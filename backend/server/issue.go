@@ -37,7 +37,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
 
-		issue, err := s.createIssue(ctx, issueCreate)
+		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
@@ -336,7 +336,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.Issue, error) {
+func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	if issueCreate.ProjectID == api.DefaultProjectUID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create a new issue in the default project")
 	}
@@ -381,7 +381,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return issue, nil
 	}
 
-	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate)
+	pipeline, err := s.createPipeline(ctx, creatorID, pipelineCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -389,17 +389,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	issue, err := s.store.CreateIssue(ctx, issueCreate)
 	if err != nil {
 		return nil, err
-	}
-	// Create issue subscribers.
-	// TODO(p0ny): create subscriber in batch.
-	for _, subscriberID := range issueCreate.SubscriberIDList {
-		subscriberCreate := &api.IssueSubscriberCreate{
-			IssueID:      issue.ID,
-			SubscriberID: subscriberID,
-		}
-		if _, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
-		}
 	}
 
 	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, issue.Pipeline); err != nil {
@@ -456,7 +445,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	return issue, nil
 }
 
-func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
+func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
@@ -464,7 +453,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 
 	var stageCreates []*api.StageCreate
 	for i := range pipelineCreate.StageList {
-		pipelineCreate.StageList[i].CreatorID = issueCreate.CreatorID
+		pipelineCreate.StageList[i].CreatorID = creatorID
 		pipelineCreate.StageList[i].PipelineID = pipelineCreated.ID
 		stageCreates = append(stageCreates, &pipelineCreate.StageList[i])
 	}
@@ -482,7 +471,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		var taskCreateList []*api.TaskCreate
 		for _, taskCreate := range stageCreate.TaskList {
 			c := taskCreate
-			c.CreatorID = issueCreate.CreatorID
+			c.CreatorID = creatorID
 			c.PipelineID = pipelineCreated.ID
 			c.StageID = createdStage.ID
 			taskCreateList = append(taskCreateList, &c)

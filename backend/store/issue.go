@@ -851,6 +851,68 @@ func (s *Store) GetIssueByUID(ctx context.Context, uid int) (*IssueMessage, erro
 	return issue, nil
 }
 
+// CreateIssueV2 creates a new issue.
+func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage) (*IssueMessage, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
+
+	query := `
+		INSERT INTO issue (
+			creator_id,
+			updater_id,
+			project_id,
+			pipeline_id,
+			name,
+			status,
+			type,
+			description,
+			assignee_id,
+			assignee_need_attention,
+			payload
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, created_ts, updated_ts
+	`
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if err := tx.QueryRowContext(ctx, query,
+		create.Creator.ID,
+		create.Creator.ID,
+		create.Project.UID,
+		create.PipelineUID,
+		create.Title,
+		api.IssueOpen,
+		create.Type,
+		create.Description,
+		create.Assignee.ID,
+		create.NeedAttention,
+		create.Payload,
+	).Scan(
+		&create.UID,
+		&create.createdTs,
+		&create.updatedTs,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, FormatError(err)
+	}
+	create.CreatedTime = time.Unix(create.createdTs, 0)
+	create.UpdatedTime = time.Unix(create.updatedTs, 0)
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return create, nil
+}
+
 func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.UID; v != nil {
@@ -858,7 +920,6 @@ func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]
 	}
 
 	var issues []*IssueMessage
-
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
