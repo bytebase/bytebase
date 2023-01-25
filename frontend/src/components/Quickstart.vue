@@ -24,7 +24,7 @@
               <span
                 class="flex-shrink-0 relative h-5 w-5 flex items-center justify-center"
               >
-                <template v-if="intro.done">
+                <template v-if="intro.done.value">
                   <!-- Heroicon name: solid/check-circle -->
                   <heroicons-solid:check-circle
                     class="h-full w-full text-success group-hover:text-success-hover"
@@ -46,7 +46,7 @@
               </span>
               <span
                 class="ml-2 text-sm font-medium text-control-light group-hover:text-control-light-hover"
-                :class="intro.done ? 'line-through' : ''"
+                :class="intro.done.value ? 'line-through' : ''"
                 >{{ intro.name }}</span
               >
             </span>
@@ -164,11 +164,11 @@ export default defineComponent({
 
     const isTaskActive = (index: number): boolean => {
       for (let i = index - 1; i >= 0; i--) {
-        if (!introList[i].done) {
+        if (!introList[i].done.value) {
           return false;
         }
       }
-      return !introList[index].done;
+      return !introList[index].done.value;
     };
 
     const hideQuickstart = () => {
