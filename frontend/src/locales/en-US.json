@@ -592,8 +592,9 @@
     "issue-link-with-task": "Issue {issue} - task {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "Send a {im} approval request successfully",
-      "needs-attention": "Needs attention",
-      "click-to-mark": "Click to mark it as \"Needs attention\""
+      "send-attention-request-successfully": "Request assignee {principal} attention successfully",
+      "needs-attention": "Attention needed",
+      "click-to-mark": "Click to request assignee attention"
     }
   },
   "alter-schema": {
