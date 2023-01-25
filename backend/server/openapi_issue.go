@@ -65,17 +65,16 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 	}
 
 	issueCreate := &api.IssueCreate{
-		CreatorID:             c.Get(getPrincipalIDContextKey()).(int),
-		ProjectID:             project.UID,
-		Name:                  create.Name,
-		Type:                  issueType,
-		Description:           create.Description,
-		AssigneeID:            api.SystemBotID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
+		ProjectID:     project.UID,
+		Name:          create.Name,
+		Type:          issueType,
+		Description:   create.Description,
+		AssigneeID:    api.SystemBotID,
+		CreateContext: string(createContext),
 	}
+	creatorID := c.Get(getPrincipalIDContextKey()).(int)
 
-	if _, err := s.createIssue(ctx, issueCreate); err != nil {
+	if _, err := s.createIssue(ctx, issueCreate, creatorID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create the issue").SetInternal(err)
 	}
 

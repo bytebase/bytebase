@@ -68,19 +68,6 @@ func (raw *issueRaw) toIssue() *api.Issue {
 	}
 }
 
-// CreateIssue creates an instance of Issue.
-func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.Issue, error) {
-	issueRaw, err := s.createIssueRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Issue with IssueCreate[%+v]", create)
-	}
-	issue, err := s.composeIssue(ctx, issueRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", issueRaw)
-	}
-	return issue, nil
-}
-
 // GetIssueByID gets an instance of Issue.
 func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	find := &api.IssueFind{ID: &id}
@@ -171,22 +158,22 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 
 // CreateIssueValidateOnly creates an issue for validation purpose
 // Do NOT write to the database.
-func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api.PipelineCreate, create *api.IssueCreate) (*api.Issue, error) {
+func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api.PipelineCreate, create *IssueMessage, creatorID int) (*api.Issue, error) {
 	pipeline, err := s.createPipelineValidateOnly(ctx, pipelineCreate)
 	if err != nil {
 		return nil, err
 	}
 	issue := &api.Issue{
-		CreatorID:   create.CreatorID,
+		CreatorID:   creatorID,
 		CreatedTs:   time.Now().Unix(),
-		UpdaterID:   create.CreatorID,
+		UpdaterID:   creatorID,
 		UpdatedTs:   time.Now().Unix(),
-		ProjectID:   create.ProjectID,
-		Name:        create.Name,
+		ProjectID:   create.Project.UID,
+		Name:        create.Title,
 		Status:      api.IssueOpen,
 		Type:        create.Type,
 		Description: create.Description,
-		AssigneeID:  create.AssigneeID,
+		AssigneeID:  create.Assignee.ID,
 		PipelineID:  pipeline.ID,
 		Pipeline:    pipeline,
 	}
@@ -474,30 +461,6 @@ func (s *Store) composeIssueStripped(ctx context.Context, raw *issueRaw) (*api.I
 	return issue, nil
 }
 
-// createIssueRaw creates a new issue.
-func (s *Store) createIssueRaw(ctx context.Context, create *api.IssueCreate) (*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	issue, err := s.createIssueImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(issueCacheNamespace, issue.ID, issue); err != nil {
-		return nil, err
-	}
-
-	return issue, nil
-}
-
 // findIssueRaw retrieves a list of issues based on find.
 func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issueRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -570,64 +533,6 @@ func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issu
 	}
 
 	return issue, nil
-}
-
-// createIssueImpl creates a new issue.
-func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCreate) (*issueRaw, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-	query := `
-		INSERT INTO issue (
-			creator_id,
-			updater_id,
-			project_id,
-			pipeline_id,
-			name,
-			status,
-			type,
-			description,
-			assignee_id,
-			assignee_need_attention,
-			payload
-		)
-		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9, $10)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
-	`
-	var issueRaw issueRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.ProjectID,
-		create.PipelineID,
-		create.Name,
-		create.Type,
-		create.Description,
-		create.AssigneeID,
-		create.AssigneeNeedAttention,
-		create.Payload,
-	).Scan(
-		&issueRaw.ID,
-		&issueRaw.CreatorID,
-		&issueRaw.CreatedTs,
-		&issueRaw.UpdaterID,
-		&issueRaw.UpdatedTs,
-		&issueRaw.ProjectID,
-		&issueRaw.PipelineID,
-		&issueRaw.Name,
-		&issueRaw.Status,
-		&issueRaw.Type,
-		&issueRaw.Description,
-		&issueRaw.AssigneeID,
-		&issueRaw.AssigneeNeedAttention,
-		&issueRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &issueRaw, nil
 }
 
 func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([]*issueRaw, error) {
@@ -851,6 +756,74 @@ func (s *Store) GetIssueByUID(ctx context.Context, uid int) (*IssueMessage, erro
 	return issue, nil
 }
 
+// CreateIssueV2 creates a new issue.
+func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
+	creator, err := s.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `
+		INSERT INTO issue (
+			creator_id,
+			updater_id,
+			project_id,
+			pipeline_id,
+			name,
+			status,
+			type,
+			description,
+			assignee_id,
+			assignee_need_attention,
+			payload
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, created_ts, updated_ts
+	`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if err := tx.QueryRowContext(ctx, query,
+		creatorID,
+		creatorID,
+		create.Project.UID,
+		create.PipelineUID,
+		create.Title,
+		api.IssueOpen,
+		create.Type,
+		create.Description,
+		create.Assignee.ID,
+		create.NeedAttention,
+		create.Payload,
+	).Scan(
+		&create.UID,
+		&create.createdTs,
+		&create.updatedTs,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, FormatError(err)
+	}
+	create.CreatedTime = time.Unix(create.createdTs, 0)
+	create.UpdatedTime = time.Unix(create.updatedTs, 0)
+	create.Creator = creator
+	create.Updater = creator
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return create, nil
+}
+
 func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.UID; v != nil {
@@ -858,7 +831,6 @@ func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]
 	}
 
 	var issues []*IssueMessage
-
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
