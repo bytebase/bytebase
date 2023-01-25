@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
@@ -187,8 +188,15 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if task == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
+		if err != nil {
+			return err
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %v not found", task.Database.ProjectID))
+		}
 
-		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheck(ctx, task, c.Get(getPrincipalIDContextKey()).(int))
+		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
 		}

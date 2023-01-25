@@ -217,10 +217,10 @@ func (s *Scheduler) Register(taskType api.TaskCheckType, executor Executor) {
 	s.executors[taskType] = executor
 }
 
-func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	var createList []*api.TaskCheckRunCreate
 
-	create, err := s.getLGTMTaskCheck(ctx, task, creatorID)
+	create, err := s.getLGTMTaskCheck(ctx, project, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
@@ -310,8 +310,8 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID 
 }
 
 // ScheduleCheck schedules variouse task checks depending on the task type.
-func (s *Scheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
-	createList, err := s.getTaskCheck(ctx, task, creatorID)
+func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) (*api.Task, error) {
+	createList, err := s.getTaskCheck(ctx, project, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to getTaskCheck")
 	}
@@ -433,11 +433,11 @@ func (*Scheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID 
 	}, nil
 }
 
-func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 		return nil, nil
 	}
-	if task.Database.Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
+	if project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
 		// don't schedule LGTM check if it's disabled.
 		return nil, nil
 	}
@@ -459,11 +459,11 @@ func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creato
 }
 
 // SchedulePipelineTaskCheck schedules the task checks for a pipeline.
-func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pipeline) error {
+func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *store.ProjectMessage, pipeline *api.Pipeline) error {
 	var createList []*api.TaskCheckRunCreate
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
-			create, err := s.getTaskCheck(ctx, task, api.SystemBotID)
+			create, err := s.getTaskCheck(ctx, project, task, api.SystemBotID)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
 			}
