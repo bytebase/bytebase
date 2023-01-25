@@ -592,8 +592,9 @@
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "{im}审批请求发送成功",
+      "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
       "needs-attention": "需要关注",
-      "click-to-mark": "点击以标记为「需要关注」"
+      "click-to-mark": "点击以请求审核人关注"
     }
   },
   "alter-schema": {
