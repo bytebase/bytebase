@@ -187,7 +187,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to false")
 		}
 
-		issue, err := s.store.GetIssueByID(ctx, id)
+		issue, err := s.store.GetIssueByUID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
@@ -196,15 +196,19 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			if *issuePatch.AssigneeID == issue.AssigneeID {
+			if *issuePatch.AssigneeID == issue.Assignee.ID {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
 			}
-			stage := utils.GetActiveStage(issue.Pipeline)
+			composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+			if err != nil {
+				return err
+			}
+			stage := utils.GetActiveStage(composedPipeline)
 			if stage == nil {
 				// all stages have finished, use the last stage
-				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+				stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
 			}
-			ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
+			ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.Project.UID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
@@ -213,7 +217,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 
 			// set AssigneeNeedAttention to false on assignee change
-			if issue.Project.WorkflowType == api.UIWorkflow {
+			if issue.Project.Workflow == api.UIWorkflow {
 				needAttention := false
 				issuePatch.AssigneeNeedAttention = &needAttention
 			}
@@ -226,18 +230,18 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		// cancel external approval on assignee change
 		if issuePatch.AssigneeID != nil {
-			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonReassigned); err != nil {
-				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
+			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonReassigned); err != nil {
+				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.UID), zap.Error(err))
 			}
 		}
 
 		payloadList := [][]byte{}
-		if issuePatch.Name != nil && *issuePatch.Name != issue.Name {
+		if issuePatch.Name != nil && *issuePatch.Name != issue.Title {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
 				FieldID:   api.IssueFieldName,
-				OldValue:  issue.Name,
+				OldValue:  issue.Title,
 				NewValue:  *issuePatch.Name,
-				IssueName: issue.Name,
+				IssueName: issue.Title,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue name: %v", updatedIssue.Name)).SetInternal(err)
@@ -249,19 +253,19 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				FieldID:   api.IssueFieldDescription,
 				OldValue:  issue.Description,
 				NewValue:  *issuePatch.Description,
-				IssueName: issue.Name,
+				IssueName: issue.Title,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue description: %v", updatedIssue.Name)).SetInternal(err)
 			}
 			payloadList = append(payloadList, payload)
 		}
-		if issuePatch.AssigneeID != nil && *issuePatch.AssigneeID != issue.AssigneeID {
+		if issuePatch.AssigneeID != nil && *issuePatch.AssigneeID != issue.Assignee.ID {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
 				FieldID:   api.IssueFieldAssignee,
-				OldValue:  strconv.Itoa(issue.AssigneeID),
+				OldValue:  strconv.Itoa(issue.Assignee.ID),
 				NewValue:  strconv.Itoa(*issuePatch.AssigneeID),
-				IssueName: issue.Name,
+				IssueName: issue.Title,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue assignee: %v", updatedIssue.Name)).SetInternal(err)
@@ -272,7 +276,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		for _, payload := range payloadList {
 			activityCreate := &api.ActivityCreate{
 				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: issue.ID,
+				ContainerID: issue.UID,
 				Type:        api.ActivityIssueFieldUpdate,
 				Level:       api.ActivityInfo,
 				Payload:     string(payload),
@@ -306,7 +310,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssueByID(ctx, id)
+		issue, err := s.store.GetIssueByUID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -530,7 +534,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
 	}
 	taskID := c.TaskIDList[0]
-	issue, err := s.store.GetIssueByID(ctx, issueID)
+	issue, err := s.store.GetIssueByUID(ctx, issueID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with ID %d", issueID)).SetInternal(err)
 	}
@@ -550,8 +554,8 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if task.Database.Instance.Engine != db.MySQL {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", task.Database.Instance.Engine))
 	}
-	if task.PipelineID != issue.PipelineID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.ID))
+	if task.PipelineID != issue.PipelineUID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.UID))
 	}
 	if task.Status != api.TaskDone && task.Status != api.TaskFailed {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d has status %s, must be %s or %s", taskID, task.Status, api.TaskDone, api.TaskFailed))

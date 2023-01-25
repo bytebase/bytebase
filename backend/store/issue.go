@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -796,4 +797,169 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 		return nil, FormatError(err)
 	}
 	return &issueRaw, nil
+}
+
+// IssueMessage is the mssage for issues.
+type IssueMessage struct {
+	Project       *ProjectMessage
+	Title         string
+	Status        api.IssueStatus
+	Type          api.IssueType
+	Description   string
+	Assignee      *UserMessage
+	NeedAttention bool
+	Payload       string
+	Subscribers   []*UserMessage
+	PipelineUID   int
+
+	// The following fields are output only and not used for create().
+	UID         int
+	Creator     *UserMessage
+	CreatedTime time.Time
+	Updater     *UserMessage
+	UpdatedTime time.Time
+
+	// Internal fields.
+	projectUID     int
+	assigneeUID    int
+	subscriberUIDs []int
+	creatorUID     int
+	createdTs      int64
+	updaterUID     int
+	updatedTs      int64
+}
+
+// FindIssueMessage is the message to find issues.
+type FindIssueMessage struct {
+	UID *int
+}
+
+// GetIssueByUID gets issue by issue UID.
+func (s *Store) GetIssueByUID(ctx context.Context, uid int) (*IssueMessage, error) {
+	issues, err := s.listIssueImplV2(ctx, &FindIssueMessage{UID: &uid})
+	if err != nil {
+		return nil, err
+	}
+	if len(issues) == 0 {
+		return nil, nil
+	}
+	if len(issues) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d issues with UID %d, expect 1", len(issues), uid)}
+	}
+	issue := issues[0]
+
+	return issue, nil
+}
+
+func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	var issues []*IssueMessage
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		SELECT
+			issue.id,
+			issue.creator_id,
+			issue.created_ts,
+			issue.updater_id,
+			issue.updated_ts,
+			issue.project_id,
+			issue.pipeline_id,
+			issue.name,
+			issue.status,
+			issue.type,
+			issue.description,
+			issue.assignee_id,
+			issue.assignee_need_attention,
+			issue.payload,
+			ARRAY_AGG (
+				issue_subscriber.subscriber_id
+			) subscribers
+		FROM issue
+		LEFT JOIN issue_subscriber ON issue.id = issue_subscriber.issue_id
+		WHERE %s
+		GROUP BY issue.id`, strings.Join(where, " AND ")),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var issue IssueMessage
+		var subscribers []sql.NullInt32
+		if err := rows.Scan(
+			&issue.UID,
+			&issue.creatorUID,
+			&issue.createdTs,
+			&issue.updaterUID,
+			&issue.updatedTs,
+			&issue.projectUID,
+			&issue.PipelineUID,
+			&issue.Title,
+			&issue.Status,
+			&issue.Type,
+			&issue.Description,
+			&issue.assigneeUID,
+			&issue.NeedAttention,
+			&issue.Payload,
+			pq.Array(&subscribers),
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		for _, subscriber := range subscribers {
+			if !subscriber.Valid {
+				continue
+			}
+			issue.subscriberUIDs = append(issue.subscriberUIDs, int(subscriber.Int32))
+		}
+		issues = append(issues, &issue)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	// Populate from internal fields.
+	for _, issue := range issues {
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &issue.projectUID})
+		if err != nil {
+			return nil, err
+		}
+		issue.Project = project
+		assignee, err := s.GetUserByID(ctx, issue.assigneeUID)
+		if err != nil {
+			return nil, err
+		}
+		issue.Assignee = assignee
+		creator, err := s.GetUserByID(ctx, issue.creatorUID)
+		if err != nil {
+			return nil, err
+		}
+		issue.Creator = creator
+		updater, err := s.GetUserByID(ctx, issue.updaterUID)
+		if err != nil {
+			return nil, err
+		}
+		issue.Updater = updater
+		for _, subscriberUID := range issue.subscriberUIDs {
+			subscriber, err := s.GetUserByID(ctx, subscriberUID)
+			if err != nil {
+				return nil, err
+			}
+			issue.Subscribers = append(issue.Subscribers, subscriber)
+		}
+		issue.CreatedTime = time.Unix(issue.createdTs, 0)
+		issue.UpdatedTime = time.Unix(issue.updatedTs, 0)
+	}
+	return issues, nil
 }
