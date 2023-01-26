@@ -465,13 +465,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			openStatus := []api.IssueStatus{api.IssueOpen}
-			issues, err := ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
@@ -511,13 +505,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue.
-			openStatus = []api.IssueStatus{api.IssueOpen}
-			issues, err = ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
@@ -538,13 +526,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue.
-			openStatus = []api.IssueStatus{api.IssueOpen}
-			issues, err = ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
@@ -855,13 +837,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue
-			openStatus := []api.IssueStatus{api.IssueOpen}
-			issues, err := ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
@@ -896,13 +872,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue
-			openStatus = []api.IssueStatus{api.IssueOpen}
-			issues, err = ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
@@ -1331,13 +1301,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				a.NoError(err)
 
 				// Check for newly generated issues.
-				openStatus := []api.IssueStatus{api.IssueOpen}
-				issues, err := ctl.getIssues(
-					api.IssueFind{
-						ProjectID:  &project.ID,
-						StatusList: openStatus,
-					},
-				)
+				issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 				a.NoError(err)
 				if test.expect[idx] {
 					a.Len(issues, 1)

@@ -47,12 +47,12 @@ func (ctl *controller) getIssue(id int) (*api.Issue, error) {
 }
 
 // getIssue gets the issue with given ID.
-func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) {
+func (ctl *controller) getIssues(projectID *int, statusList ...api.IssueStatus) ([]*api.Issue, error) {
 	var ret []*api.Issue
 	// call getOnePageIssuesWithToken until no more issues.
 	token := ""
 	for {
-		issues, nextToken, err := ctl.getOnePageIssuesWithToken(issueFind, token)
+		issues, nextToken, err := ctl.getOnePageIssuesWithToken(projectID, statusList, token)
 		if err != nil {
 			return nil, err
 		}
@@ -65,14 +65,14 @@ func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) 
 	return ret, nil
 }
 
-func (ctl *controller) getOnePageIssuesWithToken(issueFind api.IssueFind, token string) ([]*api.Issue, string, error) {
+func (ctl *controller) getOnePageIssuesWithToken(projectID *int, statusList []api.IssueStatus, token string) ([]*api.Issue, string, error) {
 	params := make(map[string]string)
-	if issueFind.ProjectID != nil {
-		params["project"] = fmt.Sprintf("%d", *issueFind.ProjectID)
+	if projectID != nil {
+		params["project"] = fmt.Sprintf("%d", *projectID)
 	}
-	if len(issueFind.StatusList) > 0 {
+	if len(statusList) > 0 {
 		var sl []string
-		for _, status := range issueFind.StatusList {
+		for _, status := range statusList {
 			sl = append(sl, string(status))
 		}
 		params["status"] = strings.Join(sl, ",")
