@@ -11,8 +11,6 @@ import { removeHint } from "./hint";
 import { removeGuideDialog } from "./guide";
 import { waitBodyLoaded } from "./utils";
 
-const invalidDemoNameList = ["dev", "prod"];
-
 const initDemo = async (demoName: string) => {
   await waitBodyLoaded();
   // mount the demo vue app
@@ -44,18 +42,13 @@ const initDemo = async (demoName: string) => {
 const mountDemoApp = async () => {
   const serverInfo = (
     await axios.get<{
-      demo: boolean;
       demoName: string;
       version: string;
     }>(`/api/actuator/info`)
   ).data;
 
-  // only show demo in feature demo mode.
-  if (
-    serverInfo.demo &&
-    serverInfo.demoName &&
-    !invalidDemoNameList.includes(serverInfo.demoName)
-  ) {
+  // only show feature demo if it's not the default demo.
+  if (serverInfo.demoName && serverInfo.demoName != "default") {
     const demoName = serverInfo.demoName;
     if (demoName) {
       initDemo(demoName);

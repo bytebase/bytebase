@@ -62,8 +62,8 @@ type DB struct {
 	// The user has superuser privilege to the database.
 	connCfg dbdriver.ConnectionConfig
 
-	// Dir to load demo data
-	demoDataDir string
+	// Demo name, empty string means do not load demo data.
+	demoName string
 
 	// Dir for postgres and its utility binaries
 	binDir string
@@ -83,10 +83,10 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
+func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
 	db := &DB{
 		connCfg:       connCfg,
-		demoDataDir:   demoDataDir,
+		demoName:      demoName,
 		binDir:        binDir,
 		readonly:      readonly,
 		Now:           time.Now,
@@ -230,14 +230,15 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 	return nil, errors.Errorf("failed to find a successful migration history to determine the schema version")
 }
 
-// setupDemoData loads the setupDemoData data for testing.
+// setupDemoData loads the demo data.
 func (db *DB) setupDemoData() error {
-	if db.demoDataDir == "" {
-		log.Debug("Skip setting up demo data. Demo data directory not specified.")
+	if db.demoName == "" {
+		log.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
 	}
-	log.Info(fmt.Sprintf("Setting up demo data from %q...", db.demoDataDir))
-	names, err := fs.Glob(demoFS, fmt.Sprintf("%s/*.sql", db.demoDataDir))
+
+	log.Info(fmt.Sprintf("Setting up demo %q...", db.demoName))
+	names, err := fs.Glob(demoFS, fmt.Sprintf("demo/%s/*.sql", db.demoName))
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 
@@ -21,12 +20,8 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			Version:     s.profile.Version,
 			GitCommit:   s.profile.GitCommit,
 			Readonly:    s.profile.Readonly,
-			Demo:        s.profile.Demo,
+			DemoName:    s.profile.DemoName,
 			ExternalURL: s.profile.ExternalURL,
-		}
-
-		if s.profile.Demo && strings.HasPrefix(s.profile.DemoDataDir, demoDataPath) {
-			serverInfo.DemoName = strings.TrimPrefix(s.profile.DemoDataDir, demoDataPath)
 		}
 
 		findRole := api.Owner

@@ -28,7 +28,7 @@ export const useActuatorStore = defineStore("actuator", {
       return state.serverInfo?.gitCommit || "";
     },
     isDemo: (state) => {
-      return state.serverInfo?.demo || false;
+      return state.serverInfo?.demoName;
     },
     isReadonly: (state) => {
       return state.serverInfo?.readonly || false;
