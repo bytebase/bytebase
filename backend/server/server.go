@@ -204,13 +204,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
-	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
-	log.Info(fmt.Sprintf("demoDataDir=%s", profile.DemoDataDir))
-	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
-	log.Info(fmt.Sprintf("demo=%t", profile.Demo))
-	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
+	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
+	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
+	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
@@ -253,9 +252,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
-		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoDataDir, profile.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoName, profile.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoDataDir, profile.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoName, profile.Mode)
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
@@ -526,7 +525,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
-	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
+	enabled := s.profile.Mode == common.ReleaseModeProd && s.profile.DemoName != "" && !s.profile.DisableMetric
 	if enabled {
 		metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))

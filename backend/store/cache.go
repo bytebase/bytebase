@@ -15,8 +15,6 @@ type cacheNamespace string
 const (
 	// pipelineCacheNamespace is the cache type of pipelines.
 	pipelineCacheNamespace cacheNamespace = "pl"
-	// issueCacheNamespace is the cache type of issues.
-	issueCacheNamespace cacheNamespace = "is"
 )
 
 // CacheService implements a cache.
