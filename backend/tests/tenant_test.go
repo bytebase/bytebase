@@ -445,13 +445,7 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			openStatus := []api.IssueStatus{api.IssueOpen}
-			issues, err := ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
@@ -897,13 +891,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			openStatus := []api.IssueStatus{api.IssueOpen}
-			issues, err := ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
@@ -1213,13 +1201,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issues.
-			openStatus := []api.IssueStatus{api.IssueOpen}
-			issues, err := ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
@@ -1497,13 +1479,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.NoError(t, err)
 
 			// Get schema update issues.
-			openStatus := []api.IssueStatus{api.IssueOpen}
-			issues, err := ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
 			require.Len(t, issues, 1)
 			status, err := ctl.waitIssuePipeline(issues[0].ID)
@@ -1536,13 +1512,7 @@ statement: |
 			require.NoError(t, err)
 
 			// Get data update issues.
-			openStatus = []api.IssueStatus{api.IssueOpen}
-			issues, err = ctl.getIssues(
-				api.IssueFind{
-					ProjectID:  &project.ID,
-					StatusList: openStatus,
-				},
-			)
+			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
 			status, err = ctl.waitIssuePipeline(issues[0].ID)
 			require.NoError(t, err)

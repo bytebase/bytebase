@@ -96,11 +96,7 @@ type IssueResponse struct {
 
 // IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
-	// Related fields
-	ProjectID  int `jsonapi:"attr,projectId"`
-	PipelineID int
-
-	// Domain specific fields
+	ProjectID             int       `jsonapi:"attr,projectId"`
 	Name                  string    `jsonapi:"attr,name"`
 	Type                  IssueType `jsonapi:"attr,type"`
 	Description           string    `jsonapi:"attr,description"`
@@ -112,7 +108,6 @@ type IssueCreate struct {
 	// This consolidates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
 	// we want the complexity resides in the backend.
 	CreateContext string `jsonapi:"attr,createContext"`
-
 	// ValidateOnly validates the request and previews the review, but does not actually post it.
 	ValidateOnly bool `jsonapi:"attr,validateOnly"`
 }
@@ -205,31 +200,6 @@ type RollbackContext struct {
 	IssueID int `json:"issueId"`
 	// TaskIDList is the list of task ids to rollback.
 	TaskIDList []int `json:"taskIdList"`
-}
-
-// IssueFind is the API message for finding issues.
-type IssueFind struct {
-	ID *int
-
-	// Related fields
-	ProjectID *int
-
-	// Domain specific fields
-	PipelineID *int
-	// Find issue where principalID is either creator, assignee or subscriber
-	PrincipalID *int
-	// To support pagination, we add into creator, assignee and subscriber.
-	// Only principleID or one of the following three fields can be set.
-	CreatorID             *int
-	AssigneeID            *int
-	AssigneeNeedAttention *bool
-	SubscriberID          *int
-
-	StatusList []IssueStatus
-	// If specified, only find issues whose ID is smaller that SinceID.
-	SinceID *int
-	// If specified, then it will only fetch "Limit" most recently updated issues
-	Limit *int
 }
 
 // IssuePatch is the API message for patching an issue.

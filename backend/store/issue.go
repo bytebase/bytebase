@@ -605,7 +605,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.SinceID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
 	}
-
 	if len(find.StatusList) != 0 {
 		var list []string
 		for _, status := range find.StatusList {
@@ -614,6 +613,11 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
+	limitClause := ""
+	if v := find.Limit; v != nil {
+		limitClause = fmt.Sprintf(" LIMIT %d", *v)
+	}
+
 	var issues []*IssueMessage
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -643,7 +647,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		FROM issue
 		LEFT JOIN issue_subscriber ON issue.id = issue_subscriber.issue_id
 		WHERE %s
-		GROUP BY issue.id`, strings.Join(where, " AND ")),
+		GROUP BY issue.id
+		ORDER BY issue.id DESC
+		%s`, strings.Join(where, " AND "), limitClause),
 		args...,
 	)
 	if err != nil {
