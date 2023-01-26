@@ -734,6 +734,17 @@ type IssueMessage struct {
 	updatedTs      int64
 }
 
+// UpdateIssueMessage is the mssage for updating an issue.
+type UpdateIssueMessage struct {
+	Title         *string
+	Status        *api.IssueStatus
+	Description   *string
+	Assignee      *UserMessage
+	NeedAttention *bool
+	Payload       *string
+	Subscribers   *[]*UserMessage
+}
+
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
 	UID *int
@@ -822,6 +833,51 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	return create, nil
+}
+
+// UpdateIssueV2 updates an issue.
+func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMessage, updaterID int) (*IssueMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{updaterID}
+	if v := patch.Title; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Status; v != nil {
+		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, api.IssueStatus(*v))
+	}
+	if v := patch.Description; v != nil {
+		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Assignee; v != nil {
+		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+	}
+	if v := patch.NeedAttention; v != nil {
+		set, args = append(set, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, uid)
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+		UPDATE issue
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d`, len(args)),
+		args...,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return s.GetIssueByUID(ctx, uid)
 }
 
 func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
