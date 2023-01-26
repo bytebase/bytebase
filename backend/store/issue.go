@@ -76,9 +76,29 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api
 		Pipeline:    pipeline,
 	}
 
-	if err := s.composeIssueValidateOnly(ctx, issue); err != nil {
+	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
+	if err != nil {
 		return nil, err
 	}
+	issue.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Updater = updater
+
+	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Assignee = assignee
+
+	project, err := s.GetProjectByID(ctx, issue.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Project = project
 
 	return issue, nil
 }
@@ -188,44 +208,6 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 //
 // private functions
 //
-
-func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) error {
-	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
-	if err != nil {
-		return err
-	}
-	issue.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
-	if err != nil {
-		return err
-	}
-	issue.Updater = updater
-
-	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
-	if err != nil {
-		return err
-	}
-	issue.Assignee = assignee
-
-	issueSubscriberFind := &api.IssueSubscriberFind{
-		IssueID: &issue.ID,
-	}
-	issueSubscriberList, err := s.FindIssueSubscriber(ctx, issueSubscriberFind)
-	if err != nil {
-		return err
-	}
-	for _, issueSub := range issueSubscriberList {
-		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
-	}
-
-	project, err := s.GetProjectByID(ctx, issue.ProjectID)
-	if err != nil {
-		return err
-	}
-	issue.Project = project
-	return nil
-}
 
 // Note: MUST keep in sync with composeIssueValidateOnly.
 func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
@@ -562,11 +544,88 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, FormatError(err)
 	}
 
+	if patch.Subscribers != nil {
+		if err := setSubscribers(ctx, tx, uid, *patch.Subscribers); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
+}
+
+func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*UserMessage) error {
+	subscriberIDs := make(map[int]bool)
+	for _, subscriber := range subscribers {
+		subscriberIDs[subscriber.ID] = true
+	}
+
+	oldSubscriberIDs := make(map[int]bool)
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			subscriber_id
+		FROM issue_subscriber
+		WHERE issue_id = $1`,
+		issueUID,
+	)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var subscriberID int
+		if err := rows.Scan(
+			&subscriberID,
+		); err != nil {
+			return err
+		}
+
+		oldSubscriberIDs[subscriberID] = true
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	var adds, deletes []int
+	for v := range oldSubscriberIDs {
+		if _, ok := subscriberIDs[v]; !ok {
+			deletes = append(deletes, v)
+		}
+	}
+	for v := range subscriberIDs {
+		if _, ok := oldSubscriberIDs[v]; !ok {
+			adds = append(adds, v)
+		}
+	}
+	if len(adds) > 0 {
+		var tokens []string
+		var args []interface{}
+		for i, v := range adds {
+			tokens = append(tokens, fmt.Sprintf("($%d, $%d)", 2*i+1, 2*i+2))
+			args = append(args, issueUID, v)
+		}
+		query := fmt.Sprintf(`INSERT INTO issue_subscriber (issue_id, subscriber_id) VALUES %s`, strings.Join(tokens, ", "))
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+	}
+	if len(deletes) > 0 {
+		var tokens []string
+		var args []interface{}
+		args = append(args, issueUID)
+		for i, v := range deletes {
+			tokens = append(tokens, fmt.Sprintf("$%d", i+2))
+			args = append(args, v)
+		}
+		query := fmt.Sprintf(`DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id IN (%s)`, strings.Join(tokens, ", "))
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ListIssueV2 returns the list of issues by find query.
