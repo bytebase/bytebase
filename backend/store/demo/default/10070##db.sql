@@ -7,8 +7,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -21,8 +19,6 @@ VALUES
         6001,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -36,8 +32,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -50,8 +44,6 @@ VALUES
         6001,
         3001,
         'testdb_dev',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         1624558090,
         ''
@@ -65,8 +57,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -79,8 +69,6 @@ VALUES
         6001,
         3002,
         'shop',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -94,8 +82,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -108,8 +94,6 @@ VALUES
         6001,
         3003,
         'blog',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -124,8 +108,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -138,8 +120,6 @@ VALUES
         6002,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -153,8 +133,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -167,8 +145,6 @@ VALUES
         6002,
         3001,
         'testdb_integration',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -182,8 +158,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -196,8 +170,6 @@ VALUES
         6002,
         3002,
         'shop',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -211,8 +183,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -225,8 +195,6 @@ VALUES
         6002,
         3003,
         'blog',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -241,8 +209,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -255,8 +221,6 @@ VALUES
         6003,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -270,8 +234,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -284,8 +246,6 @@ VALUES
         6003,
         3001,
         'testdb_staging',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -299,8 +259,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -313,8 +271,6 @@ VALUES
         6003,
         3002,
         'shop',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -328,8 +284,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -342,8 +296,6 @@ VALUES
         6003,
         3003,
         'blog',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -358,8 +310,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -372,8 +322,6 @@ VALUES
         6004,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -387,8 +335,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -401,8 +347,6 @@ VALUES
         6004,
         3001,
         'testdb_prod',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -416,8 +360,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -430,8 +372,6 @@ VALUES
         6004,
         3002,
         'shop',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -445,8 +385,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -459,8 +397,6 @@ VALUES
         6004,
         3003,
         'blog',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -475,8 +411,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -489,8 +423,6 @@ VALUES
         6005,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -505,8 +437,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -519,8 +449,6 @@ VALUES
         6006,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -535,8 +463,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -549,8 +475,6 @@ VALUES
         6007,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -565,8 +489,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -579,8 +501,6 @@ VALUES
         6008,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
         'OK',
         0,
         ''
@@ -595,8 +515,6 @@ INSERT INTO
         instance_id,
         project_id,
         name,
-        character_set,
-        "collation",
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -609,8 +527,6 @@ VALUES
         6009,
         1,
         '*',
-        '',
-        '',
         'OK',
         0,
         ''

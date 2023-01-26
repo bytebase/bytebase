@@ -107,8 +107,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
