@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gosimple/slug"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -41,14 +43,14 @@ func NewManager(store *store.Store, profile config.Profile) *Manager {
 }
 
 // BatchCreateTaskStatusUpdateApprovalActivity creates a batch task status update activities for task approvals.
-func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Context, taskList []*api.Task, updaterID int, issue *api.Issue, stage *api.Stage) error {
+func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Context, taskList []*api.Task, updaterID int, issue *store.IssueMessage, stage *api.Stage) error {
 	var createList []*api.ActivityCreate
 	for _, task := range taskList {
 		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
 			TaskID:    task.ID,
 			OldStatus: api.TaskPendingApproval,
 			NewStatus: api.TaskPending,
-			IssueName: issue.Name,
+			IssueName: issue.Title,
 			TaskName:  task.Name,
 		})
 		if err != nil {
@@ -76,11 +78,11 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 
 	activityType := api.ActivityPipelineTaskStatusUpdate
 	webhookList, err := m.store.FindProjectWebhook(ctx, &api.ProjectWebhookFind{
-		ProjectID:    &issue.ProjectID,
+		ProjectID:    &issue.Project.UID,
 		ActivityType: &activityType,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", issue.Name)
+		return errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", issue.Title)
 	}
 	if len(webhookList) == 0 {
 		return nil
@@ -91,18 +93,18 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 		ActivityType: string(activityType),
 		Title:        fmt.Sprintf("Stage tasks approved - %s", stage.Name),
 		Issue: &webhook.Issue{
-			ID:          issue.ID,
-			Name:        issue.Name,
+			ID:          issue.UID,
+			Name:        issue.Title,
 			Status:      string(issue.Status),
 			Type:        string(issue.Type),
 			Description: issue.Description,
 		},
 		Project: &webhook.Project{
-			ID:   issue.ProjectID,
-			Name: issue.Project.Name,
+			ID:   issue.Project.UID,
+			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s", m.profile.ExternalURL, api.IssueSlug(issue)),
+		Link:         fmt.Sprintf("%s/issue/%s-%d", m.profile.ExternalURL, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorID,
 		CreatorName:  anyActivity.Creator.Name,
 		CreatorEmail: anyActivity.Creator.Email,

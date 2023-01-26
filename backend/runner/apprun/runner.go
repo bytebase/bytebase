@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -76,21 +77,27 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
-				assigneeNeedAtterntion := true
-				find := &api.IssueFind{
-					StatusList:            []api.IssueStatus{api.IssueOpen},
-					AssigneeNeedAttention: &assigneeNeedAtterntion,
-				}
+				issueByID := make(map[int]*store.IssueMessage)
+				pipelineByID := make(map[int]*api.Pipeline)
 
-				issueByID := make(map[int]*api.Issue)
-				issues, err := r.store.FindIssue(ctx, find)
+				needAttention := true
+				issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
+					StatusList:    []api.IssueStatus{api.IssueOpen},
+					NeedAttention: &needAttention,
+				})
 				if err != nil {
-					log.Error("failed to find issue stripped", zap.Any("issueFind", find), zap.Error(err))
+					log.Error("failed to find issues", zap.Error(err))
 					return
 				}
 				for _, issue := range issues {
-					issueByID[issue.ID] = issue
-					r.scheduleApproval(ctx, issue, &value)
+					issueByID[issue.UID] = issue
+					pipeline, err := r.store.GetPipelineByID(ctx, issue.PipelineUID)
+					if err != nil {
+						log.Error("failed to get pipeline", zap.Int("id", issue.PipelineUID), zap.Error(err))
+						return
+					}
+					pipelineByID[issue.PipelineUID] = pipeline
+					r.scheduleApproval(ctx, issue, pipeline, &value)
 				}
 
 				externalApprovalList, err := r.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
@@ -117,12 +124,17 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("expect to have found issue in application runner", zap.Int("issue_id", externalApproval.IssueID))
 							continue
 						}
-						stage := utils.GetActiveStage(issue.Pipeline)
+						composedPipeline, ok := pipelineByID[issue.PipelineUID]
+						if !ok {
+							log.Error("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
+							continue
+						}
+						stage := utils.GetActiveStage(composedPipeline)
 						if stage == nil {
-							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+							stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
-							if err := r.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
+							if err := r.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 							}
 							continue
@@ -143,7 +155,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						switch status {
 						case feishu.ApprovalStatusApproved:
 							// double check
-							if stage.ID == payload.StageID && payload.AssigneeID == issue.AssigneeID {
+							if stage.ID == payload.StageID && payload.AssigneeID == issue.Assignee.ID {
 								// approve stage
 								if err := func() error {
 									var taskIDList []int
@@ -194,7 +206,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 
 								stageName := "UNKNOWN"
-								for _, stage := range issue.Pipeline.StageList {
+								for _, stage := range composedPipeline.StageList {
 									if stage.ID == payload.StageID {
 										stageName = stage.Name
 										break
@@ -213,7 +225,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 								activityCreate := &api.ActivityCreate{
 									CreatorID:   payload.AssigneeID,
-									ContainerID: issue.ID,
+									ContainerID: issue.UID,
 									Type:        api.ActivityIssueCommentCreate,
 									Level:       api.ActivityInfo,
 									Comment:     "",
@@ -239,8 +251,8 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
-	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
+func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *store.IssueMessage, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
+	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +270,7 @@ func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *a
 			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
 			return true
 		}
-		if payload.AssigneeID != issue.AssigneeID {
+		if payload.AssigneeID != issue.Assignee.ID {
 			reason = api.ExternalApprovalCancelReasonReassigned
 			return true
 		}
@@ -377,7 +389,7 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason
 	)
 }
 
-func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
 	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
 	if err != nil {
 		return false, err
@@ -392,7 +404,7 @@ func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *api.Is
 			return false, err
 		}
 		// nothing changes
-		if oldPayload.StageID == stage.ID && oldPayload.AssigneeID == issue.AssigneeID {
+		if oldPayload.StageID == stage.ID && oldPayload.AssigneeID == issue.Assignee.ID {
 			return false, nil
 		}
 	}
@@ -434,7 +446,7 @@ func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *api.Is
 	return true, nil
 }
 
-func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
 	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -485,9 +497,9 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, s
 			AppSecret: settingValue.AppSecret,
 		},
 		feishu.Content{
-			Issue:    fmt.Sprintf("#%d %s", issue.ID, issue.Name),
+			Issue:    fmt.Sprintf("#%d %s", issue.UID, issue.Title),
 			Stage:    stage.Name,
-			Link:     fmt.Sprintf("%s/issue/%s", r.profile.ExternalURL, api.IssueSlug(issue)),
+			Link:     fmt.Sprintf("%s/issue/%s-%d", r.profile.ExternalURL, slug.Make(issue.Title), issue.UID),
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalDefinitionID,
@@ -498,7 +510,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, s
 	}
 	payload := api.ExternalApprovalPayloadFeishu{
 		StageID:      stage.ID,
-		AssigneeID:   issue.AssigneeID,
+		AssigneeID:   issue.Assignee.ID,
 		InstanceCode: instanceCode,
 		RequesterID:  users[issue.Creator.Email],
 		Rejected:     false,
@@ -508,9 +520,9 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, s
 		return err
 	}
 	if _, err := r.store.CreateExternalApproval(ctx, &api.ExternalApprovalCreate{
-		IssueID:     issue.ID,
-		ApproverID:  issue.AssigneeID,
-		RequesterID: issue.CreatorID,
+		IssueID:     issue.UID,
+		ApproverID:  issue.Assignee.ID,
+		RequesterID: issue.Creator.ID,
 		Type:        api.ExternalApprovalTypeFeishu,
 		Payload:     string(b),
 	}); err != nil {
@@ -520,7 +532,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, s
 }
 
 // scheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
-func (r *Runner) scheduleApproval(ctx context.Context, issue *api.Issue, settingValue *api.SettingAppIMValue) {
+func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage, composedPipeline *api.Pipeline, settingValue *api.SettingAppIMValue) {
 	if !settingValue.ExternalApproval.Enabled {
 		return
 	}
@@ -530,9 +542,9 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *api.Issue, setting
 		return
 	}
 
-	stage := utils.GetActiveStage(issue.Pipeline)
+	stage := utils.GetActiveStage(composedPipeline)
 	if stage == nil {
-		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+		stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
 	}
 
 	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, settingValue)
