@@ -423,6 +423,17 @@ type FindIssueMessage struct {
 
 // GetIssueV2 gets issue by issue UID.
 func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueMessage, error) {
+	if find.UID != nil {
+		if issue, ok := s.issueCache.Load(*find.UID); ok {
+			return issue.(*IssueMessage), nil
+		}
+	}
+	if find.PipelineID != nil {
+		if issue, ok := s.issueByPipelineCache.Load(*find.PipelineID); ok {
+			return issue.(*IssueMessage), nil
+		}
+	}
+
 	issues, err := s.ListIssueV2(ctx, find)
 	if err != nil {
 		return nil, err
@@ -435,6 +446,8 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 	}
 	issue := issues[0]
 
+	s.issueCache.Store(issue.UID, issue)
+	s.issueByPipelineCache.Store(issue.PipelineUID, issue)
 	return issue, nil
 }
 
@@ -503,11 +516,18 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, FormatError(err)
 	}
 
+	s.issueCache.Store(create.UID, create)
+	s.issueByPipelineCache.Store(create.PipelineUID, create)
 	return create, nil
 }
 
 // UpdateIssueV2 updates an issue.
 func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMessage, updaterID int) (*IssueMessage, error) {
+	oldIssue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
+	if err != nil {
+		return nil, err
+	}
+
 	set, args := []string{"updater_id = $1"}, []interface{}{updaterID}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -554,6 +574,9 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, FormatError(err)
 	}
 
+	// Invalid the cache and read the value again.
+	s.issueCache.Delete(uid)
+	s.issueByPipelineCache.Delete(oldIssue.PipelineUID)
 	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
 }
 
@@ -781,6 +804,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		issue.CreatedTime = time.Unix(issue.createdTs, 0)
 		issue.UpdatedTime = time.Unix(issue.updatedTs, 0)
+
+		s.issueCache.Store(issue.UID, issue)
+		s.issueByPipelineCache.Store(issue.PipelineUID, issue)
 	}
+
 	return issues, nil
 }
