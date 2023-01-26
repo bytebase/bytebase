@@ -172,10 +172,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 
 		issuePatch := &api.IssuePatch{
 			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			UpdaterID: updaterID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
@@ -192,11 +193,19 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
 		}
+		updateIssueMessage := &store.UpdateIssueMessage{
+			Title:         issuePatch.Name,
+			Description:   issuePatch.Description,
+			NeedAttention: issuePatch.AssigneeNeedAttention,
+			Payload:       issuePatch.Payload,
+		}
 
 		if issuePatch.AssigneeID != nil {
-			if *issuePatch.AssigneeID == issue.Assignee.ID {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
+			assignee, err := s.store.GetUserByID(ctx, *issuePatch.AssigneeID)
+			if err != nil {
+				return err
 			}
+			updateIssueMessage.Assignee = assignee
 			composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
 			if err != nil {
 				return err
@@ -206,7 +215,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				// all stages have finished, use the last stage
 				stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
 			}
-			ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.Project.UID, issue.Type)
+			ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, stage.EnvironmentID, issue.Project.UID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
@@ -217,13 +226,17 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			// set AssigneeNeedAttention to false on assignee change
 			if issue.Project.Workflow == api.UIWorkflow {
 				needAttention := false
-				issuePatch.AssigneeNeedAttention = &needAttention
+				updateIssueMessage.NeedAttention = &needAttention
 			}
 		}
 
-		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
+		updatedIssue, err := s.store.UpdateIssueV2(ctx, id, updateIssueMessage, updaterID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
+		}
+		composedIssue, err := s.store.GetIssueByID(ctx, id)
+		if err != nil {
+			return err
 		}
 
 		// cancel external approval on assignee change
@@ -242,7 +255,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				IssueName: issue.Title,
 			})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue name: %v", updatedIssue.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue name: %v", updatedIssue.Title)).SetInternal(err)
 			}
 			payloadList = append(payloadList, payload)
 		}
@@ -254,7 +267,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				IssueName: issue.Title,
 			})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue description: %v", updatedIssue.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue description: %v", updatedIssue.Title)).SetInternal(err)
 			}
 			payloadList = append(payloadList, payload)
 		}
@@ -266,7 +279,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				IssueName: issue.Title,
 			})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue assignee: %v", updatedIssue.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue assignee: %v", updatedIssue.Title)).SetInternal(err)
 			}
 			payloadList = append(payloadList, payload)
 		}
@@ -280,15 +293,15 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Payload:     string(payload),
 			}
 			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-				Issue: updatedIssue,
+				Issue: composedIssue,
 			}); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Title)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedIssue); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update issue response: %v", updatedIssue.Name)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedIssue); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update issue response: %v", updatedIssue.Title)).SetInternal(err)
 		}
 		return nil
 	})
@@ -357,11 +370,11 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
 	if issueCreate.AssigneeID == api.SystemBotID {
-		assigneeID, err := s.TaskScheduler.GetDefaultAssigneeID(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		assignee, err := s.TaskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 		}
-		issueCreate.AssigneeID = assigneeID
+		issueCreate.AssigneeID = assignee.ID
 	}
 	ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {

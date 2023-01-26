@@ -311,18 +311,13 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									}
 									if !ok {
 										// reassign the issue to a new assignee if the current one doesn't fit.
-										assigneeID, err := s.GetDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
+										assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.ProjectID, issue.Type)
 										if err != nil {
 											log.Error("failed to get a default assignee", zap.Error(err))
 											return
 										}
-										patch := &api.IssuePatch{
-											ID:         issue.ID,
-											UpdaterID:  api.SystemBotID,
-											AssigneeID: &assigneeID,
-										}
-										if _, err := s.store.PatchIssue(ctx, patch); err != nil {
-											log.Error("failed to update the issue assignee", zap.Any("issuePatch", patch))
+										if _, err := s.store.UpdateIssueV2(ctx, issue.ID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
+											log.Error("failed to update the issue assignee", zap.Error(err))
 											return
 										}
 									}
@@ -370,12 +365,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 	}
 	if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
 		needAttention := false
-		patch := &api.IssuePatch{
-			ID:                    issue.ID,
-			UpdaterID:             api.SystemBotID,
-			AssigneeNeedAttention: &needAttention,
-		}
-		if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+		if _, err := s.store.UpdateIssueV2(ctx, issue.ID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
 		}
 	}
@@ -1119,15 +1109,19 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 	return true
 }
 
-// GetDefaultAssigneeID gets the default assignee for an issue.
-func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+// GetDefaultAssignee gets the default assignee for an issue.
+func (s *Scheduler) GetDefaultAssignee(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (*store.UserMessage, error) {
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
-		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
+		return nil, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
 	}
 	if policy.Value == api.PipelineApprovalValueManualNever {
 		// use SystemBot for auto approval tasks.
-		return api.SystemBotID, nil
+		systemBot, err := s.store.GetUserByID(ctx, api.SystemBotID)
+		if err != nil {
+			return nil, err
+		}
+		return systemBot, nil
 	}
 
 	var groupValue *api.AssigneeGroupValue
@@ -1140,18 +1134,18 @@ func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int,
 	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		user, err := s.getAnyWorkspaceOwner(ctx)
 		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
+			return nil, errors.Wrap(err, "failed to get a workspace owner or DBA")
 		}
-		return user.ID, nil
+		return user, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
 		projectOwner, err := s.getAnyProjectOwner(ctx, projectID)
 		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
+			return nil, errors.Wrap(err, "failed to get a project owner")
 		}
-		return projectOwner.ID, nil
+		return projectOwner, nil
 	}
 	// never reached
-	return api.UnknownID, errors.New("invalid assigneeGroupValue")
+	return nil, errors.New("invalid assigneeGroupValue")
 }
 
 // getAnyWorkspaceOwner finds a default assignee from the workspace owners.
@@ -1286,19 +1280,19 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Title, pipelinePatch)
 	}
 
-	issuePatch := &api.IssuePatch{
-		ID:        issue.UID,
-		UpdaterID: updaterID,
-		Status:    &newStatus,
-	}
+	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
 	if newStatus != api.IssueOpen && issue.Project.Workflow == api.UIWorkflow {
 		// for UI workflow, set assigneeNeedAttention to false if we are closing the issue.
 		needAttention := false
-		issuePatch.AssigneeNeedAttention = &needAttention
+		updateIssueMessage.NeedAttention = &needAttention
 	}
-	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
+	updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Title, issuePatch)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+	}
+	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+	if err != nil {
+		return nil, err
 	}
 
 	// Cancel external approval, it's ok if we failed.
@@ -1311,7 +1305,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
 		OldStatus: issue.Status,
 		NewStatus: newStatus,
-		IssueName: updatedIssue.Name,
+		IssueName: updatedIssue.Title,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Title)
@@ -1327,12 +1321,12 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	}
 
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: updatedIssue,
+		Issue: composedIssue,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Title)
 	}
 
-	return updatedIssue, nil
+	return composedIssue, nil
 }
 
 func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPatched *api.Task) error {
@@ -1435,13 +1429,8 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPat
 	// we need to set issue.AssigneeNeedAttention to false for UI workflow.
 	if taskPatched.Status == api.TaskPending && issue.Project.WorkflowType == api.UIWorkflow && !stageTaskHasPendingApproval {
 		needAttention := false
-		patch := &api.IssuePatch{
-			ID:                    issue.ID,
-			UpdaterID:             api.SystemBotID,
-			AssigneeNeedAttention: &needAttention,
-		}
-		if _, err := s.store.PatchIssue(ctx, patch); err != nil {
-			return errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage, issuePatch: %+v", patch)
+		if _, err := s.store.UpdateIssueV2(ctx, issue.ID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
+			return errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage")
 		}
 	}
 
