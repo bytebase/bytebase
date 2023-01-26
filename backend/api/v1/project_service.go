@@ -170,12 +170,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	if len(databases) > 0 {
 		return nil, status.Errorf(codes.FailedPrecondition, "transfer all databases under the project before deleting the project")
 	}
-	issueList, err := s.store.FindIssueStripped(ctx, &api.IssueFind{ProjectID: &project.UID, StatusList: []api.IssueStatus{api.IssueOpen}})
+	openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectUID: &project.UID, StatusList: []api.IssueStatus{api.IssueOpen}})
 	if err != nil {
 		return nil, err
 	}
-	if len(issueList) > 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "resolve all issues before deleting the project")
+	if len(openIssues) > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition, "resolve all open issues before deleting the project")
 	}
 
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{

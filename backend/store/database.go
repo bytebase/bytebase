@@ -81,16 +81,13 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	}
 	v2Find.IncludeAllDatabase = find.IncludeAllDatabase
 
-	databases, err := s.ListDatabases(ctx, v2Find)
+	database, err := s.GetDatabaseV2(ctx, v2Find)
 	if err != nil {
 		return nil, err
 	}
-	if len(databases) == 0 {
+	if database == nil {
 		return nil, nil
-	} else if len(databases) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databases), v2Find)}
 	}
-	database := databases[0]
 	composedDatabase, err := s.composeDatabase(ctx, database)
 	if err != nil {
 		return nil, err
