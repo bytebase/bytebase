@@ -84,24 +84,6 @@ func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	return issue, nil
 }
 
-// FindIssue finds a list of issues.
-func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
-	issueRawList, err := s.findIssueRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Issue list with IssueFind[%+v]", find)
-	}
-	var issueList []*api.Issue
-	for _, raw := range issueRawList {
-		issue, err := s.composeIssue(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", raw)
-		}
-		issueList = append(issueList, issue)
-	}
-
-	return issueList, nil
-}
-
 // FindIssueStripped finds a list of issues in stripped format.
 // We do not load the pipeline in order to reduce the size of the response payload and the complexity of composing the issue list.
 func (s *Store) FindIssueStripped(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
@@ -636,10 +618,10 @@ type FindIssueMessage struct {
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID             *int
-	AssigneeID            *int
-	SubscriberID          *int
-	AssigneeNeedAttention *bool
+	CreatorID     *int
+	AssigneeID    *int
+	SubscriberID  *int
+	NeedAttention *bool
 
 	StatusList []api.IssueStatus
 	// If specified, only find issues whose ID is smaller that SinceID.
@@ -805,7 +787,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.AssigneeNeedAttention; v != nil {
+	if v := find.NeedAttention; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_need_attention = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.SubscriberID; v != nil {

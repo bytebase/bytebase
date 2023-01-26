@@ -78,11 +78,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
-		if err != nil {
-			return err
-		}
-		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, composedIssue, stage); err != nil {
+		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 		}
 
