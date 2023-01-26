@@ -9,9 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// demoDataPath is the path prefix for demo data.
-var demoDataPath = "demo/"
-
 func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := c.Request().Context()
