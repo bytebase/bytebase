@@ -1,22 +1,12 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 )
 
 func getBaseProfile() config.Profile {
-	var demoDataDir string
-	if flags.demo {
-		demoName := "default"
-		if flags.demoName != "" {
-			demoName = flags.demoName
-		}
-		demoDataDir = fmt.Sprintf("demo/%s", demoName)
-	}
 	backupStorageBackend := api.BackupStorageBackendLocal
 	if flags.backupBucket != "" {
 		backupStorageBackend = api.BackupStorageBackendS3
@@ -28,8 +18,7 @@ func getBaseProfile() config.Profile {
 		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
 		Readonly:             flags.readonly,
 		Debug:                flags.debug,
-		Demo:                 flags.demo,
-		DemoDataDir:          demoDataDir,
+		DemoName:             flags.demoName,
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
