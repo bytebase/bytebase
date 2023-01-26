@@ -174,10 +174,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 
-		issuePatch := &api.IssuePatch{
-			ID:        id,
-			UpdaterID: updaterID,
-		}
+		issuePatch := &api.IssuePatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}

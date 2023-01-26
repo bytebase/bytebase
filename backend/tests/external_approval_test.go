@@ -142,8 +142,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	attention := true
-	issue, err = ctl.patchIssue(api.IssuePatch{
-		ID:                    issue.ID,
+	issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
 		AssigneeNeedAttention: &attention,
 	})
 	a.NoError(err)
@@ -297,8 +296,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	attention := true
-	issue, err = ctl.patchIssue(api.IssuePatch{
-		ID:                    issue.ID,
+	issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
 		AssigneeNeedAttention: &attention,
 	})
 	a.NoError(err)
