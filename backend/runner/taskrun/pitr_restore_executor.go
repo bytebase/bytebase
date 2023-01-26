@@ -102,7 +102,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	if payload.TargetInstanceID == nil {
 		// Backup restore in place
 		if task.Instance.Engine == db.Postgres {
-			issue, err := getIssueByPipelineID(ctx, stores, task.PipelineID)
+			issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 			if err != nil {
 				return nil, err
 			}
@@ -197,9 +197,12 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
 	defer targetDriver.Close(ctx)
 
-	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return nil, err
+	}
+	if issue == nil {
+		return nil, errors.Errorf("issue not found for pipeline %v", task.PipelineID)
 	}
 
 	backupStatus := api.BackupStatusDone
@@ -275,30 +278,30 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 		// case 1: PITR to a new database.
 		if err := mysqlTargetDriver.RestoreBackupToDatabase(ctx, backupFile, *payload.DatabaseName); err != nil {
 			log.Error("failed to restore full backup in the new database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", *payload.DatabaseName),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to restore full backup in the new database")
 		}
 		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, *targetBinlogInfo, targetTs, mysqlSourceDriver.GetBinlogDir()); err != nil {
 			log.Error("failed to perform a PITR restore in the new database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", *payload.DatabaseName),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to perform a PITR restore in the new database")
 		}
 	} else {
 		// case 2: in-place PITR.
-		if err := mysqlTargetDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
+		if err := mysqlTargetDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTime.Unix()); err != nil {
 			log.Error("failed to restore full backup in the PITR database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", task.Database.Name),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to perform a backup restore in the PITR database")
 		}
-		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, *targetBinlogInfo, issue.CreatedTs, targetTs); err != nil {
+		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, *targetBinlogInfo, issue.CreatedTime.Unix(), targetTs); err != nil {
 			log.Error("failed to perform a PITR restore in the PITR database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", task.Database.Name),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to replay binlog in the PITR database")
@@ -330,7 +333,7 @@ func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, star
 	return replayBinlogPathList, nil
 }
 
-func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *store.IssueMessage, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID == nil {
 		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
@@ -373,7 +376,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
-	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTime.Unix())
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s;", pitrDatabaseName)); err != nil {
@@ -439,19 +442,6 @@ func (exec *PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mys
 	return nil
 }
 
-func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {
-	issue, err := store.GetIssueByPipelineID(ctx, pid)
-	if err != nil {
-		log.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
-		return nil, errors.Wrapf(err, "failed to get issue by PipelineID: %d", pid)
-	}
-	if issue == nil {
-		log.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
-		return nil, errors.Errorf("issue not found with PipelineID: %d", pid)
-	}
-	return issue, nil
-}
-
 // restoreDatabase will restore the database to the instance from the backup.
 func (*PITRRestoreExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *api.Backup) error {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
@@ -509,14 +499,14 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	if err != nil {
 		return "", "", err
 	}
-	issue, err := stores.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
 	// Add a branch migration history record.
 	issueID := ""
 	if issue != nil {
-		issueID = strconv.Itoa(issue.ID)
+		issueID = strconv.Itoa(issue.UID)
 	}
 	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.DatabaseName)
 	if sourceDatabase.InstanceID != targetDatabase.InstanceID {

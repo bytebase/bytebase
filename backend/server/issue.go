@@ -183,7 +183,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to false")
 		}
 
-		issue, err := s.store.GetIssueByUID(ctx, id)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
@@ -318,7 +318,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssueByUID(ctx, id)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -559,7 +559,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
 	}
 	taskID := c.TaskIDList[0]
-	issue, err := s.store.GetIssueByUID(ctx, issueID)
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with ID %d", issueID)).SetInternal(err)
 	}

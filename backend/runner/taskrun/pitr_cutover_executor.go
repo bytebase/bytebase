@@ -50,14 +50,20 @@ type PITRCutoverExecutor struct {
 // RunOnce will run the PITR cutover task executor once.
 func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
-	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
 		return true, nil, err
 	}
+	if issue == nil {
+		return true, nil, errors.Errorf("issue not found for pipeline %v", task.PipelineID)
+	}
+	composedIssue, err := exec.store.GetIssueByID(ctx, issue.UID)
+	if err != nil {
+		return true, nil, err
+	}
 
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
-
 	terminated, result, err = exec.pitrCutover(ctx, exec.dbFactory, exec.backupRunner, exec.schemaSyncer, exec.profile, task, issue)
 	if err != nil {
 		return terminated, result, err
@@ -67,7 +73,7 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (t
 		TaskID:    task.ID,
 		OldStatus: task.Status,
 		NewStatus: api.TaskDone,
-		IssueName: issue.Name,
+		IssueName: issue.Title,
 		TaskName:  task.Name,
 	})
 	if err != nil {
@@ -77,13 +83,13 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (t
 
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   task.UpdaterID,
-		ContainerID: issue.ProjectID,
+		ContainerID: issue.Project.UID,
 		Type:        api.ActivityDatabaseRecoveryPITRDone,
 		Level:       api.ActivityInfo,
 		Payload:     string(payload),
 		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully.", task.Database.Name, task.Instance.Name),
 	}
-	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
+	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: composedIssue}); err != nil {
 		log.Error("cannot create an pitr activity", zap.Error(err))
 	}
 
@@ -94,7 +100,7 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (t
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *store.IssueMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -124,7 +130,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		Status:         db.Done,
 		Description:    fmt.Sprintf("PITR: restoring database %s", task.Database.Name),
 		Creator:        task.Creator.Name,
-		IssueID:        strconv.Itoa(issue.ID),
+		IssueID:        strconv.Itoa(issue.UID),
 	}
 
 	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
@@ -137,7 +143,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		return true, nil, errors.Errorf("database %q not found", task.Database.Name)
 	}
 	// TODO(dragonly): Only needed for in-place PITR.
-	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTime.Unix())
 	if _, err := backupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
 	}
@@ -156,7 +162,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}, nil
 }
 
-func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
+func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver, task *api.Task, issue *store.IssueMessage) error {
 	switch task.Instance.Engine {
 	case db.Postgres:
 		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
@@ -190,7 +196,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 	}
 }
 
-func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
+func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, task *api.Task, issue *store.IssueMessage) error {
 	driverDB, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
@@ -201,7 +207,7 @@ func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driv
 	}
 	defer conn.Close()
 	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
-	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
+	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTime.Unix())
 	if err != nil {
 		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
 		return errors.Wrap(err, "failed to swap the original and PITR database")
@@ -210,9 +216,9 @@ func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driv
 	return nil
 }
 
-func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
-	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
-	pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
+func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, task *api.Task, issue *store.IssueMessage) error {
+	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTime.Unix())
+	pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTime.Unix())
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return errors.Wrap(err, "failed to get connection for PostgreSQL")
