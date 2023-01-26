@@ -18,8 +18,8 @@ import (
 type MetadataDB struct {
 	mode common.ReleaseMode
 	// Dir to store Postgres and utility binaries.
-	binDir      string
-	demoDataDir string
+	binDir   string
+	demoName string
 
 	embed bool
 
@@ -32,38 +32,38 @@ type MetadataDB struct {
 }
 
 // NewMetadataDBWithEmbedPg install postgres in `pgDataDir` returns an instance of MetadataDB.
-func NewMetadataDBWithEmbedPg(pgUser, pgDataDir, binDir, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+func NewMetadataDBWithEmbedPg(pgUser, pgDataDir, binDir, demoName string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
-		mode:        mode,
-		binDir:      binDir,
-		demoDataDir: demoDataDir,
-		embed:       true,
-		pgUser:      pgUser,
-		pgDataDir:   pgDataDir,
+		mode:      mode,
+		binDir:    binDir,
+		demoName:  demoName,
+		embed:     true,
+		pgUser:    pgUser,
+		pgDataDir: pgDataDir,
 	}
 }
 
 // NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance.
-func NewMetadataDBWithExternalPg(pgURL, binDir, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+func NewMetadataDBWithExternalPg(pgURL, binDir, demoName string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
-		mode:        mode,
-		binDir:      binDir,
-		demoDataDir: demoDataDir,
-		embed:       false,
-		pgURL:       pgURL,
+		mode:     mode,
+		binDir:   binDir,
+		demoName: demoName,
+		embed:    false,
+		pgURL:    pgURL,
 	}
 }
 
 // Connect connects to the underlying Postgres instance.
 func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*DB, error) {
 	if m.embed {
-		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
+		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoName, version, m.mode)
 	}
 	return m.connectExternal(readonly, version)
 }
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB.
-func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*DB, error) {
+func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoName, version string, mode common.ReleaseMode) (*DB, error) {
 	serverLog := mode == common.ReleaseModeDev
 	if err := postgres.Start(datastorePort, m.binDir, m.pgDataDir, serverLog); err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := NewDB(connCfg, m.binDir, demoDataDir, readonly, version, mode)
+	db := NewDB(connCfg, m.binDir, demoName, readonly, version, mode)
 	return db, nil
 }
 
@@ -148,7 +148,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := NewDB(connCfg, m.binDir, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(connCfg, m.binDir, m.demoName, readonly, version, m.mode)
 	return db, nil
 }
 

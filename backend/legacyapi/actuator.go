@@ -6,7 +6,6 @@ type ServerInfo struct {
 	Version        string `json:"version"`
 	GitCommit      string `json:"gitCommit"`
 	Readonly       bool   `json:"readonly"`
-	Demo           bool   `json:"demo"`
 	DemoName       string `json:"demoName"`
 	Host           string `json:"host"`
 	Port           string `json:"port"`
