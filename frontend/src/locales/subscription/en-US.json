@@ -122,7 +122,7 @@
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
         "sensitive-data": "Sensitive data masking",
-        "access-control": "Access control"
+        "database-access-control": "Database access control"
       }
     },
     "branding": {
@@ -147,11 +147,15 @@
     "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
     "review-and-backup-policy": "Review and backup policy",
-    "sla": "SLA support",
+    "sla": "Dedicated CSM and SLA support",
     "everything-in-team-plan": "Everything in team plan",
     "multi-tenancy": "Multi-Region / Multi-Tenancy deployment",
+    "read-replica": "Separate read-only connection",
     "dba-workflow": "DBA workflow",
     "environment-tier": "Environment tier",
-    "more-to-come": "More to come..."
+    "sensitive-data": "Sensitive data masking",
+    "database-access-control": "Database access control",
+    "roadmap": "Roadmap prioritization",
+    "custom-contract": "Custom MSA and BAA"
   }
 }
