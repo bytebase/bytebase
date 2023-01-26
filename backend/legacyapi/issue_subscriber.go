@@ -10,8 +10,6 @@ type IssueSubscriber struct {
 
 // IssueSubscriberCreate is the API message for creating an issue subscriber.
 type IssueSubscriberCreate struct {
-	// Domain specific fields
-	IssueID      int
 	SubscriberID int `jsonapi:"attr,subscriberId"`
 }
 

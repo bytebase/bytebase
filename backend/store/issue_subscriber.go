@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
@@ -28,19 +27,6 @@ func (raw *issueSubscriberRaw) toIssueSubscriber() *api.IssueSubscriber {
 	}
 }
 
-// CreateIssueSubscriber creates an instance of IssueSubscriber.
-func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
-	issueSubRaw, err := s.createIssueSubscriberRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create IssueSubscriber with IssueSubscriberCreate[%+v]", create)
-	}
-	issueSub, err := s.composeIssueSubscriber(ctx, issueSubRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose IssueSubscriber with issueSubRaw[%+v]", issueSubRaw)
-	}
-	return issueSub, nil
-}
-
 // FindIssueSubscriber finds a list of IssueSubscriber instances.
 func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	issueSubRawList, err := s.findIssueSubscriberRaw(ctx, find)
@@ -56,25 +42,6 @@ func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscrib
 		issueSubList = append(issueSubList, issueSub)
 	}
 	return issueSubList, nil
-}
-
-// DeleteIssueSubscriber deletes an existing issueSubscriber by ID.
-func (s *Store) DeleteIssueSubscriber(ctx context.Context, delete *api.IssueSubscriberDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	if err := s.deleteIssueSubscriberImpl(ctx, tx, delete); err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
 }
 
 //
@@ -93,26 +60,6 @@ func (s *Store) composeIssueSubscriber(ctx context.Context, raw *issueSubscriber
 	return issueSubscriber, nil
 }
 
-// createIssueSubscriberRaw creates a new issueSubscriber.
-func (s *Store) createIssueSubscriberRaw(ctx context.Context, create *api.IssueSubscriberCreate) (*issueSubscriberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	issueSubscriber, err := createIssueSubscriberImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return issueSubscriber, nil
-}
-
 // findIssueSubscriberRaw retrieves a list of issueSubscribers based on find.
 func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -127,33 +74,6 @@ func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubsc
 	}
 
 	return list, nil
-}
-
-// createIssueSubscriberImpl creates a new issueSubscriber.
-func createIssueSubscriberImpl(ctx context.Context, tx *Tx, create *api.IssueSubscriberCreate) (*issueSubscriberRaw, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO issue_subscriber (
-			issue_id,
-			subscriber_id
-		)
-		VALUES ($1, $2)
-		RETURNING issue_id, subscriber_id
-	`
-	var issueSubscriberRaw issueSubscriberRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.IssueID,
-		create.SubscriberID,
-	).Scan(
-		&issueSubscriberRaw.IssueID,
-		&issueSubscriberRaw.SubscriberID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &issueSubscriberRaw, nil
 }
 
 func findIssueSubscriberImpl(ctx context.Context, tx *Tx, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
@@ -197,13 +117,4 @@ func findIssueSubscriberImpl(ctx context.Context, tx *Tx, find *api.IssueSubscri
 	}
 
 	return issueSubscriberRawList, nil
-}
-
-// deleteIssueSubscriberImpl permanently deletes a issueSubscriber by ID.
-func (*Store) deleteIssueSubscriberImpl(ctx context.Context, tx *Tx, delete *api.IssueSubscriberDelete) error {
-	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id = $2`, delete.IssueID, delete.SubscriberID); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }

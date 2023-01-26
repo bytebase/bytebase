@@ -8,8 +8,8 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
@@ -19,22 +19,34 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
+		if err != nil {
+			return err
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
+		}
 
 		issueSubscriberCreate := &api.IssueSubscriberCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueSubscriberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issueSubscriber request").SetInternal(err)
 		}
 
-		issueSubscriberCreate.IssueID = issueID
-
-		issueSubscriber, err := s.store.CreateIssueSubscriber(ctx, issueSubscriberCreate)
+		newSubscriber, err := s.store.GetUserByID(ctx, issueSubscriberCreate.SubscriberID)
 		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Subscriber %d already exists in issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
+			return err
+		}
+		if newSubscriber == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "subscriber not found")
+		}
+		newSubscribers := issue.Subscribers
+		newSubscribers = append(newSubscribers, newSubscriber)
+
+		if _, err := s.store.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{Subscribers: &newSubscribers}, api.SystemBotID); err != nil {
+			return err
 		}
 
+		issueSubscriber := &api.IssueSubscriber{IssueID: issueID, SubscriberID: newSubscriber.ID}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issueSubscriber); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create issue subscriber response").SetInternal(err)
@@ -48,17 +60,24 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
-
-		issueSubscriberFind := &api.IssueSubscriberFind{
-			IssueID: &issueID,
-		}
-		issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issueID)).SetInternal(err)
+			return err
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
+		}
+
+		var issueSubscribers []*api.IssueSubscriber
+		for _, subscriber := range issue.Subscribers {
+			issueSubscribers = append(issueSubscribers, &api.IssueSubscriber{
+				IssueID:      issueID,
+				SubscriberID: subscriber.ID,
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, issueSubscriberList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, issueSubscribers); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue subscriber list response").SetInternal(err)
 		}
 		return nil
@@ -70,18 +89,35 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
+		if err != nil {
+			return err
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
+		}
 
 		subscriberID, err := strconv.Atoi(c.Param("subscriberID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Subscriber ID is not a number: %s", c.Param("subscriberID"))).SetInternal(err)
 		}
-
-		issueSubscriberDelete := &api.IssueSubscriberDelete{
-			IssueID:      issueID,
-			SubscriberID: subscriberID,
+		subscriber, err := s.store.GetUserByID(ctx, subscriberID)
+		if err != nil {
+			return err
 		}
-		if err := s.store.DeleteIssueSubscriber(ctx, issueSubscriberDelete); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete subscriber %d from issue %d", subscriberID, issueID)).SetInternal(err)
+		if subscriber == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "subscriber not found")
+		}
+
+		var newSubscribers []*store.UserMessage
+		for _, subscriber := range issue.Subscribers {
+			if subscriber.ID == subscriberID {
+				continue
+			}
+			newSubscribers = append(newSubscribers, subscriber)
+		}
+		if _, err := s.store.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{Subscribers: &newSubscribers}, api.SystemBotID); err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
