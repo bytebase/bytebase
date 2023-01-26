@@ -26,6 +26,8 @@ type Store struct {
 	projectPolicyCache   sync.Map // map[string]*IAMPolicyMessage
 	projectIDPolicyCache sync.Map // map[int]*IAMPolicyMessage
 	policyCache          sync.Map // map[string]*PolicyMessage
+	issueCache           sync.Map // map[int]*IssueMessage
+	issueByPipelineCache sync.Map // map[int]*IssueMessage
 	dbSchemaCache        sync.Map // map[int]*DBSchema
 }
 
