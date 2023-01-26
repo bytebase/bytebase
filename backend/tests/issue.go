@@ -92,13 +92,13 @@ func (ctl *controller) getOnePageIssuesWithToken(issueFind api.IssueFind, token 
 	return issueResp.Issues, issueResp.NextToken, nil
 }
 
-func (ctl *controller) patchIssue(issuePatch api.IssuePatch) (*api.Issue, error) {
+func (ctl *controller) patchIssue(uid int, issuePatch api.IssuePatch) (*api.Issue, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &issuePatch); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal issue patch")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/issue/%d", issuePatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/issue/%d", uid), buf)
 	if err != nil {
 		return nil, err
 	}
