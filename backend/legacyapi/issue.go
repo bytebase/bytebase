@@ -234,16 +234,7 @@ type IssueFind struct {
 
 // IssuePatch is the API message for patching an issue.
 type IssuePatch struct {
-	ID int `jsonapi:"primary,issuePatch"`
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Name *string `jsonapi:"attr,name"`
-	// Status is only set manually via IssueStatusPatch
-	Status                *IssueStatus
+	Name                  *string `jsonapi:"attr,name"`
 	Description           *string `jsonapi:"attr,description"`
 	AssigneeID            *int    `jsonapi:"attr,assigneeId"`
 	AssigneeNeedAttention *bool   `jsonapi:"attr,assigneeNeedAttention"`
