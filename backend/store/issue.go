@@ -84,23 +84,6 @@ func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	return issue, nil
 }
 
-// GetIssueByPipelineID gets an instance of Issue.
-func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, error) {
-	find := &api.IssueFind{PipelineID: &id}
-	issueRaw, err := s.getIssueRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Issue with PipelineID %d", id)
-	}
-	if issueRaw == nil {
-		return nil, nil
-	}
-	issue, err := s.composeIssue(ctx, issueRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", issueRaw)
-	}
-	return issue, nil
-}
-
 // FindIssue finds a list of issues.
 func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
@@ -646,12 +629,28 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID *int
+	UID        *int
+	ProjectUID *int
+	PipelineID *int
+	// Find issues where principalID is either creator, assignee or subscriber.
+	PrincipalID *int
+	// To support pagination, we add into creator, assignee and subscriber.
+	// Only principleID or one of the following three fields can be set.
+	CreatorID             *int
+	AssigneeID            *int
+	SubscriberID          *int
+	AssigneeNeedAttention *bool
+
+	StatusList []api.IssueStatus
+	// If specified, only find issues whose ID is smaller that SinceID.
+	SinceID *int
+	// If specified, then it will only fetch "Limit" most recently updated issues
+	Limit *int
 }
 
-// GetIssueByUID gets issue by issue UID.
-func (s *Store) GetIssueByUID(ctx context.Context, uid int) (*IssueMessage, error) {
-	issues, err := s.listIssueImplV2(ctx, &FindIssueMessage{UID: &uid})
+// GetIssueV2 gets issue by issue UID.
+func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueMessage, error) {
+	issues, err := s.ListIssueV2(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -659,7 +658,7 @@ func (s *Store) GetIssueByUID(ctx context.Context, uid int) (*IssueMessage, erro
 		return nil, nil
 	}
 	if len(issues) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d issues with UID %d, expect 1", len(issues), uid)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d issues with find %#v, expect 1", len(issues), find)}
 	}
 	issue := issues[0]
 
@@ -776,15 +775,54 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, FormatError(err)
 	}
 
-	return s.GetIssueByUID(ctx, uid)
+	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
 }
 
-func (s *Store) listIssueImplV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
+// ListIssueV2 returns the list of issues by find query.
+func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.PipelineID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ProjectUID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.project_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PrincipalID; v != nil {
+		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
+		}
+		where = append(where, fmt.Sprintf("(issue.creator_id = $%d OR issue.assignee_id = $%d OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d))", len(args)+1, len(args)+2, len(args)+3))
+		args = append(args, *v)
+		args = append(args, *v)
+		args = append(args, *v)
+	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.AssigneeID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.assignee_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.AssigneeNeedAttention; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.assignee_need_attention = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.SubscriberID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.SinceID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
+	}
 
+	if len(find.StatusList) != 0 {
+		var list []string
+		for _, status := range find.StatusList {
+			list = append(list, fmt.Sprintf("$%d", len(args)+1))
+			args = append(args, status)
+		}
+		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
+	}
 	var issues []*IssueMessage
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {

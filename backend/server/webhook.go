@@ -1187,12 +1187,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 		task := taskList[0]
-		taskPatch := api.TaskPatch{
-			ID:        task.ID,
-			Statement: &statement,
-			UpdaterID: api.SystemBotID,
-		}
-		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			log.Error("failed to get issue by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
 			return nil
@@ -1201,10 +1196,20 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			log.Error("issue not found by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
 			return nil
 		}
+		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+		if err != nil {
+			log.Error("issue not found by ID", zap.Int("id", issue.UID), zap.Error(err))
+			return nil
+		}
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
-		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
-		if _, err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue); err != nil {
-			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
+		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID))
+		taskPatch := api.TaskPatch{
+			ID:        task.ID,
+			Statement: &statement,
+			UpdaterID: api.SystemBotID,
+		}
+		if _, err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, composedIssue); err != nil {
+			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID), zap.Error(err))
 			return nil
 		}
 	}

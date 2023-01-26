@@ -25,7 +25,7 @@ type LGTMExecutor struct {
 
 // Run will run the task check LGTM executor once.
 func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
-	issue, err := e.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := e.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
 	}
@@ -40,7 +40,15 @@ func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.T
 		}, nil
 	}
 
-	if issue.Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
+	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("failed to find project %v", task.Database.ProjectID)
+	}
+
+	if project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusSuccess,
@@ -55,13 +63,13 @@ func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.T
 	activityType := string(api.ActivityIssueCommentCreate)
 	activityList, err := e.store.FindActivity(ctx, &api.ActivityFind{
 		TypePrefixList: []string{activityType},
-		ContainerID:    &issue.ID,
+		ContainerID:    &issue.UID,
 	})
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
 	}
 
-	ok, err := checkLGTMcomments(ctx, e.store, activityList, issue)
+	ok, err := checkLGTMcomments(ctx, e.store, activityList, project)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to check LGTM comments")
 	}
@@ -88,9 +96,9 @@ func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.T
 	}, nil
 }
 
-func checkLGTMcomments(ctx context.Context, store *store.Store, activityList []*api.Activity, issue *api.Issue) (bool, error) {
+func checkLGTMcomments(ctx context.Context, store *store.Store, activityList []*api.Activity, project *store.ProjectMessage) (bool, error) {
 	for _, activity := range activityList {
-		ok, err := isCommentLGTM(ctx, store, activity, issue)
+		ok, err := isCommentLGTM(ctx, store, activity, project)
 		if err != nil {
 			return false, err
 		}
@@ -101,14 +109,14 @@ func checkLGTMcomments(ctx context.Context, store *store.Store, activityList []*
 	return false, nil
 }
 
-func isCommentLGTM(ctx context.Context, stores *store.Store, activity *api.Activity, issue *api.Issue) (bool, error) {
+func isCommentLGTM(ctx context.Context, stores *store.Store, activity *api.Activity, project *store.ProjectMessage) (bool, error) {
 	if activity.Comment != "LGTM" {
 		return false, nil
 	}
 
-	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.ProjectID})
+	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &project.UID})
 	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.ProjectID)
+		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", project.UID)
 	}
 	role := api.UnknownRole
 	for _, binding := range policy.Bindings {
@@ -119,11 +127,11 @@ func isCommentLGTM(ctx context.Context, stores *store.Store, activity *api.Activ
 		}
 	}
 
-	switch issue.Project.LGTMCheckSetting.Value {
+	switch project.LGTMCheckSetting.Value {
 	case api.LGTMValueProjectMember:
 		return true, nil
 	case api.LGTMValueProjectOwner:
 		return role == api.Owner, nil
 	}
-	return false, errors.Errorf("unexpected LGTM setting value: %s", issue.Project.LGTMCheckSetting.Value)
+	return false, errors.Errorf("unexpected LGTM setting value: %s", project.LGTMCheckSetting.Value)
 }
