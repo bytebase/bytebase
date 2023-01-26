@@ -509,14 +509,14 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	if err != nil {
 		return "", "", err
 	}
-	issue, err := stores.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
 	// Add a branch migration history record.
 	issueID := ""
 	if issue != nil {
-		issueID = strconv.Itoa(issue.ID)
+		issueID = strconv.Itoa(issue.UID)
 	}
 	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.DatabaseName)
 	if sourceDatabase.InstanceID != targetDatabase.InstanceID {
