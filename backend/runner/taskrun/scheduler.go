@@ -299,13 +299,13 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", task.PipelineID), zap.Error(err))
 								return
 							}
-							composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
-							if err != nil {
-								return
-							}
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
+								composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+								if err != nil {
+									return
+								}
 								if stage := utils.GetActiveStage(composedPipeline); stage != nil && stage.ID != task.StageID {
 									environmentID := stage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
