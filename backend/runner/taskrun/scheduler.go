@@ -1008,15 +1008,17 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
 	}
-	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
-	if err != nil {
-		return nil, err
-	}
+	var composedIssue *api.Issue
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
 		log.Debug("Pipeline has no linking issue",
 			zap.Int("pipelineID", task.PipelineID),
 			zap.String("task", task.Name))
+	} else {
+		composedIssue, err = s.store.GetIssueByID(ctx, issue.UID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create an activity
