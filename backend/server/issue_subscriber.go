@@ -46,7 +46,11 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 			return err
 		}
 
-		issueSubscriber := &api.IssueSubscriber{IssueID: issueID, SubscriberID: newSubscriber.ID}
+		composedSubscriber, err := s.store.GetPrincipalByID(ctx, newSubscriber.ID)
+		if err != nil {
+			return err
+		}
+		issueSubscriber := &api.IssueSubscriber{IssueID: issueID, Subscriber: composedSubscriber}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issueSubscriber); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create issue subscriber response").SetInternal(err)
@@ -70,9 +74,13 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 
 		var issueSubscribers []*api.IssueSubscriber
 		for _, subscriber := range issue.Subscribers {
+			composedSubscriber, err := s.store.GetPrincipalByID(ctx, subscriber.ID)
+			if err != nil {
+				return err
+			}
 			issueSubscribers = append(issueSubscribers, &api.IssueSubscriber{
-				IssueID:      issueID,
-				SubscriberID: subscriber.ID,
+				IssueID:    issueID,
+				Subscriber: composedSubscriber,
 			})
 		}
 

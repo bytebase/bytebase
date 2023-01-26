@@ -76,9 +76,29 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api
 		Pipeline:    pipeline,
 	}
 
-	if err := s.composeIssueValidateOnly(ctx, issue); err != nil {
+	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
+	if err != nil {
 		return nil, err
 	}
+	issue.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Updater = updater
+
+	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Assignee = assignee
+
+	project, err := s.GetProjectByID(ctx, issue.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Project = project
 
 	return issue, nil
 }
@@ -188,44 +208,6 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 //
 // private functions
 //
-
-func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) error {
-	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
-	if err != nil {
-		return err
-	}
-	issue.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
-	if err != nil {
-		return err
-	}
-	issue.Updater = updater
-
-	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
-	if err != nil {
-		return err
-	}
-	issue.Assignee = assignee
-
-	issueSubscriberFind := &api.IssueSubscriberFind{
-		IssueID: &issue.ID,
-	}
-	issueSubscriberList, err := s.FindIssueSubscriber(ctx, issueSubscriberFind)
-	if err != nil {
-		return err
-	}
-	for _, issueSub := range issueSubscriberList {
-		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
-	}
-
-	project, err := s.GetProjectByID(ctx, issue.ProjectID)
-	if err != nil {
-		return err
-	}
-	issue.Project = project
-	return nil
-}
 
 // Note: MUST keep in sync with composeIssueValidateOnly.
 func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
@@ -620,23 +602,26 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 	}
 	if len(adds) > 0 {
 		var tokens []string
-		var args []int
+		var args []interface{}
 		for i, v := range adds {
 			tokens = append(tokens, fmt.Sprintf("($%d, $%d)", 2*i+1, 2*i+2))
 			args = append(args, issueUID, v)
 		}
 		query := fmt.Sprintf(`INSERT INTO issue_subscriber (issue_id, subscriber_id) VALUES %s`, strings.Join(tokens, ", "))
-		if _, err := tx.ExecContext(ctx, query, args); err != nil {
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return err
 		}
 	}
 	if len(deletes) > 0 {
 		var tokens []string
-		for i := range adds {
+		var args []interface{}
+		args = append(args, issueUID)
+		for i, v := range deletes {
 			tokens = append(tokens, fmt.Sprintf("$%d", i+2))
+			args = append(args, v)
 		}
 		query := fmt.Sprintf(`DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id IN (%s)`, strings.Join(tokens, ", "))
-		if _, err := tx.ExecContext(ctx, query, deletes); err != nil {
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return err
 		}
 	}
