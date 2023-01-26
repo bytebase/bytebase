@@ -49,7 +49,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		issueFind := &api.IssueFind{}
+		issueFind := &store.FindIssueMessage{}
 
 		pageToken := c.QueryParams().Get("token")
 		// We use descending order by default for issues.
@@ -65,7 +65,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIDStr)).SetInternal(err)
 			}
-			issueFind.ProjectID = &projectID
+			issueFind.ProjectUID = &projectID
 		}
 		if issueStatusListStr := c.QueryParam("status"); issueStatusListStr != "" {
 			statusList := []api.IssueStatus{}
