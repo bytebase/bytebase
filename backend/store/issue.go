@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -141,19 +140,6 @@ func (s *Store) FindIssueStripped(ctx context.Context, find *api.IssueFind) ([]*
 	}
 
 	return issueList, nil
-}
-
-// PatchIssue patches an instance of Issue.
-func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
-	issueRaw, err := s.patchIssueRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Issue with IssuePatch[%+v]", patch)
-	}
-	issue, err := s.composeIssue(ctx, issueRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", issueRaw)
-	}
-	return issue, nil
 }
 
 // CreateIssueValidateOnly creates an issue for validation purpose
@@ -510,31 +496,6 @@ func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw
 	return list[0], nil
 }
 
-// patchIssueRaw updates an existing issue by ID.
-// Returns ENOTFOUND if issue does not exist.
-func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	issue, err := s.patchIssueImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(issueCacheNamespace, issue.ID, issue); err != nil {
-		return nil, err
-	}
-
-	return issue, nil
-}
-
 func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([]*issueRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
@@ -640,68 +601,6 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 	}
 
 	return issuerRawList, nil
-}
-
-// patchIssueImpl updates a issue by ID. Returns the new state of the issue after update.
-func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch) (*issueRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Status; v != nil {
-		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, api.IssueStatus(*v))
-	}
-	if v := patch.Description; v != nil {
-		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.AssigneeID; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.AssigneeNeedAttention; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Payload; v != nil {
-		payload, err := json.Marshal(*patch.Payload)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
-	}
-
-	args = append(args, patch.ID)
-
-	var issueRaw issueRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE issue
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
-	`, len(args)),
-		args...,
-	).Scan(
-		&issueRaw.ID,
-		&issueRaw.CreatorID,
-		&issueRaw.CreatedTs,
-		&issueRaw.UpdaterID,
-		&issueRaw.UpdatedTs,
-		&issueRaw.ProjectID,
-		&issueRaw.PipelineID,
-		&issueRaw.Name,
-		&issueRaw.Status,
-		&issueRaw.Type,
-		&issueRaw.Description,
-		&issueRaw.AssigneeID,
-		&issueRaw.AssigneeNeedAttention,
-		&issueRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("unable to find issue ID to update: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	return &issueRaw, nil
 }
 
 // IssueMessage is the mssage for issues.
