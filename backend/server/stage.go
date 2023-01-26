@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func (s *Server) registerStageRoutes(g *echo.Group) {
@@ -70,11 +71,18 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if err := s.store.BatchPatchTaskStatus(ctx, taskIDList, api.TaskPending, currentPrincipalID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task %q status", taskIDList)).SetInternal(err)
 		}
-		issue, err := s.store.GetIssueByPipelineID(ctx, tasks[0].PipelineID)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &tasks[0].PipelineID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch containing issue").SetInternal(err)
 		}
-		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage); err != nil {
+		if issue != nil {
+			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
+		}
+		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+		if err != nil {
+			return err
+		}
+		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, composedIssue, stage); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 		}
 

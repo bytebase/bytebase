@@ -197,9 +197,12 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
 	defer targetDriver.Close(ctx)
 
-	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return nil, err
+	}
+	if issue == nil {
+		return nil, errors.Errorf("issue not found for pipeline %v", task.PipelineID)
 	}
 
 	backupStatus := api.BackupStatusDone
@@ -275,30 +278,30 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 		// case 1: PITR to a new database.
 		if err := mysqlTargetDriver.RestoreBackupToDatabase(ctx, backupFile, *payload.DatabaseName); err != nil {
 			log.Error("failed to restore full backup in the new database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", *payload.DatabaseName),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to restore full backup in the new database")
 		}
 		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, *targetBinlogInfo, targetTs, mysqlSourceDriver.GetBinlogDir()); err != nil {
 			log.Error("failed to perform a PITR restore in the new database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", *payload.DatabaseName),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to perform a PITR restore in the new database")
 		}
 	} else {
 		// case 2: in-place PITR.
-		if err := mysqlTargetDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
+		if err := mysqlTargetDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTime.Unix()); err != nil {
 			log.Error("failed to restore full backup in the PITR database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", task.Database.Name),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to perform a backup restore in the PITR database")
 		}
-		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, *targetBinlogInfo, issue.CreatedTs, targetTs); err != nil {
+		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, *targetBinlogInfo, issue.CreatedTime.Unix(), targetTs); err != nil {
 			log.Error("failed to perform a PITR restore in the PITR database",
-				zap.Int("issueID", issue.ID),
+				zap.Int("issueID", issue.UID),
 				zap.String("databaseName", task.Database.Name),
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to replay binlog in the PITR database")
