@@ -160,7 +160,7 @@ Promise.all([initActuator(), initSubscription(), restoreUser()]).finally(() => {
 
   // Try to mount demo vue app instance
   const serverInfo = useActuatorStore().serverInfo;
-  if ((serverInfo && serverInfo.demo && serverInfo.demoName) || isDev()) {
+  if ((serverInfo && serverInfo.demoName) || isDev()) {
     mountDemoApp();
   }
 });

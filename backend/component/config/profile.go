@@ -33,10 +33,8 @@ type Profile struct {
 	ResourceDirOverride string
 	// Debug decides the log level
 	Debug bool
-	// Demo decides that whether load demo data.
-	Demo bool
-	// DemoDataDir points to where to populate the initial data.
-	DemoDataDir string
+	// DemoName specifies the demo name. Empty string means no demo.
+	DemoName string
 	// AppRunnerInterval is the interval for application runner.
 	AppRunnerInterval time.Duration
 	// BackupRunnerInterval is the interval for backup runner.
