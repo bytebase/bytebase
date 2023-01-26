@@ -32,7 +32,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	// close existing issues
-	issues, err := ctl.getIssues(api.IssueFind{})
+	issues, err := ctl.getIssues(nil /* projectID */)
 	a.NoError(err)
 	for _, issue := range issues {
 		patchedIssue, err := ctl.patchIssueStatus(api.IssueStatusPatch{
@@ -186,7 +186,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	// close existing issues
-	issues, err := ctl.getIssues(api.IssueFind{})
+	issues, err := ctl.getIssues(nil /* projectID */)
 	a.NoError(err)
 	for _, issue := range issues {
 		patchedIssue, err := ctl.patchIssueStatus(api.IssueStatusPatch{
