@@ -294,29 +294,33 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								return
 							}
 
-							issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+							issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 							if err != nil {
 								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", task.PipelineID), zap.Error(err))
+								return
+							}
+							composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+							if err != nil {
 								return
 							}
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								if stage := utils.GetActiveStage(issue.Pipeline); stage != nil && stage.ID != task.StageID {
+								if stage := utils.GetActiveStage(composedPipeline); stage != nil && stage.ID != task.StageID {
 									environmentID := stage.EnvironmentID
-									ok, err := s.CanPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
 									if err != nil {
 										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
 										return
 									}
 									if !ok {
 										// reassign the issue to a new assignee if the current one doesn't fit.
-										assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.ProjectID, issue.Type)
+										assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.Project.UID, issue.Type)
 										if err != nil {
 											log.Error("failed to get a default assignee", zap.Error(err))
 											return
 										}
-										if _, err := s.store.UpdateIssueV2(ctx, issue.ID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
+										if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
 											log.Error("failed to update the issue assignee", zap.Error(err))
 											return
 										}
@@ -571,14 +575,18 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 		return true, nil
 	}
 
-	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to find issue")
 	}
 	if issue == nil {
 		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
 	}
-	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
+	composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+	if err != nil {
+		return false, err
+	}
+	groupValue, err := s.getGroupValueForTask(ctx, issue, composedPipeline, task)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get assignee group value for taskID %d", task.ID)
 	}
@@ -587,9 +595,9 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 	}
 	// as the policy says, the project owner has the privilege to change task status.
 	if *groupValue == api.AssigneeGroupValueProjectOwner {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.ProjectID})
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
 		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.ProjectID)
+			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
 		}
 		for _, binding := range policy.Bindings {
 			if binding.Role != api.Owner {
@@ -605,9 +613,9 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 	return false, nil
 }
 
-func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *api.Issue, task *api.Task) (*api.AssigneeGroupValue, error) {
+func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.IssueMessage, composedPipeline *api.Pipeline, task *api.Task) (*api.AssigneeGroupValue, error) {
 	environmentID := api.UnknownID
-	for _, stage := range issue.Pipeline.StageList {
+	for _, stage := range composedPipeline.StageList {
 		if stage.ID == task.StageID {
 			environmentID = stage.EnvironmentID
 			break
@@ -996,9 +1004,13 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
-	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
+	}
+	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+	if err != nil {
+		return nil, err
 	}
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
@@ -1008,7 +1020,7 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 	}
 
 	// Create an activity
-	if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, issue); err != nil {
+	if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, composedIssue); err != nil {
 		return nil, err
 	}
 
@@ -1019,7 +1031,7 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		}
 	}
 
-	if err := s.onTaskPatched(ctx, issue, taskPatched); err != nil {
+	if err := s.onTaskPatched(ctx, composedIssue, taskPatched); err != nil {
 		return nil, err
 	}
 

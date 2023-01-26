@@ -32,16 +32,20 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
-		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &pipelineID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID: %d", pipelineID)).SetInternal(err)
 		}
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
 		}
+		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+		if err != nil {
+			return err
+		}
 
 		var taskPatchedList []*api.Task
-		for _, stage := range issue.Pipeline.StageList {
+		for _, stage := range composedIssue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				// Skip gh-ost cutover task as this task has no statement.
 				if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
@@ -49,7 +53,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				taskPatch := *taskPatch
 				taskPatch.ID = task.ID
-				taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue)
+				taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, composedIssue)
 				if httpErr != nil {
 					return httpErr
 				}
@@ -58,7 +62,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", issue.Pipeline.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", composedIssue.Pipeline.Name)).SetInternal(err)
 		}
 		return nil
 	})
@@ -90,12 +94,16 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
-		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID: %d", task.PipelineID)).SetInternal(err)
 		}
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
+		}
+		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+		if err != nil {
+			return err
 		}
 
 		if taskPatch.Statement != nil {
@@ -105,7 +113,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, issue)
+		taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, composedIssue)
 		if httpErr != nil {
 			return httpErr
 		}

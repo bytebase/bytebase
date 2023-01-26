@@ -84,23 +84,6 @@ func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	return issue, nil
 }
 
-// GetIssueByPipelineID gets an instance of Issue.
-func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, error) {
-	find := &api.IssueFind{PipelineID: &id}
-	issueRaw, err := s.getIssueRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Issue with PipelineID %d", id)
-	}
-	if issueRaw == nil {
-		return nil, nil
-	}
-	issue, err := s.composeIssue(ctx, issueRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", issueRaw)
-	}
-	return issue, nil
-}
-
 // FindIssue finds a list of issues.
 func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)

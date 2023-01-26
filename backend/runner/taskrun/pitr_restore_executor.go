@@ -102,7 +102,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	if payload.TargetInstanceID == nil {
 		// Backup restore in place
 		if task.Instance.Engine == db.Postgres {
-			issue, err := getIssueByPipelineID(ctx, stores, task.PipelineID)
+			issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 			if err != nil {
 				return nil, err
 			}
@@ -333,7 +333,7 @@ func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, star
 	return replayBinlogPathList, nil
 }
 
-func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *store.IssueMessage, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID == nil {
 		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
@@ -376,7 +376,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
-	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTime.Unix())
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s;", pitrDatabaseName)); err != nil {
@@ -440,19 +440,6 @@ func (exec *PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mys
 	}()
 
 	return nil
-}
-
-func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {
-	issue, err := store.GetIssueByPipelineID(ctx, pid)
-	if err != nil {
-		log.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
-		return nil, errors.Wrapf(err, "failed to get issue by PipelineID: %d", pid)
-	}
-	if issue == nil {
-		log.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
-		return nil, errors.Errorf("issue not found with PipelineID: %d", pid)
-	}
-	return issue, nil
 }
 
 // restoreDatabase will restore the database to the instance from the backup.
