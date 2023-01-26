@@ -134,7 +134,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	} else {
 		mi.Creator = creator.Name
 	}
-	issue, err := exec.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
@@ -150,7 +150,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 			zap.Error(err),
 		)
 	} else {
-		mi.IssueID = strconv.Itoa(issue.ID)
+		mi.IssueID = strconv.Itoa(issue.UID)
 	}
 
 	migrationID, _, err := driver.ExecuteMigration(ctx, mi, statement)

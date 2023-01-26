@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -57,7 +58,7 @@ func RunExecutorOnce(ctx context.Context, exec Executor, task *api.Task) (termin
 	return exec.RunOnce(ctx, task)
 }
 
-func preMigration(ctx context.Context, store *store.Store, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+func preMigration(ctx context.Context, stores *store.Store, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -77,7 +78,7 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
-		creator, err := store.GetUserByID(ctx, task.CreatorID)
+		creator, err := stores.GetUserByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -104,12 +105,12 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	mi.Database = databaseName
 	mi.Namespace = databaseName
 
-	issue, err := findIssueByTask(ctx, store, task)
+	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
 	if issue != nil {
-		mi.IssueID = strconv.Itoa(issue.ID)
+		mi.IssueID = strconv.Itoa(issue.UID)
 	}
 
 	statement = strings.TrimSpace(statement)
@@ -271,7 +272,10 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 
 func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
 	databaseName := task.Database.Name
-	issue, err := findIssueByTask(ctx, stores, task)
+	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	if err != nil {
+		log.Error("failed to find containing issue", zap.Error(err))
+	}
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
@@ -320,10 +324,14 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
+			composedPipeline, err := stores.GetPipelineByID(ctx, issue.PipelineUID)
+			if err != nil {
+				return true, nil, err
+			}
 			// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
 			var lastTask *api.Task
-			for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
-				stage := issue.Pipeline.StageList[i]
+			for i := len(composedPipeline.StageList) - 1; i >= 0; i-- {
+				stage := composedPipeline.StageList[i]
 				if len(stage.TaskList) > 0 {
 					lastTask = stage.TaskList[len(stage.TaskList)-1]
 					break
@@ -361,7 +369,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", profile.ExternalURL, api.IssueSlug(issue), task.StageID)
+			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", profile.ExternalURL, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, latestSchemaFile, schema, bytebaseURL)
@@ -445,17 +453,6 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 		return true, nil, err
 	}
 	return postMigration(ctx, store, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
-}
-
-func findIssueByTask(ctx context.Context, store *store.Store, task *api.Task) (*api.Issue, error) {
-	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
-	}
-	if issue == nil {
-		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v", task.PipelineID, task.ID)
-	}
-	return issue, nil
 }
 
 // Writes back the latest schema to the repository after migration
