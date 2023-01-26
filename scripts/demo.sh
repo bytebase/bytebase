@@ -25,7 +25,7 @@ if [ $1 ]; then
     fi
 fi
 
-DEMO_NAME=''
+DEMO_NAME='default'
 if [ $2 ]; then
     DEMO_NAME=$2
 fi
