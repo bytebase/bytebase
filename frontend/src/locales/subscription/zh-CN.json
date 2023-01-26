@@ -122,7 +122,7 @@
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",
         "sensitive-data": "数据脱敏",
-        "access-control": "访问控制"
+        "database-access-control": "数据库访问控制"
       }
     },
     "branding": {
@@ -147,11 +147,15 @@
     "online-schema-migration": "在线大表结构变更",
     "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
     "review-and-backup-policy": "审核和备份策略",
-    "sla": "SLA 支持",
+    "sla": "专属客户成功经理以及 SLA 支持",
     "everything-in-team-plan": "所有团队版的功能",
     "multi-tenancy": "多地域/多租户部署",
+    "read-replica": "为只读操作提供单独连接",
     "dba-workflow": "DBA 工作流",
     "environment-tier": "环境分级",
-    "more-to-come": "更多功能敬请期待..."
+    "sensitive-data": "数据脱敏",
+    "database-access-control": "数据库访问控制",
+    "roadmap": "Roadmap 优先考虑",
+    "custom-contract": "定制化 MSA 和 BAA"
   }
 }
