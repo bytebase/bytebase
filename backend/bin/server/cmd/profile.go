@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
@@ -12,7 +11,7 @@ import (
 func getBaseProfile() config.Profile {
 	var demoDataDir string
 	if flags.demo {
-		demoName := string(common.ReleaseModeDev)
+		demoName := "default"
 		if flags.demoName != "" {
 			demoName = flags.demoName
 		}
