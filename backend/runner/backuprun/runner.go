@@ -454,10 +454,9 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 		return nil, errors.Wrapf(err, "failed to create task payload for backup %q", backupName)
 	}
 
-	createdPipeline, err := r.store.CreatePipeline(ctx, &api.PipelineCreate{
-		Name:      fmt.Sprintf("backup-%s", backupName),
-		CreatorID: creatorID,
-	})
+	pipeline, err := r.store.CreatePipelineV2(ctx, &store.PipelineMessage{
+		Name: fmt.Sprintf("backup-%s", backupName),
+	}, creatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create pipeline for backup %q", backupName)
 	}
@@ -466,7 +465,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 		{
 			Name:          fmt.Sprintf("backup-%s", backupName),
 			EnvironmentID: environment.UID,
-			PipelineID:    createdPipeline.ID,
+			PipelineID:    pipeline.ID,
 			CreatorID:     creatorID,
 		},
 	})
@@ -480,7 +479,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	createdStage := createdStages[0]
 	if _, err := r.store.CreateTask(ctx, &api.TaskCreate{
 		Name:       fmt.Sprintf("backup-%s", backupName),
-		PipelineID: createdPipeline.ID,
+		PipelineID: pipeline.ID,
 		StageID:    createdStage.ID,
 		InstanceID: instance.UID,
 		DatabaseID: &database.UID,

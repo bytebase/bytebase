@@ -480,7 +480,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 }
 
 func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
-	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
+	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
