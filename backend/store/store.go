@@ -10,8 +10,7 @@ import (
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db    *DB
-	cache *CacheService
+	db *DB
 
 	userIDCache          sync.Map // map[int]*UserMessage
 	userEmailCache       sync.Map // map[string]*UserMessage
@@ -34,8 +33,7 @@ type Store struct {
 // New creates a new instance of Store.
 func New(db *DB) *Store {
 	return &Store{
-		db:    db,
-		cache: newCacheService(),
+		db: db,
 	}
 }
 

@@ -306,19 +306,21 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 	composedIssue.Project = composedProject
 
 	// Creating a stripped pipeline.
-	find := &api.PipelineFind{ID: &issue.PipelineUID}
-	pipelineRaw, err := s.getPipelineRaw(ctx, find)
+	pipeline, err := s.GetPipelineV2ByID(ctx, issue.PipelineUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Pipeline with ID %d", issue.PipelineUID)
 	}
-	if pipelineRaw == nil {
+	if pipeline == nil {
 		return nil, nil
 	}
-	pipeline := pipelineRaw.toPipeline()
+	composedPipeline := &api.Pipeline{
+		ID:   pipeline.ID,
+		Name: pipeline.Name,
+	}
 
 	stageRawList, err := s.findStageRaw(ctx, &api.StageFind{PipelineID: &issue.PipelineUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Stage list with StageFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to find stage list")
 	}
 	var stageList []*api.Stage
 	for _, raw := range stageRawList {
@@ -341,8 +343,8 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		}
 		stageList = append(stageList, stage)
 	}
-	pipeline.StageList = stageList
-	composedIssue.Pipeline = pipeline
+	composedPipeline.StageList = stageList
+	composedIssue.Pipeline = composedPipeline
 
 	return composedIssue, nil
 }

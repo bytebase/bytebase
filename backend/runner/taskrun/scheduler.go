@@ -923,11 +923,11 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 
 // scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
 func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
-	pipelineStatus := api.PipelineOpen
+	active := true
 	pipelineFind := &api.PipelineFind{
-		Status: &pipelineStatus,
+		Active: &active,
 	}
-	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
+	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind)
 	if err != nil {
 		return errors.Wrap(err, "failed to retrieve open pipelines")
 	}
@@ -1033,8 +1033,10 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		}
 	}
 
-	if err := s.onTaskPatched(ctx, composedIssue, taskPatched); err != nil {
-		return nil, err
+	if composedIssue != nil {
+		if err := s.onTaskPatched(ctx, composedIssue, taskPatched); err != nil {
+			return nil, err
+		}
 	}
 
 	return taskPatched, nil
@@ -1251,10 +1253,8 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	if err != nil {
 		return nil, err
 	}
-	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.IssueOpen:
-		pipelineStatus = api.PipelineOpen
 	case api.IssueDone:
 		// Returns error if any of the tasks is not DONE.
 		for _, stage := range composedPipeline.StageList {
@@ -1264,7 +1264,6 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 				}
 			}
 		}
-		pipelineStatus = api.PipelineDone
 	case api.IssueCanceled:
 		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
 		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
@@ -1282,16 +1281,6 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 				}
 			}
 		}
-		pipelineStatus = api.PipelineCanceled
-	}
-
-	pipelinePatch := &api.PipelinePatch{
-		ID:        issue.PipelineUID,
-		UpdaterID: updaterID,
-		Status:    &pipelineStatus,
-	}
-	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Title, pipelinePatch)
 	}
 
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
@@ -1344,10 +1333,6 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 }
 
 func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPatched *api.Task) error {
-	if issue == nil {
-		return s.onTaskPatchedWithoutIssue(ctx, taskPatched)
-	}
-
 	foundStage := false
 	stageTaskHasPendingApproval := false
 	stageTaskAllTerminated := true
@@ -1448,30 +1433,5 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPat
 		}
 	}
 
-	return nil
-}
-
-func (s *Scheduler) onTaskPatchedWithoutIssue(ctx context.Context, taskPatched *api.Task) error {
-	pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
-	if err != nil {
-		return errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
-	}
-	if pipeline == nil {
-		return errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
-	}
-	// every task in the pipeline completes, and the assignee is system bot
-	// the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	if areAllTasksDone(pipeline) {
-		// System-generated tasks such as backup tasks don't have corresponding issues.
-		status := api.PipelineDone
-		pipelinePatch := &api.PipelinePatch{
-			ID:        pipeline.ID,
-			UpdaterID: api.SystemBotID,
-			Status:    &status,
-		}
-		if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-			return errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
-		}
-	}
 	return nil
 }
