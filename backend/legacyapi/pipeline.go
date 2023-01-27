@@ -56,15 +56,3 @@ func (find *PipelineFind) String() string {
 	}
 	return string(str)
 }
-
-// PipelinePatch is the API message for patching a pipeline.
-type PipelinePatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Status *PipelineStatus
-}
