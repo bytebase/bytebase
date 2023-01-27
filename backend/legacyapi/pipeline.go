@@ -46,7 +46,7 @@ type PipelineFind struct {
 	ID *int
 
 	// Domain specific fields
-	Status *PipelineStatus
+	Active *bool
 }
 
 func (find *PipelineFind) String() string {
@@ -59,12 +59,12 @@ func (find *PipelineFind) String() string {
 
 // PipelinePatch is the API message for patching a pipeline.
 type PipelinePatch struct {
-	ID int `jsonapi:"primary,pipelinePatch"`
+	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
 	// Domain specific fields
-	Status *PipelineStatus `jsonapi:"attr,status"`
+	Status *PipelineStatus
 }
