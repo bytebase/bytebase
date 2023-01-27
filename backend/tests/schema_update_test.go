@@ -724,7 +724,7 @@ func TestVCS_SDL(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
+			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1429,7 +1429,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
+			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1879,7 +1879,7 @@ CREATE TABLE public.book (
 			dbPort := getTestPort()
 			switch test.dbType {
 			case db.Postgres:
-				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDirOverride)
+				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDir)
 				defer stopInstance()
 			default:
 				a.FailNow("unsupported db type")

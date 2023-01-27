@@ -67,19 +67,19 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	resourceDirOverride = os.TempDir()
-	dir, err := postgres.Install(resourceDirOverride)
+	resourceDir = os.TempDir()
+	dir, err := postgres.Install(resourceDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	externalPgBinDir = dir
-	if _, err := mysqlutil.Install(resourceDirOverride); err != nil {
+	if _, err := mysqlutil.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}
-	if _, err := mongoutil.Install(resourceDirOverride); err != nil {
+	if _, err := mongoutil.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}
-	dir, err = resourcemysql.Install(resourceDirOverride)
+	dir, err = resourcemysql.Install(resourceDir)
 	if err != nil {
 		log.Fatal(err)
 	}
