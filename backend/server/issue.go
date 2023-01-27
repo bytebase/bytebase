@@ -207,19 +207,17 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
-			stage := utils.GetActiveStage(composedPipeline)
-			if stage == nil {
-				// all stages have finished, use the last stage
-				stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
+			activeStage := utils.GetActiveStage(composedPipeline)
+			// When all stages have finished, assignee can be anyone such as creator.
+			if activeStage != nil {
+				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+				}
+				if !ok {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+				}
 			}
-			ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, stage.EnvironmentID, issue.Project.UID, issue.Type)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
-			}
-			if !ok {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
-			}
-
 			// set AssigneeNeedAttention to false on assignee change
 			if issue.Project.Workflow == api.UIWorkflow {
 				needAttention := false
