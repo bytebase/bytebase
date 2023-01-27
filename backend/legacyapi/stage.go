@@ -23,14 +23,6 @@ const (
 type Stage struct {
 	ID int `jsonapi:"primary,stage"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Related fields
 	// Just returns PipelineID otherwise would cause circular dependency.
 	PipelineID    int `jsonapi:"attr,pipelineId"`

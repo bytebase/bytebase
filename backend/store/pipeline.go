@@ -19,12 +19,6 @@ import (
 type pipelineRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Domain specific fields
 	Name   string
 	Status api.PipelineStatus
@@ -35,12 +29,6 @@ type pipelineRaw struct {
 func (raw *pipelineRaw) toPipeline() *api.Pipeline {
 	return &api.Pipeline{
 		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Domain specific fields
 		Name:   raw.Name,
@@ -122,18 +110,6 @@ func (s *Store) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*a
 // Note: MUST keep in sync with composePipelineValidateOnly.
 func (s *Store) composePipeline(ctx context.Context, raw *pipelineRaw) (*api.Pipeline, error) {
 	pipeline := raw.toPipeline()
-
-	creator, err := s.GetPrincipalByID(ctx, pipeline.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	pipeline.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, pipeline.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	pipeline.Updater = updater
 
 	stageList, err := s.FindStage(ctx, &api.StageFind{PipelineID: &pipeline.ID})
 	if err != nil {
@@ -263,7 +239,7 @@ func (*Store) createPipelineImpl(ctx context.Context, tx *Tx, create *api.Pipeli
 			status
 		)
 		VALUES ($1, $2, $3, 'OPEN')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
+		RETURNING id, name, status
 	`
 	var pipelineRaw pipelineRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -272,10 +248,6 @@ func (*Store) createPipelineImpl(ctx context.Context, tx *Tx, create *api.Pipeli
 		create.Name,
 	).Scan(
 		&pipelineRaw.ID,
-		&pipelineRaw.CreatorID,
-		&pipelineRaw.CreatedTs,
-		&pipelineRaw.UpdaterID,
-		&pipelineRaw.UpdatedTs,
 		&pipelineRaw.Name,
 		&pipelineRaw.Status,
 	); err != nil {
@@ -300,10 +272,6 @@ func (*Store) findPipelineImpl(ctx context.Context, tx *Tx, find *api.PipelineFi
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			name,
 			status
 		FROM pipeline
@@ -321,10 +289,6 @@ func (*Store) findPipelineImpl(ctx context.Context, tx *Tx, find *api.PipelineFi
 		var pipelineRaw pipelineRaw
 		if err := rows.Scan(
 			&pipelineRaw.ID,
-			&pipelineRaw.CreatorID,
-			&pipelineRaw.CreatedTs,
-			&pipelineRaw.UpdaterID,
-			&pipelineRaw.UpdatedTs,
 			&pipelineRaw.Name,
 			&pipelineRaw.Status,
 		); err != nil {
@@ -356,15 +320,11 @@ func (*Store) patchPipelineImpl(ctx context.Context, tx *Tx, patch *api.Pipeline
 		UPDATE pipeline
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
+		RETURNING id, name, status
 	`, len(args)),
 		args...,
 	).Scan(
 		&pipelineRaw.ID,
-		&pipelineRaw.CreatorID,
-		&pipelineRaw.CreatedTs,
-		&pipelineRaw.UpdaterID,
-		&pipelineRaw.UpdatedTs,
 		&pipelineRaw.Name,
 		&pipelineRaw.Status,
 	); err != nil {
