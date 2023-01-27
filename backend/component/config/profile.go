@@ -29,8 +29,8 @@ type Profile struct {
 	Readonly bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
-	// ResourceDirOverride is the directory stores the resources including embedded postgres and mysqlutil.
-	ResourceDirOverride string
+	// ResourceDir is the directory stores the resources including embedded postgres, mysqlutil, mongoutil and etc.
+	ResourceDir string
 	// Debug decides the log level
 	Debug bool
 	// DemoName specifies the demo name. Empty string means no demo.
