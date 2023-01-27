@@ -16,12 +16,6 @@ import (
 type stageRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Related fields
 	PipelineID    int
 	EnvironmentID int
@@ -35,12 +29,6 @@ type stageRaw struct {
 func (raw *stageRaw) toStage() *api.Stage {
 	return &api.Stage{
 		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
 		PipelineID:    raw.PipelineID,
@@ -92,18 +80,6 @@ func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stag
 // Note: MUST keep in sync with composeStageValidateOnly.
 func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, error) {
 	stage := raw.toStage()
-
-	creator, err := s.GetPrincipalByID(ctx, stage.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	stage.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, stage.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	stage.Updater = updater
 
 	env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
@@ -185,7 +161,7 @@ func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageC
 	  		environment_id,
 	  		name
 	  	) VALUES %s
-	  	RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name
+	  	RETURNING id, pipeline_id, environment_id, name
     ) SELECT * FROM inserted ORDER BY id ASC
     `, strings.Join(valueStr, ","))
 	rows, err := tx.QueryContext(ctx, query, values...)
@@ -199,10 +175,6 @@ func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageC
 		var stageRaw stageRaw
 		if err := rows.Scan(
 			&stageRaw.ID,
-			&stageRaw.CreatorID,
-			&stageRaw.CreatedTs,
-			&stageRaw.UpdaterID,
-			&stageRaw.UpdatedTs,
 			&stageRaw.PipelineID,
 			&stageRaw.EnvironmentID,
 			&stageRaw.Name,
@@ -231,10 +203,6 @@ func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			pipeline_id,
 			environment_id,
 			name
@@ -253,10 +221,6 @@ func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([
 		var stageRaw stageRaw
 		if err := rows.Scan(
 			&stageRaw.ID,
-			&stageRaw.CreatorID,
-			&stageRaw.CreatedTs,
-			&stageRaw.UpdaterID,
-			&stageRaw.UpdatedTs,
 			&stageRaw.PipelineID,
 			&stageRaw.EnvironmentID,
 			&stageRaw.Name,
