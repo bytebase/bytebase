@@ -385,7 +385,8 @@ func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "failed to new oauth2 identity provider")
 		}
-		token, err := oauth2IdentityProvider.ExchangeToken(ctx, oauth2Context.Code)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}

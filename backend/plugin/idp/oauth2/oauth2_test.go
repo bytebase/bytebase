@@ -148,7 +148,8 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	oauthToken, err := oauth2.ExchangeToken(ctx, testCode)
+	redirectURL := "https://example.com/oauth/callback"
+	oauthToken, err := oauth2.ExchangeToken(ctx, redirectURL, testCode)
 	require.NoError(t, err)
 	require.Equal(t, testAccessToken, oauthToken)
 
