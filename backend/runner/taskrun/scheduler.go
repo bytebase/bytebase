@@ -1033,8 +1033,10 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		}
 	}
 
-	if err := s.onTaskPatched(ctx, composedIssue, taskPatched); err != nil {
-		return nil, err
+	if composedIssue != nil {
+		if err := s.onTaskPatched(ctx, composedIssue, taskPatched); err != nil {
+			return nil, err
+		}
 	}
 
 	return taskPatched, nil
