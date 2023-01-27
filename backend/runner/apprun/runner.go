@@ -129,11 +129,9 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
 							continue
 						}
-						stage := utils.GetActiveStage(composedPipeline)
-						if stage == nil {
-							stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
-						}
-						if issue.Status != api.IssueOpen {
+						activeStage := utils.GetActiveStage(composedPipeline)
+
+						if issue.Status != api.IssueOpen || activeStage == nil {
 							if err := r.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 							}
@@ -155,12 +153,12 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						switch status {
 						case feishu.ApprovalStatusApproved:
 							// double check
-							if stage.ID == payload.StageID && payload.AssigneeID == issue.Assignee.ID {
+							if activeStage.ID == payload.StageID && payload.AssigneeID == issue.Assignee.ID {
 								// approve stage
 								if err := func() error {
 									var taskIDList []int
 									var tasks []*api.Task
-									for _, task := range stage.TaskList {
+									for _, task := range activeStage.TaskList {
 										if task.Status == api.TaskPendingApproval {
 											taskIDList = append(taskIDList, task.ID)
 											tasks = append(tasks, task)
@@ -169,7 +167,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									if err := r.store.BatchPatchTaskStatus(ctx, taskIDList, api.TaskPending, externalApproval.ApproverID); err != nil {
 										return errors.Wrapf(err, "failed to update task status, task id list: %+v", taskIDList)
 									}
-									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, externalApproval.ApproverID, issue, stage); err != nil {
+									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, externalApproval.ApproverID, issue, activeStage); err != nil {
 										return errors.Wrapf(err, "failed to create task status update activity")
 									}
 									return nil
@@ -542,12 +540,12 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 		return
 	}
 
-	stage := utils.GetActiveStage(composedPipeline)
-	if stage == nil {
-		stage = composedPipeline.StageList[len(composedPipeline.StageList)-1]
+	activeStage := utils.GetActiveStage(composedPipeline)
+	if activeStage == nil {
+		return
 	}
 
-	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, settingValue)
+	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, activeStage, settingValue)
 	if err != nil {
 		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
 		return
@@ -558,7 +556,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 	// 1. the approval policy of the stage environment is MANUAL_APPROVAL_ALWAYS.
 	// 2. the stage has one or more PENDING_APPROVAL tasks.
 	// 3. all task checks of the stage are done and the results have no errors.
-	ok, err := r.shouldCreateExternalApproval(ctx, issue, stage, oldApproval)
+	ok, err := r.shouldCreateExternalApproval(ctx, issue, activeStage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))
 		return
@@ -567,7 +565,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 		return
 	}
 
-	if err := r.createExternalApproval(ctx, issue, stage, settingValue); err != nil {
+	if err := r.createExternalApproval(ctx, issue, activeStage, settingValue); err != nil {
 		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
