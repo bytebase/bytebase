@@ -179,6 +179,28 @@ export interface LoginResponse {
   token: string;
 }
 
+export interface LoginWithIdentityProviderRequest {
+  /**
+   * The name of the identity provider.
+   * Format: idps/{idp}
+   */
+  idpName: string;
+  /** The context data is using to get the user information from identity provider. */
+  context?: IdentityProviderContext;
+}
+
+export interface IdentityProviderContext {
+  oauth2Context?: OAuth2IdentityProviderContext | undefined;
+  oidcContext?: OIDCIdentityProviderContextx | undefined;
+}
+
+export interface OAuth2IdentityProviderContext {
+  code: string;
+}
+
+export interface OIDCIdentityProviderContextx {
+}
+
 export interface LogoutRequest {
 }
 
@@ -687,6 +709,220 @@ export const LoginResponse = {
   },
 };
 
+function createBaseLoginWithIdentityProviderRequest(): LoginWithIdentityProviderRequest {
+  return { idpName: "", context: undefined };
+}
+
+export const LoginWithIdentityProviderRequest = {
+  encode(message: LoginWithIdentityProviderRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.idpName !== "") {
+      writer.uint32(10).string(message.idpName);
+    }
+    if (message.context !== undefined) {
+      IdentityProviderContext.encode(message.context, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoginWithIdentityProviderRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoginWithIdentityProviderRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.idpName = reader.string();
+          break;
+        case 2:
+          message.context = IdentityProviderContext.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoginWithIdentityProviderRequest {
+    return {
+      idpName: isSet(object.idpName) ? String(object.idpName) : "",
+      context: isSet(object.context) ? IdentityProviderContext.fromJSON(object.context) : undefined,
+    };
+  },
+
+  toJSON(message: LoginWithIdentityProviderRequest): unknown {
+    const obj: any = {};
+    message.idpName !== undefined && (obj.idpName = message.idpName);
+    message.context !== undefined &&
+      (obj.context = message.context ? IdentityProviderContext.toJSON(message.context) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<LoginWithIdentityProviderRequest>): LoginWithIdentityProviderRequest {
+    const message = createBaseLoginWithIdentityProviderRequest();
+    message.idpName = object.idpName ?? "";
+    message.context = (object.context !== undefined && object.context !== null)
+      ? IdentityProviderContext.fromPartial(object.context)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseIdentityProviderContext(): IdentityProviderContext {
+  return { oauth2Context: undefined, oidcContext: undefined };
+}
+
+export const IdentityProviderContext = {
+  encode(message: IdentityProviderContext, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.oauth2Context !== undefined) {
+      OAuth2IdentityProviderContext.encode(message.oauth2Context, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.oidcContext !== undefined) {
+      OIDCIdentityProviderContextx.encode(message.oidcContext, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IdentityProviderContext {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIdentityProviderContext();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.oauth2Context = OAuth2IdentityProviderContext.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.oidcContext = OIDCIdentityProviderContextx.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IdentityProviderContext {
+    return {
+      oauth2Context: isSet(object.oauth2Context)
+        ? OAuth2IdentityProviderContext.fromJSON(object.oauth2Context)
+        : undefined,
+      oidcContext: isSet(object.oidcContext) ? OIDCIdentityProviderContextx.fromJSON(object.oidcContext) : undefined,
+    };
+  },
+
+  toJSON(message: IdentityProviderContext): unknown {
+    const obj: any = {};
+    message.oauth2Context !== undefined && (obj.oauth2Context = message.oauth2Context
+      ? OAuth2IdentityProviderContext.toJSON(message.oauth2Context)
+      : undefined);
+    message.oidcContext !== undefined &&
+      (obj.oidcContext = message.oidcContext ? OIDCIdentityProviderContextx.toJSON(message.oidcContext) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<IdentityProviderContext>): IdentityProviderContext {
+    const message = createBaseIdentityProviderContext();
+    message.oauth2Context = (object.oauth2Context !== undefined && object.oauth2Context !== null)
+      ? OAuth2IdentityProviderContext.fromPartial(object.oauth2Context)
+      : undefined;
+    message.oidcContext = (object.oidcContext !== undefined && object.oidcContext !== null)
+      ? OIDCIdentityProviderContextx.fromPartial(object.oidcContext)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOAuth2IdentityProviderContext(): OAuth2IdentityProviderContext {
+  return { code: "" };
+}
+
+export const OAuth2IdentityProviderContext = {
+  encode(message: OAuth2IdentityProviderContext, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.code !== "") {
+      writer.uint32(10).string(message.code);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OAuth2IdentityProviderContext {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOAuth2IdentityProviderContext();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.code = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OAuth2IdentityProviderContext {
+    return { code: isSet(object.code) ? String(object.code) : "" };
+  },
+
+  toJSON(message: OAuth2IdentityProviderContext): unknown {
+    const obj: any = {};
+    message.code !== undefined && (obj.code = message.code);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<OAuth2IdentityProviderContext>): OAuth2IdentityProviderContext {
+    const message = createBaseOAuth2IdentityProviderContext();
+    message.code = object.code ?? "";
+    return message;
+  },
+};
+
+function createBaseOIDCIdentityProviderContextx(): OIDCIdentityProviderContextx {
+  return {};
+}
+
+export const OIDCIdentityProviderContextx = {
+  encode(_: OIDCIdentityProviderContextx, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OIDCIdentityProviderContextx {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOIDCIdentityProviderContextx();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): OIDCIdentityProviderContextx {
+    return {};
+  },
+
+  toJSON(_: OIDCIdentityProviderContextx): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(_: DeepPartial<OIDCIdentityProviderContextx>): OIDCIdentityProviderContextx {
+    const message = createBaseOIDCIdentityProviderContextx();
+    return message;
+  },
+};
+
 function createBaseLogoutRequest(): LogoutRequest {
   return {};
 }
@@ -899,6 +1135,14 @@ export const AuthServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    loginWithIdentityProvider: {
+      name: "LoginWithIdentityProvider",
+      requestType: LoginWithIdentityProviderRequest,
+      requestStream: false,
+      responseType: LoginResponse,
+      responseStream: false,
+      options: {},
+    },
     logout: {
       name: "Logout",
       requestType: LogoutRequest,
@@ -918,6 +1162,10 @@ export interface AuthServiceImplementation<CallContextExt = {}> {
   deleteUser(request: DeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
   undeleteUser(request: UndeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
   login(request: LoginRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LoginResponse>>;
+  loginWithIdentityProvider(
+    request: LoginWithIdentityProviderRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<LoginResponse>>;
   logout(request: LogoutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
@@ -929,6 +1177,10 @@ export interface AuthServiceClient<CallOptionsExt = {}> {
   deleteUser(request: DeepPartial<DeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
   undeleteUser(request: DeepPartial<UndeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
   login(request: DeepPartial<LoginRequest>, options?: CallOptions & CallOptionsExt): Promise<LoginResponse>;
+  loginWithIdentityProvider(
+    request: DeepPartial<LoginWithIdentityProviderRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<LoginResponse>;
   logout(request: DeepPartial<LogoutRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 

@@ -65,6 +65,13 @@ service AuthService {
     };
   }
 
+  rpc LoginWithIdentityProvider(LoginWithIdentityProviderRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/login/idp"
+      body: "*"
+    };
+  }
+
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/auth/logout"
@@ -146,6 +153,29 @@ message LoginRequest {
 
 message LoginResponse {
   string token = 1;
+}
+
+message LoginWithIdentityProviderRequest {
+  // The name of the identity provider.
+  // Format: idps/{idp}
+  string idp_name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The context data is using to get the user information from identity provider.
+  IdentityProviderContext context = 2;
+}
+
+message IdentityProviderContext {
+  oneof context {
+    OAuth2IdentityProviderContext oauth2_context = 1;
+    OIDCIdentityProviderContextx oidc_context = 2;
+  }
+}
+
+message OAuth2IdentityProviderContext {
+  string code = 1;
+}
+
+message OIDCIdentityProviderContextx {
 }
 
 message LogoutRequest {
