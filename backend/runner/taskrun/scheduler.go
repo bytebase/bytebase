@@ -924,7 +924,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 // scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
 func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
 	active := true
-	pipelineFind := &api.PipelineFind{
+	pipelineFind := &store.PipelineFind{
 		Active: &active,
 	}
 	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind)
