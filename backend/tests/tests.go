@@ -162,8 +162,8 @@ var (
 	externalPgDataDir  string
 	nextDatabaseNumber = 20210113
 
-	// resourceDirOverride is the shared resource directory.
-	resourceDirOverride string
+	// resourceDir is the shared resource directory.
+	resourceDir string
 )
 
 // getTestPort reserves and returns a port.
@@ -213,7 +213,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDirOverride, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 		return err
 	}
 	serverPort := getTestPortForEmbeddedPg()
-	profile := getTestProfile(config.dataDir, resourceDirOverride, serverPort, config.readOnly, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfile(config.dataDir, resourceDir, serverPort, config.readOnly, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -250,7 +250,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func getTestProfile(dataDir, resourceDirOverride string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
+func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
@@ -259,7 +259,7 @@ func getTestProfile(dataDir, resourceDirOverride string, port int, readOnly bool
 		PgUser:               "bbtest",
 		Readonly:             readOnly,
 		DataDir:              dataDir,
-		ResourceDirOverride:  resourceDirOverride,
+		ResourceDir:          resourceDir,
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
@@ -270,14 +270,14 @@ func getTestProfile(dataDir, resourceDirOverride string, port int, readOnly bool
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
 		PgUser:               pgUser,
 		DataDir:              dataDir,
-		ResourceDirOverride:  resourceDirOverride,
+		ResourceDir:          resourceDir,
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
