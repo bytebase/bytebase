@@ -1614,6 +1614,14 @@
         "title": "SQL review policy",
         "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
       },
+      "bb-feature-vcs-schema-write-back": {
+        "title": "Schema write-back",
+        "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
+      },
+      "bb-feature-vcs-sheet-sync": {
+        "title": "Synchronize SQL scripts from VCS",
+        "desc": "Synchronize SQL scripts stored in VCS to Sheet."
+      },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",
         "desc": "Add the SQL Review CI to your VCS repository pipeline. SQL Review will be triggered in the pull request for changed SQL files."
@@ -1659,7 +1667,7 @@
     "shared-with-me": "Shared with me",
     "starred": "Starred",
     "actions": {
-      "sync-from-vcs": "Sync from VCS"
+      "sync-from-vcs": "Sync SQL scripts from VCS"
     },
     "hint-tips": {
       "confirm-to-sync-sheet": "Confirm to sync sheets?",

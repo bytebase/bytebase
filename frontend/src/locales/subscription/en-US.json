@@ -107,7 +107,7 @@
         "inbox-notification": "Inbox notification",
         "vsc-workflow-basic": "Basic",
         "vsc-workflow-advanced": "Advanced",
-        "vsc-workflow-advanced-tooltip": "Basic + SQL Review CI"
+        "vsc-workflow-advanced-tooltip": "Basic + Latest Schema Write-back, SQL Scripts Sync, SQL Review CI"
       }
     },
     "admin-and-security": {
