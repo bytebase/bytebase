@@ -196,16 +196,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
-	resourceDir := common.GetResourceDir(profile.DataDir)
-	if profile.ResourceDirOverride != "" {
-		resourceDir = profile.ResourceDirOverride
-	}
-
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
@@ -225,26 +220,26 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	var err error
 	// Install mysqlutil
-	s.mysqlBinDir, err = mysqlutil.Install(resourceDir)
+	s.mysqlBinDir, err = mysqlutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
-	s.mongoBinDir, err = mongoutil.Install(resourceDir)
+	s.mongoBinDir, err = mongoutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
 	}
 
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	s.pgBinDir, err = postgres.Install(resourceDir)
+	s.pgBinDir, err = postgres.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
-		pgDataDir := common.GetPostgresDataDir(profile.DataDir)
+		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
 		log.Info("-----Embedded Postgres Config BEGIN-----")
 		log.Info(fmt.Sprintf("datastorePort=%d", profile.DatastorePort))
 		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
