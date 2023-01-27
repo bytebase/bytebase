@@ -99,7 +99,7 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		creatorID,
 		creatorID,
 		create.Name,
-		api.PipelineOpen,
+		"OPEN",
 	).Scan(
 		&pipeline.ID,
 		&pipeline.Name,
