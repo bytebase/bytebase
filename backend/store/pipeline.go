@@ -88,8 +88,7 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
-			name,
-			status
+			name
 		)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, name
@@ -99,7 +98,6 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		creatorID,
 		creatorID,
 		create.Name,
-		"OPEN",
 	).Scan(
 		&pipeline.ID,
 		&pipeline.Name,
