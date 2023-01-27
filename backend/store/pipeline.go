@@ -156,7 +156,8 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *api.PipelineFind) ([]*
 			pipeline.name
 		FROM pipeline
 		%s
-		WHERE %s`, joinClause, strings.Join(where, " AND "))
+		WHERE %s
+		GROUP BY pipeline.id`, joinClause, strings.Join(where, " AND "))
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
