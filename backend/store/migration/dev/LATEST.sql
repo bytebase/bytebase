@@ -640,8 +640,6 @@ CREATE TABLE pipeline (
     name TEXT NOT NULL
 );
 
-CREATE INDEX idx_pipeline_status ON pipeline(status);
-
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_pipeline_updated_ts
