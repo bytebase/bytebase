@@ -306,8 +306,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								if err != nil {
 									return
 								}
-								if stage := utils.GetActiveStage(composedPipeline); stage != nil && stage.ID != task.StageID {
-									environmentID := stage.EnvironmentID
+								if activeStage := utils.GetActiveStage(composedPipeline); activeStage != nil && activeStage.ID != task.StageID {
+									environmentID := activeStage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
 									if err != nil {
 										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
