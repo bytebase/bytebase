@@ -90,7 +90,7 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 			updater_id,
 			name
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3)
 		RETURNING id, name
 	`
 	pipeline := &PipelineMessage{}
