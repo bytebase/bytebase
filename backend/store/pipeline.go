@@ -119,11 +119,15 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		return nil, FormatError(err)
 	}
 
+	s.pipelineCache.Store(pipeline.ID, pipeline)
 	return pipeline, nil
 }
 
 // GetPipelineV2ByID gets the pipeline by ID.
 func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
+	if pipeline, ok := s.pipelineCache.Load(id); ok {
+		return pipeline.(*PipelineMessage), nil
+	}
 	pipelines, err := s.ListPipelineV2(ctx, &api.PipelineFind{ID: &id})
 	if err != nil {
 		return nil, err
@@ -190,5 +194,8 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *api.PipelineFind) ([]*
 		return nil, FormatError(err)
 	}
 
+	for _, pipeline := range pipelines {
+		s.pipelineCache.Store(pipeline.ID, pipeline)
+	}
 	return pipelines, nil
 }
