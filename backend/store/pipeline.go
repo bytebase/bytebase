@@ -12,19 +12,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// CreatePipeline creates an instance of Pipeline.
-func (s *Store) CreatePipeline(ctx context.Context, create *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
-	pipeline, err := s.CreatePipelineV2(ctx, &PipelineMessage{Name: create.Name}, creatorID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Pipeline with PipelineCreate[%+v]", create)
-	}
-	composedPipeline, err := s.composePipeline(ctx, pipeline)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose pipeline")
-	}
-	return composedPipeline, nil
-}
-
 // GetPipelineByID gets an instance of Pipeline.
 func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
 	pipeline, err := s.GetPipelineV2ByID(ctx, id)
@@ -42,7 +29,7 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 }
 
 // FindPipeline finds a list of Pipeline instances.
-func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind) ([]*api.Pipeline, error) {
+func (s *Store) FindPipeline(ctx context.Context, find *PipelineFind) ([]*api.Pipeline, error) {
 	pipelines, err := s.ListPipelineV2(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Pipeline list with PipelineFind[%+v]", find)
@@ -79,6 +66,14 @@ type PipelineMessage struct {
 	Name string
 	// Output only.
 	ID int
+}
+
+// PipelineFind is the API message for finding pipelines.
+type PipelineFind struct {
+	ID *int
+
+	// Domain specific fields
+	Active *bool
 }
 
 // CreatePipelineV2 creates a pipeline.
@@ -128,7 +123,7 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 	if pipeline, ok := s.pipelineCache.Load(id); ok {
 		return pipeline.(*PipelineMessage), nil
 	}
-	pipelines, err := s.ListPipelineV2(ctx, &api.PipelineFind{ID: &id})
+	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{ID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +138,7 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 }
 
 // ListPipelineV2 lists pipelines.
-func (s *Store) ListPipelineV2(ctx context.Context, find *api.PipelineFind) ([]*PipelineMessage, error) {
+func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
 	// Build WHERE clause.
 	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}

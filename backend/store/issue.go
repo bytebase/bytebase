@@ -106,7 +106,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api
 // createPipelineValidateOnly creates a pipeline for validation purpose
 // Do NOT write to the database.
 func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
-	creator, err := s.GetPrincipalByID(ctx, create.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,10 +151,10 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
-				CreatorID:         create.CreatorID,
+				CreatorID:         api.SystemBotID,
 				Creator:           creator,
 				CreatedTs:         ts,
-				UpdaterID:         create.CreatorID,
+				UpdaterID:         api.SystemBotID,
 				Updater:           creator,
 				UpdatedTs:         ts,
 				Type:              tc.Type,

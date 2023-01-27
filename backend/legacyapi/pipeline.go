@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 // PipelineStatus is the status for pipelines.
 type PipelineStatus string
 
@@ -30,29 +26,6 @@ type Pipeline struct {
 
 // PipelineCreate is the API message for creating a pipeline.
 type PipelineCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
 	StageList []StageCreate `jsonapi:"attr,stageList"`
-
-	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
-}
-
-// PipelineFind is the API message for finding pipelines.
-type PipelineFind struct {
-	ID *int
-
-	// Domain specific fields
-	Active *bool
-}
-
-func (find *PipelineFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
+	Name      string        `jsonapi:"attr,name"`
 }
