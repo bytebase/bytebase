@@ -115,15 +115,9 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 	id := 0
 	ts := time.Now().Unix()
 	pipeline := &api.Pipeline{
-		ID:        id,
-		Name:      create.Name,
-		Status:    api.PipelineOpen,
-		CreatorID: create.CreatorID,
-		Creator:   creator,
-		CreatedTs: ts,
-		UpdaterID: create.CreatorID,
-		Updater:   creator,
-		UpdatedTs: ts,
+		ID:     id,
+		Name:   create.Name,
+		Status: api.PipelineOpen,
 	}
 	for _, sc := range create.StageList {
 		id++
@@ -134,12 +128,6 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 		stage := &api.Stage{
 			ID:            id,
 			Name:          sc.Name,
-			CreatorID:     create.CreatorID,
-			Creator:       creator,
-			CreatedTs:     ts,
-			UpdaterID:     create.CreatorID,
-			Updater:       creator,
-			UpdatedTs:     ts,
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
 			Environment:   env,

@@ -20,20 +20,12 @@ const (
 type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Related fields
 	StageList []*Stage `jsonapi:"relation,stage"`
 
 	// Domain specific fields
-	Name   string         `jsonapi:"attr,name"`
-	Status PipelineStatus `jsonapi:"attr,status"`
+	Name   string `jsonapi:"attr,name"`
+	Status PipelineStatus
 }
 
 // PipelineCreate is the API message for creating a pipeline.

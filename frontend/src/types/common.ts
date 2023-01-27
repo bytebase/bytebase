@@ -276,12 +276,7 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_PIPELINE: Pipeline = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown pipeline>>",
-    status: "DONE",
     stageList: [],
   };
 
@@ -320,10 +315,6 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_STAGE: Stage = {
     id: UNKNOWN_ID,
     pipeline: UNKNOWN_PIPELINE,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown stage>>",
     environment: UNKNOWN_ENVIRONMENT,
     taskList: [],
@@ -641,12 +632,7 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_PIPELINE: Pipeline = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
-    status: "DONE",
     stageList: [],
   };
 
@@ -685,10 +671,6 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_STAGE: Stage = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     environment: EMPTY_ENVIRONMENT,
     taskList: [],
