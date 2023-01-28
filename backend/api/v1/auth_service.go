@@ -316,20 +316,15 @@ func convertUserRole(userRole v1pb.UserRole) api.Role {
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
 	var loginUser *store.UserMessage
+	var err error
 	if request.IdpName == "" {
-		user, err := s.getUserWithLoginRequestOfBytebase(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-		loginUser = user
+		loginUser, err = s.getUserWithLoginRequestOfBytebase(ctx, request)
 	} else {
-		user, err := s.getUserWithLoginRequestOfIdentityProvider(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-		loginUser = user
+		loginUser, err = s.getUserWithLoginRequestOfIdentityProvider(ctx, request)
 	}
-
+	if err != nil {
+		return nil, err
+	}
 	if loginUser == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
 	}
