@@ -237,6 +237,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 
+	// Start a Postgres sample server. This is used for onboarding users without requiring them to
+	// configure an external instance.
+	log.Info("-----Sample Postgres Instance BEGIN-----")
+	sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
+	log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
+	log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+	if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
+		return nil, err
+	}
+	log.Info("-----Sample Postgres Instance END-----")
+
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
 		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
@@ -437,7 +448,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile))
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.dbFactory, s.secret, s.MetricReporter, s.SchemaSyncer, &profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
@@ -690,6 +701,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		if err := s.store.Close(); err != nil {
 			return err
 		}
+	}
+
+	// Shutdown postgres sample instance.
+	if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
+		log.Error("Failed to stop postgres sample instance", zap.Error(err))
 	}
 
 	// Shutdown postgres server if embed.
