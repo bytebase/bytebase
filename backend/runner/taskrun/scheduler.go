@@ -727,7 +727,11 @@ func (s *Scheduler) canSchedule(ctx context.Context, task *api.Task) (bool, erro
 		return false, nil
 	}
 
-	return utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, task.Database.Instance.Engine)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return false, err
+	}
+	return utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
 }
 
 // scheduleIfNeeded schedules the task if
@@ -791,7 +795,11 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			continue
 		}
 
-		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, task.TaskCheckRunList, task.Database.Instance.Engine)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.Database.InstanceID})
+		if err != nil {
+			return err
+		}
+		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, task.TaskCheckRunList, instance.Engine)
 		if err != nil {
 			return errors.Wrap(err, "failed to check if can auto-approve")
 		}
