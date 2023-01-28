@@ -217,7 +217,8 @@
     "restart": "Restart",
     "want-help": "Want help",
     "operation": "Operation",
-    "rollback": "Rollback"
+    "rollback": "Rollback",
+    "discard-changes": "Discard changes"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -335,6 +336,7 @@
       "general": "General",
       "members": "Members",
       "im-integration": "IM Integration",
+      "sso": "SSO",
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
@@ -396,6 +398,20 @@
       "enable": "Enable",
       "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
+    },
+    "sso": {
+      "deletion": "Delete this SSO",
+      "form": {
+        "type": "Type",
+        "basic-information": "Basic information",
+        "name": "Name",
+        "domain": "Domain",
+        "resource-id": "Resource ID",
+        "endpoints": "Endpoints",
+        "user-information-mapping": "User information mapping",
+        "identifier": "Identifier",
+        "display-name": "Display name"
+      }
     },
     "general": {
       "workspace": {
@@ -792,7 +808,8 @@
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
       "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
-      "gitlab-oauth": "Reach to your Admin to enable GitLab login"
+      "gitlab-oauth": "Reach to your Admin to enable GitLab login",
+      "sign-in-with-idp": "Sign in with {idp}"
     },
     "password-forget": {
       "title": "Forgot your password?",

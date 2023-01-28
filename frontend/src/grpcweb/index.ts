@@ -1,6 +1,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { Channel, createChannel, createClientFactory } from "nice-grpc-web";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
+import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { isDev } from "@/utils";
 
 // Create each grpc service client.
@@ -31,6 +32,10 @@ const clientFactory = createClientFactory();
 
 export const authServiceClient = () => {
   return clientFactory.create(AuthServiceDefinition, getChannel());
+};
+
+export const identityProviderClient = () => {
+  return clientFactory.create(IdentityProviderServiceDefinition, getChannel());
 };
 
 // e.g. How to use `authServiceClient`?
