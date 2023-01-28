@@ -41,13 +41,13 @@ type StageCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID    int `jsonapi:"attr,environmentId"`
+	EnvironmentID    int
 	PipelineID       int
-	TaskList         []TaskCreate   `jsonapi:"attr,taskList"`
-	TaskIndexDAGList []TaskIndexDAG `jsonapi:"attr,taskDAGList"`
+	TaskList         []TaskCreate
+	TaskIndexDAGList []TaskIndexDAG
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
+	Name string
 }
 
 // StageFind is the API message for finding stages.

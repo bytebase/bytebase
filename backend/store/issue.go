@@ -323,7 +323,12 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 	}
 	var stageList []*api.Stage
 	for _, raw := range stageRawList {
-		stage := raw.toStage()
+		stage := &api.Stage{
+			ID:            raw.ID,
+			Name:          raw.Name,
+			EnvironmentID: raw.EnvironmentID,
+			PipelineID:    raw.PipelineID,
+		}
 		env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
 		if err != nil {
 			return nil, err

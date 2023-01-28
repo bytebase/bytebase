@@ -11,49 +11,13 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// stageRaw is the store model for an Stage.
-// Fields have exactly the same meanings as Stage.
-type stageRaw struct {
-	ID int
-
-	// Related fields
-	PipelineID    int
+// StageMessage is the message for stage.
+type StageMessage struct {
+	Name          string
 	EnvironmentID int
-
-	// Domain specific fields
-	Name string
-}
-
-// toStage creates an instance of Stage based on the stageRaw.
-// This is intended to be called when we need to compose an Stage relationship.
-func (raw *stageRaw) toStage() *api.Stage {
-	return &api.Stage{
-		ID: raw.ID,
-
-		// Related fields
-		PipelineID:    raw.PipelineID,
-		EnvironmentID: raw.EnvironmentID,
-
-		// Domain specific fields
-		Name: raw.Name,
-	}
-}
-
-// CreateStage creates an list of Stages.
-func (s *Store) CreateStage(ctx context.Context, creates []*api.StageCreate) ([]*api.Stage, error) {
-	stageRaws, err := s.createStageRaw(ctx, creates)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Stage")
-	}
-	var stages []*api.Stage
-	for _, stageRaw := range stageRaws {
-		stage, err := s.composeStage(ctx, stageRaw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Stage with stageRaw[%+v]", stageRaw)
-		}
-		stages = append(stages, stage)
-	}
-	return stages, nil
+	PipelineID    int
+	// Output only.
+	ID int
 }
 
 // FindStage finds a list of Stage instances.
@@ -73,19 +37,19 @@ func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stag
 	return stageList, nil
 }
 
-//
-// private functions
-//
-
-// Note: MUST keep in sync with composeStageValidateOnly.
-func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, error) {
-	stage := raw.toStage()
+func (s *Store) composeStage(ctx context.Context, stage *StageMessage) (*api.Stage, error) {
+	composedStage := &api.Stage{
+		ID:            stage.ID,
+		PipelineID:    stage.PipelineID,
+		EnvironmentID: stage.EnvironmentID,
+		Name:          stage.Name,
+	}
 
 	env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
-	stage.Environment = env
+	composedStage.Environment = env
 
 	taskFind := &api.TaskFind{
 		PipelineID: &stage.PipelineID,
@@ -95,55 +59,25 @@ func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, er
 	if err != nil {
 		return nil, err
 	}
-	stage.TaskList = taskList
+	composedStage.TaskList = taskList
 
-	return stage, nil
+	return composedStage, nil
 }
 
-// createStageRaw creates a list of stages.
-func (s *Store) createStageRaw(ctx context.Context, creates []*api.StageCreate) ([]*stageRaw, error) {
+// CreateStageV2 creates a list of stages.
+func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage, creatorID int) ([]*StageMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	stages, err := s.createStageImpl(ctx, tx, creates)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return stages, nil
-}
-
-// findStageRaw retrieves a list of stages based on find.
-func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stageRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	stageRawList, err := s.findStageImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return stageRawList, nil
-}
-
-// createStageImpl creates a new stage.
-func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageCreate) ([]*stageRaw, error) {
 	var valueStr []string
 	var values []interface{}
-	for i, create := range creates {
+	for i, create := range stagesCreate {
 		values = append(values,
-			create.CreatorID,
-			create.CreatorID,
+			creatorID,
+			creatorID,
 			create.PipelineID,
 			create.EnvironmentID,
 			create.Name,
@@ -170,27 +104,47 @@ func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageC
 	}
 	defer rows.Close()
 
-	var stageRaws []*stageRaw
+	var stages []*StageMessage
 	for rows.Next() {
-		var stageRaw stageRaw
+		var stage StageMessage
 		if err := rows.Scan(
-			&stageRaw.ID,
-			&stageRaw.PipelineID,
-			&stageRaw.EnvironmentID,
-			&stageRaw.Name,
+			&stage.ID,
+			&stage.PipelineID,
+			&stage.EnvironmentID,
+			&stage.Name,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		stageRaws = append(stageRaws, &stageRaw)
+		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return stageRaws, nil
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return stages, nil
 }
 
-func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([]*stageRaw, error) {
+// findStageRaw retrieves a list of stages based on find.
+func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*StageMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	stageRawList, err := s.findStageImpl(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	return stageRawList, nil
+}
+
+func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([]*StageMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -216,9 +170,9 @@ func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into stageRawList.
-	var stageRawList []*stageRaw
+	var stageRawList []*StageMessage
 	for rows.Next() {
-		var stageRaw stageRaw
+		var stageRaw StageMessage
 		if err := rows.Scan(
 			&stageRaw.ID,
 			&stageRaw.PipelineID,
