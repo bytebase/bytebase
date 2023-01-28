@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 
 option go_package = "generated-go/v1";
@@ -17,7 +18,7 @@ service SettingService{
 
   rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
-      patch: "/v1/{name=settings/*}"
+      patch: "/v1/{setting.name=settings/*}"
       body: "setting"
     };
   }
@@ -36,11 +37,8 @@ message GetSettingResponse {
 
 // The request message for updating a setting.
 message UpdateSettingRequest {
-  // The resource name of the setting.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The value of the setting.
-  Value value = 2 [(google.api.field_behavior) = REQUIRED];
+  // The setting to update.
+  Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 
