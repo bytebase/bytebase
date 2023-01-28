@@ -380,9 +380,9 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 		}
 		user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-			IdentityProviderResourceID: &identityProvider.ResourceID,
-			IdentityProviderUserInfo:   fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", userInfo.Identifier),
-			ShowDeleted:                true,
+			IdentityProviderResourceID:     &identityProvider.ResourceID,
+			IdentityProviderUserIdentifier: userInfo.Identifier,
+			ShowDeleted:                    true,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get principal")

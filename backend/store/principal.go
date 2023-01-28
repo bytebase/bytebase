@@ -77,9 +77,8 @@ type FindUserMessage struct {
 	Role                       *api.Role
 	ShowDeleted                bool
 	IdentityProviderResourceID *string
-	// IdentityProviderUserInfo is a specific JSONB expressions for selecting user.
-	// Ref: https://www.postgresql.org/docs/current/functions-json.html
-	IdentityProviderUserInfo string
+	// Available only if the IdentityProviderResourceID is not nil.
+	IdentityProviderUserIdentifier string
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -99,12 +98,9 @@ type UserMessage struct {
 	Type                       api.PrincipalType
 	PasswordHash               string
 	IdentityProviderResourceID *string
-	// IdentityProviderUserInfo contains specific fields and a raw json string from userinfo api response.
-	// e.g. for GitHub's authenticated user api, it looks like the following structure.
-	// https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
-	IdentityProviderUserInfo *storepb.IdentityProviderUserInfo
-	Role                     api.Role
-	MemberDeleted            bool
+	IdentityProviderUserInfo   *storepb.IdentityProviderUserInfo
+	Role                       api.Role
+	MemberDeleted              bool
 }
 
 // GetUser gets an user.
@@ -250,7 +246,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 				return nil, err
 			}
 			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
-			where = append(where, find.IdentityProviderUserInfo)
+			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 		}
 		rows, err := tx.QueryContext(ctx, `
 			SELECT

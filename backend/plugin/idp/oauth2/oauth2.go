@@ -90,7 +90,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		return nil, errors.Wrap(err, "failed to unmarshal raw response body")
 	}
 
-	userInfo := &storepb.IdentityProviderUserInfo{Raw: rawClaims}
+	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
 		userInfo.Identifier = v
 	}

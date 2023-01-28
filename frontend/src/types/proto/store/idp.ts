@@ -92,8 +92,6 @@ export interface IdentityProviderUserInfo {
   displayName: string;
   /** Email is the value of primary email in 3rd-party idp user info. */
   email: string;
-  /** Raw contains original fields returned by the Identity Provider. */
-  raw: string;
 }
 
 function createBaseIdentityProviderConfig(): IdentityProviderConfig {
@@ -425,7 +423,7 @@ export const FieldMapping = {
 };
 
 function createBaseIdentityProviderUserInfo(): IdentityProviderUserInfo {
-  return { identifier: "", displayName: "", email: "", raw: "" };
+  return { identifier: "", displayName: "", email: "" };
 }
 
 export const IdentityProviderUserInfo = {
@@ -438,9 +436,6 @@ export const IdentityProviderUserInfo = {
     }
     if (message.email !== "") {
       writer.uint32(26).string(message.email);
-    }
-    if (message.raw !== "") {
-      writer.uint32(34).string(message.raw);
     }
     return writer;
   },
@@ -461,9 +456,6 @@ export const IdentityProviderUserInfo = {
         case 3:
           message.email = reader.string();
           break;
-        case 4:
-          message.raw = reader.string();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -477,7 +469,6 @@ export const IdentityProviderUserInfo = {
       identifier: isSet(object.identifier) ? String(object.identifier) : "",
       displayName: isSet(object.displayName) ? String(object.displayName) : "",
       email: isSet(object.email) ? String(object.email) : "",
-      raw: isSet(object.raw) ? String(object.raw) : "",
     };
   },
 
@@ -486,7 +477,6 @@ export const IdentityProviderUserInfo = {
     message.identifier !== undefined && (obj.identifier = message.identifier);
     message.displayName !== undefined && (obj.displayName = message.displayName);
     message.email !== undefined && (obj.email = message.email);
-    message.raw !== undefined && (obj.raw = message.raw);
     return obj;
   },
 
@@ -495,7 +485,6 @@ export const IdentityProviderUserInfo = {
     message.identifier = object.identifier ?? "";
     message.displayName = object.displayName ?? "";
     message.email = object.email ?? "";
-    message.raw = object.raw ?? "";
     return message;
   },
 };

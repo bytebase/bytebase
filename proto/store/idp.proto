@@ -73,7 +73,4 @@ message IdentityProviderUserInfo {
 
   // Email is the value of primary email in 3rd-party idp user info.
   string email = 3;
-
-  // Raw contains original fields returned by the Identity Provider.
-  string raw = 4;
 }
