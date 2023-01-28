@@ -371,3 +371,97 @@ func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists 
 	}
 	return resTaskCreateList, resTaskIndexDAGList, nil
 }
+
+// PassAllCheck checks whether a task has passed all task checks.
+func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRunList []*api.TaskCheckRun, engine db.Type) (bool, error) {
+	// schema update, data update and gh-ost sync task have required task check.
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		pass, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseConnect, allowedStatus)
+		if err != nil {
+			return false, err
+		}
+		if !pass {
+			return false, nil
+		}
+
+		pass, err = passCheck(taskCheckRunList, api.TaskCheckInstanceMigrationSchema, allowedStatus)
+		if err != nil {
+			return false, err
+		}
+		if !pass {
+			return false, nil
+		}
+
+		if api.IsSyntaxCheckSupported(engine) {
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+
+		if api.IsSQLReviewSupported(engine) {
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+
+		if engine == db.Postgres {
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementType, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+	}
+
+	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		ok, err := passCheck(taskCheckRunList, api.TaskCheckGhostSync, allowedStatus)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// Returns true only if the task check run result is at least the minimum required level.
+// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
+// For Pending->Running transitions, the minimum level is WARN.
+func passCheck(taskCheckRunList []*api.TaskCheckRun, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
+	var lastRun *api.TaskCheckRun
+	for _, run := range taskCheckRunList {
+		if checkType != run.Type {
+			continue
+		}
+		if lastRun == nil || lastRun.ID < run.ID {
+			lastRun = run
+		}
+	}
+
+	if lastRun == nil || lastRun.Status != api.TaskCheckRunDone {
+		return false, nil
+	}
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status.LessThan(allowedStatus) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}

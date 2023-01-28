@@ -70,6 +70,8 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
+		// TODO(d): check pass checks here.
+
 		var taskIDList []int
 		for _, task := range tasks {
 			taskIDList = append(taskIDList, task.ID)
