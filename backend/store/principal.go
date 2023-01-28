@@ -370,19 +370,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 	defer tx.Rollback()
 
-	var count int
-	if err := tx.QueryRowContext(ctx,
-		`SELECT COUNT(1) FROM principal WHERE type = $1`,
-		api.EndUser,
-	).Scan(&count); err != nil {
-		return nil, err
-	}
-	role := api.Developer
-	// Grant the member Owner role if there is no existing Owner member.
-	if count == 0 {
-		role = api.Owner
-	}
-
 	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
 	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
 	// Set idp fields into principal only when the related id is not null.
@@ -418,6 +405,19 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		args...,
 	).Scan(&userID); err != nil {
 		return nil, FormatError(err)
+	}
+
+	var count int
+	if err := tx.QueryRowContext(ctx,
+		`SELECT COUNT(1) FROM member`,
+	).Scan(&count); err != nil {
+		return nil, err
+	}
+	role := api.Developer
+	firstMember := count == 0
+	// Grant the member Owner role if there is no existing member.
+	if firstMember {
+		role = api.Owner
 	}
 
 	if _, err := tx.ExecContext(ctx, `
