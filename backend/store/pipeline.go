@@ -52,11 +52,37 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 		Name: pipeline.Name,
 	}
 
-	stageList, err := s.FindStage(ctx, pipeline.ID)
+	tasks, err := s.FindTask(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, err
 	}
-	composedPipeline.StageList = stageList
+
+	stages, err := s.ListStageV2(ctx, pipeline.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find stages for pipeline %d", pipeline.ID)
+	}
+	var composedStages []*api.Stage
+	for _, stage := range stages {
+		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+		composedStage := &api.Stage{
+			ID:            stage.ID,
+			PipelineID:    stage.PipelineID,
+			EnvironmentID: stage.EnvironmentID,
+			Environment:   environment,
+			Name:          stage.Name,
+		}
+		for _, task := range tasks {
+			if task.StageID == stage.ID {
+				composedStage.TaskList = append(composedStage.TaskList, task)
+			}
+		}
+
+		composedStages = append(composedStages, composedStage)
+	}
+	composedPipeline.StageList = composedStages
 
 	return composedPipeline, nil
 }

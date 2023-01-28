@@ -9,10 +9,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 )
@@ -124,7 +122,7 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 }
 
 // FindTask finds a list of Task instances.
-func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bool) ([]*api.Task, error) {
+func (s *Store) FindTask(ctx context.Context, find *api.TaskFind) ([]*api.Task, error) {
 	taskRawList, err := s.findTaskRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Task list with TaskFind[%+v]", find)
@@ -133,13 +131,7 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 	for _, raw := range taskRawList {
 		task, err := s.composeTask(ctx, raw)
 		if err != nil {
-			if returnOnErr {
-				return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", raw)
-			}
-			log.Error("failed to compose Task",
-				zap.Any("taskRaw", raw),
-				zap.Error(err))
-			continue
+			return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", raw)
 		}
 		taskList = append(taskList, task)
 	}
