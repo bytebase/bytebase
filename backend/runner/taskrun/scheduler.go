@@ -1095,11 +1095,11 @@ func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *api.Task) er
 	for len(queue) != 0 {
 		fromTaskID := queue[0]
 		queue = queue[1:]
-		dagList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: &fromTaskID})
+		dags, err := s.store.ListTaskDags(ctx, &store.TaskDAGFind{FromTaskID: &fromTaskID})
 		if err != nil {
 			return err
 		}
-		for _, dag := range dagList {
+		for _, dag := range dags {
 			if seen[dag.ToTaskID] {
 				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
 			}

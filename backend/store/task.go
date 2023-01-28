@@ -290,12 +290,12 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 	}
 
 	blockedBy := []string{}
-	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: &raw.ID})
+	dags, err := s.ListTaskDags(ctx, &TaskDAGFind{ToTaskID: &raw.ID})
 	if err != nil {
 		return nil, err
 	}
-	for _, taskDAG := range taskDAGList {
-		blockedBy = append(blockedBy, strconv.Itoa(taskDAG.FromTaskID))
+	for _, dag := range dags {
+		blockedBy = append(blockedBy, strconv.Itoa(dag.FromTaskID))
 	}
 	task.BlockedBy = blockedBy
 
