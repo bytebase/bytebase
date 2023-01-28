@@ -26,6 +26,14 @@
           />
         </label>
       </div>
+
+      <p class="textinfolabel !mt-4">Authorization callback URL</p>
+      <input
+        type="text"
+        class="textfield mt-1 w-full"
+        readonly
+        :value="callbackUrl"
+      />
     </div>
 
     <!-- OAuth2 form group -->
@@ -278,6 +286,7 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEqual } from "lodash-es";
 import {
   computed,
   reactive,
@@ -298,7 +307,7 @@ import {
   identityProviderTypeToString,
   useIdentityProviderStore,
 } from "@/store/modules/idp";
-import { cloneDeep, isEqual } from "lodash-es";
+import { useActuatorStore } from "@/store";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -336,6 +345,12 @@ const identityProviderTypeList = [
   IdentityProviderType.OAUTH2,
   IdentityProviderType.OIDC,
 ];
+
+const callbackUrl = computed(() => {
+  return `${
+    useActuatorStore().serverInfo?.externalUrl || window.origin
+  }/oauth/callback`;
+});
 
 const isCreating = computed(() => {
   return !props.identityProviderName || props.identityProviderName === "";
@@ -395,11 +410,29 @@ const allowCreate = computed(() => {
   return true;
 });
 
+const updatedIdentityProvider = computed(() => {
+  const tempIdentityProvider: IdentityProvider = {
+    ...identityProvider.value,
+    config: IdentityProviderConfig.fromPartial({}),
+  };
+  if (state.type === IdentityProviderType.OAUTH2) {
+    tempIdentityProvider.config!.oauth2Config = {
+      ...configForOAuth2.value,
+      scopes: scopesStringOfConfig.value.split(" "),
+    };
+  } else if (state.type === IdentityProviderType.OIDC) {
+    tempIdentityProvider.config!.oidcConfig = configForOIDC.value;
+  } else {
+    // should not reach here.
+  }
+  return tempIdentityProvider;
+});
+
 const allowUpdate = computed(() => {
   if (!isFormCompleted.value) {
     return false;
   }
-  if (isEqual(identityProvider.value, originIdentityProvider.value)) {
+  if (isEqual(updatedIdentityProvider.value, originIdentityProvider.value)) {
     return false;
   }
   return true;
@@ -478,20 +511,8 @@ const handleCreateButtonClick = async () => {
 };
 
 const handleUpdateButtonClick = async () => {
-  const identityProviderUpdate: IdentityProvider = {
-    ...identityProvider.value,
-    type: state.type,
-    config: IdentityProviderConfig.fromPartial({}),
-  };
-  if (state.type === IdentityProviderType.OAUTH2) {
-    configForOAuth2.value.scopes = scopesStringOfConfig.value.split(" ");
-    identityProviderUpdate.config!.oauth2Config = configForOAuth2.value;
-  } else if (state.type === IdentityProviderType.OIDC) {
-    identityProviderUpdate.config!.oidcConfig = configForOIDC.value;
-  } else {
-    // should not reach here.
-  }
-
-  await identityProviderStore.patchIdentityProvider(identityProviderUpdate);
+  await identityProviderStore.patchIdentityProvider(
+    updatedIdentityProvider.value
+  );
 };
 </script>

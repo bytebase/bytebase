@@ -18,7 +18,7 @@ import {
 import { getIntCookie } from "@/utils";
 import { authServiceClient } from "@/grpcweb";
 import { usePrincipalStore } from "./principal";
-import { LoginWithIdentityProviderRequest } from "@/types/proto/v1/auth_service";
+import { LoginRequest } from "@/types/proto/v1/auth_service";
 
 function convert(user: ResourceObject): Principal {
   return usePrincipalStore().principalById(parseInt(user.id, 10));
@@ -70,8 +70,8 @@ export const useAuthStore = defineStore("auth", {
       }
       return unknown("PRINCIPAL") as Principal;
     },
-    async loginWithIdentityProvider(request: LoginWithIdentityProviderRequest) {
-      await axios.post("/v1/auth/login/idp", request);
+    async loginWithIdentityProvider(request: LoginRequest) {
+      await axios.post("/v1/auth/login", request);
       const userId = getIntCookie("user");
       if (userId) {
         const loggedInUser = await usePrincipalStore().fetchPrincipalById(

@@ -206,6 +206,9 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
           code,
         },
       },
+      email: "",
+      password: "",
+      web: true,
     });
     router.push("/");
   } else if (state.activeIdentityProvider.type === IdentityProviderType.OIDC) {

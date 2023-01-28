@@ -11,8 +11,8 @@ export function openWindowForSSO(
   sessionStorage.setItem("sso-state", stateQueryParameter);
 
   if (identityProvider.type === IdentityProviderType.OAUTH2) {
-    const oauthConfig = identityProvider.config?.oauth2Config;
-    if (!oauthConfig) {
+    const oauth2Config = identityProvider.config?.oauth2Config;
+    if (!oauth2Config) {
       return null;
     }
 
@@ -20,16 +20,18 @@ export function openWindowForSSO(
       `${window.location.origin}/oauth/callback`
     );
     return window.open(
-      `${oauthConfig.authUrl}?client_id=${
-        oauthConfig.clientId
+      `${oauth2Config.authUrl}?client_id=${
+        oauth2Config.clientId
       }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
-        oauthConfig.scopes.join(" ")
+        oauth2Config.scopes.join(" ")
       )}`,
       "oauth",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
     );
-  } else if (identityProvider.type === IdentityProviderType.OIDC) {
-    // TODO
+  } else {
+    throw new Error(
+      `identity provider type ${identityProvider.type.toString()} is not supported`
+    );
   }
 
   return null;

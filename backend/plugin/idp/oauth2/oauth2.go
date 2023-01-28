@@ -83,9 +83,8 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		return nil, errors.Wrap(err, "failed to read response body")
 	}
 
-	rawClaims := string(body)
 	var claims map[string]any
-	err = json.Unmarshal([]byte(rawClaims), &claims)
+	err = json.Unmarshal(body, &claims)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal raw response body")
 	}
