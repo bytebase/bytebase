@@ -12,13 +12,13 @@
     >
       <template v-for="(task, i) in taskList" :key="i">
         <div
-          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center"
+          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-x-hidden"
           :class="taskClass(task)"
           @click="onClickTask(task, i)"
         >
           <div class="flex-1">
             <div class="flex items-center pb-1">
-              <div class="flex flex-1 items-center">
+              <div class="flex flex-1 items-center gap-x-1">
                 <TaskStatusIcon
                   :create="create"
                   :active="isActiveTask(task)"
@@ -26,11 +26,13 @@
                   :task="task"
                   class="transform scale-75"
                 />
-                <heroicons-solid:arrow-narrow-right
-                  v-if="isActiveTask(task)"
-                  class="name w-5 h-5"
-                />
-                <div class="name">{{ databaseNameOfTask(task) }}</div>
+                <div class="name flex-1 space-x-1 overflow-x-hidden">
+                  <heroicons-solid:arrow-narrow-right
+                    v-if="isActiveTask(task)"
+                    class="w-5 h-5 inline-block"
+                  />
+                  <span>{{ databaseNameOfTask(task) }}</span>
+                </div>
               </div>
               <TaskExtraActionsButton :task="(task as Task)" />
             </div>
@@ -158,7 +160,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+  @apply whitespace-pre-wrap break-all;
 }
 .task.active .name {
   @apply font-bold;
