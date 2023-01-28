@@ -19,15 +19,6 @@ export function openWindowForSSO(
     const redirectUrl = encodeURIComponent(
       `${window.location.origin}/oauth/callback`
     );
-
-    console.log(
-      "link",
-      `${oauthConfig.authUrl}?client_id=${
-        oauthConfig.clientId
-      }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
-        oauthConfig.scopes.join(",")
-      )}`
-    );
     return window.open(
       `${oauthConfig.authUrl}?client_id=${
         oauthConfig.clientId
