@@ -317,7 +317,7 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		Name: pipeline.Name,
 	}
 
-	tasks, err := s.findTaskRaw(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", issue.PipelineUID)
 	}
