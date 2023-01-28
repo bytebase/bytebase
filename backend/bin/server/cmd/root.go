@@ -138,7 +138,6 @@ func init() {
 // -----------------------------------Command Line Config END--------------------------------------
 
 func normalizeExternalURL(url string) (string, error) {
-	return "http://localhost:3000", nil
 	r := strings.TrimSpace(url)
 	r = strings.TrimSuffix(r, "/")
 	if !common.HasPrefixes(r, "http://", "https://") {
