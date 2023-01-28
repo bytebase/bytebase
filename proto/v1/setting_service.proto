@@ -2,12 +2,32 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+
 option go_package = "generated-go/v1";
 
 service SettingService{
-    rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {}
-    rpc GetSetting(GetSettingRequest) returns (GetSettingResponse) {}
-    rpc UpdateSetting(UpdateSettingRequest) returns (UpdateSettingResponse) {}
+    rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
+        option (google.api.http) = {
+            get: "/v1/{parent=workspace/*}/settings"
+        };
+        option (google.api.method_signature) = "parent";
+    }
+
+    rpc GetSetting(GetSettingRequest) returns (Setting) {
+        option (google.api.http) = {
+            get: "/v1/{name=workspace/*/settings/*}"
+        };
+        option (google.api.method_signature) = "name";
+    }
+
+    rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
+        option (google.api.http) = {
+            patch: "/v1/{name=workspace/*/settings/*}"
+            body: "setting"
+        };
+    }
 }
 
 // The request message for listing settings.
@@ -41,10 +61,6 @@ message UpdateSettingRequest{
     Value value = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// The response message for updating a setting.
-message UpdateSettingResponse{
-    Setting setting = 1;
-}
 
 // The schema of setting.
 message Setting{
