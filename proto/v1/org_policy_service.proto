@@ -124,30 +124,6 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "name";
   }
-
-   rpc UndeletePolicy(UndeletePolicyRequest) returns (Policy) {
-    option (google.api.http) = {
-      post: "/v1/{name=policies/*}:undelete"
-      body: "*"
-
-      additional_bindings {
-        post: "/v1/{name=projects/*/policies/*}:undelete"
-        body: "*"
-      }
-      additional_bindings {
-        post: "/v1/{name=environments/*/policies/*}:undelete"
-        body: "*"
-      }
-      additional_bindings {
-        post: "/v1/{name=environments/*/instances/*/policies/*}:undelete"
-        body: "*"
-      }
-      additional_bindings {
-        post: "/v1/{name=environments/*/instances/*/databases/*/policies/*}:undelete"
-        body: "*"
-      }
-    };
-  }
 }
 
 message CreatePolicyRequest {
@@ -193,16 +169,6 @@ message DeletePolicyRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UndeletePolicyRequest {
-  // The policy's `name` field is used to identify the instance to update.
-  // Format: {resource name}/policies/{policy type}
-  // Workspace resource name: "".
-  // Environment resource name: environments/environment-id.
-  // Instance resource name: environments/environment-id/instances/instance-id.
-  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
 message GetPolicyRequest {
   // The name of the policy to retrieve.
   // Format: {resource type}/{resource id}/policies/{policy type}
@@ -226,9 +192,6 @@ message ListPoliciesRequest {
   // When paginating, all other parameters provided to `GetPolicies` must match
   // the call that provided the page token.
   string page_token = 3;
-
-  // Show deleted policies if specified.
-  bool show_deleted = 4;
 }
 
 message ListPoliciesResponse {
@@ -252,8 +215,6 @@ message Policy {
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  State state = 3;
-
   bool inherit_from_parent = 4;
 
   PolicyType type = 5;
@@ -265,6 +226,8 @@ message Policy {
     AccessControlPolicy access_control_policy = 9;
     SQLReviewPolicy sql_review_policy = 10;
   }
+
+  bool enforce = 11;
 }
 
 enum PolicyType {

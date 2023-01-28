@@ -13,6 +13,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/casbin/v2 v2.56.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/github/gh-ost v1.1.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.4.2
@@ -90,7 +91,6 @@ require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect

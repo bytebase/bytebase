@@ -276,21 +276,12 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_PIPELINE: Pipeline = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown pipeline>>",
-    status: "DONE",
     stageList: [],
   };
 
   const UNKNOWN_POLICY: Policy = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     resourceType: "",
     resourceId: UNKNOWN_ID,
@@ -324,10 +315,6 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_STAGE: Stage = {
     id: UNKNOWN_ID,
     pipeline: UNKNOWN_PIPELINE,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown stage>>",
     environment: UNKNOWN_ENVIRONMENT,
     taskList: [],
@@ -465,10 +452,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     name: "",
@@ -649,21 +632,12 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_PIPELINE: Pipeline = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
-    status: "DONE",
     stageList: [],
   };
 
   const EMPTY_POLICY: Policy = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     resourceType: "",
     resourceId: EMPTY_ID,
@@ -697,10 +671,6 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_STAGE: Stage = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     environment: EMPTY_ENVIRONMENT,
     taskList: [],
@@ -838,10 +808,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     environment: EMPTY_ENVIRONMENT,
     name: "",

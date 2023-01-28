@@ -54,7 +54,15 @@
             v-if="selectedProject?.workflowType === 'VCS'"
             @click="handleSyncSheetFromVCS"
           >
-            <heroicons-outline:refresh class="w-4 h-auto mr-1" />
+            <heroicons-outline:refresh
+              v-if="hasFeature('bb.feature.vcs-sheet-sync')"
+              class="w-4 h-auto mr-1"
+            />
+            <FeatureBadge
+              v-else
+              feature="bb.feature.vcs-sheet-sync"
+              class="text-accent"
+            />
             {{ $t("sheet.actions.sync-from-vcs") }}
           </n-button>
         </div>
@@ -115,6 +123,12 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.vcs-sheet-sync"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -124,7 +138,12 @@ import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
-import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useProjectStore,
+  useSheetStore,
+} from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import {
   getDefaultSheetPayloadWithSource,
@@ -135,6 +154,7 @@ import {
 interface LocalState {
   isLoading: boolean;
   sheetList: Sheet[];
+  showFeatureModal: boolean;
 }
 
 const route = useRoute();
@@ -143,6 +163,7 @@ const dialog = useDialog();
 const state = reactive<LocalState>({
   isLoading: true,
   sheetList: [],
+  showFeatureModal: false,
 });
 const currentUser = useCurrentUser();
 const projectStore = useProjectStore();
@@ -274,6 +295,11 @@ const handleClearSearchBtnClick = () => {
 };
 
 const handleSyncSheetFromVCS = () => {
+  if (!hasFeature("bb.feature.vcs-sheet-sync")) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   if (
     selectedProject.value === null ||
     selectedProject.value.workflowType !== "VCS"

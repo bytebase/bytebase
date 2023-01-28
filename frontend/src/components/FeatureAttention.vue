@@ -13,6 +13,7 @@
 import { PropType, computed } from "vue";
 import {
   FeatureType,
+  getMinimumRequiredPlan,
   PlanType,
   planTypeToString,
   FEATURE_MATRIX,
@@ -64,7 +65,7 @@ const descriptionText = computed(() => {
     return `${props.description}\n${startTrial}`;
   }
 
-  const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
+  const requiredPlan = getMinimumRequiredPlan(props.feature);
   const trialText = t("subscription.required-plan-with-trial", {
     requiredPlan: t(
       `subscription.plan.${planTypeToString(requiredPlan)}.title`

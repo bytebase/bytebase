@@ -145,19 +145,6 @@
                 database.instance.engine != 'SNOWFLAKE'
               "
             >
-              <div class="col-span-1 col-start-1">
-                <dt class="text-sm font-medium text-control-light">
-                  {{
-                    database.instance.engine == "POSTGRES"
-                      ? $t("db.encoding")
-                      : $t("db.character-set")
-                  }}
-                </dt>
-                <dd class="mt-1 text-sm text-main">
-                  {{ database.characterSet }}
-                </dd>
-              </div>
-
               <div class="col-span-1">
                 <dt class="text-sm font-medium text-control-light">
                   {{ $t("db.collation") }}

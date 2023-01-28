@@ -63,3 +63,14 @@ message FieldMapping {
   // Email is the field name of primary email in 3rd-party idp user info. Required.
   string email = 3;
 }
+
+message IdentityProviderUserInfo {
+  // Identifier is the value of the unique identifier in 3rd-party idp user info.
+  string identifier = 1;
+
+  // DisplayName is the value of display name in 3rd-party idp user info.
+  string display_name = 2;
+
+  // Email is the value of primary email in 3rd-party idp user info.
+  string email = 3;
+}

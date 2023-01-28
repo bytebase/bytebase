@@ -156,15 +156,11 @@ message Database {
   // Format: projects/{project}
   string project = 5;
 
-  string character_set = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string collation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The version of database schema.
-  string schema_version = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string schema_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Labels will be used for deployment and policy control.
-  map<string, string> labels = 9;
+  map<string, string> labels = 7;
 }
 
 // DatabaseMetadata is the metadata for databases.

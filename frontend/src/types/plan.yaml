@@ -34,7 +34,7 @@ categoryList:
       - dba-workflow
       - environment-tier
       - sensitive-data
-      - access-control
+      - database-access-control
   - type: branding
     featureList:
       - branding-logo
@@ -120,8 +120,8 @@ planList:
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
       - type: anomaly-detection
-        content: anomaly-detection-advanced
-        tooltip: anomaly-detection-advanced-tooltip
+        content: anomaly-detection-basic
+        tooltip: anomaly-detection-basic-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
       - type: seat-count
@@ -204,12 +204,16 @@ planList:
         tooltip: dba-workflow-tooltip
       - type: environment-tier
       - type: sensitive-data
-      - type: access-control
+      - type: database-access-control
       - type: branding-logo
     mainFeatureList:
       - sla
       - everything-in-team-plan
       - multi-tenancy
+      - read-replica
       - dba-workflow
       - environment-tier
-      - more-to-come
+      - sensitive-data
+      - database-access-control
+      - roadmap
+      - custom-contract

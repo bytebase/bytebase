@@ -4,7 +4,6 @@ import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
 export const protobufPackage = "bytebase.v1";
@@ -314,18 +313,6 @@ export interface DeletePolicyRequest {
   name: string;
 }
 
-export interface UndeletePolicyRequest {
-  /**
-   * The policy's `name` field is used to identify the instance to update.
-   * Format: {resource name}/policies/{policy type}
-   * Workspace resource name: "".
-   * Environment resource name: environments/environment-id.
-   * Instance resource name: environments/environment-id/instances/instance-id.
-   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
-   */
-  name: string;
-}
-
 export interface GetPolicyRequest {
   /**
    * The name of the policy to retrieve.
@@ -355,8 +342,6 @@ export interface ListPoliciesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
-  /** Show deleted policies if specified. */
-  showDeleted: boolean;
 }
 
 export interface ListPoliciesResponse {
@@ -381,7 +366,6 @@ export interface Policy {
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
-  state: State;
   inheritFromParent: boolean;
   type: PolicyType;
   deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
@@ -389,6 +373,7 @@ export interface Policy {
   sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
   accessControlPolicy?: AccessControlPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
+  enforce: boolean;
 }
 
 export interface DeploymentApprovalPolicy {
@@ -622,53 +607,6 @@ export const DeletePolicyRequest = {
   },
 };
 
-function createBaseUndeletePolicyRequest(): UndeletePolicyRequest {
-  return { name: "" };
-}
-
-export const UndeletePolicyRequest = {
-  encode(message: UndeletePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UndeletePolicyRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUndeletePolicyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UndeletePolicyRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: UndeletePolicyRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<UndeletePolicyRequest>): UndeletePolicyRequest {
-    const message = createBaseUndeletePolicyRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
 function createBaseGetPolicyRequest(): GetPolicyRequest {
   return { name: "" };
 }
@@ -717,7 +655,7 @@ export const GetPolicyRequest = {
 };
 
 function createBaseListPoliciesRequest(): ListPoliciesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
+  return { parent: "", pageSize: 0, pageToken: "" };
 }
 
 export const ListPoliciesRequest = {
@@ -730,9 +668,6 @@ export const ListPoliciesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
-    }
-    if (message.showDeleted === true) {
-      writer.uint32(32).bool(message.showDeleted);
     }
     return writer;
   },
@@ -753,9 +688,6 @@ export const ListPoliciesRequest = {
         case 3:
           message.pageToken = reader.string();
           break;
-        case 4:
-          message.showDeleted = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -769,7 +701,6 @@ export const ListPoliciesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -778,7 +709,6 @@ export const ListPoliciesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -787,7 +717,6 @@ export const ListPoliciesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
-    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -858,7 +787,6 @@ function createBasePolicy(): Policy {
   return {
     name: "",
     uid: "",
-    state: 0,
     inheritFromParent: false,
     type: 0,
     deploymentApprovalPolicy: undefined,
@@ -866,6 +794,7 @@ function createBasePolicy(): Policy {
     sensitiveDataPolicy: undefined,
     accessControlPolicy: undefined,
     sqlReviewPolicy: undefined,
+    enforce: false,
   };
 }
 
@@ -876,9 +805,6 @@ export const Policy = {
     }
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
-    }
-    if (message.state !== 0) {
-      writer.uint32(24).int32(message.state);
     }
     if (message.inheritFromParent === true) {
       writer.uint32(32).bool(message.inheritFromParent);
@@ -901,6 +827,9 @@ export const Policy = {
     if (message.sqlReviewPolicy !== undefined) {
       SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(82).fork()).ldelim();
     }
+    if (message.enforce === true) {
+      writer.uint32(88).bool(message.enforce);
+    }
     return writer;
   },
 
@@ -916,9 +845,6 @@ export const Policy = {
           break;
         case 2:
           message.uid = reader.string();
-          break;
-        case 3:
-          message.state = reader.int32() as any;
           break;
         case 4:
           message.inheritFromParent = reader.bool();
@@ -941,6 +867,9 @@ export const Policy = {
         case 10:
           message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
           break;
+        case 11:
+          message.enforce = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -953,7 +882,6 @@ export const Policy = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       inheritFromParent: isSet(object.inheritFromParent) ? Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
       deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
@@ -967,6 +895,7 @@ export const Policy = {
         ? AccessControlPolicy.fromJSON(object.accessControlPolicy)
         : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
+      enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
     };
   },
 
@@ -974,7 +903,6 @@ export const Policy = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.inheritFromParent !== undefined && (obj.inheritFromParent = message.inheritFromParent);
     message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
     message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
@@ -990,6 +918,7 @@ export const Policy = {
       : undefined);
     message.sqlReviewPolicy !== undefined &&
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
+    message.enforce !== undefined && (obj.enforce = message.enforce);
     return obj;
   },
 
@@ -997,7 +926,6 @@ export const Policy = {
     const message = createBasePolicy();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.state = object.state ?? 0;
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? 0;
     message.deploymentApprovalPolicy =
@@ -1016,6 +944,7 @@ export const Policy = {
     message.sqlReviewPolicy = (object.sqlReviewPolicy !== undefined && object.sqlReviewPolicy !== null)
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
       : undefined;
+    message.enforce = object.enforce ?? false;
     return message;
   },
 };
@@ -1622,14 +1551,6 @@ export const OrgPolicyServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    undeletePolicy: {
-      name: "UndeletePolicy",
-      requestType: UndeletePolicyRequest,
-      requestStream: false,
-      responseType: Policy,
-      responseStream: false,
-      options: {},
-    },
   },
 } as const;
 
@@ -1642,7 +1563,6 @@ export interface OrgPolicyServiceImplementation<CallContextExt = {}> {
   createPolicy(request: CreatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
   updatePolicy(request: UpdatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
   deletePolicy(request: DeletePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeletePolicy(request: UndeletePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
 }
 
 export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
@@ -1654,7 +1574,6 @@ export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
   createPolicy(request: DeepPartial<CreatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
   updatePolicy(request: DeepPartial<UpdatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
   deletePolicy(request: DeepPartial<DeletePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeletePolicy(request: DeepPartial<UndeletePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

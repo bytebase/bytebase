@@ -2,11 +2,11 @@
   <div class="mx-auto w-full max-w-sm">
     <div>
       <img
-        class="h-12 w-auto"
+        class="h-12 w-auto mx-auto mb-8"
         src="../../assets/logo-full.svg"
         alt="Bytebase"
       />
-      <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
+      <h2 class="text-2xl leading-9 font-medium text-main">
         <template v-if="needAdminSetup">
           <i18n-t
             keypath="auth.sign-up.admin-title"

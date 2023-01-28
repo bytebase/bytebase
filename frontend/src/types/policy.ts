@@ -3,7 +3,6 @@ import {
   Environment,
   IssueType,
   PolicyId,
-  Principal,
   RuleType,
   RuleLevel,
   SubsetOf,
@@ -110,10 +109,6 @@ export type Policy = {
   id: PolicyId;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
   rowStatus: RowStatus;
 
   // Related fields

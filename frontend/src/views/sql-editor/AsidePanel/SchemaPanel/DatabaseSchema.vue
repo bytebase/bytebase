@@ -27,13 +27,13 @@
             engine == "POSTGRES" ? $t("db.encoding") : $t("db.character-set")
           }}
         </span>
-        <span>{{ database.characterSet }}</span>
+        <span>{{ databaseMetadata.characterSet }}</span>
       </div>
       <div v-if="showCollation" class="flex items-center justify-between">
         <span>
           {{ $t("db.collation") }}
         </span>
-        <span>{{ database.collation }}</span>
+        <span>{{ databaseMetadata.collation }}</span>
       </div>
     </div>
 

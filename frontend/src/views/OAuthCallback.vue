@@ -15,11 +15,7 @@
 <script lang="ts">
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import {
-  OAuthStateSessionKey,
-  OAuthWindowEventPayload,
-  OAuthType,
-} from "../types";
+import { OAuthWindowEventPayload, OAuthType } from "../types";
 
 interface LocalState {
   message: string;
@@ -41,7 +37,7 @@ export default {
       code: "",
     };
 
-    const expectedState = sessionStorage.getItem(OAuthStateSessionKey);
+    const expectedState = sessionStorage.getItem("sso-state");
     let eventType = undefined;
 
     if (

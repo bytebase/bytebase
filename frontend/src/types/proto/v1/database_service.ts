@@ -122,8 +122,6 @@ export interface Database {
    * Format: projects/{project}
    */
   project: string;
-  characterSet: string;
-  collation: string;
   /** The version of database schema. */
   schemaVersion: string;
   /** Labels will be used for deployment and policy control. */
@@ -745,17 +743,7 @@ export const GetDatabaseSchemaRequest = {
 };
 
 function createBaseDatabase(): Database {
-  return {
-    name: "",
-    uid: "",
-    syncState: 0,
-    successfulSyncTime: undefined,
-    project: "",
-    characterSet: "",
-    collation: "",
-    schemaVersion: "",
-    labels: {},
-  };
+  return { name: "", uid: "", syncState: 0, successfulSyncTime: undefined, project: "", schemaVersion: "", labels: {} };
 }
 
 export const Database = {
@@ -775,17 +763,11 @@ export const Database = {
     if (message.project !== "") {
       writer.uint32(42).string(message.project);
     }
-    if (message.characterSet !== "") {
-      writer.uint32(50).string(message.characterSet);
-    }
-    if (message.collation !== "") {
-      writer.uint32(58).string(message.collation);
-    }
     if (message.schemaVersion !== "") {
-      writer.uint32(66).string(message.schemaVersion);
+      writer.uint32(50).string(message.schemaVersion);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
+      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
     });
     return writer;
   },
@@ -813,18 +795,12 @@ export const Database = {
           message.project = reader.string();
           break;
         case 6:
-          message.characterSet = reader.string();
-          break;
-        case 7:
-          message.collation = reader.string();
-          break;
-        case 8:
           message.schemaVersion = reader.string();
           break;
-        case 9:
-          const entry9 = Database_LabelsEntry.decode(reader, reader.uint32());
-          if (entry9.value !== undefined) {
-            message.labels[entry9.key] = entry9.value;
+        case 7:
+          const entry7 = Database_LabelsEntry.decode(reader, reader.uint32());
+          if (entry7.value !== undefined) {
+            message.labels[entry7.key] = entry7.value;
           }
           break;
         default:
@@ -842,8 +818,6 @@ export const Database = {
       syncState: isSet(object.syncState) ? stateFromJSON(object.syncState) : 0,
       successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
       project: isSet(object.project) ? String(object.project) : "",
-      characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
-      collation: isSet(object.collation) ? String(object.collation) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -861,8 +835,6 @@ export const Database = {
     message.syncState !== undefined && (obj.syncState = stateToJSON(message.syncState));
     message.successfulSyncTime !== undefined && (obj.successfulSyncTime = message.successfulSyncTime.toISOString());
     message.project !== undefined && (obj.project = message.project);
-    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
-    message.collation !== undefined && (obj.collation = message.collation);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     obj.labels = {};
     if (message.labels) {
@@ -880,8 +852,6 @@ export const Database = {
     message.syncState = object.syncState ?? 0;
     message.successfulSyncTime = object.successfulSyncTime ?? undefined;
     message.project = object.project ?? "";
-    message.characterSet = object.characterSet ?? "";
-    message.collation = object.collation ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {

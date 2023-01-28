@@ -23,7 +23,7 @@
           @click="onClickTask(task, j)"
         >
           <div class="flex items-center justify-between pb-1">
-            <div class="flex flex-1 items-center">
+            <div class="flex flex-1 items-center gap-x-1">
               <TaskStatusIcon
                 :create="create"
                 :active="isActiveTask(task)"
@@ -31,12 +31,12 @@
                 :task="task"
                 class="transform scale-75"
               />
-              <heroicons-solid:arrow-narrow-right
-                v-if="isActiveTask(task)"
-                class="name w-5 h-5"
-              />
-              <div class="name">
-                {{ j + 1 }} - {{ databaseForTask(task).name }}
+              <div class="name flex-1 space-x-1 overflow-x-hidden">
+                <heroicons-solid:arrow-narrow-right
+                  v-if="isActiveTask(task)"
+                  class="w-5 h-5 inline-block"
+                />
+                <span>{{ j + 1 }} - {{ databaseForTask(task).name }}</span>
               </div>
             </div>
             <TaskExtraActionsButton :task="(task as Task)" />
@@ -149,7 +149,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+  @apply whitespace-pre-wrap break-all;
 }
 .task.active .name {
   @apply font-bold;

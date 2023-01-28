@@ -41,14 +41,18 @@
                 : $t("db.character-set")
             }}
           </dt>
-          <dd class="mt-1 text-sm text-main">{{ database.characterSet }}</dd>
+          <dd class="mt-1 text-sm text-main">
+            {{ databaseSchemaMetadata.characterSet }}
+          </dd>
         </div>
 
         <div class="col-span-1">
           <dt class="text-sm font-medium text-control-light">
             {{ $t("db.collation") }}
           </dt>
-          <dd class="mt-1 text-sm text-main">{{ database.collation }}</dd>
+          <dd class="mt-1 text-sm text-main">
+            {{ databaseSchemaMetadata.collation }}
+          </dd>
         </div>
       </template>
 
@@ -301,6 +305,10 @@ const schemaList = computed(() => {
 
 const schemaNameList = computed(() => {
   return schemaList.value.map((schema) => schema.name);
+});
+
+const databaseSchemaMetadata = computed(() => {
+  return dbSchemaStore.getDatabaseMetadataByDatabaseId(props.database.id);
 });
 
 const tableList = computed(() => {

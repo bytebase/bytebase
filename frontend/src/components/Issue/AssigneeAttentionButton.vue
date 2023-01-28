@@ -108,6 +108,8 @@ const notifyAssignee = () => {
   if (!showNotifyAssignee.value) return;
   if (isAssigneeAttentionOn.value) return;
 
+  const issueEntity = issue.value as Issue;
+
   useIssueStore()
     .patchIssue({
       issueId: (issue.value as Issue).id,
@@ -120,7 +122,9 @@ const notifyAssignee = () => {
         ? t("issue.assignee-attention.send-approval-request-successfully", {
             im: imTypeName.value,
           })
-        : t("common.updated");
+        : t("issue.assignee-attention.send-attention-request-successfully", {
+            principal: issueEntity.assignee.name,
+          });
 
       pushNotification({
         module: "bytebase",

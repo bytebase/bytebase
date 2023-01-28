@@ -28,7 +28,6 @@ type OrgPolicyServiceClient interface {
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	UndeletePolicy(ctx context.Context, in *UndeletePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 }
 
 type orgPolicyServiceClient struct {
@@ -84,15 +83,6 @@ func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, in *DeletePol
 	return out, nil
 }
 
-func (c *orgPolicyServiceClient) UndeletePolicy(ctx context.Context, in *UndeletePolicyRequest, opts ...grpc.CallOption) (*Policy, error) {
-	out := new(Policy)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.OrgPolicyService/UndeletePolicy", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // OrgPolicyServiceServer is the server API for OrgPolicyService service.
 // All implementations must embed UnimplementedOrgPolicyServiceServer
 // for forward compatibility
@@ -102,7 +92,6 @@ type OrgPolicyServiceServer interface {
 	CreatePolicy(context.Context, *CreatePolicyRequest) (*Policy, error)
 	UpdatePolicy(context.Context, *UpdatePolicyRequest) (*Policy, error)
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error)
-	UndeletePolicy(context.Context, *UndeletePolicyRequest) (*Policy, error)
 	mustEmbedUnimplementedOrgPolicyServiceServer()
 }
 
@@ -124,9 +113,6 @@ func (UnimplementedOrgPolicyServiceServer) UpdatePolicy(context.Context, *Update
 }
 func (UnimplementedOrgPolicyServiceServer) DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePolicy not implemented")
-}
-func (UnimplementedOrgPolicyServiceServer) UndeletePolicy(context.Context, *UndeletePolicyRequest) (*Policy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UndeletePolicy not implemented")
 }
 func (UnimplementedOrgPolicyServiceServer) mustEmbedUnimplementedOrgPolicyServiceServer() {}
 
@@ -231,24 +217,6 @@ func _OrgPolicyService_DeletePolicy_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrgPolicyService_UndeletePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UndeletePolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrgPolicyServiceServer).UndeletePolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.OrgPolicyService/UndeletePolicy",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrgPolicyServiceServer).UndeletePolicy(ctx, req.(*UndeletePolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // OrgPolicyService_ServiceDesc is the grpc.ServiceDesc for OrgPolicyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -275,10 +243,6 @@ var OrgPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePolicy",
 			Handler:    _OrgPolicyService_DeletePolicy_Handler,
-		},
-		{
-			MethodName: "UndeletePolicy",
-			Handler:    _OrgPolicyService_UndeletePolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
