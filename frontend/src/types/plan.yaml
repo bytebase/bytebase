@@ -120,8 +120,8 @@ planList:
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
       - type: anomaly-detection
-        content: anomaly-detection-advanced
-        tooltip: anomaly-detection-advanced-tooltip
+        content: anomaly-detection-basic
+        tooltip: anomaly-detection-basic-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
       - type: seat-count
