@@ -111,7 +111,6 @@ import {
   useCurrentUser,
   useMemberStore,
   useProjectStore,
-  useRepositoryStore,
 } from "@/store";
 
 interface LocalState {
@@ -239,16 +238,6 @@ export default defineComponent({
       state.error = "";
     };
 
-    const openWindowForVCSMember = () => {
-      // currently we only support Gitlab, so the following redirect URL is fixed
-      useRepositoryStore()
-        .fetchRepositoryByProjectId(props.project.id)
-        .then((repository) => {
-          // this uri format is for GitLab
-          window.open(`${repository.webUrl}/-/project_members`);
-        });
-    };
-
     return {
       state,
       hasRBACFeature,
@@ -257,7 +246,6 @@ export default defineComponent({
       clearValidationError,
       hasValidMember,
       addMember,
-      openWindowForVCSMember,
       has3rdPartyAuthFeature,
     };
   },
