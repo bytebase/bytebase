@@ -692,6 +692,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.POST("/project/:projectID/sync-sheet", func(c echo.Context) error {
+		// TODO(tianzhou): uncomment this after adding the test harness to using Enterprise version.
+		// if !s.licenseService.IsFeatureEnabled(api.FeatureVCSSheetSync) {
+		// 	return echo.NewHTTPError(http.StatusForbidden, api.FeatureVCSSheetSync.AccessErrorMessage())
+		// }
+
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		projectID, err := strconv.Atoi(c.Param("projectID"))
