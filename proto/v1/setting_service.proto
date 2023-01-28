@@ -24,18 +24,18 @@ service SettingService{
 }
 
 // The request message for getting a setting.
-message GetSettingRequest{
+message GetSettingRequest {
     // The resource name of the setting.
     string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // The response message for getting a setting.
-message GetSettingResponse{
+message GetSettingResponse {
     Setting setting = 1;
 }
 
 // The request message for updating a setting.
-message UpdateSettingRequest{
+message UpdateSettingRequest {
     // The resource name of the setting.
     string name = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -45,7 +45,7 @@ message UpdateSettingRequest{
 
 
 // The schema of setting.
-message Setting{
+message Setting {
     // The resource name of the setting. Must be one of the following forms(we only support workspace setting):
     //
     // - `workspace/{workspace_id}/setting/{setting_name}`
@@ -57,15 +57,9 @@ message Setting{
 }
 
 // The data in setting value.
-message Value{
-    enum DataType {
-        // Unspecified data type.
-        DATA_TYPE_UNSPECIFIED = 0;
-        // String data type.
-        DATA_TYPE_STRING = 1;
-    }
-
-    oneof value{
+message Value {
+    // Value is a oneof field for setting value.
+    oneof value {
         // Defines this value as being a string value.
         string string_value = 1;
     }
