@@ -3,13 +3,16 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetPrincipalList gets a list of Principal instances.
@@ -69,10 +72,13 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
-	ID          *int
-	Email       *string
-	Role        *api.Role
-	ShowDeleted bool
+	ID                         *int
+	Email                      *string
+	Role                       *api.Role
+	ShowDeleted                bool
+	IdentityProviderResourceID *string
+	// Available only if the IdentityProviderResourceID is not nil.
+	IdentityProviderUserIdentifier string
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -92,12 +98,34 @@ type UserMessage struct {
 	Type                       api.PrincipalType
 	PasswordHash               string
 	IdentityProviderResourceID *string
-	// IdentityProviderUserInfo is a raw json string from userinfo api response.
-	// e.g. for GitHub's authenticated user api, it looks like the following structure.
-	// https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
-	IdentityProviderUserInfo string
-	Role                     api.Role
-	MemberDeleted            bool
+	IdentityProviderUserInfo   *storepb.IdentityProviderUserInfo
+	Role                       api.Role
+	MemberDeleted              bool
+}
+
+// GetUser gets an user.
+func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	users, err := s.listUserImpl(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if len(users) == 0 {
+		return nil, nil
+	} else if len(users) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with filter %+v, expect 1", len(users), find)}
+	}
+	return users[0], nil
 }
 
 // ListUsers list all users.
@@ -192,7 +220,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 // GetUserByEmailV2 gets an instance of Principal.
-func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
@@ -209,6 +237,17 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 
 	var userMessages []*UserMessage
 	if common.FeatureFlag(common.FeatureFlagNoop) {
+		if find.IdentityProviderResourceID != nil {
+			// Get identity provider's UID with resource id.
+			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+				ResourceID: find.IdentityProviderResourceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
+			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
+		}
 		rows, err := tx.QueryContext(ctx, `
 			SELECT
 				principal.id AS user_id,
@@ -233,13 +272,14 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		for rows.Next() {
 			var userMessage UserMessage
 			var role, rowStatus, idpResourceID sql.NullString
+			var idpUserInfo string
 			if err := rows.Scan(
 				&userMessage.ID,
 				&userMessage.Email,
 				&userMessage.Name,
 				&userMessage.Type,
 				&userMessage.PasswordHash,
-				&userMessage.IdentityProviderUserInfo,
+				&idpUserInfo,
 				&role,
 				&rowStatus,
 				&idpResourceID,
@@ -260,6 +300,11 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			}
 			if idpResourceID.Valid {
 				userMessage.IdentityProviderResourceID = &idpResourceID.String
+				var identityProviderUserInfo storepb.IdentityProviderUserInfo
+				if err := json.Unmarshal([]byte(idpUserInfo), &identityProviderUserInfo); err != nil {
+					return nil, err
+				}
+				userMessage.IdentityProviderUserInfo = &identityProviderUserInfo
 			}
 			userMessages = append(userMessages, &userMessage)
 		}
@@ -350,7 +395,11 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 				return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", *create.IdentityProviderResourceID)
 			}
 			set, args = append(set, "idp_id"), append(args, identityProvider.UID)
-			set, args = append(set, "idp_user_info"), append(args, create.IdentityProviderUserInfo)
+			userInfoBytes, err := protojson.Marshal(create.IdentityProviderUserInfo)
+			if err != nil {
+				return nil, err
+			}
+			set, args = append(set, "idp_user_info"), append(args, string(userInfoBytes))
 		}
 	}
 	placeholder := []string{}

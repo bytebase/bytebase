@@ -81,7 +81,7 @@
         "anomaly-detection-basic": "Basic",
         "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
         "anomaly-detection-advanced": "Advanced",
-        "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
+        "anomaly-detection-advanced-tooltip": "Basic + Schema drift detection",
         "schedule-change": "Scheduled change at specific time",
         "review-and-backup-policy": "Review and backup policy",
         "tenancy": "Multi-Region / Multi-Tenancy deployment",

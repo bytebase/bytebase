@@ -142,6 +142,27 @@ message LoginRequest {
 
   // If web is set, we will set access token, refresh token, and user to the cookie.
   bool web = 3;
+
+  // The name of the identity provider.
+  // Format: idps/{idp}
+  string idp_name = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // The context data is using to get the user information from identity provider.
+  IdentityProviderContext context = 5;
+}
+
+message IdentityProviderContext {
+  oneof context {
+    OAuth2IdentityProviderContext oauth2_context = 1;
+    OIDCIdentityProviderContextx oidc_context = 2;
+  }
+}
+
+message OAuth2IdentityProviderContext {
+  string code = 1;
+}
+
+message OIDCIdentityProviderContextx {
 }
 
 message LoginResponse {

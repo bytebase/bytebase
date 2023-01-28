@@ -1,40 +1,38 @@
 -- schema migration seeding data
 INSERT INTO "public"."principal" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "type", "name", "email", "password_hash") VALUES
-(1, 'NORMAL', 1, 1657272778, 1, 1657272778, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', ''),
 (101, 'NORMAL', 1, 1657272815, 1, 1657272815, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$/65QFlHOmDzXshEMt/qYuunbJrXtRLcaYDcRODbyOPa/9/N0N8Zc2');
 
 INSERT INTO "public"."member" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "status", "role", "principal_id") VALUES
 (101, 'NORMAL', 1, 1657272815, 1, 1657272815, 'ACTIVE', 'OWNER', 101);
 
-INSERT INTO "public"."project" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "key", "workflow_type", "visibility", "tenant_mode", "db_name_template") VALUES
-(1, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', ''),
-(101, 'NORMAL', 101, 1657272873, 101, 1657272873, 'DEMO', 'Z77', 'UI', 'PUBLIC', 'DISABLED', '');
+INSERT INTO "public"."project" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "key", "workflow_type", "visibility", "tenant_mode", "db_name_template", "resource_id") VALUES
+(101, 'NORMAL', 101, 1657272873, 101, 1657272873, 'DEMO', 'Z77', 'UI', 'PUBLIC', 'DISABLED', '', 'demo');
 
 INSERT INTO "public"."project_member" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "project_id", "role", "principal_id", "payload") VALUES
 (101, 'NORMAL', 101, 1657272873, 101, 1657272873, 101, 'OWNER', 101, '{}');
 
-INSERT INTO "public"."environment" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "order") VALUES
-(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Test', 0),
-(102, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Prod', 1);
+INSERT INTO "public"."environment" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "order", "resource_id") VALUES
+(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Test', 0, 'test'),
+(102, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Prod', 1, 'prod');
 
 INSERT INTO "public"."policy" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "resource_type", "resource_id", "type", "payload") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'ENVIRONMENT', 101, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_NEVER"}'),
 (102, 'NORMAL', 1, 1657272778, 1, 1657272778, 'ENVIRONMENT', 102, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS"}'),
 (103, 'NORMAL', 1, 1657272778, 1, 1657272778, 'ENVIRONMENT', 102, 'bb.policy.backup-plan', '{"schedule": "WEEKLY"}');
 
-INSERT INTO "public"."instance" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "environment_id", "name", "engine", "engine_version", "host", "port", "external_link") VALUES
-(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'Sample Test instance', 'POSTGRES', '14.3', 'host.docker.internal', '5432', ''),
-(102, 'NORMAL', 101, 1657272848, 1, 1657272850, 101, 'DEMO', 'MYSQL', '8.0.28', 'demo.cfxzcrq5mf2d.us-west-1.rds.amazonaws.com', '', '');
+INSERT INTO "public"."instance" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "environment_id", "name", "engine", "engine_version", "external_link", "resource_id") VALUES
+(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'Sample Test instance', 'POSTGRES', '14.3', '', 'sample-test-mysql'),
+(102, 'NORMAL', 101, 1657272848, 1, 1657272850, 101, 'DEMO', 'MYSQL', '8.0.28', '', 'demo-test-mysql');
 
 INSERT INTO "public"."instance_user" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "instance_id", "name", "grant") VALUES
 (101, 'NORMAL', 1, 1657272852, 1, 1657274591, 102, '''admin''@''%''', 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `admin`@`%` WITH GRANT OPTION'),
 (102, 'NORMAL', 1, 1657272852, 1, 1657274591, 102, '''rdsadmin''@''localhost''', 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE ON *.* TO `rdsadmin`@`localhost` WITH GRANT OPTION
 GRANT SERVICE_CONNECTION_ADMIN,SET_USER_ID,SYSTEM_USER ON *.* TO `rdsadmin`@`localhost` WITH GRANT OPTION');
 
-INSERT INTO "public"."db" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "instance_id", "project_id", "source_backup_id", "sync_status", "last_successful_sync_ts", "schema_version", "name", "character_set", "collation") VALUES
-(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 1, NULL, 'OK', 0, '', '*', 'utf8mb4', 'utf8mb4_general_ci'),
-(102, 'NORMAL', 101, 1657272848, 101, 1657272848, 102, 1, NULL, 'OK', 1657272848, '', '*', 'utf8mb4', 'utf8mb4_general_ci'),
-(103, 'NORMAL', 1, 1657272853, 1, 1657274591, 102, 101, NULL, 'OK', 1657274591, '20220708094434', 'employee', 'utf8mb4', 'utf8mb4_general_ci');
+INSERT INTO "public"."db" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "instance_id", "project_id", "source_backup_id", "sync_status", "last_successful_sync_ts", "schema_version", "name") VALUES
+(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 1, NULL, 'OK', 0, '', '*'),
+(102, 'NORMAL', 101, 1657272848, 101, 1657272848, 102, 1, NULL, 'OK', 1657272848, '', '*'),
+(103, 'NORMAL', 1, 1657272853, 1, 1657274591, 102, 101, NULL, 'OK', 1657274591, '20220708094434', 'employee');
 
 INSERT INTO "public"."tbl" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "database_id", "name", "type", "engine", "collation", "row_count", "data_size", "index_size", "data_free", "create_options", "comment") VALUES
 (126, 'NORMAL', 1, 1657190787, 1, 0, 103, 'department', 'BASE TABLE', 'InnoDB', 'utf8mb4_0900_ai_ci', 0, 16384, 16384, 0, '', ''),
@@ -102,11 +100,11 @@ INSERT INTO "public"."data_source" ("id", "row_status", "creator_id", "created_t
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 101, 'Admin data source', 'ADMIN', 'root', '', '', '', ''),
 (102, 'NORMAL', 101, 1657272848, 101, 1657272848, 102, 102, 'Admin data source', 'ADMIN', 'admin', 'Bytebase12345', '', '', '');
 
-INSERT INTO "public"."pipeline" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "status") VALUES
-(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Pipeline - Hello world', 'OPEN'),
-(102, 'NORMAL', 101, 1657272890, 101, 1657272890, 'Establish database baseline pipeline', 'OPEN'),
-(103, 'NORMAL', 101, 1657272927, 101, 1657272945, 'Update database schema pipeline', 'DONE'),
-(104, 'NORMAL', 101, 1657273475, 101, 1657273475, 'Update database schema pipeline', 'OPEN');
+INSERT INTO "public"."pipeline" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name") VALUES
+(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Pipeline - Hello world'),
+(102, 'NORMAL', 101, 1657272890, 101, 1657272890, 'Establish database baseline pipeline'),
+(103, 'NORMAL', 101, 1657272927, 101, 1657272945, 'Update database schema pipeline'),
+(104, 'NORMAL', 101, 1657273475, 101, 1657273475, 'Update database schema pipeline');
 
 INSERT INTO "public"."stage" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "pipeline_id", "environment_id", "name") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 101, 'Test'),
@@ -187,10 +185,3 @@ INSERT INTO "public"."anomaly" ("id", "row_status", "creator_id", "created_ts", 
 INSERT INTO "public"."label_key" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "key") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'bb.location'),
 (102, 'NORMAL', 1, 1657272778, 1, 1657272778, 'bb.tenant');
-
-INSERT INTO "public"."setting" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "value", "description") VALUES
-(101, 'NORMAL', 1, 1657272785, 1, 1657272785, 'bb.branding.logo', '', 'The branding logo image in base64 string format.'),
-(102, 'NORMAL', 1, 1657272785, 1, 1657272785, 'bb.auth.secret', 'qOfnyO0qpMdqThSRdsDvLgQcL8me45EC', 'Random string used to sign the JWT auth token.'),
-(103, 'NORMAL', 1, 1657272785, 1, 1657272785, 'bb.workspace.id', 'cd0d7ce7-e7a6-4bbd-b922-d6716829f032', 'The workspace identifier'),
-(104, 'NORMAL', 1, 1657272785, 101, 1657272865, 'bb.enterprise.license', 'eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IlRFQU0iLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo0ODExMTA3NTg0LCJpYXQiOjE2NTUzNjQ5NTQsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiNjc2MjA4NTMuNDI0Mjk4MTQifQ.tQHbKBkcG6DEvTnSbd4HK9ysyk4nCUiiCUhRXXOxBTa0aesJW8if35FKS-x6Aw7bOyQ8EEw8o_18qYidWmiWzSss_jKrgwnDLBsHMFdpdTYdnh9nJfiS-52UBbGC1x8fy7k_owmAnnQ7mta4Vc8u8rIa022iCIzb6xiAszvZ0NJD4lGl3MlX5T7R7kFV3nuDy4BZW8m2N_X6Hj4bLFdBSJbrVx_z831tPaymkE2o2NHCNYghDgQgAhYGp9ligOT2w9lg3hB9wCVWItFiGbx2kqVmkEwrvH6OfSgfAORsNbM6oXjtnJd0fd5PzTYy3woLHyVGvyX2pVNKTmOEIt7Abw', 'Enterprise license');
-
