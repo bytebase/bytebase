@@ -46,11 +46,6 @@ type StageCreate struct {
 	Name string
 }
 
-// StageFind is the API message for finding stages.
-type StageFind struct {
-	PipelineID *int
-}
-
 // StageAllTaskStatusPatch is the API message for patching task status for all tasks in a stage.
 type StageAllTaskStatusPatch struct {
 	ID int

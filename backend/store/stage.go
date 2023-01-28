@@ -130,15 +130,14 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 
 // ListStageV2 finds a list of stages based on find.
 func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
+
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
-
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
