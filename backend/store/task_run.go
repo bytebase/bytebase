@@ -14,19 +14,21 @@ import (
 
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
+	TaskID  int
+	Name    string
+	Status  api.TaskRunStatus
+	Type    api.TaskType
+	Code    common.Code
+	Comment string
+	Result  string
+	Payload string
+
+	// Output only.
 	ID        int
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
 	UpdatedTs int64
-	TaskID    int
-	Name      string
-	Status    api.TaskRunStatus
-	Type      api.TaskType
-	Code      common.Code
-	Comment   string
-	Result    string
-	Payload   string
 }
 
 // TaskRunCreate is the API message for creating a task run.
@@ -84,7 +86,7 @@ func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunCreate) error {
+func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, creatorID int) error {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -98,11 +100,10 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunCrea
 			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, 'RUNNING', $5, $6)
 	`
 	if _, err := tx.ExecContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
+		creatorID,
+		creatorID,
 		create.TaskID,
 		create.Name,
 		create.Type,

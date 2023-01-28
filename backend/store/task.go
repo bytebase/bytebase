@@ -555,14 +555,11 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 	}
 	if taskRunRaw == nil {
 		if patch.Status == api.TaskRunning {
-			taskRunCreate := &TaskRunCreate{
-				CreatorID: patch.UpdaterID,
-				TaskID:    task.ID,
-				Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-				Type:      task.Type,
-			}
-			// insert a running taskRun
-			if err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
+			if err := s.createTaskRunImpl(ctx, tx, &TaskRunMessage{
+				TaskID: task.ID,
+				Name:   fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+				Type:   task.Type,
+			}, patch.UpdaterID); err != nil {
 				return nil, err
 			}
 		}
