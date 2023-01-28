@@ -409,7 +409,7 @@ func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, "failed to get principal")
 	}
 	if user == nil {
-		// Generate random password from new user from identity provider.
+		// Generate random password for new users from identity provider.
 		password, err := common.RandomString(20)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate random password")
