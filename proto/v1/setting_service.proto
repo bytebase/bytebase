@@ -8,59 +8,59 @@ import "google/api/field_behavior.proto";
 option go_package = "generated-go/v1";
 
 service SettingService{
-    rpc GetSetting(GetSettingRequest) returns (Setting) {
-        option (google.api.http) = {
-            get: "/v1/{name=workspace/*/settings/*}"
-        };
-        option (google.api.method_signature) = "name";
-    }
+  rpc GetSetting(GetSettingRequest) returns (Setting) {
+    option (google.api.http) = {
+      get: "/v1/{name=workspace/*/settings/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
 
-    rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
-        option (google.api.http) = {
-            patch: "/v1/{name=workspace/*/settings/*}"
-            body: "setting"
-        };
-    }
+  rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
+    option (google.api.http) = {
+      patch: "/v1/{name=workspace/*/settings/*}"
+      body: "setting"
+    };
+  }
 }
 
 // The request message for getting a setting.
 message GetSettingRequest {
-    // The resource name of the setting.
-    string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // The resource name of the setting.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // The response message for getting a setting.
 message GetSettingResponse {
-    Setting setting = 1;
+  Setting setting = 1;
 }
 
 // The request message for updating a setting.
 message UpdateSettingRequest {
-    // The resource name of the setting.
-    string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // The resource name of the setting.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-    // The value of the setting.
-    Value value = 2 [(google.api.field_behavior) = REQUIRED];
+  // The value of the setting.
+  Value value = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 
 // The schema of setting.
 message Setting {
-    // The resource name of the setting. Must be one of the following forms(we only support workspace setting):
-    //
-    // - `workspace/{workspace_id}/setting/{setting_name}`
-    // For example, "/workspace/cb76e505-894d-46ad-b093-75613ca448ce/settings/bb.branding.logo"
-    string name = 1;
+  // The resource name of the setting. Must be one of the following forms(we only support workspace setting):
+  //
+  // - `workspace/{workspace_id}/setting/{setting_name}`
+  // For example, "/workspace/cb76e505-894d-46ad-b093-75613ca448ce/settings/bb.branding.logo"
+  string name = 1;
 
-    // The value of the setting.
-    Value value = 2;
+  // The value of the setting.
+  Value value = 2;
 }
 
 // The data in setting value.
 message Value {
-    // Value is a oneof field for setting value.
-    oneof value {
-        // Defines this value as being a string value.
-        string string_value = 1;
-    }
+  // Value is a oneof field for setting value.
+  oneof value {
+  // Defines this value as being a string value.
+  string string_value = 1;
+  }
 }
