@@ -54,6 +54,8 @@ message Setting{
     // For example, "/workspace/cb76e505-894d-46ad-b093-75613ca448ce/settings/bb.branding.logo"
     string name = 1;
 
+    // The value of the setting.
+    Value value = 2;
 }
 
 // The data in setting value.
