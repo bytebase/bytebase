@@ -3,7 +3,6 @@ package oidc
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
@@ -98,14 +97,8 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "fetch user info")
 	}
 
-	var rawClaims json.RawMessage
-	err = rawUserInfo.Claims(&rawClaims)
-	if err != nil {
-		return nil, errors.Wrap(err, "get raw claims")
-	}
-
 	var claims map[string]any
-	err = json.Unmarshal(rawClaims, &claims)
+	err = rawUserInfo.Claims(&claims)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
