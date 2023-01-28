@@ -549,11 +549,11 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			api.TaskRunRunning,
 		},
 	}
-	taskRunRaw, err := s.getTaskRunTx(ctx, tx, taskRunFind)
+	taskRun, err := s.getTaskRunTx(ctx, tx, taskRunFind)
 	if err != nil {
 		return nil, err
 	}
-	if taskRunRaw == nil {
+	if taskRun == nil {
 		if patch.Status == api.TaskRunning {
 			if err := s.createTaskRunImpl(ctx, tx, &TaskRunMessage{
 				TaskID: task.ID,
@@ -568,7 +568,7 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			return nil, errors.Errorf("task is already running: %v", task.Name)
 		}
 		taskRunStatusPatch := &TaskRunStatusPatch{
-			ID:        &taskRunRaw.ID,
+			ID:        &taskRun.ID,
 			UpdaterID: patch.UpdaterID,
 			Code:      patch.Code,
 			Result:    patch.Result,

@@ -99,15 +99,16 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 			status,
 			type,
 			payload
-		)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,
 		creatorID,
 		create.TaskID,
 		create.Name,
+		api.TaskRunRunning,
 		create.Type,
-		create.Payload,
+		"{}", /* payload */
 	); err != nil {
 		return err
 	}
