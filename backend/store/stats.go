@@ -268,3 +268,37 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	}
 	return res, nil
 }
+
+// CountTaskGroupByTypeAndStatus counts the number of TaskGroup and group by TaskType.
+// Used for the metric collector.
+func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.TaskCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT type, status, COUNT(*)
+		FROM task
+		WHERE (id <= 102 AND updater_id != 1) OR id > 102
+		GROUP BY type, status`,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*metric.TaskCountMetric
+	for rows.Next() {
+		var metric metric.TaskCountMetric
+		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return res, nil
+}
