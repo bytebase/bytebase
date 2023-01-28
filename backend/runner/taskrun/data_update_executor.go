@@ -10,17 +10,19 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
-func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile) Executor {
+func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) Executor {
 	return &DataUpdateExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		license:         license,
 		stateCfg:        stateCfg,
 		profile:         profile,
 	}
@@ -31,6 +33,7 @@ type DataUpdateExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	license         enterpriseAPI.LicenseService
 	stateCfg        *state.State
 	profile         config.Profile
 }
@@ -53,5 +56,5 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (te
 		}
 		statement = sheet.Statement
 	}
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, payload.VCSPushEvent)
 }

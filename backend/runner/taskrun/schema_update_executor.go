@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -19,11 +20,12 @@ import (
 )
 
 // NewSchemaUpdateExecutor creates a schema update (DDL) task executor.
-func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		license:         license,
 		stateCfg:        stateCfg,
 		schemaSyncer:    schemaSyncer,
 		profile:         profile,
@@ -35,6 +37,7 @@ type SchemaUpdateExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	license         enterpriseAPI.LicenseService
 	stateCfg        *state.State
 	schemaSyncer    *schemasync.Syncer
 	profile         config.Profile
@@ -66,7 +69,7 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (
 	if err != nil {
 		return true, nil, err
 	}
-	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, payload.VCSPushEvent)
+	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, payload.VCSPushEvent)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Instance.Name),
