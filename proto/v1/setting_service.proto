@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+option go_package = "generated-go/v1";
+
+service SettingService{
+    rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {}
+    rpc GetSetting(GetSettingRequest) returns (GetSettingResponse) {}
+    rpc UpdateSetting(UpdateSettingRequest) returns (UpdateSettingResponse) {}
+}
+
+// The request message for listing settings.
+message ListSettingsRequest{
+    // The Cloud resource that parents the setting, workspace only for now.
+    string parent = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The response message for listing settings.
+message ListSettingsResponse{
+    repeated Setting settings = 1;
+}
+
+// The request message for getting a setting.
+message GetSettingRequest{
+    // The resource name of the setting.
+    string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The response message for getting a setting.
+message GetSettingResponse{
+    Setting setting = 1;
+}
+
+// The request message for updating a setting.
+message UpdateSettingRequest{
+    // The resource name of the setting.
+    string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+    // The value of the setting.
+    Value value = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The response message for updating a setting.
+message UpdateSettingResponse{
+    Setting setting = 1;
+}
+
+// The schema of setting.
+message Setting{
+    // The resource name of the setting. Must be one of the following forms(we only support workspace setting):
+    //
+    // - `workspace/{workspace_id}/setting/{setting_name}`
+    // For example, "/workspace/cb76e505-894d-46ad-b093-75613ca448ce/settings/bb.branding.logo"
+    string name = 1;
+
+}
+
+// The data in setting value.
+message Value{
+    enum DataType {
+        // Unspecified data type.
+        DATA_TYPE_UNSPECIFIED = 0;
+        // String data type.
+        DATA_TYPE_STRING = 1;
+    }
+
+    oneof value{
+        // Defines this value as being a string value.
+        string string_value = 1;
+    }
+}
