@@ -238,7 +238,7 @@ var featureMatrix = map[FeatureType][3]bool{
 	FeatureIMApproval:       {false, false, true},
 	FeatureMultiTenancy:     {false, false, true},
 	FeatureOnlineMigration:  {false, true, true},
-	FeatureSchemaDrift:      {false, true, true},
+	FeatureSchemaDrift:      {false, false, true},
 	FeatureSQLReview:        {true, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	// VCS Integration
