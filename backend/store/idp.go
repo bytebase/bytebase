@@ -263,7 +263,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 			config,
 			row_status
 		FROM idp
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
 	)
 	if err != nil {
