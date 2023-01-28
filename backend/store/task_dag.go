@@ -72,7 +72,6 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			from_task_id,
 			to_task_id
 		FROM task_dag
