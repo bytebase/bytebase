@@ -1529,7 +1529,7 @@
     "start-n-days-trial": "开启 {days} 天试用",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
-    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买的 Bytebase 证书来解锁该功能。",
+    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
@@ -1599,6 +1599,14 @@
         "title": "Schema 审核策略",
         "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
       },
+      "bb-feature-vcs-schema-write-back": {
+        "title": "Schema 回写",
+        "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
+      },
+      "bb-feature-vcs-sheet-sync": {
+        "title": "从 VCS 同步 SQL 脚本",
+        "desc": "将保存在 VCS 中的 SQL 脚本同步到 Sheet 中。"
+      },
       "bb-feature-vcs-sql-review": {
         "title": "GitOps 工作流中的 SQL 审核",
         "desc": "在您的 VCS 仓库流水线上添加 SQL 审核 CI，以便在拉取请求中对变动的 SQL 文件进行自动审核。"
@@ -1644,7 +1652,7 @@
     "shared-with-me": "与我共享",
     "starred": "已加星标",
     "actions": {
-      "sync-from-vcs": "从 VCS 同步数据"
+      "sync-from-vcs": "从 VCS 同步 SQL 脚本"
     },
     "hint-tips": {
       "confirm-to-sync-sheet": "确定要同步工作表?",

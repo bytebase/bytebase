@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
@@ -270,7 +271,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
 	databaseName := task.Database.Name
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
@@ -301,27 +302,31 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			return true, nil, errors.Errorf("failed to update database %q for instance %q", databaseName, task.Database.Instance.Name)
 		}
 	}
-	// On the presence of schema path template We write back the latest schema after migration for VCS-based projects for
+	// If write-back feature is allowed in the Plan, on the presence of schema path template, we
+	// write back the latest schema after migration for VCS-based projects for
 	// 1) Non-wildcard branch filter and baseline migration for SDL.
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
-	if repo != nil && repo.SchemaPathTemplate != "" {
-		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-			if task.Type == api.TaskDatabaseSchemaBaseline && !strings.Contains(repo.BranchFilter, "*") {
-				writeBack = true
-				// Transform the schema to standard style for SDL mode.
-				if task.Database.Instance.Engine == db.MySQL {
-					standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
-					if err != nil {
-						return true, nil, errors.Errorf("failed to transform to standard schema for database %q", task.Database.Name)
+	if license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
+		if repo != nil && repo.SchemaPathTemplate != "" {
+			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+				if task.Type == api.TaskDatabaseSchemaBaseline && !strings.Contains(repo.BranchFilter, "*") {
+					writeBack = true
+					// Transform the schema to standard style for SDL mode.
+					if task.Database.Instance.Engine == db.MySQL {
+						standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+						if err != nil {
+							return true, nil, errors.Errorf("failed to transform to standard schema for database %q", task.Database.Name)
+						}
+						schema = standardSchema
 					}
-					schema = standardSchema
 				}
+			} else {
+				writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 			}
-		} else {
-			writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 		}
 	}
+
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
 			composedPipeline, err := stores.GetPipelineByID(ctx, issue.PipelineUID)
@@ -443,7 +448,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
@@ -452,7 +457,7 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 // Writes back the latest schema to the repository after migration
