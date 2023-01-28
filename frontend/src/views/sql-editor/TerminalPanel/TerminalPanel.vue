@@ -159,7 +159,7 @@ watch(
   { immediate: true }
 );
 const handleHistory = (direction: "up" | "down") => {
-  if (currentQuery.value.status !== "RUNNING") {
+  if (currentQuery.value.status !== "IDLE") {
     return;
   }
   const list = queryList.value;
