@@ -1175,7 +1175,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
 			Payload:    fmt.Sprintf("payload->>'schemaVersion' = '%s'", schemaVersion),
 		}
-		taskList, err := s.store.FindTask(ctx, find, true)
+		taskList, err := s.store.FindTask(ctx, find)
 		if err != nil {
 			return err
 		}

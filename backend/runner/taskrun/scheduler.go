@@ -135,7 +135,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
 				// We may optimize this in the future since only some relationship info is needed by the executor
-				taskList, err := s.store.FindTask(ctx, taskFind, false)
+				taskList, err := s.store.FindTask(ctx, taskFind)
 				if err != nil {
 					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
@@ -644,7 +644,7 @@ func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.Issue
 // So we change their status to CANCELED before starting the scheduler.
 func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
-	runningTasks, err := s.store.FindTask(ctx, taskFind, false /* returnOnErr */)
+	runningTasks, err := s.store.FindTask(ctx, taskFind)
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}
@@ -890,7 +890,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{
 		StatusList: &taskStatusList,
 	}
-	taskList, err := s.store.FindTask(ctx, taskFind, false)
+	taskList, err := s.store.FindTask(ctx, taskFind)
 	if err != nil {
 		return err
 	}
