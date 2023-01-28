@@ -327,6 +327,10 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		if user.MemberDeleted {
 			return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
 		}
+		// Disallow user from identity provider login without SSO.
+		if user.IdentityProviderResourceID != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "user %q only can login by SSO", request.Email)
+		}
 		// Compare the stored hashed password, with the hashed version of the password that was received.
 		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 			// If the two passwords don't match, return a 401 status.
@@ -378,6 +382,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		user, err := s.store.GetUser(ctx, &store.FindUserMessage{
 			IdentityProviderResourceID: &identityProvider.ResourceID,
 			IdentityProviderUserInfo:   fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", userInfo.Identifier),
+			ShowDeleted:                true,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get principal")
