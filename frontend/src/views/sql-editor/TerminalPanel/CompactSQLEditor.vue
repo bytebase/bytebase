@@ -53,6 +53,7 @@ const emit = defineEmits<{
     config: ExecuteConfig,
     option?: ExecuteOption
   ): void;
+  (e: "history", direction: "up" | "down"): void;
 }>();
 
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
@@ -144,12 +145,22 @@ const handleSaveSheet = () => {
 const handleEditorReady = async () => {
   const monaco = await import("monaco-editor");
   const editor = editorRef.value?.editorInstance;
+  const readonly = editor?.createContextKey<boolean>(
+    "readonly",
+    props.readonly
+  );
+  watch(
+    () => props.readonly,
+    () => readonly?.set(props.readonly)
+  );
+
   editor?.addAction({
     id: "RunQuery",
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
+    precondition: "!readonly",
     run: async () => {
       emit("execute", props.sql, {
         databaseType: selectedInstanceEngine.value,
@@ -163,6 +174,7 @@ const handleEditorReady = async () => {
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
+    precondition: "!readonly",
     run: async () => {
       emit(
         "execute",
@@ -206,7 +218,6 @@ const handleEditorReady = async () => {
     }
     cursorAtLast?.set(false);
   });
-
   editor?.addCommand(
     monaco.KeyCode.Enter,
     () => {
@@ -221,7 +232,56 @@ const handleEditorReady = async () => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "endsWithSemicolon && cursorAtLast"
+    "!readonly && endsWithSemicolon && cursorAtLast"
+  );
+
+  const cursorAtFirstLine = editor?.createContextKey<boolean>(
+    "cursorAtFirstLine",
+    false
+  );
+  const cursorAtLastLine = editor?.createContextKey<boolean>(
+    "cursorAtLastLine",
+    false
+  );
+  const updateCursorPosition = () => {
+    if (!editor) return;
+    const model = editor.getModel();
+    if (model) {
+      const maxLine = model.getLineCount();
+      const cursor = editor.getPosition();
+      cursorAtFirstLine?.set(cursor?.lineNumber === 1);
+      cursorAtLastLine?.set(cursor?.lineNumber === maxLine);
+      return;
+    }
+    cursorAtLast?.set(false);
+  };
+  updateCursorPosition();
+  editor?.onDidChangeCursorPosition(updateCursorPosition);
+  editor?.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.UpArrow,
+    () => {
+      // When
+      // - the cursor is at the first line
+      // - then press "CtrlCmd + Up"
+      // We trigger the "history" event
+      emit("history", "up");
+    },
+    // Tell the editor this should be only
+    // triggered when both of the two conditions are satisfied.
+    "!readonly && !suggestWidgetVisible && cursorAtFirstLine"
+  );
+  editor?.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.DownArrow,
+    () => {
+      // When
+      // - the cursor is at the last line
+      // - then press "CtrlCmd + Down"
+      // We trigger the "history" event
+      emit("history", "down");
+    },
+    // Tell the editor this should be only
+    // triggered when both of the two conditions are satisfied.
+    "!readonly && !suggestWidgetVisible && cursorAtLastLine"
   );
 
   watchEffect(async () => {
