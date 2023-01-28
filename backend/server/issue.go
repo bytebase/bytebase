@@ -485,13 +485,15 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
-	var stageCreates []*api.StageCreate
-	for i := range pipelineCreate.StageList {
-		pipelineCreate.StageList[i].CreatorID = creatorID
-		pipelineCreate.StageList[i].PipelineID = pipelineCreated.ID
-		stageCreates = append(stageCreates, &pipelineCreate.StageList[i])
+	var stageCreates []*store.StageMessage
+	for _, stage := range pipelineCreate.StageList {
+		stageCreates = append(stageCreates, &store.StageMessage{
+			Name:          stage.Name,
+			EnvironmentID: stage.EnvironmentID,
+			PipelineID:    pipelineCreated.ID,
+		})
 	}
-	createdStages, err := s.store.CreateStage(ctx, stageCreates)
+	createdStages, err := s.store.CreateStageV2(ctx, stageCreates, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create stages for issue")
 	}

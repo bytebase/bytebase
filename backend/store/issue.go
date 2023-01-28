@@ -317,13 +317,18 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		Name: pipeline.Name,
 	}
 
-	stageRawList, err := s.findStageRaw(ctx, &api.StageFind{PipelineID: &issue.PipelineUID})
+	stages, err := s.ListStageV2(ctx, issue.PipelineUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find stage list")
 	}
 	var stageList []*api.Stage
-	for _, raw := range stageRawList {
-		stage := raw.toStage()
+	for _, raw := range stages {
+		stage := &api.Stage{
+			ID:            raw.ID,
+			Name:          raw.Name,
+			EnvironmentID: raw.EnvironmentID,
+			PipelineID:    raw.PipelineID,
+		}
 		env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
 		if err != nil {
 			return nil, err
@@ -335,7 +340,7 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		}
 		taskRawList, err := s.findTaskRaw(ctx, taskFind)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find task list with TaskFind[%+v]", taskFind)
+			return nil, errors.Wrapf(err, "failed to find task list with find %+v", taskFind)
 		}
 		for _, taskRaw := range taskRawList {
 			stage.TaskList = append(stage.TaskList, taskRaw.toTask())
