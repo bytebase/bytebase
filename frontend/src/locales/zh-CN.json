@@ -384,16 +384,6 @@
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
         "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
       },
-      "toggle-role-provider": {
-        "title": "您确认吗？"
-      },
-      "change-role-provider-to-vcs": {
-        "content": "开启 VCS 同步将会用 VCS 中对应仓库的成员列表替换现存的所有成员。\n原来的成员将会无效，您之后也可以关闭该 VCS 同步来撤销这一操作。",
-        "emphasize": "请注意，该功能需要 VCS 仓库内所有成员均设置了公开邮箱。"
-      },
-      "change-role-provider-to-bytebase": {
-        "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
-      },
       "system-bot": "机器人助手",
       "service-account": "服务账号",
       "copy-service-key": "复制 Service Key",
@@ -1062,9 +1052,7 @@
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
-    "linked": "关联的仓库",
-    "role-provider": "项目角色权限提供方",
-    "role-provider-description": "Bytebase 将会从选定的角色提供方同步成员角色，所有此前存在的成员将会被替换。"
+    "linked": "关联的仓库"
   },
   "workflow": {
     "current-workflow": "当前工作流",
@@ -1200,10 +1188,6 @@
         "title": "恢复项目",
         "btn-text": "恢复这个@:common.project"
       },
-      "sync-from-vcs": "从 VCS 同步",
-      "success-member-sync-prompt": "从 VCS 同步成功",
-      "view-vcs-member": "在 VCS 中查看成员",
-      "switch-role-provider-to-bytebase-success-prompt": "成功关闭了 VCS 项目成员同步",
       "schema-change-type": "Schema 变更类型",
       "select-schema-change-type-ddl": "通过指定过程 DDL 变更到期望的 Schema",
       "select-schema-change-type-sdl": "直接指定期望达到的 Schema",
