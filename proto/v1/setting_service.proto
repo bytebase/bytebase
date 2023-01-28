@@ -60,7 +60,7 @@ message Setting {
 message Value {
   // Value is a oneof field for setting value.
   oneof value {
-  // Defines this value as being a string value.
-  string string_value = 1;
+    // Defines this value as being a string value.
+    string string_value = 1;
   }
 }
