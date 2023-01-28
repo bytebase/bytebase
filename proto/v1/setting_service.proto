@@ -8,13 +8,6 @@ import "google/api/field_behavior.proto";
 option go_package = "generated-go/v1";
 
 service SettingService{
-    rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
-        option (google.api.http) = {
-            get: "/v1/{parent=workspace/*}/settings"
-        };
-        option (google.api.method_signature) = "parent";
-    }
-
     rpc GetSetting(GetSettingRequest) returns (Setting) {
         option (google.api.http) = {
             get: "/v1/{name=workspace/*/settings/*}"
@@ -28,17 +21,6 @@ service SettingService{
             body: "setting"
         };
     }
-}
-
-// The request message for listing settings.
-message ListSettingsRequest{
-    // The Cloud resource that parents the setting, workspace only for now.
-    string parent = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-// The response message for listing settings.
-message ListSettingsResponse{
-    repeated Setting settings = 1;
 }
 
 // The request message for getting a setting.
