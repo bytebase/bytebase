@@ -22,15 +22,15 @@ type StageMessage struct {
 
 // FindStage finds a list of Stage instances.
 func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
-	stageRawList, err := s.findStageRaw(ctx, find)
+	composedStages, err := s.ListStageV2(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Stage list with StageFind[%+v]", find)
 	}
 	var stageList []*api.Stage
-	for _, raw := range stageRawList {
-		stage, err := s.composeStage(ctx, raw)
+	for _, stage := range composedStages {
+		stage, err := s.composeStage(ctx, stage)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Stage with stageRaw[%+v]", raw)
+			return nil, errors.Wrapf(err, "failed to compose stage %+v", stage)
 		}
 		stageList = append(stageList, stage)
 	}
@@ -128,23 +128,14 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 	return stages, nil
 }
 
-// findStageRaw retrieves a list of stages based on find.
-func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*StageMessage, error) {
+// ListStageV2 finds a list of stages based on find.
+func (s *Store) ListStageV2(ctx context.Context, find *api.StageFind) ([]*StageMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	stageRawList, err := s.findStageImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return stageRawList, nil
-}
-
-func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([]*StageMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -169,24 +160,25 @@ func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into stageRawList.
-	var stageRawList []*StageMessage
+	var stages []*StageMessage
 	for rows.Next() {
-		var stageRaw StageMessage
+		var stage StageMessage
 		if err := rows.Scan(
-			&stageRaw.ID,
-			&stageRaw.PipelineID,
-			&stageRaw.EnvironmentID,
-			&stageRaw.Name,
+			&stage.ID,
+			&stage.PipelineID,
+			&stage.EnvironmentID,
+			&stage.Name,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		stageRawList = append(stageRawList, &stageRaw)
+		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return stageRawList, nil
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	return stages, nil
 }
