@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -215,11 +214,10 @@ func TestIdentityProvider(t *testing.T) {
 	userInfo, err := oidc.UserInfo(ctx, oauthToken, testNonce)
 	require.NoError(t, err)
 
-	wantUserInfo := &idp.UserInfo{
+	wantUserInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  testSubject,
 		DisplayName: testName,
 		Email:       testEmail,
-		Raw:         json.RawMessage(userinfo),
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"github.com/bytebase/bytebase/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -77,7 +76,7 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 // The nonce is used for request validation, which should be the same value as
 // it was sent to the issuer as part of the Authentication Request, see
 // https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest.
-func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, nonce string) (*idp.UserInfo, error) {
+func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, nonce string) (*storepb.IdentityProviderUserInfo, error) {
 	// Extract the ID Token from the access token, see http://openid.net/specs/openid-connect-core-1_0.html#TokenResponse.
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
@@ -111,7 +110,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
 
-	userInfo := &idp.UserInfo{Raw: rawClaims}
+	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
 		userInfo.Identifier = v
 	}
