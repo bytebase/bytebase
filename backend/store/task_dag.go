@@ -5,104 +5,28 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-type taskDAGRaw struct {
-	ID int
-
-	// Standard fields
-	CreatedTs int64
-	UpdatedTs int64
-
-	// Domain Specific fields
+// TaskDAGMessage is the message for task dags.
+type TaskDAGMessage struct {
 	FromTaskID int
 	ToTaskID   int
-	Payload    string
 }
 
-func (raw *taskDAGRaw) toTaskDAG() *api.TaskDAG {
-	return &api.TaskDAG{
-		ID:         raw.ID,
-		CreatedTs:  raw.CreatedTs,
-		UpdatedTs:  raw.UpdatedTs,
-		FromTaskID: raw.FromTaskID,
-		ToTaskID:   raw.ToTaskID,
-		Payload:    raw.Payload,
-	}
+// TaskDAGFind is the API message to find TaskDAG.
+type TaskDAGFind struct {
+	FromTaskID *int
+	ToTaskID   *int
 }
 
-// CreateTaskDAG creates TaskDAG.
-func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*api.TaskDAG, error) {
-	taskDAGRaw, err := s.createTaskDAGRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create TaskDAG with TaskDAGCreate[%+v]", create)
-	}
-	taskDAG := taskDAGRaw.toTaskDAG()
-	return taskDAG, nil
-}
-
-// FindTaskDAGList finds a TaskDAG list by ToTaskID.
-func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*api.TaskDAG, error) {
-	taskDAGRawList, err := s.findTaskDAGRawList(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find TaskDAG with TaskDAGFind[%+v]", find)
-	}
-	var taskDAGList []*api.TaskDAG
-	for _, taskDAGRaw := range taskDAGRawList {
-		taskDAGList = append(taskDAGList, taskDAGRaw.toTaskDAG())
-	}
-	return taskDAGList, nil
-}
-
-// GetTaskDAGByToTaskID gets a single TaskDAG by ToTaskID.
-func (s *Store) GetTaskDAGByToTaskID(ctx context.Context, id int) (*api.TaskDAG, error) {
-	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: &id})
-	if err != nil {
-		return nil, err
-	}
-	if len(taskDAGList) != 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tasks with ToTaskID %v, expect 1", len(taskDAGList), id)}
-	}
-	return taskDAGList[0], nil
-}
-
-func (s *Store) createTaskDAGRaw(ctx context.Context, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
+// CreateTaskDAGV2 creates a task DAG.
+func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
-	taskDAG, err := createTaskDAGImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-	return taskDAG, nil
-}
-
-func (s *Store) findTaskDAGRawList(ctx context.Context, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findTaskDAGRawListImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
-}
-
-func createTaskDAGImpl(ctx context.Context, tx *Tx, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
 	query := `
 		INSERT INTO task_dag (
 			from_task_id,
@@ -110,30 +34,28 @@ func createTaskDAGImpl(ctx context.Context, tx *Tx, create *api.TaskDAGCreate) (
 			payload
 		)
 		VALUES ($1, $2, $3)
-		RETURNING id, created_ts, updated_ts, from_task_id, to_task_id, payload
+		RETURNING from_task_id, to_task_id
 	`
-	var taskDAGRaw taskDAGRaw
+	var taskDAG TaskDAGMessage
 	if err := tx.QueryRowContext(ctx, query,
 		create.FromTaskID,
 		create.ToTaskID,
-		create.Payload,
+		"{}", /* payload */
 	).Scan(
-		&taskDAGRaw.ID,
-		&taskDAGRaw.CreatedTs,
-		&taskDAGRaw.UpdatedTs,
-		&taskDAGRaw.FromTaskID,
-		&taskDAGRaw.ToTaskID,
-		&taskDAGRaw.Payload,
+		&taskDAG.FromTaskID,
+		&taskDAG.ToTaskID,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
+		return err
 	}
-	return &taskDAGRaw, nil
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
-func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
+// ListTaskDags lists task dags.
+func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAGMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.FromTaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("from_task_id = $%d", len(args)+1)), append(args, *v)
@@ -141,14 +63,18 @@ func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) 
 	if v := find.ToTaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("to_task_id = $%d", len(args)+1)), append(args, *v)
 	}
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			created_ts,
-			updated_ts,
 			from_task_id,
-			to_task_id,
-			payload
+			to_task_id
 		FROM task_dag
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -158,26 +84,23 @@ func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) 
 	}
 	defer rows.Close()
 
-	var taskDAGRawList []*taskDAGRaw
+	var taskDAGs []*TaskDAGMessage
 	for rows.Next() {
-		var taskDAGRaw taskDAGRaw
+		var taskDAG TaskDAGMessage
 		if err := rows.Scan(
-			&taskDAGRaw.ID,
-			&taskDAGRaw.CreatedTs,
-			&taskDAGRaw.UpdatedTs,
-			&taskDAGRaw.FromTaskID,
-			&taskDAGRaw.ToTaskID,
-			&taskDAGRaw.Payload,
+			&taskDAG.FromTaskID,
+			&taskDAG.ToTaskID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
-		taskDAGRawList = append(taskDAGRawList, &taskDAGRaw)
+		taskDAGs = append(taskDAGs, &taskDAG)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
-	return taskDAGRawList, nil
+	return taskDAGs, nil
 }
