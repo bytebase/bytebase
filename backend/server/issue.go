@@ -512,7 +512,7 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 			c.StageID = createdStage.ID
 			taskCreateList = append(taskCreateList, &c)
 		}
-		taskList, err := s.store.BatchCreateTask(ctx, taskCreateList)
+		tasks, err := s.store.CreateTasksV2(ctx, taskCreateList...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create tasks for issue")
 		}
@@ -520,8 +520,8 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 		// TODO(p0ny): create task dags in batch.
 		for _, indexDAG := range stageCreate.TaskIndexDAGList {
 			if err := s.store.CreateTaskDAGV2(ctx, &store.TaskDAGMessage{
-				FromTaskID: taskList[indexDAG.FromIndex].ID,
-				ToTaskID:   taskList[indexDAG.ToIndex].ID,
+				FromTaskID: tasks[indexDAG.FromIndex].ID,
+				ToTaskID:   tasks[indexDAG.ToIndex].ID,
 			}); err != nil {
 				return nil, errors.Wrap(err, "failed to create task DAG for issue")
 			}
