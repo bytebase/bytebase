@@ -3,7 +3,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "npm run copy-sql-review-file && vite --mode dev",
-    "release": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-sql-review-file && vite build --mode release --outDir=../server/dist --emptyOutDir",
+    "release": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-sql-review-file && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
     "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
@@ -34,6 +34,7 @@
     "escape-string-regexp": "5.0.0",
     "google-protobuf": "^3.21.2",
     "highlight.js": "11.6.0",
+    "html-to-image": "^1.11.4",
     "inter-ui": "3.19.3",
     "js-yaml": "4.1.0",
     "lodash-es": "4.17.21",

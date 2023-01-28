@@ -289,6 +289,7 @@ export type TaskCheckResult = {
   code: ErrorCode;
   title: string;
   content: string;
+  line: number | undefined;
   namespace: TaskCheckNamespace;
 };
 

@@ -7,11 +7,11 @@
           class="default-theme"
           :dbl-click-splitter="false"
         >
-          <Pane :size="databasePaneSize">
+          <Pane>
             <DatabaseTree />
           </Pane>
-          <Pane :size="FULL_HEIGHT - databasePaneSize">
-            <TableSchema @close-pane="handleCloseTableSchemaPane" />
+          <Pane v-if="showSchemaPanel" :size="40">
+            <SchemaPanel />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -25,11 +25,11 @@
           class="default-theme"
           :dbl-click-splitter="false"
         >
-          <Pane :size="databasePaneSize">
+          <Pane>
             <DatabaseTree />
           </Pane>
-          <Pane :size="FULL_HEIGHT - databasePaneSize">
-            <TableSchema @close-pane="handleCloseTableSchemaPane" />
+          <Pane v-if="showSchemaPanel" :size="40">
+            <SchemaPanel />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -42,20 +42,17 @@
 
 <script lang="ts" setup>
 import { computed, ref, watchEffect } from "vue";
-import { isUndefined } from "lodash-es";
 
-import { useConnectionTreeStore, useCurrentUser } from "@/store";
+import { useConnectionTreeStore, useCurrentUser, useTabStore } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
-import TableSchema from "./TableSchema.vue";
+import SchemaPanel from "./SchemaPanel/";
 import { Splitpanes, Pane } from "splitpanes";
-import { ConnectionTreeMode } from "@/types";
+import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermission } from "@/utils";
 
-const FULL_HEIGHT = 100;
-const DATABASE_PANE_SIZE = 60;
-
 const currentUser = useCurrentUser();
+const tabStore = useTabStore();
 
 const tab = ref<"projects" | "instances" | "history">("projects");
 
@@ -68,16 +65,10 @@ const hasInstanceView = computed((): boolean => {
 
 const connectionTreeStore = useConnectionTreeStore();
 
-const databasePaneSize = computed(() => {
-  if (!isUndefined(connectionTreeStore.selectedTableAtom)) {
-    return DATABASE_PANE_SIZE;
-  }
-  return FULL_HEIGHT;
+const showSchemaPanel = computed(() => {
+  return tabStore.currentTab.connection.databaseId !== UNKNOWN_ID;
 });
 
-const handleCloseTableSchemaPane = () => {
-  connectionTreeStore.selectedTableAtom = undefined;
-};
 watchEffect(() => {
   if (tab.value === "projects") {
     connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;

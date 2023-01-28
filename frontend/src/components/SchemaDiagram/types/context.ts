@@ -1,12 +1,14 @@
-import { Ref } from "vue";
+import type { Ref } from "vue";
 import type Emittery from "emittery";
 
-import {
-  ColumnMetadata,
+import type {
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  ColumnMetadata,
 } from "@/types/proto/store/database";
-import { Position, Rect } from "./geometry";
+import type { Database } from "@/types";
+import type { Geometry, Point, Rect } from "./geometry";
 import { EditStatus } from "./edit";
 
 // This is an abstract Schema Diagram context including states, methods and
@@ -14,13 +16,17 @@ import { EditStatus } from "./edit";
 // and used in its descendants.
 export type SchemaDiagramContext = {
   // Props
-  tableList: Ref<TableMetadata[]>;
+  database: Ref<Database>;
+  databaseMetadata: Ref<DatabaseMetadata>;
   editable: Ref<boolean>;
 
   // States
+  dummy: Ref<boolean>;
+  busy: Ref<boolean>;
   zoom: Ref<number>;
-  position: Ref<Position>;
+  position: Ref<Point>;
   panning: Ref<boolean>;
+  geometries: Ref<Set<Geometry>>;
 
   // Methods
   idOfTable: (table: TableMetadata) => string;

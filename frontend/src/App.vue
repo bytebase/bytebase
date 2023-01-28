@@ -30,6 +30,7 @@
 
 <script lang="ts" setup>
 import { NConfigProvider, NDialogProvider } from "naive-ui";
+import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
 import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -170,7 +171,7 @@ onErrorCaptured((error: any /* , _, info */) => {
   // Handle grpc request error.
   // It looks like: `{"path":"/bytebase.v1.AuthService/Login","code":2,"details":"Response closed without headers"}`
   if (
-    error instanceof ClientError &&
+    (error instanceof ServerError || error instanceof ClientError) &&
     Object.values(Status).includes(error.code)
   ) {
     notificationStore.pushNotification({

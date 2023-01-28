@@ -32,6 +32,10 @@ type ProjectServiceClient interface {
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	SyncExternalIamPolicy(ctx context.Context, in *SyncExternalIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error)
+	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
 }
 
 type projectServiceClient struct {
@@ -123,6 +127,42 @@ func (c *projectServiceClient) SyncExternalIamPolicy(ctx context.Context, in *Sy
 	return out, nil
 }
 
+func (c *projectServiceClient) GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+	out := new(Review)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/GetReview", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error) {
+	out := new(ListReviewsResponse)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/ListReviews", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+	out := new(Review)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/UpdateReview", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error) {
+	out := new(BatchUpdateReviewsResponse)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/BatchUpdateReviews", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -136,6 +176,10 @@ type ProjectServiceServer interface {
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
 	SyncExternalIamPolicy(context.Context, *SyncExternalIamPolicyRequest) (*IamPolicy, error)
+	GetReview(context.Context, *GetReviewRequest) (*Review, error)
+	ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error)
+	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
+	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -169,6 +213,18 @@ func (UnimplementedProjectServiceServer) SetIamPolicy(context.Context, *SetIamPo
 }
 func (UnimplementedProjectServiceServer) SyncExternalIamPolicy(context.Context, *SyncExternalIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncExternalIamPolicy not implemented")
+}
+func (UnimplementedProjectServiceServer) GetReview(context.Context, *GetReviewRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
+}
+func (UnimplementedProjectServiceServer) ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListReviews not implemented")
+}
+func (UnimplementedProjectServiceServer) UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateReview not implemented")
+}
+func (UnimplementedProjectServiceServer) BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateReviews not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -345,6 +401,78 @@ func _ProjectService_SyncExternalIamPolicy_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_GetReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetReview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/GetReview",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetReview(ctx, req.(*GetReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_ListReviews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReviewsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).ListReviews(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/ListReviews",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).ListReviews(ctx, req.(*ListReviewsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_UpdateReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).UpdateReview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/UpdateReview",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).UpdateReview(ctx, req.(*UpdateReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_BatchUpdateReviews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpdateReviewsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).BatchUpdateReviews(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/BatchUpdateReviews",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).BatchUpdateReviews(ctx, req.(*BatchUpdateReviewsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -387,6 +515,22 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SyncExternalIamPolicy",
 			Handler:    _ProjectService_SyncExternalIamPolicy_Handler,
+		},
+		{
+			MethodName: "GetReview",
+			Handler:    _ProjectService_GetReview_Handler,
+		},
+		{
+			MethodName: "ListReviews",
+			Handler:    _ProjectService_ListReviews_Handler,
+		},
+		{
+			MethodName: "UpdateReview",
+			Handler:    _ProjectService_UpdateReview_Handler,
+		},
+		{
+			MethodName: "BatchUpdateReviews",
+			Handler:    _ProjectService_BatchUpdateReviews_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

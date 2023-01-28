@@ -169,8 +169,8 @@ const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
         taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING)
     ) {
       return {
-        title: t("task.view-migration-history"),
-        link: `/db/${databaseSlug(task.database!)}#migration-history`,
+        title: t("task.view-change-history"),
+        link: `/db/${databaseSlug(task.database!)}#change-history`,
       };
     }
   }

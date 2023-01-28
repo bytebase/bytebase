@@ -132,10 +132,11 @@
       class="w-full h-auto max-h-[360px]"
       data-label="bb-issue-sql-editor"
       :value="state.editStatement"
-      :readonly="!state.editing || !allowEditStatement || isTaskHasSheetId"
+      :readonly="readonly"
       :auto-focus="false"
       :language="language"
       :dialect="dialect"
+      :advices="readonly ? markers : []"
       @change="onStatementChange"
       @ready="handleMonacoEditorReady"
     />
@@ -195,6 +196,7 @@ import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
 import { useInstanceEditorLanguage } from "@/utils";
+import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 interface LocalState {
   editing: boolean;
@@ -334,6 +336,12 @@ const useTempEditState = (state: LocalState) => {
 };
 
 useTempEditState(state);
+
+const readonly = computed(() => {
+  return !state.editing || !allowEditStatement.value || isTaskHasSheetId.value;
+});
+
+const { markers } = useSQLAdviceMarkers();
 
 const language = useInstanceEditorLanguage(
   computed(() => selectedDatabase.value?.instance)

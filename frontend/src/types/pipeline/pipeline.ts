@@ -1,5 +1,4 @@
 import { PipelineId } from "../id";
-import { Principal } from "../principal";
 import { Stage, StageCreate } from "./stage";
 
 /*
@@ -30,15 +29,8 @@ export type Pipeline = {
   // Related fields
   stageList: Stage[];
 
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
   // Domain specific fields
   name: string;
-  status: PipelineStatus;
 };
 
 export type PipelineCreate = {

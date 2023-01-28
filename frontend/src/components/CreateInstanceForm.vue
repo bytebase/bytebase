@@ -75,10 +75,16 @@
             <template v-else-if="state.instance.engine == 'SPANNER'">
               {{ $t("instance.project-id-and-instance-id") }}
               <span style="color: red">*</span>
-              <p class="text-sm text-gray-500 mt-1 mb-2">
-                Don't know where to find project ID and instance ID? Check this
-                link!
-                <!-- TODO(p0ny): fix the link -->
+              <p class="text-sm text-gray-500 mt-1">
+                {{ $t("instance.find-gcp-project-id-and-instance-id") }}
+                <a
+                  href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
+                  target="_blank"
+                  class="normal-link inline-flex items-center"
+                >
+                  {{ $t("common.detailed-guide")
+                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
+                /></a>
               </p>
             </template>
             <template v-else>
@@ -206,6 +212,16 @@
               <template v-if="state.instance.engine == 'SPANNER'">
                 {{ $t("common.credentials") }}
                 <span class="text-red-600">*</span>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ $t("instance.create-gcp-credentials") }}
+                  <a
+                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
+                    target="_blank"
+                    class="normal-link inline-flex items-center"
+                    >{{ $t("common.detailed-guide") }}
+                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
+                  /></a>
+                </p>
               </template>
               <template v-else>
                 {{ $t("common.password") }}
@@ -232,9 +248,6 @@
           <div class="flex flex-row items-center space-x-2">
             <label for="database" class="textlabel block">
               {{ $t("common.database") }}
-              <template v-if="state.instance.engine === 'SPANNER'">
-                <span style="color: red">*</span>
-              </template>
             </label>
           </div>
           <input
@@ -431,7 +444,7 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
-const mongodbConnectionStringSchemaList = ["mongodb", "mongodb+srv"];
+const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
 
 const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
@@ -440,10 +453,7 @@ const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
 const allowCreate = computed(() => {
   if (state.instance.engine === "SPANNER") {
     return (
-      state.instance.name &&
-      state.instance.host &&
-      state.instance.password &&
-      state.instance.database
+      state.instance.name && state.instance.host && state.instance.password
     );
   }
   return state.instance.name && state.instance.host;
@@ -478,9 +488,7 @@ const showSSL = computed((): boolean => {
 });
 
 const showDatabase = computed((): boolean => {
-  return (
-    state.instance.engine === "POSTGRES" || state.instance.engine === "SPANNER"
-  );
+  return state.instance.engine === "POSTGRES";
 });
 
 const showAuthenticationDatabase = computed((): boolean => {
@@ -581,10 +589,10 @@ const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
 
 const handleMongodbConnectionStringSchemaChange = (event: Event) => {
   switch ((event.target as HTMLInputElement).value) {
-    case "mongodb://":
+    case mongodbConnectionStringSchemaList[0]:
       state.instance.srv = false;
       break;
-    case "mongodb+srv://":
+    case mongodbConnectionStringSchemaList[1]:
       state.instance.srv = true;
       break;
     default:
@@ -671,11 +679,6 @@ const tryCreate = () => {
   // MongoDB can use auth database.
   // https://www.mongodb.com/docs/manual/tutorial/authenticate-a-user/#std-label-authentication-auth-as-user
   if (instance.engine === "MONGODB") {
-    connectionInfo.database = instance.database;
-  }
-  // Spanner must connect to a specific database.
-  // To test connection, we must set database.
-  if (instance.engine === "SPANNER") {
     connectionInfo.database = instance.database;
   }
 

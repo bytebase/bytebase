@@ -13,7 +13,7 @@
     "custom": "Custom",
     "im": "IM",
     "overview": "Overview",
-    "migration-history": "Migration History",
+    "change-history": "Change History",
     "webhook": "Webhook",
     "webhooks": "Webhooks",
     "key": "Key",
@@ -32,6 +32,7 @@
     "activate": "Activate",
     "save": "Save",
     "cancel": "Cancel",
+    "cancelled": "Cancelled",
     "comment": "Comment",
     "home": "Home",
     "setting": "Setting",
@@ -265,7 +266,7 @@
     "started": "Started",
     "ended": "Ended",
     "view-migration": "View migration",
-    "view-migration-history": "View migration history",
+    "view-change-history": "View change history",
     "status": {
       "running": "Running",
       "failed": "Failed",
@@ -591,8 +592,9 @@
     "issue-link-with-task": "Issue {issue} - task {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "Send a {im} approval request successfully",
-      "needs-attention": "Needs attention",
-      "click-to-mark": "Click to mark it as \"Needs attention\""
+      "send-attention-request-successfully": "Request assignee {principal} attention successfully",
+      "needs-attention": "Attention needed",
+      "click-to-mark": "Click to request assignee attention"
     }
   },
   "alter-schema": {
@@ -745,7 +747,10 @@
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
     "search-instance-name": "Search instance name",
-    "grants": "Grants"
+    "grants": "Grants",
+    "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
+    "create-gcp-credentials": "To create Credentials, see",
+    "used-for-testing-connection": "Used for testing connections only"
   },
   "environment": {
     "select": "Select environment",
@@ -845,8 +850,8 @@
       "mark-env-as-protected": "Mark as protected environment"
     }
   },
-  "migration-history": {
-    "self": "Migration History",
+  "change-history": {
+    "self": "Change History",
     "select": "Select version",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
@@ -855,23 +860,23 @@
     "schema-drift-detected": "A schema drift was detected.",
     "view-drift": "View drift",
     "before-left-schema-choice": "Compare the schema",
-    "left-schema-choice-prev-history-schema": "after prev migration",
-    "left-schema-choice-current-history-schema-prev": "before this migration",
-    "after-left-schema-choice": "and after this migration",
+    "left-schema-choice-prev-history-schema": "after prev change",
+    "left-schema-choice-current-history-schema-prev": "before this change",
+    "after-left-schema-choice": "and after this change",
     "show-diff": "Show diff",
     "left-vs-right": "Prev {prevLink} vs This version",
-    "schema-snapshot-after-migration": "The schema snapshot recorded after applying this migration",
+    "schema-snapshot-after-change": "The schema snapshot recorded after applying this change",
     "current-schema-empty": "Current schema is empty",
-    "list-limit": "For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
-    "no-history-in-project": "Do not find migration history from any database in this project.",
-    "recording-info": "Migration history is recorded whenever the database schema is altered.",
+    "list-limit": "For database having change history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
+    "no-history-in-project": "Do not find change history from any database in this project.",
+    "recording-info": "Change history is recorded whenever the database schema is altered.",
     "establish-baseline": "Establish new baseline",
     "refreshing-history": "Refreshing history ...",
     "config-instance": "Config instance",
     "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
     "establish-database-baseline": "Establish \"{name}\" baseline",
-    "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
-    "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
+    "instance-missing-change-schema": "Missing change history schema on instance \"{name}\".",
+    "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve change history.",
     "contact-dba": "Please contact your DBA to config it"
   },
   "database": {
@@ -941,6 +946,7 @@
     "index-size": "Index size",
     "column": "Column",
     "columns": "Columns",
+    "data-type": "Data type",
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
     "incorrect-project-warning": "SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.",
@@ -1564,6 +1570,13 @@
         "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
         "runoutof": "Your have run out of your {total} instance quota.",
         "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+      },
+      "bb-feature-seat-count": {
+        "title": "Seat count limit",
+        "desc": "You have reached the maximum seat count limit. Please upgrade to get more seat quota.",
+        "remaining": "Your total seat quota is {total}, only have {count} seat remained.",
+        "runoutof": "Your have run out of your {total} seat quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get more seat quota."
       },
       "bb-feature-multi-tenancy": {
         "title": "Multi-tenancy",

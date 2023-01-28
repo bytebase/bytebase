@@ -31,4 +31,4 @@ fi
 
 echo "Starting Bytebase in demo mode on port ${ONLINE_DEMO_PORT}, visiting from ${ONLINE_DEMO_EXTERNAL_URL} ..."
 
-bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} ${PG} --data /var/opt/bytebase --demo --debug
+bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} ${PG} --data /var/opt/bytebase --demo default --debug

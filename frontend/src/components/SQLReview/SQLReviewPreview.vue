@@ -13,6 +13,7 @@
           :text="environmentName(selectedEnvironment)"
           :can-remove="false"
         />
+        <SQLRuleLevelSummary :rule-list="selectedRuleList" />
       </div>
       <BBAttention
         v-else-if="isPreviewStep"
@@ -119,6 +120,7 @@ import {
   SchemaRuleEngineType,
 } from "@/types";
 import { environmentName } from "@/utils";
+import SQLRuleLevelSummary from "./components/SQLRuleLevelSummary.vue";
 
 const props = withDefaults(
   defineProps<{

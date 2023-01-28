@@ -1,0 +1,94 @@
+- oldSchema: |
+    create table public.t2 (a int);
+  newSchema: |
+    create table public.t1 (a int);
+    create sequence public.s1
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+    alter sequence public.s1 owned by public.t1.a;
+    alter table public.t1 alter column a set default nextval('public.s1'::regclass);
+  diff: |+
+    DROP TABLE "public"."t2";
+
+    CREATE SEQUENCE "public"."s1"
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        START WITH 1
+        CACHE 1;
+
+    CREATE TABLE "public"."t1" (
+        "a" integer DEFAULT nextval('public.s1'::regclass)
+    );
+
+    ALTER SEQUENCE "public"."s1"
+        OWNED BY "public"."t1"."a";
+
+- oldSchema: |
+    create table public.t1 (a int);
+    create sequence public.s1
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+    alter sequence public.s1 owned by public.t1.a;
+    alter table public.t1 alter column a set default nextval('public.s1'::regclass);
+  newSchema: ""
+  diff: |+
+    ALTER SEQUENCE "public"."s1"
+        OWNED BY NONE;
+
+    DROP TABLE "public"."t1";
+
+    DROP SEQUENCE "public"."s1";
+
+- oldSchema: |
+    create table public.t1 (a int);
+    create sequence public.s1
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+    alter sequence public.s1 owned by public.t1.a;
+    alter table public.t1 alter column a set default nextval('public.s1'::regclass);
+  newSchema: |
+    create table public.t1 (a int);
+    create sequence public.s1
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+    alter sequence public.s1 owned by public.t1.a;
+    alter table public.t1 alter column a set default nextval('public.s1'::regclass);
+  diff: ""
+- oldSchema: |
+    create table public.t1 (a int);
+    create sequence public.s1
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+  newSchema: |
+    create table public.t1 (a int);
+    create sequence public.s1
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+    alter sequence public.s1 owned by public.t1.a;
+    alter table public.t1 alter column a set default nextval('public.s1'::regclass);
+  diff: |+
+    ALTER SEQUENCE "public"."s1"
+        OWNED BY "public"."t1"."a";
+
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "a" SET DEFAULT nextval('public.s1'::regclass);
+

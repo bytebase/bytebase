@@ -126,8 +126,7 @@ export default defineComponent({
     };
 
     const instanceQuota = computed((): number => {
-      const { subscription } = subscriptionStore;
-      return subscription?.instanceCount ?? 5;
+      return subscriptionStore.instanceCount;
     });
 
     const remainingInstanceCount = computed((): number => {

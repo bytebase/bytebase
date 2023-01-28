@@ -25,7 +25,7 @@ if [ $1 ]; then
     fi
 fi
 
-DEMO_NAME=''
+DEMO_NAME='default'
 if [ $2 ]; then
     DEMO_NAME=$2
 fi
@@ -33,7 +33,7 @@ fi
 seedDemoData() {
     echo 'Seeding data for online demo'
 
-    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --demo --demo-name ${DEMO_NAME} --data /var/opt/bytebase &
+    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --demo ${DEMO_NAME} --data /var/opt/bytebase &
 
     until [ -f /var/opt/bytebase/pgdata/PG_VERSION ]; do
         echo "waiting..."
@@ -52,7 +52,7 @@ seedDemoData() {
 startReadonly() {
     echo "Starting Bytebase in readonly and demo mode on port ${ONLINE_DEMO_PORT}, visiting from ${ONLINE_DEMO_EXTERNAL_URL}..."
 
-    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --readonly --demo --demo-name ${DEMO_NAME} --data /var/opt/bytebase
+    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --readonly --demo ${DEMO_NAME} --data /var/opt/bytebase
 }
 
 seedDemoData

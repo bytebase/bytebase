@@ -45,7 +45,13 @@
         </dt>
         <dd class="mt-1 text-4xl">{{ instanceCount }}</dd>
       </div>
-      <div class="my-3 col-span-2">
+      <div class="my-3">
+        <dt class="text-gray-400">
+          {{ $t("subscription.seat-count") }}
+        </dt>
+        <dd class="mt-1 text-4xl">{{ seatCount }}</dd>
+      </div>
+      <div class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
         </dt>
@@ -153,8 +159,20 @@ export default defineComponent({
     const { subscription, expireAt, isTrialing, isExpired } =
       storeToRefs(subscriptionStore);
 
-    const instanceCount = computed((): number => {
-      return subscription.value?.instanceCount ?? 5;
+    const instanceCount = computed((): string => {
+      const count = subscription.value?.instanceCount ?? 5;
+      if (count > 0) {
+        return `${count}`;
+      }
+      return t("subscription.unlimited");
+    });
+
+    const seatCount = computed((): string => {
+      const seat = subscription.value?.seat ?? 2;
+      if (seat > 0) {
+        return `${seat}`;
+      }
+      return t("subscription.unlimited");
     });
 
     const currentPlan = computed((): string => {
@@ -191,6 +209,7 @@ export default defineComponent({
       expireAt,
       isTrialing,
       isExpired,
+      seatCount,
       currentPlan,
       instanceCount,
       uploadLicense,

@@ -13,7 +13,7 @@
     "custom": "自定义",
     "im": "IM",
     "overview": "概览",
-    "migration-history": "变更历史",
+    "change-history": "变更历史",
     "webhook": "Webhook",
     "webhooks": "Webhook",
     "key": "键值",
@@ -32,6 +32,7 @@
     "activate": "激活",
     "save": "保存",
     "cancel": "取消",
+    "cancelled": "已取消",
     "comment": "评论",
     "home": "主页",
     "setting": "设置",
@@ -264,7 +265,7 @@
     "started": "开始于",
     "ended": "结束于",
     "view-migration": "查看变更",
-    "view-migration-history": "查看变更历史",
+    "view-change-history": "查看变更历史",
     "earliest-allowed-time-unset": "未设置",
     "status": {
       "running": "运行中",
@@ -591,8 +592,9 @@
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "{im}审批请求发送成功",
+      "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
       "needs-attention": "需要关注",
-      "click-to-mark": "点击以标记为「需要关注」"
+      "click-to-mark": "点击以请求审核人关注"
     }
   },
   "alter-schema": {
@@ -745,7 +747,10 @@
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
     "grants": "权限",
-    "authentication-database": "认证数据库"
+    "authentication-database": "认证数据库",
+    "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
+    "create-gcp-credentials": "创建凭据的方法见",
+    "used-for-testing-connection": "仅作测试连接用"
   },
   "environment": {
     "select": "选择环境",
@@ -845,7 +850,7 @@
       "mark-env-as-protected": "标记为受保护的环境"
     }
   },
-  "migration-history": {
+  "change-history": {
     "self": "变更历史",
     "select": "选择版本",
     "workflow": "工作流",
@@ -860,7 +865,7 @@
     "after-left-schema-choice": "和本次变更后的 Schema",
     "show-diff": "显示差异",
     "left-vs-right": "之前{prevLink} vs 当前版本",
-    "schema-snapshot-after-migration": "完成这次变更后的 schema 快照",
+    "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
     "current-schema-empty": "当前 schema 为空",
     "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
     "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
@@ -870,7 +875,7 @@
     "config-instance": "配置实例",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
     "establish-database-baseline": "建立「{name}」基线",
-    "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
+    "instance-missing-change-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。"
   },
@@ -941,6 +946,7 @@
     "index-size": "索引大小",
     "column": "列",
     "columns": "列",
+    "data-type": "数据类型",
     "indexes": "索引",
     "row-count-est": "估计行数",
     "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
@@ -1566,6 +1572,13 @@
         "runoutof": "已用尽全部 {total} 个实例额度。",
         "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
       },
+      "bb-feature-seat-count": {
+        "title": "席位数量限制",
+        "desc": "您已达最大席位数量限制，请付费升级来获取更多席位额度。",
+        "remaining": "当前总席位额度为 {total}，目前仅剩 {count} 个份额可用。",
+        "runoutof": "已用尽全部 {total} 个席位额度。",
+        "upgrade": "@:{'subscription.upgrade'}来获取更多席位额度。"
+      },
       "bb-feature-multi-tenancy": {
         "title": "多租户",
         "desc": "「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。"
@@ -1775,7 +1788,7 @@
     }
   },
   "schema-diagram": {
-    "self": "Schema 展示图",
+    "self": "Schema 关系图",
     "fit-content-with-view": "自动适应视图"
   }
 }

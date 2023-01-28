@@ -2,11 +2,11 @@
   <div
     class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10]"
     bb-node-type="table"
-    :bb-node-id="idOfTable(table)"
+    :bb-node-id="dummy ? `dummy-${idOfTable(table)}` : idOfTable(table)"
     :bb-status="tableStatus(table)"
     :style="{
-      left: `${position.x}px`,
-      top: `${position.y}px`,
+      left: `${rect.x}px`,
+      top: `${rect.y}px`,
     }"
   >
     <h3
@@ -39,7 +39,7 @@
       <tr
         v-for="(column, i) in table.columns"
         :key="i"
-        :bb-column-name="column.name"
+        :bb-column-name="dummy ? `dummy-${column.name}` : column.name"
         :bb-status="columnStatus(column)"
         :class="columnClasses(column)"
       >
@@ -85,7 +85,12 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
+import {
+  useSchemaDiagramContext,
+  isPrimaryKey,
+  isIndex,
+  useGeometry,
+} from "../common";
 import { VueClass } from "@/utils";
 
 const props = withDefaults(
@@ -96,6 +101,7 @@ const props = withDefaults(
   {}
 );
 const {
+  dummy,
   editable,
   idOfTable,
   rectOfTable,
@@ -184,5 +190,7 @@ const tableStatusText = computed(() => {
   return "";
 });
 
-const position = computed(() => rectOfTable(props.table));
+const rect = computed(() => rectOfTable(props.table));
+
+useGeometry(rect);
 </script>

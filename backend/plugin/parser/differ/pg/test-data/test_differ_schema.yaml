@@ -1,0 +1,17 @@
+- oldSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
+  newSchema: CREATE SCHEMA s1;
+  diff: |+
+    DROP SCHEMA "s2";
+
+- oldSchema: CREATE SCHEMA s1;
+  newSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
+  diff: |+
+    CREATE SCHEMA "s2";
+
+- oldSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
+  newSchema: CREATE SCHEMA s2; CREATE SCHEMA s3;
+  diff: |+
+    DROP SCHEMA "s1";
+
+    CREATE SCHEMA "s3";
+
