@@ -109,6 +109,13 @@ const (
 	FeatureSQLReview FeatureType = "bb.feature.sql-review"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
+
+	// VCS Integration.
+
+	// FeatureVCSSchemaWriteBack allows user to enable the latest schema write-back in VCS workflow.
+	FeatureVCSSchemaWriteBack FeatureType = "bb.feature.vcs-schema-write-back"
+	// FeatureVCSSheetSync allows to sync sheets from the VCS in VCS workflow.
+	FeatureVCSSheetSync FeatureType = "bb.feature.vcs-sheet-sync"
 	// FeatureVCSSQLReviewWorkflow allows user to enable the SQL review CI in VCS workflow.
 	FeatureVCSSQLReviewWorkflow FeatureType = "bb.feature.vcs-sql-review"
 
@@ -172,6 +179,11 @@ func (e FeatureType) Name() string {
 		return "SQL review"
 	case FeatureTaskScheduleTime:
 		return "Task schedule time"
+	// VCS Integration
+	case FeatureVCSSchemaWriteBack:
+		return "Schema write-back"
+	case FeatureVCSSheetSync:
+		return "Sync sheets from VCS"
 	case FeatureVCSSQLReviewWorkflow:
 		return "VCS SQL review workflow"
 	// Database management
@@ -220,15 +232,18 @@ var featureMatrix = map[FeatureType][3]bool{
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
-	FeatureDataSource:           {false, false, false},
-	FeatureDBAWorkflow:          {false, false, true},
-	FeatureLGTM:                 {false, false, true},
-	FeatureIMApproval:           {false, false, true},
-	FeatureMultiTenancy:         {false, false, true},
-	FeatureOnlineMigration:      {false, true, true},
-	FeatureSchemaDrift:          {false, true, true},
-	FeatureSQLReview:            {true, true, true},
-	FeatureTaskScheduleTime:     {false, true, true},
+	FeatureDataSource:       {false, false, false},
+	FeatureDBAWorkflow:      {false, false, true},
+	FeatureLGTM:             {false, false, true},
+	FeatureIMApproval:       {false, false, true},
+	FeatureMultiTenancy:     {false, false, true},
+	FeatureOnlineMigration:  {false, true, true},
+	FeatureSchemaDrift:      {false, true, true},
+	FeatureSQLReview:        {true, true, true},
+	FeatureTaskScheduleTime: {false, true, true},
+	// VCS Integration
+	FeatureVCSSchemaWriteBack:   {false, false, true},
+	FeatureVCSSheetSync:         {false, false, true},
 	FeatureVCSSQLReviewWorkflow: {false, false, true},
 	// Database management
 	FeaturePITR:                  {false, true, true},

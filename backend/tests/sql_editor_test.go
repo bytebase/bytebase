@@ -73,7 +73,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	pgStopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
+	pgStopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
 	defer pgStopInstance()
 
 	// Create a project.

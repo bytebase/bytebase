@@ -106,7 +106,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api
 // createPipelineValidateOnly creates a pipeline for validation purpose
 // Do NOT write to the database.
 func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
-	creator, err := s.GetPrincipalByID(ctx, create.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +115,8 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 	id := 0
 	ts := time.Now().Unix()
 	pipeline := &api.Pipeline{
-		ID:     id,
-		Name:   create.Name,
-		Status: api.PipelineOpen,
+		ID:   id,
+		Name: create.Name,
 	}
 	for _, sc := range create.StageList {
 		id++
@@ -151,10 +150,10 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
-				CreatorID:         create.CreatorID,
+				CreatorID:         api.SystemBotID,
 				Creator:           creator,
 				CreatedTs:         ts,
-				UpdaterID:         create.CreatorID,
+				UpdaterID:         api.SystemBotID,
 				Updater:           creator,
 				UpdatedTs:         ts,
 				Type:              tc.Type,
@@ -306,19 +305,21 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 	composedIssue.Project = composedProject
 
 	// Creating a stripped pipeline.
-	find := &api.PipelineFind{ID: &issue.PipelineUID}
-	pipelineRaw, err := s.getPipelineRaw(ctx, find)
+	pipeline, err := s.GetPipelineV2ByID(ctx, issue.PipelineUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Pipeline with ID %d", issue.PipelineUID)
 	}
-	if pipelineRaw == nil {
+	if pipeline == nil {
 		return nil, nil
 	}
-	pipeline := pipelineRaw.toPipeline()
+	composedPipeline := &api.Pipeline{
+		ID:   pipeline.ID,
+		Name: pipeline.Name,
+	}
 
 	stageRawList, err := s.findStageRaw(ctx, &api.StageFind{PipelineID: &issue.PipelineUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Stage list with StageFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to find stage list")
 	}
 	var stageList []*api.Stage
 	for _, raw := range stageRawList {
@@ -341,8 +342,8 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		}
 		stageList = append(stageList, stage)
 	}
-	pipeline.StageList = stageList
-	composedIssue.Pipeline = pipeline
+	composedPipeline.StageList = stageList
+	composedIssue.Pipeline = composedPipeline
 
 	return composedIssue, nil
 }

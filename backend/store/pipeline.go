@@ -7,331 +7,188 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// pipelineRaw is the store model for an Pipeline.
-// Fields have exactly the same meanings as Pipeline.
-type pipelineRaw struct {
-	ID int
-
-	// Domain specific fields
-	Name   string
-	Status api.PipelineStatus
-}
-
-// toPipeline creates an instance of Pipeline based on the pipelineRaw.
-// This is intended to be called when we need to compose an Pipeline relationship.
-func (raw *pipelineRaw) toPipeline() *api.Pipeline {
-	return &api.Pipeline{
-		ID: raw.ID,
-
-		// Domain specific fields
-		Name:   raw.Name,
-		Status: raw.Status,
-	}
-}
-
-// CreatePipeline creates an instance of Pipeline.
-func (s *Store) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
-	pipelineRaw, err := s.createPipelineRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Pipeline with PipelineCreate[%+v]", create)
-	}
-	pipeline, err := s.composePipeline(ctx, pipelineRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Pipeline with pipelineRaw[%+v]", pipelineRaw)
-	}
-	return pipeline, nil
-}
-
 // GetPipelineByID gets an instance of Pipeline.
 func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
-	find := &api.PipelineFind{ID: &id}
-	pipelineRaw, err := s.getPipelineRaw(ctx, find)
+	pipeline, err := s.GetPipelineV2ByID(ctx, id)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Pipeline with ID %d", id)
+		return nil, errors.Wrapf(err, "failed to get pipeline with ID %d", id)
 	}
-	if pipelineRaw == nil {
+	if pipeline == nil {
 		return nil, nil
 	}
-	pipeline, err := s.composePipeline(ctx, pipelineRaw)
+	composedPipeline, err := s.composePipeline(ctx, pipeline)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Pipeline with pipelineRaw[%+v]", pipelineRaw)
+		return nil, errors.Wrapf(err, "failed to compose pipeline")
 	}
-	return pipeline, nil
+	return composedPipeline, nil
 }
 
 // FindPipeline finds a list of Pipeline instances.
-func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, returnOnErr bool) ([]*api.Pipeline, error) {
-	pipelineRawList, err := s.findPipelineRaw(ctx, find)
+func (s *Store) FindPipeline(ctx context.Context, find *PipelineFind) ([]*api.Pipeline, error) {
+	pipelines, err := s.ListPipelineV2(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Pipeline list with PipelineFind[%+v]", find)
 	}
-	var pipelineList []*api.Pipeline
-	for _, raw := range pipelineRawList {
-		pipeline, err := s.composePipeline(ctx, raw)
+	var composedPipelines []*api.Pipeline
+	for _, pipeline := range pipelines {
+		composedPipeline, err := s.composePipeline(ctx, pipeline)
 		if err != nil {
-			if returnOnErr {
-				return nil, errors.Wrapf(err, "failed to compose Pipeline with pipelineRaw[%+v]", raw)
-			}
-			log.Error("failed to compose pipeline",
-				zap.Any("pipelineRaw", raw),
-				zap.Error(err),
-			)
-			continue
+			return nil, err
 		}
-		pipelineList = append(pipelineList, pipeline)
+		composedPipelines = append(composedPipelines, composedPipeline)
 	}
-	return pipelineList, nil
+	return composedPipelines, nil
 }
-
-// PatchPipeline patches an instance of Pipeline.
-func (s *Store) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
-	pipelineRaw, err := s.patchPipelineRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Pipeline with PipelinePatch[%+v]", patch)
-	}
-	pipeline, err := s.composePipeline(ctx, pipelineRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Pipeline with pipelineRaw[%+v]", pipelineRaw)
-	}
-	return pipeline, nil
-}
-
-//
-// private function
-//
 
 // Note: MUST keep in sync with composePipelineValidateOnly.
-func (s *Store) composePipeline(ctx context.Context, raw *pipelineRaw) (*api.Pipeline, error) {
-	pipeline := raw.toPipeline()
+func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
+	composedPipeline := &api.Pipeline{
+		ID:   pipeline.ID,
+		Name: pipeline.Name,
+	}
 
 	stageList, err := s.FindStage(ctx, &api.StageFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, err
 	}
-	pipeline.StageList = stageList
+	composedPipeline.StageList = stageList
 
-	return pipeline, nil
+	return composedPipeline, nil
 }
 
-// createPipelineRaw creates a new pipeline.
-func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreate) (*pipelineRaw, error) {
+// PipelineMessage is the message for pipelines.
+type PipelineMessage struct {
+	Name string
+	// Output only.
+	ID int
+}
+
+// PipelineFind is the API message for finding pipelines.
+type PipelineFind struct {
+	ID *int
+
+	// Domain specific fields
+	Active *bool
+}
+
+// CreatePipelineV2 creates a pipeline.
+func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, creatorID int) (*PipelineMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	pipeline, err := s.createPipelineImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(pipelineCacheNamespace, pipeline.ID, pipeline); err != nil {
-		return nil, err
-	}
-
-	return pipeline, nil
-}
-
-// findPipelineRaw retrieves a list of pipelines based on find.
-func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]*pipelineRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := s.findPipelineImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if err == nil {
-		for _, pipeline := range list {
-			if err := s.cache.UpsertCache(pipelineCacheNamespace, pipeline.ID, pipeline); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return list, nil
-}
-
-// getPipelineRaw retrieves a single pipeline based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pipelineRaw, error) {
-	if find.ID != nil {
-		pipelineRaw := &pipelineRaw{}
-		has, err := s.cache.FindCache(pipelineCacheNamespace, *find.ID, pipelineRaw)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			return pipelineRaw, nil
-		}
-	}
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	pipelineRawList, err := s.findPipelineImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(pipelineRawList) == 0 {
-		return nil, nil
-	} else if len(pipelineRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d pipelines with filter %+v, expect 1", len(pipelineRawList), find)}
-	}
-	if err := s.cache.UpsertCache(pipelineCacheNamespace, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
-		return nil, err
-	}
-	return pipelineRawList[0], nil
-}
-
-// patchPipelineRaw updates an existing pipeline by ID.
-// Returns ENOTFOUND if pipeline does not exist.
-func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) (*pipelineRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	pipelineRaw, err := s.patchPipelineImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(pipelineCacheNamespace, pipelineRaw.ID, pipelineRaw); err != nil {
-		return nil, err
-	}
-
-	return pipelineRaw, nil
-}
-
-// createPipelineImpl creates a new pipeline.
-func (*Store) createPipelineImpl(ctx context.Context, tx *Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
 	query := `
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
-			name,
-			status
+			name
 		)
-		VALUES ($1, $2, $3, 'OPEN')
-		RETURNING id, name, status
+		VALUES ($1, $2, $3)
+		RETURNING id, name
 	`
-	var pipelineRaw pipelineRaw
+	pipeline := &PipelineMessage{}
 	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
+		creatorID,
+		creatorID,
 		create.Name,
 	).Scan(
-		&pipelineRaw.ID,
-		&pipelineRaw.Name,
-		&pipelineRaw.Status,
+		&pipeline.ID,
+		&pipeline.Name,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, FormatError(err)
 	}
-	return &pipelineRaw, nil
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	s.pipelineCache.Store(pipeline.ID, pipeline)
+	return pipeline, nil
 }
 
-func (*Store) findPipelineImpl(ctx context.Context, tx *Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+// GetPipelineV2ByID gets the pipeline by ID.
+func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
+	if pipeline, ok := s.pipelineCache.Load(id); ok {
+		return pipeline.(*PipelineMessage), nil
 	}
-	if v := find.Status; v != nil {
-		where, args = append(where, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
+	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{ID: &id})
+	if err != nil {
+		return nil, err
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	if len(pipelines) == 0 {
+		return nil, nil
+	} else if len(pipelines) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d pipelines, expect 1", len(pipelines))}
+	}
+	pipeline := pipelines[0]
+	return pipeline, nil
+}
+
+// ListPipelineV2 lists pipelines.
+func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
+	// Build WHERE clause.
+	joinClause := ""
+	where, args := []string{"TRUE"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Active; v != nil {
+		joinClause = "JOIN task ON pipeline.id = task.pipeline_id"
+		where, args = append(where, fmt.Sprintf(`(SELECT COUNT(1) FROM task WHERE task.status = $%d AND pipeline.id = task.pipeline_id) > 0`, len(args)+1)), append(args, api.TaskPending)
+	}
+	query := fmt.Sprintf(`
 		SELECT
-			id,
-			name,
-			status
+			pipeline.id,
+			pipeline.name
 		FROM pipeline
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+		%s
+		WHERE %s
+		GROUP BY pipeline.id`, joinClause, strings.Join(where, " AND "))
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into pipelineRawList.
-	var pipelineRawList []*pipelineRaw
+	var pipelines []*PipelineMessage
 	for rows.Next() {
-		var pipelineRaw pipelineRaw
+		var pipeline PipelineMessage
 		if err := rows.Scan(
-			&pipelineRaw.ID,
-			&pipelineRaw.Name,
-			&pipelineRaw.Status,
+			&pipeline.ID,
+			&pipeline.Name,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
-		pipelineRawList = append(pipelineRawList, &pipelineRaw)
+		pipelines = append(pipelines, &pipeline)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return pipelineRawList, nil
-}
-
-// patchPipelineImpl updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (*Store) patchPipelineImpl(ctx context.Context, tx *Tx, patch *api.PipelinePatch) (*pipelineRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.Status; v != nil {
-		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, api.PipelineStatus(*v))
-	}
-
-	args = append(args, patch.ID)
-
-	var pipelineRaw pipelineRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE pipeline
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, name, status
-	`, len(args)),
-		args...,
-	).Scan(
-		&pipelineRaw.ID,
-		&pipelineRaw.Name,
-		&pipelineRaw.Status,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("pipeline ID not found: %d", patch.ID)}
-		}
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-	return &pipelineRaw, nil
+
+	for _, pipeline := range pipelines {
+		s.pipelineCache.Store(pipeline.ID, pipeline)
+	}
+	return pipelines, nil
 }

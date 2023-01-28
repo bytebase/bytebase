@@ -11,10 +11,9 @@ import (
 )
 
 func activeProfile(dataDir string) config.Profile {
-	p := getBaseProfile()
+	p := getBaseProfile(dataDir)
 	p.Mode = common.ReleaseModeDev
 	p.PgUser = "bbdev"
-	p.DataDir = dataDir
 	p.BackupRunnerInterval = 10 * time.Second
 	p.AppRunnerInterval = 30 * time.Second
 	p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"

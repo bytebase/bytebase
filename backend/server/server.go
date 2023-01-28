@@ -196,16 +196,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
-	resourceDir := common.GetResourceDir(profile.DataDir)
-	if profile.ResourceDirOverride != "" {
-		resourceDir = profile.ResourceDirOverride
-	}
-
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
@@ -225,26 +220,26 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	var err error
 	// Install mysqlutil
-	s.mysqlBinDir, err = mysqlutil.Install(resourceDir)
+	s.mysqlBinDir, err = mysqlutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
-	s.mongoBinDir, err = mongoutil.Install(resourceDir)
+	s.mongoBinDir, err = mongoutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
 	}
 
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	s.pgBinDir, err = postgres.Install(resourceDir)
+	s.pgBinDir, err = postgres.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
-		pgDataDir := common.GetPostgresDataDir(profile.DataDir)
+		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
 		log.Info("-----Embedded Postgres Config BEGIN-----")
 		log.Info(fmt.Sprintf("datastorePort=%d", profile.DatastorePort))
 		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
@@ -328,13 +323,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
