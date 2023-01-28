@@ -14,7 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// IdentityProviderMessage is the mssage for identity provider.
+// IdentityProviderMessage is the message for identity provider.
 type IdentityProviderMessage struct {
 	ResourceID string
 	Title      string
