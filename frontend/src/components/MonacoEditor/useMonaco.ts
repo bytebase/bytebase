@@ -61,8 +61,6 @@ export const useMonaco = async () => {
         forceMoveMarkers: true,
       },
     ]);
-    // reset the selection
-    editorInstance.setSelection(new monaco.Range(0, 0, 0, 0));
   };
 
   const formatContent = (

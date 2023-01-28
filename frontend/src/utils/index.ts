@@ -23,3 +23,4 @@ export * from "./pev2";
 export * from "./web-storage";
 export * from "./dom";
 export * from "./schemaEditor";
+export * from "./math";
