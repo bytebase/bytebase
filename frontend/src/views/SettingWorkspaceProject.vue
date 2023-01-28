@@ -66,10 +66,9 @@ export default defineComponent({
       searchField.value.$el.querySelector("#search").focus();
     });
 
-    const prepareProjectList = () => {
-      projectStore.fetchAllProjectList().then((projectList: Project[]) => {
-        state.projectList = projectList;
-      });
+    const prepareProjectList = async () => {
+      const projectList = await projectStore.fetchAllProjectList();
+      state.projectList = projectList;
     };
 
     watchEffect(prepareProjectList);
