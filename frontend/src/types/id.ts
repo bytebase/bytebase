@@ -39,7 +39,7 @@ export type EnvironmentId = IdType;
 
 export type InstanceId = IdType;
 
-export type InstanceUserId = IdType;
+export type InstanceUserId = string;
 
 export type DataSourceId = IdType;
 
@@ -49,7 +49,7 @@ export type VCSId = IdType;
 
 export type RepositoryId = IdType;
 
-export type MigrationHistoryId = IdType;
+export type MigrationHistoryId = string;
 
 export type BackupId = IdType;
 

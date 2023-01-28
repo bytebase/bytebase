@@ -2,7 +2,7 @@
   <NTooltip>
     <template #trigger>
       <div class="relative w-4" v-bind="$attrs">
-        <img class="h-4 w-auto" :src="SelectedEngineIconPath" />
+        <img class="h-4 w-auto mx-auto" :src="SelectedEngineIconPath" />
         <div
           v-if="showStatus"
           class="bg-green-400 border-surface-high rounded-full absolute border-2"
@@ -38,6 +38,7 @@ export default defineComponent({
       SNOWFLAKE: new URL("../assets/db-snowflake.png", import.meta.url).href,
       CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
       MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
+      SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
     };
     const SelectedEngineIconPath = computed(() => {
       return EngineIconPath[props.instance.engine];

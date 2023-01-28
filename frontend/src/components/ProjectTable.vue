@@ -10,7 +10,6 @@
     <template #header>
       <BBTableHeaderCell class="table-cell" :title="columnList[0].title" />
       <BBTableHeaderCell class="table-cell" :title="columnList[1].title" />
-      <BBTableHeaderCell class="table-cell" :title="columnList[2].title" />
     </template>
     <template #body="{ rowData: project }">
       <BBTableCell :left-padding="4" class="table-cell text-gray-500 w-[30%]">
@@ -38,9 +37,6 @@
       </BBTableCell>
       <BBTableCell class="truncate">
         {{ projectName(project) }}
-      </BBTableCell>
-      <BBTableCell class="hidden md:table-cell md:w-[15%]">
-        {{ humanizeTs(project.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -75,9 +71,6 @@ export default defineComponent({
       },
       {
         title: t("project.table.name"),
-      },
-      {
-        title: t("project.table.created-at"),
       },
     ]);
 

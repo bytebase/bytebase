@@ -13,7 +13,7 @@
     "custom": "自定义",
     "im": "IM",
     "overview": "概览",
-    "migration-history": "变更历史",
+    "change-history": "变更历史",
     "webhook": "Webhook",
     "webhooks": "Webhook",
     "key": "键值",
@@ -27,10 +27,12 @@
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
+    "credentials": "凭据",
     "password": "密码",
     "activate": "激活",
     "save": "保存",
     "cancel": "取消",
+    "cancelled": "已取消",
     "comment": "评论",
     "home": "主页",
     "setting": "设置",
@@ -264,7 +266,7 @@
     "started": "开始于",
     "ended": "结束于",
     "view-migration": "查看变更",
-    "view-migration-history": "查看变更历史",
+    "view-change-history": "查看变更历史",
     "earliest-allowed-time-unset": "未设置",
     "status": {
       "running": "运行中",
@@ -291,8 +293,9 @@
       "counting": "统计中"
     },
     "n-similar-tasks": "({count} 个相似的任务)",
-    "mark-as-done": "标记为已完成",
-    "mark-as-done-modal-title": "将任务[{name}]标记为已完成？"
+    "skip": "跳过",
+    "skip-modal-title": "跳过任务[{name}]？",
+    "task-checks": "任务检查项"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -422,9 +425,12 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     },
     "access-control": {
-      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。",
+      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。{link}",
       "add-rule": "添加规则",
-      "remove-policy-tips": "删除这条规则？"
+      "remove-policy-tips": "删除这条规则？",
+      "inactive-rules": "无效的规则",
+      "inactive-rules-description": "这些规则不再生效，因为所属环境不是受保护的。",
+      "no-database-in-protected-environment": "请确保{protected_environment}中有数据库。"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -442,6 +448,7 @@
       "comment-create": "创建评论",
       "issue-field-update": "更新工单字段",
       "issue-status-update": "更新工单状态",
+      "pipeline-stage-status-update": "更新工单阶段状态",
       "pipeline-task-status-update": "更新工单任务状态",
       "pipeline-task-file-commit": "提交文件",
       "pipeline-task-statement-update": "更新 SQL",
@@ -484,10 +491,12 @@
       "task-name": "任务 {name}",
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
       "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
-      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批"
+      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批",
+      "skipped": "跳过"
     },
     "subject-prefix": {
-      "task": "任务"
+      "task": "任务",
+      "stage": "阶段"
     },
     "n-similar-activities": "({count} 个相似的活动)"
   },
@@ -584,8 +593,9 @@
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "{im}审批请求发送成功",
+      "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
       "needs-attention": "需要关注",
-      "click-to-mark": "点击以标记为「需要关注」"
+      "click-to-mark": "点击以请求审核人关注"
     }
   },
   "alter-schema": {
@@ -622,6 +632,7 @@
   },
   "create-db": {
     "new-database-name": "新数据库名称",
+    "new-collection-name": "新集合名称",
     "database-owner-name": "数据库所有者",
     "cluster": "集群",
     "reserved-db-error": "{databaseName} 是一个预留名称",
@@ -674,10 +685,10 @@
     "account": "账户",
     "name": "名称",
     "host-or-socket": "Host 或 Socket",
+    "project-id-and-instance-id": "项目 ID 与实例 ID",
     "your-snowflake-account-name": "您的 Snowflake @:{'instance.account'}@:{'instance.name'}",
     "port": "端口",
     "instance-name": "@:common.instance@:instance.name",
-    "instance-name-unique": "@:{'common.instance'}@:{'instance.name'}需要保证唯一性",
     "snowflake-web-console": "Snowflake @:{'instance.web-console'}",
     "external-link": "外部链接",
     "web-console": "Web 控制台",
@@ -720,6 +731,7 @@
       }
     },
     "no-password": "无密码",
+    "credentials-write-only": "CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
@@ -735,7 +747,11 @@
     "failed-to-connect-instance": "连接到实例失败。",
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
-    "grants": "权限"
+    "grants": "权限",
+    "authentication-database": "认证数据库",
+    "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
+    "create-gcp-credentials": "创建凭据的方法见",
+    "used-for-testing-connection": "仅作测试连接用"
   },
   "environment": {
     "select": "选择环境",
@@ -748,7 +764,8 @@
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
-    }
+    },
+    "protected-environment": "受保护的环境"
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
@@ -834,7 +851,7 @@
       "mark-env-as-protected": "标记为受保护的环境"
     }
   },
-  "migration-history": {
+  "change-history": {
     "self": "变更历史",
     "select": "选择版本",
     "workflow": "工作流",
@@ -849,7 +866,7 @@
     "after-left-schema-choice": "和本次变更后的 Schema",
     "show-diff": "显示差异",
     "left-vs-right": "之前{prevLink} vs 当前版本",
-    "schema-snapshot-after-migration": "完成这次变更后的 schema 快照",
+    "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
     "current-schema-empty": "当前 schema 为空",
     "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
     "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
@@ -859,7 +876,7 @@
     "config-instance": "配置实例",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
     "establish-database-baseline": "建立「{name}」基线",
-    "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
+    "instance-missing-change-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。"
   },
@@ -871,8 +888,6 @@
     "sync-status": "同步状态",
     "search-database-name": "搜索数据库名称",
     "search-database": "搜索数据库",
-    "restored-from": "恢复于",
-    "database-name-is-restored-from-another-database-backup": "{0}恢复于另一个数据库备份",
     "transfer-project": "转移项目",
     "alter-schema": "变更 Schema",
     "alter-schema-in-vcs": "变更 Schema (VCS)",
@@ -932,6 +947,7 @@
     "index-size": "索引大小",
     "column": "列",
     "columns": "列",
+    "data-type": "数据类型",
     "indexes": "索引",
     "row-count-est": "估计行数",
     "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
@@ -992,7 +1008,9 @@
     "access-denied": "你没有访问该数据库的权限",
     "schema": {
       "select": "选择 schema"
-    }
+    },
+    "show-missing-databases": "显示未找到的数据库",
+    "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1093,8 +1111,7 @@
     },
     "table": {
       "key": "@:common.key",
-      "name": "@:common.name",
-      "created-at": "创建于"
+      "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:{'common.project'}@:{'common.name'}",
@@ -1159,6 +1176,10 @@
         "issue-comment-creation": {
           "title": "工单被评论",
           "label": "当新的工单评论被创建"
+        },
+        "issue-stage-status-change": {
+          "title": "工单阶段状态变更",
+          "label": "当一个工单包含的阶段状态发生了变更"
         }
       }
     },
@@ -1336,7 +1357,8 @@
     "ssl-connection": "SSL 连接",
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
-    "delete-read-only-data-source": "删除只读数据源"
+    "delete-read-only-data-source": "删除只读数据源",
+    "connection-string-schema": "连接串模式"
   },
   "setting": {
     "project": {
@@ -1417,7 +1439,9 @@
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
       "self": "管理员模式"
-    }
+    },
+    "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。",
+    "run-selected": "运行选中的语句"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -1426,6 +1450,8 @@
     "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
     "actions": {
+      "create-schema": "新建 Schema",
+      "drop-schema": "删除 Schema",
       "create-table": "新建表",
       "rename": "重命名",
       "drop-table": "删除表",
@@ -1445,31 +1471,45 @@
       "collation": "字符排序规则",
       "comment": "注释"
     },
+    "schema": {
+      "select": "选择 schema",
+      "name": "Schema 名称"
+    },
     "table-list": "表",
     "table": {
+      "select": "选择表",
       "name": "表名"
     },
     "column-list": "列",
     "column": {
+      "select": "选择列",
       "name": "名称",
       "type": "类型",
       "default": "默认值",
       "comment": "注释",
-      "not-null": "不可为空"
+      "not-null": "不可为空",
+      "primary": "主键"
     },
     "nothing-changed": "无任何改动",
     "message": {
+      "invalid-schema-name": "无效的 Schema 名称",
+      "duplicated-schema-name": "重复的 Schema 名称",
       "invalid-table-name": "无效的表名",
       "duplicated-table-name": "重复的表名",
       "invalid-column-name": "无效的列名",
       "duplicated-column-name": "重复的列名",
-      "invalid-column-type": "无效的列类型"
+      "invalid-column-type": "无效的列类型",
+      "failed-to-fetch-database-schema": "请求数据库 Schema 失败"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
       "description": "关闭后更改将会丢失。"
     },
-    "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。"
+    "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。",
+    "edit-foreign-key": "修改外键",
+    "select-reference-schema": "选择外键的 Schema",
+    "select-reference-table": "选择外键的表",
+    "select-reference-column": "选择外键的列"
   },
   "label": {
     "empty-label-value": "<空值>",
@@ -1532,6 +1572,13 @@
         "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
         "runoutof": "已用尽全部 {total} 个实例额度。",
         "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
+      },
+      "bb-feature-seat-count": {
+        "title": "席位数量限制",
+        "desc": "您已达最大席位数量限制，请付费升级来获取更多席位额度。",
+        "remaining": "当前总席位额度为 {total}，目前仅剩 {count} 个份额可用。",
+        "runoutof": "已用尽全部 {total} 个席位额度。",
+        "upgrade": "@:{'subscription.upgrade'}来获取更多席位额度。"
       },
       "bb-feature-multi-tenancy": {
         "title": "多租户",
@@ -1710,14 +1757,16 @@
       "comment": "评论",
       "payload": "Payload",
       "empty": "<空>",
-      "view-details": "查看详情"
+      "view-details": "查看详情",
+      "select-type": "选择类型"
     },
     "type": {
       "member-create": "增加成员",
       "member-role-update": "更新角色",
       "member-activate": "激活成员",
       "member-deactivate": "禁用成员",
-      "database-transfer": "转移数据库"
+      "database-transfer": "转移数据库",
+      "sql-editor-query": "SQL 编辑器查询"
     }
   },
   "onboarding-guide": {
@@ -1740,7 +1789,7 @@
     }
   },
   "schema-diagram": {
-    "self": "Schema 展示图",
+    "self": "Schema 关系图",
     "fit-content-with-view": "自动适应视图"
   }
 }

@@ -23,7 +23,7 @@
             :tab-item-list="tabItemList"
             :selected-index="state.selectedIndex"
             @select-index="
-              (index) => {
+              (index: number) => {
                 state.selectedIndex = index;
               }
             "
@@ -54,11 +54,21 @@
             </button>
           </div>
         </div>
-        <DatabaseTable
-          v-if="state.selectedIndex == DATABASE_TAB"
-          :mode="'INSTANCE'"
-          :database-list="databaseList"
-        />
+        <div v-if="state.selectedIndex == DATABASE_TAB">
+          <div class="mb-2 pl-4">
+            <BBCheckbox
+              :title="$t('database.show-missing-databases')"
+              :value="state.showMissingDatabases"
+              @toggle="state.showMissingDatabases = $event"
+            />
+          </div>
+          <DatabaseTable
+            mode="INSTANCE"
+            :scroll-on-page-change="false"
+            :show-missing-databases="state.showMissingDatabases"
+            :database-list="databaseList"
+          />
+        </div>
         <InstanceUserTable
           v-else-if="state.selectedIndex == USER_TAB"
           :instance-user-list="instanceUserList"
@@ -164,6 +174,7 @@ import {
   useInstanceStore,
   useSubscriptionStore,
   useSQLStore,
+  useDBSchemaStore,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -177,6 +188,7 @@ interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
   showFeatureModal: boolean;
+  showMissingDatabases: boolean;
 }
 
 const props = defineProps({
@@ -201,6 +213,7 @@ const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
   showFeatureModal: false,
+  showMissingDatabases: false,
 });
 
 const instance = computed((): Instance => {
@@ -362,9 +375,8 @@ const doArchive = () => {
 };
 
 const doRestore = () => {
-  const { subscription } = subscriptionStore;
   const instanceList = instanceStore.getInstanceList(["NORMAL"]);
-  if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
+  if (subscriptionStore.instanceCount <= instanceList.length) {
     state.showFeatureModal = true;
     return;
   }
@@ -445,6 +457,16 @@ const syncSchema = () => {
           description: resultSet.error,
         });
       }
+
+      // Clear the db schema metadata cache entities.
+      // So we will re-fetch new values when needed.
+      const dbSchemaStore = useDBSchemaStore();
+      const databaseList = useDatabaseStore().getDatabaseListByInstanceId(
+        instance.value.id
+      );
+      databaseList.forEach((database) =>
+        dbSchemaStore.removeCacheByDatabaseId(database.id)
+      );
     })
     .catch(() => {
       state.syncingSchema = false;

@@ -1,0 +1,240 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service InstanceService {
+  rpc GetInstance(GetInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=environments/*}/instances"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{parent=environments/*}/instances"
+      body: "instance"
+    };
+    option (google.api.method_signature) = "parent,instance";
+  }
+
+  rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      patch: "/v1/{instance.name=environments/*/instances/*}"
+      body: "instance"
+    };
+    option (google.api.method_signature) = "instance,update_mask";
+  }
+
+  rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=environments/*/instances/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{name=environments/*/instances/*}:undelete"
+      body: "*"
+    };
+  }
+
+  rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{instance=environments/*/instances/*}:addDataSource"
+      body: "*"
+    };
+  }
+  
+  rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{instance=environments/*/instances/*}:removeDataSource"
+      body: "*"
+    };
+  }
+
+  rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
+    option (google.api.http) = {
+      patch: "/v1/{instance=environments/*/instances/*}:updateDataSource"
+      body: "*"
+    };
+  }
+}
+
+message GetInstanceRequest {
+  // The name of the instance to retrieve.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListInstancesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: environments/{environment}
+  // Use "environments/-" to list all instances from all environments.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of instances to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 instances will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListInstances` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListInstances` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Show deleted instances if specified.
+  bool show_deleted = 4;
+}
+
+message ListInstancesResponse {
+  // The instances from the specified request.
+  repeated Instance instances = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateInstanceRequest {
+  // The parent resource where this instance will be created.
+  // Format: environments/{environment}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The instance to create.
+  Instance instance = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the instance, which will become the final component of
+  // the instance's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string instance_id = 3;
+}
+
+message UpdateInstanceRequest {
+  // The instance to update.
+  //
+  // The instance's `name` field is used to identify the instance to update.
+  // Format: environments/{environment}/instances/{instance}
+  Instance instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteInstanceRequest {
+  // The name of the instance to delete.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteInstanceRequest {
+  // The name of the deleted instance.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message AddDataSourceRequest {
+  // The name of the instance to add a data source to.
+  // Format: environments/{environment}/instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Identified by type.
+  // Only READ_ONLY data source can be added.
+  DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RemoveDataSourceRequest {
+  // The name of the instance to remove a data source from.
+  // Format: environments/{environment}/instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Identified by type.
+  // Only READ_ONLY data source can be removed.
+  DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateDataSourceRequest {
+  // The name of the instance to update a data source.
+  // Format: environments/{environment}/instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Identified by type.
+  DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message Instance {
+  // The name of the instance.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  string title = 4;
+
+  Engine engine = 5;
+
+  string external_link = 6;
+
+  repeated DataSource data_sources = 7;
+}
+
+enum Engine {
+  ENGINE_UNSPECIFIED = 0;
+  CLICKHOUSE = 1;
+  MYSQL = 2;
+  POSTGRES = 3;
+  SNOWFLAKE = 4;
+  SQLITE = 5;
+  TIDB = 6;
+  MONGODB = 7;
+}
+
+message DataSource {
+  string title = 1;
+  DataSourceType type = 2;
+  string username = 3;
+  string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  string host = 8;
+  string port = 9;
+  string database = 10;
+  bool srv = 11;
+  string authentication_database = 12;
+}
+
+enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = 0;
+  ADMIN = 1;
+  READ_ONLY = 2;
+}

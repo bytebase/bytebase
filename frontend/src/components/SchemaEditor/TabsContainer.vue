@@ -43,12 +43,12 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useSchemaEditorStore } from "@/store";
 import { TabContext, SchemaEditorTabType } from "@/types";
+import { isTableChanged } from "./utils/table";
 
 const editorStore = useSchemaEditorStore();
 const tabsContainerRef = ref();
@@ -89,12 +89,7 @@ const getTabComputedClassList = (tab: TabContext) => {
       return ["text-green-700"];
     }
 
-    const originTable = editorStore.getOriginTable(
-      tab.databaseId,
-      tab.schemaName,
-      tab.tableName
-    );
-    if (!isEqual(originTable, table)) {
+    if (isTableChanged(tab.databaseId, tab.schemaId, tab.tableId)) {
       return ["text-yellow-700"];
     }
   }
@@ -109,7 +104,12 @@ const getTabName = (tab: TabContext) => {
     );
     return `${database?.name || "unknown database"}`;
   } else if (tab.type === SchemaEditorTabType.TabForTable) {
-    return `${tab.tableName}`;
+    const table = editorStore.getTable(
+      tab.databaseId,
+      tab.schemaId,
+      tab.tableId
+    );
+    return `${table?.name || ""}`;
   } else {
     // Should never reach here.
     return "unknown structure";

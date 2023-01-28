@@ -10,7 +10,6 @@ import {
   Pipeline,
   Environment,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 import { useTaskStore } from "./task";
 
@@ -53,19 +52,8 @@ function convertPartial(
   }
 
   const result: Omit<Stage, "pipeline"> = {
-    ...(stage.attributes as Omit<
-      Stage,
-      "id" | "database" | "taskList" | "creator" | "updater"
-    >),
+    ...(stage.attributes as Omit<Stage, "id" | "database" | "taskList">),
     id: parseInt(stage.id),
-    creator: getPrincipalFromIncludedList(
-      stage.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      stage.relationships!.updater.data,
-      includedList
-    ),
     environment,
     taskList,
   };

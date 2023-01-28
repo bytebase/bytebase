@@ -7,6 +7,9 @@ export enum AuditActivityType {
 
   // Project related
   DatabaseTransfer = "bb.project.database.transfer",
+
+  // SQL Editor related.
+  SQLEditorQuery = "bb.sql-editor.query",
 }
 
 export enum AuditActivityLevel {
@@ -22,6 +25,7 @@ export const AuditActivityTypeI18nNameMap: Record<AuditActivityType, string> = {
   [AuditActivityType.MemberActivate]: "audit-log.type.member-activate",
   [AuditActivityType.MemberDeactivate]: "audit-log.type.member-deactivate",
   [AuditActivityType.DatabaseTransfer]: "audit-log.type.database-transfer",
+  [AuditActivityType.SQLEditorQuery]: "audit-log.type.sql-editor-query",
 };
 
 export type AuditLog = {

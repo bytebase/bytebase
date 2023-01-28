@@ -38,17 +38,24 @@
     </div>
   </div>
 
+  <SchemaNameModal
+    v-if="state.schemaNameModalContext !== undefined"
+    :database-id="state.schemaNameModalContext.databaseId"
+    :schema-id="state.schemaNameModalContext.schemaId"
+    @close="state.schemaNameModalContext = undefined"
+  />
+
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
-    :schema-name="state.tableNameModalContext.schemaName"
-    :table-name="state.tableNameModalContext.tableName"
+    :schema-id="state.tableNameModalContext.schemaId"
+    :table-id="state.tableNameModalContext.tableId"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
 
 <script lang="ts" setup>
-import { escape, isEqual, isUndefined } from "lodash-es";
+import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -59,12 +66,17 @@ import {
   useSchemaEditorStore,
   generateUniqueTabId,
   useInstanceStore,
+  useNotificationStore,
 } from "@/store";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
+import { isSchemaChanged } from "./utils/schema";
+import { isTableChanged } from "./utils/table";
+import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import DatabaseIcon from "~icons/heroicons-outline/database";
-import TableIcon from "~icons/heroicons-outline/table";
+import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
+import TableIcon from "~icons/heroicons-outline/table-cells";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 
 interface BaseTreeNode extends TreeOption {
@@ -89,15 +101,15 @@ interface TreeNodeForSchema extends BaseTreeNode {
   type: "schema";
   instanceId: InstanceId;
   databaseId: DatabaseId;
-  schemaName: string;
+  schemaId: string;
 }
 
 interface TreeNodeForTable extends BaseTreeNode {
   type: "table";
   instanceId: InstanceId;
   databaseId: DatabaseId;
-  schemaName: string;
-  tableName: string;
+  schemaId: string;
+  tableId: string;
 }
 
 type TreeNode =
@@ -115,10 +127,14 @@ interface TreeContextMenu {
 
 interface LocalState {
   shouldRelocateTreeNode: boolean;
+  schemaNameModalContext?: {
+    databaseId: DatabaseId;
+    schemaId: string | undefined;
+  };
   tableNameModalContext?: {
     databaseId: DatabaseId;
-    schemaName: string;
-    tableName: string | undefined;
+    schemaId: string;
+    tableId: string | undefined;
   };
 }
 
@@ -166,21 +182,51 @@ const contextMenuOptions = computed(() => {
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
       });
+    } else if (instanceEngine === "POSTGRES") {
+      options.push({
+        key: "create-schema",
+        label: t("schema-editor.actions.create-schema"),
+      });
     }
     return options;
   } else if (treeNode.type === "schema") {
     const options = [];
     if (instanceEngine === "POSTGRES") {
-      options.push({
-        key: "create-table",
-        label: t("schema-editor.actions.create-table"),
-      });
+      const schema = editorStore.getSchema(
+        treeNode.databaseId,
+        treeNode.schemaId
+      );
+      if (!schema) {
+        return [];
+      }
+
+      const isDropped = schema.status === "dropped";
+      if (isDropped) {
+        options.push({
+          key: "restore",
+          label: t("schema-editor.actions.restore"),
+        });
+      } else {
+        options.push({
+          key: "create-table",
+          label: t("schema-editor.actions.create-table"),
+        });
+        options.push({
+          key: "rename",
+          label: t("schema-editor.actions.rename"),
+        });
+        options.push({
+          key: "drop-schema",
+          label: t("schema-editor.actions.drop-schema"),
+        });
+      }
     }
     return options;
   } else if (treeNode.type === "table") {
-    const table = schemaList.value
-      .find((schema) => schema.name === treeNode.schemaName)
-      ?.tableList.find((table) => table.newName === treeNode.tableName);
+    const table = editorStore.databaseSchemaById
+      .get(treeNode.databaseId)
+      ?.schemaList.find((schema) => schema.id === treeNode.schemaId)
+      ?.tableList.find((table) => table.id === treeNode.tableId);
     if (!table) {
       return [];
     }
@@ -251,17 +297,28 @@ onMounted(async () => {
   if (databaseTreeNodeList.length === 1) {
     const node = databaseTreeNodeList[0];
     await loadSubTree(node);
+    const schemaList = await editorStore.fetchSchemaListByDatabaseId(
+      node.databaseId
+    );
     expandedKeysRef.value.push(node.key);
-    editorStore.addTab({
-      id: generateUniqueTabId(),
-      type: SchemaEditorTabType.TabForDatabase,
-      databaseId: node.databaseId,
-    });
+    const schema = head(schemaList);
+    if (schemaList.length === 1 && schema) {
+      expandedKeysRef.value.push(`s-${node.databaseId}-${schema.id}`);
+      editorStore.addTab({
+        id: generateUniqueTabId(),
+        type: SchemaEditorTabType.TabForDatabase,
+        databaseId: node.databaseId,
+      });
+    }
   }
 });
 
 watch(
-  [() => tableList.value, () => databaseDataLoadedSet.value],
+  [
+    () => schemaList.value,
+    () => tableList.value,
+    () => databaseDataLoadedSet.value,
+  ],
   () => {
     const databaseTreeNodeList: TreeNodeForDatabase[] = [];
     for (const treeNode of treeDataRef.value) {
@@ -290,9 +347,11 @@ watch(
       if (instanceEngine === "MYSQL") {
         const schemaList: Schema[] =
           editorStore.databaseSchemaById.get(database.id)?.schemaList || [];
-        const tableList: Table[] = schemaList
-          .map((schema) => schema.tableList)
-          .flat();
+        const schema = head(schemaList);
+        if (!schema) {
+          return;
+        }
+        const tableList: Table[] = schema.tableList;
         if (tableList.length === 0) {
           databaseTreeNode.isLeaf = true;
           databaseTreeNode.children = [];
@@ -301,14 +360,14 @@ watch(
           databaseTreeNode.children = tableList.map((table) => {
             return {
               type: "table",
-              key: `t-${database.id}-${table.newName}`,
-              label: table.newName,
+              key: `t-${database.id}-${table.id}`,
+              label: table.name,
               children: [],
               isLeaf: true,
               instanceId: database.instance.id,
               databaseId: database.id,
-              schemaName: "",
-              tableName: table.newName,
+              schemaId: schema.id,
+              tableId: table.id,
             };
           });
         }
@@ -319,11 +378,11 @@ watch(
         for (const schema of schemaList) {
           const schemaTreeNode: TreeNodeForSchema = {
             type: "schema",
-            key: `s-${database.id}-${schema.name}`,
+            key: `s-${database.id}-${schema.id}`,
             label: schema.name,
             instanceId: database.instance.id,
             databaseId: database.id,
-            schemaName: schema.name,
+            schemaId: schema.id,
             isLeaf: true,
           };
 
@@ -335,14 +394,14 @@ watch(
             schemaTreeNode.children = schema.tableList.map((table) => {
               return {
                 type: "table",
-                key: `t-${database.id}-${table.newName}`,
-                label: table.newName,
+                key: `t-${database.id}-${table.id}`,
+                label: table.name,
                 children: [],
                 isLeaf: true,
                 instanceId: database.instance.id,
                 databaseId: database.id,
-                schemaName: "",
-                tableName: table.newName,
+                schemaId: schema.id,
+                tableId: table.id,
               };
             });
           }
@@ -374,14 +433,23 @@ watch(
     }
 
     if (currentTab.type === SchemaEditorTabType.TabForDatabase) {
-      const key = `d-${currentTab.databaseId}`;
-      selectedKeysRef.value = [key];
+      if (currentTab.selectedSchemaId) {
+        const key = `s-${currentTab.databaseId}-${currentTab.selectedSchemaId}`;
+        selectedKeysRef.value = [key];
+      } else {
+        const key = `d-${currentTab.databaseId}`;
+        selectedKeysRef.value = [key];
+      }
     } else if (currentTab.type === SchemaEditorTabType.TabForTable) {
       const databaseTreeNodeKey = `d-${currentTab.databaseId}`;
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
       }
-      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableName}`;
+      const schemaTreeNodeKey = `s-${currentTab.databaseId}-${currentTab.schemaId}`;
+      if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
+        expandedKeysRef.value.push(schemaTreeNodeKey);
+      }
+      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableId}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
 
@@ -432,6 +500,10 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
     return h(DatabaseIcon, {
       class: "w-4 h-auto text-gray-400",
     });
+  } else if (treeNode.type === "schema") {
+    return h(SchemaIcon, {
+      class: "w-4 h-auto text-gray-400",
+    });
   } else if (treeNode.type === "table") {
     return h(TableIcon, {
       class: "w-4 h-auto text-gray-400",
@@ -444,26 +516,43 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
 const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
   const additionalClassList: string[] = ["select-none"];
 
-  if (treeNode.type === "table") {
+  if (treeNode.type === "schema") {
+    const schema = editorStore.databaseSchemaById
+      .get(treeNode.databaseId)
+      ?.schemaList.find((schema) => schema.id === treeNode.schemaId);
+
+    if (schema) {
+      if (schema.status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (schema.status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else {
+        if (isSchemaChanged(treeNode.databaseId, treeNode.schemaId)) {
+          additionalClassList.push("text-yellow-700");
+        }
+      }
+    }
+  } else if (treeNode.type === "table") {
     const table = editorStore.databaseSchemaById
       .get(treeNode.databaseId)
-      ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
-      ?.tableList.find(
-        (table) => table.newName === treeNode.tableName
-      ) as Table;
+      ?.schemaList.find((schema) => schema.id === treeNode.schemaId)
+      ?.tableList.find((table) => table.id === treeNode.tableId);
 
-    if (table.status === "created") {
-      additionalClassList.push("text-green-700");
-    } else if (table.status === "dropped") {
-      additionalClassList.push("text-red-700 line-through");
-    } else {
-      const originTable = editorStore.getOriginTable(
-        treeNode.databaseId,
-        treeNode.schemaName,
-        treeNode.tableName
-      );
-      if (!isEqual(originTable, table)) {
-        additionalClassList.push("text-yellow-700");
+    if (table) {
+      if (table.status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (table.status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else {
+        if (
+          isTableChanged(
+            treeNode.databaseId,
+            treeNode.schemaId,
+            treeNode.tableId
+          )
+        ) {
+          additionalClassList.push("text-yellow-700");
+        }
       }
     }
   }
@@ -486,20 +575,23 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
+  const icon = h(EllipsisIcon, {
+    class: "w-4 h-auto text-gray-600",
+    onClick: (e) => {
+      handleShowDropdown(e, treeNode);
+    },
+  });
+  const instanceEngine = instanceStore.getInstanceById(
+    treeNode.instanceId
+  ).engine;
   if (treeNode.type === "database") {
-    return h(EllipsisIcon, {
-      class: "w-4 h-auto text-gray-600",
-      onClick: (e) => {
-        handleShowDropdown(e, treeNode);
-      },
-    });
+    return icon;
+  } else if (treeNode.type === "schema") {
+    if (instanceEngine === "POSTGRES") {
+      return icon;
+    }
   } else if (treeNode.type === "table") {
-    return h(EllipsisIcon, {
-      class: "w-4 h-auto text-gray-600",
-      onClick: (e) => {
-        handleShowDropdown(e, treeNode);
-      },
-    });
+    return icon;
   }
   return null;
 };
@@ -523,12 +615,20 @@ const loadSubTree = async (treeNode: TreeNode) => {
     }
 
     databaseDataLoadedSet.value.add(databaseId);
-    const schemaList = await editorStore.getOrFetchSchemaListByDatabaseId(
-      databaseId
-    );
-    if (schemaList.length === 0) {
-      treeNode.children = [];
-      treeNode.isLeaf = true;
+    try {
+      const schemaList = await editorStore.fetchSchemaListByDatabaseId(
+        databaseId
+      );
+      if (schemaList.length === 0) {
+        treeNode.children = [];
+        treeNode.isLeaf = true;
+      }
+    } catch (error) {
+      useNotificationStore().pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("schema-editor.message.failed-to-fetch-database-schema"),
+      });
     }
   }
 };
@@ -560,31 +660,38 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
             databaseId: treeNode.databaseId,
           });
         } else if (treeNode.type === "schema") {
-          // Toggle schema tree node expanded status.
           const index = expandedKeysRef.value.findIndex(
             (key) => key === treeNode.key
           );
-          if (index >= 0) {
-            expandedKeysRef.value.splice(index, 1);
-          } else {
+          if (index < 0) {
             expandedKeysRef.value.push(treeNode.key);
           }
+          editorStore.addTab({
+            id: generateUniqueTabId(),
+            type: SchemaEditorTabType.TabForDatabase,
+            databaseId: treeNode.databaseId,
+            selectedSchemaId: treeNode.schemaId,
+          });
         } else if (treeNode.type === "table") {
           editorStore.addTab({
             id: generateUniqueTabId(),
             type: SchemaEditorTabType.TabForTable,
             databaseId: treeNode.databaseId,
-            schemaName: treeNode.schemaName,
-            tableName: treeNode.tableName,
+            schemaId: treeNode.schemaId,
+            tableId: treeNode.tableId,
           });
         }
 
         nextTick(() => {
           if (treeNode.type === "database") {
             selectedKeysRef.value = [`d-${treeNode.databaseId}`];
+          } else if (treeNode.type === "schema") {
+            selectedKeysRef.value = [
+              `s-${treeNode.databaseId}-${treeNode.schemaId}`,
+            ];
           } else if (treeNode.type === "table") {
             selectedKeysRef.value = [
-              `t-${treeNode.databaseId}-${treeNode.tableId}-${treeNode.label}`,
+              `t-${treeNode.databaseId}-${treeNode.tableId}`,
             ];
           }
           state.shouldRelocateTreeNode = true;
@@ -619,11 +726,27 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (treeNode?.type === "database") {
     if (key === "create-table") {
       await loadSubTree(treeNode);
-      // Only for MySQL.
-      state.tableNameModalContext = {
+      const instanceEngine = instanceStore.getInstanceById(
+        treeNode.instanceId
+      ).engine;
+      if (instanceEngine === "MYSQL") {
+        const schemaList: Schema[] =
+          editorStore.databaseSchemaById.get(treeNode.databaseId)?.schemaList ||
+          [];
+        const schema = head(schemaList);
+        if (!schema) {
+          return;
+        }
+        state.tableNameModalContext = {
+          databaseId: treeNode.databaseId,
+          schemaId: schema.id,
+          tableId: undefined,
+        };
+      }
+    } else if (key === "create-schema") {
+      state.schemaNameModalContext = {
         databaseId: treeNode.databaseId,
-        schemaName: "",
-        tableName: undefined,
+        schemaId: undefined,
       };
     }
   } else if (treeNode?.type === "schema") {
@@ -631,28 +754,38 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       await loadSubTree(treeNode);
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
-        schemaName: treeNode.schemaName,
-        tableName: undefined,
+        schemaId: treeNode.schemaId,
+        tableId: undefined,
       };
+    } else if (key === "rename") {
+      state.schemaNameModalContext = {
+        databaseId: treeNode.databaseId,
+        schemaId: treeNode.schemaId,
+      };
+    } else if (key === "drop-schema") {
+      editorStore.dropSchema(treeNode.databaseId, treeNode.schemaId);
+    } else if (key === "restore") {
+      editorStore.restoreSchema(treeNode.databaseId, treeNode.schemaId);
     }
   } else if (treeNode?.type === "table") {
-    const table = editorStore.databaseSchemaById
-      .get(treeNode.databaseId)
-      ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
-      ?.tableList.find(
-        (table) => table.newName === treeNode.tableName
-      ) as Table;
-
     if (key === "rename") {
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
-        schemaName: treeNode.schemaName,
-        tableName: table.newName,
+        schemaId: treeNode.schemaId,
+        tableId: treeNode.tableId,
       };
     } else if (key === "drop") {
-      editorStore.dropTable(treeNode.databaseId, treeNode.schemaName, table);
+      editorStore.dropTable(
+        treeNode.databaseId,
+        treeNode.schemaId,
+        treeNode.tableId
+      );
     } else if (key === "restore") {
-      editorStore.restoreTable(table);
+      editorStore.restoreTable(
+        treeNode.databaseId,
+        treeNode.schemaId,
+        treeNode.tableId
+      );
     }
   }
   contextMenu.showDropdown = false;

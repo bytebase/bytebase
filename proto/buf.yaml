@@ -1,0 +1,11 @@
+version: v1
+name: buf.build/bytebase/bytebase
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway

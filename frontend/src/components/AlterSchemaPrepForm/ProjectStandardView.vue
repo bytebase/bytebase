@@ -8,39 +8,66 @@
       {{ $t("alter-schema.alter-multiple-db-info") }}
     </div>
     <slot name="header"></slot>
-    <div class="space-y-4 max-h-[55vh] overflow-y-auto">
-      <div
+
+    <NCollapse
+      class="overflow-y-auto"
+      style="max-height: calc(100vh - 380px)"
+      arrow-placement="left"
+      :default-expanded-names="
+        databaseListGroupByEnvironment.map((group) => group.environment.id)
+      "
+    >
+      <NCollapseItem
         v-for="{
           environment,
           databaseList: databaseListInEnvironment,
         } in databaseListGroupByEnvironment"
         :key="environment.id"
+        :name="environment.id"
       >
-        <label class="flex items-center gap-x-2 mb-2 mt-4">
-          <input
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-[calc(1rem+1px)]"
-            v-bind="
-              getAllSelectionStateForEnvironment(
-                environment,
-                databaseListInEnvironment
+        <template #header>
+          <label class="flex items-center gap-x-2" @click.stop="">
+            <input
+              type="checkbox"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-0.5"
+              v-bind="
+                getAllSelectionStateForEnvironment(
+                  environment,
+                  databaseListInEnvironment
+                )
+              "
+              @click.stop=""
+              @input="
+                toggleAllDatabasesSelectionForEnvironment(
+                  environment,
+                  databaseListInEnvironment,
+                  ($event.target as HTMLInputElement).checked
+                )
+              "
+            />
+            <div>{{ environment.name }}</div>
+            <ProtectedEnvironmentIcon
+              class="w-4 h-4 -ml-1"
+              :environment="environment"
+            />
+          </label>
+        </template>
+
+        <template #header-extra>
+          <div class="flex items-center text-xs text-gray-500 mr-2">
+            {{
+              $t(
+                "database.n-selected-m-in-total",
+                getSelectionStateSummaryForEnvironment(
+                  environment,
+                  databaseListInEnvironment
+                )
               )
-            "
-            @input="
-              toggleAllDatabasesSelectionForEnvironment(
-                environment,
-                databaseListInEnvironment,
-                ($event.target as HTMLInputElement).checked
-              )
-            "
-          />
-          <div>{{ environment.name }}</div>
-          <ProtectedEnvironmentIcon
-            class="w-4 h-4 -ml-1"
-            :environment="environment"
-          />
-        </label>
-        <div class="relative bg-white rounded-md -space-y-px">
+            }}
+          </div>
+        </template>
+
+        <div class="relative bg-white rounded-md -space-y-px px-2">
           <template
             v-for="(database, dbIndex) in databaseListInEnvironment"
             :key="dbIndex"
@@ -87,8 +114,8 @@
             </label>
           </template>
         </div>
-      </div>
-    </div>
+      </NCollapseItem>
+    </NCollapse>
   </template>
   <template v-else>
     <!-- single stage view -->
@@ -106,6 +133,8 @@
 <script lang="ts">
 /* eslint-disable vue/no-mutating-props */
 import { defineComponent, watch, PropType, computed } from "vue";
+import { NCollapse, NCollapseItem } from "naive-ui";
+
 import {
   Database,
   DatabaseId,
@@ -123,6 +152,10 @@ export type State = {
 
 export default defineComponent({
   name: "ProjectStandardView",
+  components: {
+    NCollapse,
+    NCollapseItem,
+  },
   props: {
     state: {
       type: Object as PropType<State>,
@@ -244,6 +277,19 @@ export default defineComponent({
       emit("select-database", db);
     };
 
+    const getSelectionStateSummaryForEnvironment = (
+      environment: Environment,
+      databaseList: Database[]
+    ) => {
+      const set = new Set(
+        props.state.selectedDatabaseIdListForEnvironment.get(environment.id)
+      );
+      const selected = databaseList.filter((db) => set.has(db.id)).length;
+      const total = databaseList.length;
+
+      return { selected, total };
+    };
+
     return {
       databaseListGroupByEnvironment,
       toggleDatabaseIdForEnvironment,
@@ -251,6 +297,7 @@ export default defineComponent({
       getAllSelectionStateForEnvironment,
       toggleAllDatabasesSelectionForEnvironment,
       selectDatabase,
+      getSelectionStateSummaryForEnvironment,
     };
   },
 });

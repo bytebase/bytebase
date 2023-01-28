@@ -24,7 +24,7 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { ViewMetadata } from "@/types/proto/database";
+import { ViewMetadata } from "@/types/proto/store/database";
 import { Database } from "@/types";
 
 export default {

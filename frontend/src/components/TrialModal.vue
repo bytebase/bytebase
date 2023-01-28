@@ -16,7 +16,11 @@
           <template #plan>
             <span class="font-bold text-accent">
               {{
-                $t(`subscription.plan.${planTypeToString(PlanType.TEAM)}.title`)
+                $t(
+                  `subscription.plan.${planTypeToString(
+                    PlanType.ENTERPRISE
+                  )}.title`
+                )
               }}
             </span>
           </template>
@@ -72,7 +76,7 @@ const learnMore = () => {
 };
 
 const trialSubscription = () => {
-  subscriptionStore.trialSubscription(PlanType.TEAM).then(() => {
+  subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

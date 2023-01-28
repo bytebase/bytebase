@@ -18,6 +18,17 @@
         <NTooltip>
           <template #trigger>
             <NButton tooltip>
+              <heroicons-outline:photo @click="handleScreenshot" />
+            </NButton>
+          </template>
+          <div class="whitespace-nowrap">Screenshot</div>
+        </NTooltip>
+      </NButtonGroup>
+
+      <NButtonGroup size="tiny" class="bg-white rounded">
+        <NTooltip>
+          <template #trigger>
+            <NButton tooltip>
               <Square2x2 @click="handleFitView" />
             </NButton>
           </template>
@@ -35,29 +46,36 @@
       />
     </div>
 
+    <DummyCanvas ref="dummy" :render-desktop="renderDummy" />
+
     <slot />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { ref, useSlots } from "vue";
 import { useEventListener } from "@vueuse/core";
 import normalizeWheel from "normalize-wheel";
 import { NButtonGroup, NButton } from "naive-ui";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 
-import { Position } from "../types";
+import { Point } from "../types";
 import { useDraggable, minmax, useSchemaDiagramContext } from "../common";
 import ZoomButton from "./ZoomButton.vue";
 import { fitView } from "./libs/fitView";
+import DummyCanvas from "./DummyCanvas.vue";
+import { pushNotification } from "@/store";
+
+const slots = useSlots();
 
 const canvas = ref<Element>();
 const desktop = ref<Element>();
+const dummy = ref<InstanceType<typeof DummyCanvas>>();
 
-const { tableList, rectOfTable, zoom, position, events } =
+const { database, busy, zoom, position, panning, geometries, events } =
   useSchemaDiagramContext();
 
-const zoomCenter = ref<Position>({ x: 0.5, y: 0.5 });
+const zoomCenter = ref<Point>({ x: 0.5, y: 0.5 });
 const ZOOM_RANGE = {
   max: 2, // 200%
   min: 0.05, // 5%
@@ -65,10 +83,9 @@ const ZOOM_RANGE = {
 
 const handleFitView = () => {
   if (!canvas.value) return;
-  const rects = tableList.value.map(rectOfTable);
   const layout = fitView(
     canvas.value,
-    rects,
+    [...geometries.value],
     [10, 20, 40, 20] /* paddings [T,R,B,L] */,
     [ZOOM_RANGE.min, 1.0] /* [zoomMin, zoomMax] */
   );
@@ -80,7 +97,7 @@ const handleFitView = () => {
 };
 events.on("fit-view", handleFitView);
 
-const handleZoom = (delta: number, center: Position = { x: 0.5, y: 0.5 }) => {
+const handleZoom = (delta: number, center: Point = { x: 0.5, y: 0.5 }) => {
   if (!canvas.value) return "";
 
   const z = minmax(zoom.value + delta, ZOOM_RANGE.min, ZOOM_RANGE.max);
@@ -100,11 +117,18 @@ const handleZoom = (delta: number, center: Position = { x: 0.5, y: 0.5 }) => {
 const handlePan = (x: number, y: number) => {
   position.value.x += x;
   position.value.y += y;
+  panning.value = true;
+};
+const handlePanEnd = () => {
+  requestAnimationFrame(() => {
+    panning.value = false;
+  });
 };
 
 useDraggable(canvas, {
   exact: false,
   onPan: handlePan,
+  onEnd: handlePanEnd,
 });
 
 useEventListener(
@@ -127,4 +151,23 @@ useEventListener(
   },
   true
 );
+
+const renderDummy = () => {
+  return slots["desktop"]?.();
+};
+
+const handleScreenshot = async () => {
+  busy.value = true;
+  try {
+    await dummy.value?.capture(`${database.value.name}.png`);
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Screenshot request failed",
+    });
+  } finally {
+    busy.value = false;
+  }
+};
 </script>

@@ -4,24 +4,10 @@
       ref="editorRef"
       class="w-full h-auto max-h-[360px]"
       :value="sql"
+      :language="selectedLanguage"
       :dialect="selectedDialect"
       :readonly="readonly"
-      :options="{
-        theme: 'bb-dark',
-        minimap: {
-          enabled: false,
-        },
-        scrollbar: {
-          vertical: 'hidden',
-          horizontal: 'hidden',
-          alwaysConsumeMouseWheel: false,
-        },
-        overviewRulerLanes: 0,
-        lineNumbers: getLineNumber,
-        lineNumbersMinChars: 5,
-        glyphMargin: false,
-        cursorStyle: 'block',
-      }"
+      :options="EDITOR_OPTIONS"
       @change="handleChange"
       @change-selection="handleChangeSelection"
       @save="handleSaveSheet"
@@ -32,6 +18,7 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, ref, watch, watchEffect } from "vue";
+import { editor as Editor } from "monaco-editor";
 
 import {
   useInstanceStore,
@@ -43,7 +30,8 @@ import {
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { Database, ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
+import { useInstanceEditorLanguage } from "@/utils";
 
 const props = defineProps({
   sql: {
@@ -83,6 +71,7 @@ const selectedInstance = useInstanceById(
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
+const selectedLanguage = useInstanceEditorLanguage(selectedInstance);
 const selectedDialect = computed((): SQLDialect => {
   const engine = selectedInstanceEngine.value;
   if (engine === "PostgreSQL") {
@@ -110,6 +99,10 @@ watch(
   }
 );
 
+const firstLinePrompt = computed(() => {
+  return selectedLanguage.value === "sql" ? "SQL>" : "MONGO>";
+});
+
 const getLineNumber = (lineNumber: number) => {
   /*
     Show a SQL CLI like command prompt.
@@ -117,7 +110,9 @@ const getLineNumber = (lineNumber: number) => {
       -> second_line
       -> more_lines
   */
-  if (lineNumber === 1) return "SQL>";
+  if (lineNumber === 1) {
+    return firstLinePrompt.value;
+  }
   return "->";
 };
 
@@ -257,4 +252,25 @@ const updateEditorHeight = () => {
   }
   editorRef.value?.setEditorContentHeight(actualHeight);
 };
+
+const EDITOR_OPTIONS = ref<Editor.IStandaloneEditorConstructionOptions>({
+  theme: "bb-dark",
+  minimap: {
+    enabled: false,
+  },
+  scrollbar: {
+    vertical: "hidden",
+    horizontal: "hidden",
+    alwaysConsumeMouseWheel: false,
+  },
+  overviewRulerLanes: 0,
+  lineNumbers: getLineNumber,
+  lineNumbersMinChars: firstLinePrompt.value.length + 1,
+  glyphMargin: false,
+  cursorStyle: "block",
+});
+watch(
+  firstLinePrompt,
+  (prompt) => (EDITOR_OPTIONS.value.lineNumbersMinChars = prompt.length + 1)
+);
 </script>

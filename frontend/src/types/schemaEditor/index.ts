@@ -11,6 +11,8 @@ export interface DatabaseTabContext {
   id: string;
   type: SchemaEditorTabType.TabForDatabase;
   databaseId: DatabaseId;
+  selectedSchemaId?: string;
+  selectedSubtab?: string;
 }
 
 // Tab context for editing table.
@@ -18,8 +20,9 @@ export interface TableTabContext {
   id: string;
   type: SchemaEditorTabType.TabForTable;
   databaseId: DatabaseId;
-  schemaName: string;
-  tableName: string;
+  schemaId: string;
+  tableId: string;
+  selectedSubtab?: string;
 }
 
 export type TabContext = DatabaseTabContext | TableTabContext;
@@ -46,13 +49,30 @@ export interface SchemaEditorState {
 export interface DatabaseEdit {
   databaseId: DatabaseId;
 
+  createSchemaList: CreateSchemaContext[];
+  renameSchemaList: RenameSchemaContext[];
+  dropSchemaList: DropSchemaContext[];
   createTableList: CreateTableContext[];
   alterTableList: AlterTableContext[];
   renameTableList: RenameTableContext[];
   dropTableList: DropTableContext[];
 }
 
+export interface CreateSchemaContext {
+  schema: string;
+}
+
+export interface RenameSchemaContext {
+  oldName: string;
+  newName: string;
+}
+
+export interface DropSchemaContext {
+  schema: string;
+}
+
 export interface CreateTableContext {
+  schema: string;
   name: string;
   engine: string;
   characterSet: string;
@@ -60,22 +80,33 @@ export interface CreateTableContext {
   comment: string;
 
   addColumnList: AddColumnContext[];
+  primaryKeyList: string[];
+  addForeignKeyList: AddForeignKeyContext[];
 }
 
 export interface AlterTableContext {
+  schema: string;
   name: string;
 
   addColumnList: AddColumnContext[];
+  alterColumnList: AlterColumnContext[];
   changeColumnList: ChangeColumnContext[];
   dropColumnList: DropColumnContext[];
+  dropPrimaryKey: boolean;
+  dropPrimaryKeyList: string[];
+  primaryKeyList?: string[];
+  dropForeignKeyList: string[];
+  addForeignKeyList: AddForeignKeyContext[];
 }
 
 export interface RenameTableContext {
+  schema: string;
   oldName: string;
   newName: string;
 }
 
 export interface DropTableContext {
+  schema: string;
   name: string;
 }
 
@@ -86,6 +117,16 @@ export interface AddColumnContext {
   collation: string;
   comment: string;
   nullable: boolean;
+  default?: string;
+}
+
+export interface AlterColumnContext {
+  oldName: string;
+  newName: string;
+  type?: string;
+  comment?: string;
+  nullable?: boolean;
+  defaultChanged: boolean;
   default?: string;
 }
 
@@ -102,6 +143,13 @@ export interface ChangeColumnContext {
 
 export interface DropColumnContext {
   name: string;
+}
+
+export interface AddForeignKeyContext {
+  columnList: string[];
+  referencedSchema: string;
+  referencedTable: string;
+  referencedColumnList: string[];
 }
 
 /**

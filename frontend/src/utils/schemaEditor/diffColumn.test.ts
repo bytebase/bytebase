@@ -3,6 +3,7 @@ import {
   AddColumnContext,
   DropColumnContext,
   ChangeColumnContext,
+  AlterColumnContext,
 } from "@/types";
 import { Column } from "@/types/schemaEditor/atomType";
 import { diffColumnList } from "./diffColumn";
@@ -13,6 +14,7 @@ it("diff add column list", () => {
     columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
+      alterColumnList: AlterColumnContext[];
       changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
@@ -21,8 +23,8 @@ it("diff add column list", () => {
       originColumnList: [],
       columnList: [
         {
-          oldName: "id",
-          newName: "id",
+          id: "1",
+          name: "id",
           type: "int",
           comment: "",
           nullable: false,
@@ -41,6 +43,7 @@ it("diff add column list", () => {
             default: undefined,
           },
         ],
+        alterColumnList: [],
         changeColumnList: [],
         dropColumnList: [],
       },
@@ -59,6 +62,7 @@ it("diff modify column list", () => {
     columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
+      alterColumnList: AlterColumnContext[];
       changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
@@ -66,8 +70,8 @@ it("diff modify column list", () => {
     {
       originColumnList: [
         {
-          oldName: "id",
-          newName: "id",
+          id: "1",
+          name: "id",
           type: "int",
           comment: "",
           nullable: true,
@@ -76,8 +80,8 @@ it("diff modify column list", () => {
       ],
       columnList: [
         {
-          oldName: "id",
-          newName: "id",
+          id: "1",
+          name: "id",
           type: "varchar",
           comment: "",
           nullable: false,
@@ -86,6 +90,15 @@ it("diff modify column list", () => {
       ],
       wanted: {
         addColumnList: [],
+        alterColumnList: [
+          {
+            oldName: "id",
+            newName: "id",
+            type: "varchar",
+            nullable: false,
+            defaultChanged: false,
+          },
+        ],
         changeColumnList: [
           {
             oldName: "id",
@@ -115,6 +128,7 @@ it("diff drop column list", () => {
     columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
+      alterColumnList: AlterColumnContext[];
       changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
@@ -122,8 +136,8 @@ it("diff drop column list", () => {
     {
       originColumnList: [
         {
-          oldName: "id",
-          newName: "id",
+          id: "1",
+          name: "id",
           type: "int",
           comment: "",
           nullable: true,
@@ -131,8 +145,8 @@ it("diff drop column list", () => {
       ],
       columnList: [
         {
-          oldName: "id",
-          newName: "id",
+          id: "1",
+          name: "id",
           type: "int",
           comment: "",
           nullable: true,
@@ -141,133 +155,11 @@ it("diff drop column list", () => {
       ],
       wanted: {
         addColumnList: [],
+        alterColumnList: [],
         changeColumnList: [],
         dropColumnList: [
           {
             name: "id",
-          },
-        ],
-      },
-    },
-  ];
-
-  for (const test of testList) {
-    const result = diffColumnList(test.originColumnList, test.columnList);
-    expect(result).toStrictEqual(test.wanted);
-  }
-});
-
-it("diff column list", () => {
-  const testList: {
-    originColumnList: Column[];
-    columnList: Column[];
-    wanted: {
-      addColumnList: AddColumnContext[];
-      changeColumnList: ChangeColumnContext[];
-      dropColumnList: DropColumnContext[];
-    };
-  }[] = [
-    {
-      originColumnList: [
-        {
-          oldName: "id",
-          newName: "id",
-          type: "int",
-          comment: "",
-          nullable: true,
-          status: "normal",
-        } as any as Column,
-        {
-          oldName: "name",
-          newName: "name",
-          type: "varchar",
-          comment: "",
-          nullable: true,
-          status: "normal",
-        } as any as Column,
-        {
-          oldName: "city",
-          newName: "city",
-          type: "varchar",
-          comment: "",
-          nullable: true,
-          status: "normal",
-        } as any as Column,
-      ],
-      columnList: [
-        {
-          oldName: "id",
-          newName: "id",
-          type: "int",
-          comment: "this is id",
-          nullable: true,
-          default: undefined,
-          status: "normal",
-        } as any as Column,
-        {
-          oldName: "name",
-          newName: "name",
-          type: "varchar",
-          comment: "",
-          nullable: false,
-          default: "",
-          status: "normal",
-        } as Column,
-        {
-          oldName: "city",
-          newName: "city",
-          type: "varchar",
-          comment: "",
-          nullable: true,
-          status: "dropped",
-        } as any as Column,
-        {
-          oldName: "birthday",
-          newName: "birthday",
-          type: "varchar",
-          comment: "",
-          nullable: false,
-          default: "",
-          status: "created",
-        } as Column,
-      ],
-      wanted: {
-        addColumnList: [
-          {
-            name: "birthday",
-            type: "varchar",
-            characterSet: "",
-            collation: "",
-            comment: "",
-            nullable: false,
-            default: "",
-          },
-        ],
-        changeColumnList: [
-          {
-            oldName: "id",
-            newName: "id",
-            type: "int",
-            characterSet: "",
-            collation: "",
-            comment: "this is id",
-            nullable: true,
-            default: undefined,
-          },
-          {
-            oldName: "name",
-            newName: "name",
-            type: "varchar",
-            characterSet: "",
-            collation: "",
-            comment: "",
-            nullable: false,
-            default: "",
-          },
-        ],
-        dropColumnList: [
-          {
-            name: "city",
           },
         ],
       },

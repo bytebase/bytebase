@@ -1,7 +1,0 @@
-- statement: ALTER TABLE t1 ALTER COLUMN f1 TYPE TEXT
-  want:
-    - status: WARN
-      code: 111
-      title: schema.backward-compatibility
-      content: '"ALTER TABLE t1 ALTER COLUMN f1 TYPE TEXT" may cause incompatibility with the existing data and code'
-      line: 1

@@ -75,7 +75,7 @@
                 {{ pushEvent.fileCommit.id.substring(0, 7) }}:
               </a>
               <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
-              <i18n-t keypath="migration-history.commit-info">
+              <i18n-t keypath="change-history.commit-info">
                 <template #author>
                   {{ pushEvent.authorName }}
                 </template>
@@ -129,30 +129,30 @@
             <heroicons-outline:exclamation-circle
               class="w-5 h-5 mr-0.5 text-error"
             />
-            <span>{{ $t("migration-history.schema-drift-detected") }}</span>
+            <span>{{ $t("change-history.schema-drift-detected") }}</span>
           </div>
           <div
             class="normal-link text-sm"
-            data-label="bb-migration-history-view-drift-button"
+            data-label="bb-change-history-view-drift-button"
             @click="state.viewDrift = true"
           >
-            {{ $t("migration-history.view-drift") }}
+            {{ $t("change-history.view-drift") }}
           </div>
         </div>
 
         <div class="flex flex-row items-center space-x-2 mt-2">
           <BBSwitch
             v-if="allowShowDiff"
-            :label="$t('migration-history.show-diff')"
+            :label="$t('change-history.show-diff')"
             :value="state.showDiff"
-            data-label="bb-migration-history-diff-switch"
+            data-label="bb-change-history-diff-switch"
             @toggle="state.showDiff = $event"
           />
           <div class="textinfolabel">
             <i18n-t
               v-if="state.showDiff"
               tag="span"
-              keypath="migration-history.left-vs-right"
+              keypath="change-history.left-vs-right"
             >
               <template #prevLink>
                 <router-link
@@ -165,11 +165,11 @@
               </template>
             </i18n-t>
             <template v-else>
-              {{ $t("migration-history.schema-snapshot-after-migration") }}
+              {{ $t("change-history.schema-snapshot-after-change") }}
             </template>
           </div>
           <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
-            ({{ $t("migration-history.no-schema-change") }})
+            ({{ $t("change-history.no-schema-change") }})
           </div>
         </div>
 
@@ -179,17 +179,17 @@
           :old-string="migrationHistory.schemaPrev"
           :new-string="migrationHistory.schema"
           output-format="side-by-side"
-          data-label="bb-migration-history-code-diff-block"
+          data-label="bb-change-history-code-diff-block"
         />
         <template v-else>
           <highlight-code-block
             v-if="migrationHistory.schema"
             class="border mt-2 px-2 whitespace-pre-wrap w-full"
             :code="migrationHistory.schema"
-            data-label="bb-migration-history-code-block"
+            data-label="bb-change-history-code-block"
           />
           <div v-else class="mt-2">
-            {{ $t("migration-history.current-schema-empty") }}
+            {{ $t("change-history.current-schema-empty") }}
           </div>
         </template>
       </div>
@@ -200,9 +200,9 @@
       @close="state.viewDrift = false"
     >
       <template #title>
-        <span>{{ $t("migration-history.schema-drift") }}</span>
+        <span>{{ $t("change-history.schema-drift") }}</span>
         <span class="mx-2">-</span>
-        <i18n-t tag="span" keypath="migration-history.left-vs-right">
+        <i18n-t tag="span" keypath="change-history.left-vs-right">
           <template #prevLink>
             <router-link class="normal-link" :to="previousHistoryLink">
               ({{ previousHistory.version }})
@@ -241,6 +241,7 @@ import {
   idFromSlug,
   nanosecondsToString,
   migrationHistorySlug,
+  migrationHistoryIdFromSlug,
 } from "../utils";
 import {
   MigrationHistory,
@@ -274,7 +275,9 @@ export default defineComponent({
       return useDatabaseStore().getDatabaseById(idFromSlug(props.databaseSlug));
     });
 
-    const migrationHistoryId = idFromSlug(props.migrationHistorySlug);
+    const migrationHistoryId = migrationHistoryIdFromSlug(
+      props.migrationHistorySlug
+    );
 
     onMounted(() => {
       instanceStore.fetchMigrationHistory({

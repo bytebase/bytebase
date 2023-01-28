@@ -9,8 +9,8 @@
       :data-bb-modal-index="index"
       :data-bb-modal-active="active"
     >
-      <div class="relative -mt-4 -ml-4 flex items-center justify-between">
-        <div class="ml-4 text-xl text-main">
+      <div class="modal-header" :class="headerClass">
+        <div class="text-xl text-main">
           <slot name="title"><component :is="renderTitle" /></slot>
           <component :is="renderSubtitle" />
         </div>
@@ -25,7 +25,7 @@
           <heroicons-solid:x class="w-6 h-6" />
         </button>
       </div>
-      <div class="modal-container">
+      <div class="modal-container" :class="containerClass">
         <slot />
       </div>
     </div>
@@ -41,11 +41,13 @@ import {
   onBeforeMount,
   onMounted,
   onUnmounted,
+  PropType,
   provide,
   ref,
   Ref,
   RenderFunction,
 } from "vue";
+import type { VueClass } from "@/utils";
 import { useModalStack } from "./BBModalStack.vue";
 
 type Overrides = {
@@ -71,6 +73,14 @@ export default defineComponent({
     showClose: {
       type: Boolean,
       default: true,
+    },
+    headerClass: {
+      type: [String, Object, Array] as PropType<VueClass>,
+      default: undefined,
+    },
+    containerClass: {
+      type: [String, Object, Array] as PropType<VueClass>,
+      default: undefined,
     },
     escClosable: {
       type: Boolean,
@@ -206,15 +216,17 @@ export const useOverrideSubtitle = (
 
 <style scoped>
 .bb-modal {
-  @apply absolute m-auto w-full max-w-max bg-white shadow-lg rounded-lg p-8 flex space-y-6 divide-y divide-block-border pointer-events-auto;
+  @apply absolute m-auto w-full max-w-max bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto;
   @apply flex-col;
 
   max-height: calc(100vh - 80px);
 }
 
-.modal-container {
-  @apply px-px pt-4 max-h-screen overflow-auto w-full;
+.modal-header {
+  @apply relative mx-8 pb-2 flex items-center justify-between border-b border-block-border;
+}
 
-  margin-top: 0.5rem !important;
+.modal-container {
+  @apply px-8 pt-2 max-h-screen overflow-auto w-full;
 }
 </style>

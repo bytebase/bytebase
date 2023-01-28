@@ -13,11 +13,6 @@ export type ProjectVisibility = "PUBLIC" | "PRIVATE";
 
 export type ProjectTenantMode = "DISABLED" | "TENANT";
 
-export type ProjectRoleProvider =
-  | "GITLAB_SELF_HOST"
-  | "GITHUB_COM"
-  | "BYTEBASE";
-
 export type SchemaChangeType = "DDL" | "SDL";
 
 export type LGTMCheckValue = "DISABLED" | "PROJECT_OWNER" | "PROJECT_MEMBER";
@@ -26,25 +21,10 @@ export type LGTMCheckSetting = {
   value: LGTMCheckValue;
 };
 
-export type ProjectRoleProviderPayload = {
-  vcsRole: string;
-  lastSyncTs: number;
-};
-
-export const EmptyProjectRoleProviderPayload: ProjectRoleProviderPayload = {
-  vcsRole: "",
-  lastSyncTs: 0,
-};
-
 // Project
 export type Project = {
   id: ProjectId;
-
-  // Standard fields
-  creator: Principal;
-  updater: Principal;
-  createdTs: number;
-  updatedTs: number;
+  resourceId: string;
   rowStatus: RowStatus;
 
   // Domain specific fields
@@ -57,7 +37,6 @@ export type Project = {
   visibility: ProjectVisibility;
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
-  roleProvider: ProjectRoleProvider;
   schemaChangeType: SchemaChangeType;
   lgtmCheckSetting: LGTMCheckSetting;
 };
@@ -74,7 +53,6 @@ export type ProjectCreate = {
   key: string;
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
-  roleProvider: ProjectRoleProvider;
   schemaChangeType: SchemaChangeType;
 };
 
@@ -85,7 +63,6 @@ export type ProjectPatch = {
   // Domain specific fields
   name?: string;
   key?: string;
-  roleProvider?: ProjectRoleProvider;
   schemaChangeType?: SchemaChangeType;
   lgtmCheckSetting?: LGTMCheckSetting;
   dbNameTemplate?: string;
@@ -98,30 +75,20 @@ export type ProjectMember = {
   // Related fields
   project: Project;
 
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
   // Domain specific fields
   role: ProjectRoleType;
   principal: Principal;
-  roleProvider: ProjectRoleProvider;
-  payload: ProjectRoleProviderPayload;
 };
 
 export type ProjectMemberCreate = {
   // Domain specific fields
   principalId: PrincipalId;
   role: ProjectRoleType;
-  roleProvider: ProjectRoleProvider;
 };
 
 export type ProjectMemberPatch = {
   // Domain specific fields
   role: ProjectRoleType;
-  roleProvider: ProjectRoleProvider;
 };
 
 export type ProjectRepositoryConfig = {

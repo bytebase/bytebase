@@ -7,34 +7,58 @@ import {
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
-} from "@/types/proto/database";
+} from "@/types/proto/store/database";
 
 export const useDBSchemaStore = defineStore("dbSchema", {
   state: (): DBSchemaState => ({
+    requestCache: new Map(),
     databaseMetadataById: new Map(),
   }),
   actions: {
     async getOrFetchDatabaseMetadataById(
-      databaseId: DatabaseId
+      databaseId: DatabaseId,
+      skipCache = false
     ): Promise<DatabaseMetadata> {
-      if (this.databaseMetadataById.has(databaseId)) {
-        return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
+      if (!skipCache) {
+        if (this.databaseMetadataById.has(databaseId)) {
+          // The metadata entity is stored in local dictionary.
+          return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
+        }
+
+        const cachedRequest = this.requestCache.get(databaseId);
+        if (cachedRequest) {
+          // The request was sent but still not returned.
+          // We won't create a duplicated request.
+          return cachedRequest;
+        }
       }
 
-      const res = await axios.get(
-        `/api/database/${databaseId}/schema?metadata=true`
-      );
-      const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
-      this.databaseMetadataById.set(databaseId, databaseMetadata);
-      return databaseMetadata;
+      // Send a request and cache it.
+      const promise = axios
+        .get(`/api/database/${databaseId}/schema?metadata=true`)
+        .then((res) => {
+          const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
+          this.databaseMetadataById.set(databaseId, databaseMetadata);
+          return databaseMetadata;
+        });
+      this.requestCache.set(databaseId, promise);
+
+      return promise;
     },
     async getOrFetchSchemaListByDatabaseId(
-      databaseId: DatabaseId
+      databaseId: DatabaseId,
+      skipCache = false
     ): Promise<SchemaMetadata[]> {
-      if (!this.databaseMetadataById.has(databaseId)) {
-        await this.getOrFetchDatabaseMetadataById(databaseId);
+      if (skipCache || !this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId, skipCache);
       }
       return this.getSchemaListByDatabaseId(databaseId);
+    },
+    getDatabaseMetadataByDatabaseId(databaseId: DatabaseId): DatabaseMetadata {
+      return (
+        this.databaseMetadataById.get(databaseId) ??
+        DatabaseMetadata.fromPartial({})
+      );
     },
     getSchemaListByDatabaseId(databaseId: DatabaseId): SchemaMetadata[] {
       const databaseMetadata = this.databaseMetadataById.get(databaseId);
@@ -113,6 +137,10 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       }
 
       return databaseMetadata.extensions;
+    },
+    removeCacheByDatabaseId(databaseId: DatabaseId) {
+      this.requestCache.delete(databaseId);
+      this.databaseMetadataById.delete(databaseId);
     },
   },
 });

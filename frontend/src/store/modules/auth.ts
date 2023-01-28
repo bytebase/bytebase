@@ -5,15 +5,18 @@ import { computed, Ref } from "vue";
 import {
   Principal,
   AuthState,
-  LoginInfo,
+  AuthProviderType,
+  VCSLoginInfo,
   SignupInfo,
   ActivateInfo,
   ResourceObject,
   unknown,
   PrincipalId,
   AuthProvider,
+  BytebaseLoginInfo,
 } from "@/types";
 import { getIntCookie } from "@/utils";
+import { authServiceClient } from "@/grpcweb";
 import { usePrincipalStore } from "./principal";
 
 function convert(user: ResourceObject): Principal {
@@ -49,16 +52,34 @@ export const useAuthStore = defineStore("auth", {
       this.setAuthProviderList(convertedProviderList);
       return convertedProviderList;
     },
-    async login(loginInfo: LoginInfo) {
+    async login(loginInfo: BytebaseLoginInfo) {
+      await axios.post("/v1/auth/login", {
+        email: loginInfo.email,
+        password: loginInfo.password,
+        web: true,
+      });
+      const userId = getIntCookie("user");
+      if (userId) {
+        const loggedInUser = await usePrincipalStore().fetchPrincipalById(
+          userId
+        );
+
+        this.setCurrentUser(loggedInUser);
+        return loggedInUser;
+      }
+      return unknown("PRINCIPAL") as Principal;
+    },
+    async vcsLogin(
+      authProviderType: AuthProviderType,
+      loginInfo: VCSLoginInfo
+    ) {
       const loggedInUser = (
-        await axios.post(`/api/auth/login/${loginInfo.authProvider}`, {
-          data: { type: "loginInfo", attributes: loginInfo.payload },
+        await axios.post(`/api/auth/login/${authProviderType}`, {
+          data: { type: "loginInfo", attributes: loginInfo },
         })
       ).data.data;
-
       // Refresh the corresponding principal
       await usePrincipalStore().fetchPrincipalById(loggedInUser.id);
-
       // The conversion relies on the above refresh.
       const convertedUser = convert(loggedInUser);
       this.setCurrentUser(convertedUser);
@@ -67,26 +88,35 @@ export const useAuthStore = defineStore("auth", {
     async logout() {
       const unknownPrincipal = unknown("PRINCIPAL") as Principal;
       try {
-        await axios.post("/api/auth/logout");
+        await axios.post("/v1/auth/logout");
       } finally {
         this.setCurrentUser(unknownPrincipal);
       }
       return unknownPrincipal;
     },
     async signup(signupInfo: SignupInfo) {
-      const newUser = (
-        await axios.post("/api/auth/signup", {
-          data: { type: "signupInfo", attributes: signupInfo },
-        })
-      ).data.data;
+      await authServiceClient().createUser({
+        user: {
+          email: signupInfo.email,
+          title: signupInfo.name,
+          password: signupInfo.password,
+        },
+      });
+      await axios.post("/v1/auth/login", {
+        email: signupInfo.email,
+        password: signupInfo.password,
+        web: true,
+      });
+      const userId = getIntCookie("user");
+      if (userId) {
+        const loggedInUser = await usePrincipalStore().fetchPrincipalById(
+          userId
+        );
 
-      // Refresh the corresponding principal
-      await usePrincipalStore().fetchPrincipalById(newUser.id);
-
-      // The conversion relies on the above refresh.
-      const convertedUser = convert(newUser);
-      this.setCurrentUser(convertedUser);
-      return convertedUser;
+        this.setCurrentUser(loggedInUser);
+        return loggedInUser;
+      }
+      return unknown("PRINCIPAL") as Principal;
     },
     async activate(activateInfo: ActivateInfo) {
       const activatedUser = (

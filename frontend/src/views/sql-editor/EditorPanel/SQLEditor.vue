@@ -6,6 +6,7 @@
       ref="editorRef"
       v-model:value="sqlCode"
       class="w-full h-full"
+      :language="selectedLanguage"
       :dialect="selectedDialect"
       :readonly="readonly"
       @change="handleChange"
@@ -35,7 +36,8 @@ import type {
   ExecuteOption,
   SQLDialect,
 } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
+import { useInstanceEditorLanguage } from "@/utils";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -63,6 +65,7 @@ const selectedInstance = useInstanceById(
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
+const selectedLanguage = useInstanceEditorLanguage(selectedInstance);
 const selectedDialect = computed((): SQLDialect => {
   const engine = selectedInstanceEngine.value;
   if (engine === "PostgreSQL") {
@@ -158,17 +161,18 @@ const handleEditorReady = async () => {
     },
   });
 
-  watchEffect(async () => {
+  watchEffect(() => {
     if (selectedInstance.value) {
       const databaseMap: Map<Database, TableMetadata[]> = new Map();
       const databaseList = databaseStore.getDatabaseListByInstanceId(
         selectedInstance.value.id
       );
+      // Only provide auto-complete context for those opened database.
       for (const database of databaseList) {
-        const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-          database.id
-        );
-        databaseMap.set(database, tableList);
+        const tableList = dbSchemaStore.getTableListByDatabaseId(database.id);
+        if (tableList.length > 0) {
+          databaseMap.set(database, tableList);
+        }
       }
       editorRef.value?.setEditorAutoCompletionContext(databaseMap);
     }

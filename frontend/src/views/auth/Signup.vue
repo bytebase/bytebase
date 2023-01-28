@@ -313,7 +313,8 @@ export default defineComponent({
     };
 
     const onTextEmail = () => {
-      const email = state.email.trim();
+      const email = state.email.trim().toLowerCase();
+      state.email = email;
       if (!state.nameManuallyEdited) {
         const emailParts = email.split("@");
         if (emailParts.length > 0) {
@@ -342,7 +343,7 @@ export default defineComponent({
       state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy;
     };
 
-    const trySignup = () => {
+    const trySignup = async () => {
       if (!passwordMatch.value) {
         state.showPasswordMismatchError = true;
       } else {
@@ -351,16 +352,11 @@ export default defineComponent({
           password: state.password,
           name: state.name,
         };
-        useAuthStore()
-          .signup(signupInfo)
-          .then(async () => {
-            // we need to update the server info after setting up the first admin account so that the splash screen
-            // won't display the UI for registering the first admin account again.
-            if (needAdminSetup.value) {
-              await actuatorStore.fetchServerInfo();
-            }
-            router.push("/");
-          });
+        await useAuthStore().signup(signupInfo);
+        if (needAdminSetup.value) {
+          await actuatorStore.fetchServerInfo();
+        }
+        router.replace("/");
       }
     };
 

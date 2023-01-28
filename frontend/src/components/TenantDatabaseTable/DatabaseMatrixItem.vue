@@ -112,7 +112,7 @@ export default defineComponent({
     });
 
     const schemaVersionUrl = computed((): string => {
-      return `/db/${databaseSlug(props.database)}#migration-history`;
+      return `/db/${databaseSlug(props.database)}#change-history`;
     });
 
     return {

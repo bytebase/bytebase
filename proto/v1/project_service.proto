@@ -1,0 +1,394 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service ProjectService {
+  rpc GetProject(GetProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc CreateProject(CreateProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/projects"
+      body: "project"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateProject(UpdateProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      patch: "/v1/{project.name=projects/*}"
+      body: "project"
+    };
+    option (google.api.method_signature) = "project,update_mask";
+  }
+
+  rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=projects/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*}:undelete"
+      body: "*"
+    };
+  }
+
+  rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy){
+    option (google.api.http) = {
+      get: "/v1/{project=projects/*}:getIamPolicy"
+    };
+  }
+
+  rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy){
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:setIamPolicy"
+      body: "*"
+    };
+  }
+
+  rpc SyncExternalIamPolicy(SyncExternalIamPolicyRequest) returns (IamPolicy){
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:syncExternalIamPolicy"
+      body: "*"
+    };
+  }
+
+  rpc GetReview(GetReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*/reviews/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListReviews(ListReviewsRequest) returns (ListReviewsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/reviews"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc UpdateReview(UpdateReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      patch: "/v1/{review.name=projects/*/reviews/*}"
+      body: "review"
+    };
+    option (google.api.method_signature) = "review,update_mask";
+  }
+
+  rpc BatchUpdateReviews(BatchUpdateReviewsRequest) returns (BatchUpdateReviewsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/reviews:batchUpdate"
+      body: "*"
+    };
+  }
+}
+
+message GetProjectRequest {
+  // The name of the project to retrieve.
+  // Format: projects/{project}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListProjectsRequest {
+  // The maximum number of projects to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 projects will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListProjects` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListProjects` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted projects if specified.
+  bool show_deleted = 3;
+}
+
+message ListProjectsResponse {
+  // The projects from the specified request.
+  repeated Project projects = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateProjectRequest {
+  // The project to create.
+  Project project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the project, which will become the final component of
+  // the project's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string project_id = 2;
+}
+
+message UpdateProjectRequest {
+  // The project to update.
+  //
+  // The project's `name` field is used to identify the project to update.
+  // Format: projects/{project}
+  Project project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteProjectRequest {
+  // The name of the project to delete.
+  // Format: projects/{project}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteProjectRequest {
+  // The name of the deleted project.
+  // Format: projects/{project}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetIamPolicyRequest {
+  // The name of the project to get the IAM policy.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];  
+}
+
+message SetIamPolicyRequest {
+  // The name of the project to set the IAM policy.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SyncExternalIamPolicyRequest {
+  // The name of the project to set the IAM policy.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Project {
+  // The name of the project.
+  // Format: projects/{project}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  // The title or name of a project. It's not unique within the workspace.
+  string title = 4;
+
+  // The key is a short and upper-case identifier for a project. It's unique within the workspace.
+  string key = 5;
+
+  Workflow workflow = 6;
+
+  Visibility visibility = 7;
+
+  TenantMode tenant_mode = 8;
+
+  string db_name_template = 9;
+
+  SchemaVersion schema_version = 10;
+
+  SchemaChange schema_change = 11;
+
+  LgtmCheck lgtm_check = 12;
+}
+
+message IamPolicy {
+  // Collection of binding.
+  // A binding binds one or more project members to a single project role.
+  repeated Binding bindings = 1;
+}
+
+message Binding {
+  // The project role that is assigned to the members.
+  ProjectRole role = 1;
+
+  // Specifies the principals requesting access for a Bytebase resource.
+  // `members` can have the following values:
+  //
+  // * `user:{emailid}`: An email address that represents a specific Bytebase
+  //    account. For example, `alice@example.com` .
+  //
+  repeated string members = 2;
+}
+
+enum Workflow {
+  WORKFLOW_UNSPECIFIED = 0;
+  UI = 1;
+  VCS = 2;
+}
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PUBLIC = 1;
+  VISIBILITY_PRIVATE = 2;
+}
+
+enum TenantMode {
+  TENANT_MODE_UNSPECIFIED = 0;
+  TENANT_MODE_DISABLED = 1;
+  TENANT_MODE_ENABLED = 2;
+}
+
+enum SchemaVersion {
+  SCHEMA_VERSION_UNSPECIFIED = 0;
+  TIMESTAMP = 1;
+  SEMANTIC = 2;
+}
+
+enum SchemaChange {
+  SCHEMA_CHANGE_UNSPECIFIED = 0;
+  DDL = 1;
+  SDL = 2;
+}
+
+
+enum LgtmCheck {
+  LGTM_CHECK_UNSPECIFIED = 0;
+  LGTM_CHECK_DISABLED = 1;
+  LGTM_CHECK_PROJECT_OWNER = 2;
+  LGTM_CHECK_PROJECT_MEMBER = 3;
+}
+
+enum ProjectRole {
+  PROJECT_ROLE_UNSPECIFIED = 0;
+  PROJECT_ROLE_OWNER = 1;
+  PROJECT_ROLE_DEVELOPER = 2;
+}
+
+message GetReviewRequest {
+  // The name of the review to retrieve.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListReviewsRequest {
+  // The parent, which owns this collection of reviews.
+  // Format: projects/{project}
+  // Use "projects/-" to list all reviews from all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of reviews to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 reviews will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListReviews` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListReviews` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListReviewsResponse {
+  // The reviews from the specified request.
+  repeated Review reviews = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateReviewRequest {
+  // The review to update.
+  //
+  // The review's `name` field is used to identify the review to update.
+  // Format: projects/{project}/reviews/{review}
+  Review review = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message BatchUpdateReviewsRequest {
+  // The parent resource shared by all reviews being updated.
+  // Format: projects/{project}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the status of databases for now.
+  string parent = 1;
+
+  // The request message specifying the resources to update.
+  // A maximum of 1000 databases can be modified in a batch.
+  repeated UpdateReviewRequest requests = 2
+    [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchUpdateReviewsResponse {
+  // Reviews updated.
+  repeated Review reviews = 1;
+}
+
+message Review {
+  // The name of the review.
+  // `review` is a system generated ID.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string title = 3;
+
+  string description = 4;
+
+  ReviewStatus status = 5;
+
+  // Format: user:hello@world.com
+  string assignee = 6;
+
+  bool assignee_attention = 7;
+
+  // The subscribers.
+  // Format: user:hello@world.com
+  repeated string subscribers = 8;
+
+  // Format: user:hello@world.com
+  string creator = 9;
+
+  google.protobuf.Timestamp create_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum ReviewStatus {
+  REVIEW_STATUS_UNSPECIFIED = 0;
+  OPEN = 1;
+  DONE = 2;
+  CANCELED = 3;
+}

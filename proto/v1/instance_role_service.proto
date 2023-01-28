@@ -1,0 +1,173 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service InstanceRoleService {
+  rpc GetRole(GetRoleRequest) returns (InstanceRole) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*/roles/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=environments/*/instances/*}/roles"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc CreateRole(CreateRoleRequest) returns (InstanceRole) {
+    option (google.api.http) = {
+      post: "/v1/{parent=environments/*/instances/*}/roles"
+      body: "role"
+    };
+    option (google.api.method_signature) = "parent,role";
+  }
+
+  rpc UpdateRole(UpdateRoleRequest) returns (InstanceRole) {
+    option (google.api.http) = {
+      patch: "/v1/{role.name=environments/*/instances/*/roles/*}"
+      body: "role"
+    };
+    option (google.api.method_signature) = "role,update_mask";
+  }
+
+  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=environments/*/instances/*/roles/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteRole(UndeleteRoleRequest) returns (InstanceRole) {
+    option (google.api.http) = {
+      post: "/v1/{name=environments/*/instances/*/roles/*}:undelete"
+      body: "*"
+    };
+  }
+}
+
+message GetRoleRequest {
+  // The name of the role to retrieve.
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // The role name is the unique name for the role.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListRolesRequest {
+  // The parent, which owns this collection of roles.
+  // Format: environments/{environment}/instances/{instance}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of roles to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 roles will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListRoles` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRoles` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListRolesResponse {
+  // The roles from the specified request.
+  repeated InstanceRole roles = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateRoleRequest {
+  // The parent resource where this role will be created.
+  // Format: environments/{environment}/instances/{instance}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The role to create.
+  InstanceRole role = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateRoleRequest {
+  // The role to update.
+  //
+  // The role's `name`, `environment` and `instance` field is used to identify the role to update.
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  InstanceRole role = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteRoleRequest {
+  // The name of the role to delete.
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteRoleRequest {
+  // The name of the deleted role.
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// RoleAttribute is the attribute for role. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+message RoleAttribute {
+  // A database superuser bypasses all permission checks, except the right to log in.
+  bool super_user = 1;
+
+  // A role is given permission to inherit the privileges of roles it is a member of. To create a role without the permission, use "noInherit = true"
+  bool no_inherit = 2;
+
+  // A role must be explicitly given permission to create more roles (except for superusers, since those bypass all permission checks).
+  bool create_role = 3;
+
+  // A role must be explicitly given permission to create databases (except for superusers, since those bypass all permission checks).
+  bool create_db = 4;
+
+  // Only roles that have the LOGIN attribute can be used as the initial role name for a database connection.
+  bool can_login = 5;
+
+  // A role must explicitly be given permission to initiate streaming replication (except for superusers, since those bypass all permission checks).
+  bool replication = 6;
+
+  // A role must be explicitly given permission to bypass every row-level security (RLS) policy (except for superusers, since those bypass all permission checks).
+  bool bypass_rls = 7;
+}
+
+// InstanceRole is the API message for instance role.
+message InstanceRole {
+  // The name of the role.
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // The role name is the unique name for the role.
+  string name = 1;
+
+  // The role name. It's unique within the instance.
+  string role_name = 2;
+
+  // The role password.
+  optional string password = 3 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // The connection count limit for this role.
+  optional int32 connection_limit = 4;
+
+  // The expiration for the role's password.
+  optional string valid_until = 5;
+
+  // The role attribute.
+  RoleAttribute attribute = 6;
+}

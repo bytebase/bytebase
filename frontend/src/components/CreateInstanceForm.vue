@@ -1,18 +1,21 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
+      <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-7">
         <template v-for="engine in engineList" :key="engine">
           <div
-            class="flex justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
+            class="flex relative justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
             @click.capture="changeInstanceEngine(engine)"
           >
             <div class="flex flex-col items-center">
               <img class="h-8 w-auto" :src="EngineIconPath[engine]" />
-              <p class="mt-1 text-center textlabel">
+              <p class="mt-2 text-center textlabel">
                 {{ engineName(engine) }}
               </p>
-              <div class="mt-3 radio text-sm">
+              <template v-if="isEngineBeta(engine)">
+                <BBBetaBadge class="absolute right-0.5 top-1" />
+              </template>
+              <div class="mt-4 radio text-sm">
                 <input
                   type="radio"
                   class="btn"
@@ -31,9 +34,6 @@
             &nbsp;
             <span style="color: red">*</span>
           </label>
-          <p class="text-sm text-gray-500 mt-1 mb-2">
-            {{ $t("instance.instance-name-unique") }}
-          </p>
           <input
             id="name"
             required
@@ -72,6 +72,21 @@
               {{ $t("instance.account-name") }}
               <span style="color: red">*</span>
             </template>
+            <template v-else-if="state.instance.engine == 'SPANNER'">
+              {{ $t("instance.project-id-and-instance-id") }}
+              <span style="color: red">*</span>
+              <p class="text-sm text-gray-500 mt-1">
+                {{ $t("instance.find-gcp-project-id-and-instance-id") }}
+                <a
+                  href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
+                  target="_blank"
+                  class="normal-link inline-flex items-center"
+                >
+                  {{ $t("common.detailed-guide")
+                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
+                /></a>
+              </p>
+            </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
               <span style="color: red">*</span>
@@ -85,6 +100,8 @@
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
                 ? $t('instance.your-snowflake-account-name')
+                : state.instance.engine === 'SPANNER'
+                ? 'projects/<projectID>/instances/<instanceID>'
                 : $t('instance.sentence.host.snowflake')
             "
             class="textfield mt-1 w-full"
@@ -100,33 +117,53 @@
           </div>
         </div>
 
-        <div class="sm:col-span-1">
-          <label for="port" class="textlabel block">{{
-            $t("instance.port")
-          }}</label>
-          <input
-            id="port"
-            type="number"
-            name="port"
-            class="textfield mt-1 w-full"
-            :placeholder="defaultPort"
-            :disabled="!allowEdit"
-            :value="state.instance.port"
-            @wheel="handleInstancePortWheelScroll"
-            @input="handleInstancePortInput"
-          />
-        </div>
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <div class="sm:col-span-1">
+            <label for="port" class="textlabel block">{{
+              $t("instance.port")
+            }}</label>
+            <input
+              id="port"
+              type="number"
+              name="port"
+              class="textfield mt-1 w-full"
+              :placeholder="defaultPort"
+              :disabled="!allowEdit"
+              :value="state.instance.port"
+              @wheel="handleInstancePortWheelScroll"
+              @input="handleInstancePortInput"
+            />
+          </div>
+        </template>
 
-        <template v-if="state.instance.engine == 'MONGODB'">
-          <div class="sm:row-span-1">
-            <div class="ml-1">
-              <BBCheckbox
-                title="DNS SRV Record"
-                :value="state.instance.srv"
-                @toggle="handleToggleSRV"
-              />
-            </div></div
-        ></template>
+        <div
+          v-if="state.instance.engine === 'MONGODB'"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-string-schema") }}
+          </label>
+          <label
+            v-for="type in mongodbConnectionStringSchemaList"
+            :key="type"
+            class="radio h-7"
+          >
+            <input
+              type="radio"
+              class="btn"
+              name="connectionStringSchema"
+              :value="type"
+              :checked="type === mongodbConnectionStringSchemaList[0]"
+              @change="handleMongodbConnectionStringSchemaChange"
+            />
+            <span class="label">
+              {{ type }}
+            </span>
+          </label>
+        </div>
       </div>
 
       <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
@@ -136,36 +173,59 @@
       <div
         class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
       >
-        <CreateDataSourceExample
-          className="sm:col-span-3"
-          :createInstanceFlag="true"
-          :engineType="state.instance.engine"
-          :dataSourceType="'ADMIN'"
-        />
-        <div class="sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">{{
-            $t("common.username")
-          }}</label>
-          <!-- For mysql, username can be empty indicating anonymous user.
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <CreateDataSourceExample
+            className="sm:col-span-3"
+            :createInstanceFlag="true"
+            :engineType="state.instance.engine"
+            :dataSourceType="'ADMIN'"
+          />
+        </template>
+
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <div class="sm:col-span-1 sm:col-start-1">
+            <label for="username" class="textlabel block">{{
+              $t("common.username")
+            }}</label>
+            <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
         thus we make it REQUIRED here.-->
-          <input
-            id="username"
-            name="username"
-            type="text"
-            class="textfield mt-1 w-full"
-            :placeholder="
-              state.instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
-            "
-            :value="state.instance.username"
-            @input="handleInstanceUsernameInput"
-          />
-        </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="
+                state.instance.engine === 'CLICKHOUSE'
+                  ? $t('common.default')
+                  : ''
+              "
+              :value="state.instance.username"
+              @input="handleInstanceUsernameInput"
+            />
+          </div>
+        </template>
 
         <div class="sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              {{ $t("common.password") }}
+              <template v-if="state.instance.engine == 'SPANNER'">
+                {{ $t("common.credentials") }}
+                <span class="text-red-600">*</span>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ $t("instance.create-gcp-credentials") }}
+                  <a
+                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
+                    target="_blank"
+                    class="normal-link inline-flex items-center"
+                    >{{ $t("common.detailed-guide") }}
+                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
+                  /></a>
+                </p>
+              </template>
+              <template v-else>
+                {{ $t("common.password") }}
+              </template>
             </label>
           </div>
           <input
@@ -174,7 +234,11 @@
             type="text"
             class="textfield mt-1 w-full"
             autocomplete="off"
-            :placeholder="$t('instance.password-write-only')"
+            :placeholder="
+              state.instance.engine === 'SPANNER'
+                ? $t('instance.credentials-write-only')
+                : $t('instance.password-write-only')
+            "
             :value="state.instance.password"
             @input="handleInstancePasswordInput"
           />
@@ -198,21 +262,24 @@
           />
         </div>
 
-        <div v-if="showAuthSource" class="sm:col-span-1 sm:col-start-1">
+        <div
+          v-if="showAuthenticationDatabase"
+          class="sm:col-span-1 sm:col-start-1"
+        >
           <div class="flex flex-row items-center space-x-2">
-            <label for="authSource" class="textlabel block">
-              Auth Source
+            <label for="authenticationDatabase" class="textlabel block">
+              {{ $t("instance.authentication-database") }}
             </label>
           </div>
           <input
-            id="authSource"
-            name="authSource"
+            id="authenticationDatabase"
+            name="authenticationDatabase"
             type="text"
             class="textfield mt-1 w-full"
             autocomplete="off"
-            placeholder="Auth Source"
-            :value="state.instance.authSource"
-            @input="handleInstanceAuthSourceInput"
+            placeholder="admin"
+            :value="state.instance.authenticationDatabase"
+            @input="handleInstanceAuthenticationDatabaseInput"
           />
         </div>
 
@@ -234,7 +301,7 @@
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="!state.instance.host || state.isPingingInstance"
+            :disabled="!allowCreate || state.isPingingInstance"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -320,6 +387,7 @@ import {
   useOnboardingGuideStore,
   useSQLStore,
 } from "@/store";
+import { BBBetaBadge } from "@/bbkit";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -342,10 +410,9 @@ const engineList = computed(() => {
     "TIDB",
     "SNOWFLAKE",
     "CLICKHOUSE",
+    "MONGODB",
+    "SPANNER",
   ];
-  if (isDev()) {
-    engines.push("MONGODB");
-  }
   return engines;
 });
 
@@ -356,6 +423,7 @@ const EngineIconPath = {
   SNOWFLAKE: new URL("../assets/db-snowflake.png", import.meta.url).href,
   CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
   MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
+  SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
 };
 
 const state = reactive<LocalState>({
@@ -368,7 +436,7 @@ const state = reactive<LocalState>({
     host: isDev() ? "127.0.0.1" : "host.docker.internal",
     username: "",
     srv: false,
-    authSource: "",
+    authenticationDatabase: "",
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
@@ -376,11 +444,18 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
+const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
+
 const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
 const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
 
 const allowCreate = computed(() => {
+  if (state.instance.engine === "SPANNER") {
+    return (
+      state.instance.name && state.instance.host && state.instance.password
+    );
+  }
   return state.instance.name && state.instance.host;
 });
 
@@ -404,16 +479,25 @@ const defaultPort = computed(() => {
 });
 
 const showSSL = computed((): boolean => {
-  return state.instance.engine === "CLICKHOUSE";
+  return (
+    state.instance.engine === "CLICKHOUSE" ||
+    state.instance.engine === "MYSQL" ||
+    state.instance.engine === "TIDB" ||
+    state.instance.engine === "POSTGRES"
+  );
 });
 
 const showDatabase = computed((): boolean => {
   return state.instance.engine === "POSTGRES";
 });
 
-const showAuthSource = computed((): boolean => {
+const showAuthenticationDatabase = computed((): boolean => {
   return state.instance.engine === "MONGODB";
 });
+
+const isEngineBeta = (engine: EngineType): boolean => {
+  return engine === "MONGODB" || engine === "SPANNER";
+};
 
 const isInOnboaringCreateDatabaseGuide = computed(() => {
   const guideName = useOnboardingGuideStore().guideName;
@@ -453,7 +537,7 @@ watch(showSSL, (ssl) => {
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: EngineType) => {
-  if (engine == "SNOWFLAKE") {
+  if (engine === "SNOWFLAKE" || engine === "SPANNER") {
     if (
       state.instance.host == "127.0.0.1" ||
       state.instance.host == "host.docker.internal"
@@ -496,12 +580,24 @@ const handleInstanceDatabaseInput = (event: Event) => {
   updateInstance("database", (event.target as HTMLInputElement).value);
 };
 
-const handleInstanceAuthSourceInput = (event: Event) => {
-  updateInstance("authSource", (event.target as HTMLInputElement).value);
+const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
+  updateInstance(
+    "authenticationDatabase",
+    (event.target as HTMLInputElement).value
+  );
 };
 
-const handleToggleSRV = (on: boolean) => {
-  updateInstance("srv", on);
+const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+  switch ((event.target as HTMLInputElement).value) {
+    case mongodbConnectionStringSchemaList[0]:
+      state.instance.srv = false;
+      break;
+    case mongodbConnectionStringSchemaList[1]:
+      state.instance.srv = true;
+      break;
+    default:
+      state.instance.srv = false;
+  }
 };
 
 const updateInstance = (field: string, value: string | boolean) => {
@@ -514,7 +610,7 @@ const updateInstance = (field: string, value: string | boolean) => {
     field === "username" ||
     field === "password" ||
     field === "database" ||
-    field === "authSource"
+    field === "authenticationDatabase"
   ) {
     str = (value as string).trim();
   }
@@ -570,7 +666,7 @@ const tryCreate = () => {
     host: instance.host,
     port: instance.port,
     srv: instance.srv,
-    authSource: instance.authSource,
+    authenticationDatabase: instance.authenticationDatabase,
   };
 
   if (showSSL.value) {
@@ -651,11 +747,12 @@ const testConnection = () => {
     username: instance.username,
     password: instance.password,
     // Use the `database` field only when needed.
-    database: instance.engine === "POSTGRES" ? instance.database : undefined,
+    database: showDatabase.value ? instance.database : undefined,
     useEmptyPassword: false,
     instanceId: undefined,
     srv: instance.srv,
-    authSource: instance.engine === "MONGODB" ? instance.authSource : "",
+    authenticationDatabase:
+      instance.engine === "MONGODB" ? instance.authenticationDatabase : "",
   };
 
   if (showSSL.value) {

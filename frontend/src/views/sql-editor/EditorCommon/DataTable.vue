@@ -119,7 +119,7 @@ const tableResize = useTableColumnWidthLogic({
 const data = computed(() => props.data);
 const columns = computed(() =>
   props.columns.map<ColumnDef<string[]>>((col, index) => ({
-    // accessorKey: col.key,
+    id: `${col.key}@${index}`,
     accessorFn: (item) => item[index],
     header: col.title,
   }))

@@ -39,10 +39,6 @@ const convertToSQLReviewPolicy = (
 
   return {
     id: policy.id,
-    creator: policy.creator,
-    createdTs: policy.createdTs,
-    updater: policy.updater,
-    updatedTs: policy.updatedTs,
     rowStatus: policy.rowStatus,
     environment: policy.environment,
     name: payload.name,

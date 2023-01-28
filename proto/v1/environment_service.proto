@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service EnvironmentService {
+  rpc GetEnvironment(GetEnvironmentRequest) returns (Environment) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListEnvironments(ListEnvironmentsRequest) returns (ListEnvironmentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/environments"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc CreateEnvironment(CreateEnvironmentRequest) returns (Environment) {
+    option (google.api.http) = {
+      post: "/v1/environments"
+      body: "environment"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Environment) {
+    option (google.api.http) = {
+      patch: "/v1/{environment.name=environments/*}"
+      body: "environment"
+    };
+    option (google.api.method_signature) = "environment,update_mask";
+  }
+
+  rpc DeleteEnvironment(DeleteEnvironmentRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=environments/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteEnvironment(UndeleteEnvironmentRequest) returns (Environment) {
+    option (google.api.http) = {
+      post: "/v1/{name=environments/*}:undelete"
+      body: "*"
+    };
+  }
+}
+
+message GetEnvironmentRequest {
+  // The name of the environment to retrieve.
+  // Format: environments/{environment}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListEnvironmentsRequest {
+  // The maximum number of environments to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 environments will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListEnvironments` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListEnvironments` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted environments if specified.
+  bool show_deleted = 3;
+}
+
+message ListEnvironmentsResponse {
+  // The environments from the specified request.
+  repeated Environment environments = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateEnvironmentRequest {
+  // The environment to create.
+  Environment environment = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the environment, which will become the final component of
+  // the environment's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string environment_id = 2;
+}
+
+message UpdateEnvironmentRequest {
+  // The environment to update.
+  //
+  // The environment's `name` field is used to identify the environment to update.
+  // Format: environments/{environment}
+  Environment environment = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteEnvironmentRequest {
+  // The name of the environment to delete.
+  // Format: environments/{environment}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteEnvironmentRequest {
+  // The name of the deleted environment.
+  // Format: environments/{environment}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Environment {
+  // The name of the environment.
+  // Format: environments/{environment}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  string title = 4;
+
+  int32 order = 5;
+
+  EnvironmentTier tier = 6;
+}
+
+enum EnvironmentTier {
+  ENVIRONMENT_TIER_UNSPECIFIED = 0;
+  PROTECTED = 1;
+  UNPROTECTED = 2;
+}

@@ -1,15 +1,35 @@
 <template>
   <div class="aside-panel h-full">
-    <n-tabs type="segment" default-value="databases" class="h-full">
-      <n-tab-pane name="databases" :tab="$t('common.databases')">
+    <n-tabs v-model:value="tab" type="segment" class="h-full">
+      <n-tab-pane name="projects" :tab="$t('common.projects')">
         <Splitpanes
           horizontal
           class="default-theme"
           :dbl-click-splitter="false"
         >
-          <Pane :size="databasePaneSize"><DatabaseTree /></Pane>
-          <Pane :size="FULL_HEIGHT - databasePaneSize">
-            <TableSchema @close-pane="handleCloseTableSchemaPane" />
+          <Pane>
+            <DatabaseTree />
+          </Pane>
+          <Pane v-if="showSchemaPanel" :size="40">
+            <SchemaPanel />
+          </Pane>
+        </Splitpanes>
+      </n-tab-pane>
+      <n-tab-pane
+        v-if="hasInstanceView"
+        name="instances"
+        :tab="$t('common.instances')"
+      >
+        <Splitpanes
+          horizontal
+          class="default-theme"
+          :dbl-click-splitter="false"
+        >
+          <Pane>
+            <DatabaseTree />
+          </Pane>
+          <Pane v-if="showSchemaPanel" :size="40">
+            <SchemaPanel />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -21,28 +41,42 @@
 </template>
 
 <script lang="ts" setup>
-import { isUndefined } from "lodash-es";
-import { computed } from "vue";
-import { useConnectionTreeStore } from "@/store";
+import { computed, ref, watchEffect } from "vue";
+
+import { useConnectionTreeStore, useCurrentUser, useTabStore } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
-import TableSchema from "./TableSchema.vue";
+import SchemaPanel from "./SchemaPanel/";
 import { Splitpanes, Pane } from "splitpanes";
+import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
+import { hasWorkspacePermission } from "@/utils";
 
-const FULL_HEIGHT = 100;
-const DATABASE_PANE_SIZE = 60;
+const currentUser = useCurrentUser();
+const tabStore = useTabStore();
 
-const connectionTreeStore = useConnectionTreeStore();
-const databasePaneSize = computed(() => {
-  if (!isUndefined(connectionTreeStore.selectedTableAtom)) {
-    return DATABASE_PANE_SIZE;
-  }
-  return FULL_HEIGHT;
+const tab = ref<"projects" | "instances" | "history">("projects");
+
+const hasInstanceView = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-database",
+    currentUser.value.role
+  );
 });
 
-const handleCloseTableSchemaPane = () => {
-  connectionTreeStore.selectedTableAtom = undefined;
-};
+const connectionTreeStore = useConnectionTreeStore();
+
+const showSchemaPanel = computed(() => {
+  return tabStore.currentTab.connection.databaseId !== UNKNOWN_ID;
+});
+
+watchEffect(() => {
+  if (tab.value === "projects") {
+    connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
+  }
+  if (tab.value === "instances") {
+    connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
+  }
+});
 </script>
 
 <style scoped>

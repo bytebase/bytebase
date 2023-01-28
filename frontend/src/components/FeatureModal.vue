@@ -22,30 +22,39 @@
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          <i18n-t
-            v-if="subscriptionStore.canTrial"
-            keypath="subscription.required-plan-with-trial"
-          >
-            <template #requiredPlan>
-              <span class="font-bold text-accent">
+          <template v-if="subscriptionStore.canTrial">
+            <i18n-t
+              v-if="isRequiredInPlan"
+              keypath="subscription.required-plan-with-trial"
+            >
+              <template #requiredPlan>
+                <span class="font-bold text-accent">
+                  {{
+                    $t(
+                      `subscription.plan.${planTypeToString(
+                        requiredPlan
+                      )}.title`
+                    )
+                  }}
+                </span>
+              </template>
+              <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
+                {{ $t("subscription.upgrade-trial").toLowerCase() }}
+              </template>
+              <template v-else #startTrial>
                 {{
-                  $t(
-                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
-                  )
+                  $t("subscription.trial-for-days", {
+                    days: subscriptionStore.trialingDays,
+                  }).toLowerCase()
                 }}
-              </span>
-            </template>
-            <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
-              {{ $t("subscription.upgrade-trial").toLowerCase() }}
-            </template>
-            <template v-else #startTrial>
-              {{
-                $t("subscription.trial-for-days", {
-                  days: subscriptionStore.trialingDays,
-                }).toLowerCase()
-              }}
-            </template>
-          </i18n-t>
+              </template>
+            </i18n-t>
+            <i18n-t v-else keypath="subscription.trial-for-days">
+              <template #days>
+                {{ subscriptionStore.trialingDays }}
+              </template>
+            </i18n-t>
+          </template>
           <i18n-t v-else keypath="subscription.require-subscription">
             <template #requiredPlan>
               <span class="font-bold text-accent">
@@ -103,7 +112,12 @@ import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
-import { FeatureType, planTypeToString } from "@/types";
+import {
+  FeatureType,
+  PlanType,
+  planTypeToString,
+  FEATURE_MATRIX,
+} from "@/types";
 
 const props = defineProps({
   feature: {
@@ -122,29 +136,32 @@ const ok = () => {
 
 const subscriptionStore = useSubscriptionStore();
 
+const isRequiredInPlan = Array.isArray(FEATURE_MATRIX.get(props.feature));
 const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
 const featureKey = props.feature.split(".").join("-");
 
 const trialSubscription = () => {
   const isUpgrade = subscriptionStore.canUpgradeTrial;
-  subscriptionStore.trialSubscription(requiredPlan).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.success"),
-      description: isUpgrade
-        ? t("subscription.successfully-upgrade-trial", {
-            plan: t(
-              `subscription.plan.${planTypeToString(requiredPlan)}.title`
-            ),
-          })
-        : t("subscription.successfully-start-trial", {
-            days: subscriptionStore.trialingDays,
-          }),
+  subscriptionStore
+    .trialSubscription(PlanType.ENTERPRISE)
+    .then((subscription) => {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.success"),
+        description: isUpgrade
+          ? t("subscription.successfully-upgrade-trial", {
+              plan: t(
+                `subscription.plan.${planTypeToString(subscription.plan)}.title`
+              ),
+            })
+          : t("subscription.successfully-start-trial", {
+              days: subscriptionStore.trialingDays,
+            }),
+      });
+      emit("cancel");
     });
-    emit("cancel");
-  });
 };
 </script>
 

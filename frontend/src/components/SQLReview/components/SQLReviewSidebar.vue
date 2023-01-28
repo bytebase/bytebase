@@ -2,11 +2,19 @@
   <aside class="hidden lg:block">
     <div class="space-y-6">
       <h1 class="text-left text-2xl font-semibold">
-        {{ $t("sql-review.rules") }}
+        <span>{{ $t("sql-review.rules") }}</span>
+        <span class="ml-1 font-normal text-control-light">
+          ({{ selectedRuleList.length }})
+        </span>
       </h1>
       <fieldset v-for="(category, index) in categoryList" :key="index">
         <div class="block text-sm font-medium text-gray-900">
-          {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
+          <span>
+            {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
+          </span>
+          <span class="ml-0.5 font-normal text-control-light">
+            ({{ category.ruleList.length }})
+          </span>
         </div>
         <div
           v-for="(rule, ruleIndex) in category.ruleList"

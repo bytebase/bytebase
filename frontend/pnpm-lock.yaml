@@ -3,7 +3,8 @@ lockfileVersion: 5.4
 specifiers:
   '@bytebase/vue-kbar': 0.1.8
   '@codingame/monaco-vscode-api': 1.69.12
-  '@iconify/json': 2.1.146
+  '@iconify/json': 2.1.159
+  '@improbable-eng/grpc-web': ^0.15.0
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
   '@markdoc/markdoc': 0.2.1
@@ -16,14 +17,14 @@ specifiers:
   '@tanstack/table-core': 8.5.22
   '@tanstack/vue-table': 8.5.22
   '@types/canvas-confetti': 1.4.3
-  '@types/dagre': ^0.7.48
+  '@types/d3-shape': ^3.1.0
   '@types/dompurify': 2.3.4
   '@types/downloadjs': 1.4.3
   '@types/js-yaml': 4.0.5
   '@types/lodash-es': 4.17.6
-  '@types/node': 18.11.9
+  '@types/node': 18.11.18
   '@types/normalize-wheel': ^1.0.1
-  '@types/papaparse': 5.3.5
+  '@types/papaparse': 5.3.7
   '@types/prettier': 2.7.1
   '@types/qs': 6.9.7
   '@types/scrollparent': ^2.0.1
@@ -42,17 +43,20 @@ specifiers:
   axios: 1.1.3
   bootstrap: 5.2.2
   canvas-confetti: 1.6.0
-  dagre: ^0.8.5
+  d3-shape: ^3.2.0
   dayjs: 1.11.6
   dompurify: 2.4.0
   downloadjs: 1.4.7
+  elkjs: ^0.8.2
   emittery: ^1.0.1
   escape-string-regexp: 5.0.0
   eslint: 8.26.0
   eslint-config-prettier: 8.5.0
   eslint-plugin-prettier: 4.2.1
   eslint-plugin-vue: 9.7.0
+  google-protobuf: ^3.21.2
   highlight.js: 11.6.0
+  html-to-image: ^1.11.4
   inter-ui: 3.19.3
   jquery: 3.6.1
   js-yaml: 4.1.0
@@ -61,6 +65,8 @@ specifiers:
   monaco-editor: 0.34.1
   monaco-languageclient: 4.0.1
   naive-ui: 2.33.5
+  nice-grpc-common: ^2.0.0
+  nice-grpc-web: ^2.0.1
   node-sql-parser: 4.5.1
   normalize-wheel: ^1.0.1
   papaparse: 5.3.2
@@ -103,6 +109,7 @@ specifiers:
 dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.41
   '@codingame/monaco-vscode-api': 1.69.12_g4fp2q2jxj3u35wmxezeq2vo6y
+  '@improbable-eng/grpc-web': 0.15.0_google-protobuf@3.21.2
   '@joe-re/sql-parser': 1.2.1
   '@markdoc/markdoc': 0.2.1
   '@soerenmartius/vue3-clipboard': 0.1.2
@@ -112,19 +119,24 @@ dependencies:
   axios: 1.1.3
   bootstrap: 5.2.2_@popperjs+core@2.11.6
   canvas-confetti: 1.6.0
-  dagre: 0.8.5
+  d3-shape: 3.2.0
   dayjs: 1.11.6
   dompurify: 2.4.0
   downloadjs: 1.4.7
+  elkjs: 0.8.2
   emittery: 1.0.1
   escape-string-regexp: 5.0.0
+  google-protobuf: 3.21.2
   highlight.js: 11.6.0
+  html-to-image: 1.11.4
   inter-ui: 3.19.3
   js-yaml: 4.1.0
   lodash-es: 4.17.21
   monaco-editor: 0.34.1
   monaco-languageclient: 4.0.1_g4fp2q2jxj3u35wmxezeq2vo6y
   naive-ui: 2.33.5_vue@3.2.41
+  nice-grpc-common: 2.0.0
+  nice-grpc-web: 2.0.1_google-protobuf@3.21.2
   node-sql-parser: 4.5.1
   normalize-wheel: 1.0.1
   papaparse: 5.3.2
@@ -151,7 +163,7 @@ dependencies:
   vueuc: 0.4.49_vue@3.2.41
 
 devDependencies:
-  '@iconify/json': 2.1.146
+  '@iconify/json': 2.1.159
   '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.2.2+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
@@ -159,14 +171,14 @@ devDependencies:
   '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.2.1
   '@tailwindcss/typography': 0.5.8_tailwindcss@3.2.1
   '@types/canvas-confetti': 1.4.3
-  '@types/dagre': 0.7.48
+  '@types/d3-shape': 3.1.0
   '@types/dompurify': 2.3.4
   '@types/downloadjs': 1.4.3
   '@types/js-yaml': 4.0.5
   '@types/lodash-es': 4.17.6
-  '@types/node': 18.11.9
+  '@types/node': 18.11.18
   '@types/normalize-wheel': 1.0.1
-  '@types/papaparse': 5.3.5
+  '@types/papaparse': 5.3.7
   '@types/prettier': 2.7.1
   '@types/qs': 6.9.7
   '@types/scrollparent': 2.0.1
@@ -396,8 +408,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json/2.1.146:
-    resolution: {integrity: sha512-wIGCtWvxNjWbHPOuJK1e7VaRn0EVrcpzTyC1TaSDRJFsBoGki9Z2NEPEPOS4VaEukh8MLHzLor1IMGgiLhfohg==}
+  /@iconify/json/2.1.159:
+    resolution: {integrity: sha512-LBJDXNsHMBhBZ2BfN2Es/cB8GmI9+2305biJz/C2riYyUWNIU1BnrM5EzDL4i0FwKq6s7I2C+j2wtBJ3pCeQjA==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 0.3.9
@@ -420,6 +432,15 @@ packages:
       - supports-color
     dev: true
 
+  /@improbable-eng/grpc-web/0.15.0_google-protobuf@3.21.2:
+    resolution: {integrity: sha512-ERft9/0/8CmYalqOVnJnpdDry28q+j+nAlFFARdjyxXDJ+Mhgv9+F600QC8BR9ygOfrXRlAk6CvST2j+JCpQPg==}
+    peerDependencies:
+      google-protobuf: ^3.14.0
+    dependencies:
+      browser-headers: 0.4.1
+      google-protobuf: 3.21.2
+    dev: false
+
   /@intlify/bundle-utils/3.2.1_vue-i18n@9.2.2:
     resolution: {integrity: sha512-rf4cLBOnbqmpXVcCdcYHilZpMt1m82syh3WLBJlZvGxN2KkH9HeHVH4+bnibF/SDXCHNh6lM6wTpS/qw+PkcMg==}
     engines: {node: '>= 12'}
@@ -432,8 +453,8 @@ packages:
       vue-i18n:
         optional: true
     dependencies:
-      '@intlify/message-compiler': 9.3.0-beta.10
-      '@intlify/shared': 9.3.0-beta.10
+      '@intlify/message-compiler': 9.3.0-beta.16
+      '@intlify/shared': 9.3.0-beta.16
       jsonc-eslint-parser: 1.4.1
       source-map: 0.6.1
       vue-i18n: 9.2.2_vue@3.2.41
@@ -462,11 +483,11 @@ packages:
       '@intlify/shared': 9.2.2
       source-map: 0.6.1
 
-  /@intlify/message-compiler/9.3.0-beta.10:
-    resolution: {integrity: sha512-RoOC6yceOykLRhN0NlbkNOBUx1el6iphx3W8NfOx3jHVNtfT1FYokx14/5sU3F1F0uxeG4sp6q+ppKvaF8o+ww==}
+  /@intlify/message-compiler/9.3.0-beta.16:
+    resolution: {integrity: sha512-CGQI3xRcs1ET75eDQ0DUy3MRYOqTauRIIgaMoISKiF83gqRWg93FqN8lGMKcpBqaF4tI0JhsfosCaGiBL9+dnw==}
     engines: {node: '>= 14'}
     dependencies:
-      '@intlify/shared': 9.3.0-beta.10
+      '@intlify/shared': 9.3.0-beta.16
       source-map: 0.6.1
     dev: true
 
@@ -474,8 +495,8 @@ packages:
     resolution: {integrity: sha512-wRwTpsslgZS5HNyM7uDQYZtxnbI12aGiBZURX3BTR9RFIKKRWpllTsgzHWvj3HKm3Y2Sh5LPC1r0PDCKEhVn9Q==}
     engines: {node: '>= 14'}
 
-  /@intlify/shared/9.3.0-beta.10:
-    resolution: {integrity: sha512-h93uAanbAt/XgjDHclrVB7xix6r7Uz11wx0iGNOCdHP7aA2LCJjUT3uNbekJjjbo+Fl5jzTSJZdm2SexzoqhRA==}
+  /@intlify/shared/9.3.0-beta.16:
+    resolution: {integrity: sha512-kXbm4svALe3lX+EjdJxfnabOphqS4yQ1Ge/iIlR8tvUiYRCoNz3hig1M4336iY++Dfx5ytEQJPNjIcknNIuvig==}
     engines: {node: '>= 14'}
     dev: true
 
@@ -495,7 +516,7 @@ packages:
         optional: true
     dependencies:
       '@intlify/bundle-utils': 3.2.1_vue-i18n@9.2.2
-      '@intlify/shared': 9.3.0-beta.10
+      '@intlify/shared': 9.3.0-beta.16
       '@rollup/pluginutils': 4.2.1
       debug: 4.3.4
       fast-glob: 3.2.12
@@ -791,7 +812,6 @@ packages:
 
   /@types/d3-path/3.0.0:
     resolution: {integrity: sha512-0g/A+mZXgFkQxN3HniRDbXMN79K3CdTpLsevj+PXiTcb2hVyvkZUBg37StmgCQkaD84cUJ4uaDAWq7UJOQy2Tg==}
-    dev: false
 
   /@types/d3-polygon/3.0.0:
     resolution: {integrity: sha512-D49z4DyzTKXM0sGKVqiTDTYr+DHg/uxsiWDAkNrwXYuiZVd9o9wXZIo+YsHkifOiyBkmSWlEngHCQme54/hnHw==}
@@ -823,7 +843,6 @@ packages:
     resolution: {integrity: sha512-jYIYxFFA9vrJ8Hd4Se83YI6XF+gzDL1aC5DCsldai4XYYiVNdhtpGbA/GM6iyQ8ayhSp3a148LY34hy7A4TxZA==}
     dependencies:
       '@types/d3-path': 3.0.0
-    dev: false
 
   /@types/d3-time-format/4.0.0:
     resolution: {integrity: sha512-yjfBUe6DJBsDin2BMIulhSHmr5qNR5Pxs17+oW4DoVPyVIXZ+m6bs7j1UVKP08Emv6jRmYrYqxYzO63mQxy1rw==}
@@ -884,10 +903,6 @@ packages:
       '@types/d3-transition': 3.0.2
       '@types/d3-zoom': 3.0.1
     dev: false
-
-  /@types/dagre/0.7.48:
-    resolution: {integrity: sha512-rF3yXSwHIrDxEkN6edCE4TXknb5YSEpiXfLaspw1I08grC49ZFuAVGOQCmZGIuLUGoFgcqGlUFBL/XrpgYpQgw==}
-    dev: true
 
   /@types/dompurify/2.3.4:
     resolution: {integrity: sha512-EXzDatIb5EspL2eb/xPGmaC8pePcTHrkDCONjeisusLFrVfl38Pjea/R0YJGu3k9ZQadSvMqW0WXPI2hEo2Ajg==}
@@ -950,8 +965,8 @@ packages:
     resolution: {integrity: sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==}
     dev: false
 
-  /@types/node/18.11.9:
-    resolution: {integrity: sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==}
+  /@types/node/18.11.18:
+    resolution: {integrity: sha512-DHQpWGjyQKSHj3ebjFI/wRKcqQcdR+MoFBygntYOZytCqNfkd2ZC4ARDJ2DQqhjH5p85Nnd3jhUJIXrszFX/JA==}
     dev: true
 
   /@types/normalize-wheel/1.0.1:
@@ -962,10 +977,10 @@ packages:
     resolution: {integrity: sha512-xFdpkAkikBgqBdG9vIlsqffDV8GpvnPEzs0IUtr1v3BEB97ijsFQ4RXVbUZwjFThhB4MDSTUfvmxUD5PGx0wXA==}
     dev: true
 
-  /@types/papaparse/5.3.5:
-    resolution: {integrity: sha512-R1icl/hrJPFRpuYj9PVG03WBAlghJj4JW9Py5QdR8FFSxaLmZRyu7xYDCCBZIJNfUv3MYaeBbhBoX958mUTAaw==}
+  /@types/papaparse/5.3.7:
+    resolution: {integrity: sha512-f2HKmlnPdCvS0WI33WtCs5GD7X1cxzzS/aduaxSu3I7TbhWlENjSPs6z5TaB9K0J+BH1jbmqTaM+ja5puis4wg==}
     dependencies:
-      '@types/node': 18.11.9
+      '@types/node': 18.11.18
     dev: true
 
   /@types/prettier/2.7.1:
@@ -1355,6 +1370,10 @@ packages:
     resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
     dev: false
 
+  /abort-controller-x/0.4.1:
+    resolution: {integrity: sha512-lJ2ssrl3FoTK3cX/g15lRCkXFWKiwRTRtBjfwounO2EM/Q65rI/MEZsfsch1juWU2pH2aLSaq0HGowlDP/imrw==}
+    dev: false
+
   /acorn-jsx/5.3.2_acorn@7.4.1:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -1525,6 +1544,10 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       fill-range: 7.0.1
+
+  /browser-headers/0.4.1:
+    resolution: {integrity: sha512-CA9hsySZVo9371qEHjHZtYxV2cFtVj5Wj/ZHi8ooEsrtm4vOnl9Y9HmyYWk9q+05d7K3rdoAE0j3MVEFVvtQtg==}
+    dev: false
 
   /browserslist/4.21.4:
     resolution: {integrity: sha512-CBHJJdDmgjl3daYjN5Cp5kbTf1mUhZoS+beLklHIvkOWscs83YAhLlF3Wsh/lciQYAcbBJgTOD44VtG31ZM4Hw==}
@@ -1714,7 +1737,7 @@ packages:
     resolution: {integrity: sha512-VE5S6TNa+j8msksl7HwjxMHDM2yNK3XCkusIlpX5kwauBfXuyLAtNg9jCp/iHH61tgI4sb6R/EIMWCqEIdjT/g==}
     engines: {node: '>=12'}
     dependencies:
-      d3-path: 3.0.1
+      d3-path: 3.1.0
     dev: false
 
   /d3-color/3.1.0:
@@ -1819,6 +1842,11 @@ packages:
     engines: {node: '>=12'}
     dev: false
 
+  /d3-path/3.1.0:
+    resolution: {integrity: sha512-p3KP5HCf/bvjBSSKuXid6Zqijx7wIfNW+J/maPs+iwR35at5JCbLUT0LzF1cnjbCHWhqzQTIN2Jpe8pRebIEFQ==}
+    engines: {node: '>=12'}
+    dev: false
+
   /d3-polygon/3.0.1:
     resolution: {integrity: sha512-3vbA7vXYwfe1SYhED++fPUQlWSYTTGmFmQiany/gdbiWgU/iEyQzyymwL9SkJjFFuCS4902BSzewVGsHHmHtXg==}
     engines: {node: '>=12'}
@@ -1858,11 +1886,11 @@ packages:
     engines: {node: '>=12'}
     dev: false
 
-  /d3-shape/3.1.0:
-    resolution: {integrity: sha512-tGDh1Muf8kWjEDT/LswZJ8WF85yDZLvVJpYU9Nq+8+yW1Z5enxrmXOhTArlkaElU+CTn0OTVNli+/i+HP45QEQ==}
+  /d3-shape/3.2.0:
+    resolution: {integrity: sha512-SaLBuwGm3MOViRq2ABk3eLoxwZELpH6zhl3FbAoJ7Vm1gofKx6El1Ib5z23NUEhF9AsGl7y+dzLe5Cw2AArGTA==}
     engines: {node: '>=12'}
     dependencies:
-      d3-path: 3.0.1
+      d3-path: 3.1.0
     dev: false
 
   /d3-time-format/4.1.0:
@@ -1937,19 +1965,12 @@ packages:
       d3-scale: 4.0.2
       d3-scale-chromatic: 3.0.0
       d3-selection: 3.0.0
-      d3-shape: 3.1.0
+      d3-shape: 3.2.0
       d3-time: 3.0.0
       d3-time-format: 4.1.0
       d3-timer: 3.0.1
       d3-transition: 3.0.1_d3-selection@3.0.0
       d3-zoom: 3.0.0
-    dev: false
-
-  /dagre/0.8.5:
-    resolution: {integrity: sha512-/aTqmnRta7x7MCCpExk7HQL2O4owCT2h8NT//9I1OQ9vt29Pa0BzSAkR5lwFUcQ7491yVi/3CXU9jQ5o0Mn2Sw==}
-    dependencies:
-      graphlib: 2.1.8
-      lodash: 4.17.21
     dev: false
 
   /dataloader/1.4.0:
@@ -2093,6 +2114,10 @@ packages:
   /electron-to-chromium/1.4.284:
     resolution: {integrity: sha512-M8WEXFuKXMYMVr45fo8mq0wUrrJHheiKZf6BArTKk9ZBYCKJEOU5H8cdWgDT+qCVZf7Na4lVUaZsA+h6uA9+PA==}
     dev: true
+
+  /elkjs/0.8.2:
+    resolution: {integrity: sha512-L6uRgvZTH+4OF5NE/MBbzQx/WYpru1xCBE9respNj6qznEewGUIfhzmm7horWWxbNO2M0WckQypGctR8lH79xQ==}
+    dev: false
 
   /emittery/1.0.1:
     resolution: {integrity: sha512-2ID6FdrMD9KDLldGesP6317G78K7km/kMcwItRtVFva7I/cSEOIaLpewaUb+YLXVwdAp3Ctfxh/V5zIl1sj7dQ==}
@@ -2702,15 +2727,13 @@ packages:
       delegate: 3.2.0
     dev: false
 
+  /google-protobuf/3.21.2:
+    resolution: {integrity: sha512-3MSOYFO5U9mPGikIYCzK0SaThypfGgS6bHqrUGXG3DPHCrb+txNqeEcns1W0lkGfk0rCyNXm7xB9rMxnCiZOoA==}
+    dev: false
+
   /grapheme-splitter/1.0.4:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
     dev: true
-
-  /graphlib/2.1.8:
-    resolution: {integrity: sha512-jcLLfkpoVGmH7/InMC/1hIvOPSUh38oJtGhvrOFGzioE1DZ+0YW16RgmOJhHiuWTvGiJQ9Z1Ik43JvkRPRvE+A==}
-    dependencies:
-      lodash: 4.17.21
-    dev: false
 
   /has-flag/4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -2748,6 +2771,10 @@ packages:
     dependencies:
       mkdirp: 0.3.0
       nopt: 1.0.10
+    dev: false
+
+  /html-to-image/1.11.4:
+    resolution: {integrity: sha512-I6jeGpjSI/pea+p/8q6HAWPxptZkEYaZ40ZLnpCHuhCJJnUHQ/YzMEQMNY/KMdPZJ4+GJIwo9dnJy76eW9p9cg==}
     dev: false
 
   /human-signals/2.1.0:
@@ -2850,6 +2877,10 @@ packages:
 
   /jquery/3.6.1:
     resolution: {integrity: sha512-opJeO4nCucVnsjiXOE+/PcCgYw9Gwpvs/a6B1LL/lQhwWwpbVEVYDZ1FokFr8PRc7ghYlrFPuyHuiiDNTQxmcw==}
+
+  /js-base64/3.7.4:
+    resolution: {integrity: sha512-wpM/wi20Tl+3ifTyi0RdDckS4YTD4Lf953mBRrpG8547T7hInHNPEj8+ck4gB8VDcGyeAWFK++Wb/fU1BeavKQ==}
+    dev: false
 
   /js-sdsl/4.1.5:
     resolution: {integrity: sha512-08bOAKweV2NUC1wqTtf3qZlnpOX/R2DU9ikpjOHs0H+ibQv3zpncVQg6um4uYtRtrwIX8M4Nh3ytK4HGlYAq7Q==}
@@ -3101,6 +3132,23 @@ packages:
       moo: 0.5.2
       railroad-diagrams: 1.0.0
       randexp: 0.4.6
+    dev: false
+
+  /nice-grpc-common/2.0.0:
+    resolution: {integrity: sha512-8h/QraeDmScnbKLd5ImS+e7uUDxumvByBo6ILj1jLHjKlIa74WKHNSn54u7RmnJ5tFAYE70iTm8VWyvbTv82yg==}
+    dependencies:
+      ts-error: 1.0.6
+    dev: false
+
+  /nice-grpc-web/2.0.1_google-protobuf@3.21.2:
+    resolution: {integrity: sha512-r8jy0TJY6ZO9qWtujiqmtRkqgItAChoJxJyYv+CHacP9G5kRIH03M+sQqtieXNNDUAKfFT/z5yroSy1cPFX0sA==}
+    dependencies:
+      '@improbable-eng/grpc-web': 0.15.0_google-protobuf@3.21.2
+      abort-controller-x: 0.4.1
+      js-base64: 3.7.4
+      nice-grpc-common: 2.0.0
+    transitivePeerDependencies:
+      - google-protobuf
     dev: false
 
   /node-releases/2.0.6:
@@ -3407,7 +3455,7 @@ packages:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
       '@types/long': 4.0.2
-      '@types/node': 18.11.9
+      '@types/node': 18.11.18
       long: 4.0.0
     dev: true
 
@@ -3426,7 +3474,7 @@ packages:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 18.11.9
+      '@types/node': 18.11.18
       long: 5.2.1
     dev: true
 
@@ -3777,6 +3825,10 @@ packages:
     resolution: {integrity: sha512-M8RGFoKtZ8dF+iwJfAJTOH/SM4KluKOKRJpjCMhI8bG3qB74zrFoArKZ62ll0Fr3mqkMJiQOmWYkdYgDeITYQg==}
     dev: false
 
+  /ts-error/1.0.6:
+    resolution: {integrity: sha512-tLJxacIQUM82IR7JO1UUkKlYuUTmoY9HBJAmNWFzheSlDS5SPMcNIepejHJa4BpPQLAcbRhRf3GDJzyj6rbKvA==}
+    dev: false
+
   /ts-poet/6.3.0:
     resolution: {integrity: sha512-RjS37SnXMa9En8xvQf//+rvNNNCB7x2TKP/ZfsiQFidtfN3A6FYgPDESe4r7YA3F663XO2ozx+2buQItGOLMxg==}
     dependencies:
@@ -4008,7 +4060,7 @@ packages:
     dependencies:
       '@types/chai': 4.3.3
       '@types/chai-subset': 1.3.3
-      '@types/node': 18.11.9
+      '@types/node': 18.11.18
       chai: 4.3.6
       debug: 4.3.4
       local-pkg: 0.4.2

@@ -11,6 +11,7 @@
       v-if="isTenantProject"
       id="deployment-config"
       :project="project"
+      :database-list="databaseList"
       :allow-edit="allowEdit"
     />
     <ProjectDatabasesPanel
@@ -19,9 +20,9 @@
       :database-list="databaseList"
     />
   </template>
-  <template v-if="hash === 'migration-history'">
+  <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
-      id="migration-history"
+      id="change-history"
       :project="project"
       :database-list="databaseList"
     />
@@ -114,7 +115,9 @@ export default defineComponent({
 
     const databaseList = computed(() => {
       const list = cloneDeep(
-        databaseStore.getDatabaseListByProjectId(project.value.id)
+        databaseStore
+          .getDatabaseListByProjectId(project.value.id)
+          .filter((db) => db.syncStatus === "OK")
       );
       return sortDatabaseList(list, environmentList.value);
     });

@@ -29,16 +29,14 @@
 </template>
 
 <script lang="ts" setup>
+import { NConfigProvider, NDialogProvider } from "naive-ui";
+import { ServerError } from "nice-grpc-common";
+import { ClientError, Status } from "nice-grpc-web";
 import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { isDev } from "./utils";
 import { BBNotificationItem } from "./bbkit/types";
-import KBarWrapper from "./components/KBar/KBarWrapper.vue";
-import BBModalStack from "./bbkit/BBModalStack.vue";
-import HelpDrawer from "@/components/HelpDrawer";
-
-import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { t } from "./plugins/i18n";
 import {
@@ -48,6 +46,10 @@ import {
   useHelpStore,
 } from "./store";
 import { RouteMapList } from "@/types";
+import KBarWrapper from "./components/KBar/KBarWrapper.vue";
+import BBModalStack from "./bbkit/BBModalStack.vue";
+import HelpDrawer from "@/components/HelpDrawer";
+
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -165,15 +167,27 @@ watch(
 
 watchEffect(watchNotification);
 
-onErrorCaptured((e: any /* , _, info */) => {
-  // If e has response, then we assume it's an http error and has already been
-  // handled by the axios global handler.
-  if (!e.response) {
+onErrorCaptured((error: any /* , _, info */) => {
+  // Handle grpc request error.
+  // It looks like: `{"path":"/bytebase.v1.AuthService/Login","code":2,"details":"Response closed without headers"}`
+  if (
+    (error instanceof ServerError || error instanceof ClientError) &&
+    Object.values(Status).includes(error.code)
+  ) {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Request error occurred`,
+      description: error.details,
+    });
+  } else if (!error.response) {
+    // If error has response, then we assume it's an http error and has already been
+    // handled by the axios global handler.
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: `Internal error occurred`,
-      description: isDev() ? e.stack : undefined,
+      description: isDev() ? error.stack : undefined,
     });
   }
   return true;

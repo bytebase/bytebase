@@ -1,62 +1,67 @@
+import { isGhostTable } from "@/utils";
+import { v1 as uuidv1 } from "uuid";
 import {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "../proto/database";
+} from "../proto/store/database";
 
-type TableOrColumnStatus = "normal" | "created" | "dropped";
+type AtomResourceStatus = "normal" | "created" | "dropped";
 
 export interface Column {
-  oldName: string;
-  newName: string;
+  id: string;
+  name: string;
   type: string;
   nullable: boolean;
   comment: string;
   default?: string;
-  status: TableOrColumnStatus;
+  status: AtomResourceStatus;
+}
+
+export interface PrimaryKey {
+  name: string;
+  columnIdList: string[];
 }
 
 export interface Table {
-  oldName: string;
-  newName: string;
+  id: string;
+  name: string;
   engine: string;
   collation: string;
   rowCount: number;
   dataSize: number;
   comment: string;
   columnList: Column[];
-  status: TableOrColumnStatus;
-}
-
-export interface PrimaryKey {
-  schema: string;
-  table: string;
-  columnList: string[];
+  // Including column id list.
+  primaryKey: PrimaryKey;
+  status: AtomResourceStatus;
 }
 
 export interface ForeignKey {
-  schema: string;
-  table: string;
-  columnList: string[];
-  referencedSchema: string;
-  referencedTable: string;
-  referencedColumns: string[];
+  // Should be an unique name.
+  name: string;
+  tableId: string;
+  columnIdList: string[];
+  referencedSchemaId: string;
+  referencedTableId: string;
+  referencedColumnIdList: string[];
 }
 
 export interface Schema {
+  id: string;
   // It should be an empty string for MySQL/TiDB.
   name: string;
   tableList: Table[];
-  primaryKeyList: PrimaryKey[];
   foreignKeyList: ForeignKey[];
+  status: AtomResourceStatus;
 }
 
 export const convertColumnMetadataToColumn = (
   columnMetadata: ColumnMetadata
 ): Column => {
   return {
-    oldName: columnMetadata.name,
-    newName: columnMetadata.name,
+    id: uuidv1(),
+    name: columnMetadata.name,
     type: columnMetadata.type,
     nullable: columnMetadata.nullable,
     comment: columnMetadata.comment,
@@ -68,9 +73,9 @@ export const convertColumnMetadataToColumn = (
 export const convertTableMetadataToTable = (
   tableMetadata: TableMetadata
 ): Table => {
-  return {
-    oldName: tableMetadata.name,
-    newName: tableMetadata.name,
+  const table: Table = {
+    id: uuidv1(),
+    name: tableMetadata.name,
     engine: tableMetadata.engine,
     collation: tableMetadata.collation,
     rowCount: tableMetadata.rowCount,
@@ -79,46 +84,123 @@ export const convertTableMetadataToTable = (
     columnList: tableMetadata.columns.map((column) =>
       convertColumnMetadataToColumn(column)
     ),
+    primaryKey: {
+      name: "",
+      columnIdList: [],
+    },
     status: "normal",
   };
+
+  for (const indexMetadata of tableMetadata.indexes) {
+    if (indexMetadata.primary === true) {
+      table.primaryKey.name = indexMetadata.name;
+      for (const columnName of indexMetadata.expressions) {
+        const column = table.columnList.find(
+          (column) => column.name === columnName
+        );
+        if (column) {
+          table.primaryKey.columnIdList.push(column.id);
+        }
+      }
+      break;
+    }
+  }
+
+  return table;
 };
 
 export const convertSchemaMetadataToSchema = (
   schemaMetadata: SchemaMetadata
 ): Schema => {
   const tableList: Table[] = [];
-  const primaryKeyList: PrimaryKey[] = [];
-  const foreignKeyList: ForeignKey[] = [];
 
   for (const tableMetadata of schemaMetadata.tables) {
-    tableList.push(convertTableMetadataToTable(tableMetadata));
-
-    for (const indexMetadata of tableMetadata.indexes) {
-      if (indexMetadata.primary === true) {
-        primaryKeyList.push({
-          schema: schemaMetadata.name,
-          table: tableMetadata.name,
-          columnList: indexMetadata.expressions,
-        });
-      }
+    // Don't display ghost table in Schema Editor.
+    if (isGhostTable(tableMetadata)) {
+      continue;
     }
 
-    for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
-      foreignKeyList.push({
-        schema: schemaMetadata.name,
-        table: tableMetadata.name,
-        columnList: foreignKeyMetadata.columns,
-        referencedSchema: foreignKeyMetadata.referencedSchema,
-        referencedTable: foreignKeyMetadata.referencedTable,
-        referencedColumns: foreignKeyMetadata.referencedColumns,
-      });
-    }
+    const table = convertTableMetadataToTable(tableMetadata);
+    tableList.push(table);
   }
 
   return {
+    id: uuidv1(),
     name: schemaMetadata.name,
     tableList: tableList,
-    primaryKeyList: primaryKeyList,
-    foreignKeyList: foreignKeyList,
+    foreignKeyList: [],
+    status: "normal",
   };
+};
+
+export const convertSchemaMetadataList = (
+  schemaMetadataList: SchemaMetadata[]
+) => {
+  // Compose all tables of each schema.
+  const schemaList: Schema[] = schemaMetadataList.map((schemaMetadata) =>
+    convertSchemaMetadataToSchema(schemaMetadata)
+  );
+
+  // Build foreign keys for schema and referenced schema.
+  for (const schemaMetadata of schemaMetadataList) {
+    const schema = schemaList.find(
+      (schema) => schema.name === schemaMetadata.name
+    );
+    if (!schema) {
+      continue;
+    }
+
+    const tableList = schema.tableList;
+    const foreignKeyList: ForeignKey[] = [];
+    for (const tableMetadata of schemaMetadata.tables) {
+      const table = tableList.find(
+        (table) => table.name === tableMetadata.name
+      );
+      if (!table) {
+        continue;
+      }
+
+      for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
+        const referencedSchema = schemaList.find(
+          (schema) => schema.name === foreignKeyMetadata.referencedSchema
+        );
+        const referencedTable = referencedSchema?.tableList.find(
+          (table) => table.name === foreignKeyMetadata.referencedTable
+        );
+        if (!referencedSchema || !referencedTable) {
+          continue;
+        }
+
+        const fk: ForeignKey = {
+          name: foreignKeyMetadata.name,
+          tableId: table.id,
+          columnIdList: [],
+          referencedSchemaId: referencedSchema.id,
+          referencedTableId: referencedTable.id,
+          referencedColumnIdList: [],
+        };
+        for (const columnName of foreignKeyMetadata.columns) {
+          const column = table.columnList.find(
+            (column) => column.name === columnName
+          );
+          if (column) {
+            fk.columnIdList.push(column.id);
+          }
+        }
+        for (const referencedColumnName of foreignKeyMetadata.referencedColumns) {
+          const referencedColumn = referencedTable.columnList.find(
+            (column) => column.name === referencedColumnName
+          );
+          if (referencedColumn) {
+            fk.referencedColumnIdList.push(referencedColumn.id);
+          }
+        }
+
+        foreignKeyList.push(fk);
+      }
+    }
+    schema.foreignKeyList = foreignKeyList;
+  }
+
+  return schemaList;
 };

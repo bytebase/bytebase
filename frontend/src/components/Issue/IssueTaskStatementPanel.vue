@@ -4,19 +4,24 @@
   >
     <div class="flex space-x-4 flex-1">
       <div
-        class="text-sm font-medium"
+        class="py-2 text-sm font-medium"
         :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
       >
-        {{ $t("common.sql") }}
+        <template v-if="language === 'sql'">
+          {{ $t("common.sql") }}
+        </template>
+        <template v-else>
+          {{ $t("common.statement") }}
+        </template>
         <span v-if="create" class="text-red-600">*</span>
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
-        v-if="allowApplyStatementToOtherTasks"
+        v-if="allowApplyTaskStateToOthers"
         :disabled="isEmpty(state.editStatement)"
         type="button"
-        class="btn-small"
-        @click.prevent="applyStatementToOtherTasks(state.editStatement)"
+        class="btn-small py-1 px-3 my-auto"
+        @click.prevent="applyTaskStateToOthers(selectedTask as TaskCreate)"
       >
         {{ $t("issue.apply-to-other-tasks") }}
       </button>
@@ -25,7 +30,10 @@
     <div class="space-x-2 flex items-center">
       <template v-if="create || state.editing">
         <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
-        <label class="mt-0.5 mr-2 inline-flex items-center gap-1">
+        <label
+          v-if="allowFormatOnSave"
+          class="mt-0.5 mr-2 inline-flex items-center gap-1"
+        >
           <input
             v-model="formatOnSave"
             type="checkbox"
@@ -33,48 +41,32 @@
           />
           <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
-        <button
-          v-if="state.editing && allowUploadSheetForTask"
-          type="button"
-          class="cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg-hover disabled:cursor-not-allowed disabled:opacity-60 text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-          :disabled="state.isUploadingFile"
-        >
-          <label
-            for="sql-file-with-sheet-input"
-            class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
-            :class="state.isUploadingFile && 'cursor-wait'"
-          >
-            <heroicons-outline:document-text class="w-4 h-auto mr-1" />
-            {{ $t("issue.upload-sql-as-sheet") }}
-            <input
-              id="sql-file-with-sheet-input"
-              type="file"
-              accept=".sql,.txt,application/sql,text/plain"
-              class="hidden"
-              @change="handleUploadLocalFileAsSheet"
-            />
-          </label>
-        </button>
-        <button
+        <BBContextMenuButton
           v-if="state.editing"
-          type="button"
-          class="cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          :disabled="state.isUploadingFile"
+          :action-list="uploadSQLActionButtonList"
         >
-          <label
-            for="sql-file-input"
-            class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
-          >
-            <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
-            {{ $t("issue.upload-sql") }}
-            <input
-              id="sql-file-input"
-              type="file"
-              accept=".sql,.txt,application/sql,text/plain"
-              class="hidden"
-              @change="handleUploadLocalFile"
-            />
-          </label>
-        </button>
+          <template #default="{ action }">
+            <button type="button">
+              <label
+                for="sql-file-input"
+                class="w-full flex flex-row justify-center items-center cursor-pointer"
+              >
+                <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
+                <span>{{ action.text }}</span>
+                <input
+                  id="sql-file-input"
+                  type="file"
+                  accept=".sql,.txt,application/sql,text/plain"
+                  class="hidden"
+                  @change="
+                    (event) => handleUploadFileButtonClick(event, action.key)
+                  "
+                />
+              </label>
+            </button>
+          </template>
+        </BBContextMenuButton>
       </template>
 
       <button
@@ -89,7 +81,7 @@
         <button
           v-if="state.editing"
           type="button"
-          class="px-3 py-1 cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
           :disabled="!allowSaveSQL"
           @click.prevent="saveEdit"
         >
@@ -98,7 +90,7 @@
         <button
           v-if="state.editing"
           type="button"
-          class="px-3 py-1 cursor-pointer rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          class="px-4 py-2 cursor-pointer rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
           @click.prevent="cancelEdit"
         >
           {{ $t("common.cancel") }}
@@ -140,9 +132,11 @@
       class="w-full h-auto max-h-[360px]"
       data-label="bb-issue-sql-editor"
       :value="state.editStatement"
-      :readonly="!state.editing || !allowEditStatement || isTaskHasSheetId"
+      :readonly="readonly"
       :auto-focus="false"
+      :language="language"
       :dialect="dialect"
+      :advices="readonly ? markers : []"
       @change="onStatementChange"
       @ready="handleMonacoEditorReady"
     />
@@ -197,10 +191,12 @@ import type {
   TaskId,
 } from "@/types";
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
+import { useInstanceEditorLanguage } from "@/utils";
+import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 interface LocalState {
   editing: boolean;
@@ -233,8 +229,8 @@ const {
   selectedTask,
   updateStatement,
   updateSheetId,
-  allowApplyStatementToOtherTasks,
-  applyStatementToOtherTasks,
+  allowApplyTaskStateToOthers,
+  applyTaskStateToOthers,
 } = useIssueLogic();
 
 const { t } = useI18n();
@@ -341,6 +337,16 @@ const useTempEditState = (state: LocalState) => {
 
 useTempEditState(state);
 
+const readonly = computed(() => {
+  return !state.editing || !allowEditStatement.value || isTaskHasSheetId.value;
+});
+
+const { markers } = useSQLAdviceMarkers();
+
+const language = useInstanceEditorLanguage(
+  computed(() => selectedDatabase.value?.instance)
+);
+
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
   if (db?.instance.engine === "POSTGRES") {
@@ -355,16 +361,41 @@ const formatOnSave = computed({
   set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
 });
 
+const allowFormatOnSave = computed(() => language.value === "sql");
+
 const allowUploadSheetForTask = computed(() => {
+  if (!create.value) {
+    return false;
+  }
+
+  // Only allow DML.
+  if (issue.value.type !== "bb.issue.database.data.update") {
+    return false;
+  }
+
   const task = selectedTask.value;
   return TaskTypeWithSheetId.includes(task.type);
 });
 
-const isTaskHasSheetId = computed(() => {
-  if (!allowUploadSheetForTask.value) {
-    return false;
+const uploadSQLActionButtonList = computed(() => {
+  const list = [
+    {
+      key: "NORMAL",
+      text: t("issue.upload-sql"),
+    },
+  ];
+
+  if (allowUploadSheetForTask.value) {
+    list.push({
+      key: "SHEET",
+      text: t("issue.upload-sql-as-sheet"),
+    });
   }
 
+  return list;
+});
+
+const isTaskHasSheetId = computed(() => {
   const task = selectedTask.value;
   if (create.value) {
     return !isUndefined((task as TaskCreate).sheetId);
@@ -384,7 +415,7 @@ const shouldShowStatementEditButton = computed(() => {
     return false;
   }
 
-  return allowEditStatement;
+  return allowEditStatement.value;
 });
 
 onMounted(() => {
@@ -435,7 +466,7 @@ const beginEdit = () => {
 };
 
 const saveEdit = () => {
-  if (formatOnSave.value) {
+  if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
   updateStatement(state.editStatement, () => {
@@ -461,6 +492,17 @@ const allowSaveSQL = computed((): boolean => {
   // Allowed to save otherwise
   return true;
 });
+
+const handleUploadFileButtonClick = (
+  event: Event,
+  action: "NORMAL" | "SHEET"
+) => {
+  if (action === "SHEET") {
+    handleUploadLocalFileAsSheet(event);
+  } else {
+    handleUploadLocalFile(event);
+  }
+};
 
 const handleUploadFileEvent = (
   event: Event,
@@ -535,8 +577,7 @@ const handleUploadLocalFile = async (event: Event) => {
         // nothing to do
       },
       onPositiveClick: () => {
-        updateSheetId(undefined);
-        updateStatement(statement);
+        onStatementChange(statement);
       },
     });
   } else {

@@ -19,6 +19,7 @@
                   :create="create"
                   :active="isActiveTask(task)"
                   :status="task.status"
+                  :task="task"
                   class="transform scale-75"
                 />
                 <heroicons-solid:arrow-narrow-right

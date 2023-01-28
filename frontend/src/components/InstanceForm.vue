@@ -10,9 +10,6 @@
             <InstanceEngineIcon :instance="state.instance" />
             <span class="ml-1">{{ state.instance.engineVersion }}</span>
           </label>
-          <p class="text-sm text-gray-500 mt-1 mb-2">
-            {{ $t("instance.instance-name-unique") }}
-          </p>
           <input
             id="name"
             required
@@ -51,6 +48,21 @@
               {{ $t("instance.account-name") }}
               <span class="text-red-600 mr-2">*</span>
             </template>
+            <template v-else-if="state.instance.engine === 'SPANNER'">
+              {{ $t("instance.project-id-and-instance-id") }}
+              <span style="color: red">*</span>
+              <p class="text-sm text-gray-500 mt-1">
+                {{ $t("instance.find-gcp-project-id-and-instance-id") }}
+                <a
+                  href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
+                  target="_blank"
+                  class="normal-link inline-flex items-center"
+                >
+                  {{ $t("common.detailed-guide")
+                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
+                /></a>
+              </p>
+            </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
               <span class="text-red-600 mr-2">*</span>
@@ -64,11 +76,13 @@
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
                 ? $t('instance.your-snowflake-account-name')
+                : state.instance.engine === 'SPANNER'
+                ? 'projects/<projectID>/instances/<instanceID>'
                 : $t('instance.sentence.host.snowflake')
             "
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
-            :value="state.instance.host"
+            :value="adminDataSource.host"
             @input="handleInstanceHostInput"
           />
           <div
@@ -78,24 +92,24 @@
             {{ $t("instance.sentence.proxy.snowflake") }}
           </div>
         </div>
-
-        <div class="sm:col-span-1">
-          <label for="port" class="textlabel block">{{
-            $t("instance.port")
-          }}</label>
-          <input
-            id="port"
-            type="number"
-            name="port"
-            class="textfield mt-1 w-full"
-            :placeholder="defaultPort"
-            :disabled="!allowEdit"
-            :value="state.instance.port"
-            @wheel="handleInstancePortWheelScroll"
-            @input="handleInstancePortInput"
-          />
-        </div>
-
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <div class="sm:col-span-1">
+            <label for="port" class="textlabel block">{{
+              $t("instance.port")
+            }}</label>
+            <input
+              id="port"
+              type="number"
+              name="port"
+              class="textfield mt-1 w-full"
+              :placeholder="defaultPort"
+              :disabled="!allowEdit"
+              :value="adminDataSource.port"
+              @wheel="handleInstancePortWheelScroll"
+              @input="handleInstancePortInput"
+            />
+          </div>
+        </template>
         <!--Do not show external link on create to reduce cognitive load-->
         <div class="sm:col-span-3 sm:col-start-1">
           <label for="externallink" class="textlabel inline-flex">
@@ -108,10 +122,8 @@
             </span>
             <button
               class="ml-1 btn-icon"
-              :disabled="instanceLink(state.instance)?.trim().length == 0"
-              @click.prevent="
-                window.open(urlfy(instanceLink(state.instance)), '_blank')
-              "
+              :disabled="instanceLink.trim().length == 0"
+              @click.prevent="window.open(urlfy(instanceLink), '_blank')"
             >
               <heroicons-outline:external-link class="w-4 h-4" />
             </button>
@@ -124,7 +136,7 @@
               type="text"
               class="textfield mt-1 w-full"
               disabled="true"
-              :value="instanceLink(state.instance)"
+              :value="instanceLink"
             />
           </template>
           <template v-else>
@@ -194,39 +206,61 @@
             />
           </NTab>
         </NTabs>
-        <CreateDataSourceExample
-          className="sm:col-span-3 border-none mt-2"
-          :createInstanceFlag="false"
-          :engineType="state.instance.engine"
-          :dataSourceType="state.currentDataSourceType"
-        />
-        <div class="mt-2 sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">
-            {{ $t("common.username") }}
-            <span class="text-red-600">*</span>
-          </label>
-          <!-- For mysql, username can be empty indicating anonymous user.
+
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <CreateDataSourceExample
+            className="sm:col-span-3 border-none mt-2"
+            :createInstanceFlag="false"
+            :engineType="state.instance.engine"
+            :dataSourceType="state.currentDataSourceType"
+          />
+        </template>
+
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="username" class="textlabel block">
+              {{ $t("common.username") }}
+              <span class="text-red-600">*</span>
+            </label>
+            <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
           thus we make it REQUIRED here.-->
-          <input
-            id="username"
-            name="username"
-            type="text"
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :placeholder="
-              instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
-            "
-            :value="currentDataSource.username"
-            @input="handleCurrentDataSourceNameInput"
-          />
-        </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="
+                instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
+              "
+              :value="currentDataSource.username"
+              @input="handleCurrentDataSourceNameInput"
+            />
+          </div>
+        </template>
 
         <div class="mt-2 sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              {{ $t("common.password") }}
-              <span class="text-red-600">*</span>
+              <template v-if="state.instance.engine === 'SPANNER'">
+                {{ $t("common.credentials") }}
+                <span class="text-red-600">*</span>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ $t("instance.create-gcp-credentials") }}
+                  <a
+                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
+                    target="_blank"
+                    class="normal-link inline-flex items-center"
+                    >{{ $t("common.detailed-guide") }}
+                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
+                  /></a>
+                </p>
+              </template>
+              <template v-else>
+                {{ $t("common.password") }}
+                <span class="text-red-600">*</span>
+              </template>
             </label>
             <BBCheckbox
               :title="$t('common.empty')"
@@ -243,6 +277,8 @@
             :placeholder="
               currentDataSource.useEmptyPassword
                 ? $t('instance.no-password')
+                : state.instance.engine === 'SPANNER'
+                ? $t('instance.credentials-write-only')
                 : $t('instance.password-write-only')
             "
             :disabled="!allowEdit || currentDataSource.useEmptyPassword"
@@ -255,36 +291,54 @@
           />
         </div>
 
-        <template v-if="showAuthSource">
+        <template v-if="showAuthenticationDatabase">
           <div class="sm:col-span-1 sm:col-start-1">
             <div class="flex flex-row items-center space-x-2">
-              <label for="authSource" class="textlabel block">
-                Auth Source
+              <label for="authenticationDatabase" class="textlabel block">
+                {{ $t("instance.authentication-database") }}
               </label>
             </div>
             <input
-              id="authSource"
-              name="authSource"
+              id="authenticationDatabase"
+              name="authenticationDatabase"
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              placeholder="Auth Source"
-              :value="currentDataSource.options.authSource"
-              @input="handleInstanceAuthSourceInput"
+              placeholder="admin"
+              :value="currentDataSource.options.authenticationDatabase"
+              @input="handleInstanceAuthenticationDatabaseInput"
             />
           </div>
         </template>
 
-        <template v-if="state.instance.engine == 'MONGODB'">
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <div class="lex flex-row items-center space-x-2">
-              <BBCheckbox
-                title="DNS SRV Record"
-                :value="currentDataSource.options.srv"
-                @toggle="handleToggleSRV"
-              />
-            </div></div
-        ></template>
+        <div
+          v-if="state.instance.engine === 'MONGODB'"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-string-schema") }}
+          </label>
+          <label
+            v-for="type in mongodbConnectionStringSchemaList"
+            :key="type"
+            class="radio h-7"
+          >
+            <input
+              type="radio"
+              class="btn"
+              name="connectionStringSchema"
+              :value="type"
+              :checked="type === currentMongoDBConnectionSchema"
+              @change="handleMongodbConnectionStringSchemaChange"
+            />
+            <span class="label">
+              {{ type }}
+            </span>
+          </label>
+        </div>
 
         <template v-if="state.currentDataSourceType === 'RO'">
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
@@ -299,8 +353,8 @@
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              :value="currentDataSource.hostOverride"
-              @input="handleCurrentDataSourceHostOverrideInput"
+              :value="currentDataSource.host"
+              @input="handleCurrentDataSourceHostInput"
             />
           </div>
 
@@ -316,8 +370,8 @@
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              :value="currentDataSource.portOverride"
-              @input="handleCurrentDataSourcePortOverrideInput"
+              :value="currentDataSource.port"
+              @input="handleCurrentDataSourcePortInput"
             />
           </div>
         </template>
@@ -328,7 +382,7 @@
           </label>
           <input
             id="database"
-            v-model="state.instance.database"
+            v-model="currentDataSource.database"
             name="database"
             type="text"
             class="textfield mt-1 w-full"
@@ -378,7 +432,6 @@
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="!instance.host"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -418,7 +471,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual, pick } from "lodash-es";
+import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
@@ -494,6 +547,14 @@ const state = reactive<State>({
   showFeatureModal: false,
 });
 
+const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
+
+const currentMongoDBConnectionSchema = computed(() => {
+  return currentDataSource.value.options.srv === false
+    ? mongodbConnectionStringSchemaList[0]
+    : mongodbConnectionStringSchemaList[1];
+});
+
 const allowEdit = computed(() => {
   return (
     state.instance.rowStatus == "NORMAL" &&
@@ -513,14 +574,9 @@ const connectionInfoChanged = computed(() => {
     return false;
   }
 
-  return (
-    state.instance.host !== state.originalInstance.host ||
-    state.instance.port !== state.originalInstance.port ||
-    state.instance.database !== state.originalInstance.database ||
-    !isEqual(
-      state.originalInstance.dataSourceList,
-      state.instance.dataSourceList
-    )
+  return !isEqual(
+    state.originalInstance.dataSourceList,
+    state.instance.dataSourceList
   );
 });
 
@@ -542,7 +598,7 @@ const defaultPort = computed(() => {
 const adminDataSource = computed(() => {
   const temp = state.dataSourceList.find(
     (ds) => ds.type === "ADMIN"
-  ) as DataSource;
+  ) as EditDataSource;
   return temp;
 });
 
@@ -565,16 +621,16 @@ const currentDataSource = computed(() => {
 const snowflakeExtraLinkPlaceHolder =
   "https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false";
 
-const instanceLink = (instance: Instance): string => {
-  if (instance.engine == "SNOWFLAKE") {
-    if (instance.host) {
+const instanceLink = computed(() => {
+  if (state.instance.engine == "SNOWFLAKE") {
+    if (currentDataSource.value.host) {
       return `https://${
-        instance.host.split("@")[0]
+        currentDataSource.value.host.split("@")[0]
       }.snowflakecomputing.com/console`;
     }
   }
-  return instance.host;
-};
+  return currentDataSource.value.host || "";
+});
 
 const showDatabase = computed((): boolean => {
   return (
@@ -584,10 +640,15 @@ const showDatabase = computed((): boolean => {
 });
 
 const showSSL = computed((): boolean => {
-  return state.instance.engine === "CLICKHOUSE";
+  return (
+    state.instance.engine === "CLICKHOUSE" ||
+    state.instance.engine === "MYSQL" ||
+    state.instance.engine === "TIDB" ||
+    state.instance.engine === "POSTGRES"
+  );
 });
 
-const showAuthSource = computed((): boolean => {
+const showAuthenticationDatabase = computed((): boolean => {
   return state.instance.engine === "MONGODB";
 });
 
@@ -596,7 +657,8 @@ const handleInstanceNameInput = (event: Event) => {
 };
 
 const handleInstanceHostInput = (event: Event) => {
-  updateInstance("host", (event.target as HTMLInputElement).value);
+  adminDataSource.value.host = (event.target as HTMLInputElement).value;
+  updateInstanceDataSource(adminDataSource.value);
 };
 
 const handleInstancePortWheelScroll = (event: MouseEvent) => {
@@ -604,7 +666,8 @@ const handleInstancePortWheelScroll = (event: MouseEvent) => {
 };
 
 const handleInstancePortInput = (event: Event) => {
-  updateInstance("port", (event.target as HTMLInputElement).value);
+  currentDataSource.value.port = (event.target as HTMLInputElement).value;
+  updateInstanceDataSource(adminDataSource.value);
 };
 
 const handleInstanceExternalLinkInput = (event: Event) => {
@@ -618,41 +681,50 @@ const handleDataSourceTypeChange = (value: string) => {
 const handleCurrentDataSourceNameInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.username = str;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleToggleUseEmptyPassword = (on: boolean) => {
   currentDataSource.value.useEmptyPassword = on;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleCurrentDataSourcePasswordInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.updatedPassword = str;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleInstanceAuthSourceInput = (event: Event) => {
+const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.authSource = str;
-  updateInstanceDataSource();
+  currentDataSource.value.options.authenticationDatabase = str;
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleToggleSRV = (on: boolean) => {
-  currentDataSource.value.options.srv = on;
-  updateInstanceDataSource();
+const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+  switch ((event.target as HTMLInputElement).value) {
+    case mongodbConnectionStringSchemaList[0]:
+      currentDataSource.value.options.srv = false;
+      break;
+    case mongodbConnectionStringSchemaList[1]:
+      currentDataSource.value.options.srv = true;
+      break;
+    default:
+      currentDataSource.value.options.srv = false;
+  }
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleCurrentDataSourceHostOverrideInput = (event: Event) => {
+const handleCurrentDataSourceHostInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.hostOverride = str;
-  updateInstanceDataSource();
+  currentDataSource.value.host = str;
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleCurrentDataSourcePortOverrideInput = (event: Event) => {
+const handleCurrentDataSourcePortInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.portOverride = str;
-  updateInstanceDataSource();
+  currentDataSource.value.port = str;
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleDeleteReadOnlyDataSource = async () => {
@@ -690,7 +762,7 @@ const handleEditSsl = (edit: boolean) => {
     curr.sslKey = "";
     curr.updateSsl = true;
   }
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleCurrentDataSourceSslChange = (
@@ -698,51 +770,44 @@ const handleCurrentDataSourceSslChange = (
 ) => {
   Object.assign(currentDataSource.value, value);
   currentDataSource.value.updateSsl = true;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const updateInstanceDataSource = () => {
-  const curr = currentDataSource.value;
-  const index = state.dataSourceList.findIndex((ds) => ds === curr);
-  let newValue = {
+const updateInstanceDataSource = (dataSource: EditDataSource) => {
+  const index = state.dataSourceList.findIndex((ds) => ds === dataSource);
+  const newValue = {
     ...state.instance.dataSourceList[index],
-    username: curr.username,
-    options: curr.options,
+    ...omit(dataSource, ["updatedPassword", "useEmptyPassword"]),
   };
 
-  if (curr.type === "RO") {
+  if (dataSource.type === "RO") {
     if (!hasFeature("bb.feature.read-replica-connection")) {
-      if (curr.hostOverride || curr.portOverride) {
-        state.dataSourceList[index].hostOverride = "";
-        state.dataSourceList[index].portOverride = "";
-        newValue.hostOverride = "";
-        newValue.portOverride = "";
+      if (dataSource.host || dataSource.port) {
+        state.dataSourceList[index].host = "";
+        state.dataSourceList[index].port = "";
+        newValue.host = "";
+        newValue.port = "";
         state.showFeatureModal = true;
       }
-    } else {
-      newValue = {
-        ...newValue,
-        ...pick(curr, ["hostOverride", "portOverride"]),
-      };
     }
   }
 
-  if (curr.useEmptyPassword) {
+  if (dataSource.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.
     newValue.password = "";
-  } else if (curr.updatedPassword) {
+  } else if (dataSource.updatedPassword) {
     // When the user has typed something in the password textbox, we use the typed value.
-    newValue.password = curr.updatedPassword;
+    newValue.password = dataSource.updatedPassword;
   } else {
     // When the user didn't touch the password textbox, or the user did typed something
     // but cleared the textbox again, we won't update the password.
     delete newValue.password;
   }
 
-  if (curr.updateSsl) {
-    newValue.sslCa = curr.sslCa;
-    newValue.sslKey = curr.sslKey;
-    newValue.sslCert = curr.sslCert;
+  if (dataSource.updateSsl) {
+    newValue.sslCa = dataSource.sslCa;
+    newValue.sslKey = dataSource.sslKey;
+    newValue.sslCert = dataSource.sslCert;
   } else {
     delete newValue.sslCa;
     delete newValue.sslCert;
@@ -761,6 +826,10 @@ const handleCreateDataSource = (type: DataSourceType) => {
     type: type,
     username: "",
     password: "",
+    options: {
+      authenticationDatabase: "",
+      srv: false,
+    },
   } as DataSource;
   state.dataSourceList.push({
     ...tempDataSource,
@@ -821,18 +890,6 @@ const doUpdate = () => {
     patchedInstance.externalLink = state.instance.externalLink;
     instanceInfoChanged = true;
   }
-  if (state.instance.host != state.originalInstance.host) {
-    patchedInstance.host = state.instance.host;
-    instanceInfoChanged = true;
-  }
-  if (state.instance.port != state.originalInstance.port) {
-    patchedInstance.port = state.instance.port;
-    instanceInfoChanged = true;
-  }
-  if (state.instance.database !== state.originalInstance.database) {
-    patchedInstance.database = state.instance.database;
-    instanceInfoChanged = true;
-  }
 
   if (
     !isEqual(
@@ -860,8 +917,9 @@ const doUpdate = () => {
               type: dataSource.type,
               username: dataSource.username,
               password: dataSource.password,
-              hostOverride: dataSource.hostOverride,
-              portOverride: dataSource.portOverride,
+              host: dataSource.host,
+              port: dataSource.port,
+              database: dataSource.database,
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -880,11 +938,6 @@ const doUpdate = () => {
           const dataSourcePatch: DataSourcePatch = {
             ...dataSource,
           };
-          if (dataSource.type !== "RO") {
-            dataSourcePatch.hostOverride = undefined;
-            dataSourcePatch.portOverride = undefined;
-          }
-
           requests.push(
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
@@ -926,26 +979,28 @@ const doUpdate = () => {
 const testConnection = () => {
   const instance = state.instance;
   const dataSource = currentDataSource.value;
-  let connectionHost = instance.host;
-  let connectionPort = instance.port;
+  let connectionHost = adminDataSource.value.host;
+  let connectionPort = adminDataSource.value.port;
   if (dataSource.type === "RO") {
-    if (dataSource.hostOverride && dataSource.portOverride) {
-      connectionHost = dataSource.hostOverride;
-      connectionPort = dataSource.portOverride;
+    if (dataSource.host) {
+      connectionHost = dataSource.host;
+    }
+    if (dataSource.port) {
+      connectionPort = dataSource.port;
     }
   }
 
   const connectionInfo: ConnectionInfo = {
+    instanceId: instance.id,
     engine: instance.engine,
     username: dataSource.username,
     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
     useEmptyPassword: dataSource.useEmptyPassword,
     host: connectionHost,
     port: connectionPort,
-    database: instance.database,
-    instanceId: instance.id,
+    database: dataSource.database,
     srv: dataSource.options.srv,
-    authSource: dataSource.options.authSource,
+    authenticationDatabase: dataSource.options.authenticationDatabase,
   };
 
   if (typeof dataSource.sslCa !== "undefined") {

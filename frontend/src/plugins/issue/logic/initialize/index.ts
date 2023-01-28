@@ -1,8 +1,8 @@
 import { computed, ref, Ref, watch } from "vue";
-import { useRoute } from "vue-router";
-import type { IssueCreate, IssueType } from "@/types";
+import { type LocationQuery, useRoute, useRouter } from "vue-router";
+import { EMPTY_ID, Issue, IssueCreate, IssueType } from "@/types";
 import { SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
-import { pushNotification, useIssueStore } from "@/store";
+import { pushNotification, useDatabaseStore, useIssueStore } from "@/store";
 import { idFromSlug } from "@/utils";
 import { defaultTemplate, templateForType } from "@/plugins";
 import { BuildNewIssueContext } from "../common";
@@ -15,12 +15,20 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const issueStore = useIssueStore();
   const create = computed(() => issueSlug.value.toLowerCase() == "new");
   const route = useRoute();
-  const issueCreate = ref<IssueCreate | undefined>();
+  const router = useRouter();
 
-  const issue = computed(() => {
-    return create.value
-      ? issueCreate.value
-      : issueStore.getIssueById(idFromSlug(issueSlug.value));
+  const issueCreate = ref<IssueCreate | undefined>();
+  const issue = computed((): Issue | IssueCreate | undefined => {
+    if (create.value) {
+      return issueCreate.value;
+    } else {
+      const id = idFromSlug(issueSlug.value);
+      const issueEntity = issueStore.getIssueById(id);
+      if (issueEntity.id === EMPTY_ID || issueEntity.id === UNKNOWN_ID) {
+        return undefined;
+      }
+      return issueEntity;
+    }
   });
 
   const template = computed(() => {
@@ -43,20 +51,30 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
     return defaultTemplate();
   });
 
-  // initialize or re-initialize issue when issueSlug changes
   watch(
-    issueSlug,
-    async () => {
-      issueCreate.value = undefined;
-      if (create.value) {
-        issueCreate.value = await buildNewIssue({ template, route });
-        if (
-          issueCreate.value.assigneeId === UNKNOWN_ID ||
-          issueCreate.value.assigneeId === SYSTEM_BOT_ID
-        ) {
-          // Try to find a default assignee of the first task automatically.
-          await tryGetDefaultAssignee(issueCreate.value);
+    [issueSlug, create],
+    async ([issueSlug, create]) => {
+      try {
+        if (create) {
+          issueCreate.value = undefined;
+
+          await prepareDatabaseListForIssueCreation(route.query);
+
+          issueCreate.value = await buildNewIssue({ template, route });
+          if (
+            issueCreate.value.assigneeId === UNKNOWN_ID ||
+            issueCreate.value.assigneeId === SYSTEM_BOT_ID
+          ) {
+            // Try to find a default assignee of the first task automatically.
+            await tryGetDefaultAssignee(issueCreate.value);
+          }
+        } else {
+          const id = idFromSlug(issueSlug);
+          await issueStore.fetchIssueById(id);
         }
+      } catch (error) {
+        router.push({ name: "error.404" });
+        throw error;
       }
     },
     { immediate: true }
@@ -79,4 +97,34 @@ const buildNewIssue = async (
   }
 
   return buildNewStandardIssue(context);
+};
+
+const prepareDatabaseListForIssueCreation = async (query: LocationQuery) => {
+  const databaseStore = useDatabaseStore();
+  // For preparing the database if user visits creating issue url directly.
+  // It's horrible to fetchDatabaseById one-by-one when query.databaseList
+  // is big (100+ sometimes)
+  // So we are fetching databaseList by project since that's better cached.
+  if (query.project) {
+    // If we found query.project, we can directly fetchDatabaseListByProjectId
+    const projectId = query.project as string;
+    await databaseStore.fetchDatabaseListByProjectId(parseInt(projectId, 10));
+  } else {
+    // Otherwise, we don't have the projectId (very rare to see, theoretically)
+    // so we need to fetch the first database in databaseList by id,
+    // and see what project it belongs.
+    const databaseIdList = (query.databaseList as string)
+      .split(",")
+      .map((str) => parseInt(str, 10));
+    if (databaseIdList.length > 0) {
+      const firstDB = await databaseStore.getOrFetchDatabaseById(
+        databaseIdList[0]
+      );
+      if (databaseIdList.length > 1) {
+        // If we have more than one databases in the list
+        // fetch the rest of databases by projectId
+        await databaseStore.fetchDatabaseListByProjectId(firstDB.project.id);
+      }
+    }
+  }
 };

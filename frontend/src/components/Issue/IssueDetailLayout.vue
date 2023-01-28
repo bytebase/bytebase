@@ -191,8 +191,8 @@ const {
   allowApplyIssueStatusTransition,
   allowApplyTaskStatusTransition,
   selectedStatement,
-  allowApplyStatementToOtherTasks,
-  applyStatementToOtherTasks,
+  allowApplyTaskStateToOthers,
+  applyTaskStateToOthers,
 } = useBaseIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
@@ -263,6 +263,9 @@ const showIssueOutputPanel = computed(() => {
 
 const showIssueTaskStatementPanel = computed(() => {
   const task = selectedTask.value;
+  if (task.type === "bb.task.database.schema.baseline" && !create.value) {
+    return false;
+  }
   return TaskTypeWithStatement.includes(task.type);
 });
 
@@ -388,8 +391,8 @@ provideIssueLogic(
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
     selectedStatement,
-    allowApplyStatementToOtherTasks,
-    applyStatementToOtherTasks,
+    allowApplyTaskStateToOthers,
+    applyTaskStateToOthers,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

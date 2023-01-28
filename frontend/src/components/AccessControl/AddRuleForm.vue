@@ -10,7 +10,8 @@
 
     <DatabaseTable
       mode="ALL_TINY"
-      class="max-h-[55vh] overflow-y-auto"
+      class="overflow-y-auto"
+      style="max-height: calc(100vh - 320px)"
       table-class="border"
       :custom-click="true"
       :database-list="databaseList"
@@ -47,10 +48,24 @@
       v-if="!state.isLoading && databaseList.length === 0"
       class="w-full flex flex-col py-6 justify-start items-center"
     >
-      <heroicons-outline:inbox class="w-12 h-auto text-gray-500" />
-      <span class="text-sm leading-6 text-gray-500">{{
-        $t("common.no-data")
-      }}</span>
+      <i18n-t
+        keypath="settings.access-control.no-database-in-protected-environment"
+        tag="div"
+        class="text-sm leading-6 text-gray-500 max-w-[15rem] whitespace-pre-wrap text-center"
+      >
+        <template #protected_environment>
+          <a
+            href="https://www.bytebase.com/docs/administration/database-access-control"
+            class="normal-link lowercase"
+            target="__BLANK"
+          >
+            {{ $t("environment.protected-environment") }}
+            <heroicons-outline:external-link
+              class="inline-block w-4 h-4 -mt-0.5 mr-0.5"
+            />
+          </a>
+        </template>
+      </i18n-t>
     </div>
 
     <div class="flex items-center justify-between">
@@ -86,20 +101,21 @@
 import { computed, PropType, reactive } from "vue";
 
 import type { Database, DatabaseId, Policy } from "@/types";
-import { DEFAULT_PROJECT_ID } from "@/types";
-import { useDatabaseStore } from "@/store";
 import { filterDatabaseByKeyword } from "@/utils";
 
 type LocalState = {
   isLoading: boolean;
   searchText: string;
-  databaseList: Database[];
   selectedDatabaseIdList: Set<DatabaseId>;
 };
 
 const props = defineProps({
   policyList: {
     type: Array as PropType<Policy[]>,
+    default: () => [],
+  },
+  databaseList: {
+    type: Array as PropType<Database[]>,
     default: () => [],
   },
 });
@@ -112,21 +128,8 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   isLoading: false,
   searchText: "",
-  databaseList: [],
   selectedDatabaseIdList: new Set(),
 });
-
-const databaseStore = useDatabaseStore();
-
-const prepareList = async () => {
-  state.isLoading = true;
-
-  const allDatabaseList = await databaseStore.fetchDatabaseList();
-  state.databaseList = allDatabaseList
-    .filter((db) => db.instance.environment.tier === "PROTECTED")
-    .filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
-  state.isLoading = false;
-};
 
 const presetDatabaseIdList = computed(() => {
   const databaseIdList = props.policyList.map(
@@ -137,7 +140,7 @@ const presetDatabaseIdList = computed(() => {
 
 const databaseList = computed(() => {
   // Don't show the databases already have access control policy.
-  let list = state.databaseList.filter(
+  let list = props.databaseList.filter(
     (db) => !presetDatabaseIdList.value.has(db.id)
   );
 
@@ -204,6 +207,4 @@ const toggleAllDatabasesSelection = (
     });
   }
 };
-
-prepareList();
 </script>

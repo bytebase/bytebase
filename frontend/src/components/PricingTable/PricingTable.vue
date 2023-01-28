@@ -35,18 +35,12 @@
               </p>
 
               <p class="mt-4 flex items-baseline text-gray-900 text-xl">
-                <span v-if="plan.pricePrefix" class="text-xl 2xl:text-3xl">
-                  {{ plan.pricePrefix }}&nbsp;</span
-                >
                 <span class="text-4xl">
-                  ${{ plan.pricePerInstancePerMonth }}
+                  {{ plan.pricing }}
                 </span>
                 {{ plan.priceUnit }}
               </p>
 
-              <div class="text-gray-400">
-                {{ $t("subscription.per-instance") }}
-              </div>
               <div class="text-gray-400">
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
@@ -163,10 +157,11 @@
         </p>
 
         <p class="mt-4 flex items-baseline text-gray-900 text-xl">
-          <span class="text-4xl"> ${{ plan.pricePerInstancePerMonth }} </span>
-          &nbsp;
-          {{ $t("subscription.per-instance") }}
-          {{ $t("subscription.per-month") }}
+          <span class="text-4xl"> {{ plan.pricing }} </span>
+          <span v-if="plan.type != PlanType.ENTERPRISE">
+            &nbsp;
+            {{ $t("subscription.per-month") }}
+          </span>
         </p>
 
         <div class="text-gray-400">
@@ -295,12 +290,12 @@ const plans = computed((): LocalPlan[] => {
     isAvailable: plan.type === PlanType.TEAM,
     isFreePlan: plan.type === PlanType.FREE,
     label: t(`subscription.plan.${plan.title}.label`),
-    pricePrefix:
-      plan.type === PlanType.ENTERPRISE ? t("subscription.start-from") : "",
-    priceUnit:
+    pricing:
       plan.type === PlanType.ENTERPRISE
-        ? t("subscription.price-unit-for-enterprise")
-        : t("subscription.per-month"),
+        ? t("subscription.contact-us")
+        : `$${plan.pricePerSeatPerMonth}`,
+    priceUnit:
+      plan.type === PlanType.ENTERPRISE ? "" : t("subscription.per-month"),
   }));
 });
 

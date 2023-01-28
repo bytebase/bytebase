@@ -48,7 +48,7 @@ import { Label } from "./label";
 import { ReleaseInfo } from "./actuator";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
-import { DatabaseMetadata } from "./proto/database";
+import { DatabaseMetadata } from "./proto/store/database";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -154,6 +154,7 @@ export interface DatabaseState {
 }
 
 export interface DBSchemaState {
+  requestCache: Map<DatabaseId, Promise<DatabaseMetadata>>;
   databaseMetadataById: Map<DatabaseId, DatabaseMetadata>;
 }
 

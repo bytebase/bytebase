@@ -3,6 +3,7 @@ import type {
   AddColumnContext,
   DropColumnContext,
   ChangeColumnContext,
+  AlterColumnContext,
 } from "@/types";
 import { Column } from "@/types/schemaEditor/atomType";
 import {
@@ -24,13 +25,14 @@ export const diffColumnList = (
     addColumnContextList.push(transformColumnToAddColumnContext(column));
   }
 
+  const alterColumnContextList: AlterColumnContext[] = [];
   const changeColumnContextList: ChangeColumnContext[] = [];
   const changedColumnList = columnList.filter(
     (column) => column.status === "normal"
   );
   for (const column of changedColumnList) {
     const originColumn = originColumnList.find(
-      (originColumn) => originColumn.oldName === column.oldName
+      (originColumn) => originColumn.id === column.id
     );
     if (isUndefined(originColumn)) {
       continue;
@@ -39,6 +41,26 @@ export const diffColumnList = (
       changeColumnContextList.push(
         transformColumnToChangeColumnContext(originColumn, column)
       );
+
+      const alterColumnContext: AlterColumnContext = {
+        oldName: originColumn.name,
+        newName: column.name,
+        defaultChanged: false,
+      };
+      if (!isEqual(originColumn.type, column.type)) {
+        alterColumnContext.type = column.type;
+      }
+      if (!isEqual(originColumn.comment, column.comment)) {
+        alterColumnContext.comment = column.comment;
+      }
+      if (!isEqual(originColumn.nullable, column.nullable)) {
+        alterColumnContext.nullable = column.nullable;
+      }
+      if (!isEqual(originColumn.default, column.default)) {
+        alterColumnContext.defaultChanged = true;
+        alterColumnContext.default = column.default;
+      }
+      alterColumnContextList.push(alterColumnContext);
     }
   }
 
@@ -47,13 +69,17 @@ export const diffColumnList = (
     (column) => column.status === "dropped"
   );
   for (const column of droppedColumnList) {
-    dropColumnContextList.push({
-      name: column.oldName,
-    });
+    const originColumn = originColumnList.find((item) => item.id === column.id);
+    if (originColumn) {
+      dropColumnContextList.push({
+        name: originColumn.name,
+      });
+    }
   }
 
   return {
     addColumnList: addColumnContextList,
+    alterColumnList: alterColumnContextList,
     changeColumnList: changeColumnContextList,
     dropColumnList: dropColumnContextList,
   };

@@ -1,8 +1,7 @@
 <template>
   <BBModal
     :title="$t('database.alter-schema')"
-    class="schema-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
-    :esc-closable="false"
+    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     @close="dismissModal"
   >
     <div
@@ -145,7 +144,11 @@ import {
   useProjectStore,
   useSchemaEditorStore,
 } from "@/store";
-import { diffTableList } from "@/utils/schemaEditor/diffTable";
+import {
+  checkHasSchemaChanges,
+  diffSchema,
+  mergeDiffResults,
+} from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
@@ -226,11 +229,12 @@ const project = useProjectStore().getProjectById(
 const isTenantProject = project.tenantMode === "TENANT";
 
 onMounted(() => {
-  if (
-    databaseList.length === 0 ||
-    project.id === UNKNOWN_ID ||
-    databaseEngineType === "unknown"
-  ) {
+  if (databaseList.length === 0 || project.id === UNKNOWN_ID) {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Invalid database list",
+    });
     emit("close");
     return;
   }
@@ -291,23 +295,27 @@ const getDatabaseEditListWithSchemaEditor = () => {
       continue;
     }
 
-    const originTableList = databaseSchema.originSchemaList
-      .map((schema) => schema.tableList)
-      .flat();
-    const tableList = databaseSchema.schemaList
-      .map((schema) => schema.tableList)
-      .flat();
-    const diffTableListResult = diffTableList(originTableList, tableList);
-    if (
-      diffTableListResult.createTableList.length > 0 ||
-      diffTableListResult.alterTableList.length > 0 ||
-      diffTableListResult.renameTableList.length > 0 ||
-      diffTableListResult.dropTableList.length > 0
-    ) {
-      databaseEditList.push({
-        databaseId: database.id,
-        ...diffTableListResult,
-      });
+    for (const schema of databaseSchema.schemaList) {
+      const originSchema = databaseSchema.originSchemaList.find(
+        (originSchema) => originSchema.id === schema.id
+      );
+      const diffSchemaResult = diffSchema(database.id, originSchema, schema);
+      if (checkHasSchemaChanges(diffSchemaResult)) {
+        const index = databaseEditList.findIndex(
+          (edit) => edit.databaseId === database.id
+        );
+        if (index !== -1) {
+          databaseEditList[index] = {
+            databaseId: database.id,
+            ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
+          };
+        } else {
+          databaseEditList.push({
+            databaseId: database.id,
+            ...diffSchemaResult,
+          });
+        }
+      }
     }
   }
   return databaseEditList;
@@ -332,10 +340,12 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
         });
         return;
       }
-      databaseEditMap.set(
-        databaseEdit.databaseId,
+      const previousStatement =
+        databaseEditMap.get(databaseEdit.databaseId) || "";
+      const statement = `${previousStatement}${previousStatement && "\n"}${
         databaseEditResult.statement
-      );
+      }`;
+      databaseEditMap.set(databaseEdit.databaseId, statement);
     }
   }
   return databaseEditMap;
@@ -391,12 +401,21 @@ const handlePreviewIssue = async () => {
     mode: "normal",
     ghost: undefined,
   };
-  if (isTenantProject && props.databaseIdList.length > 1) {
-    query.mode = "tenant";
+  if (isTenantProject) {
+    if (props.databaseIdList.length > 1) {
+      // A tenant pipeline with 2 or more databases will be generated
+      // via deployment config, so we don't need the databaseList parameter.
+      query.mode = "tenant";
+    } else {
+      // A tenant pipeline with only 1 database will be downgraded to
+      // a standard pipeline.
+      // So we need to provide the databaseList parameter
+      query.databaseList = props.databaseIdList.join(",");
+    }
   }
   if (props.alterType !== "TENANT") {
     // If we are not using tenant deployment config pipeline
-    // we need to pass the databaseIdList explicitly.
+    // we need to pass the databaseList explicitly.
     query.databaseList = props.databaseIdList.join(",");
   }
   if (state.selectedTab === "raw-sql") {
@@ -516,7 +535,7 @@ watch(
 
 <style>
 .schema-editor-modal-container > .modal-container {
-  @apply w-full h-160 overflow-auto grid;
+  @apply w-full h-[46rem] overflow-auto grid;
   grid-template-rows: min-content 1fr min-content;
 }
 </style>

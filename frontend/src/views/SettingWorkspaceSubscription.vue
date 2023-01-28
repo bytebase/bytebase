@@ -21,7 +21,13 @@
         <dt class="flex text-gray-400">
           {{ $t("subscription.current") }}
           <span
-            v-if="isTrialing"
+            v-if="isExpired"
+            class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-red-100 text-red-800 h-6"
+          >
+            {{ $t("subscription.expired") }}
+          </span>
+          <span
+            v-else-if="isTrialing"
             class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800 h-6"
           >
             {{ $t("subscription.trialing") }}
@@ -39,7 +45,13 @@
         </dt>
         <dd class="mt-1 text-4xl">{{ instanceCount }}</dd>
       </div>
-      <div class="my-3 col-span-2">
+      <div class="my-3">
+        <dt class="text-gray-400">
+          {{ $t("subscription.seat-count") }}
+        </dt>
+        <dd class="mt-1 text-4xl">{{ seatCount }}</dd>
+      </div>
+      <div class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
         </dt>
@@ -144,11 +156,23 @@ export default defineComponent({
       }
     };
 
-    const { subscription, expireAt, isTrialing } =
+    const { subscription, expireAt, isTrialing, isExpired } =
       storeToRefs(subscriptionStore);
 
-    const instanceCount = computed((): number => {
-      return subscription.value?.instanceCount ?? 5;
+    const instanceCount = computed((): string => {
+      const count = subscription.value?.instanceCount ?? 5;
+      if (count > 0) {
+        return `${count}`;
+      }
+      return t("subscription.unlimited");
+    });
+
+    const seatCount = computed((): string => {
+      const seat = subscription.value?.seat ?? 2;
+      if (seat > 0) {
+        return `${seat}`;
+      }
+      return t("subscription.unlimited");
     });
 
     const currentPlan = computed((): string => {
@@ -184,6 +208,8 @@ export default defineComponent({
       canTrial,
       expireAt,
       isTrialing,
+      isExpired,
+      seatCount,
       currentPlan,
       instanceCount,
       uploadLicense,

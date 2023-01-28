@@ -72,29 +72,6 @@
                 >{{ projectName(database.project) }}</router-link
               >
             </dd>
-            <template v-if="database.sourceBackup">
-              <dt class="sr-only">{{ $t("db.parent") }}</dt>
-              <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
-                <span class="textlabel">{{
-                  $t("database.restored-from")
-                }}</span>
-                <router-link
-                  :to="`/db/${database.sourceBackup.databaseId}`"
-                  class="normal-link"
-                >
-                  <!-- Do not display the name of the backup's database because that requires a fetch  -->
-                  <span class="tooltip">
-                    {{
-                      $t(
-                        "database.database-name-is-restored-from-another-database-backup",
-                        [database.name]
-                      )
-                    }}
-                  </span>
-                  {{ $t("database.database-backup") }}
-                </router-link>
-              </dd>
-            </template>
             <dd
               class="flex items-center text-sm md:mr-4"
               :class="
@@ -108,12 +85,12 @@
               <heroicons-solid:terminal class="w-5 h-5" />
             </dd>
             <dd
-              v-if="isDev"
+              v-if="hasSchemaDiagramFeature"
               class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
               @click.prevent="state.showSchemaDiagram = true"
             >
               <span class="mr-1">{{ $t("schema-diagram.self") }}</span>
-              <heroicons-solid:table-cells class="w-4 h-4" />
+              <SchemaDiagramIcon />
             </dd>
             <DatabaseLabelProps
               :label-list="database.labels"
@@ -166,7 +143,7 @@
             />
           </button>
           <button
-            v-if="allowAlterSchemaOrChangeData"
+            v-if="allowAlterSchema"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
@@ -304,12 +281,17 @@
   <BBModal
     v-if="state.showSchemaDiagram"
     :title="$t('schema-diagram.self')"
+    class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
+    header-class="!border-0"
+    container-class="flex-1 !pt-0"
     @close="state.showSchemaDiagram = false"
   >
-    <div class="w-[80vw] h-[70vh]">
+    <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
-        :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
+        :database-metadata="
+          dbSchemaStore.getDatabaseMetadataByDatabaseId(database.id)
+        "
       />
     </div>
   </BBModal>
@@ -357,7 +339,7 @@ import {
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
-import SchemaDiagram from "@/components/SchemaDiagram";
+import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import {
   pushNotification,
   useCurrentUser,
@@ -395,17 +377,17 @@ const props = defineProps({
   },
 });
 
+const { t } = useI18n();
+const router = useRouter();
 const databaseStore = useDatabaseStore();
 const repositoryStore = useRepositoryStore();
 const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
-const router = useRouter();
-const { t } = useI18n();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: t("common.overview"), hash: "overview" },
-  { name: t("migration-history.self"), hash: "migration-history" },
+  { name: t("change-history.self"), hash: "change-history" },
   { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
 ];
 
@@ -423,6 +405,10 @@ const currentUser = useCurrentUser();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+
+const hasSchemaDiagramFeature = computed((): boolean => {
+  return database.value.instance.engine !== "MONGODB";
 });
 
 const accessControlPolicy = usePolicyByDatabaseAndType(
@@ -542,6 +528,13 @@ const allowAlterSchemaOrChangeData = computed(() => {
     return false;
   }
   return allowEdit.value;
+});
+
+const allowAlterSchema = computed(() => {
+  return (
+    allowAlterSchemaOrChangeData.value &&
+    database.value.instance.engine !== "MONGODB"
+  );
 });
 
 const allowEditDatabaseLabels = computed((): boolean => {
@@ -777,6 +770,10 @@ const syncDatabaseSchema = () => {
           description: resultSet.error,
         });
       }
+      useDBSchemaStore().getOrFetchDatabaseMetadataById(
+        database.value.id,
+        true // skip cache
+      );
     })
     .catch(() => {
       state.syncingSchema = false;

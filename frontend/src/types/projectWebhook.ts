@@ -1,6 +1,5 @@
 import { ActivityType } from "./activity";
 import { MemberId, ProjectId } from "./id";
-import { Principal } from "./principal";
 import { t } from "../plugins/i18n";
 
 type ProjectWebhookTypeItem = {
@@ -68,6 +67,11 @@ export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: () => ProjectWebhookActivityItem[]
       activity: "bb.issue.status.update",
     },
     {
+      title: t("project.webhook.activity-item.issue-stage-status-change.title"),
+      label: t("project.webhook.activity-item.issue-stage-status-change.label"),
+      activity: "bb.pipeline.stage.status.update",
+    },
+    {
       title: t("project.webhook.activity-item.issue-task-status-change.title"),
       label: t("project.webhook.activity-item.issue-task-status-change.label"),
       activity: "bb.pipeline.task.status.update",
@@ -90,12 +94,6 @@ export type ProjectWebhook = {
 
   // Related fields
   projectId: ProjectId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   type: string;

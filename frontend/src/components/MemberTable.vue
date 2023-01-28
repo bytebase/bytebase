@@ -7,6 +7,22 @@
     :show-header="true"
     :row-clickable="false"
   >
+    <template
+      #sectionHeader="{
+        section,
+      }: {
+        section: BBTableSectionDataSource<Member>,
+      }"
+    >
+      <span>{{ section.title }}</span>
+      <span
+        v-if="section.list.length > 0"
+        class="ml-0.5 font-normal text-control-light"
+      >
+        ({{ section.list.length }})
+      </span>
+    </template>
+
     <template #header>
       <BBTableHeaderCell
         :left-padding="4"
@@ -14,16 +30,12 @@
         :title="$t(columnList[0].title)"
       />
       <BBTableHeaderCell
-        class="w-8 table-cell"
+        class="w-20 table-cell"
         :title="$t(columnList[1].title)"
       />
       <BBTableHeaderCell
-        class="w-72 table-cell"
+        class="w-20 table-cell"
         :title="$t(columnList[2].title)"
-      />
-      <BBTableHeaderCell
-        class="w-auto table-cell"
-        :title="$t(columnList[3].title)"
       />
     </template>
     <template #body="{ rowData: member }">
@@ -110,18 +122,6 @@
           "
         />
       </BBTableCell>
-      <BBTableCell class="table-cell">
-        <div
-          v-if="member.principal.id !== SYSTEM_BOT_ID"
-          class="flex flex-row items-center space-x-1"
-        >
-          <span>{{ humanizeTs(member.updatedTs) }}</span>
-          <span>by</span>
-          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
-            member.updater.name
-          }}</router-link>
-        </div>
-      </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
           v-if="allowDeactivateMember(member)"
@@ -192,9 +192,6 @@ const columnList = computed(() => [
   },
   {
     title: "settings.members.table.role",
-  },
-  {
-    title: "settings.members.table.update-time",
   },
   {
     title: "",

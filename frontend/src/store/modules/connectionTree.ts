@@ -6,6 +6,11 @@ import {
   Connection,
   Policy,
   ConnectionAtom,
+  ConnectionTreeMode,
+  ConnectionAtomType,
+  Project,
+  Instance,
+  Database,
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import { useDatabaseStore } from "./database";
@@ -18,6 +23,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
   const accessControlPolicyList = ref<Policy[]>([]);
   const tree = reactive({
     data: [] as ConnectionAtom[],
+    mode: ConnectionTreeMode.PROJECT,
     state: ConnectionTreeState.UNSET,
   });
   const expandedTreeNodeKeys = ref<string[]>([]);
@@ -68,6 +74,24 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
       return { instanceId: UNKNOWN_ID, databaseId: UNKNOWN_ID };
     }
   };
+  // utilities
+  const mapAtom = (
+    item: Project | Instance | Database,
+    type: ConnectionAtomType,
+    parentId: number
+  ) => {
+    const id = item.id;
+    const key = `${type}-${id}`;
+    const connectionAtom: ConnectionAtom = {
+      parentId,
+      id,
+      key,
+      label: item.name,
+      type,
+      isLeaf: type === "database",
+    };
+    return connectionAtom;
+  };
 
   return {
     accessControlPolicyList,
@@ -76,6 +100,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     selectedTableAtom,
     fetchConnectionByInstanceIdAndDatabaseId,
     fetchConnectionByInstanceId,
+    mapAtom,
   };
 });
 

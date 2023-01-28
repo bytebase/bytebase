@@ -1,11 +1,13 @@
 import { ref, unref } from "vue";
 import { MaybeRef, useEventListener } from "@vueuse/core";
 
-import { Position } from "../types";
+import { Point } from "../types";
 
 export type DraggableOptions = {
   exact?: boolean;
+  onStart?: () => void;
   onPan?: (dx: number, dy: number) => void;
+  onEnd?: () => void;
   capture?: boolean;
 };
 
@@ -13,8 +15,8 @@ export const useDraggable = (
   target: MaybeRef<Element | undefined>,
   options: DraggableOptions
 ) => {
-  const startPointerPosition = ref<Position>();
-  const lastPointerPosition = ref<Position>();
+  const startPointerPosition = ref<Point>();
+  const lastPointerPosition = ref<Point>();
 
   const start = (e: PointerEvent) => {
     if (unref(options.exact) && e.target !== unref(target)) return;
@@ -28,6 +30,7 @@ export const useDraggable = (
     };
     e.stopPropagation();
     e.preventDefault();
+    options.onStart?.();
   };
   const move = (e: PointerEvent) => {
     if (!startPointerPosition.value) return;
@@ -45,6 +48,7 @@ export const useDraggable = (
     startPointerPosition.value = undefined;
     e.stopPropagation();
     e.preventDefault();
+    options.onEnd?.();
   };
 
   const capture = options.capture ?? false;

@@ -2,7 +2,6 @@ import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
-import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
 export type EngineType =
@@ -11,7 +10,8 @@ export type EngineType =
   | "POSTGRES"
   | "SNOWFLAKE"
   | "TIDB"
-  | "MONGODB";
+  | "MONGODB"
+  | "SPANNER";
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
@@ -24,6 +24,8 @@ export function defaultCharset(type: EngineType): string {
     case "POSTGRES":
       return "UTF8";
     case "MONGODB":
+      return "";
+    case "SPANNER":
       return "";
   }
 }
@@ -42,6 +44,8 @@ export function engineName(type: EngineType): string {
       return "TiDB";
     case "MONGODB":
       return "MongoDB";
+    case "SPANNER":
+      return "Spanner";
   }
 }
 
@@ -60,34 +64,28 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "MONGODB":
       return "";
+    case "SPANNER":
+      return "";
   }
 }
 
 export type Instance = {
   id: InstanceId;
+  resourceId: string;
+  rowStatus: RowStatus;
 
   // Related fields
   environment: Environment;
   // An instance must have a admin data source, maybe a read-only data source.
   dataSourceList: DataSource[];
 
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-  rowStatus: RowStatus;
-
   // Domain specific fields
   name: string;
   engine: EngineType;
   engineVersion: string;
   externalLink?: string;
-  database: string;
-  host: string;
-  port?: string;
   srv: boolean;
-  authSource: string;
+  authenticationDatabase: string;
 };
 
 export type InstanceCreate = {
@@ -110,7 +108,7 @@ export type InstanceCreate = {
   // DNS SRV record is only used for MongoDB.
   srv: boolean;
   // For MongoDB, the auth database is used to authenticate the user.
-  authSource: string;
+  authenticationDatabase: string;
 };
 
 export type InstancePatch = {
@@ -120,9 +118,6 @@ export type InstancePatch = {
   // Domain specific fields
   name?: string;
   externalLink?: string;
-  host?: string;
-  port?: string;
-  database?: string;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
