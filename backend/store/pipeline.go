@@ -52,7 +52,7 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 		Name: pipeline.Name,
 	}
 
-	stageList, err := s.FindStage(ctx, &api.StageFind{PipelineID: &pipeline.ID})
+	stageList, err := s.FindStage(ctx, pipeline.ID)
 	if err != nil {
 		return nil, err
 	}

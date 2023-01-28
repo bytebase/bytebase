@@ -167,7 +167,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									if err := r.store.BatchPatchTaskStatus(ctx, taskIDList, api.TaskPending, externalApproval.ApproverID); err != nil {
 										return errors.Wrapf(err, "failed to update task status, task id list: %+v", taskIDList)
 									}
-									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, externalApproval.ApproverID, issue, activeStage); err != nil {
+									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, externalApproval.ApproverID, issue, activeStage.Name); err != nil {
 										return errors.Wrapf(err, "failed to create task status update activity")
 									}
 									return nil
