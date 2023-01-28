@@ -312,42 +312,11 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 	if pipeline == nil {
 		return nil, nil
 	}
-	composedPipeline := &api.Pipeline{
-		ID:   pipeline.ID,
-		Name: pipeline.Name,
-	}
 
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
+	composedPipeline, err := s.composeSimplePipeline(ctx, pipeline)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", issue.PipelineUID)
+		return nil, err
 	}
-
-	stages, err := s.ListStageV2(ctx, issue.PipelineUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find stage list")
-	}
-	var composedStages []*api.Stage
-	for _, stage := range stages {
-		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-		composedStage := &api.Stage{
-			ID:            stage.ID,
-			Name:          stage.Name,
-			EnvironmentID: stage.EnvironmentID,
-			Environment:   environment,
-			PipelineID:    stage.PipelineID,
-		}
-
-		for _, task := range tasks {
-			if task.StageID == stage.ID {
-				composedStage.TaskList = append(composedStage.TaskList, task.toTask())
-			}
-		}
-		composedStages = append(composedStages, composedStage)
-	}
-	composedPipeline.StageList = composedStages
 	composedIssue.Pipeline = composedPipeline
 
 	return composedIssue, nil

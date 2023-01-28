@@ -873,7 +873,7 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, er
 		if err != nil {
 			return true, errors.Wrapf(err, "failed to convert id string to int, id string: %v", blockingTaskIDString)
 		}
-		blockingTask, err := s.store.GetTaskByID(ctx, blockingTaskID)
+		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskID)
 		if err != nil {
 			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %v", blockingTaskID)
 		}
@@ -923,11 +923,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 
 // scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
 func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
-	active := true
-	pipelineFind := &store.PipelineFind{
-		Active: &active,
-	}
-	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind)
+	pipelineList, err := s.store.ListActivePipelines(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to retrieve open pipelines")
 	}
