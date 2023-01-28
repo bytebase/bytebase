@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 // StageStatusUpdateType is the type of the stage status update.
 // StageStatusUpdate is a computed event of the contained tasks.
 type StageStatusUpdateType string
@@ -69,12 +65,4 @@ type StageAllTaskStatusPatch struct {
 	// Domain specific fields
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Comment *string    `jsonapi:"attr,comment"`
-}
-
-func (find *StageFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
 }

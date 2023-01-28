@@ -24,14 +24,20 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
 		}
-		stageList, err := s.store.FindStage(ctx, &api.StageFind{ID: &stageID})
+		stages, err := s.store.ListStageV2(ctx, &api.StageFind{PipelineID: &pipelineID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find stage %v", stageID)).SetInternal(err)
 		}
-		if len(stageList) != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Find invalid number %v stages for stage %v", len(stageList), stageID)).SetInternal(err)
+		var stage *store.StageMessage
+		for _, v := range stages {
+			if v.ID == stageID {
+				stage = v
+				break
+			}
 		}
-		stage := stageList[0]
+		if stage == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid stage %v", stageID)).SetInternal(err)
+		}
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		stageAllTaskStatusPatch := &api.StageAllTaskStatusPatch{
@@ -78,7 +84,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
 		}
-		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage); err != nil {
+		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage.Name); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 		}
 
