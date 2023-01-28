@@ -317,37 +317,37 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		Name: pipeline.Name,
 	}
 
+	tasks, err := s.findTaskRaw(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", issue.PipelineUID)
+	}
+
 	stages, err := s.ListStageV2(ctx, issue.PipelineUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find stage list")
 	}
-	var stageList []*api.Stage
-	for _, raw := range stages {
-		stage := &api.Stage{
-			ID:            raw.ID,
-			Name:          raw.Name,
-			EnvironmentID: raw.EnvironmentID,
-			PipelineID:    raw.PipelineID,
-		}
-		env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+	var composedStages []*api.Stage
+	for _, stage := range stages {
+		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
 		if err != nil {
 			return nil, err
 		}
-		stage.Environment = env
-		taskFind := &api.TaskFind{
-			PipelineID: &stage.PipelineID,
-			StageID:    &stage.ID,
+		composedStage := &api.Stage{
+			ID:            stage.ID,
+			Name:          stage.Name,
+			EnvironmentID: stage.EnvironmentID,
+			Environment:   environment,
+			PipelineID:    stage.PipelineID,
 		}
-		taskRawList, err := s.findTaskRaw(ctx, taskFind)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find task list with find %+v", taskFind)
+
+		for _, task := range tasks {
+			if task.StageID == stage.ID {
+				composedStage.TaskList = append(composedStage.TaskList, task.toTask())
+			}
 		}
-		for _, taskRaw := range taskRawList {
-			stage.TaskList = append(stage.TaskList, taskRaw.toTask())
-		}
-		stageList = append(stageList, stage)
+		composedStages = append(composedStages, composedStage)
 	}
-	composedPipeline.StageList = stageList
+	composedPipeline.StageList = composedStages
 	composedIssue.Pipeline = composedPipeline
 
 	return composedIssue, nil

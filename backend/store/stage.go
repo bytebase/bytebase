@@ -5,10 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
-
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // StageMessage is the message for stage.
@@ -18,50 +14,6 @@ type StageMessage struct {
 	PipelineID    int
 	// Output only.
 	ID int
-}
-
-// FindStage finds a list of Stage instances.
-func (s *Store) FindStage(ctx context.Context, pipelineUID int) ([]*api.Stage, error) {
-	composedStages, err := s.ListStageV2(ctx, pipelineUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Stage list with pipeline %d", pipelineUID)
-	}
-	var stageList []*api.Stage
-	for _, stage := range composedStages {
-		stage, err := s.composeStage(ctx, stage)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose stage %+v", stage)
-		}
-		stageList = append(stageList, stage)
-	}
-	return stageList, nil
-}
-
-func (s *Store) composeStage(ctx context.Context, stage *StageMessage) (*api.Stage, error) {
-	composedStage := &api.Stage{
-		ID:            stage.ID,
-		PipelineID:    stage.PipelineID,
-		EnvironmentID: stage.EnvironmentID,
-		Name:          stage.Name,
-	}
-
-	env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-	composedStage.Environment = env
-
-	taskFind := &api.TaskFind{
-		PipelineID: &stage.PipelineID,
-		StageID:    &stage.ID,
-	}
-	taskList, err := s.FindTask(ctx, taskFind, true)
-	if err != nil {
-		return nil, err
-	}
-	composedStage.TaskList = taskList
-
-	return composedStage, nil
 }
 
 // CreateStageV2 creates a list of stages.
