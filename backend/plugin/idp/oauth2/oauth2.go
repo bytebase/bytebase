@@ -20,7 +20,7 @@ type IdentityProvider struct {
 }
 
 // NewIdentityProvider initializes a new OAuth2 Identity Provider with the given configuration.
-func NewIdentityProvider(_ context.Context, config *storepb.OAuth2IdentityProviderConfig) (*IdentityProvider, error) {
+func NewIdentityProvider(config *storepb.OAuth2IdentityProviderConfig) (*IdentityProvider, error) {
 	for v, field := range map[string]string{
 		config.ClientId:                "clientId",
 		config.ClientSecret:            "clientSecret",
@@ -66,7 +66,7 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 }
 
 // UserInfo returns the parsed user information using the given OAuth2 token.
-func (p *IdentityProvider) UserInfo(_ context.Context, token string) (*storepb.IdentityProviderUserInfo, error) {
+func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUserInfo, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, p.config.UserInfoUrl, nil)
 	if err != nil {

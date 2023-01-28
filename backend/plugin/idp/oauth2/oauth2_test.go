@@ -17,7 +17,6 @@ import (
 )
 
 func TestNewIdentityProvider(t *testing.T) {
-	ctx := context.Background()
 	tests := []struct {
 		name        string
 		config      *storepb.OAuth2IdentityProviderConfig
@@ -68,7 +67,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewIdentityProvider(ctx, test.config)
+			_, err := NewIdentityProvider(test.config)
 			assert.ErrorContains(t, err, test.containsErr)
 		})
 	}
@@ -133,7 +132,6 @@ func TestIdentityProvider(t *testing.T) {
 	s := newMockServer(t, testCode, testAccessToken, userInfo)
 
 	oauth2, err := NewIdentityProvider(
-		ctx,
 		&storepb.OAuth2IdentityProviderConfig{
 			ClientId:     testClientID,
 			ClientSecret: "test-client-secret",
@@ -153,7 +151,7 @@ func TestIdentityProvider(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, testAccessToken, oauthToken)
 
-	userInfoResult, err := oauth2.UserInfo(ctx, oauthToken)
+	userInfoResult, err := oauth2.UserInfo(oauthToken)
 	require.NoError(t, err)
 
 	wantUserInfo := &storepb.IdentityProviderUserInfo{

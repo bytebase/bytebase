@@ -381,7 +381,7 @@ func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(ctx, idp.Config.GetOauth2Config())
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(idp.Config.GetOauth2Config())
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "failed to new oauth2 identity provider")
 		}
@@ -390,7 +390,7 @@ func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		userInfo, err = oauth2IdentityProvider.UserInfo(ctx, token)
+		userInfo, err = oauth2IdentityProvider.UserInfo(token)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
