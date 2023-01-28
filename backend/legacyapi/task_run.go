@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/backend/common"
 )
 
@@ -52,56 +50,4 @@ type TaskRun struct {
 	Comment string        `jsonapi:"attr,comment"`
 	Result  string        `jsonapi:"attr,result"`
 	Payload string        `jsonapi:"attr,payload"`
-}
-
-// TaskRunCreate is the API message for creating a task run.
-type TaskRunCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Name    string   `jsonapi:"attr,name"`
-	Type    TaskType `jsonapi:"attr,type"`
-	Payload string   `jsonapi:"attr,payload"`
-}
-
-// TaskRunFind is the API message for finding task runs.
-type TaskRunFind struct {
-	ID *int
-
-	// Related fields
-	TaskID *int
-
-	// Domain specific fields
-	StatusList *[]TaskRunStatus
-}
-
-func (find *TaskRunFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
-// TaskRunStatusPatch is the API message for patching a task run.
-type TaskRunStatusPatch struct {
-	ID *int
-
-	// Standard fields
-	UpdaterID int
-
-	// Related fields
-	TaskID *int
-
-	// Domain specific fields
-	Status TaskRunStatus
-	Code   *common.Code
-	// Records the status detail (e.g. error message on failure)
-	Comment *string
-	Result  *string
 }

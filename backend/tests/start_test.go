@@ -93,7 +93,7 @@ func TestMain(m *testing.M) {
 	if err := postgres.InitDB(externalPgBinDir, externalPgDataDir, externalPgUser); err != nil {
 		log.Fatal(err)
 	}
-	if err = postgres.Start(externalPgPort, externalPgBinDir, externalPgDataDir, false /* serverLog */); err != nil {
+	if err = postgres.Start(externalPgPort, externalPgBinDir, externalPgDataDir, true /* serverLog */); err != nil {
 		log.Fatal(err)
 	}
 
