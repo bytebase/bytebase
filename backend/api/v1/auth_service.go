@@ -364,24 +364,28 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 // LoginWithIdentityProvider is the auth login method with an identity provider.
 func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1pb.LoginWithIdentityProviderRequest) (*v1pb.LoginResponse, error) {
-	idpID, _ := getIdentityProviderID(request.IdpName)
-	idp, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		ResourceID: &idpID,
+	identityProviderID, err := getIdentityProviderID(request.IdpName)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+		ResourceID: &identityProviderID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get identity provider")
 	}
-	if idp == nil {
+	if identityProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
-	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
+	if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(idp.Config.GetOauth2Config())
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProvider.Config.GetOauth2Config())
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "failed to new oauth2 identity provider")
 		}
@@ -395,15 +399,15 @@ func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 	} else {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
+		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
 
 	if userInfo == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		IdentityProviderID:       &idp.UID,
-		IdentityProviderUserInfo: fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", userInfo.Identifier),
+		IdentityProviderResourceID: &identityProvider.ResourceID,
+		IdentityProviderUserInfo:   fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", userInfo.Identifier),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get principal")
@@ -423,7 +427,7 @@ func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1
 			Email:                      userInfo.Email,
 			Type:                       api.EndUser,
 			PasswordHash:               string(passwordHash),
-			IdentityProviderResourceID: &idp.ResourceID,
+			IdentityProviderResourceID: &identityProvider.ResourceID,
 			IdentityProviderUserInfo:   userInfo,
 		}, api.SystemBotID)
 		if err != nil {

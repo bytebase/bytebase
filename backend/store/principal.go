@@ -72,11 +72,11 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
-	ID                 *int
-	Email              *string
-	Role               *api.Role
-	ShowDeleted        bool
-	IdentityProviderID *int
+	ID                         *int
+	Email                      *string
+	Role                       *api.Role
+	ShowDeleted                bool
+	IdentityProviderResourceID *string
 	// IdentityProviderUserInfo is a specific JSONB expressions for selecting user.
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
 	IdentityProviderUserInfo string
@@ -224,7 +224,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 // GetUserByEmailV2 gets an instance of Principal.
-func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
@@ -241,8 +241,15 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 
 	var userMessages []*UserMessage
 	if common.FeatureFlag(common.FeatureFlagNoop) {
-		if find.IdentityProviderID != nil {
-			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, *find.IdentityProviderID)
+		if find.IdentityProviderResourceID != nil {
+			// Get identity provider's UID with resource id.
+			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+				ResourceID: find.IdentityProviderResourceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
 			where = append(where, find.IdentityProviderUserInfo)
 		}
 		rows, err := tx.QueryContext(ctx, `
