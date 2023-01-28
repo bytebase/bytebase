@@ -41,7 +41,7 @@ export default {
       code: "",
     };
 
-    const expectedState = sessionStorage.getItem(OAuthStateSessionKey);
+    const expectedState = sessionStorage.getItem("sso-state");
     let eventType = undefined;
 
     if (

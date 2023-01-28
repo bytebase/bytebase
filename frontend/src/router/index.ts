@@ -343,6 +343,13 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "sso",
+                name: "setting.workspace.im-integration",
+                meta: { title: () => t("settings.sidebar.sso") },
+                component: () => import("../views/SettingWorkspaceSSO.vue"),
+                props: true,
+              },
+              {
                 path: "sensitive-data",
                 name: "setting.workspace.sensitive-data",
                 meta: { title: () => t("settings.sidebar.sensitive-data") },
