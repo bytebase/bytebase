@@ -65,13 +65,6 @@ service AuthService {
     };
   }
 
-  rpc LoginWithIdentityProvider(LoginWithIdentityProviderRequest) returns (LoginResponse) {
-    option (google.api.http) = {
-      post: "/v1/auth/login/idp"
-      body: "*"
-    };
-  }
-
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/auth/logout"
@@ -149,19 +142,13 @@ message LoginRequest {
 
   // If web is set, we will set access token, refresh token, and user to the cookie.
   bool web = 3;
-}
 
-message LoginResponse {
-  string token = 1;
-}
-
-message LoginWithIdentityProviderRequest {
   // The name of the identity provider.
   // Format: idps/{idp}
-  string idp_name = 1 [(google.api.field_behavior) = REQUIRED];
+  string idp_name = 4 [(google.api.field_behavior) = REQUIRED];
 
   // The context data is using to get the user information from identity provider.
-  IdentityProviderContext context = 2;
+  IdentityProviderContext context = 5;
 }
 
 message IdentityProviderContext {
@@ -176,6 +163,10 @@ message OAuth2IdentityProviderContext {
 }
 
 message OIDCIdentityProviderContextx {
+}
+
+message LoginResponse {
+  string token = 1;
 }
 
 message LogoutRequest {

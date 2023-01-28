@@ -173,13 +173,6 @@ export interface LoginRequest {
   password: string;
   /** If web is set, we will set access token, refresh token, and user to the cookie. */
   web: boolean;
-}
-
-export interface LoginResponse {
-  token: string;
-}
-
-export interface LoginWithIdentityProviderRequest {
   /**
    * The name of the identity provider.
    * Format: idps/{idp}
@@ -199,6 +192,10 @@ export interface OAuth2IdentityProviderContext {
 }
 
 export interface OIDCIdentityProviderContextx {
+}
+
+export interface LoginResponse {
+  token: string;
 }
 
 export interface LogoutRequest {
@@ -596,7 +593,7 @@ export const UndeleteUserRequest = {
 };
 
 function createBaseLoginRequest(): LoginRequest {
-  return { email: "", password: "", web: false };
+  return { email: "", password: "", web: false, idpName: "", context: undefined };
 }
 
 export const LoginRequest = {
@@ -609,6 +606,12 @@ export const LoginRequest = {
     }
     if (message.web === true) {
       writer.uint32(24).bool(message.web);
+    }
+    if (message.idpName !== "") {
+      writer.uint32(34).string(message.idpName);
+    }
+    if (message.context !== undefined) {
+      IdentityProviderContext.encode(message.context, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -629,6 +632,12 @@ export const LoginRequest = {
         case 3:
           message.web = reader.bool();
           break;
+        case 4:
+          message.idpName = reader.string();
+          break;
+        case 5:
+          message.context = IdentityProviderContext.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -642,6 +651,8 @@ export const LoginRequest = {
       email: isSet(object.email) ? String(object.email) : "",
       password: isSet(object.password) ? String(object.password) : "",
       web: isSet(object.web) ? Boolean(object.web) : false,
+      idpName: isSet(object.idpName) ? String(object.idpName) : "",
+      context: isSet(object.context) ? IdentityProviderContext.fromJSON(object.context) : undefined,
     };
   },
 
@@ -650,6 +661,9 @@ export const LoginRequest = {
     message.email !== undefined && (obj.email = message.email);
     message.password !== undefined && (obj.password = message.password);
     message.web !== undefined && (obj.web = message.web);
+    message.idpName !== undefined && (obj.idpName = message.idpName);
+    message.context !== undefined &&
+      (obj.context = message.context ? IdentityProviderContext.toJSON(message.context) : undefined);
     return obj;
   },
 
@@ -658,110 +672,6 @@ export const LoginRequest = {
     message.email = object.email ?? "";
     message.password = object.password ?? "";
     message.web = object.web ?? false;
-    return message;
-  },
-};
-
-function createBaseLoginResponse(): LoginResponse {
-  return { token: "" };
-}
-
-export const LoginResponse = {
-  encode(message: LoginResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.token !== "") {
-      writer.uint32(10).string(message.token);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): LoginResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLoginResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.token = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LoginResponse {
-    return { token: isSet(object.token) ? String(object.token) : "" };
-  },
-
-  toJSON(message: LoginResponse): unknown {
-    const obj: any = {};
-    message.token !== undefined && (obj.token = message.token);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
-    const message = createBaseLoginResponse();
-    message.token = object.token ?? "";
-    return message;
-  },
-};
-
-function createBaseLoginWithIdentityProviderRequest(): LoginWithIdentityProviderRequest {
-  return { idpName: "", context: undefined };
-}
-
-export const LoginWithIdentityProviderRequest = {
-  encode(message: LoginWithIdentityProviderRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.idpName !== "") {
-      writer.uint32(10).string(message.idpName);
-    }
-    if (message.context !== undefined) {
-      IdentityProviderContext.encode(message.context, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): LoginWithIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLoginWithIdentityProviderRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.idpName = reader.string();
-          break;
-        case 2:
-          message.context = IdentityProviderContext.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LoginWithIdentityProviderRequest {
-    return {
-      idpName: isSet(object.idpName) ? String(object.idpName) : "",
-      context: isSet(object.context) ? IdentityProviderContext.fromJSON(object.context) : undefined,
-    };
-  },
-
-  toJSON(message: LoginWithIdentityProviderRequest): unknown {
-    const obj: any = {};
-    message.idpName !== undefined && (obj.idpName = message.idpName);
-    message.context !== undefined &&
-      (obj.context = message.context ? IdentityProviderContext.toJSON(message.context) : undefined);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<LoginWithIdentityProviderRequest>): LoginWithIdentityProviderRequest {
-    const message = createBaseLoginWithIdentityProviderRequest();
     message.idpName = object.idpName ?? "";
     message.context = (object.context !== undefined && object.context !== null)
       ? IdentityProviderContext.fromPartial(object.context)
@@ -919,6 +829,53 @@ export const OIDCIdentityProviderContextx = {
 
   fromPartial(_: DeepPartial<OIDCIdentityProviderContextx>): OIDCIdentityProviderContextx {
     const message = createBaseOIDCIdentityProviderContextx();
+    return message;
+  },
+};
+
+function createBaseLoginResponse(): LoginResponse {
+  return { token: "" };
+}
+
+export const LoginResponse = {
+  encode(message: LoginResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoginResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoginResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.token = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoginResponse {
+    return { token: isSet(object.token) ? String(object.token) : "" };
+  },
+
+  toJSON(message: LoginResponse): unknown {
+    const obj: any = {};
+    message.token !== undefined && (obj.token = message.token);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
+    const message = createBaseLoginResponse();
+    message.token = object.token ?? "";
     return message;
   },
 };
@@ -1135,14 +1092,6 @@ export const AuthServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    loginWithIdentityProvider: {
-      name: "LoginWithIdentityProvider",
-      requestType: LoginWithIdentityProviderRequest,
-      requestStream: false,
-      responseType: LoginResponse,
-      responseStream: false,
-      options: {},
-    },
     logout: {
       name: "Logout",
       requestType: LogoutRequest,
@@ -1162,10 +1111,6 @@ export interface AuthServiceImplementation<CallContextExt = {}> {
   deleteUser(request: DeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
   undeleteUser(request: UndeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
   login(request: LoginRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LoginResponse>>;
-  loginWithIdentityProvider(
-    request: LoginWithIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<LoginResponse>>;
   logout(request: LogoutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
@@ -1177,10 +1122,6 @@ export interface AuthServiceClient<CallOptionsExt = {}> {
   deleteUser(request: DeepPartial<DeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
   undeleteUser(request: DeepPartial<UndeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
   login(request: DeepPartial<LoginRequest>, options?: CallOptions & CallOptionsExt): Promise<LoginResponse>;
-  loginWithIdentityProvider(
-    request: DeepPartial<LoginWithIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<LoginResponse>;
   logout(request: DeepPartial<LogoutRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 

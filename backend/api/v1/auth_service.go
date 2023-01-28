@@ -313,32 +313,115 @@ func convertUserRole(userRole v1pb.UserRole) api.Role {
 	return api.UnknownRole
 }
 
-// Login is the auth login method.
+// Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
-	user, err := s.store.GetUserByEmail(ctx, request.Email)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
+	var loginUser *store.UserMessage
+	if request.IdpName == "" {
+		user, err := s.store.GetUserByEmail(ctx, request.Email)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
+		}
+		if user == nil {
+			return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
+		}
+		if user.MemberDeleted {
+			return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
+		}
+		// Compare the stored hashed password, with the hashed version of the password that was received.
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
+			// If the two passwords don't match, return a 401 status.
+			return nil, status.Errorf(codes.InvalidArgument, "incorrect password")
+		}
+		loginUser = user
+	} else {
+		identityProviderID, err := getIdentityProviderID(request.IdpName)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+
+		identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+			ResourceID: &identityProviderID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get identity provider")
+		}
+		if identityProvider == nil {
+			return nil, status.Errorf(codes.NotFound, "identity provider not found")
+		}
+
+		var userInfo *storepb.IdentityProviderUserInfo
+		if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
+			oauth2Context := request.Context.GetOauth2Context()
+			if oauth2Context == nil {
+				return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
+			}
+			oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProvider.Config.GetOauth2Config())
+			if err != nil {
+				return nil, status.Errorf(codes.NotFound, "failed to new oauth2 identity provider")
+			}
+			redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+			token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			userInfo, err = oauth2IdentityProvider.UserInfo(token)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+		} else {
+			return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
+		}
+
+		if userInfo == nil {
+			return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
+		}
+		user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+			IdentityProviderResourceID: &identityProvider.ResourceID,
+			IdentityProviderUserInfo:   fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", userInfo.Identifier),
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get principal")
+		}
+		if user == nil {
+			// Generate random password for new users from identity provider.
+			password, err := common.RandomString(20)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate random password")
+			}
+			passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate password hash")
+			}
+			newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
+				Name:                       userInfo.DisplayName,
+				Email:                      userInfo.Email,
+				Type:                       api.EndUser,
+				PasswordHash:               string(passwordHash),
+				IdentityProviderResourceID: &identityProvider.ResourceID,
+				IdentityProviderUserInfo:   userInfo,
+			}, api.SystemBotID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
+			}
+			user = newUser
+		} else if user.MemberDeleted {
+			return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
+		}
+		loginUser = user
 	}
-	if user == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
-	}
-	if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
-	}
-	// Compare the stored hashed password, with the hashed version of the password that was received.
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
-		// If the two passwords don't match, return a 401 status.
-		return nil, status.Errorf(codes.InvalidArgument, "incorrect password")
+
+	if loginUser == nil {
+		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
 	}
 
 	var accessToken string
 	if request.Web {
-		token, err := auth.GenerateAccessToken(user.Name, user.ID, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		accessToken = token
-		refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, s.profile.Mode, s.secret)
+		refreshToken, err := auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
@@ -346,115 +429,16 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 			auth.GatewayMetadataAccessTokenKey:  accessToken,
 			auth.GatewayMetadataRefreshTokenKey: refreshToken,
-			auth.GatewayMetadataUserIDKey:       fmt.Sprintf("%d", user.ID),
+			auth.GatewayMetadataUserIDKey:       fmt.Sprintf("%d", loginUser.ID),
 		})); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
 	} else {
-		token, err := auth.GenerateAPIToken(user.Name, user.ID, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		accessToken = token
-	}
-	return &v1pb.LoginResponse{
-		Token: accessToken,
-	}, nil
-}
-
-// LoginWithIdentityProvider is the auth login method with an identity provider.
-func (s *AuthService) LoginWithIdentityProvider(ctx context.Context, request *v1pb.LoginWithIdentityProviderRequest) (*v1pb.LoginResponse, error) {
-	identityProviderID, err := getIdentityProviderID(request.IdpName)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		ResourceID: &identityProviderID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get identity provider")
-	}
-	if identityProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "identity provider not found")
-	}
-
-	var userInfo *storepb.IdentityProviderUserInfo
-	if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
-		oauth2Context := request.Context.GetOauth2Context()
-		if oauth2Context == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
-		}
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProvider.Config.GetOauth2Config())
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "failed to new oauth2 identity provider")
-		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
-		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		userInfo, err = oauth2IdentityProvider.UserInfo(token)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-	} else {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
-	}
-
-	if userInfo == nil {
-		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
-	}
-	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		IdentityProviderResourceID: &identityProvider.ResourceID,
-		IdentityProviderUserInfo:   fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", userInfo.Identifier),
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get principal")
-	}
-	if user == nil {
-		// Generate random password for new users from identity provider.
-		password, err := common.RandomString(20)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate random password")
-		}
-		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate password hash")
-		}
-		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-			Name:                       userInfo.DisplayName,
-			Email:                      userInfo.Email,
-			Type:                       api.EndUser,
-			PasswordHash:               string(passwordHash),
-			IdentityProviderResourceID: &identityProvider.ResourceID,
-			IdentityProviderUserInfo:   userInfo,
-		}, api.SystemBotID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
-		}
-		user = newUser
-	} else if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
-	}
-
-	var accessToken string
-	token, err := auth.GenerateAccessToken(user.Name, user.ID, s.profile.Mode, s.secret)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate API access token")
-	}
-	accessToken = token
-	refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, s.profile.Mode, s.secret)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate API access token")
-	}
-
-	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-		auth.GatewayMetadataAccessTokenKey:  accessToken,
-		auth.GatewayMetadataRefreshTokenKey: refreshToken,
-		auth.GatewayMetadataUserIDKey:       fmt.Sprintf("%d", user.ID),
-	})); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 	}
 	return &v1pb.LoginResponse{
 		Token: accessToken,
