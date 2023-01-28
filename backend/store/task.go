@@ -30,7 +30,7 @@ type TaskMessage struct {
 	InstanceID int
 	// Could be empty for creating database task when the task isn't yet completed successfully.
 	DatabaseID          *int
-	TaskRunRawList      []*taskRunRaw
+	TaskRunRawList      []*TaskRunMessage
 	TaskCheckRunRawList []*taskCheckRunRaw
 
 	// Domain specific fields
@@ -162,7 +162,7 @@ func (s *Store) composeTask(ctx context.Context, raw *TaskMessage) (*api.Task, e
 	}
 	task.Updater = updater
 
-	taskRunRawList, err := s.listTaskRun(ctx, &api.TaskRunFind{
+	taskRunRawList, err := s.listTaskRun(ctx, &TaskRunFind{
 		TaskID: &task.ID,
 	})
 	if err != nil {
@@ -543,26 +543,26 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 	}
 	defer tx.Rollback()
 
-	taskRunFind := &api.TaskRunFind{
+	taskRunFind := &TaskRunFind{
 		TaskID: &task.ID,
 		StatusList: &[]api.TaskRunStatus{
 			api.TaskRunRunning,
 		},
 	}
-	taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
+	taskRunRaw, err := s.getTaskRunTx(ctx, tx, taskRunFind)
 	if err != nil {
 		return nil, err
 	}
 	if taskRunRaw == nil {
 		if patch.Status == api.TaskRunning {
-			taskRunCreate := &api.TaskRunCreate{
+			taskRunCreate := &TaskRunCreate{
 				CreatorID: patch.UpdaterID,
 				TaskID:    task.ID,
 				Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
 				Type:      task.Type,
 			}
 			// insert a running taskRun
-			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
+			if err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
 				return nil, err
 			}
 		}
@@ -570,7 +570,7 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 		if patch.Status == api.TaskRunning {
 			return nil, errors.Errorf("task is already running: %v", task.Name)
 		}
-		taskRunStatusPatch := &api.TaskRunStatusPatch{
+		taskRunStatusPatch := &TaskRunStatusPatch{
 			ID:        &taskRunRaw.ID,
 			UpdaterID: patch.UpdaterID,
 			Code:      patch.Code,
