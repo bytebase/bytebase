@@ -24,7 +24,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
 		}
-		stages, err := s.store.ListStageV2(ctx, &api.StageFind{PipelineID: &pipelineID})
+		stages, err := s.store.ListStageV2(ctx, pipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find stage %v", stageID)).SetInternal(err)
 		}

@@ -317,7 +317,7 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 		Name: pipeline.Name,
 	}
 
-	stages, err := s.ListStageV2(ctx, &api.StageFind{PipelineID: &issue.PipelineUID})
+	stages, err := s.ListStageV2(ctx, issue.PipelineUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find stage list")
 	}

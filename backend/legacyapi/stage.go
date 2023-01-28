@@ -48,9 +48,6 @@ type StageCreate struct {
 
 // StageFind is the API message for finding stages.
 type StageFind struct {
-	ID *int
-
-	// Related fields
 	PipelineID *int
 }
 

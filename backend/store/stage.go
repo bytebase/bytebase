@@ -21,10 +21,10 @@ type StageMessage struct {
 }
 
 // FindStage finds a list of Stage instances.
-func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
-	composedStages, err := s.ListStageV2(ctx, find)
+func (s *Store) FindStage(ctx context.Context, pipelineUID int) ([]*api.Stage, error) {
+	composedStages, err := s.ListStageV2(ctx, pipelineUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Stage list with StageFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to find Stage list with pipeline %d", pipelineUID)
 	}
 	var stageList []*api.Stage
 	for _, stage := range composedStages {
@@ -129,7 +129,7 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 }
 
 // ListStageV2 finds a list of stages based on find.
-func (s *Store) ListStageV2(ctx context.Context, find *api.StageFind) ([]*StageMessage, error) {
+func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
@@ -138,12 +138,7 @@ func (s *Store) ListStageV2(ctx context.Context, find *api.StageFind) ([]*StageM
 
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.PipelineID; v != nil {
-		where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
-	}
+	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
