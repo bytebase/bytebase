@@ -238,6 +238,12 @@ func (db *DB) setupDemoData() error {
 	}
 
 	log.Info(fmt.Sprintf("Setting up demo %q...", db.demoName))
+
+	// Reset existing demo data.
+	if err := db.applyDataFile("demo/reset.sql"); err != nil {
+		return errors.Wrapf(err, "Failed to reset demo data")
+	}
+
 	names, err := fs.Glob(demoFS, fmt.Sprintf("demo/%s/*.sql", db.demoName))
 	if err != nil {
 		return err
@@ -252,7 +258,7 @@ func (db *DB) setupDemoData() error {
 	// Loop over all data files and execute them in order.
 	for _, name := range names {
 		if err := db.applyDataFile(name); err != nil {
-			return errors.Wrapf(err, "applyDataFile error: name=%q", name)
+			return errors.Wrapf(err, "Failed to load demo data: %q", name)
 		}
 	}
 	log.Info("Completed demo data setup.")
