@@ -23,7 +23,7 @@ export function openWindowForSSO(
       `${oauthConfig.authUrl}?client_id=${
         oauthConfig.clientId
       }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
-        oauthConfig.scopes.join(",")
+        oauthConfig.scopes.join(" ")
       )}`,
       "oauth",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
