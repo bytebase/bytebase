@@ -174,6 +174,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
+			if user.IdentityProviderResourceID != nil {
+				return nil, status.Errorf(codes.PermissionDenied, "SSO user cannot modify email address")
+			}
 			if _, err := mail.ParseAddress(request.User.Email); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
 			}
