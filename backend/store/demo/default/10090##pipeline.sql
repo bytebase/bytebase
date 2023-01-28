@@ -4,16 +4,14 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        name,
-        status
+        name
     )
 VALUES
     (
         9001,
         101,
         101,
-        'Pipeline - Hello world',
-        'OPEN'
+        'Pipeline - Hello world'
     );
 
 -- A multiple stage Pipeline for simulating webhook push event to create table for shop project database.
@@ -24,8 +22,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -34,8 +31,7 @@ VALUES
         1624873710,
         1,
         1624873710,
-        'Pipeline - Create product table',
-        'OPEN'
+        'Pipeline - Create product table'
     );
 
 -- A two stage, each containing a single create table task, the 1st task has a failed task run
@@ -44,16 +40,14 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        name,
-        status
+        name
     )
 VALUES
     (
         9003,
         103,
         103,
-        'Pipeline - Create table ''tbl1''',
-        'CANCELED'
+        'Pipeline - Create table ''tbl1'''
     );
 
 -- Pipeline for simulating webhook push event to create table for blog project dev database.
@@ -64,8 +58,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -74,8 +67,7 @@ VALUES
         1624865387,
         1,
         1624865387,
-        'Pipeline - Create user, post, comment table for dev environment',
-        'DONE'
+        'Pipeline - Create user, post, comment table for dev environment'
     );
 
 -- Pipeline for simulating webhook push event to create table for blog project integration database.
@@ -86,8 +78,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -96,8 +87,7 @@ VALUES
         1624866790,
         1,
         1624866790,
-        'Pipeline - Create user, post, comment table for integration environment',
-        'DONE'
+        'Pipeline - Create user, post, comment table for integration environment'
     );
 
 -- Pipeline for simulating webhook push event to create table for blog project staging database.
@@ -108,8 +98,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -118,8 +107,7 @@ VALUES
         1624868407,
         1,
         1624868407,
-        'Pipeline - Create user, post, comment table for staging environment',
-        'DONE'
+        'Pipeline - Create user, post, comment table for staging environment'
     );
 
 -- Pipeline for simulating webhook push event to create table for blog project prod database.
@@ -130,8 +118,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -140,8 +127,7 @@ VALUES
         1624868680,
         1,
         1624868680,
-        'Pipeline - Create user, post, comment table for prod environment',
-        'DONE'
+        'Pipeline - Create user, post, comment table for prod environment'
     );
 
 -- Pipeline for simulating webhook push event to alter table for blog project dev database.
@@ -152,8 +138,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -162,8 +147,7 @@ VALUES
         1624869944,
         1,
         1624869944,
-        'Pipeline - Add created_at column to user,post,comment table for dev environment',
-        'OPEN'
+        'Pipeline - Add created_at column to user,post,comment table for dev environment'
     );
 
 -- Pipeline for multi-stage create table UI workflow
@@ -174,8 +158,7 @@ INSERT INTO
         created_ts,
         updater_id,
         updated_ts,
-        name,
-        status
+        name
     )
 VALUES
     (
@@ -184,8 +167,7 @@ VALUES
         1624879944,
         103,
         1624879944,
-        'Pipeline - Create a new table tbl2',
-        'OPEN'
+        'Pipeline - Create a new table tbl2'
     );
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 9010;
