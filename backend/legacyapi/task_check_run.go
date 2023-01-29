@@ -152,44 +152,6 @@ type TaskCheckRun struct {
 	Payload string             `jsonapi:"attr,payload"`
 }
 
-// TaskCheckRunCreate is the API message for creating a task check run.
-type TaskCheckRunCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Type    TaskCheckType
-	Comment string
-	Payload string
-}
-
-// TaskCheckRunFind is the API message for finding task check runs.
-type TaskCheckRunFind struct {
-	// Related fields
-	TaskID *int
-	Type   *TaskCheckType
-
-	// Domain specific fields
-	StatusList *[]TaskCheckRunStatus
-}
-
-// TaskCheckRunStatusPatch is the API message for patching a task check run.
-type TaskCheckRunStatusPatch struct {
-	ID *int
-
-	// Standard fields
-	UpdaterID int
-
-	// Domain specific fields
-	Status TaskCheckRunStatus
-	Code   common.Code
-	Result string
-}
-
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
 	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
