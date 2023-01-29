@@ -728,14 +728,10 @@ func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *store.TaskMessag
 }
 
 func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) (bool, error) {
-	dags, err := s.store.ListTaskDags(ctx, &store.TaskDAGFind{ToTaskID: &task.ID})
-	if err != nil {
-		return false, err
-	}
-	for _, dag := range dags {
-		blockingTask, err := s.store.GetTaskV2ByID(ctx, dag.FromTaskID)
+	for _, block := range task.BlockedBy {
+		blockingTask, err := s.store.GetTaskV2ByID(ctx, block)
 		if err != nil {
-			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %d", dag.FromTaskID)
+			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %d", block)
 		}
 		if blockingTask.Status != api.TaskDone {
 			return true, nil
@@ -954,14 +950,17 @@ func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *api.Task) er
 	queue := []int{task.ID}
 	seen := map[int]bool{task.ID: true}
 	var idList []int
+	dags, err := s.store.ListTaskDags(ctx, &store.TaskDAGFind{PipelineID: &task.PipelineID, StageID: &task.StageID})
+	if err != nil {
+		return err
+	}
 	for len(queue) != 0 {
 		fromTaskID := queue[0]
 		queue = queue[1:]
-		dags, err := s.store.ListTaskDags(ctx, &store.TaskDAGFind{FromTaskID: &fromTaskID})
-		if err != nil {
-			return err
-		}
 		for _, dag := range dags {
+			if dag.FromTaskID != fromTaskID {
+				continue
+			}
 			if seen[dag.ToTaskID] {
 				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
 			}

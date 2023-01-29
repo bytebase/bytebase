@@ -55,14 +55,12 @@ type SchemaUpdateGhostCutoverExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
 func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
-	taskDAGs, err := exec.store.ListTaskDags(ctx, &store.TaskDAGFind{ToTaskID: &task.ID})
-	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
-	}
-	if len(taskDAGs) != 1 {
+	if len(task.BlockedBy) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
-	taskDAG := taskDAGs[0]
+	syncTaskID := task.BlockedBy[0]
+	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
+
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -71,9 +69,6 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	if err != nil {
 		return true, nil, err
 	}
-
-	syncTaskID := taskDAG.FromTaskID
-	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
 
 	syncTask, err := exec.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {

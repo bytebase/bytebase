@@ -15,8 +15,6 @@ type TaskDAGMessage struct {
 
 // TaskDAGFind is the API message to find TaskDAG.
 type TaskDAGFind struct {
-	FromTaskID *int
-	ToTaskID   *int
 	StageID    *int
 	PipelineID *int
 }
@@ -60,12 +58,6 @@ func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) err
 func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAGMessage, error) {
 	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.FromTaskID; v != nil {
-		where, args = append(where, fmt.Sprintf("from_task_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ToTaskID; v != nil {
-		where, args = append(where, fmt.Sprintf("to_task_id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.StageID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
 	}
