@@ -105,11 +105,11 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "identityProvider.title":
+		case "identity_provider.title":
 			patch.Title = &request.IdentityProvider.Title
-		case "identityProvider.domain":
+		case "identity_provider.domain":
 			patch.Domain = &request.IdentityProvider.Domain
-		case "identityProvider.config":
+		case "identity_provider.config":
 			patch.Config = convertIdentityProviderConfigToStore(request.IdentityProvider.Config)
 		}
 	}

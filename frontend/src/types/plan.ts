@@ -18,6 +18,9 @@ export type FeatureType =
   | "bb.feature.schema-drift"
   | "bb.feature.sql-review"
   | "bb.feature.task-schedule-time"
+  // VCS Integration
+  | "bb.feature.vcs-schema-write-back"
+  | "bb.feature.vcs-sheet-sync"
   | "bb.feature.vcs-sql-review"
   // Database management
   | "bb.feature.pitr"
@@ -89,9 +92,12 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.im.approval", [false, false, true]],
   ["bb.feature.multi-tenancy", [false, false, true]],
   ["bb.feature.online-migration", [false, true, true]],
-  ["bb.feature.schema-drift", [false, true, true]],
+  ["bb.feature.schema-drift", [false, false, true]],
   ["bb.feature.sql-review", [true, true, true]],
   ["bb.feature.task-schedule-time", [false, true, true]],
+  // VCS Integration
+  ["bb.feature.vcs-schema-write-back", [false, false, true]],
+  ["bb.feature.vcs-sheet-sync", [false, false, true]],
   ["bb.feature.vcs-sql-review", [false, false, true]],
   // Database management
   ["bb.feature.pitr", [false, true, true]],
@@ -137,4 +143,26 @@ export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
   }
 
   return feature;
+};
+
+export const getMinimumRequiredPlan = (type: FeatureType): PlanType => {
+  const matrix = FEATURE_MATRIX.get(type);
+  if (!Array.isArray(matrix)) {
+    return PlanType.FREE;
+  }
+
+  for (let i = 0; i < matrix.length; i++) {
+    if (matrix[i]) {
+      return i as PlanType;
+    }
+  }
+  return PlanType.FREE;
+};
+
+export const getRquiredPlanString = (type: FeatureType): string => {
+  const { t } = useI18n();
+  const plan = t(
+    `subscription.plan.${planTypeToString(getMinimumRequiredPlan(type))}.title`
+  );
+  return t("subscription.require-subscription", { requiredPlan: plan });
 };
