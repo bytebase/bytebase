@@ -8,12 +8,8 @@ export const fitView = (
   zoomRange: number[] = [0.5, 2]
 ) => {
   const contentBBox = calcBBox(geometries);
-  if (
-    contentBBox.width < Number.EPSILON ||
-    contentBBox.height < Number.EPSILON
-  ) {
-    return { zoom: 1, rect: contentBBox };
-  }
+  if (contentBBox.width < Number.EPSILON) contentBBox.width = Number.EPSILON;
+  if (contentBBox.height < Number.EPSILON) contentBBox.height = Number.EPSILON;
 
   const canvasBBox = canvas.getBoundingClientRect();
   const [paddingTop, paddingRight, paddingBottom, paddingLeft] = paddings;

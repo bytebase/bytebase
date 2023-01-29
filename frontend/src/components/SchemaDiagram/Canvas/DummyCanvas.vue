@@ -40,10 +40,10 @@
 import { pushNotification } from "@/store";
 import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
 
+import { minmax } from "@/utils";
 import {
   calcBBox,
   fitBBox,
-  minmax,
   provideSchemaDiagramContext,
   useSchemaDiagramContext,
 } from "../common";

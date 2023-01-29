@@ -58,7 +58,7 @@ import { NButtonGroup, NButton } from "naive-ui";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 import { useSchemaDiagramContext } from "../common";
 import ZoomButton from "./ZoomButton.vue";
-import { useDragCanvas, useFitView } from "./composables";
+import { useDragCanvas, useFitView, useSetCenter } from "./composables";
 import DummyCanvas from "./DummyCanvas.vue";
 import { pushNotification } from "@/store";
 import { ZOOM_RANGE } from "./const";
@@ -73,6 +73,7 @@ const { database, busy, zoom, position } = useSchemaDiagramContext();
 
 const handleFitView = useFitView(canvas);
 const { handleZoom } = useDragCanvas(canvas);
+useSetCenter(canvas);
 
 const renderDummy = () => {
   return slots["desktop"]?.();
