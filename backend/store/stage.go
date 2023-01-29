@@ -12,6 +12,7 @@ type StageMessage struct {
 	Name          string
 	EnvironmentID int
 	PipelineID    int
+	StageBlocked  bool
 	// Output only.
 	ID int
 }
@@ -96,7 +97,8 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			id,
 			pipeline_id,
 			environment_id,
-			name
+			name,
+			(SELECT 1 FROM task WHERE task.pipeline_id = stage.pipeline_id AND task.stage_id < stage.id AND task.status != 'DONE') as stage_blocked
 		FROM stage
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
@@ -109,13 +111,18 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 	var stages []*StageMessage
 	for rows.Next() {
 		var stage StageMessage
+		var blocked sql.NullBool
 		if err := rows.Scan(
 			&stage.ID,
 			&stage.PipelineID,
 			&stage.EnvironmentID,
 			&stage.Name,
+			&blocked,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if blocked.Valid {
+			stage.StageBlocked = blocked.Bool
 		}
 
 		stages = append(stages, &stage)
