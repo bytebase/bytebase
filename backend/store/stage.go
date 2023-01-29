@@ -98,7 +98,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			environment_id,
 			name
 		FROM stage
-		WHERE %s ORDER BY id ASC`+strings.Join(where, " AND ")),
+		WHERE %s ORDER BY id ASC`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
