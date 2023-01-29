@@ -56,6 +56,13 @@ service IdentityProviderService {
       body: "*"
     };
   }
+
+  rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
+    option (google.api.http) = {
+      post: "/v1/idps/*/test"
+      body: "*"
+    };
+  }
 }
 
 message GetIdentityProviderRequest {
@@ -122,6 +129,34 @@ message UndeleteIdentityProviderRequest {
   // The name of the deleted identity provider.
   // Format: idps/{identity_provider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message TestIdentityProviderRequest {
+  // The identity provider to test connection including uncreated.
+  IdentityProvider identity_provider = 1;
+
+  oneof context {
+    OAuth2IdentityProviderTestRequestContext oauth2_context = 2;
+  }
+}
+
+message OAuth2IdentityProviderTestRequestContext {
+  // Authorize code from website.
+  string code = 1;
+}
+
+message TestIdentityProviderResponse {
+  string message = 1;
+  
+  oneof result {
+    OAuth2IdentityProviderTestResult oauth2_result = 2;
+  }
+}
+
+message OAuth2IdentityProviderTestResult {
+  string access_token = 1;
+
+  optional IdentityProviderUserInfo user_info = 2;
 }
 
 message IdentityProvider {
@@ -200,5 +235,16 @@ message FieldMapping {
   string display_name = 2;
 
   // Email is the field name of primary email in 3rd-party idp user info. Required.
+  string email = 3;
+}
+
+message IdentityProviderUserInfo {
+  // Identifier is the value of the unique identifier in 3rd-party idp user info.
+  string identifier = 1;
+
+  // DisplayName is the value of display name in 3rd-party idp user info.
+  string display_name = 2;
+
+  // Email is the value of primary email in 3rd-party idp user info.
   string email = 3;
 }

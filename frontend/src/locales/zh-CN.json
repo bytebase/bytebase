@@ -218,7 +218,8 @@
     "want-help": "加入用户群",
     "operation": "操作",
     "rollback": "回滚",
-    "discard-changes": "取消修改"
+    "discard-changes": "取消修改",
+    "error-message": "错误信息"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1802,5 +1803,12 @@
   "schema-diagram": {
     "self": "Schema 关系图",
     "fit-content-with-view": "自动适应视图"
+  },
+  "identity-provider": {
+    "test-connection": "测试连接",
+    "test-modal": {
+      "title": "测试 OAuth2 连接性",
+      "start-test": "点击登录按钮开始测试"
+    }
   }
 }

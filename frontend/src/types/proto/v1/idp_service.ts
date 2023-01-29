@@ -121,6 +121,27 @@ export interface UndeleteIdentityProviderRequest {
   name: string;
 }
 
+export interface TestIdentityProviderRequest {
+  /** The identity provider to test connection including uncreated. */
+  identityProvider?: IdentityProvider;
+  oauth2Context?: OAuth2IdentityProviderTestRequestContext | undefined;
+}
+
+export interface OAuth2IdentityProviderTestRequestContext {
+  /** Authorize code from website. */
+  code: string;
+}
+
+export interface TestIdentityProviderResponse {
+  message: string;
+  oauth2Result?: OAuth2IdentityProviderTestResult | undefined;
+}
+
+export interface OAuth2IdentityProviderTestResult {
+  accessToken: string;
+  userInfo?: IdentityProviderUserInfo | undefined;
+}
+
 export interface IdentityProvider {
   /**
    * The name of the identity provider.
@@ -176,6 +197,15 @@ export interface FieldMapping {
   /** DisplayName is the field name of display name in 3rd-party idp user info. Required. */
   displayName: string;
   /** Email is the field name of primary email in 3rd-party idp user info. Required. */
+  email: string;
+}
+
+export interface IdentityProviderUserInfo {
+  /** Identifier is the value of the unique identifier in 3rd-party idp user info. */
+  identifier: string;
+  /** DisplayName is the value of display name in 3rd-party idp user info. */
+  displayName: string;
+  /** Email is the value of primary email in 3rd-party idp user info. */
   email: string;
 }
 
@@ -569,6 +599,245 @@ export const UndeleteIdentityProviderRequest = {
   fromPartial(object: DeepPartial<UndeleteIdentityProviderRequest>): UndeleteIdentityProviderRequest {
     const message = createBaseUndeleteIdentityProviderRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseTestIdentityProviderRequest(): TestIdentityProviderRequest {
+  return { identityProvider: undefined, oauth2Context: undefined };
+}
+
+export const TestIdentityProviderRequest = {
+  encode(message: TestIdentityProviderRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.identityProvider !== undefined) {
+      IdentityProvider.encode(message.identityProvider, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.oauth2Context !== undefined) {
+      OAuth2IdentityProviderTestRequestContext.encode(message.oauth2Context, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TestIdentityProviderRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestIdentityProviderRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.identityProvider = IdentityProvider.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.oauth2Context = OAuth2IdentityProviderTestRequestContext.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TestIdentityProviderRequest {
+    return {
+      identityProvider: isSet(object.identityProvider) ? IdentityProvider.fromJSON(object.identityProvider) : undefined,
+      oauth2Context: isSet(object.oauth2Context)
+        ? OAuth2IdentityProviderTestRequestContext.fromJSON(object.oauth2Context)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TestIdentityProviderRequest): unknown {
+    const obj: any = {};
+    message.identityProvider !== undefined &&
+      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
+    message.oauth2Context !== undefined && (obj.oauth2Context = message.oauth2Context
+      ? OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context)
+      : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<TestIdentityProviderRequest>): TestIdentityProviderRequest {
+    const message = createBaseTestIdentityProviderRequest();
+    message.identityProvider = (object.identityProvider !== undefined && object.identityProvider !== null)
+      ? IdentityProvider.fromPartial(object.identityProvider)
+      : undefined;
+    message.oauth2Context = (object.oauth2Context !== undefined && object.oauth2Context !== null)
+      ? OAuth2IdentityProviderTestRequestContext.fromPartial(object.oauth2Context)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOAuth2IdentityProviderTestRequestContext(): OAuth2IdentityProviderTestRequestContext {
+  return { code: "" };
+}
+
+export const OAuth2IdentityProviderTestRequestContext = {
+  encode(message: OAuth2IdentityProviderTestRequestContext, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.code !== "") {
+      writer.uint32(10).string(message.code);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OAuth2IdentityProviderTestRequestContext {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOAuth2IdentityProviderTestRequestContext();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.code = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OAuth2IdentityProviderTestRequestContext {
+    return { code: isSet(object.code) ? String(object.code) : "" };
+  },
+
+  toJSON(message: OAuth2IdentityProviderTestRequestContext): unknown {
+    const obj: any = {};
+    message.code !== undefined && (obj.code = message.code);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<OAuth2IdentityProviderTestRequestContext>): OAuth2IdentityProviderTestRequestContext {
+    const message = createBaseOAuth2IdentityProviderTestRequestContext();
+    message.code = object.code ?? "";
+    return message;
+  },
+};
+
+function createBaseTestIdentityProviderResponse(): TestIdentityProviderResponse {
+  return { message: "", oauth2Result: undefined };
+}
+
+export const TestIdentityProviderResponse = {
+  encode(message: TestIdentityProviderResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.message !== "") {
+      writer.uint32(10).string(message.message);
+    }
+    if (message.oauth2Result !== undefined) {
+      OAuth2IdentityProviderTestResult.encode(message.oauth2Result, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TestIdentityProviderResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestIdentityProviderResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.message = reader.string();
+          break;
+        case 2:
+          message.oauth2Result = OAuth2IdentityProviderTestResult.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TestIdentityProviderResponse {
+    return {
+      message: isSet(object.message) ? String(object.message) : "",
+      oauth2Result: isSet(object.oauth2Result)
+        ? OAuth2IdentityProviderTestResult.fromJSON(object.oauth2Result)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TestIdentityProviderResponse): unknown {
+    const obj: any = {};
+    message.message !== undefined && (obj.message = message.message);
+    message.oauth2Result !== undefined && (obj.oauth2Result = message.oauth2Result
+      ? OAuth2IdentityProviderTestResult.toJSON(message.oauth2Result)
+      : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
+    const message = createBaseTestIdentityProviderResponse();
+    message.message = object.message ?? "";
+    message.oauth2Result = (object.oauth2Result !== undefined && object.oauth2Result !== null)
+      ? OAuth2IdentityProviderTestResult.fromPartial(object.oauth2Result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOAuth2IdentityProviderTestResult(): OAuth2IdentityProviderTestResult {
+  return { accessToken: "", userInfo: undefined };
+}
+
+export const OAuth2IdentityProviderTestResult = {
+  encode(message: OAuth2IdentityProviderTestResult, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.accessToken !== "") {
+      writer.uint32(10).string(message.accessToken);
+    }
+    if (message.userInfo !== undefined) {
+      IdentityProviderUserInfo.encode(message.userInfo, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OAuth2IdentityProviderTestResult {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOAuth2IdentityProviderTestResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.accessToken = reader.string();
+          break;
+        case 2:
+          message.userInfo = IdentityProviderUserInfo.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OAuth2IdentityProviderTestResult {
+    return {
+      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
+      userInfo: isSet(object.userInfo) ? IdentityProviderUserInfo.fromJSON(object.userInfo) : undefined,
+    };
+  },
+
+  toJSON(message: OAuth2IdentityProviderTestResult): unknown {
+    const obj: any = {};
+    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
+    message.userInfo !== undefined &&
+      (obj.userInfo = message.userInfo ? IdentityProviderUserInfo.toJSON(message.userInfo) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<OAuth2IdentityProviderTestResult>): OAuth2IdentityProviderTestResult {
+    const message = createBaseOAuth2IdentityProviderTestResult();
+    message.accessToken = object.accessToken ?? "";
+    message.userInfo = (object.userInfo !== undefined && object.userInfo !== null)
+      ? IdentityProviderUserInfo.fromPartial(object.userInfo)
+      : undefined;
     return message;
   },
 };
@@ -1007,6 +1276,73 @@ export const FieldMapping = {
   },
 };
 
+function createBaseIdentityProviderUserInfo(): IdentityProviderUserInfo {
+  return { identifier: "", displayName: "", email: "" };
+}
+
+export const IdentityProviderUserInfo = {
+  encode(message: IdentityProviderUserInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    if (message.displayName !== "") {
+      writer.uint32(18).string(message.displayName);
+    }
+    if (message.email !== "") {
+      writer.uint32(26).string(message.email);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IdentityProviderUserInfo {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIdentityProviderUserInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.identifier = reader.string();
+          break;
+        case 2:
+          message.displayName = reader.string();
+          break;
+        case 3:
+          message.email = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IdentityProviderUserInfo {
+    return {
+      identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
+      email: isSet(object.email) ? String(object.email) : "",
+    };
+  },
+
+  toJSON(message: IdentityProviderUserInfo): unknown {
+    const obj: any = {};
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.email !== undefined && (obj.email = message.email);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<IdentityProviderUserInfo>): IdentityProviderUserInfo {
+    const message = createBaseIdentityProviderUserInfo();
+    message.identifier = object.identifier ?? "";
+    message.displayName = object.displayName ?? "";
+    message.email = object.email ?? "";
+    return message;
+  },
+};
+
 export type IdentityProviderServiceDefinition = typeof IdentityProviderServiceDefinition;
 export const IdentityProviderServiceDefinition = {
   name: "IdentityProviderService",
@@ -1060,6 +1396,14 @@ export const IdentityProviderServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    testIdentityProvider: {
+      name: "TestIdentityProvider",
+      requestType: TestIdentityProviderRequest,
+      requestStream: false,
+      responseType: TestIdentityProviderResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1088,6 +1432,10 @@ export interface IdentityProviderServiceImplementation<CallContextExt = {}> {
     request: UndeleteIdentityProviderRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<IdentityProvider>>;
+  testIdentityProvider(
+    request: TestIdentityProviderRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<TestIdentityProviderResponse>>;
 }
 
 export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
@@ -1115,6 +1463,10 @@ export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UndeleteIdentityProviderRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<IdentityProvider>;
+  testIdentityProvider(
+    request: DeepPartial<TestIdentityProviderRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<TestIdentityProviderResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
