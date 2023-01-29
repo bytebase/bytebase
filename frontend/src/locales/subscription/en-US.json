@@ -16,8 +16,8 @@
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
   "per-instance": "Per instance",
-  "free-price-intro": "Up to 2 seats",
-  "team-price-intro": "Per seat, billed monthly",
+  "free-price-intro": "Up to 10 seats",
+  "team-price-intro": "Per seat & Per instance, billed monthly",
   "enterprise-price-intro": "Customized, billed annually",
   "deploy": "Deploy",
   "contact-us": "Contact us",
@@ -54,6 +54,8 @@
       "features": {
         "instance-count": "Instance count",
         "instance-customized": "Customized",
+        "instance-maximum-5": "Up to 5",
+        "instance-maximum-10": "Up to 10",
         "instance-unlimited": "Unlimited",
         "environment-count": "Environment count",
         "environment-unlimited": "Unlimited",
@@ -93,7 +95,6 @@
       "title": "Collaboration",
       "features": {
         "seat-count": "Seat count",
-        "seat-maximum-2": "Up to 2",
         "seat-maximum-10": "Up to 10",
         "seat-customized": "Customized",
         "ui-based-sql-review": "UI based SQL review",
