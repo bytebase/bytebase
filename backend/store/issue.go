@@ -416,6 +416,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
+	create.Status = api.IssueOpen
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -454,7 +455,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Project.UID,
 		create.PipelineUID,
 		create.Title,
-		api.IssueOpen,
+		create.Status,
 		create.Type,
 		create.Description,
 		create.Assignee.ID,
