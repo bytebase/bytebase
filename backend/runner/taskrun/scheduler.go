@@ -387,7 +387,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
 		}
 		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
 				CreatorID: taskPatched.CreatorID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckGhostSync,
@@ -411,7 +411,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 			}
-			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
 				CreatorID: api.SystemBotID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementSyntax,
@@ -442,7 +442,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
 			}
-			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
 				CreatorID: api.SystemBotID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementType,
@@ -537,7 +537,7 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 
-	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+	if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
 		CreatorID: api.SystemBotID,
 		TaskID:    task.ID,
 		Type:      api.TaskCheckDatabaseStatementAdvise,
