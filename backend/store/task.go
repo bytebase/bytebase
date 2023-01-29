@@ -40,6 +40,7 @@ type TaskMessage struct {
 	Payload           string
 	EarliestAllowedTs int64
 	BlockedBy         []string
+	StageBlocked      bool
 }
 
 func (task *TaskMessage) toTask() *api.Task {
@@ -66,6 +67,7 @@ func (task *TaskMessage) toTask() *api.Task {
 		Payload:           task.Payload,
 		EarliestAllowedTs: task.EarliestAllowedTs,
 		BlockedBy:         task.BlockedBy,
+		StageBlocked:      task.StageBlocked,
 	}
 }
 
@@ -409,7 +411,8 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			status,
 			type,
 			payload,
-			earliest_allowed_ts
+			earliest_allowed_ts,
+			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count
 		FROM task
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
@@ -422,6 +425,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
+		var blockCount int
 		if err := rows.Scan(
 			&task.ID,
 			&task.CreatorID,
@@ -437,8 +441,12 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
+			&blockCount,
 		); err != nil {
 			return nil, err
+		}
+		if blockCount > 0 {
+			task.StageBlocked = true
 		}
 		tasks = append(tasks, task)
 	}

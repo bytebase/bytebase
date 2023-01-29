@@ -774,8 +774,12 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		if policy.Value != api.PipelineApprovalValueManualNever {
 			continue
 		}
+		// Checks active stage.
+		if task.StageBlocked {
+			continue
+		}
 
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.Database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 		if err != nil {
 			return err
 		}
@@ -783,7 +787,6 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to check if can auto-approve")
 		}
-		// Checks active stage.
 		if ok {
 			if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 				ID:        task.ID,
