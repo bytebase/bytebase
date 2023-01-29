@@ -46,6 +46,10 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	if err != nil {
 		return nil, err
 	}
+	dags, err := s.ListTaskDags(ctx, &TaskDAGFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, err
+	}
 	var composedTasks []*api.Task
 	for _, task := range tasks {
 		composedTask := task.toTask()
@@ -93,12 +97,10 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 			}
 		}
 
-		dags, err := s.ListTaskDags(ctx, &TaskDAGFind{ToTaskID: &task.ID})
-		if err != nil {
-			return nil, err
-		}
 		for _, dag := range dags {
-			composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", dag.FromTaskID))
+			if dag.ToTaskID == task.ID {
+				composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", dag.FromTaskID))
+			}
 		}
 
 		instance, err := s.GetInstanceByID(ctx, task.InstanceID)
