@@ -83,10 +83,9 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		return enterpriseAPI.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
-			ExpiresTs: -1,
-			// -1 means no limit for instance count.
-			InstanceCount: -1,
-			Seat:          config.SeatForFreePlan,
+			ExpiresTs:     -1,
+			InstanceCount: config.MaximumInstanceForFreePlan,
+			Seat:          config.MaximumSeat,
 		}
 	}
 
@@ -236,26 +235,31 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		return nil, common.Errorf(common.Invalid, "aud is not valid, expect %s but found '%v'", s.config.Audience, claims.Audience)
 	}
 
-	instanceCount := claims.InstanceCount
-	if instanceCount < s.config.MinimumInstance {
-		return nil, common.Errorf(common.Invalid, "license instance count '%v' is not valid, minimum instance requirement is %d", instanceCount, s.config.MinimumInstance)
-	}
-
 	planType, err := convertPlanType(claims.Plan)
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
+	instanceCount := claims.InstanceCount
+	seatCount := claims.Seat
+	if planType == api.TEAM {
+		if instanceCount > config.MaximumInstanceForTeamPlan {
+			return nil, common.Errorf(common.Invalid, "license instance count '%v' is not valid, maximum instance is %d", instanceCount, config.MaximumInstanceForTeamPlan)
+		}
+		if seatCount > config.MaximumSeat {
+			return nil, common.Errorf(common.Invalid, "license seat count '%v' is not valid, minimum seat is %d", seatCount, config.MaximumSeat)
+		}
+	}
+
 	license := &enterpriseAPI.License{
 		InstanceCount: instanceCount,
-		// TODO(ed): validate the seat in claim.
-		Seat:      claims.Seat,
-		ExpiresTs: claims.ExpiresAt.Unix(),
-		IssuedTs:  claims.IssuedAt.Unix(),
-		Plan:      planType,
-		Subject:   claims.Subject,
-		Trialing:  claims.Trialing,
-		OrgName:   claims.OrgName,
+		Seat:          claims.Seat,
+		ExpiresTs:     claims.ExpiresAt.Unix(),
+		IssuedTs:      claims.IssuedAt.Unix(),
+		Plan:          planType,
+		Subject:       claims.Subject,
+		Trialing:      claims.Trialing,
+		OrgName:       claims.OrgName,
 	}
 
 	if err := license.Valid(); err != nil {
