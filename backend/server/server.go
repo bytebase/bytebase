@@ -422,6 +422,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
+	s.registerPlanRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)

@@ -373,10 +373,16 @@ func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists 
 }
 
 // PassAllCheck checks whether a task has passed all task checks.
-func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRunList []*api.TaskCheckRun, engine db.Type) (bool, error) {
+func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRuns []*api.TaskCheckRun, engine db.Type) (bool, error) {
+	var runs []*api.TaskCheckRun
+	for _, run := range taskCheckRuns {
+		if run.TaskID == task.ID {
+			runs = append(runs, run)
+		}
+	}
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseConnect, allowedStatus)
+		pass, err := passCheck(runs, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -384,7 +390,7 @@ func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRu
 			return false, nil
 		}
 
-		pass, err = passCheck(taskCheckRunList, api.TaskCheckInstanceMigrationSchema, allowedStatus)
+		pass, err = passCheck(runs, api.TaskCheckInstanceMigrationSchema, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -393,7 +399,7 @@ func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRu
 		}
 
 		if api.IsSyntaxCheckSupported(engine) {
-			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
+			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -403,7 +409,7 @@ func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRu
 		}
 
 		if api.IsSQLReviewSupported(engine) {
-			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -413,7 +419,7 @@ func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRu
 		}
 
 		if engine == db.Postgres {
-			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementType, allowedStatus)
+			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementType, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -424,7 +430,7 @@ func PassAllCheck(task *api.Task, allowedStatus api.TaskCheckStatus, taskCheckRu
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		ok, err := passCheck(taskCheckRunList, api.TaskCheckGhostSync, allowedStatus)
+		ok, err := passCheck(runs, api.TaskCheckGhostSync, allowedStatus)
 		if err != nil {
 			return false, err
 		}

@@ -11,13 +11,7 @@
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
-import {
-  FeatureType,
-  getMinimumRequiredPlan,
-  PlanType,
-  planTypeToString,
-  FEATURE_MATRIX,
-} from "@/types";
+import { FeatureType, PlanType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
@@ -61,16 +55,16 @@ const descriptionText = computed(() => {
     : t("subscription.trial-for-days", {
         days: subscriptionStore.trialingDays,
       });
-  if (!Array.isArray(FEATURE_MATRIX.get(props.feature))) {
+  if (!Array.isArray(subscriptionStore.featureMatrix.get(props.feature))) {
     return `${props.description}\n${startTrial}`;
   }
 
-  const requiredPlan = getMinimumRequiredPlan(props.feature);
+  const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
   const trialText = t("subscription.required-plan-with-trial", {
     requiredPlan: t(
       `subscription.plan.${planTypeToString(requiredPlan)}.title`
     ),
-    startTrial,
+    startTrial: startTrial.toLowerCase(),
   });
 
   return `${props.description}\n${trialText}`;

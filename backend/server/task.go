@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
@@ -156,7 +157,28 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
-		// TODO(d): check pass checks here.
+
+		if taskStatusPatch.Status == api.TaskPending {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+			if err != nil {
+				return err
+			}
+			ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
+			}
+			composedPipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+			if err != nil {
+				return err
+			}
+			activeStage := utils.GetActiveStage(composedPipeline)
+			if task.StageID != activeStage.ID {
+				return echo.NewHTTPError(http.StatusBadRequest, "Tasks in the prior stage are not done yet")
+			}
+		}
 
 		if taskStatusPatch.Status == api.TaskDone {
 			// the user marks the task as DONE, set Skipped to true and SkippedReason to Comment.

@@ -301,14 +301,13 @@ import { reactive, PropType, defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   ExternalRepositoryInfo,
-  getRquiredPlanString,
   Project,
   RepositoryConfig,
   SchemaChangeType,
   VCSType,
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import { hasFeature } from "@/store";
+import { hasFeature, useSubscriptionStore } from "@/store";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -365,6 +364,8 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showFeatureModal: false,
     });
+
+    const subscriptionStore = useSubscriptionStore();
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
@@ -471,7 +472,7 @@ export default defineComponent({
       schemaOptionalTagPlaceholder,
       state,
       hasFeature,
-      getRquiredPlanString,
+      getRquiredPlanString: subscriptionStore.getRquiredPlanString,
       isProjectSchemaChangeTypeDDL,
       enableSQLReviewTitle,
       sampleFilePath,

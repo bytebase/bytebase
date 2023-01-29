@@ -12,7 +12,7 @@
         <label
           v-for="item in identityProviderTypeList"
           :key="item"
-          class="w-24 h-24 border rounded flex flex-col justify-center items-center cursor-pointer"
+          class="w-24 h-24 border rounded-md flex flex-col justify-center items-center cursor-pointer"
           :for="`radio-${item}`"
         >
           <span>{{ identityProviderTypeToString(item) }}</span>
@@ -26,14 +26,6 @@
           />
         </label>
       </div>
-
-      <p class="textinfolabel !mt-4">Authorization callback URL</p>
-      <input
-        type="text"
-        class="textfield mt-1 w-full"
-        readonly
-        :value="callbackUrl"
-      />
     </div>
 
     <!-- OAuth2 form group -->
@@ -41,6 +33,32 @@
       v-if="state.type === IdentityProviderType.OAUTH2"
       class="w-full flex flex-col justify-start items-start space-y-3"
     >
+      <template v-if="isCreating">
+        <p class="textinfolabel !mt-4">
+          {{ $t("settings.sso.form.callback-url") }}
+        </p>
+        <input
+          type="text"
+          class="textfield mt-1 w-full"
+          readonly
+          :value="callbackUrl"
+        />
+        <p class="textinfolabel !mt-4">
+          {{ $t("settings.sso.form.use-template") }}
+        </p>
+        <BBSelect
+          class="w-full"
+          :selected-item="selectedTemplate"
+          :item-list="templateList"
+          :placeholder="$t('settings.sso.form.select-template')"
+          @select-item="handleTemplateSelect"
+        >
+          <template #menuItem="{ item: template }">
+            {{ template.name }}
+          </template>
+        </BBSelect>
+      </template>
+      <hr class="w-full bg-gray-50" />
       <p class="textinfolabel !mt-4">
         {{ $t("settings.sso.form.basic-information") }}
       </p>
@@ -142,7 +160,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Email</label>
+        <label for="">{{ $t("common.email") }}</label>
         <input
           v-model="configForOAuth2.fieldMapping!.email"
           type="text"
@@ -179,7 +197,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.domain-name") }}</label>
+        <label for="">{{ $t("settings.sso.form.domain") }}</label>
         <input
           v-model="identityProvider.domain"
           type="text"
@@ -231,7 +249,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Email</label>
+        <label for="">{{ $t("common.email") }}</label>
         <input
           v-model="configForOIDC.fieldMapping!.email"
           type="text"
@@ -307,12 +325,14 @@ import {
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
-import {
-  identityProviderTypeToString,
-  useIdentityProviderStore,
-} from "@/store/modules/idp";
+import { useIdentityProviderStore } from "@/store/modules/idp";
 import { useActuatorStore } from "@/store";
-import { isDev } from "@/utils";
+import {
+  IdentityProviderTemplate,
+  identityProviderTemplateList,
+  identityProviderTypeToString,
+  isDev,
+} from "@/utils";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -346,6 +366,7 @@ const configForOIDC = ref<OIDCIdentityProviderConfig>(
     fieldMapping: FieldMapping.fromPartial({}),
   })
 );
+const selectedTemplate = ref<IdentityProviderTemplate>();
 
 const identityProviderTypeList = computed(() => {
   const list = [IdentityProviderType.OAUTH2];
@@ -363,6 +384,15 @@ const callbackUrl = computed(() => {
 
 const isCreating = computed(() => {
   return !props.identityProviderName || props.identityProviderName === "";
+});
+
+const templateList = computed(() => {
+  if (state.type === IdentityProviderType.OAUTH2) {
+    return identityProviderTemplateList.filter(
+      (template) => template.type === IdentityProviderType.OAUTH2
+    );
+  }
+  return [];
 });
 
 const originIdentityProvider = computed(() => {
@@ -463,6 +493,23 @@ onMounted(async () => {
     }
   }
 });
+
+const handleTemplateSelect = (template: IdentityProviderTemplate) => {
+  if (template.type !== state.type) {
+    return;
+  }
+
+  selectedTemplate.value = template;
+  identityProvider.value.title = template.name;
+  identityProvider.value.domain = template.domain;
+  if (template.type === IdentityProviderType.OAUTH2) {
+    configForOAuth2.value = {
+      ...configForOAuth2.value,
+      ...template.config,
+    };
+    scopesStringOfConfig.value = template.config.scopes.join(" ");
+  }
+};
 
 const handleDeleteButtonClick = async () => {
   emit("delete", identityProvider.value);
