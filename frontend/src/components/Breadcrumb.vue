@@ -71,7 +71,6 @@ import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
   useRouterStore,
-  useUIStateStore,
   useBookmarkStore,
   useDatabaseStore,
   useProjectStore,
@@ -221,12 +220,7 @@ export default defineComponent({
           name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,
         };
-        bookmarkStore.createBookmark(newBookmark).then(() => {
-          useUIStateStore().saveIntroStateByKey({
-            key: "bookmark.create",
-            newState: true,
-          });
-        });
+        bookmarkStore.createBookmark(newBookmark);
       }
     };
 
