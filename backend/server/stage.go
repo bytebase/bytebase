@@ -10,6 +10,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func (s *Server) registerStageRoutes(g *echo.Group) {
@@ -70,7 +71,30 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
-		// TODO(d): check pass checks here.
+
+		if stageAllTaskStatusPatch.Status == api.TaskPending {
+			for _, task := range tasks {
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+				if err != nil {
+					return err
+				}
+				ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
+				}
+			}
+			composedPipeline, err := s.store.GetPipelineByID(ctx, tasks[0].PipelineID)
+			if err != nil {
+				return err
+			}
+			activeStage := utils.GetActiveStage(composedPipeline)
+			if tasks[0].StageID != activeStage.ID {
+				return echo.NewHTTPError(http.StatusBadRequest, "Tasks in the prior stage are not done yet")
+			}
+		}
 
 		var taskIDList []int
 		for _, task := range tasks {
