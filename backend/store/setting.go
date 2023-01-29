@@ -336,12 +336,6 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
 	fields := []string{"creator_id", "updater_id", "name", "value"}
 	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, update.Name, update.Value}
 	if v := update.Description; v != nil {
@@ -355,6 +349,12 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 			value = EXCLUDED.value,
 			updater_id = EXCLUDED.updater_id
 		RETURNING name, value, description`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
 
 	var setting SettingMessage
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
