@@ -79,7 +79,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 
 func convertToSettingMessage(setting *store.SettingMessage) *v1pb.Setting {
 	return &v1pb.Setting{
-		Name: "settings/" + string(setting.Name),
+		Name: settingNamePrefix + string(setting.Name),
 		Value: &v1pb.Value{
 			Value: &v1pb.Value_StringValue{
 				StringValue: setting.Value,

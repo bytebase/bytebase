@@ -337,17 +337,18 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
 	fields := []string{"creator_id", "updater_id", "name", "value"}
+	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
 	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, update.Name, update.Value}
+
 	if v := update.Description; v != nil {
 		fields = append(fields, "description")
 		valuePlaceholders = append(valuePlaceholders, fmt.Sprintf("$%d", len(args)+1))
+		updateFields = append(updateFields, "description = EXCLUDED.description")
 		args = append(args, *v)
 	}
 	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
 		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
-		ON CONFLICT (name) DO UPDATE SET
-			value = EXCLUDED.value,
-			updater_id = EXCLUDED.updater_id
+		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
 		RETURNING name, value, description`
 
 	tx, err := s.db.BeginTx(ctx, nil)
