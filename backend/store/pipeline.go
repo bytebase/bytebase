@@ -28,11 +28,12 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 	return composedPipeline, nil
 }
 
-// FindPipeline finds a list of Pipeline instances.
-func (s *Store) FindPipeline(ctx context.Context, find *PipelineFind) ([]*api.Pipeline, error) {
-	pipelines, err := s.ListPipelineV2(ctx, find)
+// ListActivePipelines finds a list of active pipelines.
+func (s *Store) ListActivePipelines(ctx context.Context) ([]*api.Pipeline, error) {
+	active := true
+	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{Active: &active})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Pipeline list with PipelineFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to find active pipelines")
 	}
 	var composedPipelines []*api.Pipeline
 	for _, pipeline := range pipelines {
@@ -45,7 +46,6 @@ func (s *Store) FindPipeline(ctx context.Context, find *PipelineFind) ([]*api.Pi
 	return composedPipelines, nil
 }
 
-// Note: MUST keep in sync with composePipelineValidateOnly.
 func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
 	composedPipeline := &api.Pipeline{
 		ID:   pipeline.ID,
@@ -85,6 +85,45 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	composedPipeline.StageList = composedStages
 
 	return composedPipeline, nil
+}
+
+func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", pipeline.ID)
+	}
+
+	stages, err := s.ListStageV2(ctx, pipeline.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find stage list")
+	}
+	var composedStages []*api.Stage
+	for _, stage := range stages {
+		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+		composedStage := &api.Stage{
+			ID:            stage.ID,
+			Name:          stage.Name,
+			EnvironmentID: stage.EnvironmentID,
+			Environment:   environment,
+			PipelineID:    stage.PipelineID,
+		}
+
+		for _, task := range tasks {
+			if task.StageID == stage.ID {
+				composedStage.TaskList = append(composedStage.TaskList, task.toTask())
+			}
+		}
+		composedStages = append(composedStages, composedStage)
+	}
+
+	return &api.Pipeline{
+		ID:        pipeline.ID,
+		Name:      pipeline.Name,
+		StageList: composedStages,
+	}, nil
 }
 
 // PipelineMessage is the message for pipelines.
