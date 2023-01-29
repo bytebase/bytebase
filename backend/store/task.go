@@ -168,7 +168,7 @@ func (s *Store) composeTask(ctx context.Context, raw *TaskMessage) (*api.Task, e
 	if err != nil {
 		return nil, err
 	}
-	taskCheckRunFind := &api.TaskCheckRunFind{
+	taskCheckRunFind := &TaskCheckRunFind{
 		TaskID: &task.ID,
 	}
 	taskCheckRunRawList, err := s.listTaskCheckRun(ctx, taskCheckRunFind)

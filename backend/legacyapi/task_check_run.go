@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -164,29 +162,19 @@ type TaskCheckRunCreate struct {
 	TaskID int
 
 	// Domain specific fields
-	Type    TaskCheckType `jsonapi:"attr,type"`
-	Comment string        `jsonapi:"attr,comment"`
-	Payload string        `jsonapi:"attr,payload"`
+	Type    TaskCheckType
+	Comment string
+	Payload string
 }
 
 // TaskCheckRunFind is the API message for finding task check runs.
 type TaskCheckRunFind struct {
-	ID *int
-
 	// Related fields
 	TaskID *int
 	Type   *TaskCheckType
 
 	// Domain specific fields
 	StatusList *[]TaskCheckRunStatus
-}
-
-func (find *TaskCheckRunFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
 }
 
 // TaskCheckRunStatusPatch is the API message for patching a task check run.

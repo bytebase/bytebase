@@ -63,7 +63,7 @@ func (raw *taskCheckRunRaw) toTaskCheckRun() *api.TaskCheckRun {
 }
 
 // CreateTaskCheckRunIfNeeded creates an instance of TaskCheckRun if needed.
-func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
+func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) (*api.TaskCheckRun, error) {
 	taskCheckRunRaw, err := s.createTaskCheckRunRawIfNeeded(ctx, create)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreate[%+v]", create)
@@ -76,7 +76,7 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 }
 
 // BatchCreateTaskCheckRun inserts many TaskCheckRun instances, which is too slow otherwise to insert one by one.
-func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
+func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
 	if len(creates) == 0 {
 		return nil, nil
 	}
@@ -96,7 +96,7 @@ func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*api.Task
 }
 
 // FindTaskCheckRun finds a list of TaskCheckRun instances.
-func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
+func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	taskCheckRunRawList, err := s.findTaskCheckRunRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find TaskCheckRun list with TaskCheckRunFind[%+v]", find)
@@ -113,7 +113,7 @@ func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind
 }
 
 // PatchTaskCheckRunStatus patches an instance of TaskCheckRunStatus.
-func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
+func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
 	taskCheckRunRaw, err := s.patchTaskCheckRunRawStatus(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch TaskCheckRunStatus with TaskCheckRunStatusPatch[%+v]", patch)
@@ -148,8 +148,43 @@ func (s *Store) composeTaskCheckRun(ctx context.Context, raw *taskCheckRunRaw) (
 	return taskCheckRun, nil
 }
 
+// TaskCheckRunCreate is the API message for creating a task check run.
+type TaskCheckRunCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorID int
+
+	// Related fields
+	TaskID int
+
+	// Domain specific fields
+	Type    api.TaskCheckType
+	Comment string
+	Payload string
+}
+
+// TaskCheckRunFind is the API message for finding task check runs.
+type TaskCheckRunFind struct {
+	// Related fields
+	TaskID *int
+	Type   *api.TaskCheckType
+
+	// Domain specific fields
+	StatusList *[]api.TaskCheckRunStatus
+}
+
+// TaskCheckRunStatusPatch is the API message for patching a task check run.
+type TaskCheckRunStatusPatch struct {
+	ID        *int
+	UpdaterID int
+
+	Status api.TaskCheckRunStatus
+	Code   common.Code
+	Result string
+}
+
 // createTaskCheckRunRawIfNeeded creates a new taskCheckRun. See interface for the expected behavior.
-func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
+func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *TaskCheckRunCreate) (*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -157,7 +192,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 	defer tx.Rollback()
 
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
-	taskCheckRunFind := &api.TaskCheckRunFind{
+	taskCheckRunFind := &TaskCheckRunFind{
 		TaskID:     &create.TaskID,
 		Type:       &create.Type,
 		StatusList: &statusList,
@@ -195,7 +230,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 	return list[0], nil
 }
 
-func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -214,7 +249,7 @@ func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.T
 	return taskCheckRunList, nil
 }
 
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
@@ -285,7 +320,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*ap
 }
 
 // findTaskCheckRunRaw retrieves a list of taskCheckRuns based on find.
-func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
@@ -301,7 +336,7 @@ func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *api.TaskCheckRunF
 }
 
 // findTaskCheckRunRawTx retrieves a list of taskCheckRuns based on find.
-func (s *Store) findTaskCheckRunRawTx(ctx context.Context, tx *Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+func (s *Store) findTaskCheckRunRawTx(ctx context.Context, tx *Tx, find *TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	list, err := s.findTaskCheckRunImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -311,7 +346,7 @@ func (s *Store) findTaskCheckRunRawTx(ctx context.Context, tx *Tx, find *api.Tas
 }
 
 // patchTaskCheckRunRawStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
+func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -331,7 +366,7 @@ func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *api.TaskC
 }
 
 // patchTaskCheckRunStatusImpl updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
+func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
 	// Build UPDATE clause.
 	if patch.Result == "" {
 		patch.Result = "{}"
@@ -377,7 +412,7 @@ func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *ap
 	return &taskCheckRunRaw, nil
 }
 
-func (s *Store) listTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+func (s *Store) listTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
@@ -396,12 +431,9 @@ func (s *Store) listTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind
 	return list, nil
 }
 
-func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.TaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_id = $%d", len(args)+1)), append(args, *v)
 	}
