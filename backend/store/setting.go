@@ -280,3 +280,105 @@ func patchSettingImpl(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*se
 	}
 	return &settingRaw, nil
 }
+
+// FindSettingMessage is the message for finding setting.
+type FindSettingMessage struct {
+	Name api.SettingName
+}
+
+// UpdateSettingMessage is the message for updating setting.
+type UpdateSettingMessage struct {
+	Name  api.SettingName
+	Value string
+}
+
+// SettingMessage is the message of setting.
+type SettingMessage struct {
+	UID         int
+	Name        api.SettingName
+	Value       string
+	Description string
+}
+
+// GetSettingV2 returns the setting by name.
+func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	setting, err := getSettingV2Impl(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	return setting, nil
+}
+
+func getSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) (*SettingMessage, error) {
+	var setting SettingMessage
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			id,
+			name,
+			value,
+			description
+		FROM setting
+		WHERE name = $1
+	`, find.Name).Scan(
+		&setting.UID,
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", find.Name)}
+		}
+		return nil, FormatError(err)
+	}
+	return &setting, nil
+}
+
+// UpdateSettingV2 updates the setting by name.
+func (s *Store) UpdateSettingV2(ctx context.Context, update *UpdateSettingMessage, principalUID int) (*SettingMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	setting, err := updateSettingV2Impl(ctx, tx, update, principalUID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	return setting, nil
+}
+
+func updateSettingV2Impl(ctx context.Context, tx *Tx, update *UpdateSettingMessage, principalUID int) (*SettingMessage, error) {
+	var setting SettingMessage
+	if err := tx.QueryRowContext(ctx, `
+		UPDATE setting
+		SET value = $1, updater_id = $2
+		WHERE name = $3
+		RETURNING id, name, value, description
+	`, update.Value, principalUID, update.Name).Scan(
+		&setting.UID,
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
+		}
+		return nil, FormatError(err)
+	}
+	return &setting, nil
+}
