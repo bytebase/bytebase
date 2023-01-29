@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/mail"
-	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -14,20 +13,14 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
-	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -37,22 +30,20 @@ import (
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
 	store          *store.Store
-	dbFactory      *dbfactory.DBFactory
 	secret         string
 	metricReporter *metricreport.Reporter
-	schemaSyncer   *schemasync.Syncer
 	profile        *config.Profile
+	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, dbFactory *dbfactory.DBFactory, secret string, metricReporter *metricreport.Reporter, schemaSyncer *schemasync.Syncer, profile *config.Profile) *AuthService {
+func NewAuthService(store *store.Store, secret string, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
 		store:          store,
-		dbFactory:      dbFactory,
 		secret:         secret,
 		metricReporter: metricReporter,
-		schemaSyncer:   schemaSyncer,
 		profile:        profile,
+		postCreateUser: postCreateUser,
 	}
 }
 
@@ -114,10 +105,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to find existing users, error: %v", err)
 	}
 
-	noExistingEndUser := true
+	firstEndUser := true
 	for _, user := range existingUsers {
 		if user.Type == api.EndUser {
-			noExistingEndUser = false
+			firstEndUser = false
 			break
 		}
 	}
@@ -132,11 +123,8 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}
 
-	// Only generates onbaording data after the first enduser signup.
-	if noExistingEndUser {
-		if err := s.generateOnboardingData(ctx, user.ID); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
-		}
+	if err := s.postCreateUser(ctx, user, firstEndUser); err != nil {
+		return nil, err
 	}
 
 	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {
@@ -507,69 +495,4 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
 	return user, nil
-}
-
-// generateOnboardingData generates onboarding data after the first signup.
-func (s *AuthService) generateOnboardingData(ctx context.Context, userID int) error {
-	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
-		ResourceID: "project-sample",
-		Title:      "Sample Project",
-		Key:        "SAM",
-		Workflow:   api.UIWorkflow,
-		Visibility: api.Public,
-		TenantMode: api.TenantModeDisabled,
-	}, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding project")
-	}
-
-	instance, err := s.store.CreateInstanceV2(ctx, api.DefaultTestEnvironmentID, &store.InstanceMessage{
-		ResourceID:   "postgres-sample",
-		Title:        "Postgres Sample Instance",
-		Engine:       db.Postgres,
-		ExternalLink: "",
-		DataSources: []*store.DataSourceMessage{
-			{
-				Title:              api.AdminDataSourceName,
-				Type:               api.Admin,
-				Username:           postgres.SampleUser,
-				ObfuscatedPassword: common.Obfuscate("", s.secret),
-				Host:               common.GetPostgresSocketDir(),
-				Port:               strconv.Itoa(s.profile.SampleDatabasePort),
-				Database:           postgres.SampleDatabase,
-			},
-		},
-	}, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding instance")
-	}
-
-	// Try creating the migration history database.
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, postgres.SampleDatabase)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect onboarding instance")
-	}
-	defer driver.Close(ctx)
-	if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-		return errors.Wrapf(err, "failed to set up migration schema on onboarding instance")
-	}
-
-	// Sync the instance schema so we can transfer the sample database later.
-	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
-		return errors.Wrapf(err, "failed to sync onboarding instance")
-	}
-
-	// Transfer sample database to the just created project.
-	transferDatabaseMessage := &store.UpdateDatabaseMessage{
-		EnvironmentID: api.DefaultTestEnvironmentID,
-		InstanceID:    instance.ResourceID,
-		DatabaseName:  postgres.SampleDatabase,
-		ProjectID:     &project.ResourceID,
-	}
-	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to transfer sample database")
-	}
-
-	return nil
 }

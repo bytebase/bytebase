@@ -776,8 +776,7 @@
     "protected-environment": "Protected environment"
   },
   "quick-start": {
-    "bookmark-an-issue": "Bookmark an issue",
-    "add-a-comment": "Add a comment",
+    "view-an-issue": "View an issue",
     "visit-project": "@:common.visit @:common.projects",
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
