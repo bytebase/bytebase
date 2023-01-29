@@ -17,6 +17,8 @@ type TaskDAGMessage struct {
 type TaskDAGFind struct {
 	FromTaskID *int
 	ToTaskID   *int
+	StageID    *int
+	PipelineID *int
 }
 
 // CreateTaskDAGV2 creates a task DAG.
@@ -56,12 +58,23 @@ func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) err
 
 // ListTaskDags lists task dags.
 func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAGMessage, error) {
+	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.FromTaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("from_task_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ToTaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("to_task_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.StageID; v != nil {
+		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PipelineID; v != nil {
+		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if find.StageID != nil || find.PipelineID != nil {
+		// FROM and TO tasks are from the same pipeline and same stage.
+		joinClause = "JOIN task ON task.id = task_dag.from_task_id"
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -70,12 +83,13 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			from_task_id,
-			to_task_id
+			task_dag.from_task_id,
+			task_dag.to_task_id
 		FROM task_dag
-		WHERE `+strings.Join(where, " AND "),
+		%s
+		WHERE %s`, joinClause, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
