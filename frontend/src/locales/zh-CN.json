@@ -776,8 +776,7 @@
     "protected-environment": "受保护的环境"
   },
   "quick-start": {
-    "bookmark-an-issue": "收藏工单",
-    "add-a-comment": "添加评论",
+    "view-an-issue": "查看工单",
     "visit-project": "@:common.visit@:common.projects",
     "visit-instance": "@:common.visit@:common.instances",
     "visit-database": "@:common.visit@:common.databases",
