@@ -13,10 +13,10 @@ const InstanceMaximumConnectionNumber = 20
 // State is the state for all in-memory states within the server.
 type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
-	InstanceDatabaseSyncChan chan *api.Instance // = make(chan *api.Instance, 100)
+	InstanceDatabaseSyncChan chan *api.Instance
 
 	// RollbackGenerateMap is the set of tasks for generating rollback statements.
-	RollbackGenerateMap sync.Map
+	RollbackGenerateMap sync.Map // map[task.ID]*store.TaskMessage
 
 	// TaskProgress is the map from task ID to task progress.
 	TaskProgress sync.Map // map[taskID]api.Progress

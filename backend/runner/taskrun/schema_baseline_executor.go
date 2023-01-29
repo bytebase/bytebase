@@ -44,17 +44,17 @@ type SchemaBaselineExecutor struct {
 }
 
 // RunOnce will run the schema update (DDL) task executor once.
-func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, task *api.Task) (bool, *api.TaskRunResultPayload, error) {
+func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	payload := &api.TaskDatabaseSchemaBaselinePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
 	}
 
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
-		InstanceID:    &task.Database.Instance.ResourceID,
-		DatabaseName:  &task.Database.Name,
-	})
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -62,8 +62,8 @@ func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, task *api.Task)
 	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Baseline, "" /* statement */, payload.SchemaVersion, nil /* vcsPushEvent */)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instanceName", task.Instance.Name),
-			zap.String("databaseName", task.Database.Name),
+			zap.String("instanceName", instance.ResourceID),
+			zap.String("databaseName", database.DatabaseName),
 			zap.Error(err),
 		)
 	}
