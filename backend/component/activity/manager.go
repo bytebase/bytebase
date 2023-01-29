@@ -43,7 +43,7 @@ func NewManager(store *store.Store, profile config.Profile) *Manager {
 }
 
 // BatchCreateTaskStatusUpdateApprovalActivity creates a batch task status update activities for task approvals.
-func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Context, taskList []*api.Task, updaterID int, issue *store.IssueMessage, stageName string) error {
+func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Context, taskList []*store.TaskMessage, updaterID int, issue *store.IssueMessage, stageName string) error {
 	var createList []*api.ActivityCreate
 	for _, task := range taskList {
 		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{

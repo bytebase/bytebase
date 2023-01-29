@@ -37,7 +37,7 @@ type SchemaUpdateGhostSyncExecutor struct {
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
-func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
@@ -50,7 +50,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, stores *store.Store, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, stores *store.Store, task *store.TaskMessage, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -72,7 +72,15 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	}
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
+		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
+	}
+
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return true, nil, err
+	}
+	if database == nil {
+		return true, nil, errors.Errorf("database not found")
 	}
 
 	instanceUsers, err := stores.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: task.InstanceID})
@@ -80,7 +88,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 		return true, nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
 
-	config, err := utils.GetGhostConfig(task, adminDataSource, exec.secret, instanceUsers, tableName, statement, false, 10000000)
+	config, err := utils.GetGhostConfig(task.ID, database, adminDataSource, exec.secret, instanceUsers, tableName, statement, false, 10000000)
 	if err != nil {
 		return true, nil, err
 	}

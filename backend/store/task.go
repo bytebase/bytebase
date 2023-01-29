@@ -39,8 +39,9 @@ type TaskMessage struct {
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedTs int64
-	BlockedBy         []string
-	StageBlocked      bool
+	// TODO(d): add block by here.
+	BlockedBy    []int
+	StageBlocked bool
 }
 
 func (task *TaskMessage) toTask() *api.Task {
@@ -66,7 +67,6 @@ func (task *TaskMessage) toTask() *api.Task {
 		Type:              task.Type,
 		Payload:           task.Payload,
 		EarliestAllowedTs: task.EarliestAllowedTs,
-		BlockedBy:         task.BlockedBy,
 		StageBlocked:      task.StageBlocked,
 	}
 }
@@ -103,15 +103,15 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind) ([]*api.Task, 
 
 // PatchTask patches an instance of Task.
 func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
-	taskRaw, err := s.UpdateTaskV2(ctx, patch)
+	task, err := s.UpdateTaskV2(ctx, patch)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Task with TaskPatch[%+v]", patch)
+		return nil, errors.Wrapf(err, "failed to patch task %+v", patch)
 	}
-	task, err := s.composeTask(ctx, taskRaw)
+	composedTask, err := s.composeTask(ctx, task)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", taskRaw)
+		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
 	}
-	return task, nil
+	return composedTask, nil
 }
 
 // PatchTaskStatus patches a task status.
