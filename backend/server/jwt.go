@@ -134,6 +134,11 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 			return next(c)
 		}
 
+		// Skip GET /feature request
+		if common.HasPrefixes(path, "/feature") && method == "GET" {
+			return next(c)
+		}
+
 		// Skips OpenAPI SQL endpoint
 		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
 			return next(c)
