@@ -247,7 +247,7 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 			return nil, common.Errorf(common.Invalid, "license instance count '%v' is not valid, maximum instance is %d", instanceCount, config.MaximumInstanceForTeamPlan)
 		}
 		if seatCount > config.MaximumSeat {
-			return nil, common.Errorf(common.Invalid, "license seat count '%v' is not valid, minimum seat is %d", seatCount, config.MaximumSeat)
+			return nil, common.Errorf(common.Invalid, "license seat count '%v' is not valid, maximum seat is %d", seatCount, config.MaximumSeat)
 		}
 	}
 

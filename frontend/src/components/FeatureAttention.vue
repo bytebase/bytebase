@@ -64,7 +64,7 @@ const descriptionText = computed(() => {
     requiredPlan: t(
       `subscription.plan.${planTypeToString(requiredPlan)}.title`
     ),
-    startTrial,
+    startTrial: startTrial.toLowerCase(),
   });
 
   return `${props.description}\n${trialText}`;
