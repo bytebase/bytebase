@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -279,4 +280,97 @@ func patchSettingImpl(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*se
 		return nil, FormatError(err)
 	}
 	return &settingRaw, nil
+}
+
+// FindSettingMessage is the message for finding setting.
+type FindSettingMessage struct {
+	Name api.SettingName
+}
+
+// SetSettingMessage is the message for updating setting.
+type SetSettingMessage struct {
+	Name        api.SettingName
+	Value       string
+	Description *string
+}
+
+// SettingMessage is the message of setting.
+type SettingMessage struct {
+	Name        api.SettingName
+	Value       string
+	Description string
+}
+
+// GetSettingV2 returns the setting by name.
+func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var setting SettingMessage
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			name,
+			value,
+			description
+		FROM setting
+		WHERE name = $1
+	`, find.Name).Scan(
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", find.Name)}
+		}
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	return &setting, nil
+}
+
+// UpsertSettingV2 upserts the setting by name.
+func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
+	fields := []string{"creator_id", "updater_id", "name", "value"}
+	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
+	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, update.Name, update.Value}
+
+	if v := update.Description; v != nil {
+		fields = append(fields, "description")
+		valuePlaceholders = append(valuePlaceholders, fmt.Sprintf("$%d", len(args)+1))
+		updateFields = append(updateFields, "description = EXCLUDED.description")
+		args = append(args, *v)
+	}
+	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
+		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
+		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
+		RETURNING name, value, description`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var setting SettingMessage
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
+		}
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	return &setting, nil
 }
