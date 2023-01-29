@@ -1,9 +1,6 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import {
-  IdentityProvider,
-  IdentityProviderType,
-} from "@/types/proto/v1/idp_service";
+import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderClient } from "@/grpcweb";
 
 interface IdentityProviderState {
@@ -89,18 +86,6 @@ export const useIdentityProviderStore = defineStore("idp", {
     },
   },
 });
-
-export const identityProviderTypeToString = (
-  type: IdentityProviderType
-): string => {
-  if (type === IdentityProviderType.OAUTH2) {
-    return "OAuth2";
-  } else if (type === IdentityProviderType.OIDC) {
-    return "OIDC";
-  } else {
-    throw new Error(`identity provider type ${type} not found`);
-  }
-};
 
 const getUpdateMaskFromIdentityProviders = (
   origin: IdentityProvider,

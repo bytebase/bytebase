@@ -25,3 +25,4 @@ export * from "./dom";
 export * from "./schemaEditor";
 export * from "./sso";
 export * from "./math";
+export * from "./idp";

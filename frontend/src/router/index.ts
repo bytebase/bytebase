@@ -346,7 +346,7 @@ const routes: Array<RouteRecordRaw> = [
               },
               {
                 path: "sso",
-                name: "setting.workspace.im-integration",
+                name: "setting.workspace.sso",
                 meta: { title: () => t("settings.sidebar.sso") },
                 component: () => import("../views/SettingWorkspaceSSO.vue"),
                 props: true,

@@ -402,6 +402,9 @@
     "sso": {
       "deletion": "Delete this SSO",
       "form": {
+        "callback-url": "Authorization callback url",
+        "use-template": "Use template",
+        "select-template": "Select template",
         "type": "Type",
         "basic-information": "Basic information",
         "name": "Name",
