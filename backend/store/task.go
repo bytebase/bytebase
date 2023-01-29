@@ -31,7 +31,7 @@ type TaskMessage struct {
 	// Could be empty for creating database task when the task isn't yet completed successfully.
 	DatabaseID          *int
 	TaskRunRawList      []*TaskRunMessage
-	TaskCheckRunRawList []*taskCheckRunRaw
+	TaskCheckRunRawList []*TaskCheckRunMessage
 
 	// Domain specific fields
 	Name              string
@@ -168,10 +168,10 @@ func (s *Store) composeTask(ctx context.Context, raw *TaskMessage) (*api.Task, e
 	if err != nil {
 		return nil, err
 	}
-	taskCheckRunFind := &api.TaskCheckRunFind{
+	taskCheckRunFind := &TaskCheckRunFind{
 		TaskID: &task.ID,
 	}
-	taskCheckRunRawList, err := s.listTaskCheckRun(ctx, taskCheckRunFind)
+	taskCheckRunRawList, err := s.ListTaskCheckRuns(ctx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
 	}
