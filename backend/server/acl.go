@@ -182,6 +182,11 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			return next(c)
 		}
 
+		// Skip GET /feature request
+		if common.HasPrefixes(path, "/feature") && method == "GET" {
+			return next(c)
+		}
+
 		if readonly && method != "GET" {
 			return echo.NewHTTPError(http.StatusMethodNotAllowed, "Server is in readonly mode")
 		}
