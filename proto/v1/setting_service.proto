@@ -16,7 +16,7 @@ service SettingService{
     option (google.api.method_signature) = "name";
   }
 
-  rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
+  rpc SetSetting(SetSettingRequest) returns (Setting) {
     option (google.api.http) = {
       patch: "/v1/{setting.name=settings/*}"
       body: "setting"
@@ -36,7 +36,7 @@ message GetSettingResponse {
 }
 
 // The request message for updating a setting.
-message UpdateSettingRequest {
+message SetSettingRequest {
   // The setting to update.
   Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
 }

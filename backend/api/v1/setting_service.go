@@ -58,8 +58,8 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 	return nil, status.Errorf(codes.InvalidArgument, "setting %s is not whitelisted", settingName)
 }
 
-// UpdateSetting updates the setting by name.
-func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.UpdateSettingRequest) (*v1pb.Setting, error) {
+// SetSetting set the setting by name.
+func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettingRequest) (*v1pb.Setting, error) {
 	settingName, err := getSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	if settingName == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
 	}
-	setting, err := s.store.UpdateSettingV2(ctx, &store.UpdateSettingMessage{
+	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  api.SettingName(settingName),
 		Value: request.Setting.Value.GetStringValue(),
 	}, ctx.Value(common.PrincipalIDContextKey).(int))

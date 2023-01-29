@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -286,15 +287,15 @@ type FindSettingMessage struct {
 	Name api.SettingName
 }
 
-// UpdateSettingMessage is the message for updating setting.
-type UpdateSettingMessage struct {
-	Name  api.SettingName
-	Value string
+// SetSettingMessage is the message for updating setting.
+type SetSettingMessage struct {
+	Name        api.SettingName
+	Value       string
+	Description *string
 }
 
 // SettingMessage is the message of setting.
 type SettingMessage struct {
-	UID         int
 	Name        api.SettingName
 	Value       string
 	Description string
@@ -308,29 +309,15 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 	}
 	defer tx.Rollback()
 
-	setting, err := getSettingV2Impl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
-	}
-	return setting, nil
-}
-
-func getSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) (*SettingMessage, error) {
 	var setting SettingMessage
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
-			id,
 			name,
 			value,
 			description
 		FROM setting
 		WHERE name = $1
 	`, find.Name).Scan(
-		&setting.UID,
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
@@ -340,37 +327,37 @@ func getSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) (*S
 		}
 		return nil, FormatError(err)
 	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
 	return &setting, nil
 }
 
-// UpdateSettingV2 updates the setting by name.
-func (s *Store) UpdateSettingV2(ctx context.Context, update *UpdateSettingMessage, principalUID int) (*SettingMessage, error) {
+// UpsertSettingV2 upserts the setting by name.
+func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	setting, err := updateSettingV2Impl(ctx, tx, update, principalUID)
-	if err != nil {
-		return nil, err
+	fields := []string{"creator_id", "updater_id", "name", "value"}
+	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, update.Name, update.Value}
+	if v := update.Description; v != nil {
+		fields = append(fields, "description")
+		valuePlaceholders = append(valuePlaceholders, fmt.Sprintf("$%d", len(args)+1))
+		args = append(args, *v)
 	}
+	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
+		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
+		ON CONFLICT (name) DO UPDATE SET
+			value = EXCLUDED.value,
+			updater_id = EXCLUDED.updater_id
+		RETURNING name, value, description`
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
-	}
-	return setting, nil
-}
-
-func updateSettingV2Impl(ctx context.Context, tx *Tx, update *UpdateSettingMessage, principalUID int) (*SettingMessage, error) {
 	var setting SettingMessage
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE setting
-		SET value = $1, updater_id = $2
-		WHERE name = $3
-		RETURNING id, name, value, description
-	`, update.Value, principalUID, update.Name).Scan(
-		&setting.UID,
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
@@ -379,6 +366,10 @@ func updateSettingV2Impl(ctx context.Context, tx *Tx, update *UpdateSettingMessa
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
 		}
 		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	return &setting, nil
 }
