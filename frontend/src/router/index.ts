@@ -1,10 +1,12 @@
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 import {
   createRouter,
   createWebHistory,
   RouteLocationNormalized,
   RouteRecordRaw,
 } from "vue-router";
+import { useTitle } from "@vueuse/core";
+
 import BodyLayout from "../layouts/BodyLayout.vue";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
@@ -340,6 +342,13 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("settings.sidebar.im-integration") },
                 component: () =>
                   import("../views/SettingWorkspaceIMIntegration.vue"),
+                props: true,
+              },
+              {
+                path: "sso",
+                name: "setting.workspace.sso",
+                meta: { title: () => t("settings.sidebar.sso") },
+                component: () => import("../views/SettingWorkspaceSSO.vue"),
                 props: true,
               },
               {
@@ -843,6 +852,7 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.issue.detail",
             meta: {
               allowBookmark: true,
+              overrideTitle: true,
             },
             components: {
               content: () => import("../views/IssueDetail.vue"),
@@ -1373,13 +1383,20 @@ router.beforeEach((to, from, next) => {
   });
 });
 
+const DEFAULT_DOCUMENT_TITLE = "Bytebase";
+const title = ref(DEFAULT_DOCUMENT_TITLE);
+useTitle(title);
+
 router.afterEach((to /*, from */) => {
   // Needs to use nextTick otherwise title will still be the one from the previous route.
   nextTick(() => {
+    if (to.meta.overrideTitle) {
+      return;
+    }
     if (to.meta.title) {
       document.title = to.meta.title(to);
     } else {
-      document.title = "Bytebase";
+      document.title = DEFAULT_DOCUMENT_TITLE;
     }
   });
 });

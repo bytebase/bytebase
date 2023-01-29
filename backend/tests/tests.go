@@ -256,6 +256,7 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
 		DatastorePort:        port + 2,
+		SampleDatabasePort:   port + 3,
 		PgUser:               "bbtest",
 		Readonly:             readOnly,
 		DataDir:              dataDir,
@@ -272,9 +273,12 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 // pgURL for connect to Postgres.
 func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                 testReleaseMode,
-		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:             port + 1,
+		Mode:        testReleaseMode,
+		ExternalURL: fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:    port + 1,
+		// Not applicable for external Postgres.
+		// DatastorePort:        port + 2,
+		SampleDatabasePort:   port + 3,
 		PgUser:               pgUser,
 		DataDir:              dataDir,
 		ResourceDir:          resourceDir,

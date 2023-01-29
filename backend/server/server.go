@@ -237,6 +237,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 
+	// Start a Postgres sample server. This is used for onboarding users without requiring them to
+	// configure an external instance.
+	log.Info("-----Sample Postgres Instance BEGIN-----")
+	sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
+	log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
+	log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+	if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
+		return nil, err
+	}
+	log.Info("-----Sample Postgres Instance END-----")
+
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
 		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
@@ -323,13 +334,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
@@ -422,6 +433,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
+	s.registerPlanRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
@@ -437,7 +449,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile))
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.dbFactory, s.secret, s.MetricReporter, s.SchemaSyncer, &profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
@@ -690,6 +702,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		if err := s.store.Close(); err != nil {
 			return err
 		}
+	}
+
+	// Shutdown postgres sample instance.
+	if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
+		log.Error("Failed to stop postgres sample instance", zap.Error(err))
 	}
 
 	// Shutdown postgres server if embed.

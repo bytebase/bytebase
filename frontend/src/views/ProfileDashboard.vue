@@ -127,6 +127,7 @@
                 name="email"
                 type="text"
                 class="textfield"
+                :disabled="isSSOUser"
                 :value="state.editingPrincipal?.email"
                 @input="(e: any)=>updatePrincipal('email', e.target.value)"
               />
@@ -184,7 +185,7 @@
   </main>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import {
   nextTick,
   computed,
@@ -192,15 +193,18 @@ import {
   onUnmounted,
   reactive,
   ref,
-  defineComponent,
+  watch,
 } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEmpty from "lodash-es/isEmpty";
-import isEqual from "lodash-es/isEqual";
-import PrincipalAvatar from "../components/PrincipalAvatar.vue";
+import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { PrincipalPatch } from "../types";
 import { hasWorkspacePermission } from "../utils";
-import { featureToRef, useCurrentUser, usePrincipalStore } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  usePrincipalStore,
+  useUserStore,
+} from "@/store";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 
 interface LocalState {
   editing: boolean;
@@ -208,128 +212,118 @@ interface LocalState {
   passwordConfirm?: string;
 }
 
-export default defineComponent({
-  name: "ProfileDashboard",
-  components: { PrincipalAvatar },
-  props: {
-    principalId: {
-      type: String,
-      default: undefined,
-    },
-  },
-  setup(props) {
-    const editNameTextField = ref();
+const props = defineProps<{
+  principalId?: string;
+}>();
 
-    const principalStore = usePrincipalStore();
+const currentUser = useCurrentUser();
+const principalStore = usePrincipalStore();
+const userStore = useUserStore();
+const state = reactive<LocalState>({
+  editing: false,
+});
 
-    const state = reactive<LocalState>({
-      editing: false,
-    });
+const editNameTextField = ref();
 
-    const keyboardHandler = (e: KeyboardEvent) => {
-      if (state.editing) {
-        if (e.code == "Escape") {
-          cancelEdit();
-        } else if (e.code == "Enter" && e.metaKey) {
-          if (allowSaveEdit.value) {
-            saveEdit();
-          }
-        }
+const keyboardHandler = (e: KeyboardEvent) => {
+  if (state.editing) {
+    if (e.code == "Escape") {
+      cancelEdit();
+    } else if (e.code == "Enter" && e.metaKey) {
+      if (allowSaveEdit.value) {
+        saveEdit();
       }
-    };
+    }
+  }
+};
 
-    onMounted(() => {
-      document.addEventListener("keydown", keyboardHandler);
-    });
+onMounted(async () => {
+  document.addEventListener("keydown", keyboardHandler);
+});
 
-    onUnmounted(() => {
-      document.removeEventListener("keydown", keyboardHandler);
-    });
+onUnmounted(() => {
+  document.removeEventListener("keydown", keyboardHandler);
+});
 
-    const currentUser = useCurrentUser();
+const hasRBACFeature = featureToRef("bb.feature.rbac");
 
-    const hasRBACFeature = featureToRef("bb.feature.rbac");
+const principal = computed(() => {
+  if (props.principalId) {
+    return principalStore.principalById(parseInt(props.principalId));
+  }
+  return currentUser.value;
+});
 
-    const principal = computed(() => {
-      if (props.principalId) {
-        return principalStore.principalById(parseInt(props.principalId));
-      }
-      return currentUser.value;
-    });
+const passwordMismatch = computed(() => {
+  return (
+    !isEmpty(state.editingPrincipal?.password) &&
+    state.editingPrincipal?.password != state.passwordConfirm
+  );
+});
 
-    const passwordMismatch = computed(() => {
-      return (
-        !isEmpty(state.editingPrincipal?.password) &&
-        state.editingPrincipal?.password != state.passwordConfirm
-      );
-    });
+const isSSOUser = computed(() => {
+  const name = `users/${principal.value.id}`;
+  return userStore.userMapByName.get(name)?.identityProvider !== "";
+});
 
-    // User can change her own info.
-    // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
-    const allowEdit = computed(() => {
-      return (
-        currentUser.value.id == principal.value.id ||
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-member",
-          currentUser.value.role
-        )
-      );
-    });
+// User can change her own info.
+// Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
+const allowEdit = computed(() => {
+  return (
+    currentUser.value.id == principal.value.id ||
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-member",
+      currentUser.value.role
+    )
+  );
+});
 
-    const allowSaveEdit = computed(() => {
-      return (
-        !isEqual(principal.value, state.editingPrincipal) &&
-        (state.passwordConfirm == "" ||
-          state.passwordConfirm == state.editingPrincipal?.password)
-      );
-    });
+const allowSaveEdit = computed(() => {
+  return (
+    !isEqual(principal.value, state.editingPrincipal) &&
+    (state.passwordConfirm == "" ||
+      state.passwordConfirm == state.editingPrincipal?.password)
+  );
+});
 
-    const updatePrincipal = (field: string, value: string) => {
-      (state.editingPrincipal as any)[field] = value;
-    };
+const updatePrincipal = (field: string, value: string) => {
+  (state.editingPrincipal as any)[field] = value;
+};
 
-    const editUser = () => {
-      const clone = cloneDeep(principal.value);
-      state.editingPrincipal = {
-        name: clone.name,
-        email: clone.email,
-        type: clone.type,
-      };
-      state.editing = true;
+const editUser = () => {
+  const clone = cloneDeep(principal.value);
+  state.editingPrincipal = {
+    name: clone.name,
+    email: clone.email,
+    type: clone.type,
+  };
+  state.editing = true;
 
-      nextTick(() => editNameTextField.value.focus());
-    };
+  nextTick(() => editNameTextField.value.focus());
+};
 
-    const cancelEdit = () => {
+const cancelEdit = () => {
+  state.editingPrincipal = undefined;
+  state.editing = false;
+};
+
+const saveEdit = () => {
+  principalStore
+    .patchPrincipal({
+      principalId: principal.value.id,
+      principalPatch: state.editingPrincipal!,
+    })
+    .then(() => {
       state.editingPrincipal = undefined;
       state.editing = false;
-    };
+    });
+};
 
-    const saveEdit = () => {
-      principalStore
-        .patchPrincipal({
-          principalId: principal.value.id,
-          principalPatch: state.editingPrincipal!,
-        })
-        .then(() => {
-          state.editingPrincipal = undefined;
-          state.editing = false;
-        });
-    };
-
-    return {
-      editNameTextField,
-      state,
-      hasRBACFeature,
-      principal,
-      allowEdit,
-      allowSaveEdit,
-      passwordMismatch,
-      updatePrincipal,
-      editUser,
-      cancelEdit,
-      saveEdit,
-    };
+watch(
+  principal,
+  async () => {
+    await userStore.fetchUser(`users/${principal.value.id}`);
   },
-});
+  { immediate: true }
+);
 </script>

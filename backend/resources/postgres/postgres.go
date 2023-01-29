@@ -2,7 +2,10 @@
 package postgres
 
 import (
+	_ "embed"
+
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,7 +22,18 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/utils"
+)
+
+//go:embed employee.sql
+var sampleEmployeeStr string
+
+const (
+	// SampleUser is the user name for the sample database.
+	SampleUser = "bbsample"
+	// SampleDatabase is the sample database name.
+	SampleDatabase = "employee"
 )
 
 // isPgDump15 returns true if the pg_dump binary is version 15.
@@ -285,6 +299,126 @@ func SetupTestInstance(t *testing.T, port int, resourceDir string) func() {
 	}
 
 	return stopFn
+}
+
+// Verify by pinging the sample database. As long as we encounter error, we will regard it as need
+// to create sample database. This might not be 100% accurate since it could be connection issue.
+// But if it's the connection issue, the following code will catch that anyway.
+func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string) bool {
+	driver, err := db.Open(
+		ctx,
+		db.Postgres,
+		db.DriverConfig{},
+		db.ConnectionConfig{
+			Username: pgUser,
+			Password: "",
+			Host:     common.GetPostgresSocketDir(),
+			Port:     port,
+			Database: database,
+		},
+		db.ConnectionContext{},
+	)
+	if err != nil {
+		return true
+	}
+	defer driver.Close(ctx)
+
+	if err := driver.Ping(ctx); err != nil {
+		return true
+	}
+	return false
+}
+
+// prepareSampleDatabaseIfNeeded creates sample database if needed.
+func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database string) error {
+	if !needSetupSampleDatabase(ctx, pgUser, port, database) {
+		return nil
+	}
+
+	// Connect the default postgres database created by initdb.
+	driver, err := db.Open(
+		ctx,
+		db.Postgres,
+		db.DriverConfig{},
+		db.ConnectionConfig{
+			Username: pgUser,
+			Password: "",
+			Host:     host,
+			Port:     port,
+			Database: "postgres",
+		},
+		db.ConnectionContext{},
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to connect sample instance")
+	}
+
+	// Create the sample database.
+	_, err = driver.Execute(
+		context.Background(),
+		fmt.Sprintf("CREATE DATABASE %s", database),
+		true)
+	if err != nil {
+		driver.Close(ctx)
+		return errors.Wrapf(err, "failed to create sample database")
+	}
+
+	// We are going to drop the default postgres database afterwards, so we need to close the
+	// connection first to avoid "database is being accessed by other users" error.
+	driver.Close(ctx)
+
+	// Connect the just created sample database to load data.
+	driver, err = db.Open(
+		ctx,
+		db.Postgres,
+		db.DriverConfig{},
+		db.ConnectionConfig{
+			Username: pgUser,
+			Password: "",
+			Host:     host,
+			Port:     port,
+			Database: database,
+		},
+		db.ConnectionContext{},
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to connect sample database")
+	}
+	defer driver.Close(ctx)
+
+	// Load sample data
+	_, err = driver.Execute(
+		context.Background(),
+		sampleEmployeeStr,
+		false)
+	if err != nil {
+		return errors.Wrapf(err, "failed to load sample database data")
+	}
+
+	// Drop the default postgres database, this is to present a cleaner database list to the user.
+	_, err = driver.Execute(
+		context.Background(),
+		"DROP DATABASE postgres",
+		true)
+	if err != nil {
+		return errors.Wrapf(err, "failed to drop default postgres database")
+	}
+
+	return nil
+}
+
+// StartSampleInstance starts a postgres sample instance.
+func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port int, mode common.ReleaseMode) error {
+	if err := InitDB(pgBinDir, pgDataDir, SampleUser); err != nil {
+		return errors.Wrapf(err, "failed to init sample instance")
+	}
+
+	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
+		return errors.Wrapf(err, "failed to start sample instance")
+	}
+
+	host := common.GetPostgresSocketDir()
+	return prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase)
 }
 
 func installInDir(tarName string, dir string) error {

@@ -636,11 +636,8 @@ CREATE TABLE pipeline (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED'))
+    name TEXT NOT NULL
 );
-
-CREATE INDEX idx_pipeline_status ON pipeline(status);
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 

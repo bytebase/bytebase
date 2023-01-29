@@ -27,9 +27,10 @@ func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller
 	projects, err := ctl.getProjects()
 	a.NoError(err)
 
-	// Default project.
-	a.Equal(1, len(projects))
+	// Default + Sample project.
+	a.Equal(2, len(projects))
 	a.Equal("Default", projects[0].Name)
+	a.Equal("Sample Project", projects[1].Name)
 
 	err = ctl.Close(ctx)
 	a.NoError(err)
@@ -93,7 +94,7 @@ func TestMain(m *testing.M) {
 	if err := postgres.InitDB(externalPgBinDir, externalPgDataDir, externalPgUser); err != nil {
 		log.Fatal(err)
 	}
-	if err = postgres.Start(externalPgPort, externalPgBinDir, externalPgDataDir, false /* serverLog */); err != nil {
+	if err = postgres.Start(externalPgPort, externalPgBinDir, externalPgDataDir, true /* serverLog */); err != nil {
 		log.Fatal(err)
 	}
 

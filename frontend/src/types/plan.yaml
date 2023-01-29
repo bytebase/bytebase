@@ -44,13 +44,13 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
-    freeInstanceCount: -1
-    freeSeatCount: 2
-    maximumSeatCount: 2
+    freeInstanceCount: 5
+    maximumInstanceCount: 5
+    maximumSeatCount: 10
     pricePerSeatPerMonth: 0
     featureList:
       - type: instance-count
-        content: instance-unlimited
+        content: instance-maximum-5
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
@@ -66,13 +66,13 @@ planList:
         tooltip: disaster-recovery-basic-tooltip
       - type: archiving
       - type: sql-check
-        content: sql-check-advanced
-        tooltip: sql-check-advanced-tooltip
+        content: sql-check-basic
+        tooltip: sql-check-basic-tooltip
       - type: anomaly-detection
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
       - type: seat-count
-        content: seat-maximum-2
+        content: seat-maximum-10
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
@@ -95,13 +95,13 @@ planList:
     trialDays: 14
     unitPrice: 29
     trialPrice: 0
-    freeInstanceCount: -1
-    freeSeatCount: 1
+    freeInstanceCount: 5
+    maximumInstanceCount: 10
     maximumSeatCount: 10
     pricePerSeatPerMonth: 29
     featureList:
       - type: instance-count
-        content: instance-unlimited
+        content: instance-maximum-10
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
@@ -120,8 +120,8 @@ planList:
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
       - type: anomaly-detection
-        content: anomaly-detection-advanced
-        tooltip: anomaly-detection-advanced-tooltip
+        content: anomaly-detection-basic
+        tooltip: anomaly-detection-basic-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
       - type: seat-count
@@ -153,8 +153,8 @@ planList:
     trialDays: 0
     unitPrice: 90
     trialPrice: 0
-    freeInstanceCount: -1
-    freeSeatCount: 1
+    freeInstanceCount: 5
+    maximumInstanceCount: -1
     maximumSeatCount: -1
     pricePerSeatPerMonth: 90
     featureList:

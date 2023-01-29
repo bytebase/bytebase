@@ -87,6 +87,14 @@
             <BBBetaBadge class="ml-1" />
           </router-link>
           <router-link
+            v-if="showSSOItem"
+            to="/setting/sso"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.sso") }}
+            <BBBetaBadge class="ml-1" />
+          </router-link>
+          <router-link
             v-if="showVCSItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
@@ -157,6 +165,13 @@ const showAccessControlItem = computed((): boolean => {
 const showIMIntegrationItem = computed((): boolean => {
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-im-integration",
+    currentUser.value.role
+  );
+});
+
+const showSSOItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-sso",
     currentUser.value.role
   );
 });

@@ -85,6 +85,15 @@ export interface FieldMapping {
   email: string;
 }
 
+export interface IdentityProviderUserInfo {
+  /** Identifier is the value of the unique identifier in 3rd-party idp user info. */
+  identifier: string;
+  /** DisplayName is the value of display name in 3rd-party idp user info. */
+  displayName: string;
+  /** Email is the value of primary email in 3rd-party idp user info. */
+  email: string;
+}
+
 function createBaseIdentityProviderConfig(): IdentityProviderConfig {
   return { oauth2Config: undefined, oidcConfig: undefined };
 }
@@ -406,6 +415,73 @@ export const FieldMapping = {
 
   fromPartial(object: DeepPartial<FieldMapping>): FieldMapping {
     const message = createBaseFieldMapping();
+    message.identifier = object.identifier ?? "";
+    message.displayName = object.displayName ?? "";
+    message.email = object.email ?? "";
+    return message;
+  },
+};
+
+function createBaseIdentityProviderUserInfo(): IdentityProviderUserInfo {
+  return { identifier: "", displayName: "", email: "" };
+}
+
+export const IdentityProviderUserInfo = {
+  encode(message: IdentityProviderUserInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    if (message.displayName !== "") {
+      writer.uint32(18).string(message.displayName);
+    }
+    if (message.email !== "") {
+      writer.uint32(26).string(message.email);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IdentityProviderUserInfo {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIdentityProviderUserInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.identifier = reader.string();
+          break;
+        case 2:
+          message.displayName = reader.string();
+          break;
+        case 3:
+          message.email = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IdentityProviderUserInfo {
+    return {
+      identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
+      email: isSet(object.email) ? String(object.email) : "",
+    };
+  },
+
+  toJSON(message: IdentityProviderUserInfo): unknown {
+    const obj: any = {};
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.email !== undefined && (obj.email = message.email);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<IdentityProviderUserInfo>): IdentityProviderUserInfo {
+    const message = createBaseIdentityProviderUserInfo();
     message.identifier = object.identifier ?? "";
     message.displayName = object.displayName ?? "";
     message.email = object.email ?? "";

@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 // StageStatusUpdateType is the type of the stage status update.
 // StageStatusUpdate is a computed event of the contained tasks.
 type StageStatusUpdateType string
@@ -41,21 +37,21 @@ type StageCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID    int `jsonapi:"attr,environmentId"`
+	EnvironmentID    int
 	PipelineID       int
-	TaskList         []TaskCreate   `jsonapi:"attr,taskList"`
-	TaskIndexDAGList []TaskIndexDAG `jsonapi:"attr,taskDAGList"`
+	TaskList         []TaskCreate
+	TaskIndexDAGList []TaskIndexDAG
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
+	Name string
 }
 
-// StageFind is the API message for finding stages.
-type StageFind struct {
-	ID *int
-
-	// Related fields
-	PipelineID *int
+// TaskIndexDAG describes task dependency relationship using array index to represent task.
+// It is needed because we don't know task id before insertion, so we describe the dependency
+// using the in-memory representation, i.e, the array index.
+type TaskIndexDAG struct {
+	FromIndex int
+	ToIndex   int
 }
 
 // StageAllTaskStatusPatch is the API message for patching task status for all tasks in a stage.
@@ -69,12 +65,4 @@ type StageAllTaskStatusPatch struct {
 	// Domain specific fields
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Comment *string    `jsonapi:"attr,comment"`
-}
-
-func (find *StageFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
 }

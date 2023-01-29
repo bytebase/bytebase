@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -29,11 +30,12 @@ import (
 )
 
 // NewSchemaUpdateGhostCutoverExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateGhostCutoverExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		license:         license,
 		stateCfg:        stateCfg,
 		schemaSyncer:    schemaSyncer,
 		profile:         profile,
@@ -45,6 +47,7 @@ type SchemaUpdateGhostCutoverExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	license         enterpriseAPI.LicenseService
 	stateCfg        *state.State
 	schemaSyncer    *schemasync.Syncer
 	profile         config.Profile
@@ -52,10 +55,14 @@ type SchemaUpdateGhostCutoverExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
 func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (bool, *api.TaskRunResultPayload, error) {
-	taskDAG, err := exec.store.GetTaskDAGByToTaskID(ctx, task.ID)
+	taskDAGs, err := exec.store.ListTaskDags(ctx, &store.TaskDAGFind{ToTaskID: &task.ID})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
 	}
+	if len(taskDAGs) != 1 {
+		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
+	}
+	taskDAG := taskDAGs[0]
 	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
 		InstanceID:    &task.Database.Instance.ResourceID,
@@ -90,7 +97,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	}
 	sharedGhost := value.(sharedGhostState)
 
-	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Instance.Name),
@@ -102,7 +109,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -178,7 +185,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, stores, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {

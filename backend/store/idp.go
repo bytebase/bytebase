@@ -14,7 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// IdentityProviderMessage is the mssage for identity provider.
+// IdentityProviderMessage is the message for identity provider.
 type IdentityProviderMessage struct {
 	ResourceID string
 	Title      string
@@ -263,7 +263,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 			config,
 			row_status
 		FROM idp
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
 	)
 	if err != nil {

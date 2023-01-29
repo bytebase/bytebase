@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -152,54 +150,6 @@ type TaskCheckRun struct {
 	Comment string             `jsonapi:"attr,comment"`
 	Result  string             `jsonapi:"attr,result"`
 	Payload string             `jsonapi:"attr,payload"`
-}
-
-// TaskCheckRunCreate is the API message for creating a task check run.
-type TaskCheckRunCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Type    TaskCheckType `jsonapi:"attr,type"`
-	Comment string        `jsonapi:"attr,comment"`
-	Payload string        `jsonapi:"attr,payload"`
-}
-
-// TaskCheckRunFind is the API message for finding task check runs.
-type TaskCheckRunFind struct {
-	ID *int
-
-	// Related fields
-	TaskID *int
-	Type   *TaskCheckType
-
-	// Domain specific fields
-	StatusList *[]TaskCheckRunStatus
-}
-
-func (find *TaskCheckRunFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
-// TaskCheckRunStatusPatch is the API message for patching a task check run.
-type TaskCheckRunStatusPatch struct {
-	ID *int
-
-	// Standard fields
-	UpdaterID int
-
-	// Domain specific fields
-	Status TaskCheckRunStatus
-	Code   common.Code
-	Result string
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.

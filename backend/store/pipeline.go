@@ -28,37 +28,170 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 	return composedPipeline, nil
 }
 
-// FindPipeline finds a list of Pipeline instances.
-func (s *Store) FindPipeline(ctx context.Context, find *PipelineFind) ([]*api.Pipeline, error) {
-	pipelines, err := s.ListPipelineV2(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Pipeline list with PipelineFind[%+v]", find)
-	}
-	var composedPipelines []*api.Pipeline
-	for _, pipeline := range pipelines {
-		composedPipeline, err := s.composePipeline(ctx, pipeline)
-		if err != nil {
-			return nil, err
-		}
-		composedPipelines = append(composedPipelines, composedPipeline)
-	}
-	return composedPipelines, nil
-}
-
-// Note: MUST keep in sync with composePipelineValidateOnly.
 func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
 	composedPipeline := &api.Pipeline{
 		ID:   pipeline.ID,
 		Name: pipeline.Name,
 	}
 
-	stageList, err := s.FindStage(ctx, &api.StageFind{PipelineID: &pipeline.ID})
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find Task list for pipeline %v", pipeline.ID)
+	}
+	taskRuns, err := s.listTaskRun(ctx, &TaskRunFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, err
 	}
-	composedPipeline.StageList = stageList
+	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, &TaskCheckRunFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, err
+	}
+	dags, err := s.ListTaskDags(ctx, &TaskDAGFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, err
+	}
+	var composedTasks []*api.Task
+	for _, task := range tasks {
+		composedTask := task.toTask()
+		creator, err := s.GetPrincipalByID(ctx, task.CreatorID)
+		if err != nil {
+			return nil, err
+		}
+		composedTask.Creator = creator
+		updater, err := s.GetPrincipalByID(ctx, task.UpdaterID)
+		if err != nil {
+			return nil, err
+		}
+		composedTask.Updater = updater
+
+		for _, taskRun := range taskRuns {
+			if taskRun.TaskID == task.ID {
+				composedTaskRun := taskRun.toTaskRun()
+				creator, err := s.GetPrincipalByID(ctx, composedTaskRun.CreatorID)
+				if err != nil {
+					return nil, err
+				}
+				composedTaskRun.Creator = creator
+				updater, err := s.GetPrincipalByID(ctx, composedTaskRun.UpdaterID)
+				if err != nil {
+					return nil, err
+				}
+				composedTaskRun.Updater = updater
+				composedTask.TaskRunList = append(composedTask.TaskRunList, composedTaskRun)
+			}
+		}
+		for _, taskCheckRun := range taskCheckRuns {
+			if taskCheckRun.TaskID == task.ID {
+				taskCheckRun := taskCheckRun.toTaskCheckRun()
+				creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
+				if err != nil {
+					return nil, err
+				}
+				taskCheckRun.Creator = creator
+				updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
+				if err != nil {
+					return nil, err
+				}
+				taskCheckRun.Updater = updater
+				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
+			}
+		}
+
+		for _, dag := range dags {
+			if dag.ToTaskID == task.ID {
+				composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", dag.FromTaskID))
+			}
+		}
+
+		instance, err := s.GetInstanceByID(ctx, task.InstanceID)
+		if err != nil {
+			return nil, err
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance not found with ID %v", task.InstanceID)
+		}
+		composedTask.Instance = instance
+		if task.DatabaseID != nil {
+			database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+			if err != nil {
+				return nil, err
+			}
+			if database == nil {
+				return nil, errors.Errorf("database not found with ID %v", task.DatabaseID)
+			}
+			composedTask.Database = database
+		}
+
+		composedTasks = append(composedTasks, composedTask)
+	}
+
+	stages, err := s.ListStageV2(ctx, pipeline.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find stages for pipeline %d", pipeline.ID)
+	}
+	var composedStages []*api.Stage
+	for _, stage := range stages {
+		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+		composedStage := &api.Stage{
+			ID:            stage.ID,
+			PipelineID:    stage.PipelineID,
+			EnvironmentID: stage.EnvironmentID,
+			Environment:   environment,
+			Name:          stage.Name,
+		}
+		for _, composedTask := range composedTasks {
+			if composedTask.StageID == stage.ID {
+				composedStage.TaskList = append(composedStage.TaskList, composedTask)
+			}
+		}
+
+		composedStages = append(composedStages, composedStage)
+	}
+	composedPipeline.StageList = composedStages
 
 	return composedPipeline, nil
+}
+
+func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", pipeline.ID)
+	}
+
+	stages, err := s.ListStageV2(ctx, pipeline.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find stage list")
+	}
+	var composedStages []*api.Stage
+	for _, stage := range stages {
+		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+		composedStage := &api.Stage{
+			ID:            stage.ID,
+			Name:          stage.Name,
+			EnvironmentID: stage.EnvironmentID,
+			Environment:   environment,
+			PipelineID:    stage.PipelineID,
+		}
+
+		for _, task := range tasks {
+			if task.StageID == stage.ID {
+				composedStage.TaskList = append(composedStage.TaskList, task.toTask())
+			}
+		}
+		composedStages = append(composedStages, composedStage)
+	}
+
+	return &api.Pipeline{
+		ID:        pipeline.ID,
+		Name:      pipeline.Name,
+		StageList: composedStages,
+	}, nil
 }
 
 // PipelineMessage is the message for pipelines.
@@ -71,9 +204,6 @@ type PipelineMessage struct {
 // PipelineFind is the API message for finding pipelines.
 type PipelineFind struct {
 	ID *int
-
-	// Domain specific fields
-	Active *bool
 }
 
 // CreatePipelineV2 creates a pipeline.
@@ -88,10 +218,9 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
-			name,
-			status
+			name
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3)
 		RETURNING id, name
 	`
 	pipeline := &PipelineMessage{}
@@ -99,7 +228,6 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		creatorID,
 		creatorID,
 		create.Name,
-		"OPEN",
 	).Scan(
 		&pipeline.ID,
 		&pipeline.Name,
@@ -139,24 +267,16 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 
 // ListPipelineV2 lists pipelines.
 func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
-	// Build WHERE clause.
-	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Active; v != nil {
-		joinClause = "JOIN task ON pipeline.id = task.pipeline_id"
-		where, args = append(where, fmt.Sprintf(`(SELECT COUNT(1) FROM task WHERE task.status = $%d AND pipeline.id = task.pipeline_id) > 0`, len(args)+1)), append(args, api.TaskPending)
 	}
 	query := fmt.Sprintf(`
 		SELECT
 			pipeline.id,
 			pipeline.name
 		FROM pipeline
-		%s
-		WHERE %s
-		GROUP BY pipeline.id`, joinClause, strings.Join(where, " AND "))
+		WHERE %s`, strings.Join(where, " AND "))
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {

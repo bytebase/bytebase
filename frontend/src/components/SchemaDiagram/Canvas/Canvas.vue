@@ -54,17 +54,14 @@
 
 <script lang="ts" setup>
 import { ref, useSlots } from "vue";
-import { useEventListener } from "@vueuse/core";
-import normalizeWheel from "normalize-wheel";
 import { NButtonGroup, NButton } from "naive-ui";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
-
-import { Point } from "../types";
-import { useDraggable, minmax, useSchemaDiagramContext } from "../common";
+import { useSchemaDiagramContext } from "../common";
 import ZoomButton from "./ZoomButton.vue";
-import { fitView } from "./libs/fitView";
+import { useDragCanvas, useFitView } from "./composables";
 import DummyCanvas from "./DummyCanvas.vue";
 import { pushNotification } from "@/store";
+import { ZOOM_RANGE } from "./const";
 
 const slots = useSlots();
 
@@ -72,85 +69,10 @@ const canvas = ref<Element>();
 const desktop = ref<Element>();
 const dummy = ref<InstanceType<typeof DummyCanvas>>();
 
-const { database, busy, zoom, position, panning, geometries, events } =
-  useSchemaDiagramContext();
+const { database, busy, zoom, position } = useSchemaDiagramContext();
 
-const zoomCenter = ref<Point>({ x: 0.5, y: 0.5 });
-const ZOOM_RANGE = {
-  max: 2, // 200%
-  min: 0.05, // 5%
-};
-
-const handleFitView = () => {
-  if (!canvas.value) return;
-  const layout = fitView(
-    canvas.value,
-    [...geometries.value],
-    [10, 20, 40, 20] /* paddings [T,R,B,L] */,
-    [ZOOM_RANGE.min, 1.0] /* [zoomMin, zoomMax] */
-  );
-  zoom.value = layout.zoom;
-  position.value = {
-    x: layout.rect.x,
-    y: layout.rect.y,
-  };
-};
-events.on("fit-view", handleFitView);
-
-const handleZoom = (delta: number, center: Point = { x: 0.5, y: 0.5 }) => {
-  if (!canvas.value) return "";
-
-  const z = minmax(zoom.value + delta, ZOOM_RANGE.min, ZOOM_RANGE.max);
-  const factor = z / zoom.value;
-  zoom.value = z;
-
-  zoomCenter.value = center;
-
-  // While zooming, we need to adjust the `position` according to the
-  // zoom level and zoom center.
-  const { width, height } = canvas.value.getBoundingClientRect();
-  const cx = center.x * width;
-  const cy = center.y * height;
-  position.value.x = cx - factor * (cx - position.value.x);
-  position.value.y = cy - factor * (cy - position.value.y);
-};
-const handlePan = (x: number, y: number) => {
-  position.value.x += x;
-  position.value.y += y;
-  panning.value = true;
-};
-const handlePanEnd = () => {
-  requestAnimationFrame(() => {
-    panning.value = false;
-  });
-};
-
-useDraggable(canvas, {
-  exact: false,
-  onPan: handlePan,
-  onEnd: handlePanEnd,
-});
-
-useEventListener(
-  canvas,
-  "mousewheel",
-  (e: WheelEvent) => {
-    const ne = normalizeWheel(e);
-
-    const scrollDelta = -ne.pixelY;
-    const delta = scrollDelta / 250; // adjust the scrolling speed
-    const rect = canvas.value!.getBoundingClientRect();
-    const center = {
-      x: (e.pageX - rect.left) / rect.width,
-      y: (e.pageY - rect.top) / rect.height,
-    };
-    handleZoom(delta, center);
-
-    e.preventDefault();
-    e.stopPropagation();
-  },
-  true
-);
+const handleFitView = useFitView(canvas);
+const { handleZoom } = useDragCanvas(canvas);
 
 const renderDummy = () => {
   return slots["desktop"]?.();
