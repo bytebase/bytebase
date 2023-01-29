@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -39,13 +39,12 @@ type TaskMessage struct {
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedTs int64
-	// TODO(d): add block by here.
-	BlockedBy    []int
-	StageBlocked bool
+	BlockedBy         []int
+	StageBlocked      bool
 }
 
 func (task *TaskMessage) toTask() *api.Task {
-	return &api.Task{
+	composedTask := &api.Task{
 		ID: task.ID,
 
 		// Standard fields
@@ -69,6 +68,10 @@ func (task *TaskMessage) toTask() *api.Task {
 		EarliestAllowedTs: task.EarliestAllowedTs,
 		StageBlocked:      task.StageBlocked,
 	}
+	for _, block := range task.BlockedBy {
+		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
+	}
+	return composedTask
 }
 
 // GetTaskByID gets a task by ID.
@@ -145,33 +148,29 @@ func (s *Store) BatchPatchTaskStatus(ctx context.Context, taskIDs []int, status 
 	return nil
 }
 
-//
-// private functions
-//
+func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, error) {
+	composedTask := task.toTask()
 
-func (s *Store) composeTask(ctx context.Context, raw *TaskMessage) (*api.Task, error) {
-	task := raw.toTask()
-
-	creator, err := s.GetPrincipalByID(ctx, task.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, composedTask.CreatorID)
 	if err != nil {
 		return nil, err
 	}
-	task.Creator = creator
+	composedTask.Creator = creator
 
-	updater, err := s.GetPrincipalByID(ctx, task.UpdaterID)
+	updater, err := s.GetPrincipalByID(ctx, composedTask.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
-	task.Updater = updater
+	composedTask.Updater = updater
 
 	taskRunRawList, err := s.listTaskRun(ctx, &TaskRunFind{
-		TaskID: &task.ID,
+		TaskID: &composedTask.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
 	taskCheckRunFind := &TaskCheckRunFind{
-		TaskID: &task.ID,
+		TaskID: &composedTask.ID,
 	}
 	taskCheckRunRawList, err := s.ListTaskCheckRuns(ctx, taskCheckRunFind)
 	if err != nil {
@@ -190,7 +189,7 @@ func (s *Store) composeTask(ctx context.Context, raw *TaskMessage) (*api.Task, e
 			return nil, err
 		}
 		taskRun.Updater = updater
-		task.TaskRunList = append(task.TaskRunList, taskRun)
+		composedTask.TaskRunList = append(composedTask.TaskRunList, taskRun)
 	}
 	for _, taskCheckRunRaw := range taskCheckRunRawList {
 		taskCheckRun := taskCheckRunRaw.toTaskCheckRun()
@@ -205,40 +204,30 @@ func (s *Store) composeTask(ctx context.Context, raw *TaskMessage) (*api.Task, e
 			return nil, err
 		}
 		taskCheckRun.Updater = updater
-		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRun)
+		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
 	}
 
-	blockedBy := []string{}
-	dags, err := s.ListTaskDags(ctx, &TaskDAGFind{ToTaskID: &raw.ID})
-	if err != nil {
-		return nil, err
-	}
-	for _, dag := range dags {
-		blockedBy = append(blockedBy, strconv.Itoa(dag.FromTaskID))
-	}
-	task.BlockedBy = blockedBy
-
-	instance, err := s.GetInstanceByID(ctx, task.InstanceID)
+	instance, err := s.GetInstanceByID(ctx, composedTask.InstanceID)
 	if err != nil {
 		return nil, err
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found with ID %v", task.InstanceID)
+		return nil, errors.Errorf("instance not found with ID %v", composedTask.InstanceID)
 	}
-	task.Instance = instance
+	composedTask.Instance = instance
 
-	if task.DatabaseID != nil {
-		database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+	if composedTask.DatabaseID != nil {
+		database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: composedTask.DatabaseID})
 		if err != nil {
 			return nil, err
 		}
 		if database == nil {
-			return nil, errors.Errorf("database not found with ID %v", task.DatabaseID)
+			return nil, errors.Errorf("database not found with ID %v", composedTask.DatabaseID)
 		}
-		task.Database = database
+		composedTask.Database = database
 	}
 
-	return task, nil
+	return composedTask, nil
 }
 
 // GetTaskV2ByID gets a task by ID.
@@ -359,16 +348,16 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) (
 func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.StageID; v != nil {
-		where, args = append(where, fmt.Sprintf("stage_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.StatusList; v != nil {
 		list := []string{}
@@ -376,7 +365,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.TypeList; v != nil {
 		var list []string
@@ -384,7 +373,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, taskType)
 		}
-		where = append(where, fmt.Sprintf("type in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.Payload; v != "" {
 		where = append(where, v)
@@ -396,25 +385,29 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			pipeline_id,
-			stage_id,
-			instance_id,
-			database_id,
-			name,
-			status,
-			type,
-			payload,
-			earliest_allowed_ts,
-			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count
+			task.id,
+			task.creator_id,
+			task.created_ts,
+			task.updater_id,
+			task.updated_ts,
+			task.pipeline_id,
+			task.stage_id,
+			task.instance_id,
+			task.database_id,
+			task.name,
+			task.status,
+			task.type,
+			task.payload,
+			task.earliest_allowed_ts,
+			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count,
+			ARRAY_AGG (task_dag.from_task_id) blocked_by
 		FROM task
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
+		LEFT JOIN task_dag ON task.id = task_dag.to_task_id
+		WHERE %s
+		GROUP BY task.id
+		ORDER BY task.id ASC`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -426,6 +419,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	for rows.Next() {
 		task := &TaskMessage{}
 		var blockCount int
+		var blockedBy []sql.NullInt32
 		if err := rows.Scan(
 			&task.ID,
 			&task.CreatorID,
@@ -442,11 +436,17 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Payload,
 			&task.EarliestAllowedTs,
 			&blockCount,
+			pq.Array(&blockedBy),
 		); err != nil {
 			return nil, err
 		}
 		if blockCount > 0 {
 			task.StageBlocked = true
+		}
+		for _, v := range blockedBy {
+			if v.Valid {
+				task.BlockedBy = append(task.BlockedBy, int(v.Int32))
+			}
 		}
 		tasks = append(tasks, task)
 	}

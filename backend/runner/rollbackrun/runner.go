@@ -64,7 +64,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError' IS NULL AND payload->>'rollbackStatement' IS NULL",
+		Payload:    "task.payload->>'threadID'!='' AND task.payload->>'rollbackError' IS NULL AND task.payload->>'rollbackStatement' IS NULL",
 	}
 	taskList, err := r.store.FindTask(ctx, find)
 	if err != nil {

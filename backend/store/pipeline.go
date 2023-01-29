@@ -62,10 +62,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	if err != nil {
 		return nil, err
 	}
-	dags, err := s.ListTaskDags(ctx, &TaskDAGFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, err
-	}
 	var composedTasks []*api.Task
 	for _, task := range tasks {
 		composedTask := task.toTask()
@@ -110,12 +106,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 				}
 				taskCheckRun.Updater = updater
 				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
-			}
-		}
-
-		for _, dag := range dags {
-			if dag.ToTaskID == task.ID {
-				composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", dag.FromTaskID))
 			}
 		}
 
