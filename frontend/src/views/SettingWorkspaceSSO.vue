@@ -20,7 +20,7 @@
         <div
           v-for="identityProvider in identityProviderList"
           :key="identityProvider.name"
-          class="w-28 h-28 px-2 border rounded flex flex-col justify-center items-center cursor-pointer"
+          class="w-28 h-28 px-2 border rounded-md flex flex-col justify-center items-center cursor-pointer"
           @click="state.selectedIdentityProviderName = identityProvider.name"
         >
           <span class="max-w-full truncate">{{ identityProvider.title }}</span>
@@ -61,20 +61,21 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive } from "vue";
-import {
-  identityProviderTypeToString,
-  useIdentityProviderStore,
-} from "@/store/modules/idp";
-import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { head } from "lodash-es";
+import { computed, onMounted, reactive, watch, watchEffect } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useIdentityProviderStore } from "@/store/modules/idp";
+import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import { identityProviderTypeToString } from "@/utils";
 
 interface LocalState {
   showCreatingSSOModal: boolean;
   selectedIdentityProviderName: string;
 }
 
+const route = useRoute();
+const router = useRouter();
 const state = reactive<LocalState>({
   showCreatingSSOModal: false,
   selectedIdentityProviderName: "",
@@ -92,10 +93,32 @@ const selectedIdentityProvider = computed(() => {
 });
 
 onMounted(async () => {
-  const identityProviderList =
-    await identityProviderStore.fetchIdentityProviderList();
-  state.selectedIdentityProviderName = head(identityProviderList)?.name || "";
+  await identityProviderStore.fetchIdentityProviderList();
 });
+
+watchEffect(() => {
+  const hashValue = route.hash.slice(1);
+  const identityProviderNameList = identityProviderList.value.map(
+    (idp) => idp.name
+  );
+  if (identityProviderNameList.includes(hashValue)) {
+    state.selectedIdentityProviderName = hashValue;
+  } else {
+    state.selectedIdentityProviderName = head(identityProviderNameList) || "";
+  }
+});
+
+watch(
+  () => state.selectedIdentityProviderName,
+  () => {
+    const hashValue = `#${state.selectedIdentityProviderName}`;
+    if (route.hash !== hashValue) {
+      router.push({
+        hash: hashValue,
+      });
+    }
+  }
+);
 
 const hideCreateSSOModal = () => {
   state.showCreatingSSOModal = false;
