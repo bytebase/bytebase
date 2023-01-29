@@ -385,7 +385,6 @@ func (s *Store) ListTaskCheckRuns(ctx context.Context, find *TaskCheckRunFind) (
 }
 
 func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *TaskCheckRunFind) ([]*TaskCheckRunMessage, error) {
-	// Build WHERE clause.
 	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.TaskID; v != nil {
