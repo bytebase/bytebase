@@ -214,7 +214,7 @@ func (e FeatureType) AccessErrorMessage() string {
 
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
 func (e FeatureType) minimumSupportedPlan() PlanType {
-	for i, enabled := range featureMatrix[e] {
+	for i, enabled := range FeatureMatrix[e] {
 		if enabled {
 			return PlanType(i)
 		}
@@ -223,12 +223,12 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 	return ENTERPRISE
 }
 
-// featureMatrix is a map from the a particular feature to the respective enablement of a particular
+// FeatureMatrix is a map from the a particular feature to the respective enablement of a particular
 // plan in [FREE, TEAM, Enterprise].
-var featureMatrix = map[FeatureType][3]bool{
+var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
-	FeatureRBAC:         {true, true, true},
+	FeatureRBAC:         {false, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -239,7 +239,7 @@ var featureMatrix = map[FeatureType][3]bool{
 	FeatureMultiTenancy:     {false, false, true},
 	FeatureOnlineMigration:  {false, true, true},
 	FeatureSchemaDrift:      {false, false, true},
-	FeatureSQLReview:        {true, true, true},
+	FeatureSQLReview:        {false, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	// VCS Integration
 	FeatureVCSSchemaWriteBack:   {false, false, true},
@@ -292,5 +292,5 @@ var PlanLimitValues = map[PlanLimit][3]int64{
 
 // Feature returns whether a particular feature is available in a particular plan.
 func Feature(feature FeatureType, plan PlanType) bool {
-	return featureMatrix[feature][plan]
+	return FeatureMatrix[feature][plan]
 }
