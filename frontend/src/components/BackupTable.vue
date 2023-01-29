@@ -17,11 +17,10 @@
       <BBTableHeaderCell class="w-48" :title="columnList[2].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-      <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
       <BBTableHeaderCell
         v-if="allowEdit"
         class="w-4"
-        :title="columnList[6].title"
+        :title="columnList[5].title"
       />
     </template>
     <template #body="{ rowData: backup }">
@@ -80,9 +79,6 @@
           {{ dayjs(backup.createdTs * 1000).format("YYYY-MM-DD HH:mm") }}
         </span>
         {{ humanizeTs(backup.createdTs) }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ backup.creator.name }}
       </BBTableCell>
       <BBTableCell v-if="allowEdit">
         <button
@@ -242,9 +238,6 @@ export default defineComponent({
         title: t("common.time"),
       },
       {
-        title: t("common.creator"),
-      },
-      {
         title: "",
       },
     ];
@@ -264,9 +257,6 @@ export default defineComponent({
       },
       {
         title: t("common.time"),
-      },
-      {
-        title: t("common.creator"),
       },
     ];
 
