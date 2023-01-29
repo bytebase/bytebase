@@ -91,14 +91,14 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id,
 			pipeline_id,
 			environment_id,
 			name
 		FROM stage
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
+		WHERE %s ORDER BY id ASC`+strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
