@@ -8,6 +8,7 @@
     :show-irrelevant-nodes="false"
     :default-expand-all="true"
     :selected-keys="[]"
+    :expand-on-click="true"
     :render-label="renderLabel"
     :render-prefix="renderPrefix"
     :node-props="nodeProps"
