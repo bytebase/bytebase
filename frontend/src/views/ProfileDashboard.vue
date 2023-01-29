@@ -116,7 +116,7 @@
 
           <div class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">
-              {{ $t("settings.profile.email") }} {{ isSSOUser }}
+              {{ $t("settings.profile.email") }}
             </dt>
             <dd class="mt-1 text-sm text-main">
               <input
