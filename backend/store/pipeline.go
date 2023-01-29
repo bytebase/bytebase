@@ -38,6 +38,10 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Task list for pipeline %v", pipeline.ID)
 	}
+	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, &TaskCheckRunFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, err
+	}
 	var composedTasks []*api.Task
 	for _, task := range tasks {
 		composedTask := task.toTask()
@@ -70,24 +74,21 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 			composedTaskRun.Updater = updater
 			composedTask.TaskRunList = append(composedTask.TaskRunList, composedTaskRun)
 		}
-		taskCheckRuns, err := s.ListTaskCheckRuns(ctx, &TaskCheckRunFind{TaskID: &task.ID})
-		if err != nil {
-			return nil, err
-		}
 		for _, taskCheckRun := range taskCheckRuns {
-			taskCheckRun := taskCheckRun.toTaskCheckRun()
-			creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
-			if err != nil {
-				return nil, err
+			if taskCheckRun.TaskID == task.ID {
+				taskCheckRun := taskCheckRun.toTaskCheckRun()
+				creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
+				if err != nil {
+					return nil, err
+				}
+				taskCheckRun.Creator = creator
+				updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
+				if err != nil {
+					return nil, err
+				}
+				taskCheckRun.Updater = updater
+				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
 			}
-			taskCheckRun.Creator = creator
-
-			updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
-			if err != nil {
-				return nil, err
-			}
-			taskCheckRun.Updater = updater
-			composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
 		}
 
 		dags, err := s.ListTaskDags(ctx, &TaskDAGFind{ToTaskID: &task.ID})
