@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -714,118 +713,6 @@ func canUpdateTaskStatement(task *api.Task) *echo.HTTPError {
 	return nil
 }
 
-func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		StatusList: &statusList,
-	}
-	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
-	if err != nil {
-		return false, err
-	}
-
-	// schema update, data update and gh-ost sync task have required task check.
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseConnect, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-
-		pass, err = passCheck(taskCheckRunList, api.TaskCheckInstanceMigrationSchema, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-
-		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
-		if err != nil {
-			return false, err
-		}
-		if instance == nil {
-			return false, errors.Errorf("instance ID not found %v", task.InstanceID)
-		}
-
-		if api.IsSyntaxCheckSupported(instance.Engine) {
-			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-
-		if api.IsSQLReviewSupported(instance.Engine) {
-			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-
-		if instance.Engine == db.Postgres {
-			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementType, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-	}
-
-	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		ok, err := passCheck(taskCheckRunList, api.TaskCheckGhostSync, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
-// Returns true only if the task check run result is at least the minimum required level.
-// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
-// For Pending->Running transitions, the minimum level is WARN.
-// TODO(dragonly): refactor arguments.
-func passCheck(taskCheckRunList []*api.TaskCheckRun, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
-	var lastRun *api.TaskCheckRun
-	for _, run := range taskCheckRunList {
-		if checkType != run.Type {
-			continue
-		}
-		if lastRun == nil || lastRun.ID < run.ID {
-			lastRun = run
-		}
-	}
-
-	if lastRun == nil || lastRun.Status != api.TaskCheckRunDone {
-		return false, nil
-	}
-	checkResult := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
-		return false, err
-	}
-	for _, result := range checkResult.ResultList {
-		if result.Status.LessThan(allowedStatus) {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 // canSchedule returns whether a task can be scheduled.
 func (s *Scheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
@@ -840,7 +727,11 @@ func (s *Scheduler) canSchedule(ctx context.Context, task *api.Task) (bool, erro
 		return false, nil
 	}
 
-	return s.passAllCheck(ctx, task, api.TaskCheckStatusWarn)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return false, err
+	}
+	return utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
 }
 
 // scheduleIfNeeded schedules the task if
@@ -873,7 +764,7 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, er
 		if err != nil {
 			return true, errors.Wrapf(err, "failed to convert id string to int, id string: %v", blockingTaskIDString)
 		}
-		blockingTask, err := s.store.GetTaskByID(ctx, blockingTaskID)
+		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskID)
 		if err != nil {
 			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %v", blockingTaskID)
 		}
@@ -904,7 +795,11 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			continue
 		}
 
-		ok, err := s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.Database.InstanceID})
+		if err != nil {
+			return err
+		}
+		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, task.TaskCheckRunList, instance.Engine)
 		if err != nil {
 			return errors.Wrap(err, "failed to check if can auto-approve")
 		}
@@ -923,11 +818,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 
 // scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
 func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
-	active := true
-	pipelineFind := &store.PipelineFind{
-		Active: &active,
-	}
-	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind)
+	pipelineList, err := s.store.ListActivePipelines(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to retrieve open pipelines")
 	}
