@@ -428,14 +428,6 @@ export interface SetIamPolicyRequest {
   policy?: IamPolicy;
 }
 
-export interface SyncExternalIamPolicyRequest {
-  /**
-   * The name of the project to set the IAM policy.
-   * Format: projects/{project}
-   */
-  project: string;
-}
-
 export interface Project {
   /**
    * The name of the project.
@@ -1072,53 +1064,6 @@ export const SetIamPolicyRequest = {
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? IamPolicy.fromPartial(object.policy)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseSyncExternalIamPolicyRequest(): SyncExternalIamPolicyRequest {
-  return { project: "" };
-}
-
-export const SyncExternalIamPolicyRequest = {
-  encode(message: SyncExternalIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SyncExternalIamPolicyRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSyncExternalIamPolicyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.project = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SyncExternalIamPolicyRequest {
-    return { project: isSet(object.project) ? String(object.project) : "" };
-  },
-
-  toJSON(message: SyncExternalIamPolicyRequest): unknown {
-    const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<SyncExternalIamPolicyRequest>): SyncExternalIamPolicyRequest {
-    const message = createBaseSyncExternalIamPolicyRequest();
-    message.project = object.project ?? "";
     return message;
   },
 };
@@ -1970,14 +1915,6 @@ export const ProjectServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    syncExternalIamPolicy: {
-      name: "SyncExternalIamPolicy",
-      requestType: SyncExternalIamPolicyRequest,
-      requestStream: false,
-      responseType: IamPolicy,
-      responseStream: false,
-      options: {},
-    },
     getReview: {
       name: "GetReview",
       requestType: GetReviewRequest,
@@ -2028,10 +1965,6 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<Project>>;
   getIamPolicy(request: GetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
   setIamPolicy(request: SetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
-  syncExternalIamPolicy(
-    request: SyncExternalIamPolicyRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IamPolicy>>;
   getReview(request: GetReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
   listReviews(
     request: ListReviewsRequest,
@@ -2059,10 +1992,6 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
   ): Promise<Project>;
   getIamPolicy(request: DeepPartial<GetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
   setIamPolicy(request: DeepPartial<SetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
-  syncExternalIamPolicy(
-    request: DeepPartial<SyncExternalIamPolicyRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IamPolicy>;
   getReview(request: DeepPartial<GetReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
   listReviews(
     request: DeepPartial<ListReviewsRequest>,
