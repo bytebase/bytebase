@@ -404,7 +404,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count,
 			ARRAY_AGG (task_dag.from_task_id) blocked_by
 		FROM task
-		JOIN task_dag ON task.id = task_dag.to_task_id
+		LEFT JOIN task_dag ON task.id = task_dag.to_task_id
 		WHERE %s
 		GROUP BY task.id
 		ORDER BY task.id ASC`, strings.Join(where, " AND ")),
