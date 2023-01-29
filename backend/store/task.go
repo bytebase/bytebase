@@ -348,16 +348,16 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) (
 func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.StageID; v != nil {
-		where, args = append(where, fmt.Sprintf("stage_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task.database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.StatusList; v != nil {
 		list := []string{}
@@ -365,7 +365,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.TypeList; v != nil {
 		var list []string
@@ -373,7 +373,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, taskType)
 		}
-		where = append(where, fmt.Sprintf("type in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.Payload; v != "" {
 		where = append(where, v)
