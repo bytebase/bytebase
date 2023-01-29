@@ -412,7 +412,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			type,
 			payload,
 			earliest_allowed_ts,
-			(SELECT 1 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as stage_blocked
+			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count
 		FROM task
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
@@ -425,7 +425,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
-		var blocked sql.NullBool
+		var blockCount int
 		if err := rows.Scan(
 			&task.ID,
 			&task.CreatorID,
@@ -441,12 +441,12 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
-			&blocked,
+			&blockCount,
 		); err != nil {
 			return nil, err
 		}
-		if blocked.Valid {
-			task.StageBlocked = blocked.Bool
+		if blockCount > 0 {
+			task.StageBlocked = true
 		}
 		tasks = append(tasks, task)
 	}
