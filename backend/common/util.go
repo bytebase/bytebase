@@ -69,6 +69,11 @@ func GetPostgresDataDir(dataDir string, demoName string) string {
 	return path.Join(dataDir, "pgdata")
 }
 
+// GetPostgresSampleDataDir returns the data directory of postgres sample instance.
+func GetPostgresSampleDataDir(dataDir string) string {
+	return path.Join(dataDir, "pgdata-sample")
+}
+
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
 func GetPostgresSocketDir() string {
 	return "/tmp"

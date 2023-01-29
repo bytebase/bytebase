@@ -16,7 +16,7 @@ export interface GetSettingResponse {
 }
 
 /** The request message for updating a setting. */
-export interface UpdateSettingRequest {
+export interface SetSettingRequest {
   /** The setting to update. */
   setting?: Setting;
 }
@@ -136,22 +136,22 @@ export const GetSettingResponse = {
   },
 };
 
-function createBaseUpdateSettingRequest(): UpdateSettingRequest {
+function createBaseSetSettingRequest(): SetSettingRequest {
   return { setting: undefined };
 }
 
-export const UpdateSettingRequest = {
-  encode(message: UpdateSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SetSettingRequest = {
+  encode(message: SetSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.setting !== undefined) {
       Setting.encode(message.setting, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateSettingRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetSettingRequest {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateSettingRequest();
+    const message = createBaseSetSettingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -166,18 +166,18 @@ export const UpdateSettingRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateSettingRequest {
+  fromJSON(object: any): SetSettingRequest {
     return { setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined };
   },
 
-  toJSON(message: UpdateSettingRequest): unknown {
+  toJSON(message: SetSettingRequest): unknown {
     const obj: any = {};
     message.setting !== undefined && (obj.setting = message.setting ? Setting.toJSON(message.setting) : undefined);
     return obj;
   },
 
-  fromPartial(object: DeepPartial<UpdateSettingRequest>): UpdateSettingRequest {
-    const message = createBaseUpdateSettingRequest();
+  fromPartial(object: DeepPartial<SetSettingRequest>): SetSettingRequest {
+    const message = createBaseSetSettingRequest();
     message.setting = (object.setting !== undefined && object.setting !== null)
       ? Setting.fromPartial(object.setting)
       : undefined;
@@ -303,9 +303,9 @@ export const SettingServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    updateSetting: {
-      name: "UpdateSetting",
-      requestType: UpdateSettingRequest,
+    setSetting: {
+      name: "SetSetting",
+      requestType: SetSettingRequest,
       requestStream: false,
       responseType: Setting,
       responseStream: false,
@@ -316,12 +316,12 @@ export const SettingServiceDefinition = {
 
 export interface SettingServiceImplementation<CallContextExt = {}> {
   getSetting(request: GetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
-  updateSetting(request: UpdateSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
+  setSetting(request: SetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
 }
 
 export interface SettingServiceClient<CallOptionsExt = {}> {
   getSetting(request: DeepPartial<GetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
-  updateSetting(request: DeepPartial<UpdateSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
+  setSetting(request: DeepPartial<SetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
