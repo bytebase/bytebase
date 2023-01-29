@@ -142,7 +142,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task status request").SetInternal(err)
 		}
 
-		task, err := s.store.GetTaskByID(ctx, taskID)
+		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
@@ -163,7 +163,11 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
-			ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
+			taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
+			if err != nil {
+				return err
+			}
+			ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
 			if err != nil {
 				return err
 			}
