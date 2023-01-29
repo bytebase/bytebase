@@ -82,16 +82,9 @@ export default defineComponent({
 
     const introList: IntroItem[] = [
       {
-        name: computed(() => t("quick-start.bookmark-an-issue")),
-        link: "/issue/hello-world-101",
-        done: computed(() =>
-          uiStateStore.getIntroStateByKey("bookmark.create")
-        ),
-      },
-      {
-        name: computed(() => t("quick-start.add-a-comment")),
-        link: "/issue/hello-world-101#activity14001",
-        done: computed(() => uiStateStore.getIntroStateByKey("comment.create")),
+        name: computed(() => t("quick-start.view-an-issue")),
+        link: "/issue/101",
+        done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
       },
       {
         name: computed(() => t("quick-start.visit-project")),
