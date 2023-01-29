@@ -779,7 +779,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			continue
 		}
 
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.Database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 		if err != nil {
 			return err
 		}
