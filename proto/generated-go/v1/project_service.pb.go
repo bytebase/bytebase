@@ -927,55 +927,6 @@ func (x *SetIamPolicyRequest) GetPolicy() *IamPolicy {
 	return nil
 }
 
-type SyncExternalIamPolicyRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// The name of the project to set the IAM policy.
-	// Format: projects/{project}
-	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
-}
-
-func (x *SyncExternalIamPolicyRequest) Reset() {
-	*x = SyncExternalIamPolicyRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[9]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *SyncExternalIamPolicyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SyncExternalIamPolicyRequest) ProtoMessage() {}
-
-func (x *SyncExternalIamPolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[9]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SyncExternalIamPolicyRequest.ProtoReflect.Descriptor instead.
-func (*SyncExternalIamPolicyRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *SyncExternalIamPolicyRequest) GetProject() string {
-	if x != nil {
-		return x.Project
-	}
-	return ""
-}
-
 type Project struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1003,7 +954,7 @@ type Project struct {
 func (x *Project) Reset() {
 	*x = Project{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[10]
+		mi := &file_v1_project_service_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1016,7 +967,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[10]
+	mi := &file_v1_project_service_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1029,7 +980,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Project) GetName() string {
@@ -1129,7 +1080,7 @@ type IamPolicy struct {
 func (x *IamPolicy) Reset() {
 	*x = IamPolicy{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[11]
+		mi := &file_v1_project_service_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1142,7 +1093,7 @@ func (x *IamPolicy) String() string {
 func (*IamPolicy) ProtoMessage() {}
 
 func (x *IamPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[11]
+	mi := &file_v1_project_service_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1155,7 +1106,7 @@ func (x *IamPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IamPolicy.ProtoReflect.Descriptor instead.
 func (*IamPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *IamPolicy) GetBindings() []*Binding {
@@ -1183,7 +1134,7 @@ type Binding struct {
 func (x *Binding) Reset() {
 	*x = Binding{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[12]
+		mi := &file_v1_project_service_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1196,7 +1147,7 @@ func (x *Binding) String() string {
 func (*Binding) ProtoMessage() {}
 
 func (x *Binding) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[12]
+	mi := &file_v1_project_service_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1209,7 +1160,7 @@ func (x *Binding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Binding.ProtoReflect.Descriptor instead.
 func (*Binding) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Binding) GetRole() ProjectRole {
@@ -1239,7 +1190,7 @@ type GetReviewRequest struct {
 func (x *GetReviewRequest) Reset() {
 	*x = GetReviewRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[13]
+		mi := &file_v1_project_service_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1252,7 +1203,7 @@ func (x *GetReviewRequest) String() string {
 func (*GetReviewRequest) ProtoMessage() {}
 
 func (x *GetReviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[13]
+	mi := &file_v1_project_service_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1265,7 +1216,7 @@ func (x *GetReviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetReviewRequest.ProtoReflect.Descriptor instead.
 func (*GetReviewRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetReviewRequest) GetName() string {
@@ -1300,7 +1251,7 @@ type ListReviewsRequest struct {
 func (x *ListReviewsRequest) Reset() {
 	*x = ListReviewsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[14]
+		mi := &file_v1_project_service_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1313,7 +1264,7 @@ func (x *ListReviewsRequest) String() string {
 func (*ListReviewsRequest) ProtoMessage() {}
 
 func (x *ListReviewsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[14]
+	mi := &file_v1_project_service_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1326,7 +1277,7 @@ func (x *ListReviewsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListReviewsRequest.ProtoReflect.Descriptor instead.
 func (*ListReviewsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListReviewsRequest) GetParent() string {
@@ -1365,7 +1316,7 @@ type ListReviewsResponse struct {
 func (x *ListReviewsResponse) Reset() {
 	*x = ListReviewsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[15]
+		mi := &file_v1_project_service_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1378,7 +1329,7 @@ func (x *ListReviewsResponse) String() string {
 func (*ListReviewsResponse) ProtoMessage() {}
 
 func (x *ListReviewsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[15]
+	mi := &file_v1_project_service_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1391,7 +1342,7 @@ func (x *ListReviewsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListReviewsResponse.ProtoReflect.Descriptor instead.
 func (*ListReviewsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListReviewsResponse) GetReviews() []*Review {
@@ -1425,7 +1376,7 @@ type UpdateReviewRequest struct {
 func (x *UpdateReviewRequest) Reset() {
 	*x = UpdateReviewRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[16]
+		mi := &file_v1_project_service_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1438,7 +1389,7 @@ func (x *UpdateReviewRequest) String() string {
 func (*UpdateReviewRequest) ProtoMessage() {}
 
 func (x *UpdateReviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[16]
+	mi := &file_v1_project_service_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1451,7 +1402,7 @@ func (x *UpdateReviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateReviewRequest.ProtoReflect.Descriptor instead.
 func (*UpdateReviewRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UpdateReviewRequest) GetReview() *Review {
@@ -1486,7 +1437,7 @@ type BatchUpdateReviewsRequest struct {
 func (x *BatchUpdateReviewsRequest) Reset() {
 	*x = BatchUpdateReviewsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[17]
+		mi := &file_v1_project_service_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1499,7 +1450,7 @@ func (x *BatchUpdateReviewsRequest) String() string {
 func (*BatchUpdateReviewsRequest) ProtoMessage() {}
 
 func (x *BatchUpdateReviewsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[17]
+	mi := &file_v1_project_service_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1512,7 +1463,7 @@ func (x *BatchUpdateReviewsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateReviewsRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateReviewsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{17}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *BatchUpdateReviewsRequest) GetParent() string {
@@ -1541,7 +1492,7 @@ type BatchUpdateReviewsResponse struct {
 func (x *BatchUpdateReviewsResponse) Reset() {
 	*x = BatchUpdateReviewsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[18]
+		mi := &file_v1_project_service_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1554,7 +1505,7 @@ func (x *BatchUpdateReviewsResponse) String() string {
 func (*BatchUpdateReviewsResponse) ProtoMessage() {}
 
 func (x *BatchUpdateReviewsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[18]
+	mi := &file_v1_project_service_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1567,7 +1518,7 @@ func (x *BatchUpdateReviewsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateReviewsResponse.ProtoReflect.Descriptor instead.
 func (*BatchUpdateReviewsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{18}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *BatchUpdateReviewsResponse) GetReviews() []*Review {
@@ -1606,7 +1557,7 @@ type Review struct {
 func (x *Review) Reset() {
 	*x = Review{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[19]
+		mi := &file_v1_project_service_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1619,7 +1570,7 @@ func (x *Review) String() string {
 func (*Review) ProtoMessage() {}
 
 func (x *Review) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[19]
+	mi := &file_v1_project_service_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1632,7 +1583,7 @@ func (x *Review) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Review.ProtoReflect.Descriptor instead.
 func (*Review) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *Review) GetName() string {
@@ -1779,11 +1730,7 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0x6a, 0x65, 0x63, 0x74, 0x12, 0x34, 0x0a, 0x06, 0x70, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x76, 0x31, 0x2e, 0x49, 0x61, 0x6d, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x42, 0x04, 0xe2, 0x41,
-	0x01, 0x02, 0x52, 0x06, 0x70, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x22, 0x3e, 0x0a, 0x1c, 0x53, 0x79,
-	0x6e, 0x63, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x49, 0x61, 0x6d, 0x50, 0x6f, 0x6c,
-	0x69, 0x63, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x07, 0x70, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0xe2, 0x41, 0x01,
-	0x02, 0x52, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x22, 0x91, 0x04, 0x0a, 0x07, 0x50,
+	0x01, 0x02, 0x52, 0x06, 0x70, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x22, 0x91, 0x04, 0x0a, 0x07, 0x50,
 	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x16, 0x0a, 0x03, 0x75, 0x69,
 	0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0xe2, 0x41, 0x01, 0x03, 0x52, 0x03, 0x75,
@@ -1933,7 +1880,7 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
 	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x4f, 0x50, 0x45, 0x4e, 0x10, 0x01, 0x12,
 	0x08, 0x0a, 0x04, 0x44, 0x4f, 0x4e, 0x45, 0x10, 0x02, 0x12, 0x0c, 0x0a, 0x08, 0x43, 0x41, 0x4e,
-	0x43, 0x45, 0x4c, 0x45, 0x44, 0x10, 0x03, 0x32, 0x88, 0x0d, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a,
+	0x43, 0x45, 0x4c, 0x45, 0x44, 0x10, 0x03, 0x32, 0xf0, 0x0b, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a,
 	0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x68, 0x0a, 0x0a, 0x47, 0x65,
 	0x74, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
 	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63,
@@ -1994,52 +1941,43 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0xd3, 0xe4, 0x93, 0x02, 0x2a, 0x3a, 0x01, 0x2a, 0x22, 0x25, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70,
 	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f,
 	0x2a, 0x7d, 0x3a, 0x73, 0x65, 0x74, 0x49, 0x61, 0x6d, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x12,
-	0x95, 0x01, 0x0a, 0x15, 0x53, 0x79, 0x6e, 0x63, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
-	0x49, 0x61, 0x6d, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x12, 0x29, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x79, 0x6e, 0x63, 0x45, 0x78, 0x74, 0x65,
-	0x72, 0x6e, 0x61, 0x6c, 0x49, 0x61, 0x6d, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
-	0x76, 0x31, 0x2e, 0x49, 0x61, 0x6d, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x22, 0x39, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x33, 0x3a, 0x01, 0x2a, 0x22, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a,
-	0x7d, 0x3a, 0x73, 0x79, 0x6e, 0x63, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x49, 0x61,
-	0x6d, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x12, 0x6f, 0x0a, 0x09, 0x47, 0x65, 0x74, 0x52, 0x65,
-	0x76, 0x69, 0x65, 0x77, 0x12, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
-	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x22, 0x2e, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x21, 0x12, 0x1f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61,
-	0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65,
-	0x76, 0x69, 0x65, 0x77, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x82, 0x01, 0x0a, 0x0b, 0x4c, 0x69, 0x73,
-	0x74, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x65,
-	0x77, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69,
-	0x65, 0x77, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x30, 0xda, 0x41, 0x06,
-	0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x21, 0x12, 0x1f, 0x2f, 0x76,
-	0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
-	0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x12, 0x92, 0x01,
-	0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x12, 0x20,
-	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64,
-	0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x13, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52,
-	0x65, 0x76, 0x69, 0x65, 0x77, 0x22, 0x4b, 0xda, 0x41, 0x12, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77,
-	0x2c, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x30, 0x3a, 0x06, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x32, 0x26, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x2f,
-	0x2a, 0x7d, 0x12, 0x9d, 0x01, 0x0a, 0x12, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61,
-	0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x12, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64,
-	0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x6f, 0x0a, 0x09, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x12, 0x1d, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65,
+	0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77,
+	0x22, 0x2e, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x21, 0x12,
+	0x1f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65,
+	0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x2f, 0x2a, 0x7d,
+	0x12, 0x82, 0x01, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73,
+	0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
+	0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x30, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x21, 0x12, 0x1f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65,
+	0x76, 0x69, 0x65, 0x77, 0x73, 0x12, 0x92, 0x01, 0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65,
+	0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x22, 0x4b, 0xda,
+	0x41, 0x12, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x2c, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f,
+	0x6d, 0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x3a, 0x06, 0x72, 0x65, 0x76, 0x69,
+	0x65, 0x77, 0x32, 0x26, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x2e,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f,
+	0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x9d, 0x01, 0x0a, 0x12, 0x42,
+	0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77,
+	0x73, 0x12, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
 	0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65,
-	0x77, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x36, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x30, 0x3a, 0x01, 0x2a, 0x22, 0x2b, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65,
-	0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72,
-	0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61,
-	0x74, 0x65, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d,
-	0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x77, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x36, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x3a, 0x01, 0x2a, 0x22, 0x2b, 0x2f,
+	0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65,
+	0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x73, 0x3a, 0x62,
+	0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65,
+	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2055,64 +1993,63 @@ func file_v1_project_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_project_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_v1_project_service_proto_goTypes = []interface{}{
-	(Workflow)(0),                        // 0: bytebase.v1.Workflow
-	(Visibility)(0),                      // 1: bytebase.v1.Visibility
-	(TenantMode)(0),                      // 2: bytebase.v1.TenantMode
-	(SchemaVersion)(0),                   // 3: bytebase.v1.SchemaVersion
-	(SchemaChange)(0),                    // 4: bytebase.v1.SchemaChange
-	(LgtmCheck)(0),                       // 5: bytebase.v1.LgtmCheck
-	(ProjectRole)(0),                     // 6: bytebase.v1.ProjectRole
-	(ReviewStatus)(0),                    // 7: bytebase.v1.ReviewStatus
-	(*GetProjectRequest)(nil),            // 8: bytebase.v1.GetProjectRequest
-	(*ListProjectsRequest)(nil),          // 9: bytebase.v1.ListProjectsRequest
-	(*ListProjectsResponse)(nil),         // 10: bytebase.v1.ListProjectsResponse
-	(*CreateProjectRequest)(nil),         // 11: bytebase.v1.CreateProjectRequest
-	(*UpdateProjectRequest)(nil),         // 12: bytebase.v1.UpdateProjectRequest
-	(*DeleteProjectRequest)(nil),         // 13: bytebase.v1.DeleteProjectRequest
-	(*UndeleteProjectRequest)(nil),       // 14: bytebase.v1.UndeleteProjectRequest
-	(*GetIamPolicyRequest)(nil),          // 15: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil),          // 16: bytebase.v1.SetIamPolicyRequest
-	(*SyncExternalIamPolicyRequest)(nil), // 17: bytebase.v1.SyncExternalIamPolicyRequest
-	(*Project)(nil),                      // 18: bytebase.v1.Project
-	(*IamPolicy)(nil),                    // 19: bytebase.v1.IamPolicy
-	(*Binding)(nil),                      // 20: bytebase.v1.Binding
-	(*GetReviewRequest)(nil),             // 21: bytebase.v1.GetReviewRequest
-	(*ListReviewsRequest)(nil),           // 22: bytebase.v1.ListReviewsRequest
-	(*ListReviewsResponse)(nil),          // 23: bytebase.v1.ListReviewsResponse
-	(*UpdateReviewRequest)(nil),          // 24: bytebase.v1.UpdateReviewRequest
-	(*BatchUpdateReviewsRequest)(nil),    // 25: bytebase.v1.BatchUpdateReviewsRequest
-	(*BatchUpdateReviewsResponse)(nil),   // 26: bytebase.v1.BatchUpdateReviewsResponse
-	(*Review)(nil),                       // 27: bytebase.v1.Review
-	(*fieldmaskpb.FieldMask)(nil),        // 28: google.protobuf.FieldMask
-	(State)(0),                           // 29: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),        // 30: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                // 31: google.protobuf.Empty
+	(Workflow)(0),                      // 0: bytebase.v1.Workflow
+	(Visibility)(0),                    // 1: bytebase.v1.Visibility
+	(TenantMode)(0),                    // 2: bytebase.v1.TenantMode
+	(SchemaVersion)(0),                 // 3: bytebase.v1.SchemaVersion
+	(SchemaChange)(0),                  // 4: bytebase.v1.SchemaChange
+	(LgtmCheck)(0),                     // 5: bytebase.v1.LgtmCheck
+	(ProjectRole)(0),                   // 6: bytebase.v1.ProjectRole
+	(ReviewStatus)(0),                  // 7: bytebase.v1.ReviewStatus
+	(*GetProjectRequest)(nil),          // 8: bytebase.v1.GetProjectRequest
+	(*ListProjectsRequest)(nil),        // 9: bytebase.v1.ListProjectsRequest
+	(*ListProjectsResponse)(nil),       // 10: bytebase.v1.ListProjectsResponse
+	(*CreateProjectRequest)(nil),       // 11: bytebase.v1.CreateProjectRequest
+	(*UpdateProjectRequest)(nil),       // 12: bytebase.v1.UpdateProjectRequest
+	(*DeleteProjectRequest)(nil),       // 13: bytebase.v1.DeleteProjectRequest
+	(*UndeleteProjectRequest)(nil),     // 14: bytebase.v1.UndeleteProjectRequest
+	(*GetIamPolicyRequest)(nil),        // 15: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil),        // 16: bytebase.v1.SetIamPolicyRequest
+	(*Project)(nil),                    // 17: bytebase.v1.Project
+	(*IamPolicy)(nil),                  // 18: bytebase.v1.IamPolicy
+	(*Binding)(nil),                    // 19: bytebase.v1.Binding
+	(*GetReviewRequest)(nil),           // 20: bytebase.v1.GetReviewRequest
+	(*ListReviewsRequest)(nil),         // 21: bytebase.v1.ListReviewsRequest
+	(*ListReviewsResponse)(nil),        // 22: bytebase.v1.ListReviewsResponse
+	(*UpdateReviewRequest)(nil),        // 23: bytebase.v1.UpdateReviewRequest
+	(*BatchUpdateReviewsRequest)(nil),  // 24: bytebase.v1.BatchUpdateReviewsRequest
+	(*BatchUpdateReviewsResponse)(nil), // 25: bytebase.v1.BatchUpdateReviewsResponse
+	(*Review)(nil),                     // 26: bytebase.v1.Review
+	(*fieldmaskpb.FieldMask)(nil),      // 27: google.protobuf.FieldMask
+	(State)(0),                         // 28: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),      // 29: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),              // 30: google.protobuf.Empty
 }
 var file_v1_project_service_proto_depIdxs = []int32{
-	18, // 0: bytebase.v1.ListProjectsResponse.projects:type_name -> bytebase.v1.Project
-	18, // 1: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
-	18, // 2: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
-	28, // 3: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
-	19, // 4: bytebase.v1.SetIamPolicyRequest.policy:type_name -> bytebase.v1.IamPolicy
-	29, // 5: bytebase.v1.Project.state:type_name -> bytebase.v1.State
+	17, // 0: bytebase.v1.ListProjectsResponse.projects:type_name -> bytebase.v1.Project
+	17, // 1: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
+	17, // 2: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
+	27, // 3: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
+	18, // 4: bytebase.v1.SetIamPolicyRequest.policy:type_name -> bytebase.v1.IamPolicy
+	28, // 5: bytebase.v1.Project.state:type_name -> bytebase.v1.State
 	0,  // 6: bytebase.v1.Project.workflow:type_name -> bytebase.v1.Workflow
 	1,  // 7: bytebase.v1.Project.visibility:type_name -> bytebase.v1.Visibility
 	2,  // 8: bytebase.v1.Project.tenant_mode:type_name -> bytebase.v1.TenantMode
 	3,  // 9: bytebase.v1.Project.schema_version:type_name -> bytebase.v1.SchemaVersion
 	4,  // 10: bytebase.v1.Project.schema_change:type_name -> bytebase.v1.SchemaChange
 	5,  // 11: bytebase.v1.Project.lgtm_check:type_name -> bytebase.v1.LgtmCheck
-	20, // 12: bytebase.v1.IamPolicy.bindings:type_name -> bytebase.v1.Binding
+	19, // 12: bytebase.v1.IamPolicy.bindings:type_name -> bytebase.v1.Binding
 	6,  // 13: bytebase.v1.Binding.role:type_name -> bytebase.v1.ProjectRole
-	27, // 14: bytebase.v1.ListReviewsResponse.reviews:type_name -> bytebase.v1.Review
-	27, // 15: bytebase.v1.UpdateReviewRequest.review:type_name -> bytebase.v1.Review
-	28, // 16: bytebase.v1.UpdateReviewRequest.update_mask:type_name -> google.protobuf.FieldMask
-	24, // 17: bytebase.v1.BatchUpdateReviewsRequest.requests:type_name -> bytebase.v1.UpdateReviewRequest
-	27, // 18: bytebase.v1.BatchUpdateReviewsResponse.reviews:type_name -> bytebase.v1.Review
+	26, // 14: bytebase.v1.ListReviewsResponse.reviews:type_name -> bytebase.v1.Review
+	26, // 15: bytebase.v1.UpdateReviewRequest.review:type_name -> bytebase.v1.Review
+	27, // 16: bytebase.v1.UpdateReviewRequest.update_mask:type_name -> google.protobuf.FieldMask
+	23, // 17: bytebase.v1.BatchUpdateReviewsRequest.requests:type_name -> bytebase.v1.UpdateReviewRequest
+	26, // 18: bytebase.v1.BatchUpdateReviewsResponse.reviews:type_name -> bytebase.v1.Review
 	7,  // 19: bytebase.v1.Review.status:type_name -> bytebase.v1.ReviewStatus
-	30, // 20: bytebase.v1.Review.create_time:type_name -> google.protobuf.Timestamp
-	30, // 21: bytebase.v1.Review.update_time:type_name -> google.protobuf.Timestamp
+	29, // 20: bytebase.v1.Review.create_time:type_name -> google.protobuf.Timestamp
+	29, // 21: bytebase.v1.Review.update_time:type_name -> google.protobuf.Timestamp
 	8,  // 22: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
 	9,  // 23: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
 	11, // 24: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
@@ -2121,26 +2058,24 @@ var file_v1_project_service_proto_depIdxs = []int32{
 	14, // 27: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
 	15, // 28: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
 	16, // 29: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	17, // 30: bytebase.v1.ProjectService.SyncExternalIamPolicy:input_type -> bytebase.v1.SyncExternalIamPolicyRequest
-	21, // 31: bytebase.v1.ProjectService.GetReview:input_type -> bytebase.v1.GetReviewRequest
-	22, // 32: bytebase.v1.ProjectService.ListReviews:input_type -> bytebase.v1.ListReviewsRequest
-	24, // 33: bytebase.v1.ProjectService.UpdateReview:input_type -> bytebase.v1.UpdateReviewRequest
-	25, // 34: bytebase.v1.ProjectService.BatchUpdateReviews:input_type -> bytebase.v1.BatchUpdateReviewsRequest
-	18, // 35: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
-	10, // 36: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
-	18, // 37: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
-	18, // 38: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
-	31, // 39: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
-	18, // 40: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
-	19, // 41: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	19, // 42: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	19, // 43: bytebase.v1.ProjectService.SyncExternalIamPolicy:output_type -> bytebase.v1.IamPolicy
-	27, // 44: bytebase.v1.ProjectService.GetReview:output_type -> bytebase.v1.Review
-	23, // 45: bytebase.v1.ProjectService.ListReviews:output_type -> bytebase.v1.ListReviewsResponse
-	27, // 46: bytebase.v1.ProjectService.UpdateReview:output_type -> bytebase.v1.Review
-	26, // 47: bytebase.v1.ProjectService.BatchUpdateReviews:output_type -> bytebase.v1.BatchUpdateReviewsResponse
-	35, // [35:48] is the sub-list for method output_type
-	22, // [22:35] is the sub-list for method input_type
+	20, // 30: bytebase.v1.ProjectService.GetReview:input_type -> bytebase.v1.GetReviewRequest
+	21, // 31: bytebase.v1.ProjectService.ListReviews:input_type -> bytebase.v1.ListReviewsRequest
+	23, // 32: bytebase.v1.ProjectService.UpdateReview:input_type -> bytebase.v1.UpdateReviewRequest
+	24, // 33: bytebase.v1.ProjectService.BatchUpdateReviews:input_type -> bytebase.v1.BatchUpdateReviewsRequest
+	17, // 34: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
+	10, // 35: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
+	17, // 36: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
+	17, // 37: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
+	30, // 38: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
+	17, // 39: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
+	18, // 40: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	18, // 41: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	26, // 42: bytebase.v1.ProjectService.GetReview:output_type -> bytebase.v1.Review
+	22, // 43: bytebase.v1.ProjectService.ListReviews:output_type -> bytebase.v1.ListReviewsResponse
+	26, // 44: bytebase.v1.ProjectService.UpdateReview:output_type -> bytebase.v1.Review
+	25, // 45: bytebase.v1.ProjectService.BatchUpdateReviews:output_type -> bytebase.v1.BatchUpdateReviewsResponse
+	34, // [34:46] is the sub-list for method output_type
+	22, // [22:34] is the sub-list for method input_type
 	22, // [22:22] is the sub-list for extension type_name
 	22, // [22:22] is the sub-list for extension extendee
 	0,  // [0:22] is the sub-list for field type_name
@@ -2262,18 +2197,6 @@ func file_v1_project_service_proto_init() {
 			}
 		}
 		file_v1_project_service_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SyncExternalIamPolicyRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_v1_project_service_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Project); i {
 			case 0:
 				return &v.state
@@ -2285,7 +2208,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IamPolicy); i {
 			case 0:
 				return &v.state
@@ -2297,7 +2220,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Binding); i {
 			case 0:
 				return &v.state
@@ -2309,7 +2232,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetReviewRequest); i {
 			case 0:
 				return &v.state
@@ -2321,7 +2244,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListReviewsRequest); i {
 			case 0:
 				return &v.state
@@ -2333,7 +2256,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListReviewsResponse); i {
 			case 0:
 				return &v.state
@@ -2345,7 +2268,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UpdateReviewRequest); i {
 			case 0:
 				return &v.state
@@ -2357,7 +2280,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BatchUpdateReviewsRequest); i {
 			case 0:
 				return &v.state
@@ -2369,7 +2292,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BatchUpdateReviewsResponse); i {
 			case 0:
 				return &v.state
@@ -2381,7 +2304,7 @@ func file_v1_project_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_project_service_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+		file_v1_project_service_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Review); i {
 			case 0:
 				return &v.state
@@ -2400,7 +2323,7 @@ func file_v1_project_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_project_service_proto_rawDesc,
 			NumEnums:      8,
-			NumMessages:   20,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
