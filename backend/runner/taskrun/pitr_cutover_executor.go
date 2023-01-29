@@ -133,7 +133,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doCutover(ctx, driver, task, instance, issue, database.DatabaseName); err != nil {
+	if err := exec.doCutover(ctx, driver, instance, issue, database.DatabaseName); err != nil {
 		return true, nil, err
 	}
 
@@ -180,7 +180,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}, nil
 }
 
-func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver, task *store.TaskMessage, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
+func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
 	switch instance.Engine {
 	case db.Postgres:
 		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
@@ -192,7 +192,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 			select {
 			case <-ticker.C:
 				retry++
-				if err := exec.pitrCutoverPostgres(ctx, driver, task, issue, databaseName); err != nil {
+				if err := exec.pitrCutoverPostgres(ctx, driver, issue, databaseName); err != nil {
 					if retry == maxRetry {
 						return errors.Wrapf(err, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
 					}
@@ -205,7 +205,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 			}
 		}
 	case db.MySQL:
-		if err := exec.pitrCutoverMySQL(ctx, driver, task, issue, databaseName); err != nil {
+		if err := exec.pitrCutoverMySQL(ctx, driver, issue, databaseName); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}
 		return nil
@@ -214,7 +214,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 	}
 }
 
-func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, task *store.TaskMessage, issue *store.IssueMessage, databaseName string) error {
+func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, issue *store.IssueMessage, databaseName string) error {
 	driverDB, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
@@ -234,7 +234,7 @@ func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driv
 	return nil
 }
 
-func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, task *store.TaskMessage, issue *store.IssueMessage, databaseName string) error {
+func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, issue *store.IssueMessage, databaseName string) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, issue.CreatedTime.Unix())
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(databaseName, issue.CreatedTime.Unix())
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
