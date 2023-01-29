@@ -166,21 +166,21 @@ var (
 	resourceDir string
 )
 
-// getTestPort reserves and returns a port.
+// getTestPort reserves two ports, one for server, one for sample pg instance.
 func getTestPort() int {
 	mu.Lock()
 	defer mu.Unlock()
 	p := nextPort
-	nextPort += 2
+	nextPort += 3
 	return p
 }
 
-// getTestPortForEmbeddedPg reserves two ports, one for server and one for postgres server.
+// getTestPortForEmbeddedPg reserves three ports, one for server, one for sample pg instance, one for postgres server.
 func getTestPortForEmbeddedPg() int {
 	mu.Lock()
 	defer mu.Unlock()
 	p := nextPort
-	nextPort += 3
+	nextPort += 4
 	return p
 }
 
@@ -273,12 +273,10 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 // pgURL for connect to Postgres.
 func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:        testReleaseMode,
-		ExternalURL: fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:    port + 1,
-		// Not applicable for external Postgres.
-		// DatastorePort:        port + 2,
-		SampleDatabasePort:   port + 3,
+		Mode:                 testReleaseMode,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:             port + 1,
+		SampleDatabasePort:   port + 2,
 		PgUser:               pgUser,
 		DataDir:              dataDir,
 		ResourceDir:          resourceDir,
