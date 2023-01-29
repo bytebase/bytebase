@@ -120,7 +120,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
-				if err := s.scheduleActiveStageToRunning(ctx); err != nil {
+				if err := s.schedulePendingTasks(ctx); err != nil {
 					log.Error("Failed to schedule tasks in the active stage",
 						zap.Error(err),
 					)
@@ -713,37 +713,18 @@ func canUpdateTaskStatement(task *api.Task) *echo.HTTPError {
 	return nil
 }
 
-// canSchedule returns whether a task can be scheduled.
-func (s *Scheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
-	blocked, err := s.isTaskBlocked(ctx, task)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to check if task is blocked")
-	}
-	if blocked {
-		return false, nil
-	}
-
-	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
-		return false, nil
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return false, err
-	}
-	return utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
-}
-
 // scheduleIfNeeded schedules the task if
-//  1. its required check does not contain error in the latest run.
 //  2. it has no blocking tasks.
 //  3. it has passed the earliest allowed time.
 func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error {
-	schedule, err := s.canSchedule(ctx, task)
+	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to check if task is blocked")
 	}
-	if !schedule {
+	if blocked {
+		return nil
+	}
+	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
 		return nil
 	}
 
@@ -754,7 +735,6 @@ func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error 
 	}); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -803,6 +783,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to check if can auto-approve")
 		}
+		// Checks active stage.
 		if ok {
 			if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 				ID:        task.ID,
@@ -816,25 +797,16 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	return nil
 }
 
-// scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
-func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
-	pipelineList, err := s.store.ListActivePipelines(ctx)
+// schedulePendingTasks tries to schedule pending tasks.
+func (s *Scheduler) schedulePendingTasks(ctx context.Context) error {
+	taskStatus := []api.TaskStatus{api.TaskPending}
+	tasks, err := s.store.FindTask(ctx, &api.TaskFind{StatusList: &taskStatus})
 	if err != nil {
-		return errors.Wrap(err, "failed to retrieve open pipelines")
+		return err
 	}
-	for _, pipeline := range pipelineList {
-		stage := utils.GetActiveStage(pipeline)
-		if stage == nil {
-			continue
-		}
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskPending {
-				continue
-			}
-
-			if err := s.scheduleIfNeeded(ctx, task); err != nil {
-				return errors.Wrap(err, "failed to schedule task")
-			}
+	for _, task := range tasks {
+		if err := s.scheduleIfNeeded(ctx, task); err != nil {
+			return errors.Wrap(err, "failed to schedule task")
 		}
 	}
 	return nil

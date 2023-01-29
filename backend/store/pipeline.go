@@ -28,24 +28,6 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 	return composedPipeline, nil
 }
 
-// ListActivePipelines finds a list of active pipelines.
-func (s *Store) ListActivePipelines(ctx context.Context) ([]*api.Pipeline, error) {
-	active := true
-	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{Active: &active})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find active pipelines")
-	}
-	var composedPipelines []*api.Pipeline
-	for _, pipeline := range pipelines {
-		composedPipeline, err := s.composePipeline(ctx, pipeline)
-		if err != nil {
-			return nil, err
-		}
-		composedPipelines = append(composedPipelines, composedPipeline)
-	}
-	return composedPipelines, nil
-}
-
 func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
 	composedPipeline := &api.Pipeline{
 		ID:   pipeline.ID,
@@ -136,9 +118,6 @@ type PipelineMessage struct {
 // PipelineFind is the API message for finding pipelines.
 type PipelineFind struct {
 	ID *int
-
-	// Domain specific fields
-	Active *bool
 }
 
 // CreatePipelineV2 creates a pipeline.
@@ -202,24 +181,16 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 
 // ListPipelineV2 lists pipelines.
 func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
-	// Build WHERE clause.
-	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Active; v != nil {
-		joinClause = "JOIN task ON pipeline.id = task.pipeline_id"
-		where, args = append(where, fmt.Sprintf(`(SELECT COUNT(1) FROM task WHERE task.status = $%d AND pipeline.id = task.pipeline_id) > 0`, len(args)+1)), append(args, api.TaskPending)
 	}
 	query := fmt.Sprintf(`
 		SELECT
 			pipeline.id,
 			pipeline.name
 		FROM pipeline
-		%s
-		WHERE %s
-		GROUP BY pipeline.id`, joinClause, strings.Join(where, " AND "))
+		WHERE %s`, strings.Join(where, " AND "))
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
