@@ -43,7 +43,9 @@ type TaskRunCreate struct {
 // TaskRunFind is the API message for finding task runs.
 type TaskRunFind struct {
 	// Related fields
-	TaskID *int
+	TaskID     *int
+	StageID    *int
+	PipelineID *int
 
 	// Domain specific fields
 	StatusList *[]api.TaskRunStatus
@@ -206,9 +208,19 @@ func (s *Store) listTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunM
 }
 
 func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([]*TaskRunMessage, error) {
+	joinClause := ""
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.TaskID; v != nil {
-		where, args = append(where, fmt.Sprintf("task_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.StageID; v != nil {
+		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PipelineID; v != nil {
+		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if find.StageID != nil || find.PipelineID != nil {
+		joinClause = "JOIN task ON task.id = task_run.task_id"
 	}
 
 	if v := find.StatusList; v != nil {
@@ -220,23 +232,24 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			task_id,
-			name,
-			status,
-			type,
-			code,
-			comment,
-			result,
-			payload
+			task_run.id,
+			task_run.creator_id,
+			task_run.created_ts,
+			task_run.updater_id,
+			task_run.updated_ts,
+			task_run.task_id,
+			task_run.name,
+			task_run.status,
+			task_run.type,
+			task_run.code,
+			task_run.comment,
+			task_run.result,
+			task_run.payload
 		FROM task_run
-		WHERE `+strings.Join(where, " AND "),
+		%s
+		WHERE %s`, joinClause, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
