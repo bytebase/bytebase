@@ -52,21 +52,23 @@
           class="textfield mt-1 w-full"
         />
       </div>
+      <div
+        v-if="isCreating"
+        class="w-full flex flex-col justify-start items-start"
+      >
+        <label for="">{{ $t("settings.sso.form.resource-id") }}</label>
+        <input
+          v-model="identityProvider.name"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
+      </div>
       <div class="w-full flex flex-col justify-start items-start">
         <label for="">{{ $t("settings.sso.form.domain") }}</label>
         <input
           v-model="identityProvider.domain"
           type="text"
           class="textfield mt-1 w-full"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.resource-id") }}</label>
-        <input
-          v-model="identityProvider.name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :disabled="!isCreating"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -165,21 +167,23 @@
           class="textfield mt-1 w-full"
         />
       </div>
+      <div
+        v-if="isCreating"
+        class="w-full flex flex-col justify-start items-start"
+      >
+        <label for="">{{ $t("settings.sso.form.resource-id") }}</label>
+        <input
+          v-model="identityProvider.name"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
+      </div>
       <div class="w-full flex flex-col justify-start items-start">
         <label for="">{{ $t("settings.sso.form.domain-name") }}</label>
         <input
           v-model="identityProvider.domain"
           type="text"
           class="textfield mt-1 w-full"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.resource-id") }}</label>
-        <input
-          v-model="identityProvider.name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :disabled="!isCreating"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -308,6 +312,7 @@ import {
   useIdentityProviderStore,
 } from "@/store/modules/idp";
 import { useActuatorStore } from "@/store";
+import { isDev } from "@/utils";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -341,10 +346,14 @@ const configForOIDC = ref<OIDCIdentityProviderConfig>(
     fieldMapping: FieldMapping.fromPartial({}),
   })
 );
-const identityProviderTypeList = [
-  IdentityProviderType.OAUTH2,
-  IdentityProviderType.OIDC,
-];
+
+const identityProviderTypeList = computed(() => {
+  const list = [IdentityProviderType.OAUTH2];
+  if (isDev()) {
+    list.push(IdentityProviderType.OIDC);
+  }
+  return list;
+});
 
 const callbackUrl = computed(() => {
   return `${
@@ -375,13 +384,10 @@ const isFormCompleted = computed(() => {
     if (
       !configForOAuth2.value.clientId ||
       !configForOAuth2.value.clientSecret ||
-      !configForOAuth2.value.scopes ||
       !configForOAuth2.value.authUrl ||
       !configForOAuth2.value.tokenUrl ||
       !configForOAuth2.value.userInfoUrl ||
-      !configForOAuth2.value.fieldMapping?.identifier ||
-      !configForOAuth2.value.fieldMapping?.displayName ||
-      !configForOAuth2.value.fieldMapping?.email
+      !configForOAuth2.value.fieldMapping?.identifier
     ) {
       return false;
     }
@@ -390,9 +396,7 @@ const isFormCompleted = computed(() => {
       !configForOIDC.value.clientId ||
       !configForOIDC.value.clientSecret ||
       !configForOIDC.value.issuer ||
-      !configForOIDC.value.fieldMapping?.identifier ||
-      !configForOIDC.value.fieldMapping?.displayName ||
-      !configForOIDC.value.fieldMapping?.email
+      !configForOIDC.value.fieldMapping?.identifier
     ) {
       return false;
     }
