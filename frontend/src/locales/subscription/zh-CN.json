@@ -54,6 +54,8 @@
       "features": {
         "instance-count": "实例数",
         "instance-customized": "自定义",
+        "instance-maximum-5": "不超过 5 个",
+        "instance-maximum-10": "不超过 10 个",
         "instance-unlimited": "无限制",
         "environment-count": "环境数",
         "environment-unlimited": "无限制",
@@ -93,7 +95,6 @@
       "title": "团队协作",
       "features": {
         "seat-count": "席位",
-        "seat-maximum-2": "不超过 2 个",
         "seat-maximum-10": "不超过 10 个",
         "seat-customized": "自定义",
         "ui-based-sql-review": "基于 UI 的 SQL 审查",
