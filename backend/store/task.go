@@ -44,7 +44,7 @@ type TaskMessage struct {
 }
 
 func (task *TaskMessage) toTask() *api.Task {
-	return &api.Task{
+	composedTask := &api.Task{
 		ID: task.ID,
 
 		// Standard fields
@@ -68,6 +68,10 @@ func (task *TaskMessage) toTask() *api.Task {
 		EarliestAllowedTs: task.EarliestAllowedTs,
 		StageBlocked:      task.StageBlocked,
 	}
+	for _, block := range task.BlockedBy {
+		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
+	}
+	return composedTask
 }
 
 // GetTaskByID gets a task by ID.
@@ -202,12 +206,6 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 		taskCheckRun.Updater = updater
 		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
 	}
-
-	var blockedBy []string
-	for _, v := range task.BlockedBy {
-		blockedBy = append(blockedBy, fmt.Sprintf("%d", v))
-	}
-	composedTask.BlockedBy = blockedBy
 
 	instance, err := s.GetInstanceByID(ctx, composedTask.InstanceID)
 	if err != nil {
