@@ -54,7 +54,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		}
 
 		pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
-		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID, StatusList: &pendingApprovalStatus})
+		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID, StatusList: &pendingApprovalStatus})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
 		}
@@ -78,7 +78,11 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 				if err != nil {
 					return err
 				}
-				ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunList, instance.Engine)
+				taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
+				if err != nil {
+					return err
+				}
+				ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
 				if err != nil {
 					return err
 				}

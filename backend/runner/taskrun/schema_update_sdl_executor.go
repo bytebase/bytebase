@@ -47,7 +47,7 @@ type SchemaUpdateSDLExecutor struct {
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
-func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task) (bool, *api.TaskRunResultPayload, error) {
+func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
@@ -56,11 +56,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task
 	if err != nil {
 		return true, nil, err
 	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &instance.EnvironmentID,
-		InstanceID:    &instance.ResourceID,
-		DatabaseName:  &task.Database.Name,
-	})
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -72,8 +68,8 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instanceName", task.Instance.Name),
-			zap.String("databaseName", task.Database.Name),
+			zap.String("instanceName", instance.ResourceID),
+			zap.String("databaseName", database.DatabaseName),
 			zap.Error(err),
 		)
 	}

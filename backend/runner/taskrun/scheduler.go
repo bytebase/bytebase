@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
@@ -128,13 +127,12 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				// Inspect all running tasks
-				taskStatusList := []api.TaskStatus{api.TaskRunning}
-				taskFind := &api.TaskFind{
-					StatusList: &taskStatusList,
-				}
 				// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
 				// We may optimize this in the future since only some relationship info is needed by the executor
-				taskList, err := s.store.FindTask(ctx, taskFind)
+				taskStatusList := []api.TaskStatus{api.TaskRunning}
+				tasks, err := s.store.ListTasks(ctx, &api.TaskFind{
+					StatusList: &taskStatusList,
+				})
 				if err != nil {
 					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
@@ -143,11 +141,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				// For each database, we will only execute the earliest running task (minimal task ID) and hold up the rest of the running tasks.
 				// Sort the taskList by ID first.
 				// databaseRunningTasks is the mapping from database ID to the earliest task of this database.
-				sort.Slice(taskList, func(i, j int) bool {
-					return taskList[i].ID < taskList[j].ID
+				sort.Slice(tasks, func(i, j int) bool {
+					return tasks[i].ID < tasks[j].ID
 				})
 				databaseRunningTasks := make(map[int]int)
-				for _, task := range taskList {
+				for _, task := range tasks {
 					if task.DatabaseID == nil {
 						continue
 					}
@@ -157,9 +155,13 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					databaseRunningTasks[*task.DatabaseID] = task.ID
 				}
 
-				for _, task := range taskList {
+				for _, task := range tasks {
 					// Skip task belongs to archived instances
-					if i := task.Instance; i == nil || i.RowStatus == api.Archived {
+					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+					if err != nil {
+						continue
+					}
+					if instance.Deleted {
 						continue
 					}
 					// Skip the task that is already being executed.
@@ -193,7 +195,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					s.stateCfg.Unlock()
 
 					s.stateCfg.RunningTasks.Store(task.ID, true)
-					go func(ctx context.Context, task *api.Task, executor Executor) {
+					go func(ctx context.Context, task *store.TaskMessage, executor Executor) {
 						defer func() {
 							s.stateCfg.RunningTasks.Delete(task.ID)
 							s.stateCfg.RunningTasksCancel.Delete(task.ID)
@@ -352,19 +354,6 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
-	}
-	// Update statement or earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
-	// TODO(d): revisit this as task pending is only a short-period of time.
-	if taskPatched.Status == api.TaskPending {
-		t, err := s.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-			ID:        taskPatch.ID,
-			UpdaterID: taskPatch.UpdaterID,
-			Status:    api.TaskPendingApproval,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
-		}
-		taskPatched = t
 	}
 	if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
 		needAttention := false
@@ -555,7 +544,7 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 }
 
 // CanPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
-func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task, toStatus api.TaskStatus) (bool, error) {
+func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *store.TaskMessage, toStatus api.TaskStatus) (bool, error) {
 	// The creator can cancel task.
 	if toStatus == api.TaskCanceled {
 		if principalID == task.CreatorID {
@@ -612,7 +601,7 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 	return false, nil
 }
 
-func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.IssueMessage, composedPipeline *api.Pipeline, task *api.Task) (*api.AssigneeGroupValue, error) {
+func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.IssueMessage, composedPipeline *api.Pipeline, task *store.TaskMessage) (*api.AssigneeGroupValue, error) {
 	environmentID := api.UnknownID
 	for _, stage := range composedPipeline.StageList {
 		if stage.ID == task.StageID {
@@ -716,7 +705,7 @@ func canUpdateTaskStatement(task *api.Task) *echo.HTTPError {
 // scheduleIfNeeded schedules the task if
 //  2. it has no blocking tasks.
 //  3. it has passed the earliest allowed time.
-func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error {
+func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *store.TaskMessage) error {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if task is blocked")
@@ -738,15 +727,15 @@ func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error 
 	return nil
 }
 
-func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
-	for _, blockingTaskIDString := range task.BlockedBy {
-		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
+func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) (bool, error) {
+	dags, err := s.store.ListTaskDags(ctx, &store.TaskDAGFind{ToTaskID: &task.ID})
+	if err != nil {
+		return false, err
+	}
+	for _, dag := range dags {
+		blockingTask, err := s.store.GetTaskV2ByID(ctx, dag.FromTaskID)
 		if err != nil {
-			return true, errors.Wrapf(err, "failed to convert id string to int, id string: %v", blockingTaskIDString)
-		}
-		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskID)
-		if err != nil {
-			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %v", blockingTaskID)
+			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %d", dag.FromTaskID)
 		}
 		if blockingTask.Status != api.TaskDone {
 			return true, nil
@@ -758,23 +747,14 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, er
 // scheduleAutoApprovedTasks schedules tasks that are approved automatically.
 func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
-	taskFind := &api.TaskFind{
+	taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
 		StatusList: &taskStatusList,
-	}
-	taskList, err := s.store.FindTask(ctx, taskFind)
+	})
 	if err != nil {
 		return err
 	}
 
 	for _, task := range taskList {
-		policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
-		}
-		if policy.Value != api.PipelineApprovalValueManualNever {
-			continue
-		}
-		// Checks active stage.
 		if task.StageBlocked {
 			continue
 		}
@@ -783,7 +763,23 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, task.TaskCheckRunList, instance.Engine)
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		if err != nil {
+			return err
+		}
+		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", environment.UID)
+		}
+		if policy.Value != api.PipelineApprovalValueManualNever {
+			continue
+		}
+
+		taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
+		if err != nil {
+			return err
+		}
+		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, taskCheckRuns, instance.Engine)
 		if err != nil {
 			return errors.Wrap(err, "failed to check if can auto-approve")
 		}
@@ -803,7 +799,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 // schedulePendingTasks tries to schedule pending tasks.
 func (s *Scheduler) schedulePendingTasks(ctx context.Context) error {
 	taskStatus := []api.TaskStatus{api.TaskPending}
-	tasks, err := s.store.FindTask(ctx, &api.TaskFind{StatusList: &taskStatus})
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{StatusList: &taskStatus})
 	if err != nil {
 		return err
 	}
@@ -816,7 +812,7 @@ func (s *Scheduler) schedulePendingTasks(ctx context.Context) error {
 }
 
 // PatchTaskStatus patches a single task.
-func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
@@ -917,7 +913,7 @@ func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
 	return false
 }
 
-func (s *Scheduler) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
+func (s *Scheduler) createTaskStatusUpdateActivity(ctx context.Context, task *store.TaskMessage, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
 	var issueName string
 	if issue != nil {
 		issueName = issue.Name
@@ -978,17 +974,6 @@ func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *api.Task) er
 		return errors.Wrapf(err, "failed to change task %v's status to %s", idList, api.TaskCanceled)
 	}
 	return nil
-}
-
-func areAllTasksDone(pipeline *api.Pipeline) bool {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskDone {
-				return false
-			}
-		}
-	}
-	return true
 }
 
 // GetDefaultAssignee gets the default assignee for an issue.
@@ -1115,7 +1100,7 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 
 // ChangeIssueStatus changes the status of an issue.
 func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
-	composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
 	if err != nil {
 		return nil, err
 	}
@@ -1123,27 +1108,23 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	case api.IssueOpen:
 	case api.IssueDone:
 		// Returns error if any of the tasks is not DONE.
-		for _, stage := range composedPipeline.StageList {
-			for _, task := range stage.TaskList {
-				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Title, task.Name)}
-				}
+		for _, task := range tasks {
+			if task.Status != api.TaskDone {
+				return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Title, task.Name)}
 			}
 		}
 	case api.IssueCanceled:
 		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
 		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
 		// keep those tasks in the same state before the issue was canceled.
-		for _, stage := range composedPipeline.StageList {
-			for _, task := range stage.TaskList {
-				if task.Status == api.TaskRunning {
-					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						ID:        task.ID,
-						UpdaterID: updaterID,
-						Status:    api.TaskCanceled,
-					}); err != nil {
-						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Title, task.Name)
-					}
+		for _, task := range tasks {
+			if task.Status == api.TaskRunning {
+				if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+					ID:        task.ID,
+					UpdaterID: updaterID,
+					Status:    api.TaskCanceled,
+				}); err != nil {
+					return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Title, task.Name)
 				}
 			}
 		}
