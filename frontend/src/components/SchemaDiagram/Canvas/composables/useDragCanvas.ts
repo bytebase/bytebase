@@ -5,7 +5,7 @@ import normalizeWheel from "normalize-wheel";
 import type { Point } from "../../types";
 import { ZOOM_RANGE } from "../const";
 import { useDraggable, useSchemaDiagramContext } from "../../common";
-import { minmax } from "@/utils/math";
+import { minmax } from "@/utils";
 
 export const useDragCanvas = (canvas: Ref<Element | undefined>) => {
   const { zoom, position, panning } = useSchemaDiagramContext();
