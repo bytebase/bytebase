@@ -34,29 +34,29 @@ func TestGetPeerTenantDatabase(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		pipeline      [][]int
+		pipeline      [][]*store.DatabaseMessage
 		environmentID string
 		want          *store.DatabaseMessage
 	}{
 		{
 			"same environment",
-			[][]int{
+			[][]*store.DatabaseMessage{
 				{},
-				{dbs[0].UID, dbs[1].UID},
+				{dbs[0], dbs[1]},
 				nil,
-				{dbs[3].UID},
-				{dbs[2].UID},
+				{dbs[3]},
+				{dbs[2]},
 			},
 			"staging",
 			dbs[2],
 		},
 		{
 			"fallback",
-			[][]int{
+			[][]*store.DatabaseMessage{
 				{},
-				{dbs[0].UID, dbs[1].UID},
+				{dbs[0], dbs[1]},
 				nil,
-				{dbs[3].UID},
+				{dbs[3]},
 			},
 			"staging",
 			dbs[0],
@@ -64,7 +64,7 @@ func TestGetPeerTenantDatabase(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := getPeerTenantDatabase(test.pipeline, test.environmentID, dbs)
+		got := getPeerTenantDatabase(test.pipeline, test.environmentID)
 		assert.Equal(t, got, test.want)
 	}
 }
