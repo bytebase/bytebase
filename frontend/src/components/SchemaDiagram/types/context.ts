@@ -51,5 +51,17 @@ export type SchemaDiagramContext = {
       column: ColumnMetadata;
       target: "name" | "type";
     };
+    "set-center": CenterTarget;
   }>;
+};
+
+export type CenterTargetType = "table" | "rect" | "point";
+export type CenterTarget<T extends CenterTargetType = CenterTargetType> = {
+  type: T;
+  target: {
+    table: TableMetadata;
+    rect: Rect;
+    point: Point;
+  }[T];
+  padding?: number[]; // [T,R,B,L]
 };
