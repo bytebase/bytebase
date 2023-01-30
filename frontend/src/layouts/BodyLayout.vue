@@ -165,8 +165,25 @@
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
             <Breadcrumb />
           </div>
-          <div v-if="quickActionList.length > 0" class="mx-4 mt-4">
-            <QuickActionPanel :quick-action-list="quickActionList" />
+          <div class="flex items-center flex-wrap px-4 gap-x-4">
+            <div v-if="quickActionList.length > 0" class="flex-1 mt-4">
+              <QuickActionPanel :quick-action-list="quickActionList" />
+            </div>
+            <div
+              v-if="route.name === 'workspace.home'"
+              class="mt-4 hidden md:flex"
+            >
+              <a
+                href="/sql-editor"
+                target="_blank"
+                class="btn-primary items-center !px-6 !py-3 !text-xl"
+              >
+                <heroicons-solid:terminal class="w-6 h-6 mr-2" />
+                <span class="whitespace-nowrap">{{
+                  $t("sql-editor.self")
+                }}</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -193,7 +210,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
@@ -224,6 +241,7 @@ export default defineComponent({
     const actuatorStore = useActuatorStore();
     const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
+    const route = useRoute();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -328,6 +346,7 @@ export default defineComponent({
 
     return {
       state,
+      route,
       quickActionList,
       showBreadcrumb,
       showQuickstart,
