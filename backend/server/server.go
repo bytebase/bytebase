@@ -830,7 +830,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 				{
 					MigrationType: db.Migrate,
 					DatabaseID:    database.UID,
-					Statement:     "ALTER TABLE Salary ADD COLUMN IF NOT EXISTS email TEXT;",
+					Statement:     "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT NOT NULL DEFAULT '';",
 				},
 			},
 		})
@@ -840,7 +840,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	issueCreate := &api.IssueCreate{
 		ProjectID: project.UID,
-		Name:      "👉 [Try this] Add email column to Salary table",
+		Name:      "👉👉👉 [START HERE] Add email column to Employee table",
 		Type:      api.IssueDatabaseSchemaUpdate,
 		Description: `A sample issue to showcase how to review database schema change.
 		
@@ -850,7 +850,8 @@ Click "Approve" button to apply the schema update.`,
 		CreateContext:         string(createContext),
 	}
 
-	issue, err := s.createIssue(ctx, issueCreate, userID)
+	// Use system bot as the creator so that the issue only appears in the user's assignee list
+	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create sample issue")
 	}
@@ -858,7 +859,7 @@ Click "Approve" button to apply the schema update.`,
 	// Bookmark the issue.
 	if _, err := s.store.CreateBookmark(ctx, &api.BookmarkCreate{
 		CreatorID: userID,
-		Name:      issue.Name,
+		Name:      "Sample Issue",
 		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
 	}); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
@@ -870,7 +871,7 @@ Click "Approve" button to apply the schema update.`,
 		ProjectID:  project.UID,
 		DatabaseID: &database.UID,
 		Name:       "Sample Sheet",
-		Statement:  "SELECT * FROM Salary;",
+		Statement:  "SELECT * FROM salary;",
 		Visibility: api.ProjectSheet,
 		Source:     api.SheetFromBytebase,
 		Type:       api.SheetForSQL,
