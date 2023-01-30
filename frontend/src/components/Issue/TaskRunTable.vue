@@ -145,7 +145,7 @@ const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
       case "bb.task.database.schema.update":
       case "bb.task.database.data.update": {
         return {
-          title: t("task.view-migration"),
+          title: t("task.view-change"),
           link: `/db/${databaseSlug(
             task.database!
           )}/history/${migrationHistorySlug(
