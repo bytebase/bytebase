@@ -50,6 +50,6 @@ func TestPostgreSQLRules(t *testing.T) {
 	}
 
 	for _, rule := range pgRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.Postgres, true /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, db.Postgres, false /* record */)
 	}
 }
