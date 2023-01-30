@@ -12,19 +12,19 @@ import (
 var mockConfigOverrideYAMLStr = `
 template: bb.sql-review.prod # Provide the template id, then we can extend rules from the specific template.
 ruleList:
-  - type: statement.select.no-select-all
+  - type: mysql.statement.select.no-select-all
     level: DISABLED
-  - type: table.drop-naming-convention
+  - type: mysql.table.drop-naming-convention
     level: WARNING
-  - type: table.require-pk
+  - type: mysql.table.require-pk
     level: TEST
-  - type: naming.table
+  - type: mysql.naming.table
     payload:
       format: "^table_[a-z]+(_[a-z]+)*$"
-  - type: naming.column
+  - type: mysql.naming.column
     payload:
       maxLength: 24
-  - type: column.required
+  - type: mysql.column.required
     level: ERROR
     payload:
       list:
@@ -41,13 +41,13 @@ func TestConfigOverride(t *testing.T) {
 
 	for _, rule := range ruleList {
 		switch rule.Type {
-		case "statement.select.no-select-all":
+		case "mysql.statement.select.no-select-all":
 			assert.Equal(t, SchemaRuleLevelDisabled, rule.Level)
-		case "table.drop-naming-convention":
+		case "mysql.table.drop-naming-convention":
 			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
-		case "table.require-pk":
+		case "mysql.table.require-pk":
 			assert.Equal(t, SchemaRuleLevelError, rule.Level)
-		case "naming.table":
+		case "mysql.naming.table":
 			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
 
 			var nr NamingRulePayload
@@ -56,7 +56,7 @@ func TestConfigOverride(t *testing.T) {
 
 			assert.Equal(t, "^table_[a-z]+(_[a-z]+)*$", nr.Format)
 			assert.Equal(t, 63, nr.MaxLength)
-		case "naming.column":
+		case "mysql.naming.column":
 			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
 
 			var nr NamingRulePayload
@@ -65,7 +65,7 @@ func TestConfigOverride(t *testing.T) {
 
 			assert.Equal(t, "^[a-z]+(_[a-z]+)*$", nr.Format)
 			assert.Equal(t, 24, nr.MaxLength)
-		case "column.required":
+		case "mysql.column.required":
 			assert.Equal(t, SchemaRuleLevelError, rule.Level)
 
 			var payload StringArrayTypeRulePayload

@@ -90,7 +90,7 @@ export interface RuleConfigComponent {
 
 // The identifier for rule template
 export type RuleType =
-  | "engine.mysql.use-innodb"
+  | "mysql.engine.mysql.use-innodb"
   | "table.require-pk"
   | "table.no-foreign-key"
   | "table.drop-naming-convention"

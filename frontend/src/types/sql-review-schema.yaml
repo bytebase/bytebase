@@ -9,7 +9,7 @@ categoryList:
   - SYSTEM
   - DATABASE
 ruleList:
-  - type: engine.mysql.use-innodb
+  - type: mysql.engine.mysql.use-innodb
     category: ENGINE
     engineList:
       - MYSQL
@@ -33,6 +33,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -57,6 +58,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
@@ -84,6 +86,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.disallow-limit
     category: STATEMENT
@@ -96,12 +99,14 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.merge-alter-table
     category: STATEMENT
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.insert.row-limit
     category: STATEMENT
@@ -118,17 +123,20 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.insert.disallow-order-by-rand
     category: STATEMENT
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.affected-row-limit
     category: STATEMENT
     engineList:
       - MYSQL
+      - POSTGRES
     componentList:
       - key: number
         payload:
@@ -283,6 +291,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: column.set-default-for-not-null
     category: COLUMN
@@ -295,6 +304,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: column.disallow-changing-order
     category: COLUMN
@@ -327,6 +337,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: list
         payload:
@@ -343,6 +354,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:
@@ -375,6 +387,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: schema.backward-compatibility
     category: SCHEMA
@@ -394,12 +407,14 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: index.key-number-limit
     category: INDEX
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:
@@ -422,6 +437,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:
@@ -443,6 +459,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: list
         payload:
