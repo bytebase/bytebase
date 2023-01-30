@@ -10,12 +10,12 @@ categoryList:
   - DATABASE
 ruleList:
   # MySQL
-  - type: mysql.mysql.engine.mysql.use-innodb
+  - type: mysql.engine.mysql.use-innodb
     category: ENGINE
     engineList:
       - MYSQL
     componentList: []
-  - type: mysql.mysql.table.require-pk
+  - type: mysql.table.require-pk
     category: TABLE
     engineList:
       - MYSQL
