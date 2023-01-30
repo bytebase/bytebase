@@ -22,6 +22,13 @@
       >
         {{ $t("sql-editor.format") }} (⇧+⌥+F)
       </NButton>
+      <NButton
+        v-if="showClearHistory"
+        :disabled="queryList.length <= 1 || isExecutingSQL"
+        @click="handleClearHistory"
+      >
+        {{ $t("sql-editor.clear-history") }} (⇧+⌥+C)
+      </NButton>
     </div>
     <div class="action-right space-x-2 flex justify-end items-center">
       <AdminModeButton />
@@ -64,6 +71,7 @@ import {
   useTabStore,
   useSQLEditorStore,
   useInstanceById,
+  useWebTerminalStore,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
@@ -78,11 +86,13 @@ const emit = defineEmits<{
     config: ExecuteConfig,
     option?: ExecuteOption
   ): void;
+  (e: "clear-history"): void;
 }>();
 
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
+const webTerminalStore = useWebTerminalStore();
 
 const connection = computed(() => tabStore.currentTab.connection);
 
@@ -127,6 +137,14 @@ const allowSave = computed(() => {
   return true;
 });
 
+const showClearHistory = computed(() => {
+  return tabStore.currentTab.mode === TabMode.Admin;
+});
+
+const queryList = computed(() => {
+  return webTerminalStore.getQueryListByTab(tabStore.currentTab);
+});
+
 const handleRunQuery = async () => {
   const currentTab = tabStore.currentTab;
   const statement = currentTab.statement;
@@ -150,5 +168,9 @@ const handleExplainQuery = () => {
 
 const handleFormatSQL = () => {
   sqlEditorStore.setShouldFormatContent(true);
+};
+
+const handleClearHistory = () => {
+  emit("clear-history");
 };
 </script>

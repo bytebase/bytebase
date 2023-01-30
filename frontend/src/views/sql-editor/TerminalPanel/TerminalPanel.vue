@@ -2,7 +2,10 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
   >
-    <EditorAction @execute="handleExecute" />
+    <EditorAction
+      @execute="handleExecute"
+      @clear-history="handleClearHistory"
+    />
 
     <ConnectionPathBar />
 
@@ -16,13 +19,14 @@
         class="w-full flex flex-col"
         :data-height="queryListHeight"
       >
-        <div v-for="(query, i) in queryList" :key="i" class="relative">
+        <div v-for="query in queryList" :key="query.id" class="relative">
           <CompactSQLEditor
             v-model:sql="query.sql"
             class="min-h-[2rem]"
             :readonly="!isEditableQueryItem(query)"
             @execute="handleExecute"
             @history="handleHistory"
+            @clear-history="handleClearHistory"
           />
           <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
             <TableView
@@ -63,7 +67,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
 import { ExecuteConfig, ExecuteOption, WebTerminalQueryItem } from "@/types";
-import { useTabStore, useWebTerminalStore } from "@/store";
+import { createQueryItem, useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
   EditorAction,
@@ -80,6 +84,7 @@ type LocalState = {
 };
 
 const QUERY_TIMEOUT_MS = 5000;
+const MAX_QUERY_ITEM_COUNT = 20;
 
 const tabStore = useTabStore();
 const webTerminalStore = useWebTerminalStore();
@@ -108,6 +113,15 @@ const isEditableQueryItem = (query: WebTerminalQueryItem): boolean => {
   return query === currentQuery.value && query.status === "IDLE";
 };
 
+const pushQueryItem = () => {
+  const list = queryList.value;
+  list.push(createQueryItem());
+
+  if (list.length > MAX_QUERY_ITEM_COUNT) {
+    list.shift();
+  }
+};
+
 const handleExecute = async (
   query: string,
   config: ExecuteConfig,
@@ -134,10 +148,7 @@ const handleExecute = async (
     // which means it hasn't been cancelled.
     if (queryItem === currentQuery.value) {
       queryItem.queryResult = sqlResultSet;
-      queryList.value.push({
-        sql: "",
-        status: "IDLE",
-      });
+      pushQueryItem();
       // Clear the tab's statement and keep it sync with the latest query
       tabStore.currentTab.statement = "";
       tabStore.currentTab.selectedStatement = "";
@@ -148,6 +159,13 @@ const handleExecute = async (
       // The query is still not cancelled
       queryItem.status = "FINISHED";
     }
+  }
+};
+
+const handleClearHistory = () => {
+  const list = queryList.value;
+  while (list.length > 1) {
+    list.shift();
   }
 };
 
@@ -182,10 +200,7 @@ const handleHistory = (direction: "up" | "down") => {
 const handleCancelQuery = async () => {
   queryTimer.stop();
   currentQuery.value.status = "CANCELLED";
-  queryList.value.push({
-    sql: "",
-    status: "IDLE",
-  });
+  pushQueryItem();
   // Clear the tab's statement and keep it sync with the latest query
   tabStore.currentTab.statement = "";
   tabStore.currentTab.selectedStatement = "";
