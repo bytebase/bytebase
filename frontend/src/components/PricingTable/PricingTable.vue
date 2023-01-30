@@ -46,7 +46,7 @@
                 {{ plan.priceSuffix }}
               </p>
 
-              <div class="text-gray-400">
+              <div class="text-gray-600 font-bold">
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
@@ -171,7 +171,7 @@
           {{ plan.priceSuffix }}
         </p>
 
-        <div class="text-gray-400">
+        <div class="text-gray-600 font-bold">
           {{ $t(`subscription.${plan.title}-price-intro`) }}
         </div>
 
