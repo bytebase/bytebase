@@ -81,17 +81,13 @@ const prepareAccessibleDatabaseList = async () => {
     await databaseStore.fetchDatabaseList({
       syncStatus: "OK",
     })
-  )
-    .filter((db) =>
-      isDatabaseAccessible(
-        db,
-        connectionTreeStore.accessControlPolicyList,
-        currentUser.value
-      )
+  ).filter((db) =>
+    isDatabaseAccessible(
+      db,
+      connectionTreeStore.accessControlPolicyList,
+      currentUser.value
     )
-    .filter((db) => {
-      return db.project.id !== DEFAULT_PROJECT_ID;
-    });
+  );
   state.databaseList = databaseList;
 };
 
@@ -131,7 +127,9 @@ const prepareConnectionTree = async () => {
     }
     connectionTreeStore.tree.data = connectionTree;
   } else {
-    const { databaseList } = state;
+    const databaseList = state.databaseList.filter((db) => {
+      return db.project.id !== DEFAULT_PROJECT_ID;
+    });
     const projectList = uniqBy(
       databaseList.map((db) => db.project),
       (project) => project.id
