@@ -113,6 +113,14 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
+	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
+	}
+	if existingUser != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "email is already existed")
+	}
+
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
