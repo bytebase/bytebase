@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2 w-full pl-4 pr-2">
+  <div class="space-y-2 w-full py-2 pl-4 pr-2 bg-yellow-50">
     <div class="flex flex-row justify-between">
       <div class="outline-title group toplevel flex">
         🎈 {{ $t("common.quickstart") }}
