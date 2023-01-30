@@ -16,27 +16,27 @@
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: mysql.column.maximum-character-length
       content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
       line: 1
 - statement: ALTER TABLE tech_book ADD COLUMN name_2 char(225)
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: mysql.column.maximum-character-length
       content: The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead
       line: 1
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name char(225)
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: mysql.column.maximum-character-length
       content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
       line: 1
 - statement: ALTER TABLE tech_book MODIFY COLUMN name char(225)
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: mysql.column.maximum-character-length
       content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
       line: 1

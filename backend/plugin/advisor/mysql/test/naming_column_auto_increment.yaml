@@ -9,27 +9,27 @@
   want:
     - status: WARN
       code: 307
-      title: naming.column.auto-increment
+      title: mysql.naming.column.auto-increment
       content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1
 - statement: ALTER TABLE tech_book ADD COLUMN a int AUTO_INCREMENT
   want:
     - status: WARN
       code: 307
-      title: naming.column.auto-increment
+      title: mysql.naming.column.auto-increment
       content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1
 - statement: ALTER TABLE tech_book CHANGE COLUMN id a int AUTO_INCREMENT
   want:
     - status: WARN
       code: 307
-      title: naming.column.auto-increment
+      title: mysql.naming.column.auto-increment
       content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1
 - statement: ALTER TABLE tech_book MODIFY COLUMN name int AUTO_INCREMENT
   want:
     - status: WARN
       code: 307
-      title: naming.column.auto-increment
+      title: mysql.naming.column.auto-increment
       content: '`tech_book`.`name` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1

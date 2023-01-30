@@ -16,6 +16,6 @@
   want:
     - status: WARN
       code: 416
-      title: column.auto-increment-initial-value
+      title: mysql.column.auto-increment-initial-value
       content: The initial auto-increment value in table `t` is 2, which doesn't equal 20
       line: 1

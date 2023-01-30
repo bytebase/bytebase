@@ -2,14 +2,14 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int)
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
       line: 1
 - statement: CREATE TABLE book(id int, creator_id int)
@@ -25,7 +25,7 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
 - statement: ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
@@ -46,7 +46,7 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 7
 - statement: ALTER TABLE tech_book CHANGE COLUMN id creator_id int;
@@ -73,7 +73,7 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 6
 - statement: |-
@@ -89,21 +89,21 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 3
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`book`.`updaterId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 4
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`student`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 8
     - status: WARN
       code: 302
-      title: naming.column
+      title: mysql.naming.column
       content: '`student`.`updatedTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 9

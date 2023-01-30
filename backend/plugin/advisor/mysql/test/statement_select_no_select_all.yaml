@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 203
-      title: statement.select.no-select-all
+      title: mysql.statement.select.no-select-all
       content: '"SELECT * FROM t" uses SELECT all'
       line: 1
 - statement: SELECT a, b FROM t
@@ -16,6 +16,6 @@
   want:
     - status: WARN
       code: 203
-      title: statement.select.no-select-all
+      title: mysql.statement.select.no-select-all
       content: '"SELECT a, b FROM (SELECT * from t1 JOIN t2) t" uses SELECT all'
       line: 1

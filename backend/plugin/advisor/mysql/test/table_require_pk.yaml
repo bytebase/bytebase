@@ -16,7 +16,7 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: mysql.table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 1
 - statement: |-
@@ -43,7 +43,7 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: mysql.table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 2
 - statement: |-
@@ -52,7 +52,7 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: mysql.table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 2
 - statement: |-
@@ -111,14 +111,14 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: mysql.table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 2
 - statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: mysql.table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       line: 1
 - statement: ALTER TABLE tech_book DROP COLUMN name
@@ -134,6 +134,6 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: mysql.table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       line: 2
