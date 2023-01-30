@@ -352,85 +352,104 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
-	case SchemaRuleMySQLEngine,
-		SchemaRuleStatementNoSelectAll,
-		SchemaRuleStatementRequireWhere,
-		SchemaRuleStatementNoLeadingWildcardLike,
-		SchemaRuleStatementDisallowCommit,
-		SchemaRuleStatementDisallowLimit,
-		SchemaRuleStatementDisallowOrderBy,
-		SchemaRuleStatementMergeAlterTable,
-		SchemaRuleStatementInsertMustSpecifyColumn,
-		SchemaRuleStatementInsertDisallowOrderByRand,
-		SchemaRuleStatementDMLDryRun,
-		SchemaRuleTableRequirePK,
-		SchemaRuleTableNoFK,
-		SchemaRuleTableDisallowPartition,
-		SchemaRuleColumnNotNull,
-		SchemaRuleColumnDisallowChangeType,
-		SchemaRuleColumnSetDefaultForNotNull,
-		SchemaRuleColumnDisallowChange,
-		SchemaRuleColumnDisallowChangingOrder,
-		SchemaRuleColumnAutoIncrementMustInteger,
-		SchemaRuleColumnDisallowSetCharset,
-		SchemaRuleColumnAutoIncrementMustUnsigned,
-		SchemaRuleCurrentTimeColumnCountLimit,
-		SchemaRuleColumnRequireDefault,
-		SchemaRuleSchemaBackwardCompatibility,
-		SchemaRuleDropEmptyDatabase,
-		SchemaRuleIndexNoDuplicateColumn,
-		SchemaRuleIndexPKTypeLimit,
-		SchemaRuleStatementDisallowAddColumnWithDefault,
-		SchemaRuleCreateIndexConcurrently,
-		SchemaRuleStatementAddCheckNotValid,
-		SchemaRuleStatementDisallowAddNotNull,
-		SchemaRuleIndexTypeNoBlob:
-	case SchemaRuleTableDropNamingConvention:
+	case MySQLSchemaRuleMySQLEngine,
+		MySQLSchemaRuleStatementNoSelectAll,
+		MySQLSchemaRuleStatementRequireWhere,
+		MySQLSchemaRuleStatementNoLeadingWildcardLike,
+		MySQLSchemaRuleStatementDisallowCommit,
+		MySQLSchemaRuleStatementDisallowLimit,
+		MySQLSchemaRuleStatementDisallowOrderBy,
+		MySQLSchemaRuleStatementMergeAlterTable,
+		MySQLSchemaRuleStatementInsertMustSpecifyColumn,
+		MySQLSchemaRuleStatementInsertDisallowOrderByRand,
+		MySQLSchemaRuleStatementDMLDryRun,
+		MySQLSchemaRuleTableRequirePK,
+		MySQLSchemaRuleTableNoFK,
+		MySQLSchemaRuleTableDisallowPartition,
+		MySQLSchemaRuleColumnNotNull,
+		MySQLSchemaRuleColumnDisallowChangeType,
+		MySQLSchemaRuleColumnSetDefaultForNotNull,
+		MySQLSchemaRuleColumnDisallowChange,
+		MySQLSchemaRuleColumnDisallowChangingOrder,
+		MySQLSchemaRuleColumnAutoIncrementMustInteger,
+		MySQLSchemaRuleColumnDisallowSetCharset,
+		MySQLSchemaRuleColumnAutoIncrementMustUnsigned,
+		MySQLSchemaRuleCurrentTimeColumnCountLimit,
+		MySQLSchemaRuleColumnRequireDefault,
+		MySQLSchemaRuleSchemaBackwardCompatibility,
+		MySQLSchemaRuleDropEmptyDatabase,
+		MySQLSchemaRuleIndexNoDuplicateColumn,
+		MySQLSchemaRuleIndexPKTypeLimit,
+		MySQLSchemaRuleIndexTypeNoBlob,
+
+		PostgreSQLSchemaRuleStatementNoSelectAll,
+		PostgreSQLSchemaRuleStatementRequireWhere,
+		PostgreSQLSchemaRuleStatementNoLeadingWildcardLike,
+		PostgreSQLSchemaRuleStatementDisallowCommit,
+		PostgreSQLSchemaRuleStatementMergeAlterTable,
+		PostgreSQLSchemaRuleStatementInsertMustSpecifyColumn,
+		PostgreSQLSchemaRuleStatementInsertDisallowOrderByRand,
+		PostgreSQLSchemaRuleStatementDMLDryRun,
+		PostgreSQLSchemaRuleTableRequirePK,
+		PostgreSQLSchemaRuleTableNoFK,
+		PostgreSQLSchemaRuleTableDisallowPartition,
+		PostgreSQLSchemaRuleColumnNotNull,
+		PostgreSQLSchemaRuleColumnDisallowChangeType,
+		PostgreSQLSchemaRuleColumnRequireDefault,
+		PostgreSQLSchemaRuleSchemaBackwardCompatibility,
+		PostgreSQLSchemaRuleIndexNoDuplicateColumn,
+		PostgreSQLSchemaRuleStatementDisallowAddColumnWithDefault,
+		PostgreSQLSchemaRuleCreateIndexConcurrently,
+		PostgreSQLSchemaRuleStatementAddCheckNotValid,
+		PostgreSQLSchemaRuleStatementDisallowAddNotNull:
+	case MySQLSchemaRuleTableDropNamingConvention,
+		PostgreSQLSchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",
 		})
-	case SchemaRuleTableNaming:
+	case MySQLSchemaRuleTableNaming, PostgreSQLSchemaRuleTableNaming:
 		fallthrough
-	case SchemaRuleColumnNaming:
+	case MySQLSchemaRuleColumnNaming, PostgreSQLSchemaRuleColumnNaming:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^[a-z]+(_[a-z]+)*$",
 			MaxLength: 64,
 		})
-	case SchemaRuleIDXNaming:
+	case MySQLSchemaRuleIDXNaming, PostgreSQLSchemaRuleIDXNaming:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^idx_{{table}}_{{column_list}}$",
 			MaxLength: 64,
 		})
-	case SchemaRulePKNaming:
+	case PostgreSQLSchemaRulePKNaming:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^pk_{{table}}_{{column_list}}$",
 			MaxLength: 64,
 		})
-	case SchemaRuleUKNaming:
+	case MySQLSchemaRuleUKNaming, PostgreSQLSchemaRuleUKNaming:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^uk_{{table}}_{{column_list}}$",
 			MaxLength: 64,
 		})
-	case SchemaRuleFKNaming:
+	case MySQLSchemaRuleFKNaming, PostgreSQLSchemaRuleFKNaming:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 			MaxLength: 64,
 		})
-	case SchemaRuleAutoIncrementColumnNaming:
+	case MySQLSchemaRuleAutoIncrementColumnNaming:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^id$",
 			MaxLength: 64,
 		})
-	case SchemaRuleStatementInsertRowLimit, SchemaRuleStatementAffectedRowLimit:
+	case MySQLSchemaRuleStatementInsertRowLimit, MySQLSchemaRuleStatementAffectedRowLimit,
+		PostgreSQLSchemaRuleStatementInsertRowLimit, PostgreSQLSchemaRuleStatementAffectedRowLimit:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 5,
 		})
-	case SchemaRuleTableCommentConvention, SchemaRuleColumnCommentConvention:
+	case MySQLSchemaRuleTableCommentConvention, MySQLSchemaRuleColumnCommentConvention:
 		payload, err = json.Marshal(CommentConventionRulePayload{
 			Required:  true,
 			MaxLength: 10,
 		})
-	case SchemaRuleRequiredColumn:
+	case MySQLSchemaRuleRequiredColumn, PostgreSQLSchemaRuleRequiredColumn:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{
 				"id",
@@ -440,36 +459,37 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 				"updater_id",
 			},
 		})
-	case SchemaRuleColumnTypeDisallowList:
+	case MySQLSchemaRuleColumnTypeDisallowList, PostgreSQLSchemaRuleColumnTypeDisallowList:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"JSON"},
 		})
-	case SchemaRuleColumnMaximumCharacterLength:
+	case MySQLSchemaRuleColumnMaximumCharacterLength, PostgreSQLSchemaRuleColumnMaximumCharacterLength:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
 		})
-	case SchemaRuleColumnAutoIncrementInitialValue:
+	case MySQLSchemaRuleColumnAutoIncrementInitialValue:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
 		})
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleIndexTotalNumberLimit:
+	case MySQLSchemaRuleIndexKeyNumberLimit, MySQLSchemaRuleIndexTotalNumberLimit,
+		PostgreSQLSchemaRuleIndexKeyNumberLimit, PostgreSQLSchemaRuleIndexTotalNumberLimit:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 5,
 		})
-	case SchemaRuleCharsetAllowlist:
+	case MySQLSchemaRuleCharsetAllowlist, PostgreSQLSchemaRuleCharsetAllowlist:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"utf8mb4", "UTF8"},
 		})
-	case SchemaRuleCollationAllowlist:
+	case MySQLSchemaRuleCollationAllowlist, PostgreSQLSchemaRuleCollationAllowlist:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"utf8mb4_0900_ai_ci"},
 		})
-	case SchemaRuleCommentLength:
+	case PostgreSQLSchemaRuleCommentLength:
 		payload, err = json.Marshal(CommentConventionRulePayload{
 			Required:  true,
 			MaxLength: 20,
 		})
-	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
+	case PostgreSQLSchemaRuleIndexPrimaryKeyTypeAllowlist:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"serial", "bigserial"},
 		})

@@ -26,133 +26,308 @@ type SQLReviewRuleLevel string
 type SQLReviewRuleType string
 
 const (
+	// MySQL rule list.
+
+	// MySQLSchemaRuleMySQLEngine require InnoDB as the storage engine.
+	MySQLSchemaRuleMySQLEngine SQLReviewRuleType = "mysql.engine.mysql.use-innodb"
+
+	// MySQLSchemaRuleTableNaming enforce the table name format.
+	MySQLSchemaRuleTableNaming SQLReviewRuleType = "mysql.naming.table"
+	// MySQLSchemaRuleColumnNaming enforce the column name format.
+	MySQLSchemaRuleColumnNaming SQLReviewRuleType = "mysql.naming.column"
+	// MySQLSchemaRuleUKNaming enforce the unique key name format.
+	MySQLSchemaRuleUKNaming SQLReviewRuleType = "mysql.naming.index.uk"
+	// MySQLSchemaRuleFKNaming enforce the foreign key name format.
+	MySQLSchemaRuleFKNaming SQLReviewRuleType = "mysql.naming.index.fk"
+	// MySQLSchemaRuleIDXNaming enforce the index name format.
+	MySQLSchemaRuleIDXNaming SQLReviewRuleType = "mysql.naming.index.idx"
+	// MySQLSchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
+	MySQLSchemaRuleAutoIncrementColumnNaming SQLReviewRuleType = "mysql.naming.column.auto-increment"
+
+	// MySQLSchemaRuleStatementNoSelectAll disallow 'SELECT *'.
+	MySQLSchemaRuleStatementNoSelectAll SQLReviewRuleType = "mysql.statement.select.no-select-all"
+	// MySQLSchemaRuleStatementRequireWhere require 'WHERE' clause.
+	MySQLSchemaRuleStatementRequireWhere SQLReviewRuleType = "mysql.statement.where.require"
+	// MySQLSchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+	MySQLSchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "mysql.statement.where.no-leading-wildcard-like"
+	// MySQLSchemaRuleStatementDisallowCommit disallow using commit in the issue.
+	MySQLSchemaRuleStatementDisallowCommit SQLReviewRuleType = "mysql.statement.disallow-commit"
+	// MySQLSchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
+	MySQLSchemaRuleStatementDisallowLimit SQLReviewRuleType = "mysql.statement.disallow-limit"
+	// MySQLSchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
+	MySQLSchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "mysql.statement.disallow-order-by"
+	// MySQLSchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
+	MySQLSchemaRuleStatementMergeAlterTable SQLReviewRuleType = "mysql.statement.merge-alter-table"
+	// MySQLSchemaRuleStatementInsertRowLimit enforce the insert row limit.
+	MySQLSchemaRuleStatementInsertRowLimit SQLReviewRuleType = "mysql.statement.insert.row-limit"
+	// MySQLSchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
+	MySQLSchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "mysql.statement.insert.must-specify-column"
+	// MySQLSchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	MySQLSchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "mysql.statement.insert.disallow-order-by-rand"
+	// MySQLSchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
+	MySQLSchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "mysql.statement.affected-row-limit"
+	// MySQLSchemaRuleStatementDMLDryRun dry run the dml.
+	MySQLSchemaRuleStatementDMLDryRun SQLReviewRuleType = "mysql.statement.dml-dry-run"
+
+	// MySQLSchemaRuleTableRequirePK require the table to have a primary key.
+	MySQLSchemaRuleTableRequirePK SQLReviewRuleType = "mysql.table.require-pk"
+	// MySQLSchemaRuleTableNoFK require the table disallow the foreign key.
+	MySQLSchemaRuleTableNoFK SQLReviewRuleType = "mysql.table.no-foreign-key"
+	// MySQLSchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
+	MySQLSchemaRuleTableDropNamingConvention SQLReviewRuleType = "mysql.table.drop-naming-convention"
+	// MySQLSchemaRuleTableCommentConvention enforce the table comment convention.
+	MySQLSchemaRuleTableCommentConvention SQLReviewRuleType = "mysql.table.comment"
+	// MySQLSchemaRuleTableDisallowPartition disallow the table partition.
+	MySQLSchemaRuleTableDisallowPartition SQLReviewRuleType = "mysql.table.disallow-partition"
+
+	// MySQLSchemaRuleRequiredColumn enforce the required columns in each table.
+	MySQLSchemaRuleRequiredColumn SQLReviewRuleType = "mysql.column.required"
+	// MySQLSchemaRuleColumnNotNull enforce the columns cannot have NULL value.
+	MySQLSchemaRuleColumnNotNull SQLReviewRuleType = "mysql.column.no-null"
+	// MySQLSchemaRuleColumnDisallowChangeType disallow change column type.
+	MySQLSchemaRuleColumnDisallowChangeType SQLReviewRuleType = "mysql.column.disallow-change-type"
+	// MySQLSchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
+	MySQLSchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "mysql.column.set-default-for-not-null"
+	// MySQLSchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
+	MySQLSchemaRuleColumnDisallowChange SQLReviewRuleType = "mysql.column.disallow-change"
+	// MySQLSchemaRuleColumnDisallowChangingOrder disallow changing column order.
+	MySQLSchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "mysql.column.disallow-changing-order"
+	// MySQLSchemaRuleColumnCommentConvention enforce the column comment convention.
+	MySQLSchemaRuleColumnCommentConvention SQLReviewRuleType = "mysql.column.comment"
+	// MySQLSchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
+	MySQLSchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "mysql.column.auto-increment-must-integer"
+	// MySQLSchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+	MySQLSchemaRuleColumnTypeDisallowList SQLReviewRuleType = "mysql.column.type-disallow-list"
+	// MySQLSchemaRuleColumnDisallowSetCharset disallow set column charset.
+	MySQLSchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "mysql.column.disallow-set-charset"
+	// MySQLSchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
+	MySQLSchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "mysql.column.maximum-character-length"
+	// MySQLSchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
+	MySQLSchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "mysql.column.auto-increment-initial-value"
+	// MySQLSchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+	MySQLSchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "mysql.column.auto-increment-must-unsigned"
+	// MySQLSchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+	MySQLSchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "mysql.column.current-time-count-limit"
+	// MySQLSchemaRuleColumnRequireDefault enforce the column default.
+	MySQLSchemaRuleColumnRequireDefault SQLReviewRuleType = "mysql.column.require-default"
+
+	// MySQLSchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
+	MySQLSchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "mysql.schema.backward-compatibility"
+
+	// MySQLSchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
+	MySQLSchemaRuleDropEmptyDatabase SQLReviewRuleType = "mysql.database.drop-empty-database"
+
+	// MySQLSchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+	MySQLSchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "mysql.index.no-duplicate-column"
+	// MySQLSchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+	MySQLSchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "mysql.index.key-number-limit"
+	// MySQLSchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
+	MySQLSchemaRuleIndexPKTypeLimit SQLReviewRuleType = "mysql.index.pk-type-limit"
+	// MySQLSchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+	MySQLSchemaRuleIndexTypeNoBlob SQLReviewRuleType = "mysql.index.type-no-blob"
+	// MySQLSchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+	MySQLSchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "mysql.index.total-number-limit"
+
+	// MySQLSchemaRuleCharsetAllowlist enforce the charset allowlist.
+	MySQLSchemaRuleCharsetAllowlist SQLReviewRuleType = "mysql.system.charset.allowlist"
+
+	// MySQLSchemaRuleCollationAllowlist enforce the collation allowlist.
+	MySQLSchemaRuleCollationAllowlist SQLReviewRuleType = "mysql.system.collation.allowlist"
+
+	// TiDB rule list.
+
+	// TiDBSchemaRuleTableNaming enforce the table name format.
+	TiDBSchemaRuleTableNaming SQLReviewRuleType = "tidb.naming.table"
+	// TiDBSchemaRuleColumnNaming enforce the column name format.
+	TiDBSchemaRuleColumnNaming SQLReviewRuleType = "tidb.naming.column"
+	// TiDBSchemaRuleUKNaming enforce the unique key name format.
+	TiDBSchemaRuleUKNaming SQLReviewRuleType = "tidb.naming.index.uk"
+	// TiDBSchemaRuleFKNaming enforce the foreign key name format.
+	TiDBSchemaRuleFKNaming SQLReviewRuleType = "tidb.naming.index.fk"
+	// TiDBSchemaRuleIDXNaming enforce the index name format.
+	TiDBSchemaRuleIDXNaming SQLReviewRuleType = "tidb.naming.index.idx"
+	// TiDBSchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
+	TiDBSchemaRuleAutoIncrementColumnNaming SQLReviewRuleType = "tidb.naming.column.auto-increment"
+
+	// TiDBSchemaRuleStatementNoSelectAll disallow 'SELECT *'.
+	TiDBSchemaRuleStatementNoSelectAll SQLReviewRuleType = "tidb.statement.select.no-select-all"
+	// TiDBSchemaRuleStatementRequireWhere require 'WHERE' clause.
+	TiDBSchemaRuleStatementRequireWhere SQLReviewRuleType = "tidb.statement.where.require"
+	// TiDBSchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+	TiDBSchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "tidb.statement.where.no-leading-wildcard-like"
+	// TiDBSchemaRuleStatementDisallowCommit disallow using commit in the issue.
+	TiDBSchemaRuleStatementDisallowCommit SQLReviewRuleType = "tidb.statement.disallow-commit"
+	// TiDBSchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
+	TiDBSchemaRuleStatementDisallowLimit SQLReviewRuleType = "tidb.statement.disallow-limit"
+	// TiDBSchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
+	TiDBSchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "tidb.statement.disallow-order-by"
+	// TiDBSchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
+	TiDBSchemaRuleStatementMergeAlterTable SQLReviewRuleType = "tidb.statement.merge-alter-table"
+	// TiDBSchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
+	TiDBSchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "tidb.statement.insert.must-specify-column"
+	// TiDBSchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	TiDBSchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "tidb.statement.insert.disallow-order-by-rand"
+	// TiDBSchemaRuleStatementDMLDryRun dry run the dml.
+	TiDBSchemaRuleStatementDMLDryRun SQLReviewRuleType = "tidb.statement.dml-dry-run"
+
+	// TiDBSchemaRuleTableRequirePK require the table to have a primary key.
+	TiDBSchemaRuleTableRequirePK SQLReviewRuleType = "tidb.table.require-pk"
+	// TiDBSchemaRuleTableNoFK require the table disallow the foreign key.
+	TiDBSchemaRuleTableNoFK SQLReviewRuleType = "tidb.table.no-foreign-key"
+	// TiDBSchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
+	TiDBSchemaRuleTableDropNamingConvention SQLReviewRuleType = "tidb.table.drop-naming-convention"
+	// TiDBSchemaRuleTableCommentConvention enforce the table comment convention.
+	TiDBSchemaRuleTableCommentConvention SQLReviewRuleType = "tidb.table.comment"
+	// TiDBSchemaRuleTableDisallowPartition disallow the table partition.
+	TiDBSchemaRuleTableDisallowPartition SQLReviewRuleType = "tidb.table.disallow-partition"
+
+	// TiDBSchemaRuleRequiredColumn enforce the required columns in each table.
+	TiDBSchemaRuleRequiredColumn SQLReviewRuleType = "tidb.column.required"
+	// TiDBSchemaRuleColumnNotNull enforce the columns cannot have NULL value.
+	TiDBSchemaRuleColumnNotNull SQLReviewRuleType = "tidb.column.no-null"
+	// TiDBSchemaRuleColumnDisallowChangeType disallow change column type.
+	TiDBSchemaRuleColumnDisallowChangeType SQLReviewRuleType = "tidb.column.disallow-change-type"
+	// TiDBSchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
+	TiDBSchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "tidb.column.set-default-for-not-null"
+	// TiDBSchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
+	TiDBSchemaRuleColumnDisallowChange SQLReviewRuleType = "tidb.column.disallow-change"
+	// TiDBSchemaRuleColumnDisallowChangingOrder disallow changing column order.
+	TiDBSchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "tidb.column.disallow-changing-order"
+	// TiDBSchemaRuleColumnCommentConvention enforce the column comment convention.
+	TiDBSchemaRuleColumnCommentConvention SQLReviewRuleType = "tidb.column.comment"
+	// TiDBSchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
+	TiDBSchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "tidb.column.auto-increment-must-integer"
+	// TiDBSchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+	TiDBSchemaRuleColumnTypeDisallowList SQLReviewRuleType = "tidb.column.type-disallow-list"
+	// TiDBSchemaRuleColumnDisallowSetCharset disallow set column charset.
+	TiDBSchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "tidb.column.disallow-set-charset"
+	// TiDBSchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
+	TiDBSchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "tidb.column.maximum-character-length"
+	// TiDBSchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
+	TiDBSchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "tidb.column.auto-increment-initial-value"
+	// TiDBSchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+	TiDBSchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "tidb.column.auto-increment-must-unsigned"
+	// TiDBSchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+	TiDBSchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "tidb.column.current-time-count-limit"
+	// TiDBSchemaRuleColumnRequireDefault enforce the column default.
+	TiDBSchemaRuleColumnRequireDefault SQLReviewRuleType = "tidb.column.require-default"
+
+	// TiDBSchemaRuleSchemaBackwardCompatibility enforce the TiDB supports check whether the schema change is backward compatible.
+	TiDBSchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "tidb.schema.backward-compatibility"
+
+	// TiDBSchemaRuleDropEmptyDatabase enforce the TiDB supports check if the database is empty before users drop it.
+	TiDBSchemaRuleDropEmptyDatabase SQLReviewRuleType = "tidb.database.drop-empty-database"
+
+	// TiDBSchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+	TiDBSchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "tidb.index.no-duplicate-column"
+	// TiDBSchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+	TiDBSchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "tidb.index.key-number-limit"
+	// TiDBSchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
+	TiDBSchemaRuleIndexPKTypeLimit SQLReviewRuleType = "tidb.index.pk-type-limit"
+	// TiDBSchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+	TiDBSchemaRuleIndexTypeNoBlob SQLReviewRuleType = "tidb.index.type-no-blob"
+	// TiDBSchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+	TiDBSchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "tidb.index.total-number-limit"
+
+	// TiDBSchemaRuleCharsetAllowlist enforce the charset allowlist.
+	TiDBSchemaRuleCharsetAllowlist SQLReviewRuleType = "tidb.system.charset.allowlist"
+
+	// TiDBSchemaRuleCollationAllowlist enforce the collation allowlist.
+	TiDBSchemaRuleCollationAllowlist SQLReviewRuleType = "tidb.system.collation.allowlist"
+
+	// PostgreSQL rule list.
+
+	// PostgreSQLSchemaRuleTableNaming enforce the table name format.
+	PostgreSQLSchemaRuleTableNaming SQLReviewRuleType = "pg.naming.table"
+	// PostgreSQLSchemaRuleColumnNaming enforce the column name format.
+	PostgreSQLSchemaRuleColumnNaming SQLReviewRuleType = "pg.naming.column"
+	// PostgreSQLSchemaRulePKNaming enforce the primary key name format.
+	PostgreSQLSchemaRulePKNaming SQLReviewRuleType = "pg.naming.index.pk"
+	// PostgreSQLSchemaRuleUKNaming enforce the unique key name format.
+	PostgreSQLSchemaRuleUKNaming SQLReviewRuleType = "pg.naming.index.uk"
+	// PostgreSQLSchemaRuleFKNaming enforce the foreign key name format.
+	PostgreSQLSchemaRuleFKNaming SQLReviewRuleType = "pg.naming.index.fk"
+	// PostgreSQLSchemaRuleIDXNaming enforce the index name format.
+	PostgreSQLSchemaRuleIDXNaming SQLReviewRuleType = "pg.naming.index.idx"
+
+	// PostgreSQLSchemaRuleStatementNoSelectAll disallow 'SELECT *'.
+	PostgreSQLSchemaRuleStatementNoSelectAll SQLReviewRuleType = "pg.statement.select.no-select-all"
+	// PostgreSQLSchemaRuleStatementRequireWhere require 'WHERE' clause.
+	PostgreSQLSchemaRuleStatementRequireWhere SQLReviewRuleType = "pg.statement.where.require"
+	// PostgreSQLSchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+	PostgreSQLSchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "pg.statement.where.no-leading-wildcard-like"
+	// PostgreSQLSchemaRuleStatementDisallowCommit disallow using commit in the issue.
+	PostgreSQLSchemaRuleStatementDisallowCommit SQLReviewRuleType = "pg.statement.disallow-commit"
+	// PostgreSQLSchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
+	PostgreSQLSchemaRuleStatementMergeAlterTable SQLReviewRuleType = "pg.statement.merge-alter-table"
+	// PostgreSQLSchemaRuleStatementInsertRowLimit enforce the insert row limit.
+	PostgreSQLSchemaRuleStatementInsertRowLimit SQLReviewRuleType = "pg.statement.insert.row-limit"
+	// PostgreSQLSchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
+	PostgreSQLSchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "pg.statement.insert.must-specify-column"
+	// PostgreSQLSchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	PostgreSQLSchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "pg.statement.insert.disallow-order-by-rand"
+	// PostgreSQLSchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
+	PostgreSQLSchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "pg.statement.affected-row-limit"
+	// PostgreSQLSchemaRuleStatementDMLDryRun dry run the dml.
+	PostgreSQLSchemaRuleStatementDMLDryRun SQLReviewRuleType = "pg.statement.dml-dry-run"
+	// PostgreSQLSchemaRuleStatementDisallowAddColumnWithDefault disallow to add column with DEFAULT.
+	PostgreSQLSchemaRuleStatementDisallowAddColumnWithDefault SQLReviewRuleType = "pg.statement.disallow-add-column-with-default"
+	// PostgreSQLSchemaRuleStatementAddCheckNotValid require add check constraints not valid.
+	PostgreSQLSchemaRuleStatementAddCheckNotValid SQLReviewRuleType = "pg.statement.add-check-not-valid"
+	// PostgreSQLSchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
+	PostgreSQLSchemaRuleStatementDisallowAddNotNull SQLReviewRuleType = "pg.statement.disallow-add-not-null"
+
+	// PostgreSQLSchemaRuleTableRequirePK require the table to have a primary key.
+	PostgreSQLSchemaRuleTableRequirePK SQLReviewRuleType = "pg.table.require-pk"
+	// PostgreSQLSchemaRuleTableNoFK require the table disallow the foreign key.
+	PostgreSQLSchemaRuleTableNoFK SQLReviewRuleType = "pg.table.no-foreign-key"
+	// PostgreSQLSchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
+	PostgreSQLSchemaRuleTableDropNamingConvention SQLReviewRuleType = "pg.table.drop-naming-convention"
+	// PostgreSQLSchemaRuleTableDisallowPartition disallow the table partition.
+	PostgreSQLSchemaRuleTableDisallowPartition SQLReviewRuleType = "pg.table.disallow-partition"
+
+	// PostgreSQLSchemaRuleRequiredColumn enforce the required columns in each table.
+	PostgreSQLSchemaRuleRequiredColumn SQLReviewRuleType = "pg.column.required"
+	// PostgreSQLSchemaRuleColumnNotNull enforce the columns cannot have NULL value.
+	PostgreSQLSchemaRuleColumnNotNull SQLReviewRuleType = "pg.column.no-null"
+	// PostgreSQLSchemaRuleColumnDisallowChangeType disallow change column type.
+	PostgreSQLSchemaRuleColumnDisallowChangeType SQLReviewRuleType = "pg.column.disallow-change-type"
+	// PostgreSQLSchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+	PostgreSQLSchemaRuleColumnTypeDisallowList SQLReviewRuleType = "pg.column.type-disallow-list"
+	// PostgreSQLSchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
+	PostgreSQLSchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "pg.column.maximum-character-length"
+	// PostgreSQLSchemaRuleColumnRequireDefault enforce the column default.
+	PostgreSQLSchemaRuleColumnRequireDefault SQLReviewRuleType = "pg.column.require-default"
+
+	// PostgreSQLSchemaRuleSchemaBackwardCompatibility enforce the PostgreSQL supports check whether the schema change is backward compatible.
+	PostgreSQLSchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "pg.schema.backward-compatibility"
+
+	// PostgreSQLSchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+	PostgreSQLSchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "pg.index.no-duplicate-column"
+	// PostgreSQLSchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+	PostgreSQLSchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "pg.index.key-number-limit"
+	// PostgreSQLSchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+	PostgreSQLSchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "pg.index.total-number-limit"
+	// PostgreSQLSchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
+	PostgreSQLSchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "pg.index.primary-key-type-allowlist"
+	// PostgreSQLSchemaRuleCreateIndexConcurrently require creating indexes concurrently.
+	PostgreSQLSchemaRuleCreateIndexConcurrently SQLReviewRuleType = "pg.index.create-concurrently"
+
+	// PostgreSQLSchemaRuleCharsetAllowlist enforce the charset allowlist.
+	PostgreSQLSchemaRuleCharsetAllowlist SQLReviewRuleType = "pg.system.charset.allowlist"
+
+	// PostgreSQLSchemaRuleCollationAllowlist enforce the collation allowlist.
+	PostgreSQLSchemaRuleCollationAllowlist SQLReviewRuleType = "pg.system.collation.allowlist"
+
+	// PostgreSQLSchemaRuleCommentLength limit comment length.
+	PostgreSQLSchemaRuleCommentLength SQLReviewRuleType = "pg.comment.length"
+
 	// SchemaRuleLevelError is the error level of SQLReviewRuleLevel.
 	SchemaRuleLevelError SQLReviewRuleLevel = "ERROR"
 	// SchemaRuleLevelWarning is the warning level of SQLReviewRuleLevel.
 	SchemaRuleLevelWarning SQLReviewRuleLevel = "WARNING"
 	// SchemaRuleLevelDisabled is the disabled level of SQLReviewRuleLevel.
 	SchemaRuleLevelDisabled SQLReviewRuleLevel = "DISABLED"
-
-	// SchemaRuleMySQLEngine require InnoDB as the storage engine.
-	SchemaRuleMySQLEngine SQLReviewRuleType = "engine.mysql.use-innodb"
-
-	// SchemaRuleTableNaming enforce the table name format.
-	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
-	// SchemaRuleColumnNaming enforce the column name format.
-	SchemaRuleColumnNaming SQLReviewRuleType = "naming.column"
-	// SchemaRulePKNaming enforce the primary key name format.
-	SchemaRulePKNaming SQLReviewRuleType = "naming.index.pk"
-	// SchemaRuleUKNaming enforce the unique key name format.
-	SchemaRuleUKNaming SQLReviewRuleType = "naming.index.uk"
-	// SchemaRuleFKNaming enforce the foreign key name format.
-	SchemaRuleFKNaming SQLReviewRuleType = "naming.index.fk"
-	// SchemaRuleIDXNaming enforce the index name format.
-	SchemaRuleIDXNaming SQLReviewRuleType = "naming.index.idx"
-	// SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
-	SchemaRuleAutoIncrementColumnNaming SQLReviewRuleType = "naming.column.auto-increment"
-
-	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
-	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
-	// SchemaRuleStatementRequireWhere require 'WHERE' clause.
-	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
-	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
-	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
-	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
-	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
-	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
-	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
-	// SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
-	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
-	// SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
-	SchemaRuleStatementMergeAlterTable SQLReviewRuleType = "statement.merge-alter-table"
-	// SchemaRuleStatementInsertRowLimit enforce the insert row limit.
-	SchemaRuleStatementInsertRowLimit SQLReviewRuleType = "statement.insert.row-limit"
-	// SchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
-	SchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "statement.insert.must-specify-column"
-	// SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
-	SchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "statement.insert.disallow-order-by-rand"
-	// SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
-	SchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "statement.affected-row-limit"
-	// SchemaRuleStatementDMLDryRun dry run the dml.
-	SchemaRuleStatementDMLDryRun SQLReviewRuleType = "statement.dml-dry-run"
-	// SchemaRuleStatementDisallowAddColumnWithDefault disallow to add column with DEFAULT.
-	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
-	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
-	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
-	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
-	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
-
-	// SchemaRuleTableRequirePK require the table to have a primary key.
-	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
-	// SchemaRuleTableNoFK require the table disallow the foreign key.
-	SchemaRuleTableNoFK SQLReviewRuleType = "table.no-foreign-key"
-	// SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
-	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
-	// SchemaRuleTableCommentConvention enforce the table comment convention.
-	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
-	// SchemaRuleTableDisallowPartition disallow the table partition.
-	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
-
-	// SchemaRuleRequiredColumn enforce the required columns in each table.
-	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
-	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
-	SchemaRuleColumnNotNull SQLReviewRuleType = "column.no-null"
-	// SchemaRuleColumnDisallowChangeType disallow change column type.
-	SchemaRuleColumnDisallowChangeType SQLReviewRuleType = "column.disallow-change-type"
-	// SchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
-	SchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "column.set-default-for-not-null"
-	// SchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
-	SchemaRuleColumnDisallowChange SQLReviewRuleType = "column.disallow-change"
-	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
-	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
-	// SchemaRuleColumnCommentConvention enforce the column comment convention.
-	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
-	// SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
-	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
-	// SchemaRuleColumnTypeDisallowList enforce the column type disallow list.
-	SchemaRuleColumnTypeDisallowList SQLReviewRuleType = "column.type-disallow-list"
-	// SchemaRuleColumnDisallowSetCharset disallow set column charset.
-	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
-	// SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
-	SchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "column.maximum-character-length"
-	// SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
-	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
-	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
-	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
-	// SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
-	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
-	// SchemaRuleColumnRequireDefault enforce the column default.
-	SchemaRuleColumnRequireDefault SQLReviewRuleType = "column.require-default"
-
-	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
-	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
-
-	// SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
-	SchemaRuleDropEmptyDatabase SQLReviewRuleType = "database.drop-empty-database"
-
-	// SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
-	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
-	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
-	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
-	// SchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
-	SchemaRuleIndexPKTypeLimit SQLReviewRuleType = "index.pk-type-limit"
-	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
-	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
-	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
-	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
-	// SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
-	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
-	// SchemaRuleCreateIndexConcurrently require creating indexes concurrently.
-	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
-
-	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
-	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
-
-	// SchemaRuleCollationAllowlist enforce the collation allowlist.
-	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
-
-	// SchemaRuleCommentLength limit comment length.
-	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -177,19 +352,47 @@ const (
 var (
 	// TemplateNamingTokens is the mapping for rule type to template token.
 	TemplateNamingTokens = map[SQLReviewRuleType]map[string]bool{
-		SchemaRuleIDXNaming: {
+		MySQLSchemaRuleIDXNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
 		},
-		SchemaRulePKNaming: {
+		TiDBSchemaRuleIDXNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
 		},
-		SchemaRuleUKNaming: {
+		PostgreSQLSchemaRuleIDXNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
 		},
-		SchemaRuleFKNaming: {
+		PostgreSQLSchemaRulePKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		MySQLSchemaRuleUKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		TiDBSchemaRuleUKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		PostgreSQLSchemaRuleUKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		MySQLSchemaRuleFKNaming: {
+			ReferencingTableNameTemplateToken:  true,
+			ReferencingColumnNameTemplateToken: true,
+			ReferencedTableNameTemplateToken:   true,
+			ReferencedColumnNameTemplateToken:  true,
+		},
+		TiDBSchemaRuleFKNaming: {
+			ReferencingTableNameTemplateToken:  true,
+			ReferencingColumnNameTemplateToken: true,
+			ReferencedTableNameTemplateToken:   true,
+			ReferencedColumnNameTemplateToken:  true,
+		},
+		PostgreSQLSchemaRuleFKNaming: {
 			ReferencingTableNameTemplateToken:  true,
 			ReferencingColumnNameTemplateToken: true,
 			ReferencedTableNameTemplateToken:   true,
@@ -239,28 +442,39 @@ type SQLReviewRule struct {
 func (rule *SQLReviewRule) Validate() error {
 	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
-	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
+	case MySQLSchemaRuleTableNaming, MySQLSchemaRuleColumnNaming, MySQLSchemaRuleAutoIncrementColumnNaming,
+		PostgreSQLSchemaRuleTableNaming, PostgreSQLSchemaRuleColumnNaming,
+		TiDBSchemaRuleTableNaming, TiDBSchemaRuleColumnNaming, TiDBSchemaRuleAutoIncrementColumnNaming:
 		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
+	case MySQLSchemaRuleFKNaming, MySQLSchemaRuleIDXNaming, MySQLSchemaRuleUKNaming,
+		TiDBSchemaRuleFKNaming, TiDBSchemaRuleIDXNaming, TiDBSchemaRuleUKNaming,
+		PostgreSQLSchemaRuleFKNaming, PostgreSQLSchemaRuleIDXNaming, PostgreSQLSchemaRuleUKNaming, PostgreSQLSchemaRulePKNaming:
 		if _, _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleRequiredColumn:
+	case MySQLSchemaRuleRequiredColumn, PostgreSQLSchemaRuleRequiredColumn, TiDBSchemaRuleRequiredColumn:
 		if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
+	case MySQLSchemaRuleColumnCommentConvention, MySQLSchemaRuleTableCommentConvention,
+		TiDBSchemaRuleColumnCommentConvention, TiDBSchemaRuleTableCommentConvention:
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
+	case MySQLSchemaRuleIndexKeyNumberLimit, MySQLSchemaRuleStatementInsertRowLimit, MySQLSchemaRuleIndexTotalNumberLimit,
+		MySQLSchemaRuleColumnMaximumCharacterLength, MySQLSchemaRuleColumnAutoIncrementInitialValue, MySQLSchemaRuleStatementAffectedRowLimit,
+		TiDBSchemaRuleIndexKeyNumberLimit, TiDBSchemaRuleIndexTotalNumberLimit,
+		TiDBSchemaRuleColumnMaximumCharacterLength, TiDBSchemaRuleColumnAutoIncrementInitialValue,
+		PostgreSQLSchemaRuleIndexKeyNumberLimit, PostgreSQLSchemaRuleStatementInsertRowLimit, PostgreSQLSchemaRuleIndexTotalNumberLimit,
+		PostgreSQLSchemaRuleColumnMaximumCharacterLength, PostgreSQLSchemaRuleStatementAffectedRowLimit:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist, SchemaRuleIndexPrimaryKeyTypeAllowlist:
+	case MySQLSchemaRuleColumnTypeDisallowList, MySQLSchemaRuleCharsetAllowlist, MySQLSchemaRuleCollationAllowlist,
+		TiDBSchemaRuleColumnTypeDisallowList, TiDBSchemaRuleCharsetAllowlist, TiDBSchemaRuleCollationAllowlist,
+		PostgreSQLSchemaRuleColumnTypeDisallowList, PostgreSQLSchemaRuleCharsetAllowlist, PostgreSQLSchemaRuleCollationAllowlist, PostgreSQLSchemaRuleIndexPrimaryKeyTypeAllowlist:
 		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -450,7 +664,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
+		advisorType, err := getAdvisorTypeByRule(rule.Type)
 		if err != nil {
 			log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
 			continue
@@ -647,337 +861,270 @@ func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
 	return res, nil
 }
 
-func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, error) {
+func getAdvisorTypeByRule(ruleType SQLReviewRuleType) (Type, error) {
 	switch ruleType {
-	case SchemaRuleStatementRequireWhere:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLWhereRequirement, nil
-		case db.Postgres:
-			return PostgreSQLWhereRequirement, nil
-		}
-	case SchemaRuleStatementNoLeadingWildcardLike:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNoLeadingWildcardLike, nil
-		case db.Postgres:
-			return PostgreSQLNoLeadingWildcardLike, nil
-		}
-	case SchemaRuleStatementNoSelectAll:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNoSelectAll, nil
-		case db.Postgres:
-			return PostgreSQLNoSelectAll, nil
-		}
-	case SchemaRuleSchemaBackwardCompatibility:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLMigrationCompatibility, nil
-		case db.Postgres:
-			return PostgreSQLMigrationCompatibility, nil
-		}
-	case SchemaRuleTableNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNamingTableConvention, nil
-		case db.Postgres:
-			return PostgreSQLNamingTableConvention, nil
-		}
-	case SchemaRuleIDXNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNamingIndexConvention, nil
-		case db.Postgres:
-			return PostgreSQLNamingIndexConvention, nil
-		}
-	case SchemaRulePKNaming:
-		if engine == db.Postgres {
-			return PostgreSQLNamingPKConvention, nil
-		}
-	case SchemaRuleUKNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNamingUKConvention, nil
-		case db.Postgres:
-			return PostgreSQLNamingUKConvention, nil
-		}
-	case SchemaRuleFKNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNamingFKConvention, nil
-		case db.Postgres:
-			return PostgreSQLNamingFKConvention, nil
-		}
-	case SchemaRuleColumnNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNamingColumnConvention, nil
-		case db.Postgres:
-			return PostgreSQLNamingColumnConvention, nil
-		}
-	case SchemaRuleAutoIncrementColumnNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLNamingAutoIncrementColumnConvention, nil
-		}
-	case SchemaRuleRequiredColumn:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnRequirement, nil
-		case db.Postgres:
-			return PostgreSQLColumnRequirement, nil
-		}
-	case SchemaRuleColumnNotNull:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnNoNull, nil
-		case db.Postgres:
-			return PostgreSQLColumnNoNull, nil
-		}
-	case SchemaRuleColumnDisallowChangeType:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnDisallowChangingType, nil
-		case db.Postgres:
-			return PostgreSQLColumnDisallowChangingType, nil
-		}
-	case SchemaRuleColumnSetDefaultForNotNull:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnSetDefaultForNotNull, nil
-		}
-	case SchemaRuleColumnDisallowChange:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnDisallowChanging, nil
-		}
-	case SchemaRuleColumnDisallowChangingOrder:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnDisallowChangingOrder, nil
-		}
-	case SchemaRuleColumnCommentConvention:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnCommentConvention, nil
-		}
-	case SchemaRuleColumnAutoIncrementMustInteger:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLAutoIncrementColumnMustInteger, nil
-		}
-	case SchemaRuleColumnTypeDisallowList:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnTypeRestriction, nil
-		case db.Postgres:
-			return PostgreSQLColumnTypeDisallowList, nil
-		}
-	case SchemaRuleColumnDisallowSetCharset:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLDisallowSetColumnCharset, nil
-		}
-	case SchemaRuleColumnMaximumCharacterLength:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnMaximumCharacterLength, nil
-		case db.Postgres:
-			return PostgreSQLColumnMaximumCharacterLength, nil
-		}
-	case SchemaRuleColumnAutoIncrementInitialValue:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLAutoIncrementColumnInitialValue, nil
-		}
-	case SchemaRuleColumnAutoIncrementMustUnsigned:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLAutoIncrementColumnMustUnsigned, nil
-		}
-	case SchemaRuleCurrentTimeColumnCountLimit:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLCurrentTimeColumnCountLimit, nil
-		}
-	case SchemaRuleColumnRequireDefault:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLRequireColumnDefault, nil
-		case db.Postgres:
-			return PostgreSQLRequireColumnDefault, nil
-		}
-	case SchemaRuleTableRequirePK:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableRequirePK, nil
-		case db.Postgres:
-			return PostgreSQLTableRequirePK, nil
-		}
-	case SchemaRuleTableNoFK:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableNoFK, nil
-		case db.Postgres:
-			return PostgreSQLTableNoFK, nil
-		}
-	case SchemaRuleTableDropNamingConvention:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableDropNamingConvention, nil
-		case db.Postgres:
-			return PostgreSQLTableDropNamingConvention, nil
-		}
-	case SchemaRuleTableCommentConvention:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableCommentConvention, nil
-		}
-	case SchemaRuleTableDisallowPartition:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableDisallowPartition, nil
-		case db.Postgres:
-			return PostgreSQLTableDisallowPartition, nil
-		}
-	case SchemaRuleMySQLEngine:
-		if engine == db.MySQL {
-			return MySQLUseInnoDB, nil
-		}
-	case SchemaRuleDropEmptyDatabase:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLDatabaseAllowDropIfEmpty, nil
-		}
-	case SchemaRuleIndexNoDuplicateColumn:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLIndexNoDuplicateColumn, nil
-		case db.Postgres:
-			return PostgreSQLIndexNoDuplicateColumn, nil
-		}
-	case SchemaRuleIndexKeyNumberLimit:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLIndexKeyNumberLimit, nil
-		case db.Postgres:
-			return PostgreSQLIndexKeyNumberLimit, nil
-		}
-	case SchemaRuleIndexTotalNumberLimit:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLIndexTotalNumberLimit, nil
-		case db.Postgres:
-			return PostgreSQLIndexTotalNumberLimit, nil
-		}
-	case SchemaRuleStatementDisallowCommit:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLStatementDisallowCommit, nil
-		case db.Postgres:
-			return PostgreSQLStatementDisallowCommit, nil
-		}
-	case SchemaRuleCharsetAllowlist:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLCharsetAllowlist, nil
-		case db.Postgres:
-			return PostgreSQLEncodingAllowlist, nil
-		}
-	case SchemaRuleCollationAllowlist:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLCollationAllowlist, nil
-		case db.Postgres:
-			return PostgreSQLCollationAllowlist, nil
-		}
-	case SchemaRuleIndexPKTypeLimit:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLIndexPKType, nil
-		}
-	case SchemaRuleIndexTypeNoBlob:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLIndexTypeNoBlob, nil
-		}
-	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
-		if engine == db.Postgres {
-			return PostgreSQLPrimaryKeyTypeAllowlist, nil
-		}
-	case SchemaRuleCreateIndexConcurrently:
-		if engine == db.Postgres {
-			return PostgreSQLCreateIndexConcurrently, nil
-		}
-	case SchemaRuleStatementInsertRowLimit:
-		switch engine {
-		case db.MySQL:
-			return MySQLInsertRowLimit, nil
-		case db.Postgres:
-			return PostgreSQLInsertRowLimit, nil
-		}
-	case SchemaRuleStatementInsertMustSpecifyColumn:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLInsertMustSpecifyColumn, nil
-		case db.Postgres:
-			return PostgreSQLInsertMustSpecifyColumn, nil
-		}
-	case SchemaRuleStatementInsertDisallowOrderByRand:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLInsertDisallowOrderByRand, nil
-		case db.Postgres:
-			return PostgreSQLInsertDisallowOrderByRand, nil
-		}
-	case SchemaRuleStatementDisallowLimit:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLDisallowLimit, nil
-		}
-	case SchemaRuleStatementDisallowOrderBy:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLDisallowOrderBy, nil
-		}
-	case SchemaRuleStatementMergeAlterTable:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLMergeAlterTable, nil
-		case db.Postgres:
-			return PostgreSQLMergeAlterTable, nil
-		}
-	case SchemaRuleStatementAffectedRowLimit:
-		switch engine {
-		case db.MySQL:
-			return MySQLStatementAffectedRowLimit, nil
-		case db.Postgres:
-			return PostgreSQLStatementAffectedRowLimit, nil
-		}
-	case SchemaRuleStatementDMLDryRun:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLStatementDMLDryRun, nil
-		case db.Postgres:
-			return PostgreSQLStatementDMLDryRun, nil
-		}
-	case SchemaRuleStatementDisallowAddColumnWithDefault:
-		if engine == db.Postgres {
-			return PostgreSQLDisallowAddColumnWithDefault, nil
-		}
-	case SchemaRuleStatementAddCheckNotValid:
-		if engine == db.Postgres {
-			return PostgreSQLAddCheckNotValid, nil
-		}
-	case SchemaRuleStatementDisallowAddNotNull:
-		if engine == db.Postgres {
-			return PostgreSQLDisallowAddNotNull, nil
-		}
-	case SchemaRuleCommentLength:
-		if engine == db.Postgres {
-			return PostgreSQLCommentConvention, nil
-		}
+	case MySQLSchemaRuleStatementRequireWhere:
+		return MySQLWhereRequirement, nil
+	case TiDBSchemaRuleStatementRequireWhere:
+		return MySQLWhereRequirement, nil
+	case PostgreSQLSchemaRuleStatementRequireWhere:
+		return PostgreSQLWhereRequirement, nil
+	case MySQLSchemaRuleStatementNoLeadingWildcardLike:
+		return MySQLNoLeadingWildcardLike, nil
+	case TiDBSchemaRuleStatementNoLeadingWildcardLike:
+		return MySQLNoLeadingWildcardLike, nil
+	case PostgreSQLSchemaRuleStatementNoLeadingWildcardLike:
+		return PostgreSQLNoLeadingWildcardLike, nil
+	case MySQLSchemaRuleStatementNoSelectAll:
+		return MySQLNoSelectAll, nil
+	case TiDBSchemaRuleStatementNoSelectAll:
+		return MySQLNoSelectAll, nil
+	case PostgreSQLSchemaRuleStatementNoSelectAll:
+		return PostgreSQLNoSelectAll, nil
+	case MySQLSchemaRuleSchemaBackwardCompatibility:
+		return MySQLMigrationCompatibility, nil
+	case TiDBSchemaRuleSchemaBackwardCompatibility:
+		return MySQLMigrationCompatibility, nil
+	case PostgreSQLSchemaRuleSchemaBackwardCompatibility:
+		return PostgreSQLMigrationCompatibility, nil
+	case MySQLSchemaRuleTableNaming:
+		return MySQLNamingTableConvention, nil
+	case TiDBSchemaRuleTableNaming:
+		return MySQLNamingTableConvention, nil
+	case PostgreSQLSchemaRuleTableNaming:
+		return PostgreSQLNamingTableConvention, nil
+	case MySQLSchemaRuleIDXNaming:
+		return MySQLNamingIndexConvention, nil
+	case TiDBSchemaRuleIDXNaming:
+		return MySQLNamingIndexConvention, nil
+	case PostgreSQLSchemaRuleIDXNaming:
+		return PostgreSQLNamingIndexConvention, nil
+	case PostgreSQLSchemaRulePKNaming:
+		return PostgreSQLNamingPKConvention, nil
+	case MySQLSchemaRuleUKNaming:
+		return MySQLNamingUKConvention, nil
+	case TiDBSchemaRuleUKNaming:
+		return MySQLNamingUKConvention, nil
+	case PostgreSQLSchemaRuleUKNaming:
+		return PostgreSQLNamingUKConvention, nil
+	case MySQLSchemaRuleFKNaming:
+		return MySQLNamingFKConvention, nil
+	case TiDBSchemaRuleFKNaming:
+		return MySQLNamingFKConvention, nil
+	case PostgreSQLSchemaRuleFKNaming:
+		return PostgreSQLNamingFKConvention, nil
+	case MySQLSchemaRuleColumnNaming:
+		return MySQLNamingColumnConvention, nil
+	case TiDBSchemaRuleColumnNaming:
+		return MySQLNamingColumnConvention, nil
+	case PostgreSQLSchemaRuleColumnNaming:
+		return PostgreSQLNamingColumnConvention, nil
+	case MySQLSchemaRuleAutoIncrementColumnNaming:
+		return MySQLNamingAutoIncrementColumnConvention, nil
+	case TiDBSchemaRuleAutoIncrementColumnNaming:
+		return MySQLNamingAutoIncrementColumnConvention, nil
+	case MySQLSchemaRuleRequiredColumn:
+		return MySQLColumnRequirement, nil
+	case TiDBSchemaRuleRequiredColumn:
+		return MySQLColumnRequirement, nil
+	case PostgreSQLSchemaRuleRequiredColumn:
+		return PostgreSQLColumnRequirement, nil
+	case MySQLSchemaRuleColumnNotNull:
+		return MySQLColumnNoNull, nil
+	case TiDBSchemaRuleColumnNotNull:
+		return MySQLColumnNoNull, nil
+	case PostgreSQLSchemaRuleColumnNotNull:
+		return PostgreSQLColumnNoNull, nil
+	case MySQLSchemaRuleColumnDisallowChangeType:
+		return MySQLColumnDisallowChangingType, nil
+	case TiDBSchemaRuleColumnDisallowChangeType:
+		return MySQLColumnDisallowChangingType, nil
+	case PostgreSQLSchemaRuleColumnDisallowChangeType:
+		return PostgreSQLColumnDisallowChangingType, nil
+	case MySQLSchemaRuleColumnSetDefaultForNotNull:
+		return MySQLColumnSetDefaultForNotNull, nil
+	case TiDBSchemaRuleColumnSetDefaultForNotNull:
+		return MySQLColumnSetDefaultForNotNull, nil
+	case MySQLSchemaRuleColumnDisallowChange:
+		return MySQLColumnDisallowChanging, nil
+	case TiDBSchemaRuleColumnDisallowChange:
+		return MySQLColumnDisallowChanging, nil
+	case MySQLSchemaRuleColumnDisallowChangingOrder:
+		return MySQLColumnDisallowChangingOrder, nil
+	case TiDBSchemaRuleColumnDisallowChangingOrder:
+		return MySQLColumnDisallowChangingOrder, nil
+	case MySQLSchemaRuleColumnCommentConvention:
+		return MySQLColumnCommentConvention, nil
+	case TiDBSchemaRuleColumnCommentConvention:
+		return MySQLColumnCommentConvention, nil
+	case MySQLSchemaRuleColumnAutoIncrementMustInteger:
+		return MySQLAutoIncrementColumnMustInteger, nil
+	case TiDBSchemaRuleColumnAutoIncrementMustInteger:
+		return MySQLAutoIncrementColumnMustInteger, nil
+	case MySQLSchemaRuleColumnTypeDisallowList:
+		return MySQLColumnTypeRestriction, nil
+	case TiDBSchemaRuleColumnTypeDisallowList:
+		return MySQLColumnTypeRestriction, nil
+	case PostgreSQLSchemaRuleColumnTypeDisallowList:
+		return PostgreSQLColumnTypeDisallowList, nil
+	case MySQLSchemaRuleColumnDisallowSetCharset:
+		return MySQLDisallowSetColumnCharset, nil
+	case TiDBSchemaRuleColumnDisallowSetCharset:
+		return MySQLDisallowSetColumnCharset, nil
+	case MySQLSchemaRuleColumnMaximumCharacterLength:
+		return MySQLColumnMaximumCharacterLength, nil
+	case TiDBSchemaRuleColumnMaximumCharacterLength:
+		return MySQLColumnMaximumCharacterLength, nil
+	case PostgreSQLSchemaRuleColumnMaximumCharacterLength:
+		return PostgreSQLColumnMaximumCharacterLength, nil
+	case MySQLSchemaRuleColumnAutoIncrementInitialValue:
+		return MySQLAutoIncrementColumnInitialValue, nil
+	case TiDBSchemaRuleColumnAutoIncrementInitialValue:
+		return MySQLAutoIncrementColumnInitialValue, nil
+	case MySQLSchemaRuleColumnAutoIncrementMustUnsigned:
+		return MySQLAutoIncrementColumnMustUnsigned, nil
+	case TiDBSchemaRuleColumnAutoIncrementMustUnsigned:
+		return MySQLAutoIncrementColumnMustUnsigned, nil
+	case MySQLSchemaRuleCurrentTimeColumnCountLimit:
+		return MySQLCurrentTimeColumnCountLimit, nil
+	case TiDBSchemaRuleCurrentTimeColumnCountLimit:
+		return MySQLCurrentTimeColumnCountLimit, nil
+	case MySQLSchemaRuleColumnRequireDefault:
+		return MySQLRequireColumnDefault, nil
+	case TiDBSchemaRuleColumnRequireDefault:
+		return MySQLRequireColumnDefault, nil
+	case PostgreSQLSchemaRuleColumnRequireDefault:
+		return PostgreSQLRequireColumnDefault, nil
+	case MySQLSchemaRuleTableRequirePK:
+		return MySQLTableRequirePK, nil
+	case TiDBSchemaRuleTableRequirePK:
+		return MySQLTableRequirePK, nil
+	case PostgreSQLSchemaRuleTableRequirePK:
+		return PostgreSQLTableRequirePK, nil
+	case MySQLSchemaRuleTableNoFK:
+		return MySQLTableNoFK, nil
+	case TiDBSchemaRuleTableNoFK:
+		return MySQLTableNoFK, nil
+	case PostgreSQLSchemaRuleTableNoFK:
+		return PostgreSQLTableNoFK, nil
+	case MySQLSchemaRuleTableDropNamingConvention:
+		return MySQLTableDropNamingConvention, nil
+	case TiDBSchemaRuleTableDropNamingConvention:
+		return MySQLTableDropNamingConvention, nil
+	case PostgreSQLSchemaRuleTableDropNamingConvention:
+		return PostgreSQLTableDropNamingConvention, nil
+	case MySQLSchemaRuleTableCommentConvention:
+		return MySQLTableCommentConvention, nil
+	case TiDBSchemaRuleTableCommentConvention:
+		return MySQLTableCommentConvention, nil
+	case MySQLSchemaRuleTableDisallowPartition:
+		return MySQLTableDisallowPartition, nil
+	case TiDBSchemaRuleTableDisallowPartition:
+		return MySQLTableDisallowPartition, nil
+	case PostgreSQLSchemaRuleTableDisallowPartition:
+		return PostgreSQLTableDisallowPartition, nil
+	case MySQLSchemaRuleMySQLEngine:
+		return MySQLUseInnoDB, nil
+	case MySQLSchemaRuleDropEmptyDatabase:
+		return MySQLDatabaseAllowDropIfEmpty, nil
+	case TiDBSchemaRuleDropEmptyDatabase:
+		return MySQLDatabaseAllowDropIfEmpty, nil
+	case MySQLSchemaRuleIndexNoDuplicateColumn:
+		return MySQLIndexNoDuplicateColumn, nil
+	case TiDBSchemaRuleIndexNoDuplicateColumn:
+		return MySQLIndexNoDuplicateColumn, nil
+	case PostgreSQLSchemaRuleIndexNoDuplicateColumn:
+		return PostgreSQLIndexNoDuplicateColumn, nil
+	case MySQLSchemaRuleIndexKeyNumberLimit:
+		return MySQLIndexKeyNumberLimit, nil
+	case TiDBSchemaRuleIndexKeyNumberLimit:
+		return MySQLIndexKeyNumberLimit, nil
+	case PostgreSQLSchemaRuleIndexKeyNumberLimit:
+		return PostgreSQLIndexKeyNumberLimit, nil
+	case MySQLSchemaRuleIndexTotalNumberLimit:
+		return MySQLIndexTotalNumberLimit, nil
+	case TiDBSchemaRuleIndexTotalNumberLimit:
+		return MySQLIndexTotalNumberLimit, nil
+	case PostgreSQLSchemaRuleIndexTotalNumberLimit:
+		return PostgreSQLIndexTotalNumberLimit, nil
+	case MySQLSchemaRuleStatementDisallowCommit:
+		return MySQLStatementDisallowCommit, nil
+	case TiDBSchemaRuleStatementDisallowCommit:
+		return MySQLStatementDisallowCommit, nil
+	case PostgreSQLSchemaRuleStatementDisallowCommit:
+		return PostgreSQLStatementDisallowCommit, nil
+	case MySQLSchemaRuleCharsetAllowlist:
+		return MySQLCharsetAllowlist, nil
+	case TiDBSchemaRuleCharsetAllowlist:
+		return MySQLCharsetAllowlist, nil
+	case PostgreSQLSchemaRuleCharsetAllowlist:
+		return PostgreSQLEncodingAllowlist, nil
+	case MySQLSchemaRuleCollationAllowlist:
+		return MySQLCollationAllowlist, nil
+	case TiDBSchemaRuleCollationAllowlist:
+		return MySQLCollationAllowlist, nil
+	case PostgreSQLSchemaRuleCollationAllowlist:
+		return PostgreSQLCollationAllowlist, nil
+	case MySQLSchemaRuleIndexPKTypeLimit:
+		return MySQLIndexPKType, nil
+	case TiDBSchemaRuleIndexPKTypeLimit:
+		return MySQLIndexPKType, nil
+	case MySQLSchemaRuleIndexTypeNoBlob:
+		return MySQLIndexTypeNoBlob, nil
+	case TiDBSchemaRuleIndexTypeNoBlob:
+		return MySQLIndexTypeNoBlob, nil
+	case PostgreSQLSchemaRuleIndexPrimaryKeyTypeAllowlist:
+		return PostgreSQLPrimaryKeyTypeAllowlist, nil
+	case PostgreSQLSchemaRuleCreateIndexConcurrently:
+		return PostgreSQLCreateIndexConcurrently, nil
+	case MySQLSchemaRuleStatementInsertRowLimit:
+		return MySQLInsertRowLimit, nil
+	case PostgreSQLSchemaRuleStatementInsertRowLimit:
+		return PostgreSQLInsertRowLimit, nil
+	case MySQLSchemaRuleStatementInsertMustSpecifyColumn:
+		return MySQLInsertMustSpecifyColumn, nil
+	case TiDBSchemaRuleStatementInsertMustSpecifyColumn:
+		return MySQLInsertMustSpecifyColumn, nil
+	case PostgreSQLSchemaRuleStatementInsertMustSpecifyColumn:
+		return PostgreSQLInsertMustSpecifyColumn, nil
+	case MySQLSchemaRuleStatementInsertDisallowOrderByRand:
+		return MySQLInsertDisallowOrderByRand, nil
+	case TiDBSchemaRuleStatementInsertDisallowOrderByRand:
+		return MySQLInsertDisallowOrderByRand, nil
+	case PostgreSQLSchemaRuleStatementInsertDisallowOrderByRand:
+		return PostgreSQLInsertDisallowOrderByRand, nil
+	case MySQLSchemaRuleStatementDisallowLimit:
+		return MySQLDisallowLimit, nil
+	case TiDBSchemaRuleStatementDisallowLimit:
+		return MySQLDisallowLimit, nil
+	case MySQLSchemaRuleStatementDisallowOrderBy:
+		return MySQLDisallowOrderBy, nil
+	case TiDBSchemaRuleStatementDisallowOrderBy:
+		return MySQLDisallowOrderBy, nil
+	case MySQLSchemaRuleStatementMergeAlterTable:
+		return MySQLMergeAlterTable, nil
+	case TiDBSchemaRuleStatementMergeAlterTable:
+		return MySQLMergeAlterTable, nil
+	case PostgreSQLSchemaRuleStatementMergeAlterTable:
+		return PostgreSQLMergeAlterTable, nil
+	case MySQLSchemaRuleStatementAffectedRowLimit:
+		return MySQLStatementAffectedRowLimit, nil
+	case PostgreSQLSchemaRuleStatementAffectedRowLimit:
+		return PostgreSQLStatementAffectedRowLimit, nil
+	case MySQLSchemaRuleStatementDMLDryRun:
+		return MySQLStatementDMLDryRun, nil
+	case TiDBSchemaRuleStatementDMLDryRun:
+		return MySQLStatementDMLDryRun, nil
+	case PostgreSQLSchemaRuleStatementDMLDryRun:
+		return PostgreSQLStatementDMLDryRun, nil
+	case PostgreSQLSchemaRuleStatementDisallowAddColumnWithDefault:
+		return PostgreSQLDisallowAddColumnWithDefault, nil
+	case PostgreSQLSchemaRuleStatementAddCheckNotValid:
+		return PostgreSQLAddCheckNotValid, nil
+	case PostgreSQLSchemaRuleStatementDisallowAddNotNull:
+		return PostgreSQLDisallowAddNotNull, nil
+	case PostgreSQLSchemaRuleCommentLength:
+		return PostgreSQLCommentConvention, nil
 	}
-	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
+	return Fake, errors.Errorf("unknown SQL review rule type %v", ruleType)
 }

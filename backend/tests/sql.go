@@ -154,170 +154,117 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 		RuleList: []*advisor.SQLReviewRule{
 			// Naming
 			{
-				Type:  advisor.SchemaRuleTableNaming,
+				Type:  advisor.PostgreSQLSchemaRuleTableNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnNaming,
+				Type:  advisor.PostgreSQLSchemaRuleColumnNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIDXNaming,
+				Type:  advisor.PostgreSQLSchemaRuleIDXNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRulePKNaming,
+				Type:  advisor.PostgreSQLSchemaRulePKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleUKNaming,
+				Type:  advisor.PostgreSQLSchemaRuleUKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleFKNaming,
+				Type:  advisor.PostgreSQLSchemaRuleFKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// Statement
 			{
-				Type:  advisor.SchemaRuleStatementNoSelectAll,
+				Type:  advisor.PostgreSQLSchemaRuleStatementNoSelectAll,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementRequireWhere,
+				Type:  advisor.PostgreSQLSchemaRuleStatementRequireWhere,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementNoLeadingWildcardLike,
+				Type:  advisor.PostgreSQLSchemaRuleStatementNoLeadingWildcardLike,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDisallowCommit,
+				Type:  advisor.PostgreSQLSchemaRuleStatementDisallowCommit,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDisallowOrderBy,
+				Type:  advisor.PostgreSQLSchemaRuleStatementMergeAlterTable,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementMergeAlterTable,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+				Type:  advisor.PostgreSQLSchemaRuleStatementInsertDisallowOrderByRand,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// TABLE
 			{
-				Type:  advisor.SchemaRuleTableRequirePK,
+				Type:  advisor.PostgreSQLSchemaRuleTableRequirePK,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleTableNoFK,
+				Type:  advisor.PostgreSQLSchemaRuleTableNoFK,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleTableDropNamingConvention,
+				Type:  advisor.PostgreSQLSchemaRuleTableDropNamingConvention,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleTableCommentConvention,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleTableDisallowPartition,
+				Type:  advisor.PostgreSQLSchemaRuleTableDisallowPartition,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// COLUMN
 			{
-				Type:  advisor.SchemaRuleRequiredColumn,
+				Type:  advisor.PostgreSQLSchemaRuleRequiredColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnNotNull,
+				Type:  advisor.PostgreSQLSchemaRuleColumnNotNull,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnDisallowChangeType,
+				Type:  advisor.PostgreSQLSchemaRuleColumnDisallowChangeType,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnDisallowChange,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnDisallowChangingOrder,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnCommentConvention,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnAutoIncrementMustInteger,
+				Type:  advisor.PostgreSQLSchemaRuleColumnTypeDisallowList,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnTypeDisallowList,
-				Level: advisor.SchemaRuleLevelError,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnDisallowSetCharset,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnMaximumCharacterLength,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnAutoIncrementInitialValue,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleCurrentTimeColumnCountLimit,
+				Type:  advisor.PostgreSQLSchemaRuleColumnMaximumCharacterLength,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// SCHEMA
 			{
-				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,
+				Type:  advisor.PostgreSQLSchemaRuleSchemaBackwardCompatibility,
 				Level: advisor.SchemaRuleLevelWarning,
-			},
-			// DATABASE
-			{
-				Type:  advisor.SchemaRuleDropEmptyDatabase,
-				Level: advisor.SchemaRuleLevelError,
 			},
 			// INDEX
 			{
-				Type:  advisor.SchemaRuleIndexNoDuplicateColumn,
+				Type:  advisor.PostgreSQLSchemaRuleIndexNoDuplicateColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIndexKeyNumberLimit,
+				Type:  advisor.PostgreSQLSchemaRuleIndexKeyNumberLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIndexPKTypeLimit,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleIndexTypeNoBlob,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleIndexTotalNumberLimit,
+				Type:  advisor.PostgreSQLSchemaRuleIndexTotalNumberLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// SYSTEM
 			{
-				Type:  advisor.SchemaRuleCharsetAllowlist,
+				Type:  advisor.PostgreSQLSchemaRuleCharsetAllowlist,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleCollationAllowlist,
+				Type:  advisor.PostgreSQLSchemaRuleCollationAllowlist,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 		},
@@ -332,207 +279,203 @@ func prodTemplateSQLReviewPolicyForMySQL() (string, error) {
 		RuleList: []*advisor.SQLReviewRule{
 			// Engine
 			{
-				Type:  advisor.SchemaRuleMySQLEngine,
+				Type:  advisor.MySQLSchemaRuleMySQLEngine,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			// Naming
 			{
-				Type:  advisor.SchemaRuleTableNaming,
+				Type:  advisor.MySQLSchemaRuleTableNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnNaming,
+				Type:  advisor.MySQLSchemaRuleColumnNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIDXNaming,
+				Type:  advisor.MySQLSchemaRuleIDXNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRulePKNaming,
+				Type:  advisor.MySQLSchemaRuleUKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleUKNaming,
+				Type:  advisor.MySQLSchemaRuleFKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleFKNaming,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleAutoIncrementColumnNaming,
+				Type:  advisor.MySQLSchemaRuleAutoIncrementColumnNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// Statement
 			{
-				Type:  advisor.SchemaRuleStatementNoSelectAll,
+				Type:  advisor.MySQLSchemaRuleStatementNoSelectAll,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementRequireWhere,
+				Type:  advisor.MySQLSchemaRuleStatementRequireWhere,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementNoLeadingWildcardLike,
+				Type:  advisor.MySQLSchemaRuleStatementNoLeadingWildcardLike,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDisallowCommit,
+				Type:  advisor.MySQLSchemaRuleStatementDisallowCommit,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDisallowLimit,
+				Type:  advisor.MySQLSchemaRuleStatementDisallowLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDisallowOrderBy,
+				Type:  advisor.MySQLSchemaRuleStatementDisallowOrderBy,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementMergeAlterTable,
+				Type:  advisor.MySQLSchemaRuleStatementMergeAlterTable,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementInsertRowLimit,
+				Type:  advisor.MySQLSchemaRuleStatementInsertRowLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+				Type:  advisor.MySQLSchemaRuleStatementInsertMustSpecifyColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+				Type:  advisor.MySQLSchemaRuleStatementInsertDisallowOrderByRand,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementAffectedRowLimit,
+				Type:  advisor.MySQLSchemaRuleStatementAffectedRowLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDMLDryRun,
+				Type:  advisor.MySQLSchemaRuleStatementDMLDryRun,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			// TABLE
 			{
-				Type:  advisor.SchemaRuleTableRequirePK,
+				Type:  advisor.MySQLSchemaRuleTableRequirePK,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleTableNoFK,
+				Type:  advisor.MySQLSchemaRuleTableNoFK,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleTableDropNamingConvention,
+				Type:  advisor.MySQLSchemaRuleTableDropNamingConvention,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleTableCommentConvention,
+				Type:  advisor.MySQLSchemaRuleTableCommentConvention,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleTableDisallowPartition,
+				Type:  advisor.MySQLSchemaRuleTableDisallowPartition,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// COLUMN
 			{
-				Type:  advisor.SchemaRuleRequiredColumn,
+				Type:  advisor.MySQLSchemaRuleRequiredColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnNotNull,
+				Type:  advisor.MySQLSchemaRuleColumnNotNull,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnDisallowChangeType,
+				Type:  advisor.MySQLSchemaRuleColumnDisallowChangeType,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnSetDefaultForNotNull,
+				Type:  advisor.MySQLSchemaRuleColumnSetDefaultForNotNull,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnDisallowChange,
+				Type:  advisor.MySQLSchemaRuleColumnDisallowChange,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnDisallowChangingOrder,
+				Type:  advisor.MySQLSchemaRuleColumnDisallowChangingOrder,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnCommentConvention,
+				Type:  advisor.MySQLSchemaRuleColumnCommentConvention,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnAutoIncrementMustInteger,
+				Type:  advisor.MySQLSchemaRuleColumnAutoIncrementMustInteger,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnTypeDisallowList,
+				Type:  advisor.MySQLSchemaRuleColumnTypeDisallowList,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnDisallowSetCharset,
+				Type:  advisor.MySQLSchemaRuleColumnDisallowSetCharset,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnMaximumCharacterLength,
+				Type:  advisor.MySQLSchemaRuleColumnMaximumCharacterLength,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnAutoIncrementInitialValue,
+				Type:  advisor.MySQLSchemaRuleColumnAutoIncrementInitialValue,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+				Type:  advisor.MySQLSchemaRuleColumnAutoIncrementMustUnsigned,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleCurrentTimeColumnCountLimit,
+				Type:  advisor.MySQLSchemaRuleCurrentTimeColumnCountLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleColumnRequireDefault,
+				Type:  advisor.MySQLSchemaRuleColumnRequireDefault,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// SCHEMA
 			{
-				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,
+				Type:  advisor.MySQLSchemaRuleSchemaBackwardCompatibility,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// DATABASE
 			{
-				Type:  advisor.SchemaRuleDropEmptyDatabase,
+				Type:  advisor.MySQLSchemaRuleDropEmptyDatabase,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			// INDEX
 			{
-				Type:  advisor.SchemaRuleIndexNoDuplicateColumn,
+				Type:  advisor.MySQLSchemaRuleIndexNoDuplicateColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIndexKeyNumberLimit,
+				Type:  advisor.MySQLSchemaRuleIndexKeyNumberLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIndexPKTypeLimit,
+				Type:  advisor.MySQLSchemaRuleIndexPKTypeLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIndexTypeNoBlob,
+				Type:  advisor.MySQLSchemaRuleIndexTypeNoBlob,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleIndexTotalNumberLimit,
+				Type:  advisor.MySQLSchemaRuleIndexTotalNumberLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			// SYSTEM
 			{
-				Type:  advisor.SchemaRuleCharsetAllowlist,
+				Type:  advisor.MySQLSchemaRuleCharsetAllowlist,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleCollationAllowlist,
+				Type:  advisor.MySQLSchemaRuleCollationAllowlist,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 		},
