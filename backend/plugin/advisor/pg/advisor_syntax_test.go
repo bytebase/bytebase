@@ -32,6 +32,7 @@ func TestPostgreSQLSyntax(t *testing.T) {
 					Code:    advisor.StatementSyntaxError,
 					Title:   "Syntax error",
 					Content: "syntax error at or near \"ENGINE\"",
+					Line:    1,
 				},
 			},
 		},

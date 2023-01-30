@@ -46,24 +46,69 @@ func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Ad
 				Code:    advisor.StatementSyntaxError,
 				Title:   "Syntax error",
 				Content: err.Error(),
+				Line:    calculateErrorLine(supportStmt, ctx.Charset, ctx.Collation),
 			},
 		}, nil
 	}
 
 	var adviceList []advisor.Advice
-	for _, warn := range warns {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Warn,
-			Code:    advisor.StatementSyntaxError,
-			Title:   "Syntax Warning",
-			Content: warn.Error(),
-		})
+	if len(warns) > 0 {
+		adviceList = append(adviceList, getWarnWithLine(supportStmt, ctx.Charset, ctx.Collation)...)
 	}
 
 	adviceList = append(adviceList, advisor.Advice{
 		Status:  advisor.Success,
 		Code:    advisor.Ok,
 		Title:   "Syntax OK",
-		Content: "OK"})
+		Content: "OK",
+	})
 	return adviceList, nil
+}
+
+func getWarnWithLine(statement string, charset string, collation string) []advisor.Advice {
+	list, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	if err != nil {
+		return []advisor.Advice{{
+			Status:  advisor.Error,
+			Code:    advisor.Internal,
+			Title:   "Split multi-SQL error",
+			Content: err.Error(),
+			Line:    1,
+		}}
+	}
+
+	var adviceList []advisor.Advice
+	p := newParser()
+	for _, stmt := range list {
+		if _, warns, _ := p.Parse(stmt.Text, charset, collation); len(warns) > 0 {
+			for _, warn := range warns {
+				adviceList = append(adviceList, advisor.Advice{
+					Status:  advisor.Warn,
+					Code:    advisor.StatementSyntaxError,
+					Title:   "Syntax Warning",
+					Content: warn.Error(),
+					Line:    stmt.LastLine,
+				})
+			}
+		}
+	}
+
+	return adviceList
+}
+
+func calculateErrorLine(statement string, charset string, collation string) int {
+	list, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	if err != nil {
+		//nolint:nilerr
+		return 1
+	}
+
+	p := newParser()
+	for _, stmt := range list {
+		if _, _, err := p.Parse(stmt.Text, charset, collation); err != nil {
+			return stmt.LastLine
+		}
+	}
+
+	return 0
 }
