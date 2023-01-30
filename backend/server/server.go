@@ -840,13 +840,14 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	issueCreate := &api.IssueCreate{
 		ProjectID: project.UID,
-		Name:      "[Sample] Add email column to Salary table",
+		Name:      "👉 [Try this] Add email column to Salary table",
 		Type:      api.IssueDatabaseSchemaUpdate,
 		Description: `A sample issue to showcase how to review database schema change.
 		
 Click "Approve" button to apply the schema update.`,
-		AssigneeID:    userID,
-		CreateContext: string(createContext),
+		AssigneeID:            userID,
+		AssigneeNeedAttention: true,
+		CreateContext:         string(createContext),
 	}
 
 	issue, err := s.createIssue(ctx, issueCreate, userID)
