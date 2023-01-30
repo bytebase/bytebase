@@ -268,7 +268,7 @@
     "invoker": "Invoker",
     "started": "Started",
     "ended": "Ended",
-    "view-migration": "View migration",
+    "view-change": "View change",
     "view-change-history": "View change history",
     "status": {
       "running": "Running",
