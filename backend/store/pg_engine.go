@@ -734,14 +734,6 @@ func FormatError(err error) error {
 			return common.Errorf(common.Conflict, "instance id and name already exists")
 		case strings.Contains(err.Error(), "idx_db_unique_instance_id_name"):
 			return common.Errorf(common.Conflict, "database name already exists")
-		case strings.Contains(err.Error(), "idx_tbl_unique_database_id_name"):
-			return common.Errorf(common.Conflict, "database id and name already exists")
-		case strings.Contains(err.Error(), "idx_col_unique_database_id_table_id_name"):
-			return common.Errorf(common.Conflict, "database id, table id and name already exists")
-		case strings.Contains(err.Error(), "idx_idx_unique_database_id_table_id_name_expression"):
-			return common.Errorf(common.Conflict, "database id, table id, name and expression already exists")
-		case strings.Contains(err.Error(), "idx_vw_unique_database_id_name"):
-			return common.Errorf(common.Conflict, "database id and name already exists")
 		case strings.Contains(err.Error(), "idx_data_source_unique_database_id_name"):
 			return common.Errorf(common.Conflict, "data source name already exists")
 		case strings.Contains(err.Error(), "idx_backup_unique_database_id_name"):
