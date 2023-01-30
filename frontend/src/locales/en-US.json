@@ -218,6 +218,7 @@
     "want-help": "Want help",
     "operation": "Operation",
     "rollback": "Rollback",
+    "total": "Total",
     "discard-changes": "Discard changes",
     "error-message": "Error message"
   },

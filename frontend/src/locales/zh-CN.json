@@ -218,6 +218,7 @@
     "want-help": "加入用户群",
     "operation": "操作",
     "rollback": "回滚",
+    "total": "共计",
     "discard-changes": "取消修改",
     "error-message": "错误信息"
   },
