@@ -148,7 +148,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { OAuthWindowEventPayload } from "@/types";
@@ -188,6 +188,49 @@ const identityProviderList = computed(
   () => identityProviderStore.identityProviderList
 );
 
+onMounted(async () => {
+  // Navigate to signup if needs admin setup.
+  // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
+  // after router has already made the decision on first page load.
+  if (actuatorStore.needAdminSetup) {
+    router.push({ name: "auth.signup", replace: true });
+  }
+
+  if (isDemo.value) {
+    state.email = "demo@example.com";
+    state.password = "1024";
+    state.showPassword = true;
+  }
+
+  await identityProviderStore.fetchIdentityProviderList();
+});
+
+onUnmounted(() => {
+  if (state.activeIdentityProvider) {
+    window.removeEventListener(
+      `bb.oauth.signin.${state.activeIdentityProvider.name}`,
+      loginWithIdentityProviderEventListener,
+      false
+    );
+  }
+});
+
+watch(
+  () => state.activeIdentityProvider?.name,
+  (newValue, oldValue) => {
+    window.removeEventListener(
+      `bb.oauth.signin.${oldValue}`,
+      loginWithIdentityProviderEventListener,
+      false
+    );
+    window.addEventListener(
+      `bb.oauth.signin.${newValue}`,
+      loginWithIdentityProviderEventListener,
+      false
+    );
+  }
+);
+
 const loginWithIdentityProviderEventListener = async (event: Event) => {
   if (!state.activeIdentityProvider) {
     return;
@@ -216,49 +259,16 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
   }
 };
 
-onMounted(async () => {
-  // Navigate to signup if needs admin setup.
-  // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
-  // after router has already made the decision on first page load.
-  if (actuatorStore.needAdminSetup) {
-    router.push({ name: "auth.signup", replace: true });
-  }
-
-  if (isDemo.value) {
-    state.email = "demo@example.com";
-    state.password = "1024";
-    state.showPassword = true;
-  }
-
-  await identityProviderStore.fetchIdentityProviderList();
-
-  window.addEventListener(
-    "bb.oauth.signin",
-    loginWithIdentityProviderEventListener,
-    false
-  );
-});
-
-onUnmounted(() => {
-  window.removeEventListener(
-    "bb.oauth.signin",
-    loginWithIdentityProviderEventListener
-  );
-});
-
 const allowSignin = computed(() => {
   return isValidEmail(state.email) && state.password;
 });
 
-const trySignin = () => {
-  authStore
-    .login({
-      email: state.email,
-      password: state.password,
-    })
-    .then(() => {
-      router.push("/");
-    });
+const trySignin = async () => {
+  await authStore.login({
+    email: state.email,
+    password: state.password,
+  });
+  router.push("/");
 };
 
 const trySigninWithIdentityProvider = (identityProvider: IdentityProvider) => {

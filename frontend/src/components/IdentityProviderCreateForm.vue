@@ -263,6 +263,13 @@
       class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
     >
       <div class="space-x-4 flex flex-row justify-start items-center">
+        <button
+          :disabled="!allowTestConnection"
+          class="btn-normal"
+          @click="state.showTestModal = true"
+        >
+          {{ $t("identity-provider.test-connection") }}
+        </button>
         <BBButtonConfirm
           v-if="!isCreating"
           :style="'DELETE'"
@@ -305,6 +312,14 @@
       </div>
     </div>
   </div>
+
+  <template v-if="state.showTestModal">
+    <OAuth2IdentityProviderTestModal
+      v-if="state.type === IdentityProviderType.OAUTH2"
+      :identity-provider="updatedIdentityProvider"
+      @cancel="state.showTestModal = false"
+    />
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -333,9 +348,11 @@ import {
   identityProviderTypeToString,
   isDev,
 } from "@/utils";
+import OAuth2IdentityProviderTestModal from "./OAuth2IdentityProviderTestModal.vue";
 
 interface LocalState {
   type: IdentityProviderType;
+  showTestModal: boolean;
 }
 
 const props = defineProps<{
@@ -351,6 +368,7 @@ const emit = defineEmits<{
 const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   type: IdentityProviderType.OAUTH2,
+  showTestModal: false,
 });
 const identityProvider = ref<IdentityProvider>(
   IdentityProvider.fromPartial({})
@@ -442,6 +460,15 @@ const allowCreate = computed(() => {
     return false;
   }
   return true;
+});
+
+const allowTestConnection = computed(() => {
+  if (state.type === IdentityProviderType.OAUTH2) {
+    if (isFormCompleted.value) {
+      return true;
+    }
+  }
+  return false;
 });
 
 const updatedIdentityProvider = computed(() => {

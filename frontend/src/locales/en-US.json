@@ -218,7 +218,8 @@
     "want-help": "Want help",
     "operation": "Operation",
     "rollback": "Rollback",
-    "discard-changes": "Discard changes"
+    "discard-changes": "Discard changes",
+    "error-message": "Error message"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1800,5 +1801,12 @@
   "schema-diagram": {
     "self": "Schema Diagram",
     "fit-content-with-view": "Fit content within view"
+  },
+  "identity-provider": {
+    "test-connection": "Test Connection",
+    "test-modal": {
+      "title": "Test OAuth2 Connection",
+      "start-test": "Click sign in to get start testing"
+    }
   }
 }
