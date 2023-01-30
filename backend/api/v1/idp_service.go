@@ -178,13 +178,12 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 }
 
 // TestIdentityProvider tests an identity provider connection.
-func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, request *v1pb.TestIdentityProviderRequest) (*v1pb.TestIdentityProviderResponse, error) {
+func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, request *v1pb.TestIdentityProviderRequest) (*emptypb.Empty, error) {
 	identityProvider := request.IdentityProvider
 	if identityProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
-	response := &v1pb.TestIdentityProviderResponse{}
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
@@ -196,28 +195,23 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.Internal, "failed to new oauth2 identity provider")
 		}
 
-		response.Result = &v1pb.TestIdentityProviderResponse_Oauth2Result{
-			Oauth2Result: &v1pb.OAuth2IdentityProviderTestResult{
-				AccessToken: "",
-				UserInfo:    nil,
-			},
-		}
 		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
-		if err != nil || token == "" {
-			response.Message = fmt.Sprintf("failed to exchange access token, error: %s", err.Error())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
 		}
-		if token != "" {
-			response.GetOauth2Result().AccessToken = token
-			userInfo, err := oauth2IdentityProvider.UserInfo(token)
-			if err != nil || userInfo == nil {
-				response.Message = fmt.Sprintf("failed to get user info, error: %s", err.Error())
-			} else {
-				response.GetOauth2Result().UserInfo = convertIdentityProviderUserInfoFromStore(userInfo)
-			}
+		if token == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing access token")
+		}
+		userInfo, err := oauth2IdentityProvider.UserInfo(token)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
+		}
+		if userInfo == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
 		}
 	}
-	return response, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {
@@ -332,14 +326,6 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		}
 	} else {
 		return nil
-	}
-}
-
-func convertIdentityProviderUserInfoFromStore(userInfo *storepb.IdentityProviderUserInfo) *v1pb.IdentityProviderUserInfo {
-	return &v1pb.IdentityProviderUserInfo{
-		Identifier:  userInfo.Identifier,
-		DisplayName: userInfo.DisplayName,
-		Email:       userInfo.Email,
 	}
 }
 

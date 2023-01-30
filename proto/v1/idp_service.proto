@@ -57,7 +57,7 @@ service IdentityProviderService {
     };
   }
 
-  rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
+  rpc TestIdentityProvider(TestIdentityProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/idps/*/test"
       body: "*"
@@ -145,20 +145,6 @@ message OAuth2IdentityProviderTestRequestContext {
   string code = 1;
 }
 
-message TestIdentityProviderResponse {
-  string message = 1;
-  
-  oneof result {
-    OAuth2IdentityProviderTestResult oauth2_result = 2;
-  }
-}
-
-message OAuth2IdentityProviderTestResult {
-  string access_token = 1;
-
-  optional IdentityProviderUserInfo user_info = 2;
-}
-
 message IdentityProvider {
   // The name of the identity provider.
   // Format: idps/{identity_provider}
@@ -235,16 +221,5 @@ message FieldMapping {
   string display_name = 2;
 
   // Email is the field name of primary email in 3rd-party idp user info. Required.
-  string email = 3;
-}
-
-message IdentityProviderUserInfo {
-  // Identifier is the value of the unique identifier in 3rd-party idp user info.
-  string identifier = 1;
-
-  // DisplayName is the value of display name in 3rd-party idp user info.
-  string display_name = 2;
-
-  // Email is the value of primary email in 3rd-party idp user info.
   string email = 3;
 }
