@@ -1,10 +1,7 @@
 <template>
   <div class="pipeline-standard-flow divide-y">
-    <PipelineStageList>
-      <template #task-name-of-stage="{ stage }">
-        {{ taskNameOfStage(stage) }}
-      </template>
-    </PipelineStageList>
+    <PipelineStageList />
+
     <div v-if="shouldShowTaskBar" class="relative">
       <div
         ref="taskBar"
@@ -76,7 +73,7 @@ import {
   TaskDatabaseCreatePayload,
   unknown,
 } from "@/types";
-import { activeTaskInStage, taskSlug } from "@/utils";
+import { taskSlug } from "@/utils";
 import { useIssueLogic } from "./logic";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import { useVerticalScrollState } from "@/composables/useScrollState";
@@ -94,20 +91,6 @@ const databaseStore = useDatabaseStore();
 
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, 192);
-
-const taskNameOfStage = (stage: Stage | StageCreate) => {
-  if (create.value) {
-    return stage.taskList[0].status;
-  }
-  const activeTask = activeTaskInStage(stage as Stage);
-  const { taskList } = stage as Stage;
-  for (let i = 0; i < stage.taskList.length; i++) {
-    if (taskList[i].id == activeTask.id) {
-      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-    }
-  }
-  return activeTask.name;
-};
 
 const pipeline = computed(() => issue.value.pipeline!);
 
