@@ -227,7 +227,11 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { useActuatorStore, useAuthStore } from "@/store";
+import {
+  useActuatorStore,
+  useAuthStore,
+  useOnboardingStateStore,
+} from "@/store";
 import { SignupInfo, TEXT_VALIDATION_DELAY } from "@/types";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
@@ -355,6 +359,14 @@ export default defineComponent({
         await useAuthStore().signup(signupInfo);
         if (needAdminSetup.value) {
           await actuatorStore.fetchServerInfo();
+          // When the first time we created an end user, the server-side will
+          // generate onboarding data.
+          // We write a flag here to indicate that the workspace is just created
+          // and we can consume this flag somewhere else if needed.
+          useOnboardingStateStore().setState({
+            isOnboarding: true,
+            consumed: [],
+          });
         }
         router.replace("/");
       }
