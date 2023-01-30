@@ -869,6 +869,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 	}
+	fmt.Println("[databaseIDCount] ", databaseIDCount)
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
 		migrationDetail := c.DetailList[0]
@@ -977,7 +978,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		var environmentID string
 		var taskCreateList []api.TaskCreate
 		var taskIndexDAGList []api.TaskIndexDAG
-		for _, database := range databaseList {
+		fmt.Println("[databaseList]", len(databaseList))
+		for i, database := range databaseList {
+			fmt.Println(i, " ", database.UID, " ", database.DatabaseName)
 			if environmentID != "" && environmentID != database.EnvironmentID {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 			}
@@ -991,6 +994,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 
 			migrationDetailList := databaseToMigrationList[database.UID]
+			fmt.Printf("[migrationDetailList] len:%d\n", len(migrationDetailList))
 			sort.Slice(migrationDetailList, func(i, j int) bool {
 				return migrationDetailList[i].SchemaVersion < migrationDetailList[j].SchemaVersion
 			})
@@ -1004,6 +1008,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				}
 				taskCreateList = append(taskCreateList, taskCreate)
 			}
+			fmt.Printf("[taskCreateList] len:%d\n", len(taskCreateList))
 		}
 
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})

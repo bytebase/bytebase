@@ -653,6 +653,14 @@ const (
 	schemaFileType
 )
 
+func printDetail(list []*api.MigrationDetail) string {
+	result := fmt.Sprintf("len:%d", len(list))
+	for i, file := range list {
+		result = fmt.Sprintf("%s, [%d]%s", result, i, file.MigrationType)
+	}
+	return result
+}
+
 // getFileInfo processes the file item against the candidate list of
 // repositories and returns the parsed migration information, file change type
 // and a single matched repository. It returns an error when none or multiple
@@ -750,6 +758,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	var fileNameList []string
 
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
+	fmt.Println("!!!len ", len(fileInfoList))
 	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == schemaFileType {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
@@ -776,6 +785,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
 			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo)
+			fmt.Printf("[migrationDetailListForFile] %v\n", printDetail(migrationDetailListForFile))
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			if len(migrationDetailListForFile) != 0 {
@@ -783,6 +793,8 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			}
 		}
 	}
+
+	fmt.Printf("[final migrationDetailListForFile] %v\n", printDetail(migrationDetailList))
 
 	if len(migrationDetailList) == 0 {
 		return "", len(createdIssueList) != 0, activityCreateList, nil
@@ -820,6 +832,7 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 }
 
 func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
+	fmt.Printf("[createIssueFromMigrationDetailList] %s\n", printDetail(migrationDetailList))
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			VCSPushEvent: &pushEvent,
@@ -854,6 +867,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 	}
+	fmt.Printf("[issue] len %d\n", len(issue.Pipeline.StageList[0].TaskList))
 
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(

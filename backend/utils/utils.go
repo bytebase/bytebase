@@ -257,6 +257,9 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
 func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+	for i := range databaseList {
+		fmt.Println("[GetDatabaseMatrixFromDeploymentSchedule] ", i, " ", databaseList[i])
+	}
 	var matrix [][]*store.DatabaseMessage
 
 	// idToLabels maps databaseID -> label key -> label value
@@ -369,6 +372,7 @@ func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists 
 		}
 		offset += len(taskCreateList)
 	}
+	fmt.Printf("[MergeTaskCreateLists] %v, %v\n", resTaskCreateList, resTaskIndexDAGList)
 	return resTaskCreateList, resTaskIndexDAGList, nil
 }
 
