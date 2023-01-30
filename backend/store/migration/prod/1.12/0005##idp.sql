@@ -30,8 +30,7 @@ CREATE TRIGGER update_idp_updated_ts BEFORE
 UPDATE
   ON idp FOR EACH ROW EXECUTE FUNCTION trigger_update_updated_ts();
 
-ALTER TABLE
-  principal DROP CONSTRAINT IF EXISTS idx_principal_unique_email;
+DROP INDEX IF EXISTS idx_principal_unique_email;
 
 ALTER TABLE
   principal
