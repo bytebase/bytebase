@@ -12,71 +12,52 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// settingRaw is the store model for an Setting.
-// Fields have exactly the same meanings as Setting.
-type settingRaw struct {
-	ID int
-
-	// Domain specific fields
-	Name        api.SettingName
-	Value       string
-	Description string
-}
-
-// toSetting creates an instance of Setting based on the settingRaw.
-// This is intended to be called when we need to compose an Setting relationship.
-func (raw *settingRaw) toSetting() *api.Setting {
-	return &api.Setting{
-		ID: raw.ID,
-
-		// Domain specific fields
-		Name:        raw.Name,
-		Value:       raw.Value,
-		Description: raw.Description,
-	}
-}
-
 // CreateSettingIfNotExist creates an instance of Setting.
 func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, bool, error) {
 	settingRaw, created, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
 	}
-	return settingRaw.toSetting(), created, nil
+	return settingRaw.toAPISetting(), created, nil
 }
 
 // FindSetting finds a list of Setting instances.
 func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
-	settingRawList, err := s.findSettingRaw(ctx, find)
+	findV2 := &FindSettingMessage{Name: find.Name}
+	settings, err := s.ListSettingV2(ctx, findV2)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Setting list with SettingFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to list setting with [%+v]", findV2)
 	}
 	var settingList []*api.Setting
-	for _, raw := range settingRawList {
-		settingList = append(settingList, raw.toSetting())
+	for _, setting := range settings {
+		settingList = append(settingList, setting.toAPISetting())
 	}
 	return settingList, nil
 }
 
 // GetSetting gets an instance of Setting.
 func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
-	settingRaw, err := s.getSettingRaw(ctx, find)
+	findV2 := &FindSettingMessage{Name: find.Name}
+	setting, err := s.GetSettingV2(ctx, findV2)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Setting with SettingFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to get setting with [%+v]", findV2)
 	}
-	if settingRaw == nil {
+	if setting == nil {
 		return nil, nil
 	}
-	return settingRaw.toSetting(), nil
+	return setting.toAPISetting(), nil
 }
 
 // PatchSetting patches an instance of Setting.
 func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
-	settingRaw, err := s.patchSettingRaw(ctx, patch)
+	setting, err := s.UpsertSettingV2(ctx, &SetSettingMessage{
+		Name:  patch.Name,
+		Value: patch.Value,
+	}, patch.UpdaterID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Setting with SettingPatch[%+v]", patch)
+		return nil, errors.Wrapf(err, "failed to patch setting with [%+v]", patch)
 	}
-	return settingRaw.toSetting(), nil
+	return setting.toAPISetting(), nil
 }
 
 //
@@ -85,13 +66,13 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 
 // createSettingRawIfNotExist creates a new setting only if the named setting does not exist.
 // The returned bool means the resource is created successfully.
-func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.SettingCreate) (*settingRaw, bool, error) {
+func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.SettingCreate) (*SettingMessage, bool, error) {
 	// We do a find followed by a create if NOT found. Though SQLite supports UPSERT ON CONFLICT DO NOTHING syntax, it doesn't
 	// support RETURNING in such case. So we have to use separate SELECT and INSERT anyway.
-	find := &api.SettingFind{
+	find := &FindSettingMessage{
 		Name: &create.Name,
 	}
-	setting, err := s.getSettingRaw(ctx, find)
+	setting, err := s.GetSettingV2(ctx, find)
 	if err != nil {
 		return nil, false, err
 	}
@@ -117,66 +98,8 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 	return setting, false, nil
 }
 
-// findSettingRaw retrieves a list of settings based on find.
-func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findSettingImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
-}
-
-// getSettingRaw retrieves a single setting based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findSettingImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
-	}
-	return list[0], nil
-}
-
-// patchSettingRaw updates an existing setting by name.
-// Returns ENOTFOUND if setting does not exist.
-func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	setting, err := patchSettingImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return setting, nil
-}
-
 // createSettingImpl creates a new setting.
-func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (*settingRaw, error) {
+func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (*SettingMessage, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO setting (
@@ -189,7 +112,7 @@ func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING name, value, description
 	`
-	var settingRaw settingRaw
+	var settingMessage SettingMessage
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
@@ -197,94 +120,21 @@ func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (
 		create.Value,
 		create.Description,
 	).Scan(
-
-		&settingRaw.Name,
-		&settingRaw.Value,
-		&settingRaw.Description,
+		&settingMessage.Name,
+		&settingMessage.Value,
+		&settingMessage.Description,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, FormatError(err)
 	}
-	return &settingRaw, nil
-}
-
-func findSettingImpl(ctx context.Context, tx *Tx, find *api.SettingFind) ([]*settingRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.Name; v != nil {
-		where, args = append(where, "name = $1"), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			name,
-			value,
-			description
-		FROM setting
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into settingRawList.
-	var settingRawList []*settingRaw
-	for rows.Next() {
-		var settingRaw settingRaw
-		if err := rows.Scan(
-			&settingRaw.Name,
-			&settingRaw.Value,
-			&settingRaw.Description,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		settingRawList = append(settingRawList, &settingRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return settingRawList, nil
-}
-
-// patchSettingImpl updates a setting by name. Returns the new state of the setting after update.
-func patchSettingImpl(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*settingRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "value = $2"), append(args, patch.Value)
-
-	args = append(args, patch.Name)
-
-	var settingRaw settingRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE setting
-		SET `+strings.Join(set, ", ")+`
-		WHERE name = $3
-		RETURNING name, value, description
-	`,
-		args...,
-	).Scan(
-		&settingRaw.Name,
-		&settingRaw.Value,
-		&settingRaw.Description,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", patch.Name)}
-		}
-		return nil, FormatError(err)
-	}
-	return &settingRaw, nil
+	return &settingMessage, nil
 }
 
 // FindSettingMessage is the message for finding setting.
 type FindSettingMessage struct {
-	Name api.SettingName
+	Name *api.SettingName
 }
 
 // SetSettingMessage is the message for updating setting.
@@ -301,6 +151,14 @@ type SettingMessage struct {
 	Description string
 }
 
+func (sm *SettingMessage) toAPISetting() *api.Setting {
+	return &api.Setting{
+		Name:        sm.Name,
+		Value:       sm.Value,
+		Description: sm.Description,
+	}
+}
+
 // GetSettingV2 returns the setting by name.
 func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -309,29 +167,38 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 	}
 	defer tx.Rollback()
 
-	var setting SettingMessage
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			name,
-			value,
-			description
-		FROM setting
-		WHERE name = $1
-	`, find.Name).Scan(
-		&setting.Name,
-		&setting.Value,
-		&setting.Description,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", find.Name)}
-		}
-		return nil, FormatError(err)
+	settings, err := listSettingV2Impl(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list setting")
+	}
+	if len(settings) == 0 {
+		return nil, nil
+	}
+	if len(settings) > 1 {
+		return nil, errors.Errorf("found multiple settings: %v", find.Name)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
-	return &setting, nil
+	return settings[0], nil
+}
+
+// ListSettingV2 returns a list of settings.
+func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]*SettingMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+	settings, err := listSettingV2Impl(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list setting")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	return settings, nil
 }
 
 // UpsertSettingV2 upserts the setting by name.
@@ -373,4 +240,40 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	return &setting, nil
+}
+
+func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			name,
+			value,
+			description
+		FROM setting
+		WHERE `+strings.Join(where, " AND "), args...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var settingMessages []*SettingMessage
+	for rows.Next() {
+		var settingMessage SettingMessage
+		if err := rows.Scan(
+			&settingMessage.Name,
+			&settingMessage.Value,
+			&settingMessage.Description,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		settingMessages = append(settingMessages, &settingMessage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return settingMessages, nil
 }
