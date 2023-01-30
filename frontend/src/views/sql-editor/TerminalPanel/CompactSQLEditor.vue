@@ -54,6 +54,7 @@ const emit = defineEmits<{
     option?: ExecuteOption
   ): void;
   (e: "history", direction: "up" | "down"): void;
+  (e: "clear-history"): void;
 }>();
 
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
@@ -171,9 +172,23 @@ const handleEditorReady = async () => {
   editor?.addAction({
     id: "ExplainQuery",
     label: "Explain Query",
+    keybindings: [
+      monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyC,
+    ],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 2,
+    precondition: "!readonly",
+    run: () => {
+      emit("clear-history");
+    },
+  });
+
+  editor?.addAction({
+    id: "ClearHistory",
+    label: "Clear History",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
+    contextMenuOrder: 3,
     precondition: "!readonly",
     run: async () => {
       emit(
