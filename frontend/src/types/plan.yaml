@@ -45,9 +45,11 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeInstanceCount: 5
+    freeSeatCount: 10
     maximumInstanceCount: 5
     maximumSeatCount: 10
-    pricePerSeatPerMonth: 0
+    pricePerSeatPerMonth: 19
+    pricePerInstancePerMonth: 79
     featureList:
       - type: instance-count
         content: instance-maximum-5
@@ -93,15 +95,18 @@ planList:
   - type: 1
     title: team
     trialDays: 14
-    unitPrice: 29
+    unitPrice: 19
     trialPrice: 0
     freeInstanceCount: 5
+    freeSeatCount: 1
     maximumInstanceCount: 10
     maximumSeatCount: 10
-    pricePerSeatPerMonth: 29
+    pricePerSeatPerMonth: 19
+    pricePerInstancePerMonth: 79
     featureList:
       - type: instance-count
         content: instance-maximum-10
+        tooltip: instance-maximum-10-tooltip
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
@@ -154,9 +159,11 @@ planList:
     unitPrice: 90
     trialPrice: 0
     freeInstanceCount: 5
+    freeSeatCount: 1
     maximumInstanceCount: -1
     maximumSeatCount: -1
-    pricePerSeatPerMonth: 90
+    pricePerSeatPerMonth: 19
+    pricePerInstancePerMonth: 79
     featureList:
       - type: instance-count
         content: instance-customized
