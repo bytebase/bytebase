@@ -1,3 +1,4 @@
+import { OAuthStateSessionKey } from "@/types";
 import {
   IdentityProvider,
   IdentityProviderType,
@@ -7,8 +8,8 @@ export function openWindowForSSO(
   identityProvider: IdentityProvider
 ): Window | null {
   // we use type to determine oauth type when receiving the callback
-  const stateQueryParameter = `bb.oauth.signin-${identityProvider.name}`;
-  sessionStorage.setItem("sso-state", stateQueryParameter);
+  const stateQueryParameter = `bb.oauth.signin.${identityProvider.name}`;
+  sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   if (identityProvider.type === IdentityProviderType.OAUTH2) {
     const oauth2Config = identityProvider.config?.oauth2Config;
