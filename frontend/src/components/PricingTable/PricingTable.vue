@@ -40,13 +40,23 @@
                 <span v-if="plan.pricePrefix" class="text-4xl">
                   {{ plan.pricePrefix }}
                 </span>
-                <span class="text-4xl">
+                <span
+                  :class="[
+                    'font-bold',
+                    plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
+                  ]"
+                >
                   {{ plan.pricing }}
                 </span>
                 {{ plan.priceSuffix }}
               </p>
 
-              <div class="text-gray-600 font-bold">
+              <div
+                :class="[
+                  'text-gray-600',
+                  plan.type == PlanType.TEAM ? 'font-bold' : '',
+                ]"
+              >
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
@@ -165,13 +175,23 @@
           <span v-if="plan.pricePrefix" class="text-4xl">
             {{ plan.pricePrefix }}
           </span>
-          <span class="text-4xl">
+          <span
+            :class="[
+              'font-bold',
+              plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
+            ]"
+          >
             {{ plan.pricing }}
           </span>
           {{ plan.priceSuffix }}
         </p>
 
-        <div class="text-gray-600 font-bold">
+        <div
+          :class="[
+            'text-gray-600',
+            plan.type == PlanType.TEAM ? 'font-bold' : '',
+          ]"
+        >
           {{ $t(`subscription.${plan.title}-price-intro`) }}
         </div>
 
