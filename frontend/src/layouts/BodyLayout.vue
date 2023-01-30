@@ -93,7 +93,7 @@
         </router-link>
         <div
           v-if="showQuickstart"
-          class="flex-shrink-0 flex justify-center border-t border-block-border py-2"
+          class="flex-shrink-0 flex justify-center border-t border-block-border"
         >
           <Quickstart />
         </div>
