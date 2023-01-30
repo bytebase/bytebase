@@ -317,10 +317,8 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
-	if common.FeatureFlag(common.FeatureFlagNoop) {
-		if user.IdentityProviderResourceID != nil {
-			convertedUser.IdentityProvider = fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID)
-		}
+	if user.IdentityProviderResourceID != nil {
+		convertedUser.IdentityProvider = fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID)
 	}
 	return convertedUser
 }

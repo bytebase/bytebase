@@ -54,7 +54,7 @@
           @select-item="handleTemplateSelect"
         >
           <template #menuItem="{ item: template }">
-            {{ template.name }}
+            {{ template.title }}
           </template>
         </BBSelect>
       </template>
@@ -133,7 +133,11 @@
           v-model="configForOAuth2.clientSecret"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. 5bbezxc3972ca304de70c5d70a6aa932asd8"
+          :placeholder="
+            isCreating
+              ? 'ex. 5bbezxc3972ca304de70c5d70a6aa932asd8'
+              : $t('common.sensitive-placeholder')
+          "
         />
       </div>
 
