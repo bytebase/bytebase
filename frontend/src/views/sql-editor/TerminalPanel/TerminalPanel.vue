@@ -73,7 +73,7 @@ import {
 } from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
-import { minmax } from "@/components/SchemaDiagram/common";
+import { minmax } from "@/utils";
 
 type LocalState = {
   historyIndex: number;
