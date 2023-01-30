@@ -45,12 +45,20 @@ type DatabaseBackupExecutor struct {
 }
 
 // RunOnce will run database backup once.
-func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database backup payload")
 	}
 
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return true, nil, err
+	}
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
 	backup, err := exec.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
@@ -69,12 +77,8 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *api.Task)
 			return true, nil, errors.Errorf("the available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSBytes/1024/1024)
 		}
 	}
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return true, nil, err
-	}
-	log.Debug("Start database backup.", zap.String("instance", task.Instance.Name), zap.String("database", task.Database.Name), zap.String("backup", backup.Name))
-	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, instance, task.Database.Name, backup)
+	log.Debug("Start database backup.", zap.String("instance", instance.Title), zap.String("database", database.DatabaseName), zap.String("backup", backup.Name))
+	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, instance, database.DatabaseName, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
@@ -101,7 +105,7 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 
 	return true, &api.TaskRunResultPayload{
-		Detail: fmt.Sprintf("Backup database %q", task.Database.Name),
+		Detail: fmt.Sprintf("Backup database %q", database.DatabaseName),
 	}, nil
 }
 

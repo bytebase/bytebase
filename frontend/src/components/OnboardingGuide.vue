@@ -42,9 +42,10 @@ const checkShouldShowCreateDatabaseGuide = async () => {
   if (isOwner(currentUser.value.role)) {
     // Fetch data directly instead of useStore to prevent data from being cached in store.
     const { data: instanceList } = (await axios.get(`/api/instance`)).data;
-    const { data: projectList } = (await axios.get(`/api/project`)).data;
+    const { data: projectList } = (
+      await axios.get(`/api/project?user=${currentUser.value.id}`)
+    ).data;
     const { data: databaseList } = (await axios.get(`/api/database`)).data;
-
     if (
       instanceList.length === 0 &&
       // We have a default project so the length should be 1 not 0.

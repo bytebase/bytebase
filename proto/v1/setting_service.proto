@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+
+option go_package = "generated-go/v1";
+
+service SettingService{
+  rpc GetSetting(GetSettingRequest) returns (Setting) {
+    option (google.api.http) = {
+      get: "/v1/{name=settings/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc SetSetting(SetSettingRequest) returns (Setting) {
+    option (google.api.http) = {
+      patch: "/v1/{setting.name=settings/*}"
+      body: "setting"
+    };
+  }
+}
+
+// The request message for getting a setting.
+message GetSettingRequest {
+  // The resource name of the setting.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The response message for getting a setting.
+message GetSettingResponse {
+  Setting setting = 1;
+}
+
+// The request message for updating a setting.
+message SetSettingRequest {
+  // The setting to update.
+  Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+
+// The schema of setting.
+message Setting {
+  // The resource name of the setting. Must be one of the following forms:
+  //
+  // - `setting/{setting_name}`
+  // For example, "settings/bb.branding.logo"
+  string name = 1;
+
+  // The value of the setting.
+  Value value = 2;
+}
+
+// The data in setting value.
+message Value {
+  // Value is a oneof field for setting value.
+  oneof value {
+    // Defines this value as being a string value.
+    string string_value = 1;
+  }
+}

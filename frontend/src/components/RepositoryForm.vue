@@ -159,8 +159,12 @@
       </div>
     </div>
     <div>
-      <div class="textlabel">
+      <div class="textlabel flex gap-x-1">
         {{ $t("repository.schema-path-template") }}
+        <FeatureBadge
+          feature="bb.feature.vcs-schema-write-back"
+          class="text-accent"
+        />
         <a
           href="https://bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
           target="__blank"
@@ -181,12 +185,20 @@
         </template>
       </div>
       <input
+        v-if="hasFeature('bb.feature.vcs-schema-write-back')"
         id="schemapathtemplate"
         v-model="repositoryConfig.schemaPathTemplate"
         name="schemapathtemplate"
         type="text"
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
+      />
+      <input
+        v-else
+        type="text"
+        class="textfield mt-2 w-full"
+        :value="getRquiredPlanString('bb.feature.vcs-schema-write-back')"
+        :disabled="true"
       />
       <div class="mt-2 textinfolabel">
         <span class="text-red-600">*</span> {{ $t("repository.if-specified") }},
@@ -211,17 +223,31 @@
       </div>
     </div>
     <div>
-      <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
+      <div class="textlabel flex gap-x-1">
+        {{ $t("repository.sheet-path-template")
+        }}<FeatureBadge
+          feature="bb.feature.vcs-sheet-sync"
+          class="text-accent"
+        />
+      </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
       </div>
       <input
+        v-if="hasFeature('bb.feature.vcs-sheet-sync')"
         id="sheetpathtemplate"
         v-model="repositoryConfig.sheetPathTemplate"
         name="sheetpathtemplate"
         type="text"
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
+      />
+      <input
+        v-else
+        type="text"
+        class="textfield mt-2 w-full"
+        :value="getRquiredPlanString('bb.feature.vcs-sheet-sync')"
+        :disabled="true"
       />
       <div class="mt-2 textinfolabel capitalize">
         <span class="text-red-600">*</span>
@@ -281,7 +307,7 @@ import {
   VCSType,
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import { hasFeature } from "@/store";
+import { hasFeature, useSubscriptionStore } from "@/store";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -338,6 +364,8 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showFeatureModal: false,
     });
+
+    const subscriptionStore = useSubscriptionStore();
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
@@ -443,6 +471,8 @@ export default defineComponent({
       fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
       state,
+      hasFeature,
+      getRquiredPlanString: subscriptionStore.getRquiredPlanString,
       isProjectSchemaChangeTypeDDL,
       enableSQLReviewTitle,
       sampleFilePath,

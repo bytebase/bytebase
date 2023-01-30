@@ -3,7 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@bytebase/vue-kbar': 0.1.8
   '@codingame/monaco-vscode-api': 1.69.12
-  '@iconify/json': 2.1.159
+  '@iconify/json': 2.2.13
   '@improbable-eng/grpc-web': ^0.15.0
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
@@ -87,7 +87,7 @@ specifiers:
   tailwindcss: 3.2.1
   ts-proto: ^1.136.0
   typescript: 4.8.4
-  unplugin-icons: 0.14.13
+  unplugin-icons: 0.15.2
   unplugin-vue-components: 0.22.9
   uuid: 9.0.0
   v-code-diff: 0.3.12
@@ -163,7 +163,7 @@ dependencies:
   vueuc: 0.4.49_vue@3.2.41
 
 devDependencies:
-  '@iconify/json': 2.1.159
+  '@iconify/json': 2.2.13
   '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.2.2+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
@@ -206,7 +206,7 @@ devDependencies:
   tailwindcss: 3.2.1_postcss@8.4.18
   ts-proto: 1.136.0
   typescript: 4.8.4
-  unplugin-icons: 0.14.13_@vue+compiler-sfc@3.2.41
+  unplugin-icons: 0.15.2_@vue+compiler-sfc@3.2.41
   unplugin-vue-components: 0.22.9_rollup@3.2.5+vue@3.2.41
   vite: 3.2.2
   vitest: 0.24.5
@@ -223,12 +223,12 @@ packages:
       find-up: 5.0.0
     dev: true
 
-  /@antfu/utils/0.5.2:
-    resolution: {integrity: sha512-CQkeV+oJxUazwjlHD0/3ZD08QWKuGQkhnrKo3e6ly5pd48VUpXbb77q0xMU4+vc2CkJnDS02Eq/M9ugyX20XZA==}
-    dev: true
-
   /@antfu/utils/0.6.2:
     resolution: {integrity: sha512-Qdwda+qE1KOKXuM8Gnn09zIJSA293J5putdHBx4J9sdbHzqp5QY4OmH77KgwJoi0PuY+kbddkVVdkSoZ9ruiug==}
+    dev: true
+
+  /@antfu/utils/0.7.2:
+    resolution: {integrity: sha512-vy9fM3pIxZmX07dL+VX1aZe7ynZ+YyB0jY+jE6r3hOK6GNY2t6W8rzpFC4tgpbXUYABkFQwgJq2XYXlxbXAI0g==}
     dev: true
 
   /@babel/helper-string-parser/7.19.4:
@@ -408,22 +408,22 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json/2.1.159:
-    resolution: {integrity: sha512-LBJDXNsHMBhBZ2BfN2Es/cB8GmI9+2305biJz/C2riYyUWNIU1BnrM5EzDL4i0FwKq6s7I2C+j2wtBJ3pCeQjA==}
+  /@iconify/json/2.2.13:
+    resolution: {integrity: sha512-TgTGzEhU2o0gGrkke3hVbkVtZB8EcbCdNR4X6ZbXJsApMuFghS4s+yuEbGHw+mMa3sp40L5qRi7wFU6Q47ysfw==}
     dependencies:
       '@iconify/types': 2.0.0
-      pathe: 0.3.9
+      pathe: 1.1.0
     dev: true
 
   /@iconify/types/2.0.0:
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
     dev: true
 
-  /@iconify/utils/2.0.1:
-    resolution: {integrity: sha512-t8IyICk25wgZL4YKn/2kYfjG5MGA6EWZlaUJZ1OEIku4V+kX9V900T5E4HIqS3hLyD6/RJET0zY4vxO9pHLHHw==}
+  /@iconify/utils/2.1.0:
+    resolution: {integrity: sha512-ouXv1hQfOKq4k3wxQ2OJBYQ2gXBMeFoUCIiORmuUVUNlSq9oOTzQBF3jpFRb0+/P0bnV+RIoHcbZKufZTlJ16g==}
     dependencies:
       '@antfu/install-pkg': 0.1.1
-      '@antfu/utils': 0.5.2
+      '@antfu/utils': 0.7.2
       '@iconify/types': 2.0.0
       debug: 4.3.4
       kolorist: 1.6.0
@@ -3283,8 +3283,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /pathe/0.3.9:
-    resolution: {integrity: sha512-6Y6s0vT112P3jD8dGfuS6r+lpa0qqNrLyHPOwvXMnyNTQaYiwgau2DP3aNDsR13xqtGj7rrPo+jFUATpU6/s+g==}
+  /pathe/1.1.0:
+    resolution: {integrity: sha512-ODbEPR0KKHqECXW1GoxdDb+AZvULmXjVPy4rt+pGo2+TnjJTIPJQSVS6N63n8T2Ip+syHhbn52OewKicV0373w==}
     dev: true
 
   /pathval/1.1.1:
@@ -3891,11 +3891,11 @@ packages:
     engines: {node: '>=4.2.0'}
     hasBin: true
 
-  /unplugin-icons/0.14.13_@vue+compiler-sfc@3.2.41:
-    resolution: {integrity: sha512-ZZCw9qZg/zNJeHWicaFYMfsfzMAXOHHnZt5tRxslhPE++/THvg5xGu5AsIRmMCtyNBCpC1Ly1MTb8CZmlqaQTA==}
+  /unplugin-icons/0.15.2_@vue+compiler-sfc@3.2.41:
+    resolution: {integrity: sha512-oWTTdLMuqfEYfZcko+KZHDEOIsqT4OeyJB1e4U7luCOo9gto/JLyHkqfbqjmjkjdQqA3DNHS18WOKh5esqQM5g==}
     peerDependencies:
       '@svgr/core': '>=5.5.0'
-      '@vue/compiler-sfc': ^3.0.2
+      '@vue/compiler-sfc': ^3.0.2 || ^2.7.0
       vue-template-compiler: ^2.6.12
       vue-template-es2015-compiler: ^1.9.0
     peerDependenciesMeta:
@@ -3909,13 +3909,13 @@ packages:
         optional: true
     dependencies:
       '@antfu/install-pkg': 0.1.1
-      '@antfu/utils': 0.6.2
-      '@iconify/utils': 2.0.1
+      '@antfu/utils': 0.7.2
+      '@iconify/utils': 2.1.0
       '@vue/compiler-sfc': 3.2.41
       debug: 4.3.4
       kolorist: 1.6.0
       local-pkg: 0.4.2
-      unplugin: 0.10.2
+      unplugin: 1.0.1
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -3953,6 +3953,15 @@ packages:
       chokidar: 3.5.3
       webpack-sources: 3.2.3
       webpack-virtual-modules: 0.4.6
+    dev: true
+
+  /unplugin/1.0.1:
+    resolution: {integrity: sha512-aqrHaVBWW1JVKBHmGo33T5TxeL0qWzfvjWokObHA9bYmN7eNDkwOxmLjhioHl9878qDFMAaT51XNroRyuz7WxA==}
+    dependencies:
+      acorn: 8.8.1
+      chokidar: 3.5.3
+      webpack-sources: 3.2.3
+      webpack-virtual-modules: 0.5.0
     dev: true
 
   /update-browserslist-db/1.0.10_browserslist@4.21.4:
@@ -4263,6 +4272,10 @@ packages:
 
   /webpack-virtual-modules/0.4.6:
     resolution: {integrity: sha512-5tyDlKLqPfMqjT3Q9TAqf2YqjwmnUleZwzJi1A5qXnlBCdj2AtOJ6wAWdglTIDOPgOiOrXeBeFcsQ8+aGQ6QbA==}
+    dev: true
+
+  /webpack-virtual-modules/0.5.0:
+    resolution: {integrity: sha512-kyDivFZ7ZM0BVOUteVbDFhlRt7Ah/CSPwJdi8hBpkK7QLumUqdLtVfm/PX/hkcnrvr0i77fO5+TjZ94Pe+C9iw==}
     dev: true
 
   /which/2.0.2:

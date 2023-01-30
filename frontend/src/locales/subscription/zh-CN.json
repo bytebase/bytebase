@@ -11,13 +11,14 @@
   "disabled-feature": "这是一个订阅版高级功能",
   "upgrade": "升级订阅",
   "per-month": "/ 月",
-  "price-unit-for-enterprise": "/ 月起",
+  "price-unit-for-team": "/ 月起",
   "start-from": "",
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
-  "free-price-intro": "最多 2 个席位",
-  "team-price-intro": "根据席位数量按月付费",
+  "per-seat": "每个席位",
+  "free-price-intro": "最多 10 个席位，5 个实例",
+  "team-price-intro": "根据席位和实例数按月付费",
   "enterprise-price-intro": "自定义席位和实例，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
@@ -54,6 +55,9 @@
       "features": {
         "instance-count": "实例数",
         "instance-customized": "自定义",
+        "instance-maximum-5": "不超过 5 个",
+        "instance-maximum-10": "不超过 10 个",
+        "instance-maximum-10-tooltip": "前 5 个实例免费，最多可增至 10 个实例",
         "instance-unlimited": "无限制",
         "environment-count": "环境数",
         "environment-unlimited": "无限制",
@@ -93,7 +97,6 @@
       "title": "团队协作",
       "features": {
         "seat-count": "席位",
-        "seat-maximum-2": "不超过 2 个",
         "seat-maximum-10": "不超过 10 个",
         "seat-customized": "自定义",
         "ui-based-sql-review": "基于 UI 的 SQL 审查",
@@ -107,7 +110,7 @@
         "inbox-notification": "站内信通知",
         "vsc-workflow-basic": "基础",
         "vsc-workflow-advanced": "高级",
-        "vsc-workflow-advanced-tooltip": "基础版功能 + SQL 审核 CI"
+        "vsc-workflow-advanced-tooltip": "基础版功能 + 回写最新 Schema 快照，SQL 脚本同步，SQL 审核 CI"
       }
     },
     "admin-and-security": {

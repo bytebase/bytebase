@@ -218,7 +218,9 @@
     "want-help": "加入用户群",
     "operation": "操作",
     "rollback": "回滚",
-    "total": "共计"
+    "total": "共计",
+    "discard-changes": "取消修改",
+    "error-message": "错误信息"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -336,6 +338,7 @@
       "general": "通用",
       "members": "成员",
       "im-integration": "IM 集成管理",
+      "sso": "SSO",
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
@@ -385,16 +388,6 @@
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
         "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
       },
-      "toggle-role-provider": {
-        "title": "您确认吗？"
-      },
-      "change-role-provider-to-vcs": {
-        "content": "开启 VCS 同步将会用 VCS 中对应仓库的成员列表替换现存的所有成员。\n原来的成员将会无效，您之后也可以关闭该 VCS 同步来撤销这一操作。",
-        "emphasize": "请注意，该功能需要 VCS 仓库内所有成员均设置了公开邮箱。"
-      },
-      "change-role-provider-to-bytebase": {
-        "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
-      },
       "system-bot": "机器人助手",
       "service-account": "服务账号",
       "copy-service-key": "复制 Service Key",
@@ -407,6 +400,35 @@
       "enable": "启用",
       "description": "可以让用户在 IM 里直接审批工单。",
       "feishu-updated-tip": "飞书配置更新成功"
+    },
+    "sso": {
+      "create": "创建 SSO",
+      "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
+      "deletion": "删除这个 SSO",
+      "form": {
+        "callback-url": "回调地址",
+        "use-template": "使用模版",
+        "select-template": "选择模版",
+        "type": "类型",
+        "basic-information": "基础信息",
+        "name": "名称",
+        "resource-id": "资源 ID",
+        "resource-id-description": "唯一的字符串，有效字符为 /[a-z][0-9]-/",
+        "domain": "域名",
+        "domain-description": "OAuth 提供商的域名",
+        "identity-provider-information": "OAuth 提供商信息",
+        "identity-provider-information-description": "这些信息是由你的 OAuth 提供商提供的。",
+        "endpoints": "链接信息",
+        "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
+        "auth-url-description": "登录页面的链接",
+        "scopes-description": "访问 Auth URL 时携带的范围参数",
+        "token-url-description": "用于获取 accessToken 的 API 地址",
+        "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
+        "user-information-mapping": "用户信息映射",
+        "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "identifier": "唯一标识符",
+        "display-name": "昵称"
+      }
     },
     "general": {
       "workspace": {
@@ -768,8 +790,7 @@
     "protected-environment": "受保护的环境"
   },
   "quick-start": {
-    "bookmark-an-issue": "收藏工单",
-    "add-a-comment": "添加评论",
+    "view-an-issue": "查看工单",
     "visit-project": "@:common.visit@:common.projects",
     "visit-instance": "@:common.visit@:common.instances",
     "visit-database": "@:common.visit@:common.databases",
@@ -803,7 +824,8 @@
       "gitlab": "通过 GitLab 登录",
       "github": "通过 GitHub 登录",
       "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
-      "gitlab-oauth": "您可联系管理员开启 GitLab 登录"
+      "gitlab-oauth": "您可联系管理员开启 GitLab 登录",
+      "sign-in-with-idp": "通过 {idp} 登录"
     },
     "password-forget": {
       "title": "忘记了您的密码？",
@@ -1063,9 +1085,7 @@
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
-    "linked": "关联的仓库",
-    "role-provider": "项目角色权限提供方",
-    "role-provider-description": "Bytebase 将会从选定的角色提供方同步成员角色，所有此前存在的成员将会被替换。"
+    "linked": "关联的仓库"
   },
   "workflow": {
     "current-workflow": "当前工作流",
@@ -1201,10 +1221,6 @@
         "title": "恢复项目",
         "btn-text": "恢复这个@:common.project"
       },
-      "sync-from-vcs": "从 VCS 同步",
-      "success-member-sync-prompt": "从 VCS 同步成功",
-      "view-vcs-member": "在 VCS 中查看成员",
-      "switch-role-provider-to-bytebase-success-prompt": "成功关闭了 VCS 项目成员同步",
       "schema-change-type": "Schema 变更类型",
       "select-schema-change-type-ddl": "通过指定过程 DDL 变更到期望的 Schema",
       "select-schema-change-type-sdl": "直接指定期望达到的 Schema",
@@ -1546,7 +1562,7 @@
     "start-n-days-trial": "开启 {days} 天试用",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
-    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买的 Bytebase 证书来解锁该功能。",
+    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
@@ -1616,6 +1632,14 @@
         "title": "Schema 审核策略",
         "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
       },
+      "bb-feature-vcs-schema-write-back": {
+        "title": "Schema 回写",
+        "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
+      },
+      "bb-feature-vcs-sheet-sync": {
+        "title": "从 VCS 同步 SQL 脚本",
+        "desc": "将保存在 VCS 中的 SQL 脚本同步到 Sheet 中。"
+      },
       "bb-feature-vcs-sql-review": {
         "title": "GitOps 工作流中的 SQL 审核",
         "desc": "在您的 VCS 仓库流水线上添加 SQL 审核 CI，以便在拉取请求中对变动的 SQL 文件进行自动审核。"
@@ -1661,7 +1685,7 @@
     "shared-with-me": "与我共享",
     "starred": "已加星标",
     "actions": {
-      "sync-from-vcs": "从 VCS 同步数据"
+      "sync-from-vcs": "从 VCS 同步 SQL 脚本"
     },
     "hint-tips": {
       "confirm-to-sync-sheet": "确定要同步工作表?",
@@ -1791,5 +1815,12 @@
   "schema-diagram": {
     "self": "Schema 关系图",
     "fit-content-with-view": "自动适应视图"
+  },
+  "identity-provider": {
+    "test-connection": "测试连接",
+    "test-modal": {
+      "title": "测试 OAuth2 连接性",
+      "start-test": "点击登录按钮开始测试"
+    }
   }
 }

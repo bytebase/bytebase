@@ -78,6 +78,7 @@ func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *api.
 			Code:      advice.Code.Int(),
 			Title:     advice.Title,
 			Content:   advice.Content,
+			Line:      advice.Line,
 		})
 	}
 

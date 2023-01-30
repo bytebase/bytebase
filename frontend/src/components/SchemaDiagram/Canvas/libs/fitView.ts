@@ -1,19 +1,16 @@
 import type { Geometry, Rect } from "../../types";
 import { calcBBox, fitBBox } from "../../common";
+import { ZOOM_RANGE } from "../const";
 
 export const fitView = (
   canvas: Element,
   geometries: Geometry[],
   paddings: number[] = [0, 0, 0, 0], // [T,R,B,L]
-  zoomRange: number[] = [0.5, 2]
+  zoomRange: number[] = [ZOOM_RANGE.min, ZOOM_RANGE.max]
 ) => {
   const contentBBox = calcBBox(geometries);
-  if (
-    contentBBox.width < Number.EPSILON ||
-    contentBBox.height < Number.EPSILON
-  ) {
-    return { zoom: 1, rect: contentBBox };
-  }
+  if (contentBBox.width < Number.EPSILON) contentBBox.width = Number.EPSILON;
+  if (contentBBox.height < Number.EPSILON) contentBBox.height = Number.EPSILON;
 
   const canvasBBox = canvas.getBoundingClientRect();
   const [paddingTop, paddingRight, paddingBottom, paddingLeft] = paddings;

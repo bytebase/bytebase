@@ -3,9 +3,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +19,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
+	"github.com/gosimple/slug"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/labstack/echo-contrib/pprof"
@@ -28,8 +31,10 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -47,6 +52,7 @@ import (
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -237,6 +243,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 
+	// Start a Postgres sample server. This is used for onboarding users without requiring them to
+	// configure an external instance.
+	log.Info("-----Sample Postgres Instance BEGIN-----")
+	sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
+	log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
+	log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+	if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
+		return nil, err
+	}
+	log.Info("-----Sample Postgres Instance END-----")
+
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
 		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
@@ -323,13 +340,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
@@ -422,6 +439,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
+	s.registerPlanRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
@@ -437,14 +455,24 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile))
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile,
+		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
+			// Only generate onboarding data after the first enduser signup.
+			if firstEndUser {
+				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+				}
+			}
+			return nil
+		}))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
+	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -476,6 +504,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -692,6 +723,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
+	// Shutdown postgres sample instance.
+	if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
+		log.Error("Failed to stop postgres sample instance", zap.Error(err))
+	}
+
 	// Shutdown postgres server if embed.
 	if s.metaDB != nil {
 		s.metaDB.Close()
@@ -709,4 +745,141 @@ func (s *Server) GetEcho() *echo.Echo {
 // GetWorkspaceID returns the workspace id.
 func (s *Server) GetWorkspaceID() string {
 	return s.workspaceID
+}
+
+// generateOnboardingData generates onboarding data after the first signup.
+func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
+	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
+		ResourceID: "project-sample",
+		Title:      "Sample Project",
+		Key:        "SAM",
+		Workflow:   api.UIWorkflow,
+		Visibility: api.Public,
+		TenantMode: api.TenantModeDisabled,
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding project")
+	}
+
+	instance, err := s.store.CreateInstanceV2(ctx, api.DefaultProdEnvironmentID, &store.InstanceMessage{
+		ResourceID:   "postgres-sample",
+		Title:        "Postgres Sample Instance",
+		Engine:       db.Postgres,
+		ExternalLink: "",
+		DataSources: []*store.DataSourceMessage{
+			{
+				Title:              api.AdminDataSourceName,
+				Type:               api.Admin,
+				Username:           postgres.SampleUser,
+				ObfuscatedPassword: common.Obfuscate("", s.secret),
+				Host:               common.GetPostgresSocketDir(),
+				Port:               strconv.Itoa(s.profile.SampleDatabasePort),
+				Database:           postgres.SampleDatabase,
+			},
+		},
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding instance")
+	}
+
+	// Try creating the migration history database.
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, postgres.SampleDatabase)
+	if err != nil {
+		return errors.Wrapf(err, "failed to connect onboarding instance")
+	}
+	defer driver.Close(ctx)
+	if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
+		return errors.Wrapf(err, "failed to set up migration schema on onboarding instance")
+	}
+
+	// Sync the instance schema so we can transfer the sample database later.
+	if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
+		return errors.Wrapf(err, "failed to sync onboarding instance")
+	}
+
+	// Transfer sample database to the just created project.
+	transferDatabaseMessage := &store.UpdateDatabaseMessage{
+		EnvironmentID: api.DefaultProdEnvironmentID,
+		InstanceID:    instance.ResourceID,
+		DatabaseName:  postgres.SampleDatabase,
+		ProjectID:     &project.ResourceID,
+	}
+	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to transfer sample database")
+	}
+
+	dbName := postgres.SampleDatabase
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &dbName,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find onboarding instance")
+	}
+
+	// Need to sync database schema so we can create the schema update issue later.
+	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		return errors.Wrapf(err, "failed to sync sample database schema")
+	}
+
+	// Create a schema update issue.
+	createContext, err := json.Marshal(
+		&api.MigrationContext{
+			DetailList: []*api.MigrationDetail{
+				{
+					MigrationType: db.Migrate,
+					DatabaseID:    database.UID,
+					Statement:     "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT NOT NULL DEFAULT '';",
+				},
+			},
+		})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal sample schema update issue context")
+	}
+
+	issueCreate := &api.IssueCreate{
+		ProjectID: project.UID,
+		Name:      "👉👉👉 [START HERE] Add email column to Employee table",
+		Type:      api.IssueDatabaseSchemaUpdate,
+		Description: `A sample issue to showcase how to review database schema change.
+		
+Click "Approve" button to apply the schema update.`,
+		AssigneeID:            userID,
+		AssigneeNeedAttention: true,
+		CreateContext:         string(createContext),
+	}
+
+	// Use system bot as the creator so that the issue only appears in the user's assignee list
+	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create sample issue")
+	}
+
+	// Bookmark the issue.
+	if _, err := s.store.CreateBookmark(ctx, &api.BookmarkCreate{
+		CreatorID: userID,
+		Name:      "Sample Issue",
+		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
+	}); err != nil {
+		return errors.Wrapf(err, "failed to bookmark sample issue")
+	}
+
+	// Create a SQL sheet with sample queries.
+	sheetCreate := &api.SheetCreate{
+		CreatorID:  userID,
+		ProjectID:  project.UID,
+		DatabaseID: &database.UID,
+		Name:       "Sample Sheet",
+		Statement:  "SELECT * FROM salary;",
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebase,
+		Type:       api.SheetForSQL,
+	}
+	_, err = s.store.CreateSheet(ctx, sheetCreate)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create sample sheet")
+	}
+
+	return nil
 }

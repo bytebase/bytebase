@@ -85,6 +85,7 @@ p, DEVELOPER, /vcs/{vcsID}, GET
 p, DEVELOPER, /vcs/{vcsID}/external-repository, GET
 p, DEVELOPER, /setting, GET
 p, DEVELOPER, /label, GET
+p, DEVELOPER, /feature, GET
 p, DEVELOPER, /subscription, GET
 p, DEVELOPER, /sheet, POST
 p, DEVELOPER, /sheet/my, GET

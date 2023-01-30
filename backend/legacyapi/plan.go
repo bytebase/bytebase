@@ -109,6 +109,13 @@ const (
 	FeatureSQLReview FeatureType = "bb.feature.sql-review"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
+
+	// VCS Integration.
+
+	// FeatureVCSSchemaWriteBack allows user to enable the latest schema write-back in VCS workflow.
+	FeatureVCSSchemaWriteBack FeatureType = "bb.feature.vcs-schema-write-back"
+	// FeatureVCSSheetSync allows to sync sheets from the VCS in VCS workflow.
+	FeatureVCSSheetSync FeatureType = "bb.feature.vcs-sheet-sync"
 	// FeatureVCSSQLReviewWorkflow allows user to enable the SQL review CI in VCS workflow.
 	FeatureVCSSQLReviewWorkflow FeatureType = "bb.feature.vcs-sql-review"
 
@@ -172,6 +179,11 @@ func (e FeatureType) Name() string {
 		return "SQL review"
 	case FeatureTaskScheduleTime:
 		return "Task schedule time"
+	// VCS Integration
+	case FeatureVCSSchemaWriteBack:
+		return "Schema write-back"
+	case FeatureVCSSheetSync:
+		return "Sync sheets from VCS"
 	case FeatureVCSSQLReviewWorkflow:
 		return "VCS SQL review workflow"
 	// Database management
@@ -202,7 +214,7 @@ func (e FeatureType) AccessErrorMessage() string {
 
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
 func (e FeatureType) minimumSupportedPlan() PlanType {
-	for i, enabled := range featureMatrix[e] {
+	for i, enabled := range FeatureMatrix[e] {
 		if enabled {
 			return PlanType(i)
 		}
@@ -211,24 +223,27 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 	return ENTERPRISE
 }
 
-// featureMatrix is a map from the a particular feature to the respective enablement of a particular
+// FeatureMatrix is a map from the a particular feature to the respective enablement of a particular
 // plan in [FREE, TEAM, Enterprise].
-var featureMatrix = map[FeatureType][3]bool{
+var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
-	FeatureRBAC:         {true, true, true},
+	FeatureRBAC:         {false, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
-	FeatureDataSource:           {false, false, false},
-	FeatureDBAWorkflow:          {false, false, true},
-	FeatureLGTM:                 {false, false, true},
-	FeatureIMApproval:           {false, false, true},
-	FeatureMultiTenancy:         {false, false, true},
-	FeatureOnlineMigration:      {false, true, true},
-	FeatureSchemaDrift:          {false, true, true},
-	FeatureSQLReview:            {true, true, true},
-	FeatureTaskScheduleTime:     {false, true, true},
+	FeatureDataSource:       {false, false, false},
+	FeatureDBAWorkflow:      {false, false, true},
+	FeatureLGTM:             {false, false, true},
+	FeatureIMApproval:       {false, false, true},
+	FeatureMultiTenancy:     {false, false, true},
+	FeatureOnlineMigration:  {false, true, true},
+	FeatureSchemaDrift:      {false, false, true},
+	FeatureSQLReview:        {false, true, true},
+	FeatureTaskScheduleTime: {false, true, true},
+	// VCS Integration
+	FeatureVCSSchemaWriteBack:   {false, false, true},
+	FeatureVCSSheetSync:         {false, false, true},
 	FeatureVCSSQLReviewWorkflow: {false, false, true},
 	// Database management
 	FeaturePITR:                  {false, true, true},
@@ -277,5 +292,5 @@ var PlanLimitValues = map[PlanLimit][3]int64{
 
 // Feature returns whether a particular feature is available in a particular plan.
 func Feature(feature FeatureType, plan PlanType) bool {
-	return featureMatrix[feature][plan]
+	return FeatureMatrix[feature][plan]
 }

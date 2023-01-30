@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
+import { onMounted, computed, reactive, watch } from "vue";
 import { useRoute, _RouteLocationBase } from "vue-router";
 import { NSpin } from "naive-ui";
 import { IssueDetailLayout } from "@/components/Issue";
@@ -34,7 +34,12 @@ import {
   UNKNOWN_ID,
   Issue,
 } from "@/types";
-import { hasFeature, useIssueStore, useProjectStore } from "@/store";
+import {
+  hasFeature,
+  useIssueStore,
+  useProjectStore,
+  useUIStateStore,
+} from "@/store";
 import { useInitializeIssue, usePollIssue } from "@/plugins/issue/logic";
 import { useTitle } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
@@ -50,6 +55,7 @@ const props = defineProps({
   },
 });
 
+const uiStateStore = useUIStateStore();
 const route = useRoute();
 const { t } = useI18n();
 
@@ -68,6 +74,15 @@ const showLoading = computed(() => {
 });
 
 const pollIssue = usePollIssue(issueSlug, issue);
+
+onMounted(() => {
+  if (!uiStateStore.getIntroStateByKey("issue.visit")) {
+    uiStateStore.saveIntroStateByKey({
+      key: "issue.visit",
+      newState: true,
+    });
+  }
+});
 
 watch(issueSlug, async () => {
   if (!create.value) return;

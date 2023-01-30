@@ -64,12 +64,13 @@
 import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useTitle } from "@vueuse/core";
+
 import { Bookmark, UNKNOWN_ID, BookmarkCreate, RouteMapList } from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
   useRouterStore,
-  useUIStateStore,
   useBookmarkStore,
   useDatabaseStore,
   useProjectStore,
@@ -95,6 +96,8 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
+
+    const title = useTitle(null, { observe: true });
 
     const routeHelpNameMapList = ref<RouteMapList>([]);
     const helpName = computed(
@@ -191,15 +194,14 @@ export default defineComponent({
           path: "/setting/sql-review",
         });
       }
-
-      const { title, overrideBreadcrumb } = currentRoute.value.meta;
-      if (title) {
+      const { overrideBreadcrumb } = currentRoute.value.meta;
+      if (title.value) {
         const route = currentRoute.value;
         if (overrideBreadcrumb && overrideBreadcrumb(route)) {
           list.length = 0; // empty the array
         }
         list.push({
-          name: title(route),
+          name: title.value,
           // Set empty path for the current route to make the link not clickable.
           // We do this because clicking the current route path won't trigger reload and would
           // confuse user since UI won't change while we may have cleared all query parameters.
@@ -218,12 +220,7 @@ export default defineComponent({
           name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,
         };
-        bookmarkStore.createBookmark(newBookmark).then(() => {
-          useUIStateStore().saveIntroStateByKey({
-            key: "bookmark.create",
-            newState: true,
-          });
-        });
+        bookmarkStore.createBookmark(newBookmark);
       }
     };
 

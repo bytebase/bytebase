@@ -218,7 +218,9 @@
     "want-help": "Want help",
     "operation": "Operation",
     "rollback": "Rollback",
-    "total": "Total"
+    "total": "Total",
+    "discard-changes": "Discard changes",
+    "error-message": "Error message"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -336,6 +338,7 @@
       "general": "General",
       "members": "Members",
       "im-integration": "IM Integration",
+      "sso": "SSO",
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
@@ -385,16 +388,6 @@
         "project-role-provider-gitlab": "Mapped from the {rawRole} role in the corresponding GitLab project.",
         "cannot-change-role-of-systembot": "Cannot change the role of system bot"
       },
-      "toggle-role-provider": {
-        "title": "Are you sure?"
-      },
-      "change-role-provider-to-vcs": {
-        "content": "Turning on VCS sync will replace all existing members with the members from the corresponding VCS project.\nThe existing members will become inactive. You can turn off VCS sync to restore those members.",
-        "emphasize": "Please be noticed that this function requires all project members from the VCS have a public email set."
-      },
-      "change-role-provider-to-bytebase": {
-        "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
-      },
       "system-bot": "System Bot",
       "service-account": "Service Account",
       "copy-service-key": "Copy Service Key",
@@ -407,6 +400,35 @@
       "enable": "Enable",
       "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
+    },
+    "sso": {
+      "create": "Create SSO",
+      "description": "Single sign-on (SSO) is an authentication method that enables users to authenticate with other applications and websites.",
+      "deletion": "Delete this SSO",
+      "form": {
+        "callback-url": "Authorization callback url",
+        "use-template": "Use template",
+        "select-template": "Select template",
+        "type": "Type",
+        "basic-information": "Basic information",
+        "name": "Name",
+        "resource-id": "Resource ID",
+        "resource-id-description": "An unique string, and valid characters are /[a-z][0-9]-/",
+        "domain": "Domain",
+        "domain-description": "The identity provider's domain name",
+        "identity-provider-information": "Identity provider information",
+        "identity-provider-information-description": "The information is provided by your OAuth provider.",
+        "endpoints": "Endpoints",
+        "endpoints-description": "The related urls provided by your OAuth provider.",
+        "auth-url-description": "The link to OAuth login page",
+        "scopes-description": "The scope parameter carried when accessing the Auth URL",
+        "token-url-description": "The API address for obtaining accessToken",
+        "user-info-url-description": "The API address for obtaining user information by accessToken",
+        "user-information-mapping": "User information mapping",
+        "user-information-mapping-description": "Field mapping saves the field names from user info API.",
+        "identifier": "Identifier",
+        "display-name": "Display name"
+      }
     },
     "general": {
       "workspace": {
@@ -768,8 +790,7 @@
     "protected-environment": "Protected environment"
   },
   "quick-start": {
-    "bookmark-an-issue": "Bookmark an issue",
-    "add-a-comment": "Add a comment",
+    "view-an-issue": "View an issue",
     "visit-project": "@:common.visit @:common.projects",
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
@@ -803,7 +824,8 @@
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
       "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
-      "gitlab-oauth": "Reach to your Admin to enable GitLab login"
+      "gitlab-oauth": "Reach to your Admin to enable GitLab login",
+      "sign-in-with-idp": "Sign in with {idp}"
     },
     "password-forget": {
       "title": "Forgot your password?",
@@ -1063,9 +1085,7 @@
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-search": "Search repository",
-    "linked": "Linked repositories",
-    "role-provider": "Project role provider",
-    "role-provider-description": "Bytebase will sync members from the selected provider and replace the existing members in the project."
+    "linked": "Linked repositories"
   },
   "workflow": {
     "current-workflow": "Current workflow",
@@ -1201,10 +1221,6 @@
         "title": "Restore project",
         "btn-text": "Restore this @.lower:{'common.project'}"
       },
-      "sync-from-vcs": "Sync from VCS",
-      "success-member-sync-prompt": "Sync member from VCS Succeeded",
-      "view-vcs-member": "View members in VCS",
-      "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync.",
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Migration-based",
       "select-schema-change-type-sdl": "State-based",
@@ -1615,6 +1631,14 @@
         "title": "SQL review policy",
         "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
       },
+      "bb-feature-vcs-schema-write-back": {
+        "title": "Schema write-back",
+        "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
+      },
+      "bb-feature-vcs-sheet-sync": {
+        "title": "Synchronize SQL scripts from VCS",
+        "desc": "Synchronize SQL scripts stored in VCS to Sheet."
+      },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",
         "desc": "Add the SQL Review CI to your VCS repository pipeline. SQL Review will be triggered in the pull request for changed SQL files."
@@ -1660,7 +1684,7 @@
     "shared-with-me": "Shared with me",
     "starred": "Starred",
     "actions": {
-      "sync-from-vcs": "Sync from VCS"
+      "sync-from-vcs": "Sync SQL scripts from VCS"
     },
     "hint-tips": {
       "confirm-to-sync-sheet": "Confirm to sync sheets?",
@@ -1790,5 +1814,12 @@
   "schema-diagram": {
     "self": "Schema Diagram",
     "fit-content-with-view": "Fit content within view"
+  },
+  "identity-provider": {
+    "test-connection": "Test Connection",
+    "test-modal": {
+      "title": "Test OAuth2 Connection",
+      "start-test": "Click sign in to get start testing"
+    }
   }
 }

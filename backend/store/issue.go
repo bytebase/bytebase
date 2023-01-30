@@ -312,37 +312,11 @@ func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (
 	if pipeline == nil {
 		return nil, nil
 	}
-	composedPipeline := &api.Pipeline{
-		ID:   pipeline.ID,
-		Name: pipeline.Name,
-	}
 
-	stageRawList, err := s.findStageRaw(ctx, &api.StageFind{PipelineID: &issue.PipelineUID})
+	composedPipeline, err := s.composeSimplePipeline(ctx, pipeline)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find stage list")
+		return nil, err
 	}
-	var stageList []*api.Stage
-	for _, raw := range stageRawList {
-		stage := raw.toStage()
-		env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-		stage.Environment = env
-		taskFind := &api.TaskFind{
-			PipelineID: &stage.PipelineID,
-			StageID:    &stage.ID,
-		}
-		taskRawList, err := s.findTaskRaw(ctx, taskFind)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find task list with TaskFind[%+v]", taskFind)
-		}
-		for _, taskRaw := range taskRawList {
-			stage.TaskList = append(stage.TaskList, taskRaw.toTask())
-		}
-		stageList = append(stageList, stage)
-	}
-	composedPipeline.StageList = stageList
 	composedIssue.Pipeline = composedPipeline
 
 	return composedIssue, nil
@@ -442,6 +416,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
+	create.Status = api.IssueOpen
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -480,7 +455,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Project.UID,
 		create.PipelineUID,
 		create.Title,
-		api.IssueOpen,
+		create.Status,
 		create.Type,
 		create.Description,
 		create.Assignee.ID,

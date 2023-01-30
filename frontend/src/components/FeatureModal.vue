@@ -112,12 +112,7 @@ import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
-import {
-  FeatureType,
-  PlanType,
-  planTypeToString,
-  FEATURE_MATRIX,
-} from "@/types";
+import { FeatureType, PlanType, planTypeToString } from "@/types";
 
 const props = defineProps({
   feature: {
@@ -136,7 +131,9 @@ const ok = () => {
 
 const subscriptionStore = useSubscriptionStore();
 
-const isRequiredInPlan = Array.isArray(FEATURE_MATRIX.get(props.feature));
+const isRequiredInPlan = Array.isArray(
+  subscriptionStore.featureMatrix.get(props.feature)
+);
 const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
 const featureKey = props.feature.split(".").join("-");

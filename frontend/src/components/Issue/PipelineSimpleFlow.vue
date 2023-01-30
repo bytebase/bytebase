@@ -13,47 +13,43 @@
       >
         <template v-for="(task, i) in taskList" :key="i">
           <div
-            class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-hidden"
+            class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 justify-between items-center overflow-hidden"
             :class="taskClass(task)"
             @click="onClickTask(task, i)"
           >
-            <div class="flex-1">
-              <div class="flex items-center pb-1">
-                <div class="flex items-center flex-1">
-                  <TaskStatusIcon
-                    :create="create"
-                    :active="isActiveTask(task)"
-                    :status="task.status"
-                    :task="task"
-                    class="transform scale-75"
-                  />
+            <div class="flex items-center pb-1">
+              <div class="flex items-center flex-1 gap-x-1">
+                <TaskStatusIcon
+                  :create="create"
+                  :active="isActiveTask(task)"
+                  :status="task.status"
+                  :task="task"
+                  class="transform scale-75"
+                />
+                <div class="name flex-1 space-x-1 overflow-x-hidden">
                   <heroicons-solid:arrow-narrow-right
                     v-if="isActiveTask(task)"
-                    class="name w-5 h-5"
+                    class="w-5 h-5 inline-block"
                   />
-                  <div class="name">
-                    {{ databaseForTask(task).name }}
-                    <span
-                      v-if="schemaVersionForTask(task)"
-                      class="schema-version"
-                    >
-                      ({{ schemaVersionForTask(task) }})
-                    </span>
-                  </div>
-                </div>
-                <TaskExtraActionsButton :task="(task as Task)" />
-              </div>
-              <div class="flex items-center justify-between px-1 py-1">
-                <div class="flex flex-1 items-center whitespace-pre-wrap">
-                  <InstanceEngineIcon
-                    :instance="databaseForTask(task).instance"
-                  />
+                  <span>{{ databaseForTask(task).name }}</span>
                   <span
-                    class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap"
+                    v-if="schemaVersionForTask(task)"
+                    class="schema-version"
                   >
-                    {{ instanceName(databaseForTask(task).instance) }}
+                    ({{ schemaVersionForTask(task) }})
                   </span>
                 </div>
+              </div>
+              <TaskExtraActionsButton :task="(task as Task)" />
+            </div>
+            <div class="flex items-center justify-between px-1 py-1">
+              <div class="flex flex-1 items-center whitespace-pre-wrap">
+                <InstanceEngineIcon
+                  :instance="databaseForTask(task).instance"
+                />
+                <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">
+                  {{ instanceName(databaseForTask(task).instance) }}
+                </span>
               </div>
             </div>
           </div>
@@ -197,10 +193,10 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+  @apply whitespace-pre-wrap break-all;
 }
 .task .schema-version {
-  @apply ml-1 text-sm;
+  @apply text-sm;
 }
 .task.active .name {
   @apply font-bold;

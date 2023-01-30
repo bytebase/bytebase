@@ -51,7 +51,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		return errors.Wrap(err, "failed to create database creation issue")
 	}
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
+		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
@@ -100,7 +100,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		return errors.Wrap(err, "failed to create database creation issue")
 	}
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
+		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {

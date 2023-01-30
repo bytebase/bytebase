@@ -149,11 +149,20 @@ const initSubscription = () => {
   const subscriptionStore = useSubscriptionStore();
   return subscriptionStore.fetchSubscription();
 };
+const initFeatureMatrix = () => {
+  const subscriptionStore = useSubscriptionStore();
+  return subscriptionStore.fetchFeatureMatrix();
+};
 const restoreUser = () => {
   const authStore = useAuthStore();
   return authStore.restoreUser();
 };
-Promise.all([initActuator(), initSubscription(), restoreUser()]).finally(() => {
+Promise.all([
+  initActuator(),
+  initFeatureMatrix(),
+  initSubscription(),
+  restoreUser(),
+]).finally(() => {
   // Install router after the necessary data fetching is complete.
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
   app.mount("#app");

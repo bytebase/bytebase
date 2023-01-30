@@ -1,28 +1,32 @@
 <template>
-  <Canvas>
-    <template #desktop>
-      <template v-for="(schema, i) in schemaList" :key="`schema-${i}`">
-        <TableNode
-          v-for="table in schema.tables"
-          :key="idOfTable(table)"
-          :schema="schema"
-          :table="table"
-          :class="initialized ? '' : 'invisible'"
-        />
+  <div class="w-full h-full relative overflow-hidden flex">
+    <Navigator />
+
+    <Canvas class="flex-1">
+      <template #desktop>
+        <template v-for="(schema, i) in schemaList" :key="`schema-${i}`">
+          <TableNode
+            v-for="table in schema.tables"
+            :key="idOfTable(table)"
+            :schema="schema"
+            :table="table"
+            :class="initialized ? '' : 'invisible'"
+          />
+        </template>
+
+        <template v-if="initialized">
+          <ForeignKeyLine v-for="(fk, i) in foreignKeys" :key="i" :fk="fk" />
+        </template>
       </template>
 
-      <template v-if="initialized">
-        <ForeignKeyLine v-for="(fk, i) in foreignKeys" :key="i" :fk="fk" />
-      </template>
-    </template>
-
-    <div
-      v-if="busy || !initialized"
-      class="absolute inset-0 bg-white/40 flex items-center justify-center"
-    >
-      <BBSpin />
-    </div>
-  </Canvas>
+      <div
+        v-if="busy || !initialized"
+        class="absolute inset-0 bg-white/40 flex items-center justify-center"
+      >
+        <BBSpin />
+      </div>
+    </Canvas>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -47,6 +51,7 @@ import {
   Geometry,
 } from "./types";
 import Canvas from "./Canvas";
+import Navigator from "./Navigator";
 import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
 import { provideSchemaDiagramContext } from "./common";
 

@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -29,11 +30,12 @@ import (
 )
 
 // NewSchemaUpdateGhostCutoverExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateGhostCutoverExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		license:         license,
 		stateCfg:        stateCfg,
 		schemaSyncer:    schemaSyncer,
 		profile:         profile,
@@ -45,28 +47,28 @@ type SchemaUpdateGhostCutoverExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	license         enterpriseAPI.LicenseService
 	stateCfg        *state.State
 	schemaSyncer    *schemasync.Syncer
 	profile         config.Profile
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (bool, *api.TaskRunResultPayload, error) {
-	taskDAG, err := exec.store.GetTaskDAGByToTaskID(ctx, task.ID)
-	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
+func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+	if len(task.BlockedBy) != 1 {
+		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
-		InstanceID:    &task.Database.Instance.ResourceID,
-		DatabaseName:  &task.Database.Name,
-	})
+	syncTaskID := task.BlockedBy[0]
+	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
+
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
-
-	syncTaskID := taskDAG.FromTaskID
-	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return true, nil, err
+	}
 
 	syncTask, err := exec.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
@@ -82,7 +84,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 		return true, nil, errors.Wrap(err, "failed to parse table name from statement")
 	}
 
-	postponeFilename := utils.GetPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
+	postponeFilename := utils.GetPostponeFlagFilename(syncTaskID, database.UID, database.DatabaseName, tableName)
 
 	value, ok := exec.stateCfg.GhostTaskState.Load(syncTaskID)
 	if !ok {
@@ -90,11 +92,11 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	}
 	sharedGhost := value.(sharedGhostState)
 
-	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instanceName", task.Instance.Name),
-			zap.String("databaseName", task.Database.Name),
+			zap.String("instanceName", instance.ResourceID),
+			zap.String("databaseName", database.DatabaseName),
 			zap.Error(err),
 		)
 	}
@@ -102,9 +104,13 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
+	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -114,17 +120,17 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 	migrationID, schema, err := func() (migrationHistoryID string, updatedSchema string, resErr error) {
-		driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, task.Database.Name)
+		driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 		if err != nil {
 			return "", "", err
 		}
 		defer driver.Close(ctx)
 		needsSetup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
+			return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", instance.ResourceID)
 		}
 		if needsSetup {
-			return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
+			return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", instance.ResourceID)
 		}
 
 		executor := driver.(util.MigrationExecutor)
@@ -178,7 +184,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, stores, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {

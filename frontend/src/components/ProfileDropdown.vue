@@ -157,8 +157,7 @@ export default defineComponent({
 
     const resetQuickstart = () => {
       const keys = [
-        "bookmark.create",
-        "comment.create",
+        "issue.visit",
         "project.visit",
         "environment.visit",
         "instance.visit",

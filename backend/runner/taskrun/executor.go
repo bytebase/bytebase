@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
@@ -37,11 +38,11 @@ type Executor interface {
 	// 1. It's possible that err could be non-nil while terminated is false, which
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
-	RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
+	RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, exec Executor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func RunExecutorOnce(ctx context.Context, exec Executor, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -58,15 +59,22 @@ func RunExecutorOnce(ctx context.Context, exec Executor, task *api.Task) (termin
 	return exec.RunOnce(ctx, task)
 }
 
-func preMigration(ctx context.Context, stores *store.Store, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
-	if task.Database == nil {
-		msg := "missing database when updating schema"
-		if migrationType == db.Data {
-			msg = "missing database when updating data"
-		}
-		return nil, errors.Errorf(msg)
+func preMigration(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
 	}
-	databaseName := task.Database.Name
+	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	if err != nil {
+		return nil, err
+	}
+	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found")
+	}
 
 	mi := &db.MigrationInfo{
 		ReleaseVersion: profile.Version,
@@ -74,7 +82,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		// TODO(d): support semantic versioning.
 		Version:     schemaVersion,
 		Description: task.Name,
-		Environment: task.Instance.Environment.Name,
+		Environment: environment.Title,
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
@@ -102,8 +110,8 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		mi.Payload = string(bytes)
 	}
 
-	mi.Database = databaseName
-	mi.Namespace = databaseName
+	mi.Database = database.DatabaseName
+	mi.Namespace = database.DatabaseName
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
@@ -128,24 +136,27 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
+func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
 	statement = strings.TrimSpace(statement)
-	databaseName := task.Database.Name
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
 	}
-
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
+		return "", "", err
+	}
+
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", instance.ResourceID)
 	}
 	defer driver.Close(ctx)
 
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	log.Debug("Start migration...",
-		zap.String("instance", task.Instance.Name),
-		zap.String("database", databaseName),
+		zap.String("instance", instance.ResourceID),
+		zap.String("database", database.DatabaseName),
 		zap.String("source", string(mi.Source)),
 		zap.String("type", string(mi.Type)),
 		zap.String("statement", statementRecord),
@@ -153,13 +164,13 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
+		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", instance.ResourceID)
 	}
 	if setup {
-		return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
+		return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", instance.ResourceID)
 	}
 
-	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
+	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
 		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
@@ -172,19 +183,19 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		return "", "", err
 	}
 
-	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
+	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
 		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		// The runner will periodically scan the map to generate rollback SQL asynchronously.
-		stateCfg.RollbackGenerateMap.Store(updatedTask.ID, updatedTask)
+		stateCfg.RollbackGenerateMap.Store(task.ID, updatedTask)
 	}
 
 	return migrationID, schema, nil
 }
 
-func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) (*api.Task, error) {
+func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		return nil, errors.Errorf("failed to cast driver to mysql.Driver")
@@ -224,14 +235,14 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	updatedTask, err := store.PatchTask(ctx, patch)
+	updatedTask, err := store.UpdateTaskV2(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
 	}
 	return updatedTask, nil
 }
 
-func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store, migrationID string) (*api.Task, error) {
+func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store, migrationID string) (*store.TaskMessage, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrap(err, "invalid database data update payload")
@@ -263,15 +274,31 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	updatedTask, err := store.PatchTask(ctx, patch)
+	updatedTask, err := store.UpdateTaskV2(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
 	}
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
-	databaseName := task.Database.Name
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
+	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	if err != nil {
+		return true, nil, err
+	}
+	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return true, nil, err
+	}
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return true, nil, err
+	}
+
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		log.Error("failed to find containing issue", zap.Error(err))
@@ -280,48 +307,48 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
-	if err != nil {
-		return true, nil, err
-	}
 	repo, err := stores.GetRepository(ctx, &api.RepositoryFind{
-		ProjectID: &task.Database.ProjectID,
+		ProjectID: &project.UID,
 	})
 	if err != nil {
-		return true, nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
+		return true, nil, errors.Errorf("failed to find linked repository for database %q", database.DatabaseName)
 	}
 
 	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
 		if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-			EnvironmentID: task.Database.Instance.Environment.ResourceID,
-			InstanceID:    task.Database.Instance.ResourceID,
-			DatabaseName:  databaseName,
+			EnvironmentID: environment.ResourceID,
+			InstanceID:    instance.ResourceID,
+			DatabaseName:  database.DatabaseName,
 			SchemaVersion: &mi.Version,
 		}, api.SystemBotID); err != nil {
-			return true, nil, errors.Errorf("failed to update database %q for instance %q", databaseName, task.Database.Instance.Name)
+			return true, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 		}
 	}
-	// On the presence of schema path template We write back the latest schema after migration for VCS-based projects for
+	// If write-back feature is allowed in the Plan, on the presence of schema path template, we
+	// write back the latest schema after migration for VCS-based projects for
 	// 1) Non-wildcard branch filter and baseline migration for SDL.
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
-	if repo != nil && repo.SchemaPathTemplate != "" {
-		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-			if task.Type == api.TaskDatabaseSchemaBaseline && !strings.Contains(repo.BranchFilter, "*") {
-				writeBack = true
-				// Transform the schema to standard style for SDL mode.
-				if task.Database.Instance.Engine == db.MySQL {
-					standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
-					if err != nil {
-						return true, nil, errors.Errorf("failed to transform to standard schema for database %q", task.Database.Name)
+	if license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
+		if repo != nil && repo.SchemaPathTemplate != "" {
+			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+				if task.Type == api.TaskDatabaseSchemaBaseline && !strings.Contains(repo.BranchFilter, "*") {
+					writeBack = true
+					// Transform the schema to standard style for SDL mode.
+					if instance.Engine == db.MySQL {
+						standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+						if err != nil {
+							return true, nil, errors.Errorf("failed to transform to standard schema for database %q", database.DatabaseName)
+						}
+						schema = standardSchema
 					}
-					schema = standardSchema
 				}
+			} else {
+				writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 			}
-		} else {
-			writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 		}
 	}
+
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
 			composedPipeline, err := stores.GetPipelineByID(ctx, issue.PipelineUID)
@@ -345,14 +372,14 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}
 
 	log.Debug("Post migration...",
-		zap.String("instance", task.Instance.Name),
-		zap.String("database", databaseName),
+		zap.String("instance", instance.ResourceID),
+		zap.String("database", database.DatabaseName),
 		zap.Bool("writeBack", writeBack),
 	)
 
 	if writeBack {
 		if err != nil {
-			return true, nil, errors.Wrapf(err, "failed to get BaseDatabaseName for instance %q, database %q", task.Instance.Name, task.Database.Name)
+			return true, nil, errors.Wrapf(err, "failed to get BaseDatabaseName for instance %q, database %q", instance.ResourceID, database.DatabaseName)
 		}
 		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
@@ -360,7 +387,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 		vcs, err := stores.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
-			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
+			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, database.DatabaseName)
 		}
 		if vcs == nil {
 			return true, nil, errors.Errorf("VCS ID not found: %d", repo.VCSID)
@@ -425,15 +452,15 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		Type:       api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to archive anomaly",
-			zap.String("instance", task.Instance.Name),
-			zap.String("database", task.Database.Name),
+			zap.String("instance", instance.ResourceID),
+			zap.String("database", database.DatabaseName),
 			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 			zap.Error(err))
 	}
 
-	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
+	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, database.DatabaseName)
 	if mi.Type == db.Baseline {
-		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, databaseName)
+		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, database.DatabaseName)
 	}
 
 	return true, &api.TaskRunResultPayload{
@@ -443,7 +470,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
@@ -452,7 +479,7 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 // Writes back the latest schema to the repository after migration

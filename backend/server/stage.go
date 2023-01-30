@@ -10,6 +10,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func (s *Server) registerStageRoutes(g *echo.Group) {
@@ -24,14 +25,20 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
 		}
-		stageList, err := s.store.FindStage(ctx, &api.StageFind{ID: &stageID})
+		stages, err := s.store.ListStageV2(ctx, pipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find stage %v", stageID)).SetInternal(err)
 		}
-		if len(stageList) != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Find invalid number %v stages for stage %v", len(stageList), stageID)).SetInternal(err)
+		var stage *store.StageMessage
+		for _, v := range stages {
+			if v.ID == stageID {
+				stage = v
+				break
+			}
 		}
-		stage := stageList[0]
+		if stage == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid stage %v", stageID)).SetInternal(err)
+		}
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		stageAllTaskStatusPatch := &api.StageAllTaskStatusPatch{
@@ -47,7 +54,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		}
 
 		pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
-		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID, StatusList: &pendingApprovalStatus}, true /* returnOnErr */)
+		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID, StatusList: &pendingApprovalStatus})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
 		}
@@ -64,6 +71,35 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
+
+		if stageAllTaskStatusPatch.Status == api.TaskPending {
+			for _, task := range tasks {
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+				if err != nil {
+					return err
+				}
+				taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
+				if err != nil {
+					return err
+				}
+				ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
+				}
+			}
+			composedPipeline, err := s.store.GetPipelineByID(ctx, tasks[0].PipelineID)
+			if err != nil {
+				return err
+			}
+			activeStage := utils.GetActiveStage(composedPipeline)
+			if tasks[0].StageID != activeStage.ID {
+				return echo.NewHTTPError(http.StatusBadRequest, "Tasks in the prior stage are not done yet")
+			}
+		}
+
 		var taskIDList []int
 		for _, task := range tasks {
 			taskIDList = append(taskIDList, task.ID)
@@ -78,7 +114,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, "issue not found")
 		}
-		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage); err != nil {
+		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage.Name); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 		}
 

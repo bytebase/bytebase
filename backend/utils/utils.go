@@ -79,7 +79,7 @@ type GhostConfig struct {
 }
 
 // GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (GhostConfig, error) {
+func GetGhostConfig(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (GhostConfig, error) {
 	var isAWS bool
 	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
@@ -92,20 +92,20 @@ func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, secret 
 		return GhostConfig{}, err
 	}
 	return GhostConfig{
-		host:                 task.Instance.Host,
-		port:                 task.Instance.Port,
+		host:                 dataSource.Host,
+		port:                 dataSource.Port,
 		user:                 dataSource.Username,
 		password:             password,
-		database:             task.Database.Name,
+		database:             database.DatabaseName,
 		table:                tableName,
 		alterStatement:       statement,
-		socketFilename:       getSocketFilename(task.ID, task.Database.ID, task.Database.Name, tableName),
-		postponeFlagFilename: GetPostponeFlagFilename(task.ID, task.Database.ID, task.Database.Name, tableName),
+		socketFilename:       getSocketFilename(taskID, database.UID, database.DatabaseName, tableName),
+		postponeFlagFilename: GetPostponeFlagFilename(taskID, database.UID, database.DatabaseName, tableName),
 		noop:                 noop,
 		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
 		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
 		// Here we use serverID = offset + task.ID to avoid potential conflicts.
-		serverID: serverIDOffset + uint(task.ID),
+		serverID: serverIDOffset + uint(taskID),
 		// https://github.com/github/gh-ost/blob/master/doc/rds.md
 		isAWS: isAWS,
 	}, nil
@@ -370,4 +370,104 @@ func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists 
 		offset += len(taskCreateList)
 	}
 	return resTaskCreateList, resTaskIndexDAGList, nil
+}
+
+// PassAllCheck checks whether a task has passed all task checks.
+func PassAllCheck(task *store.TaskMessage, allowedStatus api.TaskCheckStatus, taskCheckRuns []*store.TaskCheckRunMessage, engine db.Type) (bool, error) {
+	var runs []*store.TaskCheckRunMessage
+	for _, run := range taskCheckRuns {
+		if run.TaskID == task.ID {
+			runs = append(runs, run)
+		}
+	}
+	// schema update, data update and gh-ost sync task have required task check.
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		pass, err := passCheck(runs, api.TaskCheckDatabaseConnect, allowedStatus)
+		if err != nil {
+			return false, err
+		}
+		if !pass {
+			return false, nil
+		}
+
+		pass, err = passCheck(runs, api.TaskCheckInstanceMigrationSchema, allowedStatus)
+		if err != nil {
+			return false, err
+		}
+		if !pass {
+			return false, nil
+		}
+
+		if api.IsSyntaxCheckSupported(engine) {
+			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+
+		if api.IsSQLReviewSupported(engine) {
+			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+
+		if engine == db.Postgres {
+			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementType, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+	}
+
+	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		ok, err := passCheck(runs, api.TaskCheckGhostSync, allowedStatus)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// Returns true only if the task check run result is at least the minimum required level.
+// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
+// For Pending->Running transitions, the minimum level is WARN.
+func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
+	var lastRun *store.TaskCheckRunMessage
+	for _, run := range taskCheckRunList {
+		if checkType != run.Type {
+			continue
+		}
+		if lastRun == nil || lastRun.ID < run.ID {
+			lastRun = run
+		}
+	}
+
+	if lastRun == nil || lastRun.Status != api.TaskCheckRunDone {
+		return false, nil
+	}
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status.LessThan(allowedStatus) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

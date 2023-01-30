@@ -650,11 +650,17 @@ export const getRuleLocalization = (
   };
 };
 
-// We decide to make the SQL review policy free to use for all plans in issue BYT-2321.
-// Return true to ignore the feature guard for SQL review rules.
+const availableRulesForFreePlan: RuleType[] = [
+  "statement.where.require",
+  "column.no-null",
+];
+
 export const ruleIsAvailableInSubscription = (
   ruleType: RuleType,
   subscriptionPlan: PlanType
 ): boolean => {
+  if (subscriptionPlan === PlanType.FREE) {
+    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
+  }
   return true;
 };
