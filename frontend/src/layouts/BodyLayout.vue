@@ -170,7 +170,7 @@
               <QuickActionPanel :quick-action-list="quickActionList" />
             </div>
             <div
-              v-if="router.currentRoute.value.name === 'workspace.home'"
+              v-if="route.name === 'workspace.home'"
               class="mt-4 hidden md:flex"
             >
               <a
@@ -210,7 +210,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
@@ -241,6 +241,7 @@ export default defineComponent({
     const actuatorStore = useActuatorStore();
     const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
+    const route = useRoute();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -345,7 +346,7 @@ export default defineComponent({
 
     return {
       state,
-      router,
+      route,
       quickActionList,
       showBreadcrumb,
       showQuickstart,
