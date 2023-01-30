@@ -77,7 +77,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		name         string
 		schedule     *api.DeploymentSchedule
 		databaseList []*store.DatabaseMessage
-		want         [][]*store.DatabaseMessage
+		want         [][]int
 		// Notice relevant position is preserved from databaseList to want.
 		// e.g. in simpleDeployments the result is [db[0], db[1]] instead of [db[1], db[0]] in the first stage.
 	}{
@@ -116,9 +116,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			[]*store.DatabaseMessage{
 				dbs[0], dbs[1],
 			},
-			[][]*store.DatabaseMessage{
-				{dbs[0]},
-				{dbs[1]},
+			[][]int{
+				{dbs[0].UID},
+				{dbs[1].UID},
 			},
 		},
 		{
@@ -156,9 +156,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			[]*store.DatabaseMessage{
 				dbs[0], dbs[1], dbs[2],
 			},
-			[][]*store.DatabaseMessage{
-				{dbs[0], dbs[2]},
-				{dbs[1]},
+			[][]int{
+				{dbs[0].UID, dbs[2].UID},
+				{dbs[1].UID},
 			},
 		},
 		{
@@ -196,8 +196,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			[]*store.DatabaseMessage{
 				dbs[0], dbs[2], dbs[3],
 			},
-			[][]*store.DatabaseMessage{
-				{dbs[0], dbs[2]},
+			[][]int{
+				{dbs[0].UID, dbs[2].UID},
 				nil,
 			},
 		},
@@ -223,8 +223,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			[]*store.DatabaseMessage{
 				dbs[3], dbs[4],
 			},
-			[][]*store.DatabaseMessage{
-				{dbs[3], dbs[4]},
+			[][]int{
+				{dbs[3].UID, dbs[4].UID},
 			},
 		},
 		{
@@ -249,8 +249,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			[]*store.DatabaseMessage{
 				dbs[5], dbs[6],
 			},
-			[][]*store.DatabaseMessage{
-				{dbs[5], dbs[6]},
+			[][]int{
+				{dbs[5].UID, dbs[6].UID},
 			},
 		},
 	}

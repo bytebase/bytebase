@@ -258,7 +258,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if err != nil {
 		return "", "", errors.Errorf("Failed to create deployment pipeline")
 	}
-	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
+	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID, databases)
 	if similarDB == nil {
 		return "", "", nil
 	}
@@ -284,11 +284,17 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	return schemaVersion, schemaBuf.String(), nil
 }
 
-func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmentID string) *store.DatabaseMessage {
+func getPeerTenantDatabase(databaseMatrix [][]int, environmentID string, databases []*store.DatabaseMessage) *store.DatabaseMessage {
+	databaseMap := make(map[int]*store.DatabaseMessage)
+	for _, database := range databases {
+		databaseMap[database.UID] = database
+	}
+
 	var similarDB *store.DatabaseMessage
 	// We try to use an existing tenant with the same environment, if possible.
-	for _, databaseList := range databaseMatrix {
-		for _, db := range databaseList {
+	for _, databaseUIDs := range databaseMatrix {
+		for _, databaseUID := range databaseUIDs {
+			db := databaseMap[databaseUID]
 			if db.EnvironmentID == environmentID {
 				similarDB = db
 				break
@@ -301,7 +307,7 @@ func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmen
 	if similarDB == nil {
 		for _, stage := range databaseMatrix {
 			if len(stage) > 0 {
-				similarDB = stage[0]
+				similarDB = databaseMap[stage[0]]
 				break
 			}
 		}

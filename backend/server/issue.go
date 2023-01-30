@@ -860,15 +860,19 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
 	}
 
-	// aggregatedMatrix is the aggregated matrix by deployments.
-	// databaseToMigrationList is the mapping from database ID to migration detail.
-	aggregatedMatrix := make([][]*store.DatabaseMessage, len(deploySchedule.Deployments))
-	databaseToMigrationList := make(map[int][]*api.MigrationDetail)
-
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 	}
+	databaseMap := make(map[int]*store.DatabaseMessage)
+	for _, database := range databases {
+		databaseMap[database.UID] = database
+	}
+
+	// aggregatedMatrix is the aggregated matrix by deployments.
+	// databaseToMigrationList is the mapping from database ID to migration detail.
+	aggregatedMatrix := make([][]int, len(deploySchedule.Deployments))
+	databaseToMigrationList := make(map[int][]*api.MigrationDetail)
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
 		migrationDetail := c.DetailList[0]
@@ -878,16 +882,12 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		aggregatedMatrix = matrix
 		for _, databaseList := range matrix {
-			for _, database := range databaseList {
+			for _, databaseUID := range databaseList {
 				// There should be only one migration per database for tenant mode deployment.
-				databaseToMigrationList[database.UID] = []*api.MigrationDetail{migrationDetail}
+				databaseToMigrationList[databaseUID] = []*api.MigrationDetail{migrationDetail}
 			}
 		}
 	} else {
-		databaseMap := make(map[int]*store.DatabaseMessage)
-		for _, database := range databases {
-			databaseMap[database.UID] = database
-		}
 		for _, d := range c.DetailList {
 			database, ok := databaseMap[d.DatabaseID]
 			if !ok {
@@ -904,12 +904,28 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				// We disallow user to create non-data migration for MongoDB.
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create non-data migration for MongoDB, consider using data migration(DML) instead.")
 			}
+
 			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*store.DatabaseMessage{database})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 			}
 			for i, databaseList := range matrix {
-				aggregatedMatrix[i] = append(aggregatedMatrix[i], databaseList...)
+				if len(databaseList) == 0 {
+					continue
+				} else if len(databaseList) > 1 {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "there should be at most one database in the matrix stage")
+				}
+				database := databaseList[0]
+				found := false
+				for _, v := range aggregatedMatrix[i] {
+					if v == database {
+						found = true
+						break
+					}
+				}
+				if !found {
+					aggregatedMatrix[i] = append(aggregatedMatrix[i], database)
+				}
 			}
 			databaseToMigrationList[database.UID] = append(databaseToMigrationList[database.UID], d)
 		}
@@ -919,15 +935,19 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		create := &api.PipelineCreate{
 			Name: "Update database schema (gh-ost) pipeline",
 		}
-		for i, databaseList := range aggregatedMatrix {
+		for i, databaseUIDs := range aggregatedMatrix {
 			// Skip the stage if the stage includes no database.
-			if len(databaseList) == 0 {
+			if len(databaseUIDs) == 0 {
 				continue
 			}
 			var environmentID string
 			var taskCreateLists [][]api.TaskCreate
 			var taskIndexDAGLists [][]api.TaskIndexDAG
-			for _, database := range databaseList {
+			for _, databaseUID := range databaseUIDs {
+				database := databaseMap[databaseUID]
+				if database == nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("database %d not found in the project", databaseUID))
+				}
 				if environmentID != "" && environmentID != database.EnvironmentID {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 				}
@@ -969,15 +989,19 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	create := &api.PipelineCreate{
 		Name: "Change database pipeline",
 	}
-	for i, databaseList := range aggregatedMatrix {
+	for i, databaseUIDs := range aggregatedMatrix {
 		// Skip the stage if the stage includes no database.
-		if len(databaseList) == 0 {
+		if len(databaseUIDs) == 0 {
 			continue
 		}
 		var environmentID string
 		var taskCreateList []api.TaskCreate
 		var taskIndexDAGList []api.TaskIndexDAG
-		for _, database := range databaseList {
+		for _, databaseUID := range databaseUIDs {
+			database := databaseMap[databaseUID]
+			if database == nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("database %d not found in the project", databaseUID))
+			}
 			if environmentID != "" && environmentID != database.EnvironmentID {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 			}
