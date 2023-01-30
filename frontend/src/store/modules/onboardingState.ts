@@ -15,6 +15,10 @@ type OnboardingState = {
  * - { isOnboarding: true, consumed: ["a", "b"] }
  *   means we are onboarding the workspace, and module "a" and "b" already
  *   consumed the onboarding state.
+ *
+ * If the value in localStorage is gone (e.g., the user cleared the browser
+ * data), the onboarding state will also be cleared. This is to ensure that the
+ * onboarding actions will never fire more than once.
  */
 
 export const useOnboardingStateStore = defineStore("onboardingState", () => {
@@ -25,8 +29,11 @@ export const useOnboardingStateStore = defineStore("onboardingState", () => {
   });
 
   // actions
-  const setState = (newState: OnboardingState) => {
-    state.value = newState;
+  const initialize = () => {
+    state.value = {
+      isOnboarding: true,
+      consumed: [],
+    };
   };
   const getStateByKey = (key: string) => {
     if (!state.value.isOnboarding) return false;
@@ -38,7 +45,7 @@ export const useOnboardingStateStore = defineStore("onboardingState", () => {
 
   // exposure
   return {
-    setState,
+    initialize,
     getStateByKey,
     consume,
   };

@@ -363,10 +363,7 @@ export default defineComponent({
           // generate onboarding data.
           // We write a flag here to indicate that the workspace is just created
           // and we can consume this flag somewhere else if needed.
-          useOnboardingStateStore().setState({
-            isOnboarding: true,
-            consumed: [],
-          });
+          useOnboardingStateStore().initialize();
         }
         router.replace("/");
       }
