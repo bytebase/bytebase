@@ -30,8 +30,6 @@ const IMTypeFeishu IMType = "im.feishu"
 
 // Setting is the API message for a setting.
 type Setting struct {
-	ID int `jsonapi:"primary,setting"`
-
 	// Domain specific fields
 	Name        SettingName `jsonapi:"attr,name"`
 	Value       string      `jsonapi:"attr,value"`
