@@ -37,7 +37,7 @@
               <p
                 class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2"
               >
-                <span v-if="plan.pricePrefix" class="text-4xl">
+                <span v-if="plan.pricePrefix" class="text-3xl">
                   {{ plan.pricePrefix }}
                 </span>
                 <span
@@ -172,7 +172,7 @@
         </p>
 
         <p class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2">
-          <span v-if="plan.pricePrefix" class="text-4xl">
+          <span v-if="plan.pricePrefix" class="text-3xl">
             {{ plan.pricePrefix }}
           </span>
           <span
