@@ -2,13 +2,13 @@
   <div class="space-y-2 w-full pl-4 pr-2">
     <div class="flex flex-row justify-between">
       <div class="outline-title group toplevel flex">
-        {{ $t("common.quickstart") }}
+        🎈 {{ $t("common.quickstart") }}
       </div>
       <button class="btn-icon" @click.prevent="hideQuickstart">
         <heroicons-solid:x class="w-4 h-4" />
       </button>
     </div>
-    <nav class="flex justify-center" aria-label="Progress">
+    <nav class="flex justify-center py-2" aria-label="Progress">
       <ol class="space-y-4 w-full">
         <li v-for="(intro, index) in introList" :key="index">
           <!-- Complete Task -->
