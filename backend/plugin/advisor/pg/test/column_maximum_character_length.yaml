@@ -16,20 +16,20 @@
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: pg.column.maximum-character-length
       content: The length of the CHAR column "name" in table "t" is bigger than 20, please use VARCHAR instead
       line: 1
 - statement: ALTER TABLE public.tech_book ADD COLUMN name_2 char(225)
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: pg.column.maximum-character-length
       content: The length of the CHAR column "name_2" in table "public"."tech_book" is bigger than 20, please use VARCHAR instead
       line: 1
 - statement: ALTER TABLE tech_book ALTER COLUMN name SET DATA TYPE char(225)
   want:
     - status: WARN
       code: 415
-      title: column.maximum-character-length
+      title: pg.column.maximum-character-length
       content: The length of the CHAR column "name" in table "tech_book" is bigger than 20, please use VARCHAR instead
       line: 1

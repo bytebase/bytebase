@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: pg.naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
@@ -32,7 +32,7 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: pg.naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
 - statement: |-
@@ -50,7 +50,7 @@
   want:
     - status: WARN
       code: 302
-      title: naming.column
+      title: pg.naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
 - statement: |-

@@ -9,14 +9,14 @@
   want:
     - status: WARN
       code: 306
-      title: naming.index.pk
+      title: pg.naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
 - statement: ALTER TABLE tech_book ADD CONSTRAINT udmhjtnsaablcmjhqcznfiwtnevcehcvw PRIMARY KEY (id, name)
   want:
     - status: WARN
       code: 306
-      title: naming.index.pk
+      title: pg.naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "udmhjtnsaablcmjhqcznfiwtnevcehcvw"
       line: 1
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), CONSTRAINT pk_book_name PRIMARY KEY (name))
@@ -36,7 +36,7 @@
   want:
     - status: WARN
       code: 306
-      title: naming.index.pk
+      title: pg.naming.index.pk
       content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_name$" but found "tech_book_name"
       line: 5
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), PRIMARY KEY (name))
@@ -64,7 +64,7 @@
   want:
     - status: WARN
       code: 306
-      title: naming.index.pk
+      title: pg.naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       line: 1
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book_id_name
@@ -78,7 +78,7 @@
   want:
     - status: WARN
       code: 306
-      title: naming.index.pk
+      title: pg.naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       line: 1
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book_id_name
@@ -92,6 +92,6 @@
   want:
     - status: WARN
       code: 306
-      title: naming.index.pk
+      title: pg.naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       line: 1

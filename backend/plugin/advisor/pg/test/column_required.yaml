@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 401
-      title: column.required
+      title: pg.column.required
       content: 'Table "book" requires columns: created_ts, creator_id, updated_ts, updater_id'
       line: 1
 - statement: |-
@@ -24,7 +24,7 @@
   want:
     - status: WARN
       code: 401
-      title: column.required
+      title: pg.column.required
       content: 'Table "tech_book" requires columns: creator_id'
       line: 2
 - statement: |-
@@ -33,6 +33,6 @@
   want:
     - status: WARN
       code: 401
-      title: column.required
+      title: pg.column.required
       content: 'Table "tech_book" requires columns: creator_id'
       line: 2

@@ -9,14 +9,14 @@
   want:
     - status: WARN
       code: 303
-      title: naming.index.idx
+      title: pg.naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
 - statement: CREATE INDEX wfdtqyetsyoovcvikjlyfukxyjxxxhifl ON tech_book(id, name)
   want:
     - status: WARN
       code: 303
-      title: naming.index.idx
+      title: pg.naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "wfdtqyetsyoovcvikjlyfukxyjxxxhifl"
       line: 1
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book_id_name
@@ -30,6 +30,6 @@
   want:
     - status: WARN
       code: 303
-      title: naming.index.idx
+      title: pg.naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "idx_tech_book"
       line: 1

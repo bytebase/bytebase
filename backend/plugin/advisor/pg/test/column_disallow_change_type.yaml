@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 403
-      title: column.disallow-change-type
+      title: pg.column.disallow-change-type
       content: The statement "ALTER TABLE tech_book ALTER COLUMN id SET DATA TYPE INTEGER" changes column type
       line: 1
 - statement: ALTER TABLE tech_book ADD COLUMN c1 int

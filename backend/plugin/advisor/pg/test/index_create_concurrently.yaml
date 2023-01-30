@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 814
-      title: index.create-concurrently
+      title: pg.index.create-concurrently
       content: Creating indexes will block writes on the table, unless use CONCURRENTLY
       line: 1
 - statement: create index concurrently on tech_book(id);

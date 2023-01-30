@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 301
-      title: naming.table
+      title: pg.naming.table
       content: '"techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtiutqeb"(id int, name varchar(255))
@@ -16,7 +16,7 @@
   want:
     - status: WARN
       code: 301
-      title: naming.table
+      title: pg.naming.table
       content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
 - statement: CREATE TABLE techBook(id int, name varchar(255))
@@ -37,7 +37,7 @@
   want:
     - status: WARN
       code: 301
-      title: naming.table
+      title: pg.naming.table
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
 - statement: |-
@@ -55,11 +55,11 @@
   want:
     - status: WARN
       code: 301
-      title: naming.table
+      title: pg.naming.table
       content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
     - status: WARN
       code: 301
-      title: naming.table
+      title: pg.naming.table
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2

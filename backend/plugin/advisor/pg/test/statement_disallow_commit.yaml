@@ -5,7 +5,7 @@
   want:
     - status: WARN
       code: 206
-      title: statement.disallow-commit
+      title: pg.statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       line: 3
 - statement: |-
@@ -19,11 +19,11 @@
   want:
     - status: WARN
       code: 206
-      title: statement.disallow-commit
+      title: pg.statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       line: 3
     - status: WARN
       code: 206
-      title: statement.disallow-commit
+      title: pg.statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       line: 7

@@ -9,20 +9,20 @@
   want:
     - status: WARN
       code: 1201
-      title: system.collation.allowlist
+      title: pg.system.collation.allowlist
       content: Use disabled collation "unknown", related statement "CREATE TABLE t(a text COLLATE "unknown")"
       line: 1
 - statement: ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown"
   want:
     - status: WARN
       code: 1201
-      title: system.collation.allowlist
+      title: pg.system.collation.allowlist
       content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown""
       line: 1
 - statement: ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown"
   want:
     - status: WARN
       code: 1201
-      title: system.collation.allowlist
+      title: pg.system.collation.allowlist
       content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown""
       line: 1

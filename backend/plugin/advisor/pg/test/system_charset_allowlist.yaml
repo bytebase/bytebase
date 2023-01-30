@@ -16,7 +16,7 @@
   want:
     - status: WARN
       code: 1001
-      title: system.charset.allowlist
+      title: pg.system.charset.allowlist
       content: '"" used disabled encoding ''latin1'''
       line: 0
 - statement: /* this is a comment */

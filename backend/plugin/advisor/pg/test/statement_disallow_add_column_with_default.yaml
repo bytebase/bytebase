@@ -9,6 +9,6 @@
   want:
     - status: WARN
       code: 210
-      title: statement.disallow-add-column-with-default
+      title: pg.statement.disallow-add-column-with-default
       content: Adding column with DEFAULT will locked the whole table and rewriting each rows
       line: 1

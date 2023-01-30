@@ -12,7 +12,7 @@
   want:
     - status: WARN
       code: 812
-      title: index.no-duplicate-column
+      title: pg.index.no-duplicate-column
       content: PRIMARY KEY "" has duplicate column "t"."a"
       line: 3
 - statement: |-
@@ -21,7 +21,7 @@
   want:
     - status: WARN
       code: 812
-      title: index.no-duplicate-column
+      title: pg.index.no-duplicate-column
       content: INDEX "idx_a" has duplicate column "t"."a"
       line: 2
 - statement: |-
@@ -30,7 +30,7 @@
   want:
     - status: WARN
       code: 812
-      title: index.no-duplicate-column
+      title: pg.index.no-duplicate-column
       content: UNIQUE KEY "uk_a" has duplicate column "t"."a"
       line: 2
 - statement: |-
@@ -39,7 +39,7 @@
   want:
     - status: WARN
       code: 812
-      title: index.no-duplicate-column
+      title: pg.index.no-duplicate-column
       content: PRIMARY KEY "pk_a" has duplicate column "t"."a"
       line: 2
 - statement: |-
@@ -48,6 +48,6 @@
   want:
     - status: WARN
       code: 812
-      title: index.no-duplicate-column
+      title: pg.index.no-duplicate-column
       content: FOREIGN KEY "fk_a" has duplicate column "t"."a"
       line: 2

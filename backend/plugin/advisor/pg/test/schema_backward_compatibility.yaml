@@ -2,6 +2,6 @@
   want:
     - status: WARN
       code: 111
-      title: schema.backward-compatibility
+      title: pg.schema.backward-compatibility
       content: '"ALTER TABLE tech_book ALTER COLUMN name TYPE TEXT" may cause incompatibility with the existing data and code'
       line: 1

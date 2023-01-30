@@ -16,14 +16,14 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: pg.table.require-pk
       content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t(id INT)"'
       line: 1
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: pg.table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP CONSTRAINT \"old_pk\""'
       line: 1
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
@@ -44,7 +44,7 @@
   want:
     - status: WARN
       code: 601
-      title: table.require-pk
+      title: pg.table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'
       line: 1
 - statement: |-

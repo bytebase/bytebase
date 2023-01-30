@@ -9,14 +9,14 @@
   want:
     - status: WARN
       code: 202
-      title: statement.where.require
+      title: pg.statement.where.require
       content: '"DELETE FROM t1" requires WHERE clause'
       line: 1
 - statement: UPDATE t1 SET a = 1
   want:
     - status: WARN
       code: 202
-      title: statement.where.require
+      title: pg.statement.where.require
       content: '"UPDATE t1 SET a = 1" requires WHERE clause'
       line: 1
 - statement: DELETE FROM t1 WHERE a > 0
@@ -37,7 +37,7 @@
   want:
     - status: WARN
       code: 202
-      title: statement.where.require
+      title: pg.statement.where.require
       content: '"SELECT a FROM t" requires WHERE clause'
       line: 1
 - statement: SELECT a FROM t WHERE a > 0
@@ -51,6 +51,6 @@
   want:
     - status: WARN
       code: 202
-      title: statement.where.require
+      title: pg.statement.where.require
       content: '"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)" requires WHERE clause'
       line: 1

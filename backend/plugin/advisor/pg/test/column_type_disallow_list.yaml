@@ -9,7 +9,7 @@
   want:
     - status: WARN
       code: 411
-      title: column.type-disallow-list
+      title: pg.column.type-disallow-list
       content: Disallow column type JSON but column "t"."b" is
       line: 1
 - statement: |-
@@ -18,6 +18,6 @@
   want:
     - status: WARN
       code: 411
-      title: column.type-disallow-list
+      title: pg.column.type-disallow-list
       content: Disallow column type JSON but column "t"."a" is
       line: 2

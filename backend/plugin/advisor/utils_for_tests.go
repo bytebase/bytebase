@@ -145,7 +145,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 			return r
 		}
 	}, string(rule))
-	filepath := filepath.Join("test", fileName+".yaml")
+	// fileName will be like pg_xxxxx, remove the prefix "pg_" here.
+	filepath := filepath.Join("test", fileName[3:]+".yaml")
 	yamlFile, err := os.Open(filepath)
 	require.NoError(t, err)
 	defer yamlFile.Close()

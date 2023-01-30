@@ -9,14 +9,14 @@
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
 - statement: CREATE UNIQUE INDEX dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj ON tech_book(id, name)
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj"
       line: 1
 - statement: ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id_name UNIQUE (id, name)
@@ -30,7 +30,7 @@
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), CONSTRAINT uk_book_name UNIQUE (name))
@@ -50,7 +50,7 @@
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_name$" but found "book_name"
       line: 5
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))
@@ -78,7 +78,7 @@
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       line: 1
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_uk TO uk_tech_book_id_name
@@ -92,7 +92,7 @@
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       line: 1
 - statement: ALTER INDEX old_uk RENAME TO uk_tech_book_id_name
@@ -106,6 +106,6 @@
   want:
     - status: WARN
       code: 304
-      title: naming.index.uk
+      title: pg.naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       line: 1

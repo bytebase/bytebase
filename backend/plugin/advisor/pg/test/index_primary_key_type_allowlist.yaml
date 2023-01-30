@@ -19,7 +19,7 @@
   want:
     - status: WARN
       code: 803
-      title: index.primary-key-type-allowlist
+      title: pg.index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       line: 2
 - statement: |-
@@ -30,6 +30,6 @@
   want:
     - status: WARN
       code: 803
-      title: index.primary-key-type-allowlist
+      title: pg.index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       line: 2

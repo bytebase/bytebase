@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 212
-      title: statement.disallow-add-not-null
+      title: pg.statement.disallow-add-not-null
       content: Setting NOT NULL will block reads and writes. You can use CHECK ("name" IS NOT NULL) instead
       line: 1
 - statement: |-

@@ -6,33 +6,33 @@
   want:
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "id" in "public"."book" cannot have NULL value
       line: 2
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 3
 - statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
   want:
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 1
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
   want:
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 1
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
   want:
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 1
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
@@ -46,7 +46,7 @@
   want:
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "reader" in "public"."tech_book" cannot have NULL value
       line: 1
 - statement: |-
@@ -70,7 +70,7 @@
   want:
     - status: WARN
       code: 402
-      title: column.no-null
+      title: pg.column.no-null
       content: Column "name" in "public"."tech_book" cannot have NULL value
       line: 1
 - statement: /* this is a comment */

@@ -9,6 +9,6 @@
   want:
     - status: WARN
       code: 1107
-      title: statement.insert.must-specify-column
+      title: pg.statement.insert.must-specify-column
       content: The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1')" does not
       line: 1
