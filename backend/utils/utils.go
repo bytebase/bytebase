@@ -256,15 +256,20 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]int, error) {
-	var matrix [][]int
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+	var matrix [][]*store.DatabaseMessage
 
 	// idToLabels maps databaseID -> label key -> label value
 	idToLabels := make(map[int]map[string]string)
 	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
 		databaseMap[database.UID] = database
-		idToLabels[database.UID] = database.Labels
+		if _, ok := idToLabels[database.UID]; !ok {
+			idToLabels[database.UID] = make(map[string]string)
+		}
+		for key, value := range database.Labels {
+			idToLabels[database.UID][key] = value
+		}
 	}
 
 	// idsSeen records database id which is already in a stage.
@@ -280,15 +285,28 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 			if _, ok := idsSeen[database.UID]; ok {
 				continue
 			}
-			if isMatchExpressions(idToLabels[database.UID], deployment.Spec.Selector.MatchExpressions) {
+
+			labels := idToLabels[database.UID]
+			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
 				matchedDatabaseList = append(matchedDatabaseList, database.UID)
 				idsSeen[database.UID] = true
 			}
 		}
 
-		sort.Ints(matchedDatabaseList)
-		matrix = append(matrix, matchedDatabaseList)
+		var databaseList []*store.DatabaseMessage
+		for _, id := range matchedDatabaseList {
+			databaseList = append(databaseList, databaseMap[id])
+		}
+		// sort databases in stage based on IDs.
+		if len(databaseList) > 0 {
+			sort.Slice(databaseList, func(i, j int) bool {
+				return databaseList[i].UID < databaseList[j].UID
+			})
+		}
+
+		matrix = append(matrix, databaseList)
 	}
+
 	return matrix, nil
 }
 
