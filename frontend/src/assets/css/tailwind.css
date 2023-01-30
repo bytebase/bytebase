@@ -237,7 +237,11 @@
 }
 
 .tooltip-left {
-  @apply invisible absolute -top-1 right-6  px-2 py-1 rounded bg-black bg-opacity-75 text-white;
+  @apply invisible absolute -top-1 right-6 px-2 py-1 rounded bg-black bg-opacity-75 text-white;
+}
+
+.tooltip-top {
+  @apply invisible absolute !-top-1 !left-1/2 !-translate-x-1/2 px-2 py-1 rounded bg-black bg-opacity-75 text-white;
 }
 
 .tooltip-wrapper:hover .tooltip,

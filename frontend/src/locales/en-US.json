@@ -401,6 +401,8 @@
       "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "sso": {
+      "create": "Create SSO",
+      "description": "Single sign-on (SSO) is an authentication method that enables users to authenticate with other applications and websites.",
       "deletion": "Delete this SSO",
       "form": {
         "callback-url": "Authorization callback url",
@@ -409,10 +411,20 @@
         "type": "Type",
         "basic-information": "Basic information",
         "name": "Name",
-        "domain": "Domain",
         "resource-id": "Resource ID",
+        "resource-id-description": "An unique string, and valid characters are /[a-z][0-9]-/",
+        "domain": "Domain",
+        "domain-description": "The identity provider's domain name",
+        "identity-provider-information": "Identity provider information",
+        "identity-provider-information-description": "The information is provided by your OAuth provider.",
         "endpoints": "Endpoints",
+        "endpoints-description": "The related urls provided by your OAuth provider.",
+        "auth-url-description": "The link to OAuth login page",
+        "scopes-description": "The scope parameter carried when accessing the Auth URL",
+        "token-url-description": "The API address for obtaining accessToken",
+        "user-info-url-description": "The API address for obtaining user information by accessToken",
         "user-information-mapping": "User information mapping",
+        "user-information-mapping-description": "Field mapping saves the field names from user info API.",
         "identifier": "Identifier",
         "display-name": "Display name"
       }
