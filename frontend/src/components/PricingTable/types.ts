@@ -8,5 +8,6 @@ export interface LocalPlan extends Plan {
   isFreePlan: boolean;
   isAvailable: boolean;
   pricing: string;
-  priceUnit: string;
+  pricePrefix: string;
+  priceSuffix: string;
 }

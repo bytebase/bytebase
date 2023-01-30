@@ -91,7 +91,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				for _, issue := range issues {
 					issueByID[issue.UID] = issue
-					pipeline, err := r.store.GetPipelineByID(ctx, issue.PipelineUID)
+					pipeline, err := r.store.GetSimplePipelineByID(ctx, issue.PipelineUID)
 					if err != nil {
 						log.Error("failed to get pipeline", zap.Int("id", issue.PipelineUID), zap.Error(err))
 						return
@@ -154,11 +154,16 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						case feishu.ApprovalStatusApproved:
 							// double check
 							if activeStage.ID == payload.StageID && payload.AssigneeID == issue.Assignee.ID {
-								// approve stage
+								// Approve stage.
 								if err := func() error {
+									// TODO(d): optimize the active stage tasks.
 									var taskIDList []int
-									var tasks []*api.Task
-									for _, task := range activeStage.TaskList {
+									var tasks []*store.TaskMessage
+									stageTasks, err := r.store.ListTasks(ctx, &api.TaskFind{PipelineID: &activeStage.PipelineID, StageID: &activeStage.ID})
+									if err != nil {
+										return err
+									}
+									for _, task := range stageTasks {
 										if task.Status == api.TaskPendingApproval {
 											taskIDList = append(taskIDList, task.ID)
 											tasks = append(tasks, task)

@@ -63,6 +63,10 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 	if instance == nil {
 		return nil, errors.Errorf("instance %d not found", task.InstanceID)
 	}
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
@@ -84,7 +88,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	config, err := utils.GetGhostConfig(task, adminDataSource, e.secret, instanceUsers, tableName, payload.Statement, true, 20000000)
+	config, err := utils.GetGhostConfig(task.ID, database, adminDataSource, e.secret, instanceUsers, tableName, payload.Statement, true, 20000000)
 	if err != nil {
 		return nil, err
 	}

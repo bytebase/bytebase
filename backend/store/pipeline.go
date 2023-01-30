@@ -28,6 +28,22 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 	return composedPipeline, nil
 }
 
+// GetSimplePipelineByID gets a pipeline in simple format.
+func (s *Store) GetSimplePipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
+	pipeline, err := s.GetPipelineV2ByID(ctx, id)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get pipeline with ID %d", id)
+	}
+	if pipeline == nil {
+		return nil, nil
+	}
+	composedPipeline, err := s.composeSimplePipeline(ctx, pipeline)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to compose pipeline")
+	}
+	return composedPipeline, nil
+}
+
 func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
 	composedPipeline := &api.Pipeline{
 		ID:   pipeline.ID,
@@ -43,10 +59,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 		return nil, err
 	}
 	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, &TaskCheckRunFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, err
-	}
-	dags, err := s.ListTaskDags(ctx, &TaskDAGFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, err
 	}
@@ -94,12 +106,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 				}
 				taskCheckRun.Updater = updater
 				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
-			}
-		}
-
-		for _, dag := range dags {
-			if dag.ToTaskID == task.ID {
-				composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", dag.FromTaskID))
 			}
 		}
 

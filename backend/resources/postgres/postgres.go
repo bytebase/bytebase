@@ -2,7 +2,9 @@
 package postgres
 
 import (
-	_ "embed"
+	"embed"
+	"io/fs"
+	"sort"
 
 	"bytes"
 	"context"
@@ -26,8 +28,10 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
-//go:embed employee.sql
-var sampleEmployeeStr string
+// Sample data is from https://github.com/bytebase/employee-sample-database/tree/main/postgres/dataset_small
+//
+//go:embed sample
+var sampleFS embed.FS
 
 const (
 	// SampleUser is the user name for the sample database.
@@ -387,12 +391,19 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	defer driver.Close(ctx)
 
 	// Load sample data
-	_, err = driver.Execute(
-		context.Background(),
-		sampleEmployeeStr,
-		false)
+	names, err := fs.Glob(sampleFS, "sample/*.sql")
 	if err != nil {
-		return errors.Wrapf(err, "failed to load sample database data")
+		return err
+	}
+
+	sort.Strings(names)
+
+	for _, name := range names {
+		if buf, err := fs.ReadFile(sampleFS, name); err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
+		} else if _, err := driver.Execute(context.Background(), string(buf), false); err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("failed to load sample database data: %s", name))
+		}
 	}
 
 	// Drop the default postgres database, this is to present a cleaner database list to the user.

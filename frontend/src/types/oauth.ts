@@ -14,7 +14,7 @@ export type OAuthToken = {
   refreshToken: string;
 };
 
-export const OAuthStateSessionKey = "oauthstate";
+export const OAuthStateSessionKey = "oauth-state";
 
 export type OAuthWindowEventPayload = {
   error: string;
@@ -41,7 +41,7 @@ export function openWindowForOAuth(
   vcsType: VCSType
 ): Window | null {
   // we use type to determine oauth type when receiving the callback
-  const stateQueryParameter = `${type}-${randomString(20)}`;
+  const stateQueryParameter = `${type}.${vcsType}-${randomString(20)}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   if (vcsType == "GITHUB_COM") {

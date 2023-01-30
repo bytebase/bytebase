@@ -11,7 +11,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -22,13 +24,15 @@ type IdentityProviderService struct {
 	v1pb.UnimplementedIdentityProviderServiceServer
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
+	profile        *config.Profile
 }
 
 // NewIdentityProviderService creates a new IdentityProviderService.
-func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService) *IdentityProviderService {
+func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService, profile *config.Profile) *IdentityProviderService {
 	return &IdentityProviderService{
 		store:          store,
 		licenseService: licenseService,
+		profile:        profile,
 	}
 }
 
@@ -71,7 +75,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		ResourceID: request.IdentityProviderId,
 		Title:      request.IdentityProvider.Title,
 		Domain:     request.IdentityProvider.Domain,
-		Type:       convertIdentityProviderTypeToStore(request.IdentityProvider.Type),
+		Type:       storepb.IdentityProviderType(request.IdentityProvider.Type),
 		Config:     convertIdentityProviderConfigToStore(request.IdentityProvider.GetConfig()),
 	}
 	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage, principalID)
@@ -114,7 +118,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		}
 	}
 	if patch.Config != nil {
-		if err := validIdentityProviderConfig(convertIdentityProviderTypeFromStore(identityProvider.Type), request.IdentityProvider.Config); err != nil {
+		if err := validIdentityProviderConfig(v1pb.IdentityProviderType(identityProvider.Type), request.IdentityProvider.Config); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -173,6 +177,43 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 	return convertToIdentityProvider(identityProvider), nil
 }
 
+// TestIdentityProvider tests an identity provider connection.
+func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, request *v1pb.TestIdentityProviderRequest) (*v1pb.TestIdentityProviderResponse, error) {
+	identityProvider := request.IdentityProvider
+	if identityProvider == nil {
+		return nil, status.Errorf(codes.NotFound, "identity provider not found")
+	}
+
+	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
+		oauth2Context := request.GetOauth2Context()
+		if oauth2Context == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
+		}
+		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProviderConfig.GetOauth2Config())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to new oauth2 identity provider")
+		}
+
+		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
+		}
+		if token == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing access token")
+		}
+		userInfo, err := oauth2IdentityProvider.UserInfo(token)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
+		}
+		if userInfo == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
+		}
+	}
+	return &v1pb.TestIdentityProviderResponse{}, nil
+}
+
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {
 	identityProviderID, err := getIdentityProviderID(name)
 	if err != nil {
@@ -193,7 +234,7 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 }
 
 func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) *v1pb.IdentityProvider {
-	identityProviderType := convertIdentityProviderTypeFromStore(identityProvider.Type)
+	identityProviderType := v1pb.IdentityProviderType(identityProvider.Type)
 	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
 	return &v1pb.IdentityProvider{
 		Name:   fmt.Sprintf("%s%s", identityProviderNamePrefix, identityProvider.ResourceID),
@@ -286,24 +327,6 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 	} else {
 		return nil
 	}
-}
-
-func convertIdentityProviderTypeFromStore(identityProviderType storepb.IdentityProviderType) v1pb.IdentityProviderType {
-	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
-		return v1pb.IdentityProviderType_OAUTH2
-	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
-		return v1pb.IdentityProviderType_OIDC
-	}
-	return v1pb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
-}
-
-func convertIdentityProviderTypeToStore(identityProviderType v1pb.IdentityProviderType) storepb.IdentityProviderType {
-	if identityProviderType == v1pb.IdentityProviderType_OAUTH2 {
-		return storepb.IdentityProviderType_OAUTH2
-	} else if identityProviderType == v1pb.IdentityProviderType_OIDC {
-		return storepb.IdentityProviderType_OIDC
-	}
-	return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
 
 // validIdentityProviderConfig validates the identity provider's config is a valid JSON.

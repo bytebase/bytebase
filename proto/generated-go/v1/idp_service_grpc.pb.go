@@ -29,6 +29,7 @@ type IdentityProviderServiceClient interface {
 	UpdateIdentityProvider(ctx context.Context, in *UpdateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
 	DeleteIdentityProvider(ctx context.Context, in *DeleteIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteIdentityProvider(ctx context.Context, in *UndeleteIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error)
 }
 
 type identityProviderServiceClient struct {
@@ -93,6 +94,15 @@ func (c *identityProviderServiceClient) UndeleteIdentityProvider(ctx context.Con
 	return out, nil
 }
 
+func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error) {
+	out := new(TestIdentityProviderResponse)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.IdentityProviderService/TestIdentityProvider", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IdentityProviderServiceServer is the server API for IdentityProviderService service.
 // All implementations must embed UnimplementedIdentityProviderServiceServer
 // for forward compatibility
@@ -103,6 +113,7 @@ type IdentityProviderServiceServer interface {
 	UpdateIdentityProvider(context.Context, *UpdateIdentityProviderRequest) (*IdentityProvider, error)
 	DeleteIdentityProvider(context.Context, *DeleteIdentityProviderRequest) (*emptypb.Empty, error)
 	UndeleteIdentityProvider(context.Context, *UndeleteIdentityProviderRequest) (*IdentityProvider, error)
+	TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error)
 	mustEmbedUnimplementedIdentityProviderServiceServer()
 }
 
@@ -127,6 +138,9 @@ func (UnimplementedIdentityProviderServiceServer) DeleteIdentityProvider(context
 }
 func (UnimplementedIdentityProviderServiceServer) UndeleteIdentityProvider(context.Context, *UndeleteIdentityProviderRequest) (*IdentityProvider, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteIdentityProvider not implemented")
+}
+func (UnimplementedIdentityProviderServiceServer) TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TestIdentityProvider not implemented")
 }
 func (UnimplementedIdentityProviderServiceServer) mustEmbedUnimplementedIdentityProviderServiceServer() {
 }
@@ -250,6 +264,24 @@ func _IdentityProviderService_UndeleteIdentityProvider_Handler(srv interface{}, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityProviderService_TestIdentityProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestIdentityProviderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityProviderServiceServer).TestIdentityProvider(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.IdentityProviderService/TestIdentityProvider",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityProviderServiceServer).TestIdentityProvider(ctx, req.(*TestIdentityProviderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IdentityProviderService_ServiceDesc is the grpc.ServiceDesc for IdentityProviderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +312,10 @@ var IdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteIdentityProvider",
 			Handler:    _IdentityProviderService_UndeleteIdentityProvider_Handler,
+		},
+		{
+			MethodName: "TestIdentityProvider",
+			Handler:    _IdentityProviderService_TestIdentityProvider_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
