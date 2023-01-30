@@ -16,6 +16,7 @@ export const identityProviderTypeToString = (
 };
 
 interface OAuth2IdentityProviderTemplate {
+  title: string;
   name: string;
   domain: string;
   type: IdentityProviderType.OAUTH2;
@@ -26,7 +27,8 @@ export type IdentityProviderTemplate = OAuth2IdentityProviderTemplate;
 
 export const identityProviderTemplateList: IdentityProviderTemplate[] = [
   {
-    name: "Google",
+    title: "Google",
+    name: "idp-google",
     domain: "google.com",
     type: IdentityProviderType.OAUTH2,
     config: {
@@ -47,7 +49,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
     },
   },
   {
-    name: "GitHub",
+    title: "GitHub",
+    name: "idp-github",
     domain: "github.com",
     type: IdentityProviderType.OAUTH2,
     config: {
@@ -65,7 +68,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
     },
   },
   {
-    name: "GitLab",
+    title: "GitLab",
+    name: "idp-gitlab",
     domain: "gitlab.com",
     type: IdentityProviderType.OAUTH2,
     config: {
