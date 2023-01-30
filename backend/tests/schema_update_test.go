@@ -475,6 +475,7 @@ func TestVCS(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			// TODO(p0ny): expose task DAG list and check the dependency.
+			a.Equal(3, len(issue.Pipeline.StageList[0].TaskList))
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
 			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nProd/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nProd/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
