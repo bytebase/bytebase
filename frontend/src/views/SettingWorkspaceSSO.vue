@@ -1,7 +1,9 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="textinfolabel"></div>
+      <div class="textinfolabel max-w-xl">
+        {{ $t("settings.sso.description") }}
+      </div>
       <div>
         <button class="btn-primary" @click="state.showCreatingSSOModal = true">
           {{ $t("common.create") }}
@@ -50,7 +52,7 @@
 
   <BBModal
     v-if="state.showCreatingSSOModal"
-    title="Create SSO"
+    :title="$t('settings.sso.create')"
     @close="hideCreateSSOModal"
   >
     <IdentityProviderCreateForm

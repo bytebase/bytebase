@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full flex flex-col justify-start items-start"
+    class="w-full flex flex-col justify-start items-start overflow-x-hidden px-1"
     :class="[isCreating && '!w-128']"
   >
     <div
@@ -63,7 +63,10 @@
         {{ $t("settings.sso.form.basic-information") }}
       </p>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.name") }}</label>
+        <p>
+          {{ $t("settings.sso.form.name") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="identityProvider.title"
           type="text"
@@ -74,97 +77,175 @@
         v-if="isCreating"
         class="w-full flex flex-col justify-start items-start"
       >
-        <label for="">{{ $t("settings.sso.form.resource-id") }}</label>
+        <p>
+          {{ $t("settings.sso.form.resource-id") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="identityProvider.name"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="$t('settings.sso.form.resource-id-description')"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.domain") }}</label>
+        <p>
+          {{ $t("settings.sso.form.domain") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="identityProvider.domain"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="$t('settings.sso.form.domain-description')"
+        />
+      </div>
+
+      <div class="w-full flex flex-row !mt-4">
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.identity-provider-information") }}
+        </p>
+        <ShowMoreIcon
+          class="inline-block ml-1 textinfolabel"
+          :content="
+            $t('settings.sso.form.identity-provider-information-description')
+          "
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Client ID</label>
+        <p>
+          Client ID
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="configForOAuth2.clientId"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. 6655asd77895265aa110ac0d3"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Client secret</label>
+        <p>
+          Client secret
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="configForOAuth2.clientSecret"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. 5bbezxc3972ca304de70c5d70a6aa932asd8"
         />
       </div>
 
-      <p class="textinfolabel !mt-4">Endpoints</p>
+      <div class="w-full flex flex-row !mt-4">
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.endpoints") }}
+        </p>
+      </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Auth URL</label>
+        <p>
+          Auth URL
+          <span class="text-red-600">*</span>
+          <span class="textinfolabel"
+            >({{ $t("settings.sso.form.auth-url-description") }})</span
+          >
+        </p>
         <input
           v-model="configForOAuth2.authUrl"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. https://github.com/login/oauth/authorize"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Token URL</label>
-        <input
-          v-model="configForOAuth2.tokenUrl"
-          type="text"
-          class="textfield mt-1 w-full"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label for="">User information URL</label>
-        <input
-          v-model="configForOAuth2.userInfoUrl"
-          type="text"
-          class="textfield mt-1 w-full"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Scopes</label>
+        <p>
+          Scopes
+          <span class="text-red-600">*</span>
+          <span class="textinfolabel"
+            >({{ $t("settings.sso.form.scopes-description") }})</span
+          >
+        </p>
         <input
           v-model="scopesStringOfConfig"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. user"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p>
+          Token URL
+          <span class="text-red-600">*</span>
+          <span class="textinfolabel"
+            >({{ $t("settings.sso.form.token-url-description") }})</span
+          >
+        </p>
+        <input
+          v-model="configForOAuth2.tokenUrl"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="ex. https://github.com/login/oauth/access_token"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p>
+          User information URL
+          <span class="text-red-600">*</span>
+          <span class="textinfolabel"
+            >({{ $t("settings.sso.form.user-info-url-description") }})</span
+          >
+        </p>
+        <input
+          v-model="configForOAuth2.userInfoUrl"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="ex. https://api.github.com/user"
         />
       </div>
 
-      <p class="textinfolabel !mt-4">
-        {{ $t("settings.sso.form.user-information-mapping") }}
-      </p>
+      <div class="w-full flex flex-row !mt-4">
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.user-information-mapping") }}
+        </p>
+        <ShowMoreIcon
+          class="inline-block ml-1 textinfolabel"
+          :content="
+            $t('settings.sso.form.user-information-mapping-description')
+          "
+        />
+      </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.identifier") }}</label>
+        <p>
+          {{ $t("settings.sso.form.identifier") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="configForOAuth2.fieldMapping!.identifier"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. login"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.display-name") }}</label>
+        <p>
+          {{ $t("settings.sso.form.display-name") }}
+        </p>
         <input
           v-model="configForOAuth2.fieldMapping!.displayName"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. name"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("common.email") }}</label>
+        <p>
+          {{ $t("common.email") }}
+        </p>
         <input
           v-model="configForOAuth2.fieldMapping!.email"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="ex. email"
         />
       </div>
     </div>
@@ -178,7 +259,7 @@
         {{ $t("settings.sso.form.basic-information") }}
       </p>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.name") }}</label>
+        <label>{{ $t("settings.sso.form.name") }}</label>
         <input
           v-model="identityProvider.title"
           type="text"
@@ -189,7 +270,7 @@
         v-if="isCreating"
         class="w-full flex flex-col justify-start items-start"
       >
-        <label for="">{{ $t("settings.sso.form.resource-id") }}</label>
+        <label>{{ $t("settings.sso.form.resource-id") }}</label>
         <input
           v-model="identityProvider.name"
           type="text"
@@ -197,7 +278,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.domain") }}</label>
+        <label>{{ $t("settings.sso.form.domain") }}</label>
         <input
           v-model="identityProvider.domain"
           type="text"
@@ -205,7 +286,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Issuer</label>
+        <label>Issuer</label>
         <input
           v-model="configForOIDC.issuer"
           type="text"
@@ -213,7 +294,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Client ID</label>
+        <label>Client ID</label>
         <input
           v-model="configForOIDC.clientId"
           type="text"
@@ -221,7 +302,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">Client secret</label>
+        <label>Client secret</label>
         <input
           v-model="configForOIDC.clientSecret"
           type="text"
@@ -233,7 +314,7 @@
         {{ $t("settings.sso.form.user-information-mapping") }}
       </p>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.identifier") }}</label>
+        <label>{{ $t("settings.sso.form.identifier") }}</label>
         <input
           v-model="configForOIDC.fieldMapping!.identifier"
           type="text"
@@ -241,7 +322,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("settings.sso.form.display-name") }}</label>
+        <label>{{ $t("settings.sso.form.display-name") }}</label>
         <input
           v-model="configForOIDC.fieldMapping!.displayName"
           type="text"
@@ -249,7 +330,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label for="">{{ $t("common.email") }}</label>
+        <label>{{ $t("common.email") }}</label>
         <input
           v-model="configForOIDC.fieldMapping!.email"
           type="text"
@@ -349,6 +430,7 @@ import {
   isDev,
 } from "@/utils";
 import OAuth2IdentityProviderTestModal from "./OAuth2IdentityProviderTestModal.vue";
+import ShowMoreIcon from "./ShowMoreIcon.vue";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -527,7 +609,8 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
   }
 
   selectedTemplate.value = template;
-  identityProvider.value.title = template.name;
+  identityProvider.value.title = template.title;
+  identityProvider.value.name = template.name;
   identityProvider.value.domain = template.domain;
   if (template.type === IdentityProviderType.OAUTH2) {
     configForOAuth2.value = {
