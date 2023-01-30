@@ -29,7 +29,7 @@ type IdentityProviderServiceClient interface {
 	UpdateIdentityProvider(ctx context.Context, in *UpdateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
 	DeleteIdentityProvider(ctx context.Context, in *DeleteIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteIdentityProvider(ctx context.Context, in *UndeleteIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
-	TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error)
 }
 
 type identityProviderServiceClient struct {
@@ -94,8 +94,8 @@ func (c *identityProviderServiceClient) UndeleteIdentityProvider(ctx context.Con
 	return out, nil
 }
 
-func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error) {
+	out := new(TestIdentityProviderResponse)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.IdentityProviderService/TestIdentityProvider", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ type IdentityProviderServiceServer interface {
 	UpdateIdentityProvider(context.Context, *UpdateIdentityProviderRequest) (*IdentityProvider, error)
 	DeleteIdentityProvider(context.Context, *DeleteIdentityProviderRequest) (*emptypb.Empty, error)
 	UndeleteIdentityProvider(context.Context, *UndeleteIdentityProviderRequest) (*IdentityProvider, error)
-	TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*emptypb.Empty, error)
+	TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error)
 	mustEmbedUnimplementedIdentityProviderServiceServer()
 }
 
@@ -139,7 +139,7 @@ func (UnimplementedIdentityProviderServiceServer) DeleteIdentityProvider(context
 func (UnimplementedIdentityProviderServiceServer) UndeleteIdentityProvider(context.Context, *UndeleteIdentityProviderRequest) (*IdentityProvider, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteIdentityProvider not implemented")
 }
-func (UnimplementedIdentityProviderServiceServer) TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*emptypb.Empty, error) {
+func (UnimplementedIdentityProviderServiceServer) TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestIdentityProvider not implemented")
 }
 func (UnimplementedIdentityProviderServiceServer) mustEmbedUnimplementedIdentityProviderServiceServer() {

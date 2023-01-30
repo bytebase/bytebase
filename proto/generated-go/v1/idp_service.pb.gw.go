@@ -589,7 +589,7 @@ func RegisterIdentityProviderServiceHandlerServer(ctx context.Context, mux *runt
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IdentityProviderService/TestIdentityProvider", runtime.WithHTTPPathPattern("/v1/idps/*/test"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IdentityProviderService/TestIdentityProvider", runtime.WithHTTPPathPattern("/v1/idps/*:test"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -785,7 +785,7 @@ func RegisterIdentityProviderServiceHandlerClient(ctx context.Context, mux *runt
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IdentityProviderService/TestIdentityProvider", runtime.WithHTTPPathPattern("/v1/idps/*/test"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IdentityProviderService/TestIdentityProvider", runtime.WithHTTPPathPattern("/v1/idps/*:test"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -817,7 +817,7 @@ var (
 
 	pattern_IdentityProviderService_UndeleteIdentityProvider_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "idps", "name"}, "undelete"))
 
-	pattern_IdentityProviderService_TestIdentityProvider_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2}, []string{"v1", "idps", "test"}, ""))
+	pattern_IdentityProviderService_TestIdentityProvider_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0}, []string{"v1", "idps"}, "test"))
 )
 
 var (

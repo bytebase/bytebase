@@ -57,9 +57,9 @@ service IdentityProviderService {
     };
   }
 
-  rpc TestIdentityProvider(TestIdentityProviderRequest) returns (google.protobuf.Empty) {
+  rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
     option (google.api.http) = {
-      post: "/v1/idps/*/test"
+      post: "/v1/idps/*:test"
       body: "*"
     };
   }
@@ -144,6 +144,8 @@ message OAuth2IdentityProviderTestRequestContext {
   // Authorize code from website.
   string code = 1;
 }
+
+message TestIdentityProviderResponse {}
 
 message IdentityProvider {
   // The name of the identity provider.

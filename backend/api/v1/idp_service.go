@@ -178,7 +178,7 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 }
 
 // TestIdentityProvider tests an identity provider connection.
-func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, request *v1pb.TestIdentityProviderRequest) (*emptypb.Empty, error) {
+func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, request *v1pb.TestIdentityProviderRequest) (*v1pb.TestIdentityProviderResponse, error) {
 	identityProvider := request.IdentityProvider
 	if identityProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
@@ -211,7 +211,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
 		}
 	}
-	return &emptypb.Empty{}, nil
+	return &v1pb.TestIdentityProviderResponse{}, nil
 }
 
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {

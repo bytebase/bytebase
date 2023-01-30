@@ -132,6 +132,9 @@ export interface OAuth2IdentityProviderTestRequestContext {
   code: string;
 }
 
+export interface TestIdentityProviderResponse {
+}
+
 export interface IdentityProvider {
   /**
    * The name of the identity provider.
@@ -698,6 +701,45 @@ export const OAuth2IdentityProviderTestRequestContext = {
   },
 };
 
+function createBaseTestIdentityProviderResponse(): TestIdentityProviderResponse {
+  return {};
+}
+
+export const TestIdentityProviderResponse = {
+  encode(_: TestIdentityProviderResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TestIdentityProviderResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestIdentityProviderResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): TestIdentityProviderResponse {
+    return {};
+  },
+
+  toJSON(_: TestIdentityProviderResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(_: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
+    const message = createBaseTestIdentityProviderResponse();
+    return message;
+  },
+};
+
 function createBaseIdentityProvider(): IdentityProvider {
   return { name: "", uid: "", state: 0, title: "", domain: "", type: 0, config: undefined };
 }
@@ -1189,7 +1231,7 @@ export const IdentityProviderServiceDefinition = {
       name: "TestIdentityProvider",
       requestType: TestIdentityProviderRequest,
       requestStream: false,
-      responseType: Empty,
+      responseType: TestIdentityProviderResponse,
       responseStream: false,
       options: {},
     },
@@ -1224,7 +1266,7 @@ export interface IdentityProviderServiceImplementation<CallContextExt = {}> {
   testIdentityProvider(
     request: TestIdentityProviderRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
+  ): Promise<DeepPartial<TestIdentityProviderResponse>>;
 }
 
 export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
@@ -1255,7 +1297,7 @@ export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
   testIdentityProvider(
     request: DeepPartial<TestIdentityProviderRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
+  ): Promise<TestIdentityProviderResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
