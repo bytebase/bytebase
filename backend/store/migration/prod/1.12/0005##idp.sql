@@ -21,11 +21,9 @@ ALTER SEQUENCE idp_id_seq RESTART WITH 101;
 CREATE TRIGGER update_idp_updated_ts
 BEFORE
 UPDATE
-  ON idp FOR EACH ROW
+    ON idp FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 DROP INDEX IF EXISTS idx_principal_unique_email;
-
 ALTER TABLE principal ADD COLUMN idp_id INTEGER REFERENCES idp (id);
-
 ALTER TABLE principal ADD COLUMN idp_user_info JSONB NOT NULL DEFAULT '{}';
