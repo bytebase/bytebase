@@ -261,7 +261,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					TokenUrl:     v.TokenUrl,
 					UserInfoUrl:  v.UserInfoUrl,
 					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
+					ClientSecret: "", // SECURITY: We do not expose the client secret
 					Scopes:       v.Scopes,
 					FieldMapping: &fieldMapping,
 				},
@@ -278,14 +278,13 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 				OidcConfig: &v1pb.OIDCIdentityProviderConfig{
 					Issuer:       v.Issuer,
 					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
+					ClientSecret: "", // SECURITY: We do not expose the client secret
 					FieldMapping: &fieldMapping,
 				},
 			},
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityProviderConfig) *storepb.IdentityProviderConfig {
