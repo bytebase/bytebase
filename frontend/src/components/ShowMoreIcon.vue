@@ -15,7 +15,7 @@
 withDefaults(
   defineProps<{
     content: string;
-    position: string;
+    position?: string;
   }>(),
   {
     content: "",

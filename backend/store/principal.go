@@ -236,7 +236,9 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 
 	var userMessages []*UserMessage
-	if find.IdentityProviderResourceID != nil {
+	if find.IdentityProviderResourceID == nil {
+		where = append(where, "principal.idp_id IS NULL")
+	} else {
 		// Get identity provider's UID with resource id.
 		identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
 			ResourceID: find.IdentityProviderResourceID,
