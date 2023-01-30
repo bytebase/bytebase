@@ -15,12 +15,6 @@
         {{ repository.fullPath }}
       </BBTableCell>
       <BBTableCell class="w-16">
-        <div class="flex flex-row items-center">
-          <PrincipalAvatar :principal="repository.creator" :size="'SMALL'" />
-          <span class="ml-2">{{ repository.creator.name }}</span>
-        </div>
-      </BBTableCell>
-      <BBTableCell class="w-16">
         {{ humanizeTs(repository.createdTs) }}
       </BBTableCell>
     </template>
@@ -30,14 +24,12 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
-import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { projectSlug } from "../utils";
 import { Repository } from "../types";
 import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   name: "RepositoryTable",
-  components: { PrincipalAvatar },
   props: {
     repositoryList: {
       required: true,
@@ -55,9 +47,6 @@ export default defineComponent({
       },
       {
         title: t("common.repository"),
-      },
-      {
-        title: t("common.creator"),
       },
       {
         title: t("common.created-at"),
