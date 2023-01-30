@@ -108,6 +108,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/OAuthCallback.vue"),
   },
   {
+    path: "/oidc/callback",
+    name: "oidc-callback",
+    component: () => import("../views/OAuthCallback.vue"), // todo
+  },
+  {
     path: "/",
     component: DashboardLayout,
     children: [

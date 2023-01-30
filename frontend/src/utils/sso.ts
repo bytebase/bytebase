@@ -1,12 +1,13 @@
 import { OAuthStateSessionKey } from "@/types";
+import { getIdentityProviderEndpoint } from "@/store";
 import {
   IdentityProvider,
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
 
-export function openWindowForSSO(
+export async function openWindowForSSO(
   identityProvider: IdentityProvider
-): Window | null {
+): Promise<Window | null> {
   // we use type to determine oauth type when receiving the callback
   const stateQueryParameter = `bb.oauth.signin.${identityProvider.name}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
@@ -27,6 +28,25 @@ export function openWindowForSSO(
         oauth2Config.scopes.join(" ")
       )}`,
       "oauth",
+      "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
+    );
+  } else if (identityProvider.type === IdentityProviderType.OIDC) {
+    const oidcConfig = identityProvider.config?.oidcConfig;
+    if (!oidcConfig) {
+      return null;
+    }
+
+    const endpoint = await getIdentityProviderEndpoint(identityProvider);
+    const redirectUrl = encodeURIComponent(
+      `${window.location.origin}/oidc/callback`
+    );
+    return window.open(
+      `${endpoint.authUrl}?client_id=${
+        oidcConfig.clientId
+      }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
+        oidcConfig.scopes.join(" ")
+      )}`,
+      "oidc",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
     );
   } else {

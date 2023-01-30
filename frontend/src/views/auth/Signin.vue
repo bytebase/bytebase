@@ -271,9 +271,11 @@ const trySignin = async () => {
   router.push("/");
 };
 
-const trySigninWithIdentityProvider = (identityProvider: IdentityProvider) => {
+const trySigninWithIdentityProvider = async (
+  identityProvider: IdentityProvider
+) => {
   state.activeIdentityProvider = identityProvider;
-  openWindowForSSO(identityProvider);
+  await openWindowForSSO(identityProvider);
 };
 
 const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");

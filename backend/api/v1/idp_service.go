@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
+	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -279,6 +280,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					Issuer:       v.Issuer,
 					ClientId:     v.ClientId,
 					ClientSecret: v.ClientSecret,
+					Scopes:       oidc.DefaultScopes,
 					FieldMapping: &fieldMapping,
 				},
 			},
@@ -343,4 +345,29 @@ func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType,
 		return errors.Errorf("unexpected provider type %s", identityProviderType)
 	}
 	return nil
+}
+
+func (s *IdentityProviderService) GetIdentityProviderEndpoint(ctx context.Context, request *v1pb.GetIdentityProviderEndpointRequest) (*v1pb.GetIdentityProviderEndpointResponse, error) {
+	idp, err := s.getIdentityProviderMessage(ctx, request.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "get identity provider")
+	}
+
+	if idp.Type != storepb.IdentityProviderType_OIDC {
+		return nil, errors.New("only OIDC Identity Provider is supported")
+	}
+
+	var config *storepb.OIDCIdentityProviderConfig
+	if idp.Config != nil {
+		config = idp.Config.GetOidcConfig()
+	}
+	if config == nil {
+		return nil, errors.New("empty OIDC config")
+	}
+
+	endpoint, err := oidc.GetEndpoint(config.Issuer)
+	if err != nil {
+		return nil, errors.Wrap(err, "get endpoint")
+	}
+	return &v1pb.GetIdentityProviderEndpointResponse{AuthUrl: endpoint.AuthURL}, nil
 }

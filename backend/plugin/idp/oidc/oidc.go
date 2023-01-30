@@ -26,6 +26,15 @@ type IdentityProviderConfig struct {
 	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
 }
 
+// GetEndpoint returns endpoint URLs for the given issuer.
+func GetEndpoint(issuer string) (oauth2.Endpoint, error) {
+	p, err := oidc.NewProvider(context.Background(), issuer)
+	if err != nil {
+		return oauth2.Endpoint{}, errors.Wrap(err, "create new provider")
+	}
+	return p.Endpoint(), nil
+}
+
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
 // configuration.
 func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*IdentityProvider, error) {
@@ -50,6 +59,10 @@ func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*I
 	}, nil
 }
 
+// DefaultScopes contains a list of scopes to be requested by default. The
+// "openid" is a required scope for OpenID Connect flows.
+var DefaultScopes = []string{oidc.ScopeOpenID, "profile", "email"}
+
 // ExchangeToken returns the exchanged OAuth2 token using the given redirect
 // URL and authorization code.
 func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code string) (*oauth2.Token, error) {
@@ -60,9 +73,7 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 
 		// Discovery returns the OAuth2 endpoints.
 		Endpoint: p.provider.Endpoint(),
-
-		// "openid" is a required scope for OpenID Connect flows.
-		Scopes: []string{oidc.ScopeOpenID, "profile", "email"},
+		Scopes:   DefaultScopes,
 	}
 	token, err := oauth2Config.Exchange(ctx, code)
 	if err != nil {

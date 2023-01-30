@@ -1,6 +1,9 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import {
+  IdentityProvider,
+  GetIdentityProviderEndpointResponse,
+} from "@/types/proto/v1/idp_service";
 import { identityProviderClient } from "@/grpcweb";
 
 interface IdentityProviderState {
@@ -86,6 +89,15 @@ export const useIdentityProviderStore = defineStore("idp", {
     },
   },
 });
+
+export const getIdentityProviderEndpoint = async (
+  identityProvider: IdentityProvider
+): Promise<GetIdentityProviderEndpointResponse> => {
+  const endpoint = await identityProviderClient().getIdentityProviderEndpoint({
+    name: identityProvider.name,
+  });
+  return endpoint;
+};
 
 const getUpdateMaskFromIdentityProviders = (
   origin: IdentityProvider,
