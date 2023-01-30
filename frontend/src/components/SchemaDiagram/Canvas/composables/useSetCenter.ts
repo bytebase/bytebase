@@ -3,6 +3,7 @@ import { type Ref } from "vue";
 import type { CenterTarget, CenterTargetType, Rect } from "../../types";
 import { useSchemaDiagramContext } from "../../common";
 import { fitView } from "../libs/fitView";
+import { minmax } from "@/utils";
 import { ZOOM_RANGE } from "../const";
 
 export const useSetCenter = (canvas: Ref<Element | undefined>) => {
@@ -13,10 +14,9 @@ export const useSetCenter = (canvas: Ref<Element | undefined>) => {
       return;
     }
     // Fit view according to the center rect with limited zoom range.
-    const layout = fitView(canvas.value, [rect], padding, [
-      ZOOM_RANGE.min,
-      Math.min(zoom.value, 1),
-    ]);
+    const zoomMin = minmax(zoom.value, ZOOM_RANGE.min, 0.5);
+    const zoomMax = minmax(zoom.value, zoomMin, 1);
+    const layout = fitView(canvas.value, [rect], padding, [zoomMin, zoomMax]);
     zoom.value = layout.zoom;
     position.value = {
       x: layout.rect.x,
