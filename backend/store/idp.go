@@ -49,7 +49,6 @@ type FindIdentityProviderMessage struct {
 
 // UpdateIdentityProviderMessage is the message for updating an identity provider.
 type UpdateIdentityProviderMessage struct {
-	UpdaterID  int
 	ResourceID string
 
 	Title  *string
@@ -59,7 +58,7 @@ type UpdateIdentityProviderMessage struct {
 }
 
 // CreateIdentityProvider creates an identity provider.
-func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage, creatorID int) (*IdentityProviderMessage, error) {
+func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage) (*IdentityProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,19 +78,15 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO idp (
-				creator_id,
-				updater_id,
 				resource_id,
 				name,
 				domain,
 				type,
 				config
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id
 		`,
-		creatorID,
-		creatorID,
 		create.ResourceID,
 		create.Title,
 		create.Domain,
@@ -179,7 +174,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 }
 
 func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+	set, args := []string{}, []interface{}{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
