@@ -328,11 +328,15 @@ watch(
     isLoggedIn,
     () => tabStore.currentTab.connection.instanceId,
     () => tabStore.currentTab.connection.databaseId,
+    () => connectionTreeStore.tree.state,
   ],
-  ([isLoggedIn, instanceId, databaseId]) => {
+  ([isLoggedIn, instanceId, databaseId, treeState]) => {
     if (!isLoggedIn) {
       // Don't go further and cleanup the state if we signed out.
       connectionTreeStore.expandedTreeNodeKeys = [];
+      return;
+    }
+    if (treeState !== ConnectionTreeState.LOADED) {
       return;
     }
 
@@ -342,13 +346,14 @@ watch(
     if (databaseId !== UNKNOWN_ID) {
       maybeExpandKey(`database-${databaseId}`);
       const db = databaseStore.getDatabaseById(databaseId);
+      console.log(db);
       const projectId = db.project.id;
       maybeExpandKey(`project-${projectId}`);
     }
 
     scrollToConnectedNode(instanceId, databaseId);
   },
-  { immediate: true, flush: "pre" }
+  { immediate: true }
 );
 </script>
 
