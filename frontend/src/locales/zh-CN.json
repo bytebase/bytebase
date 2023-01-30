@@ -267,7 +267,7 @@
     "invoker": "执行者",
     "started": "开始于",
     "ended": "结束于",
-    "view-migration": "查看变更",
+    "view-change": "查看变更",
     "view-change-history": "查看变更历史",
     "earliest-allowed-time-unset": "未设置",
     "status": {
