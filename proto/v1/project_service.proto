@@ -99,6 +99,19 @@ service ProjectService {
       body: "*"
     };
   }
+
+  rpc SetDeploymentConfigService(SetDeploymentConfigRequest) returns (DeploymentConfig) {
+    option (google.api.http) = {
+      patch: "/v1/{deployment_config.project=projects/*}/deployment_config"
+      body: "deployment_config"
+    };
+  }
+
+  rpc GetDeploymentConfigService(GetDeploymentConfigRequest) returns (DeploymentConfig) {
+    option (google.api.http) = {
+      get: "/v1/{project=projects/*}/deployment_config"
+    };
+  }
 }
 
 message GetProjectRequest {
@@ -182,6 +195,18 @@ message SetIamPolicyRequest {
 
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
 }
+
+message SetDeploymentConfigRequest {
+  DeploymentConfig deployment_config = 1 [(google.api.field_behavior) = REQUIRED]; 
+}
+
+message GetDeploymentConfigRequest{
+  // The name of the parent project resource.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+
 
 message Project {
   // The name of the project.
@@ -378,4 +403,51 @@ enum ReviewStatus {
   OPEN = 1;
   DONE = 2;
   CANCELED = 3;
+}
+
+message DeploymentConfig {
+  // The name of the parent project resource.
+  // Format: projects/{project}
+  string project = 1;
+  ProjectDeploymentConfig project_deployment_config = 2;
+}
+
+message ProjectDeploymentConfig {
+  // The name of the project deployment config. 
+  string name = 1;
+  ProjectDeploymentSchedule project_deployment_schedules = 2;
+    
+}
+
+message ProjectDeploymentSchedule {
+  repeated ProjectDeployment project_deployments = 1;    
+}
+
+message ProjectDeployment {
+  // The name of the project deployment.
+  string name = 1;
+  ProjectDeploymentSpec spec = 2;
+}
+
+message ProjectDeploymentSpec {
+  LabelSelector label_selector = 1;
+}
+
+message LabelSelector {
+  repeated LebelSelectorRequirement match_expressions = 1;
+}
+
+message LebelSelectorRequirement{
+  string key = 1;
+  OperatorType operator = 2;
+  repeated string values = 3;
+}
+
+enum OperatorType {
+  // The operator is not specified.
+  OPERATOR_TYPE_UNSPECIFIED = 0;
+  // The operator is "In".
+  OPERATOR_TYPE_IN = 1;
+  // The operator is "Exists".
+  OPERATOR_TYPE_EXISTS = 2;
 }
