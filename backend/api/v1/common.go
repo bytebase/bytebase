@@ -21,6 +21,7 @@ const (
 	instanceRolePrefix         = "roles/"
 	userNamePrefix             = "users/"
 	identityProviderNamePrefix = "idps/"
+	settingNamePrefix          = "settings/"
 )
 
 var (
@@ -82,6 +83,14 @@ func getUserID(name string) (int, error) {
 		return 0, errors.Errorf("invalid user ID %q", tokens[0])
 	}
 	return userID, nil
+}
+
+func getSettingName(name string) (string, error) {
+	token, err := getNameParentTokens(name, settingNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return token[0], nil
 }
 
 func getIdentityProviderID(name string) (string, error) {

@@ -31,7 +31,6 @@ type ProjectServiceClient interface {
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
-	SyncExternalIamPolicy(ctx context.Context, in *SyncExternalIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error)
 	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
@@ -118,15 +117,6 @@ func (c *projectServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPolic
 	return out, nil
 }
 
-func (c *projectServiceClient) SyncExternalIamPolicy(ctx context.Context, in *SyncExternalIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
-	out := new(IamPolicy)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/SyncExternalIamPolicy", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error) {
 	out := new(Review)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/GetReview", in, out, opts...)
@@ -175,7 +165,6 @@ type ProjectServiceServer interface {
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
-	SyncExternalIamPolicy(context.Context, *SyncExternalIamPolicyRequest) (*IamPolicy, error)
 	GetReview(context.Context, *GetReviewRequest) (*Review, error)
 	ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error)
 	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
@@ -210,9 +199,6 @@ func (UnimplementedProjectServiceServer) GetIamPolicy(context.Context, *GetIamPo
 }
 func (UnimplementedProjectServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
-}
-func (UnimplementedProjectServiceServer) SyncExternalIamPolicy(context.Context, *SyncExternalIamPolicyRequest) (*IamPolicy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SyncExternalIamPolicy not implemented")
 }
 func (UnimplementedProjectServiceServer) GetReview(context.Context, *GetReviewRequest) (*Review, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
@@ -383,24 +369,6 @@ func _ProjectService_SetIamPolicy_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_SyncExternalIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncExternalIamPolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SyncExternalIamPolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.ProjectService/SyncExternalIamPolicy",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SyncExternalIamPolicy(ctx, req.(*SyncExternalIamPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_GetReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetReviewRequest)
 	if err := dec(in); err != nil {
@@ -511,10 +479,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetIamPolicy",
 			Handler:    _ProjectService_SetIamPolicy_Handler,
-		},
-		{
-			MethodName: "SyncExternalIamPolicy",
-			Handler:    _ProjectService_SyncExternalIamPolicy_Handler,
 		},
 		{
 			MethodName: "GetReview",

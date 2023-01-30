@@ -71,13 +71,6 @@ service ProjectService {
     };
   }
 
-  rpc SyncExternalIamPolicy(SyncExternalIamPolicyRequest) returns (IamPolicy){
-    option (google.api.http) = {
-      post: "/v1/{project=projects/*}:syncExternalIamPolicy"
-      body: "*"
-    };
-  }
-
   rpc GetReview(GetReviewRequest) returns (Review) {
     option (google.api.http) = {
       get: "/v1/{name=projects/*/reviews/*}"
@@ -188,12 +181,6 @@ message SetIamPolicyRequest {
   string project = 1 [(google.api.field_behavior) = REQUIRED];
 
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SyncExternalIamPolicyRequest {
-  // The name of the project to set the IAM policy.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Project {

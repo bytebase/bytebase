@@ -42,7 +42,7 @@ type DatabaseCreateExecutor struct {
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -53,21 +53,25 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, errors.Errorf("empty create database statement")
 	}
 
-	instance := task.Instance
-	v2Instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
+	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	if err != nil {
+		return true, nil, err
+	}
+
 	var driver db.Driver
-	if v2Instance.Engine == db.MongoDB {
+	if instance.Engine == db.MongoDB {
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
-		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, v2Instance, payload.DatabaseName)
+		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, payload.DatabaseName)
 		if err != nil {
 			return true, nil, err
 		}
 	} else {
-		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, v2Instance, "" /* databaseName */)
+		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return true, nil, err
 		}
@@ -85,12 +89,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	var schemaVersion string
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, v2Instance, project)
+		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project)
 		if err != nil {
 			return true, nil, err
 		}
 		schemaVersion = sv
-		connectionStmt, err := getConnectionStatement(v2Instance.Engine, payload.DatabaseName)
+		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
 		if err != nil {
 			return true, nil, err
 		}
@@ -103,7 +107,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 
 	log.Debug("Start creating database...",
-		zap.String("instance", v2Instance.Title),
+		zap.String("instance", instance.Title),
 		zap.String("database", payload.DatabaseName),
 		zap.String("schemaVersion", schemaVersion),
 		zap.String("statement", statement),
@@ -116,7 +120,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		Version:        schemaVersion,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
-		Environment:    instance.Environment.Name,
+		Environment:    environment.Title,
 		Source:         db.UI,
 		Type:           db.Migrate,
 		Description:    "Create database",
@@ -170,7 +174,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:            project.ResourceID,
-		EnvironmentID:        instance.Environment.ResourceID,
+		EnvironmentID:        environment.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
 		SyncState:            api.OK,
@@ -200,7 +204,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.Name),
+			zap.String("instanceName", instance.ResourceID),
 			zap.String("databaseName", database.DatabaseName),
 			zap.Error(err),
 		)

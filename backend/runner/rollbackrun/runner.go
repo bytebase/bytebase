@@ -46,7 +46,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			r.stateCfg.RollbackGenerateMap.Range(func(key, value any) bool {
-				task := value.(*api.Task)
+				task := value.(*store.TaskMessage)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
 				r.stateCfg.RollbackGenerateMap.Delete(key)
@@ -64,7 +64,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError' IS NULL AND payload->>'rollbackStatement' IS NULL",
+		Payload:    "task.payload->>'threadID'!='' AND task.payload->>'rollbackError' IS NULL AND task.payload->>'rollbackStatement' IS NULL",
 	}
 	taskList, err := r.store.FindTask(ctx, find)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 }
 
-func (r *Runner) generateRollbackSQL(ctx context.Context, task *api.Task) {
+func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -119,7 +119,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *api.Task) {
 	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
-func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
 	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", err

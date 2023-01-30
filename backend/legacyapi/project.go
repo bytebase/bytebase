@@ -15,6 +15,13 @@ const (
 	DefaultProjectUID = 1
 	// DefaultProjectID is the resource ID for the default project.
 	DefaultProjectID = "default"
+
+	// Below are defined in LATEST_DATA.sql.
+
+	// DefaultProdEnvironmentID is the initial resource ID for the prod environment.
+	// This can be mutated by the user. But for now this is only used by onboarding flow to create
+	// a prod instance after first signup, so it's safe to refer it.
+	DefaultProdEnvironmentID = "prod"
 )
 
 // ProjectWorkflowType is the workflow type for projects.

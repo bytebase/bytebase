@@ -33,15 +33,17 @@ type AuthService struct {
 	secret         string
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
+	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, metricReporter *metricreport.Reporter, profile *config.Profile) *AuthService {
+func NewAuthService(store *store.Store, secret string, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
 		metricReporter: metricReporter,
 		profile:        profile,
+		postCreateUser: postCreateUser,
 	}
 }
 
@@ -96,6 +98,21 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
 	}
 
+	existingUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find existing users, error: %v", err)
+	}
+
+	firstEndUser := true
+	for _, user := range existingUsers {
+		if user.Type == api.EndUser {
+			firstEndUser = false
+			break
+		}
+	}
+
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
@@ -104,6 +121,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
+	}
+
+	if err := s.postCreateUser(ctx, user, firstEndUser); err != nil {
+		return nil, err
 	}
 
 	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {

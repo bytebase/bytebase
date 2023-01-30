@@ -402,6 +402,9 @@
     "sso": {
       "deletion": "删除这个 SSO",
       "form": {
+        "callback-url": "回调地址",
+        "use-template": "使用模版",
+        "select-template": "选择模版",
         "type": "类型",
         "basic-information": "基础信息",
         "name": "名称",
@@ -773,8 +776,7 @@
     "protected-environment": "受保护的环境"
   },
   "quick-start": {
-    "bookmark-an-issue": "收藏工单",
-    "add-a-comment": "添加评论",
+    "view-an-issue": "查看工单",
     "visit-project": "@:common.visit@:common.projects",
     "visit-instance": "@:common.visit@:common.instances",
     "visit-database": "@:common.visit@:common.databases",

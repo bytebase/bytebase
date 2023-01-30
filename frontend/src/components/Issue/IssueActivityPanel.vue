@@ -365,7 +365,6 @@ import { IssueBuiltinFieldId } from "@/plugins";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUser,
-  useUIStateStore,
   useIssueSubscriberStore,
   useActivityStore,
 } from "@/store";
@@ -503,11 +502,6 @@ const doCreateComment = (comment: string, clear = true) => {
     comment,
   };
   activityStore.createActivity(createActivity).then(() => {
-    useUIStateStore().saveIntroStateByKey({
-      key: "comment.create",
-      newState: true,
-    });
-
     if (clear) {
       newComment.value = "";
       nextTick(() => sizeToFit(newCommentTextArea.value));
