@@ -53,7 +53,7 @@
 
               <div
                 :class="[
-                  'text-gray-600',
+                  'text-gray-600 h-12',
                   plan.type == PlanType.TEAM ? 'font-bold' : '',
                 ]"
               >
