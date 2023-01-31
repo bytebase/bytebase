@@ -119,6 +119,7 @@
         "activity-log": "Activity log",
         "terraform-provider": "Terraform Provider",
         "rbac": "RBAC (Owner, DBA, Developer role)",
+        "watermark": "Watermark displaying",
         "3rd-party-auth": "Login with GitLab account",
         "sync-members-from-vcs": "Sync project membership from the linked GitLab project",
         "dba-workflow": "DBA workflow",
