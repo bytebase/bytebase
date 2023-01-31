@@ -1014,9 +1014,9 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "select-project": "步骤 1. 选择项目",
-      "select-schema": "步骤 2. 选择 Schema",
-      "select-database": "步骤 3. 选择待同步的数据库",
+      "select-project": "选择项目",
+      "select-database": "选择待同步的数据库",
+      "from-database": "选择源数据库",
       "schema-diff": "Schema 对比结果",
       "synchronize-statements": "DDL 语句",
       "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
