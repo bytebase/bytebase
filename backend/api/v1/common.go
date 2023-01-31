@@ -23,6 +23,8 @@ const (
 	userNamePrefix             = "users/"
 	identityProviderNamePrefix = "idps/"
 	settingNamePrefix          = "settings/"
+
+	deploymentConfigSuffix = "/deploymentConfig"
 )
 
 var (
@@ -37,6 +39,14 @@ func getProjectID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
+}
+
+func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {
+	trimmed, err := trimSuffix(name, suffix)
+	if err != nil {
+		return "", err
+	}
+	return getProjectID(trimmed)
 }
 
 func getEnvironmentID(name string) (string, error) {
