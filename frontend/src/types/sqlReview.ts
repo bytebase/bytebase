@@ -130,14 +130,20 @@ export type RuleType =
   | "statement.insert.row-limit"
   | "statement.affected-row-limit"
   | "statement.dml-dry-run"
+  | "statement.disallow-add-column-with-default"
+  | "statement.add-check-not-valid"
+  | "statement.disallow-add-not-null"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
   | "system.collation.allowlist"
+  | "system.comment.length"
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"
   | "index.total-number-limit"
+  | "index.primary-key-type-allowlist"
+  | "index.create-concurrently"
   | "index.pk-type-limit";
 
 // The naming format rule payload.
@@ -442,6 +448,7 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     case "column.type-disallow-list":
+    case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
       const stringArrayComponent = ruleTemplate.componentList[0];
@@ -490,6 +497,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
     case "index.total-number-limit":
+    case "system.comment.length":
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -588,6 +596,7 @@ export const convertRuleTemplateToPolicyRule = (
       };
     case "column.required":
     case "column.type-disallow-list":
+    case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
       const stringArrayPayload = rule.componentList[0]
@@ -617,6 +626,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
     case "index.total-number-limit":
+    case "system.comment.length":
       if (!numberPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
       }
