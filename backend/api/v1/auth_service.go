@@ -113,7 +113,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	// Try to find out if the email is used by Bytebase user instead of the SSO user.
+	// Try to find out if the email is used by Bytebase user.
 	emptyIdentityProviderResourceID := ""
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		Email:                      &request.User.Email,

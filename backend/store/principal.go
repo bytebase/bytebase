@@ -77,7 +77,7 @@ type FindUserMessage struct {
 	Role        *api.Role
 	ShowDeleted bool
 	// IdentityProviderResourceID is the name of the identity provider related with the user.
-	// If set to empty string, then only those users that are not from the idp will be found.
+	// If set with empty string, then only those users that are not from the idp will be found.
 	IdentityProviderResourceID *string
 	// Available only if the IdentityProviderResourceID is not nil.
 	IdentityProviderUserIdentifier string
