@@ -60,6 +60,9 @@ const (
 	// - Project level RBAC.
 	FeatureRBAC FeatureType = "bb.feature.rbac"
 
+	// FeatureWatermark enables full-screen watermark.
+	FeatureWatermark FeatureType = "bb.feature.watermark"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -229,6 +232,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
 	FeatureRBAC:         {false, true, true},
+	FeatureWatermark:    {false, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow

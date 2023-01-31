@@ -27,6 +27,7 @@ func NewSettingService(store *store.Store) *SettingService {
 var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
 	api.SettingAppIM,
+	api.SettingWatermark,
 }
 
 // GetSetting gets the setting by name.
