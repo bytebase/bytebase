@@ -150,6 +150,8 @@ const (
 	FeatureEnvironmentTierPolicy FeatureType = "bb.feature.environment-tier-policy"
 	// FeatureSensitiveData allows user to annotate and protect sensitive data.
 	FeatureSensitiveData FeatureType = "bb.feature.sensitive-data"
+	// FeatureAccessControl allows user to config the access control.
+	FeatureAccessControl FeatureType = "bb.feature.access-control"
 )
 
 // Name returns a readable name of the feature.
@@ -207,6 +209,8 @@ func (e FeatureType) Name() string {
 		return "Environment tier"
 	case FeatureSensitiveData:
 		return "Sensitive data"
+	case FeatureAccessControl:
+		return "Access Control"
 	}
 	return ""
 }
@@ -260,6 +264,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureBackupPolicy:          {false, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
+	FeatureAccessControl:         {false, false, true},
 }
 
 // Plan is the API message for a plan.
