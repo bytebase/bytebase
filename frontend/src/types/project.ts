@@ -65,6 +65,7 @@ export type ProjectPatch = {
   key?: string;
   schemaChangeType?: SchemaChangeType;
   lgtmCheckSetting?: LGTMCheckSetting;
+  workflowType?: ProjectWorkflowType;
   dbNameTemplate?: string;
 };
 
