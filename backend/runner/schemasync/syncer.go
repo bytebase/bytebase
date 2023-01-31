@@ -126,6 +126,7 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *api.Instance) {
 
 	instanceMap := make(map[string][]*store.DatabaseMessage)
 	for _, database := range databases {
+		// Skip deleted databases.
 		if database.SyncState != api.OK {
 			continue
 		}
