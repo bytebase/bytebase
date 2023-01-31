@@ -22,6 +22,8 @@ const (
 	userNamePrefix             = "users/"
 	identityProviderNamePrefix = "idps/"
 	settingNamePrefix          = "settings/"
+
+	deploymentConfigSuffix = "/deploymentConfig"
 )
 
 var (
