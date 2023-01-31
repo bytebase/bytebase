@@ -1655,6 +1655,10 @@
         "title": "角色管理",
         "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
       },
+      "bb-feature-watermark": {
+        "title": "水印显示",
+        "desc": "在页面上显示水印，包含用户名和 ID。"
+      },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
         "desc": "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
