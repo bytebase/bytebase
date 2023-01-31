@@ -465,9 +465,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 			List: []string{"utf8mb4_0900_ai_ci"},
 		})
 	case SchemaRuleCommentLength:
-		payload, err = json.Marshal(CommentConventionRulePayload{
-			Required:  true,
-			MaxLength: 20,
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 20,
 		})
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
