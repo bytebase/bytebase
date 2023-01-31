@@ -161,6 +161,8 @@ func (e FeatureType) Name() string {
 	case FeatureRBAC:
 		return "RBAC"
 	// Branding
+	case FeatureWatermark:
+		return "Watermark displaying"
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
@@ -232,7 +234,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
 	FeatureRBAC:         {false, true, true},
-	FeatureWatermark:    {false, true, true},
+	FeatureWatermark:    {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow

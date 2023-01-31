@@ -143,7 +143,6 @@ planList:
       - type: activity-log
       - type: terraform-provider
       - type: rbac
-      - type: watermark
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
     mainFeatureList:
