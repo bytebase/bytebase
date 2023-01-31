@@ -12,6 +12,8 @@ type StageMessage struct {
 	Name          string
 	EnvironmentID int
 	PipelineID    int
+	// The earliest stage with incompleted tasks.
+	Active bool
 	// Output only.
 	ID int
 }
@@ -96,7 +98,8 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			id,
 			pipeline_id,
 			environment_id,
-			name
+			name,
+			(SELECT COUNT(1) > 0 FROM task as other_task WHERE other_task.pipeline_id = stage.pipeline_id AND other_task.stage_id <= stage.id AND other_task.status != 'DONE')
 		FROM stage
 		WHERE %s ORDER BY id ASC`, strings.Join(where, " AND ")),
 		args...,
@@ -114,6 +117,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.PipelineID,
 			&stage.EnvironmentID,
 			&stage.Name,
+			&stage.Active,
 		); err != nil {
 			return nil, FormatError(err)
 		}
