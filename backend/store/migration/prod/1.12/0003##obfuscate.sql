@@ -55,22 +55,22 @@ LANGUAGE plpgsql;
 UPDATE data_source
 SET
 	password = encode(bytea_xor(
-		password::bytea,
-		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(password::bytea)/32), length(password::bytea))::bytea
+		convert_to(password, 'LATIN1')::bytea,
+		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(convert_to(password, 'LATIN1')::bytea)/32), length(convert_to(password, 'LATIN1')::bytea))::bytea
 	), 'base64'),
 	ssl_key = encode(bytea_xor(
-		ssl_key::bytea,
-		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(ssl_key::bytea)/32), length(ssl_key::bytea))::bytea
+		convert_to(ssl_key, 'LATIN1')::bytea,
+		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(convert_to(ssl_key, 'LATIN1')::bytea)/32), length(convert_to(ssl_key, 'LATIN1')::bytea))::bytea
 	), 'base64'),
 	
 	ssl_cert = encode(bytea_xor(
-		ssl_cert::bytea,
-		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(ssl_cert::bytea)/32), length(ssl_cert::bytea))::bytea
+		convert_to(ssl_cert, 'LATIN1')::bytea,
+		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(convert_to(ssl_cert, 'LATIN1')::bytea)/32), length(convert_to(ssl_cert, 'LATIN1')::bytea))::bytea
 	), 'base64'),
 	
 	ssl_ca = encode(bytea_xor(
-		ssl_ca::bytea,
-		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(ssl_ca::bytea)/32), length(ssl_ca::bytea))::bytea
+		convert_to(ssl_ca, 'LATIN1')::bytea,
+		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(convert_to(ssl_ca, 'LATIN1')::bytea)/32), length(convert_to(ssl_ca, 'LATIN1')::bytea))::bytea
 	), 'base64')
 ;
 
