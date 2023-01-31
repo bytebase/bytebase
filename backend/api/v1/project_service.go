@@ -289,7 +289,7 @@ func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Name)
 	}
 
-	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, &store.FindDeploymentConfigMessage{ProjectUID: project.UID})
+	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

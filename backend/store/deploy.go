@@ -243,11 +243,6 @@ func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *ap
 	return &cfg, nil
 }
 
-// FindDeploymentConfigMessage is the message to find a deployment config.
-type FindDeploymentConfigMessage struct {
-	ProjectUID int
-}
-
 // UpsertDeploymentConfigMessage is the message to upsert a deployment config.
 type UpsertDeploymentConfigMessage struct {
 	ProjectUID       int
@@ -308,9 +303,9 @@ type LabelSelectorRequirement struct {
 }
 
 // GetDeploymentConfigV2 returns the deployment config.
-func (s *Store) GetDeploymentConfigV2(ctx context.Context, find *FindDeploymentConfigMessage) (*DeploymentConfigMessage, error) {
+func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*DeploymentConfigMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
-	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, find.ProjectUID)
+	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
 
 	var deploymentConfig DeploymentConfigMessage
 	var payload string
