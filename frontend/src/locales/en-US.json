@@ -1655,7 +1655,7 @@
         "desc": "Role management can assign a particular role (e.g. DBA) to a member."
       },
       "bb-feature-watermark": {
-        "title": "Watermark displaying",
+        "title": "Watermark",
         "desc": "Display visible watermarks on pages, including username and ID."
       },
       "bb-feature-schema-drift": {
