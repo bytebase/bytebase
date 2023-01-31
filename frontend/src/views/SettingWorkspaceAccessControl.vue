@@ -1,5 +1,10 @@
 <template>
   <div class="w-full mt-4 space-y-4">
+    <FeatureAttention
+      v-if="!hasAccessControlFeature"
+      feature="bb.feature.access-control"
+      :description="$t('subscription.features.bb-feature-access-control.desc')"
+    />
     <div class="flex justify-between">
       <i18n-t
         tag="div"

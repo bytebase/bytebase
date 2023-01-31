@@ -53,7 +53,7 @@
 
               <div
                 :class="[
-                  'text-gray-600',
+                  'text-gray-600 h-12',
                   plan.type == PlanType.TEAM ? 'font-bold' : '',
                 ]"
               >
@@ -356,7 +356,7 @@ const onButtonClick = (plan: Plan) => {
     );
   } else if (plan.type === PlanType.ENTERPRISE) {
     window.open(
-      "mailto:support@bytebase.com?subject=Request for enterprise plan"
+      "mailto:support@bytebase.com?subject=Request for enterprise plan&body=Hi Bytebase team,%0D%0A%0D%0AI would like to request for an enterprise plan. Please contact me at [your email].%0D%0A%0D%0AThanks"
     );
   } else {
     window.open("https://bytebase.com/docs?source=console", "_self");

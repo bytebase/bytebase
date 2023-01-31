@@ -165,13 +165,13 @@
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
             <Breadcrumb />
           </div>
-          <div class="flex items-center flex-wrap px-4 gap-x-4">
+          <div class="flex items-start flex-wrap px-4 gap-x-4">
             <div v-if="quickActionList.length > 0" class="flex-1 mt-4">
               <QuickActionPanel :quick-action-list="quickActionList" />
             </div>
             <div
               v-if="route.name === 'workspace.home'"
-              class="mt-4 hidden md:flex"
+              class="mt-6 hidden md:flex"
             >
               <a
                 href="/sql-editor"

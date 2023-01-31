@@ -174,11 +174,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
 			}
-			composedPipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+			stages, err := s.store.ListStageV2(ctx, task.PipelineID)
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStage(composedPipeline)
+			activeStage := utils.GetActiveStage(stages)
+			if activeStage == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "All tasks are done already")
+			}
 			if task.StageID != activeStage.ID {
 				return echo.NewHTTPError(http.StatusBadRequest, "Tasks in the prior stage are not done yet")
 			}

@@ -159,12 +159,7 @@ export default defineComponent({
       }
     };
 
-    const prepareBranding = () => {
-      settingStore.fetchSetting();
-    };
-
     watchEffect(prepareInboxSummary);
-    watchEffect(prepareBranding);
 
     const inboxSummary = computed(() => {
       return inboxStore.getInboxSummaryByUser(currentUser.value.id);

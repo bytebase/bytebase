@@ -289,17 +289,11 @@ export default defineComponent({
       return isDev();
     });
 
-    const prepareBranding = () => {
-      settingStore.fetchSetting();
-    };
-
     const logoUrl = computed((): string | undefined => {
       const brandingLogoSetting =
         settingStore.getSettingByName("bb.branding.logo");
       return brandingLogoSetting?.value;
     });
-
-    watchEffect(prepareBranding);
 
     const prepareInboxSummary = () => {
       // It will also be called when user logout

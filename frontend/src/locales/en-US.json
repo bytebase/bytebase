@@ -439,7 +439,14 @@
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
-        "logo-upload-succeed": "Successfully updated the logo"
+        "logo-upload-succeed": "Successfully updated the logo",
+        "watermark": {
+          "self": "Watermark",
+          "update-success": "Watermark setting updated",
+          "description": "Display watermarks on pages, including username and ID.",
+          "only-owner-can-edit": "Only workspace owner can update watermark setting."
+        },
+        "enable-watermark": "Enable watermark"
       }
     },
     "sensitive-data": {
@@ -1014,10 +1021,10 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Synchronize Schema",
-      "select-project": "Step 1. Select project",
-      "select-schema": "Step 2. Select schema",
-      "select-database": "Step 3. Apply to database",
-      "schema-diff": "The diff",
+      "select-project": "Select project",
+      "select-database": "Apply to database",
+      "from-database": "From database",
+      "schema-diff": "The schema diff",
       "synchronize-statements": "The DDL statements",
       "synchronize-statements-description": "You can further edit the generated DDL statements.",
       "select-schema-and-target-database-tip": "Please select the schema and database first.",
@@ -1647,6 +1654,10 @@
       "bb-feature-rbac": {
         "title": "Role management",
         "desc": "Role management can assign a particular role (e.g. DBA) to a member."
+      },
+      "bb-feature-watermark": {
+        "title": "Watermark",
+        "desc": "Display visible watermarks on pages, including username and ID."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",

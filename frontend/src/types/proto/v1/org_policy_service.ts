@@ -4,6 +4,7 @@ import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
 export const protobufPackage = "bytebase.v1";
@@ -420,6 +421,7 @@ export interface SQLReviewRule {
   type: string;
   level: SQLReviewRuleLevel;
   payload: string;
+  engine: Engine;
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -1440,7 +1442,7 @@ export const SQLReviewPolicy = {
 };
 
 function createBaseSQLReviewRule(): SQLReviewRule {
-  return { type: "", level: 0, payload: "" };
+  return { type: "", level: 0, payload: "", engine: 0 };
 }
 
 export const SQLReviewRule = {
@@ -1453,6 +1455,9 @@ export const SQLReviewRule = {
     }
     if (message.payload !== "") {
       writer.uint32(26).string(message.payload);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(32).int32(message.engine);
     }
     return writer;
   },
@@ -1473,6 +1478,9 @@ export const SQLReviewRule = {
         case 3:
           message.payload = reader.string();
           break;
+        case 4:
+          message.engine = reader.int32() as any;
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1486,6 +1494,7 @@ export const SQLReviewRule = {
       type: isSet(object.type) ? String(object.type) : "",
       level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : 0,
       payload: isSet(object.payload) ? String(object.payload) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
     };
   },
 
@@ -1494,6 +1503,7 @@ export const SQLReviewRule = {
     message.type !== undefined && (obj.type = message.type);
     message.level !== undefined && (obj.level = sQLReviewRuleLevelToJSON(message.level));
     message.payload !== undefined && (obj.payload = message.payload);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     return obj;
   },
 
@@ -1502,6 +1512,7 @@ export const SQLReviewRule = {
     message.type = object.type ?? "";
     message.level = object.level ?? 0;
     message.payload = object.payload ?? "";
+    message.engine = object.engine ?? 0;
     return message;
   },
 };

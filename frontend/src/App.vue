@@ -5,6 +5,8 @@
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
   >
+    <Watermark />
+
     <NDialogProvider>
       <BBModalStack>
         <KBarWrapper>
@@ -49,6 +51,7 @@ import { RouteMapList } from "@/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import HelpDrawer from "@/components/HelpDrawer";
+import Watermark from "@/components/misc/Watermark.vue";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;

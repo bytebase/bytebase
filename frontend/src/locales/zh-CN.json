@@ -439,7 +439,14 @@
         "select-logo": "选择",
         "drag-logo": "或拖拽文件",
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
-        "logo-upload-succeed": "Logo 更新完成"
+        "logo-upload-succeed": "Logo 更新完成",
+        "watermark": {
+          "self": "水印",
+          "update-success": "水印设置已更新",
+          "description": "在页面上显示水印，包含用户名和 ID。",
+          "only-owner-can-edit": "仅管理员可以更新水印设置"
+        },
+        "enable-watermark": "开启水印"
       }
     },
     "sensitive-data": {
@@ -1014,9 +1021,9 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "select-project": "步骤 1. 选择项目",
-      "select-schema": "步骤 2. 选择 Schema",
-      "select-database": "步骤 3. 选择待同步的数据库",
+      "select-project": "选择项目",
+      "select-database": "选择待同步的数据库",
+      "from-database": "选择源数据库",
       "schema-diff": "Schema 对比结果",
       "synchronize-statements": "DDL 语句",
       "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
@@ -1648,6 +1655,10 @@
       "bb-feature-rbac": {
         "title": "角色管理",
         "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
+      },
+      "bb-feature-watermark": {
+        "title": "水印设置",
+        "desc": "在页面上显示水印，包含用户名和 ID。"
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
