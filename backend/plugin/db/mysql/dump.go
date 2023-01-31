@@ -361,18 +361,56 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 	query := "SHOW MASTER STATUS"
 	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
-	if err := db.QueryRowContext(ctx, query).Scan(
-		&binlogInfo.FileName,
-		&binlogInfo.Position,
-		&unused,
-		&unused,
-		&unused,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
-			return api.BinlogInfo{}, nil
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return api.BinlogInfo{}, errors.Wrapf(err, "cannot execute %q query", query)
+	}
+	columns, err := rows.Columns()
+	if err != nil {
+		return api.BinlogInfo{}, errors.Wrapf(err, "cannot get columns from %q query", query)
+	}
+
+	findFileName := false
+	findPosition := false
+	for _, columnName := range columns {
+		switch columnName {
+		case "File":
+			findFileName = true
+		case "Position":
+			findPosition = true
 		}
-		return api.BinlogInfo{}, err
+	}
+	if !findFileName || !findPosition {
+		return api.BinlogInfo{}, errors.Errorf("cannot find File and Position columns from %q query", query)
+	}
+
+	scanOneRow := false
+
+	for rows.Next() {
+		if scanOneRow {
+			return api.BinlogInfo{}, errors.Errorf("unexpected multiple rows returned from %q query", query)
+		}
+		cols := make([]interface{}, len(columns))
+		scanOneRow = true
+		// The query SHOW MASTER STATUS returns uncertain number of columns, especially for the RDS, which may returns 4 columns.
+		// So we have to dynamically scan the columns, and return the error if we cannot find the File and Position columns.
+		for i := 0; i < len(columns); i++ {
+			switch columns[i] {
+			case "File":
+				cols[i] = &binlogInfo.FileName
+			case "Position":
+				cols[i] = &binlogInfo.Position
+			default:
+				cols[i] = &unused
+			}
+		}
+		if err := rows.Scan(cols...); err != nil {
+			return api.BinlogInfo{}, errors.Wrapf(err, "cannot scan row from %q query", query)
+		}
+	}
+	if !scanOneRow {
+		// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
+		return api.BinlogInfo{}, nil
 	}
 	return binlogInfo, nil
 }
