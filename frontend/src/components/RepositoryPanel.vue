@@ -284,6 +284,7 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const repositoryStore = useRepositoryStore();
+    const projectStore = useProjectStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
@@ -358,17 +359,22 @@ export default defineComponent({
       restoreToUIWorkflowType(false);
     };
 
-    const restoreToUIWorkflowType = (checkSQLReviewCI: boolean) => {
+    const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
       if (checkSQLReviewCI && props.repository.enableSQLReviewCI) {
         state.showRestoreSQLReviewCIModal = true;
         return;
       }
-      repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("repository.restore-ui-workflow-success"),
-        });
+      await repositoryStore.deleteRepositoryByProjectId(props.project.id);
+      await projectStore.patchProject({
+        projectId: props.project.id,
+        projectPatch: {
+          workflowType: "UI",
+        },
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("repository.restore-ui-workflow-success"),
       });
     };
 
