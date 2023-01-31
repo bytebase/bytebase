@@ -34,14 +34,14 @@ func (*CommentConventionAdvisor) Check(ctx advisor.Context, statement string) ([
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &commentConventionChecker{
 		level:     level,
 		title:     string(ctx.Rule.Type),
-		maxLength: payload.MaxLength,
+		maxLength: payload.Number,
 	}
 
 	for _, stmt := range stmtList {
