@@ -84,6 +84,18 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		Description: task.Name,
 		Environment: environment.Title,
 	}
+
+	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	if err != nil {
+		log.Error("failed to find containing issue", zap.Error(err))
+	}
+	if issue != nil {
+		// Concate issue title and task name as the migration description so that user can see
+		// more context of the migration.
+		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
+		mi.IssueID = strconv.Itoa(issue.UID)
+	}
+
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
 		creator, err := stores.GetUserByID(ctx, task.CreatorID)
@@ -112,14 +124,6 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 
 	mi.Database = database.DatabaseName
 	mi.Namespace = database.DatabaseName
-
-	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		log.Error("failed to find containing issue", zap.Error(err))
-	}
-	if issue != nil {
-		mi.IssueID = strconv.Itoa(issue.UID)
-	}
 
 	statement = strings.TrimSpace(statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
