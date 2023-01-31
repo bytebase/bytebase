@@ -84,6 +84,9 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
 
+# Directory to store the demo data.
+RUN mkdir -p /var/opt/bytebase/pgdata-demo
+
 ENV OPENSSL_CONF /etc/ssl/
 
 CMD ["--port", "80", "--data", "/var/opt/bytebase"]
