@@ -205,6 +205,16 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
+// GetActiveStageV2 returns an active stage among all stages.
+func GetActiveStageV2(stages []*store.StageMessage) *store.StageMessage {
+	for _, stage := range stages {
+		if stage.Active {
+			return stage
+		}
+	}
+	return nil
+}
+
 // GetActiveStage returns an active stage among all stages.
 func GetActiveStage(pipeline *api.Pipeline) *api.Stage {
 	for _, stage := range pipeline.StageList {
@@ -319,11 +329,11 @@ func RefreshToken(ctx context.Context, store *store.Store, webURL string) common
 }
 
 // GetTaskStatement gets the statement of a task.
-func GetTaskStatement(task *api.Task) (string, error) {
+func GetTaskStatement(taskPayload string) (string, error) {
 	var taskStatement struct {
 		Statement string `json:"statement"`
 	}
-	if err := json.Unmarshal([]byte(task.Payload), &taskStatement); err != nil {
+	if err := json.Unmarshal([]byte(taskPayload), &taskStatement); err != nil {
 		return "", err
 	}
 	return taskStatement.Statement, nil

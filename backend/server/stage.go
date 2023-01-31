@@ -37,7 +37,11 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			}
 		}
 		if stage == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid stage %v", stageID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid stage %v", stageID))
+		}
+		activeStage := utils.GetActiveStageV2(stages)
+		if activeStage == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "all stages are done")
 		}
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
@@ -90,13 +94,8 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
 				}
 			}
-			composedPipeline, err := s.store.GetPipelineByID(ctx, tasks[0].PipelineID)
-			if err != nil {
-				return err
-			}
-			activeStage := utils.GetActiveStage(composedPipeline)
 			if tasks[0].StageID != activeStage.ID {
-				return echo.NewHTTPError(http.StatusBadRequest, "Tasks in the prior stage are not done yet")
+				return echo.NewHTTPError(http.StatusBadRequest, "We can only approve the earliest stage with incompleted tasks")
 			}
 		}
 

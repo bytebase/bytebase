@@ -78,7 +78,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				issueByID := make(map[int]*store.IssueMessage)
-				pipelineByID := make(map[int]*api.Pipeline)
+				stagesByPipelineID := make(map[int][]*store.StageMessage)
 
 				needAttention := true
 				issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
@@ -91,13 +91,13 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				for _, issue := range issues {
 					issueByID[issue.UID] = issue
-					pipeline, err := r.store.GetSimplePipelineByID(ctx, issue.PipelineUID)
+					stages, err := r.store.ListStageV2(ctx, issue.PipelineUID)
 					if err != nil {
-						log.Error("failed to get pipeline", zap.Int("id", issue.PipelineUID), zap.Error(err))
+						log.Error("failed to list stages", zap.Int("pipeline", issue.PipelineUID), zap.Error(err))
 						return
 					}
-					pipelineByID[issue.PipelineUID] = pipeline
-					r.scheduleApproval(ctx, issue, pipeline, &value)
+					stagesByPipelineID[issue.PipelineUID] = stages
+					r.scheduleApproval(ctx, issue, stages, &value)
 				}
 
 				externalApprovalList, err := r.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
@@ -124,12 +124,12 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("expect to have found issue in application runner", zap.Int("issue_id", externalApproval.IssueID))
 							continue
 						}
-						composedPipeline, ok := pipelineByID[issue.PipelineUID]
+						stages, ok := stagesByPipelineID[issue.PipelineUID]
 						if !ok {
 							log.Error("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
 							continue
 						}
-						activeStage := utils.GetActiveStage(composedPipeline)
+						activeStage := utils.GetActiveStageV2(stages)
 
 						if issue.Status != api.IssueOpen || activeStage == nil {
 							if err := r.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
@@ -209,7 +209,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 
 								stageName := "UNKNOWN"
-								for _, stage := range composedPipeline.StageList {
+								for _, stage := range stages {
 									if stage.ID == payload.StageID {
 										stageName = stage.Name
 										break
@@ -254,7 +254,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *store.IssueMessage, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
+func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *store.IssueMessage, stage *store.StageMessage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
 	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.UID)
 	if err != nil {
 		return nil, err
@@ -278,7 +278,11 @@ func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *s
 			return true
 		}
 		pendingApprovalCount := 0
-		for _, task := range stage.TaskList {
+		tasks, err := r.store.ListTasks(ctx, &api.TaskFind{PipelineID: &stage.PipelineID, StageID: &stage.ID})
+		if err != nil {
+			return false
+		}
+		for _, task := range tasks {
 			if task.Status == api.TaskPendingApproval {
 				pendingApprovalCount++
 			}
@@ -392,7 +396,7 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason
 	)
 }
 
-func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *store.StageMessage, oldApproval *api.ExternalApproval) (bool, error) {
 	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
 	if err != nil {
 		return false, err
@@ -412,35 +416,30 @@ func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.
 		}
 	}
 	pendingApprovalCount := 0
-	for _, task := range stage.TaskList {
+	tasks, err := r.store.ListTasks(ctx, &api.TaskFind{PipelineID: &stage.PipelineID, StageID: &stage.ID})
+	if err != nil {
+		return false, err
+	}
+	taskCheckRuns, err := r.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{PipelineID: &stage.PipelineID, StageID: &stage.ID})
+	if err != nil {
+		return false, err
+	}
+
+	for _, task := range tasks {
 		if task.Status == api.TaskPendingApproval {
 			pendingApprovalCount++
 		}
 
-		// get the most recent task check run result for each type of task check
-		taskCheckRun := make(map[api.TaskCheckType]*api.TaskCheckRun)
-		for _, run := range task.TaskCheckRunList {
-			v, ok := taskCheckRun[run.Type]
-			if !ok {
-				taskCheckRun[run.Type] = run
-			} else if run.ID > v.ID {
-				taskCheckRun[run.Type] = run
-			}
+		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		if err != nil {
+			return false, err
 		}
-
-		for _, taskCheck := range taskCheckRun {
-			if taskCheck.Status != api.TaskCheckRunDone {
-				return false, nil
-			}
-			var payload api.TaskCheckRunResultPayload
-			if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
-				return false, err
-			}
-			for _, result := range payload.ResultList {
-				if result.Status == api.TaskCheckStatusError {
-					return false, nil
-				}
-			}
+		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, taskCheckRuns, instance.Engine)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
 		}
 	}
 	if pendingApprovalCount == 0 {
@@ -449,7 +448,7 @@ func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.
 	return true, nil
 }
 
-func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *store.StageMessage, settingValue *api.SettingAppIMValue) error {
 	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -476,15 +475,19 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 	}
 
 	var taskList []feishu.Task
-	for _, task := range stage.TaskList {
+	tasks, err := r.store.ListTasks(ctx, &api.TaskFind{PipelineID: &stage.PipelineID, StageID: &stage.ID})
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
 		taskList = append(taskList, feishu.Task{
 			Name:   task.Name,
 			Status: string(task.Status),
 		})
 	}
 
-	for i, task := range stage.TaskList {
-		statement, err := utils.GetTaskStatement(task)
+	for i, task := range tasks {
+		statement, err := utils.GetTaskStatement(task.Payload)
 		if err != nil {
 			return err
 		}
@@ -535,7 +538,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 }
 
 // scheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
-func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage, composedPipeline *api.Pipeline, settingValue *api.SettingAppIMValue) {
+func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage, stages []*store.StageMessage, settingValue *api.SettingAppIMValue) {
 	if !settingValue.ExternalApproval.Enabled {
 		return
 	}
@@ -545,7 +548,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 		return
 	}
 
-	activeStage := utils.GetActiveStage(composedPipeline)
+	activeStage := utils.GetActiveStageV2(stages)
 	if activeStage == nil {
 		return
 	}

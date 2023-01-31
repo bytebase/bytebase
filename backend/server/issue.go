@@ -203,11 +203,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return err
 			}
 			updateIssueMessage.Assignee = assignee
-			composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+			stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStage(composedPipeline)
+			activeStage := utils.GetActiveStageV2(stages)
 			// When all stages have finished, assignee can be anyone such as creator.
 			if activeStage != nil {
 				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
