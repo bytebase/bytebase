@@ -113,7 +113,13 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
+	// Try to find out if the email is used by Bytebase user instead of the SSO user.
+	emptyIdentityProviderResourceID := ""
+	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
+		Email:                      &request.User.Email,
+		ShowDeleted:                true,
+		IdentityProviderResourceID: &emptyIdentityProviderResourceID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
 	}
