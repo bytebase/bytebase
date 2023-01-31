@@ -134,9 +134,9 @@ export default defineComponent({
     watchEffect(prepareRepository);
 
     watch(
-      () => props.project,
-      (cur) => {
-        state.workflowType = cur.workflowType;
+      () => props.project.workflowType,
+      (type) => {
+        state.workflowType = type;
       }
     );
 
