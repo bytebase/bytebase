@@ -443,7 +443,8 @@
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
-          "description": "Display watermarks on pages, including username and ID."
+          "description": "Display watermarks on pages, including username and ID.",
+          "only-owner-can-edit": "Only workspace owner can update watermark setting."
         },
         "enable-watermark": "Enable watermark"
       }

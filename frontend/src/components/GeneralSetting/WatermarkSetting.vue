@@ -7,7 +7,10 @@
     </div>
     <div class="mt-4 space-y-2">
       <div>
-        <label class="flex items-center gap-x-2">
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
           <BBCheckbox
             :disabled="!allowEdit"
             :value="enabled"
@@ -16,6 +19,13 @@
           <span class="font-medium">{{
             $t("settings.general.workspace.enable-watermark")
           }}</span>
+
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
+            {{ $t("settings.general.workspace.watermark.only-owner-can-edit") }}
+          </span>
         </label>
       </div>
 
