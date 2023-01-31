@@ -119,6 +119,7 @@
         "activity-log": "活动日志",
         "terraform-provider": "Terraform Provider",
         "rbac": "RBAC 权限管理",
+        "watermark": "水印设置",
         "3rd-party-auth": "通过 GitLab 登录",
         "sync-members-from-vcs": "从 GitLab 同步成员信息",
         "dba-workflow": "DBA 工作流",

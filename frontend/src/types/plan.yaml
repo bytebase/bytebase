@@ -35,6 +35,7 @@ categoryList:
       - environment-tier
       - sensitive-data
       - database-access-control
+      - watermark
   - type: branding
     featureList:
       - branding-logo
@@ -205,6 +206,7 @@ planList:
       - type: activity-log
       - type: terraform-provider
       - type: rbac
+      - type: watermark
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
       - type: dba-workflow

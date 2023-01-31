@@ -638,6 +638,16 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 		return nil, err
 	}
 
+	// initial watermark setting
+	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingWatermark,
+		Value:       "0",
+		Description: "Display watermark",
+	}); err != nil {
+		return nil, err
+	}
+
 	return conf, nil
 }
 

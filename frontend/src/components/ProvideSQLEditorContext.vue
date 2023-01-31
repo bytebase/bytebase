@@ -17,6 +17,7 @@ import {
   pushNotification,
   usePolicyStore,
   useConnectionTreeStore,
+  useSettingStore,
 } from "@/store";
 import {
   Database,
@@ -381,6 +382,7 @@ onMounted(async () => {
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
+  await useSettingStore().fetchSetting();
 
   syncURLWithConnection();
 });
