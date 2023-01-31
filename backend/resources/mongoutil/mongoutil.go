@@ -49,7 +49,7 @@ func Install(resourceDir string) (string, error) {
 			return "", errors.Wrapf(err, "failed to check binary directory path %q", mongoutilDir)
 		}
 		// Install if not exist yet
-		log.Info("Installing MongoDB utilities(taking about 3 minutes in docker environment)...")
+		log.Info("Installing MongoDB utilities, it may take about several minutes...")
 		if err := installImpl(resourceDir, mongoutilDir, tarName, version); err != nil {
 			return "", errors.Wrap(err, "cannot install mongoutil")
 		}
