@@ -9,3 +9,14 @@ enum State {
   ACTIVE = 1;
   DELETED = 2;
 }
+
+enum Engine {
+  ENGINE_UNSPECIFIED = 0;
+  CLICKHOUSE = 1;
+  MYSQL = 2;
+  POSTGRES = 3;
+  SNOWFLAKE = 4;
+  SQLITE = 5;
+  TIDB = 6;
+  MONGODB = 7;
+}
