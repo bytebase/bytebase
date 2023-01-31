@@ -207,17 +207,6 @@ message Instance {
   repeated DataSource data_sources = 7;
 }
 
-enum Engine {
-  ENGINE_UNSPECIFIED = 0;
-  CLICKHOUSE = 1;
-  MYSQL = 2;
-  POSTGRES = 3;
-  SNOWFLAKE = 4;
-  SQLITE = 5;
-  TIDB = 6;
-  MONGODB = 7;
-}
-
 message DataSource {
   string title = 1;
   DataSourceType type = 2;
