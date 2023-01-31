@@ -63,7 +63,7 @@ const setting = useSettingByName("bb.workspace.watermark");
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermission(
-    "bb.permission.workspace.manage-watermark",
+    "bb.permission.workspace.manage-general",
     currentUser.value.role
   );
 });
