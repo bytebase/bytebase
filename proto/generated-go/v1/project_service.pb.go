@@ -2032,7 +2032,7 @@ type LabelSelector struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	MatchExpressions []*LebelSelectorRequirement `protobuf:"bytes,1,rep,name=match_expressions,json=matchExpressions,proto3" json:"match_expressions,omitempty"`
+	MatchExpressions []*LabelSelectorRequirement `protobuf:"bytes,1,rep,name=match_expressions,json=matchExpressions,proto3" json:"match_expressions,omitempty"`
 }
 
 func (x *LabelSelector) Reset() {
@@ -2067,14 +2067,14 @@ func (*LabelSelector) Descriptor() ([]byte, []int) {
 	return file_v1_project_service_proto_rawDescGZIP(), []int{25}
 }
 
-func (x *LabelSelector) GetMatchExpressions() []*LebelSelectorRequirement {
+func (x *LabelSelector) GetMatchExpressions() []*LabelSelectorRequirement {
 	if x != nil {
 		return x.MatchExpressions
 	}
 	return nil
 }
 
-type LebelSelectorRequirement struct {
+type LabelSelectorRequirement struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -2084,8 +2084,8 @@ type LebelSelectorRequirement struct {
 	Values   []string     `protobuf:"bytes,3,rep,name=values,proto3" json:"values,omitempty"`
 }
 
-func (x *LebelSelectorRequirement) Reset() {
-	*x = LebelSelectorRequirement{}
+func (x *LabelSelectorRequirement) Reset() {
+	*x = LabelSelectorRequirement{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_v1_project_service_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2093,13 +2093,13 @@ func (x *LebelSelectorRequirement) Reset() {
 	}
 }
 
-func (x *LebelSelectorRequirement) String() string {
+func (x *LabelSelectorRequirement) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LebelSelectorRequirement) ProtoMessage() {}
+func (*LabelSelectorRequirement) ProtoMessage() {}
 
-func (x *LebelSelectorRequirement) ProtoReflect() protoreflect.Message {
+func (x *LabelSelectorRequirement) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_project_service_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2111,26 +2111,26 @@ func (x *LebelSelectorRequirement) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LebelSelectorRequirement.ProtoReflect.Descriptor instead.
-func (*LebelSelectorRequirement) Descriptor() ([]byte, []int) {
+// Deprecated: Use LabelSelectorRequirement.ProtoReflect.Descriptor instead.
+func (*LabelSelectorRequirement) Descriptor() ([]byte, []int) {
 	return file_v1_project_service_proto_rawDescGZIP(), []int{26}
 }
 
-func (x *LebelSelectorRequirement) GetKey() string {
+func (x *LabelSelectorRequirement) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
 	return ""
 }
 
-func (x *LebelSelectorRequirement) GetOperator() OperatorType {
+func (x *LabelSelectorRequirement) GetOperator() OperatorType {
 	if x != nil {
 		return x.Operator
 	}
 	return OperatorType_OPERATOR_TYPE_UNSPECIFIED
 }
 
-func (x *LebelSelectorRequirement) GetValues() []string {
+func (x *LabelSelectorRequirement) GetValues() []string {
 	if x != nil {
 		return x.Values
 	}
@@ -2347,10 +2347,10 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0x72, 0x22, 0x63, 0x0a, 0x0d, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x53, 0x65, 0x6c, 0x65, 0x63, 0x74,
 	0x6f, 0x72, 0x12, 0x52, 0x0a, 0x11, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x5f, 0x65, 0x78, 0x70, 0x72,
 	0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x25, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x65, 0x62, 0x65,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x61, 0x62, 0x65,
 	0x6c, 0x53, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65,
 	0x6d, 0x65, 0x6e, 0x74, 0x52, 0x10, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x45, 0x78, 0x70, 0x72, 0x65,
-	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x7b, 0x0a, 0x18, 0x4c, 0x65, 0x62, 0x65, 0x6c, 0x53,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x7b, 0x0a, 0x18, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x53,
 	0x65, 0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x6d, 0x65,
 	0x6e, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x03, 0x6b, 0x65, 0x79, 0x12, 0x35, 0x0a, 0x08, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72,
@@ -2576,7 +2576,7 @@ var file_v1_project_service_proto_goTypes = []interface{}{
 	(*ScheduleDeployment)(nil),            // 32: bytebase.v1.ScheduleDeployment
 	(*DeploymentSpec)(nil),                // 33: bytebase.v1.DeploymentSpec
 	(*LabelSelector)(nil),                 // 34: bytebase.v1.LabelSelector
-	(*LebelSelectorRequirement)(nil),      // 35: bytebase.v1.LebelSelectorRequirement
+	(*LabelSelectorRequirement)(nil),      // 35: bytebase.v1.LabelSelectorRequirement
 	(*fieldmaskpb.FieldMask)(nil),         // 36: google.protobuf.FieldMask
 	(State)(0),                            // 37: bytebase.v1.State
 	(*timestamppb.Timestamp)(nil),         // 38: google.protobuf.Timestamp
@@ -2610,8 +2610,8 @@ var file_v1_project_service_proto_depIdxs = []int32{
 	32, // 24: bytebase.v1.Schedule.deployments:type_name -> bytebase.v1.ScheduleDeployment
 	33, // 25: bytebase.v1.ScheduleDeployment.spec:type_name -> bytebase.v1.DeploymentSpec
 	34, // 26: bytebase.v1.DeploymentSpec.label_selector:type_name -> bytebase.v1.LabelSelector
-	35, // 27: bytebase.v1.LabelSelector.match_expressions:type_name -> bytebase.v1.LebelSelectorRequirement
-	8,  // 28: bytebase.v1.LebelSelectorRequirement.operator:type_name -> bytebase.v1.OperatorType
+	35, // 27: bytebase.v1.LabelSelector.match_expressions:type_name -> bytebase.v1.LabelSelectorRequirement
+	8,  // 28: bytebase.v1.LabelSelectorRequirement.operator:type_name -> bytebase.v1.OperatorType
 	9,  // 29: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
 	10, // 30: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
 	12, // 31: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
@@ -2967,7 +2967,7 @@ func file_v1_project_service_proto_init() {
 			}
 		}
 		file_v1_project_service_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LebelSelectorRequirement); i {
+			switch v := v.(*LabelSelectorRequirement); i {
 			case 0:
 				return &v.state
 			case 1:

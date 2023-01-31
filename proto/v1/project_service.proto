@@ -429,10 +429,10 @@ message DeploymentSpec {
 }
 
 message LabelSelector {
-  repeated LebelSelectorRequirement match_expressions = 1;
+  repeated LabelSelectorRequirement match_expressions = 1;
 }
 
-message LebelSelectorRequirement{
+message LabelSelectorRequirement{
   string key = 1;
   OperatorType operator = 2;
   repeated string values = 3;

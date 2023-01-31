@@ -651,10 +651,10 @@ export interface DeploymentSpec {
 }
 
 export interface LabelSelector {
-  matchExpressions: LebelSelectorRequirement[];
+  matchExpressions: LabelSelectorRequirement[];
 }
 
-export interface LebelSelectorRequirement {
+export interface LabelSelectorRequirement {
   key: string;
   operator: OperatorType;
   values: string[];
@@ -2272,7 +2272,7 @@ function createBaseLabelSelector(): LabelSelector {
 export const LabelSelector = {
   encode(message: LabelSelector, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.matchExpressions) {
-      LebelSelectorRequirement.encode(v!, writer.uint32(10).fork()).ldelim();
+      LabelSelectorRequirement.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -2285,7 +2285,7 @@ export const LabelSelector = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.matchExpressions.push(LebelSelectorRequirement.decode(reader, reader.uint32()));
+          message.matchExpressions.push(LabelSelectorRequirement.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -2298,7 +2298,7 @@ export const LabelSelector = {
   fromJSON(object: any): LabelSelector {
     return {
       matchExpressions: Array.isArray(object?.matchExpressions)
-        ? object.matchExpressions.map((e: any) => LebelSelectorRequirement.fromJSON(e))
+        ? object.matchExpressions.map((e: any) => LabelSelectorRequirement.fromJSON(e))
         : [],
     };
   },
@@ -2306,7 +2306,7 @@ export const LabelSelector = {
   toJSON(message: LabelSelector): unknown {
     const obj: any = {};
     if (message.matchExpressions) {
-      obj.matchExpressions = message.matchExpressions.map((e) => e ? LebelSelectorRequirement.toJSON(e) : undefined);
+      obj.matchExpressions = message.matchExpressions.map((e) => e ? LabelSelectorRequirement.toJSON(e) : undefined);
     } else {
       obj.matchExpressions = [];
     }
@@ -2315,17 +2315,17 @@ export const LabelSelector = {
 
   fromPartial(object: DeepPartial<LabelSelector>): LabelSelector {
     const message = createBaseLabelSelector();
-    message.matchExpressions = object.matchExpressions?.map((e) => LebelSelectorRequirement.fromPartial(e)) || [];
+    message.matchExpressions = object.matchExpressions?.map((e) => LabelSelectorRequirement.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseLebelSelectorRequirement(): LebelSelectorRequirement {
+function createBaseLabelSelectorRequirement(): LabelSelectorRequirement {
   return { key: "", operator: 0, values: [] };
 }
 
-export const LebelSelectorRequirement = {
-  encode(message: LebelSelectorRequirement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const LabelSelectorRequirement = {
+  encode(message: LabelSelectorRequirement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -2338,10 +2338,10 @@ export const LebelSelectorRequirement = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): LebelSelectorRequirement {
+  decode(input: _m0.Reader | Uint8Array, length?: number): LabelSelectorRequirement {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLebelSelectorRequirement();
+    const message = createBaseLabelSelectorRequirement();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2362,7 +2362,7 @@ export const LebelSelectorRequirement = {
     return message;
   },
 
-  fromJSON(object: any): LebelSelectorRequirement {
+  fromJSON(object: any): LabelSelectorRequirement {
     return {
       key: isSet(object.key) ? String(object.key) : "",
       operator: isSet(object.operator) ? operatorTypeFromJSON(object.operator) : 0,
@@ -2370,7 +2370,7 @@ export const LebelSelectorRequirement = {
     };
   },
 
-  toJSON(message: LebelSelectorRequirement): unknown {
+  toJSON(message: LabelSelectorRequirement): unknown {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.operator !== undefined && (obj.operator = operatorTypeToJSON(message.operator));
@@ -2382,8 +2382,8 @@ export const LebelSelectorRequirement = {
     return obj;
   },
 
-  fromPartial(object: DeepPartial<LebelSelectorRequirement>): LebelSelectorRequirement {
-    const message = createBaseLebelSelectorRequirement();
+  fromPartial(object: DeepPartial<LabelSelectorRequirement>): LabelSelectorRequirement {
+    const message = createBaseLabelSelectorRequirement();
     message.key = object.key ?? "";
     message.operator = object.operator ?? 0;
     message.values = object.values?.map((e) => e) || [];
