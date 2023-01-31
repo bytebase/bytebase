@@ -18,6 +18,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-sso"
   | "bb.permission.workspace.manage-vcs-provider"
   | "bb.permission.workspace.manage-general"
+  | "bb.permission.workspace.manage-watermark"
   | "bb.permission.workspace.manage-sensitive-data"
   | "bb.permission.workspace.manage-access-control"
   | "bb.permission.workspace.manage-subscription"
@@ -44,6 +45,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-member", [false, false, true]],
   ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
   ["bb.permission.workspace.manage-general", [false, false, true]],
+  ["bb.permission.workspace.manage-watermark", [false, true, true]],
   ["bb.permission.workspace.manage-im-integration", [false, false, true]],
   ["bb.permission.workspace.manage-sso", [false, false, true]],
   ["bb.permission.workspace.manage-sensitive-data", [false, true, true]],

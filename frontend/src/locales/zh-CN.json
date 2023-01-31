@@ -439,7 +439,13 @@
         "select-logo": "选择",
         "drag-logo": "或拖拽文件",
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
-        "logo-upload-succeed": "Logo 更新完成"
+        "logo-upload-succeed": "Logo 更新完成",
+        "watermark": {
+          "self": "水印",
+          "update-success": "水印设置已更新",
+          "description": "在页面上显示水印，包含用户名和 ID。"
+        },
+        "enable-watermark": "开启水印"
       }
     },
     "sensitive-data": {

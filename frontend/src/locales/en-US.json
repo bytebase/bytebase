@@ -439,7 +439,13 @@
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
-        "logo-upload-succeed": "Successfully updated the logo"
+        "logo-upload-succeed": "Successfully updated the logo",
+        "watermark": {
+          "self": "Watermark",
+          "update-success": "Watermark setting updated",
+          "description": "Display visible watermarks on pages, including username and ID."
+        },
+        "enable-watermark": "Enable watermark"
       }
     },
     "sensitive-data": {
