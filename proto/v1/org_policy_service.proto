@@ -307,6 +307,7 @@ message SQLReviewRule {
   string type = 1;
   SQLReviewRuleLevel level = 2;
   string payload = 3;
+  Engine engine = 4;
 }
 
 enum SQLReviewRuleLevel {
