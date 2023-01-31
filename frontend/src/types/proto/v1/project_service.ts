@@ -332,6 +332,48 @@ export function reviewStatusToJSON(object: ReviewStatus): string {
   }
 }
 
+export enum OperatorType {
+  /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
+  OPERATOR_TYPE_UNSPECIFIED = 0,
+  /** OPERATOR_TYPE_IN - The operator is "In". */
+  OPERATOR_TYPE_IN = 1,
+  /** OPERATOR_TYPE_EXISTS - The operator is "Exists". */
+  OPERATOR_TYPE_EXISTS = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function operatorTypeFromJSON(object: any): OperatorType {
+  switch (object) {
+    case 0:
+    case "OPERATOR_TYPE_UNSPECIFIED":
+      return OperatorType.OPERATOR_TYPE_UNSPECIFIED;
+    case 1:
+    case "OPERATOR_TYPE_IN":
+      return OperatorType.OPERATOR_TYPE_IN;
+    case 2:
+    case "OPERATOR_TYPE_EXISTS":
+      return OperatorType.OPERATOR_TYPE_EXISTS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return OperatorType.UNRECOGNIZED;
+  }
+}
+
+export function operatorTypeToJSON(object: OperatorType): string {
+  switch (object) {
+    case OperatorType.OPERATOR_TYPE_UNSPECIFIED:
+      return "OPERATOR_TYPE_UNSPECIFIED";
+    case OperatorType.OPERATOR_TYPE_IN:
+      return "OPERATOR_TYPE_IN";
+    case OperatorType.OPERATOR_TYPE_EXISTS:
+      return "OPERATOR_TYPE_EXISTS";
+    case OperatorType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetProjectRequest {
   /**
    * The name of the project to retrieve.
@@ -426,6 +468,18 @@ export interface SetIamPolicyRequest {
    */
   project: string;
   policy?: IamPolicy;
+}
+
+export interface GetDeploymentConfigRequest {
+  /**
+   * The name of the resource.
+   * Format: projects/{project}/deploymentConfig
+   */
+  name: string;
+}
+
+export interface UpdateDeploymentConfigRequest {
+  config?: DeploymentConfig;
 }
 
 export interface Project {
@@ -569,6 +623,41 @@ export interface Review {
   creator: string;
   createTime?: Date;
   updateTime?: Date;
+}
+
+export interface DeploymentConfig {
+  /**
+   * The name of the resource.
+   * Format: projects/{project}/deploymentConfig
+   */
+  name: string;
+  /** The title of the deployment config. */
+  title: string;
+  schedule?: Schedule;
+}
+
+export interface Schedule {
+  deployments: ScheduleDeployment[];
+}
+
+export interface ScheduleDeployment {
+  /** The title of the deployment (stage) in a schedule. */
+  title: string;
+  spec?: DeploymentSpec;
+}
+
+export interface DeploymentSpec {
+  labelSelector?: LabelSelector;
+}
+
+export interface LabelSelector {
+  matchExpressions: LebelSelectorRequirement[];
+}
+
+export interface LebelSelectorRequirement {
+  key: string;
+  operator: OperatorType;
+  values: string[];
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -1063,6 +1152,102 @@ export const SetIamPolicyRequest = {
     message.project = object.project ?? "";
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? IamPolicy.fromPartial(object.policy)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetDeploymentConfigRequest(): GetDeploymentConfigRequest {
+  return { name: "" };
+}
+
+export const GetDeploymentConfigRequest = {
+  encode(message: GetDeploymentConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDeploymentConfigRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDeploymentConfigRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDeploymentConfigRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetDeploymentConfigRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<GetDeploymentConfigRequest>): GetDeploymentConfigRequest {
+    const message = createBaseGetDeploymentConfigRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateDeploymentConfigRequest(): UpdateDeploymentConfigRequest {
+  return { config: undefined };
+}
+
+export const UpdateDeploymentConfigRequest = {
+  encode(message: UpdateDeploymentConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.config !== undefined) {
+      DeploymentConfig.encode(message.config, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDeploymentConfigRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateDeploymentConfigRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.config = DeploymentConfig.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateDeploymentConfigRequest {
+    return { config: isSet(object.config) ? DeploymentConfig.fromJSON(object.config) : undefined };
+  },
+
+  toJSON(message: UpdateDeploymentConfigRequest): unknown {
+    const obj: any = {};
+    message.config !== undefined && (obj.config = message.config ? DeploymentConfig.toJSON(message.config) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<UpdateDeploymentConfigRequest>): UpdateDeploymentConfigRequest {
+    const message = createBaseUpdateDeploymentConfigRequest();
+    message.config = (object.config !== undefined && object.config !== null)
+      ? DeploymentConfig.fromPartial(object.config)
       : undefined;
     return message;
   },
@@ -1846,6 +2031,366 @@ export const Review = {
   },
 };
 
+function createBaseDeploymentConfig(): DeploymentConfig {
+  return { name: "", title: "", schedule: undefined };
+}
+
+export const DeploymentConfig = {
+  encode(message: DeploymentConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.schedule !== undefined) {
+      Schedule.encode(message.schedule, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeploymentConfig {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeploymentConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.title = reader.string();
+          break;
+        case 3:
+          message.schedule = Schedule.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeploymentConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      schedule: isSet(object.schedule) ? Schedule.fromJSON(object.schedule) : undefined,
+    };
+  },
+
+  toJSON(message: DeploymentConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.title !== undefined && (obj.title = message.title);
+    message.schedule !== undefined && (obj.schedule = message.schedule ? Schedule.toJSON(message.schedule) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<DeploymentConfig>): DeploymentConfig {
+    const message = createBaseDeploymentConfig();
+    message.name = object.name ?? "";
+    message.title = object.title ?? "";
+    message.schedule = (object.schedule !== undefined && object.schedule !== null)
+      ? Schedule.fromPartial(object.schedule)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSchedule(): Schedule {
+  return { deployments: [] };
+}
+
+export const Schedule = {
+  encode(message: Schedule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.deployments) {
+      ScheduleDeployment.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Schedule {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchedule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.deployments.push(ScheduleDeployment.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Schedule {
+    return {
+      deployments: Array.isArray(object?.deployments)
+        ? object.deployments.map((e: any) => ScheduleDeployment.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: Schedule): unknown {
+    const obj: any = {};
+    if (message.deployments) {
+      obj.deployments = message.deployments.map((e) => e ? ScheduleDeployment.toJSON(e) : undefined);
+    } else {
+      obj.deployments = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<Schedule>): Schedule {
+    const message = createBaseSchedule();
+    message.deployments = object.deployments?.map((e) => ScheduleDeployment.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseScheduleDeployment(): ScheduleDeployment {
+  return { title: "", spec: undefined };
+}
+
+export const ScheduleDeployment = {
+  encode(message: ScheduleDeployment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.spec !== undefined) {
+      DeploymentSpec.encode(message.spec, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ScheduleDeployment {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseScheduleDeployment();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.title = reader.string();
+          break;
+        case 2:
+          message.spec = DeploymentSpec.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ScheduleDeployment {
+    return {
+      title: isSet(object.title) ? String(object.title) : "",
+      spec: isSet(object.spec) ? DeploymentSpec.fromJSON(object.spec) : undefined,
+    };
+  },
+
+  toJSON(message: ScheduleDeployment): unknown {
+    const obj: any = {};
+    message.title !== undefined && (obj.title = message.title);
+    message.spec !== undefined && (obj.spec = message.spec ? DeploymentSpec.toJSON(message.spec) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<ScheduleDeployment>): ScheduleDeployment {
+    const message = createBaseScheduleDeployment();
+    message.title = object.title ?? "";
+    message.spec = (object.spec !== undefined && object.spec !== null)
+      ? DeploymentSpec.fromPartial(object.spec)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeploymentSpec(): DeploymentSpec {
+  return { labelSelector: undefined };
+}
+
+export const DeploymentSpec = {
+  encode(message: DeploymentSpec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.labelSelector !== undefined) {
+      LabelSelector.encode(message.labelSelector, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeploymentSpec {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeploymentSpec();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.labelSelector = LabelSelector.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeploymentSpec {
+    return { labelSelector: isSet(object.labelSelector) ? LabelSelector.fromJSON(object.labelSelector) : undefined };
+  },
+
+  toJSON(message: DeploymentSpec): unknown {
+    const obj: any = {};
+    message.labelSelector !== undefined &&
+      (obj.labelSelector = message.labelSelector ? LabelSelector.toJSON(message.labelSelector) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<DeploymentSpec>): DeploymentSpec {
+    const message = createBaseDeploymentSpec();
+    message.labelSelector = (object.labelSelector !== undefined && object.labelSelector !== null)
+      ? LabelSelector.fromPartial(object.labelSelector)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseLabelSelector(): LabelSelector {
+  return { matchExpressions: [] };
+}
+
+export const LabelSelector = {
+  encode(message: LabelSelector, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.matchExpressions) {
+      LebelSelectorRequirement.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LabelSelector {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLabelSelector();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.matchExpressions.push(LebelSelectorRequirement.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LabelSelector {
+    return {
+      matchExpressions: Array.isArray(object?.matchExpressions)
+        ? object.matchExpressions.map((e: any) => LebelSelectorRequirement.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: LabelSelector): unknown {
+    const obj: any = {};
+    if (message.matchExpressions) {
+      obj.matchExpressions = message.matchExpressions.map((e) => e ? LebelSelectorRequirement.toJSON(e) : undefined);
+    } else {
+      obj.matchExpressions = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<LabelSelector>): LabelSelector {
+    const message = createBaseLabelSelector();
+    message.matchExpressions = object.matchExpressions?.map((e) => LebelSelectorRequirement.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLebelSelectorRequirement(): LebelSelectorRequirement {
+  return { key: "", operator: 0, values: [] };
+}
+
+export const LebelSelectorRequirement = {
+  encode(message: LebelSelectorRequirement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.operator !== 0) {
+      writer.uint32(16).int32(message.operator);
+    }
+    for (const v of message.values) {
+      writer.uint32(26).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LebelSelectorRequirement {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLebelSelectorRequirement();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.key = reader.string();
+          break;
+        case 2:
+          message.operator = reader.int32() as any;
+          break;
+        case 3:
+          message.values.push(reader.string());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LebelSelectorRequirement {
+    return {
+      key: isSet(object.key) ? String(object.key) : "",
+      operator: isSet(object.operator) ? operatorTypeFromJSON(object.operator) : 0,
+      values: Array.isArray(object?.values) ? object.values.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: LebelSelectorRequirement): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.operator !== undefined && (obj.operator = operatorTypeToJSON(message.operator));
+    if (message.values) {
+      obj.values = message.values.map((e) => e);
+    } else {
+      obj.values = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<LebelSelectorRequirement>): LebelSelectorRequirement {
+    const message = createBaseLebelSelectorRequirement();
+    message.key = object.key ?? "";
+    message.operator = object.operator ?? 0;
+    message.values = object.values?.map((e) => e) || [];
+    return message;
+  },
+};
+
 export type ProjectServiceDefinition = typeof ProjectServiceDefinition;
 export const ProjectServiceDefinition = {
   name: "ProjectService",
@@ -1947,6 +2492,22 @@ export const ProjectServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    getDeploymentConfig: {
+      name: "GetDeploymentConfig",
+      requestType: GetDeploymentConfigRequest,
+      requestStream: false,
+      responseType: DeploymentConfig,
+      responseStream: false,
+      options: {},
+    },
+    updateDeploymentConfig: {
+      name: "UpdateDeploymentConfig",
+      requestType: UpdateDeploymentConfigRequest,
+      requestStream: false,
+      responseType: DeploymentConfig,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1975,6 +2536,14 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: BatchUpdateReviewsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BatchUpdateReviewsResponse>>;
+  getDeploymentConfig(
+    request: GetDeploymentConfigRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DeploymentConfig>>;
+  updateDeploymentConfig(
+    request: UpdateDeploymentConfigRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DeploymentConfig>>;
 }
 
 export interface ProjectServiceClient<CallOptionsExt = {}> {
@@ -2002,6 +2571,14 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<BatchUpdateReviewsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BatchUpdateReviewsResponse>;
+  getDeploymentConfig(
+    request: DeepPartial<GetDeploymentConfigRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DeploymentConfig>;
+  updateDeploymentConfig(
+    request: DeepPartial<UpdateDeploymentConfigRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DeploymentConfig>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

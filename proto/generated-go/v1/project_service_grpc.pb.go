@@ -35,6 +35,8 @@ type ProjectServiceClient interface {
 	ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error)
 	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
+	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
+	UpdateDeploymentConfig(ctx context.Context, in *UpdateDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
 }
 
 type projectServiceClient struct {
@@ -153,6 +155,24 @@ func (c *projectServiceClient) BatchUpdateReviews(ctx context.Context, in *Batch
 	return out, nil
 }
 
+func (c *projectServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error) {
+	out := new(DeploymentConfig)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/GetDeploymentConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) UpdateDeploymentConfig(ctx context.Context, in *UpdateDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error) {
+	out := new(DeploymentConfig)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -169,6 +189,8 @@ type ProjectServiceServer interface {
 	ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error)
 	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
 	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
+	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*DeploymentConfig, error)
+	UpdateDeploymentConfig(context.Context, *UpdateDeploymentConfigRequest) (*DeploymentConfig, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -211,6 +233,12 @@ func (UnimplementedProjectServiceServer) UpdateReview(context.Context, *UpdateRe
 }
 func (UnimplementedProjectServiceServer) BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateReviews not implemented")
+}
+func (UnimplementedProjectServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*DeploymentConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
+}
+func (UnimplementedProjectServiceServer) UpdateDeploymentConfig(context.Context, *UpdateDeploymentConfigRequest) (*DeploymentConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDeploymentConfig not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -441,6 +469,42 @@ func _ProjectService_BatchUpdateReviews_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetDeploymentConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/GetDeploymentConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_UpdateDeploymentConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDeploymentConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).UpdateDeploymentConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/UpdateDeploymentConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).UpdateDeploymentConfig(ctx, req.(*UpdateDeploymentConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -495,6 +559,14 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BatchUpdateReviews",
 			Handler:    _ProjectService_BatchUpdateReviews_Handler,
+		},
+		{
+			MethodName: "GetDeploymentConfig",
+			Handler:    _ProjectService_GetDeploymentConfig_Handler,
+		},
+		{
+			MethodName: "UpdateDeploymentConfig",
+			Handler:    _ProjectService_UpdateDeploymentConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
