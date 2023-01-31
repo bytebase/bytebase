@@ -439,7 +439,14 @@
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
-        "logo-upload-succeed": "Successfully updated the logo"
+        "logo-upload-succeed": "Successfully updated the logo",
+        "watermark": {
+          "self": "Watermark",
+          "update-success": "Watermark setting updated",
+          "description": "Display watermarks on pages, including username and ID.",
+          "only-owner-can-edit": "Only workspace owner can update watermark setting."
+        },
+        "enable-watermark": "Enable watermark"
       }
     },
     "sensitive-data": {
@@ -1647,6 +1654,10 @@
       "bb-feature-rbac": {
         "title": "Role management",
         "desc": "Role management can assign a particular role (e.g. DBA) to a member."
+      },
+      "bb-feature-watermark": {
+        "title": "Watermark",
+        "desc": "Display visible watermarks on pages, including username and ID."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",

@@ -17,6 +17,7 @@ import (
 var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
 	api.SettingAppIM,
+	api.SettingWatermark,
 }
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {

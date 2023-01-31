@@ -1,6 +1,7 @@
+import { computed, unref } from "vue";
 import { defineStore } from "pinia";
 import axios from "axios";
-import { ResourceObject, SettingState } from "@/types";
+import { MaybeRef, ResourceObject, SettingState } from "@/types";
 import { Setting, SettingName } from "@/types/setting";
 
 function convert(
@@ -65,3 +66,11 @@ export const useSettingStore = defineStore("setting", {
     },
   },
 });
+
+export const useSettingByName = (name: MaybeRef<SettingName>) => {
+  const store = useSettingStore();
+
+  return computed(() => {
+    return store.getSettingByName(unref(name));
+  });
+};

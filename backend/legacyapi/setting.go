@@ -20,6 +20,8 @@ const (
 	SettingEnterpriseTrial SettingName = "bb.enterprise.trial"
 	// SettingAppIM is the setting name for IM applications.
 	SettingAppIM SettingName = "bb.app.im"
+	// SettingWatermark is the setting name for watermark displaying.
+	SettingWatermark SettingName = "bb.workspace.watermark"
 )
 
 // IMType is the type of IM.
