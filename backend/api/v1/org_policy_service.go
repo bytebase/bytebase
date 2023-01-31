@@ -16,7 +16,8 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	advisordb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -434,15 +435,8 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 		return nil, err
 	}
 
-	// TODO(rebelice): remove this trick.
-	ruleMap := make(map[advisor.SQLReviewRuleType]bool)
 	var rules []*v1pb.SQLReviewRule
 	for _, rule := range payload.RuleList {
-		if _, exists := ruleMap[rule.Type]; exists {
-			continue
-		}
-		ruleMap[rule.Type] = true
-
 		level := v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
 		switch rule.Level {
 		case advisor.SchemaRuleLevelError:
@@ -456,6 +450,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			Level:   level,
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
+			Engine:  convertToEngine(db.Type(rule.Engine)),
 		})
 	}
 
@@ -468,15 +463,8 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 }
 
 func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
-	// TODO(rebelice): remove this trick.
-	ruleMap := make(map[advisor.SQLReviewRuleType]bool)
 	var ruleList []*advisor.SQLReviewRule
 	for _, rule := range policy.Rules {
-		if _, exists := ruleMap[advisor.SQLReviewRuleType(rule.Type)]; exists {
-			continue
-		}
-		ruleMap[advisor.SQLReviewRuleType(rule.Type)] = true
-
 		var level advisor.SQLReviewRuleLevel
 		switch rule.Level {
 		case v1pb.SQLReviewRuleLevel_ERROR:
@@ -488,32 +476,12 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 		default:
 			return nil, errors.Errorf("invalid rule level %v", rule.Level)
 		}
-
-		// TODO(rebelice): remove this trick and add engine into protobuf define.
-		if advisor.RuleExists(advisor.SQLReviewRuleType(rule.Type), db.MySQL) {
-			ruleList = append(ruleList, &advisor.SQLReviewRule{
-				Level:   level,
-				Payload: rule.Payload,
-				Type:    advisor.SQLReviewRuleType(rule.Type),
-				Engine:  db.MySQL,
-			})
-		}
-		if advisor.RuleExists(advisor.SQLReviewRuleType(rule.Type), db.TiDB) {
-			ruleList = append(ruleList, &advisor.SQLReviewRule{
-				Level:   level,
-				Payload: rule.Payload,
-				Type:    advisor.SQLReviewRuleType(rule.Type),
-				Engine:  db.TiDB,
-			})
-		}
-		if advisor.RuleExists(advisor.SQLReviewRuleType(rule.Type), db.Postgres) {
-			ruleList = append(ruleList, &advisor.SQLReviewRule{
-				Level:   level,
-				Payload: rule.Payload,
-				Type:    advisor.SQLReviewRuleType(rule.Type),
-				Engine:  db.Postgres,
-			})
-		}
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Level:   level,
+			Payload: rule.Payload,
+			Type:    advisor.SQLReviewRuleType(rule.Type),
+			Engine:  advisordb.Type(convertEngine(rule.Engine)),
+		})
 	}
 
 	return &advisor.SQLReviewPolicy{
