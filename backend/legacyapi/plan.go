@@ -60,6 +60,9 @@ const (
 	// - Project level RBAC.
 	FeatureRBAC FeatureType = "bb.feature.rbac"
 
+	// FeatureWatermark enables full-screen watermark.
+	FeatureWatermark FeatureType = "bb.feature.watermark"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -158,6 +161,8 @@ func (e FeatureType) Name() string {
 	case FeatureRBAC:
 		return "RBAC"
 	// Branding
+	case FeatureWatermark:
+		return "Watermark"
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
@@ -229,6 +234,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
 	FeatureRBAC:         {false, true, true},
+	FeatureWatermark:    {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow

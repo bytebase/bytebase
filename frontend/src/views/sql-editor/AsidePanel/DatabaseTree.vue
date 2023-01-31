@@ -346,7 +346,6 @@ watch(
     if (databaseId !== UNKNOWN_ID) {
       maybeExpandKey(`database-${databaseId}`);
       const db = databaseStore.getDatabaseById(databaseId);
-      console.log(db);
       const projectId = db.project.id;
       maybeExpandKey(`project-${projectId}`);
     }
