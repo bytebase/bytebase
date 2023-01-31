@@ -40,7 +40,6 @@ type TaskMessage struct {
 	Payload           string
 	EarliestAllowedTs int64
 	BlockedBy         []int
-	StageBlocked      bool
 }
 
 func (task *TaskMessage) toTask() *api.Task {
@@ -66,7 +65,6 @@ func (task *TaskMessage) toTask() *api.Task {
 		Type:              task.Type,
 		Payload:           task.Payload,
 		EarliestAllowedTs: task.EarliestAllowedTs,
-		StageBlocked:      task.StageBlocked,
 	}
 	for _, block := range task.BlockedBy {
 		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
@@ -378,6 +376,9 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
+	if v := find.StageBlocked; v != nil {
+		where = append(where, "(SELECT COUNT(1) > 0 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') = FALSE")
+	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -401,7 +402,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.type,
 			task.payload,
 			task.earliest_allowed_ts,
-			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count,
 			ARRAY_AGG (task_dag.from_task_id) blocked_by
 		FROM task
 		LEFT JOIN task_dag ON task.id = task_dag.to_task_id
@@ -418,7 +418,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
-		var blockCount int
 		var blockedBy []sql.NullInt32
 		if err := rows.Scan(
 			&task.ID,
@@ -435,13 +434,9 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
-			&blockCount,
 			pq.Array(&blockedBy),
 		); err != nil {
 			return nil, err
-		}
-		if blockCount > 0 {
-			task.StageBlocked = true
 		}
 		for _, v := range blockedBy {
 			if v.Valid {

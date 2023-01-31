@@ -743,18 +743,16 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) 
 // scheduleAutoApprovedTasks schedules tasks that are approved automatically.
 func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
+	blocked := false
 	taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
-		StatusList: &taskStatusList,
+		StatusList:   &taskStatusList,
+		StageBlocked: &blocked,
 	})
 	if err != nil {
 		return err
 	}
 
 	for _, task := range taskList {
-		if task.StageBlocked {
-			continue
-		}
-
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 		if err != nil {
 			return err

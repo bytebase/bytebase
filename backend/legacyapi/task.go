@@ -241,8 +241,7 @@ type Task struct {
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
 	// Progress is loaded from the task scheduler in memory, NOT from the database
-	Progress     Progress `jsonapi:"attr,progress"`
-	StageBlocked bool
+	Progress Progress `jsonapi:"attr,progress"`
 }
 
 // Progress is a generalized struct which can track the progress of a task.
@@ -303,7 +302,8 @@ type TaskFind struct {
 	TypeList   *[]TaskType
 	// Payload contains JSONB expressions
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
-	Payload string
+	Payload      string
+	StageBlocked *bool
 }
 
 func (find *TaskFind) String() string {
