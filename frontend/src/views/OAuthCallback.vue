@@ -57,11 +57,17 @@ const closeWindow = () => {
       })
     );
   } else {
-    const eventType = sessionStorage.getItem(OAuthStateSessionKey) || "";
-    if (
-      eventType.startsWith("bb.oauth.signin") ||
-      eventType.startsWith("bb.oauth.register-vcs") ||
-      eventType.startsWith("bb.oauth.link-vcs-repository")
+    const eventName = sessionStorage.getItem(OAuthStateSessionKey) || "";
+    const eventType = eventName.slice(0, eventName.lastIndexOf("."));
+    if (eventName.startsWith("bb.oauth.signin")) {
+      window.opener.dispatchEvent(
+        new CustomEvent(eventName, {
+          detail: state.payload,
+        })
+      );
+    } else if (
+      eventName.startsWith("bb.oauth.register-vcs") ||
+      eventName.startsWith("bb.oauth.link-vcs-repository")
     ) {
       window.opener.dispatchEvent(
         new CustomEvent(eventType, {
