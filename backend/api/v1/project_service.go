@@ -268,11 +268,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 // GetDeploymentConfig returns the deployment config for a project.
 func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.GetDeploymentConfigRequest) (*v1pb.DeploymentConfig, error) {
-	trimDeploymentConfigSuffix, err := trimSuffix(request.Name, deploymentConfigSuffix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	projectID, err := getProjectID(trimDeploymentConfigSuffix)
+	projectID, err := trimSuffixAndGetProjectID(request.Name, deploymentConfigSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -305,11 +301,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	if request.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "deployment config is required")
 	}
-	trimDeploymentConfigSuffix, err := trimSuffix(request.Config.Name, deploymentConfigSuffix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	projectID, err := getProjectID(trimDeploymentConfigSuffix)
+	projectID, err := trimSuffixAndGetProjectID(request.Config.Name, deploymentConfigSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -326,11 +318,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
 	}
 
-	if err := validateSchedule(request.Config.Schedule); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	storeDeploymentConfig, err := convertToStoreDeploymentConfig(request.Config)
+	storeDeploymentConfig, err := validateAndConvertToStoreDeploymentSchedule(request.Config)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -346,46 +334,46 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	return convertToDeploymentConfig(project.ResourceID, deploymentConfig), nil
 }
 
-func validateSchedule(schedule *v1pb.Schedule) error {
-	if schedule == nil {
-		return common.Errorf(common.Invalid, "schedule must not be empty")
+func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConfig) (*store.DeploymentConfigMessage, error) {
+	if deployment.Schedule == nil {
+		return nil, common.Errorf(common.Invalid, "schedule must not be empty")
 	}
-	for _, d := range schedule.Deployments {
+	for _, d := range deployment.Schedule.Deployments {
 		if d == nil {
-			return common.Errorf(common.Invalid, "deployment must not be empty")
+			return nil, common.Errorf(common.Invalid, "deployment must not be empty")
 		}
 		if d.Title == "" {
-			return common.Errorf(common.Invalid, "Deployment name must not be empty")
+			return nil, common.Errorf(common.Invalid, "Deployment name must not be empty")
 		}
 		hasEnv := false
 		for _, e := range d.Spec.LabelSelector.MatchExpressions {
 			if e == nil {
-				return common.Errorf(common.Invalid, "label selector expression must not be empty")
+				return nil, common.Errorf(common.Invalid, "label selector expression must not be empty")
 			}
 			switch e.Operator {
 			case v1pb.OperatorType_OPERATOR_TYPE_IN:
 				if len(e.Values) == 0 {
-					return common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
+					return nil, common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
 				}
 			case v1pb.OperatorType_OPERATOR_TYPE_EXISTS:
 				if len(e.Values) > 0 {
-					return common.Errorf(common.Invalid, "expression key %q with %q operator shouldn't have values", e.Key, e.Operator)
+					return nil, common.Errorf(common.Invalid, "expression key %q with %q operator shouldn't have values", e.Key, e.Operator)
 				}
 			default:
-				return common.Errorf(common.Invalid, "expression key %q has invalid operator %q", e.Key, e.Operator)
+				return nil, common.Errorf(common.Invalid, "expression key %q has invalid operator %q", e.Key, e.Operator)
 			}
 			if e.Key == api.EnvironmentLabelKey {
 				hasEnv = true
 				if e.Operator != v1pb.OperatorType_OPERATOR_TYPE_IN || len(e.Values) != 1 {
-					return common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", api.EnvironmentLabelKey, v1pb.OperatorType_OPERATOR_TYPE_IN)
+					return nil, common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", api.EnvironmentLabelKey, v1pb.OperatorType_OPERATOR_TYPE_IN)
 				}
 			}
 		}
 		if !hasEnv {
-			return common.Errorf(common.Invalid, "deployment should contain %q label", api.EnvironmentLabelKey)
+			return nil, common.Errorf(common.Invalid, "deployment should contain %q label", api.EnvironmentLabelKey)
 		}
 	}
-	return nil
+	return convertToStoreDeploymentConfig(deployment)
 }
 
 func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
@@ -676,7 +664,7 @@ func convertToStoreDeploymentConfig(deploymentConfig *v1pb.DeploymentConfig) (*s
 }
 
 func convertToSchedule(schedule *store.Schedule) *v1pb.Schedule {
-	ds := []*v1pb.ScheduleDeployment{}
+	var ds []*v1pb.ScheduleDeployment
 	for _, d := range schedule.Deployments {
 		ds = append(ds, convertToDeployment(d))
 	}
@@ -686,7 +674,7 @@ func convertToSchedule(schedule *store.Schedule) *v1pb.Schedule {
 }
 
 func convertToStoreSchedule(schedule *v1pb.Schedule) (*store.Schedule, error) {
-	ds := []*store.Deployment{}
+	var ds []*store.Deployment
 	for _, d := range schedule.Deployments {
 		deployment, err := convertToStoreDeployment(d)
 		if err != nil {
@@ -735,7 +723,7 @@ func convertToStoreSpec(spec *v1pb.DeploymentSpec) (*store.DeploymentSpec, error
 }
 
 func convertToLabelSelector(selector *store.LabelSelector) *v1pb.LabelSelector {
-	exprs := []*v1pb.LabelSelectorRequirement{}
+	var exprs []*v1pb.LabelSelectorRequirement
 	for _, expr := range selector.MatchExpressions {
 		exprs = append(exprs, convertToLabelSelectorRequirement(expr))
 	}
@@ -746,7 +734,7 @@ func convertToLabelSelector(selector *store.LabelSelector) *v1pb.LabelSelector {
 }
 
 func convertToStoreLabelSelector(selector *v1pb.LabelSelector) (*store.LabelSelector, error) {
-	exprs := []*store.LabelSelectorRequirement{}
+	var exprs []*store.LabelSelectorRequirement
 	for _, expr := range selector.MatchExpressions {
 		requirement, err := convertToStoreLabelSelectorRequirement(expr)
 		if err != nil {
