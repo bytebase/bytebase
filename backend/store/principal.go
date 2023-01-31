@@ -72,10 +72,12 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
-	ID                         *int
-	Email                      *string
-	Role                       *api.Role
-	ShowDeleted                bool
+	ID          *int
+	Email       *string
+	Role        *api.Role
+	ShowDeleted bool
+	// IdentityProviderResourceID is the name of the identity provider related with the user.
+	// If set with empty string, then only those users that are not from the idp will be found.
 	IdentityProviderResourceID *string
 	// Available only if the IdentityProviderResourceID is not nil.
 	IdentityProviderUserIdentifier string
@@ -236,18 +238,20 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 
 	var userMessages []*UserMessage
-	if find.IdentityProviderResourceID == nil {
-		where = append(where, "principal.idp_id IS NULL")
-	} else {
-		// Get identity provider's UID with resource id.
-		identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
-			ResourceID: find.IdentityProviderResourceID,
-		})
-		if err != nil {
-			return nil, err
+	if find.IdentityProviderResourceID != nil {
+		if *find.IdentityProviderResourceID == "" {
+			where = append(where, "principal.idp_id IS NULL")
+		} else {
+			// Get identity provider's UID with resource id.
+			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+				ResourceID: find.IdentityProviderResourceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
+			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 		}
-		where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
-		where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 	}
 	rows, err := tx.QueryContext(ctx, `
 			SELECT
