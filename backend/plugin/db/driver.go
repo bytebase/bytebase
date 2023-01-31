@@ -38,6 +38,8 @@ const (
 	MongoDB Type = "MONGODB"
 	// Spanner is the database type for Spanner.
 	Spanner Type = "SPANNER"
+	// UnknownType is the database type for UNKNOWN.
+	UnknownType Type = "UNKNOWN"
 
 	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"

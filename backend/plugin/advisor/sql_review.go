@@ -228,8 +228,9 @@ func (policy *SQLReviewPolicy) String() (string, error) {
 
 // SQLReviewRule is the rule for SQL review policy.
 type SQLReviewRule struct {
-	Type  SQLReviewRuleType  `json:"type"`
-	Level SQLReviewRuleLevel `json:"level"`
+	Type   SQLReviewRuleType  `json:"type"`
+	Level  SQLReviewRuleLevel `json:"level"`
+	Engine db.Type            `json:"engine"`
 	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`
@@ -446,13 +447,18 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	}
 
 	for _, rule := range ruleList {
+		if rule.Engine != "" && rule.Engine != checkContext.DbType {
+			continue
+		}
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
 		}
 
 		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
 		if err != nil {
-			log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
+			if rule.Engine != "" {
+				log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
+			}
 			continue
 		}
 
@@ -645,6 +651,12 @@ func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
 	}
 
 	return res, nil
+}
+
+// RuleExists returns true if rule exists.
+func RuleExists(ruleType SQLReviewRuleType, engine db.Type) bool {
+	_, err := getAdvisorTypeByRule(ruleType, engine)
+	return err == nil
 }
 
 func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, error) {
