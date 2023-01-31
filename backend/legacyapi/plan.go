@@ -162,7 +162,7 @@ func (e FeatureType) Name() string {
 		return "RBAC"
 	// Branding
 	case FeatureWatermark:
-		return "Watermark displaying"
+		return "Watermark"
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
