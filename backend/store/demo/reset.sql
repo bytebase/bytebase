@@ -62,18 +62,6 @@ DELETE FROM
     data_source;
 
 DELETE FROM
-    vw;
-
-DELETE FROM
-    idx;
-
-DELETE FROM
-    col;
-
-DELETE FROM
-    tbl;
-
-DELETE FROM
     backup;
 
 DELETE FROM
