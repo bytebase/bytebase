@@ -205,23 +205,11 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-// GetActiveStageV2 returns an active stage among all stages.
-func GetActiveStageV2(stages []*store.StageMessage) *store.StageMessage {
+// GetActiveStage returns an active stage among all stages.
+func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
 	for _, stage := range stages {
 		if stage.Active {
 			return stage
-		}
-	}
-	return nil
-}
-
-// GetActiveStage returns an active stage among all stages.
-func GetActiveStage(pipeline *api.Pipeline) *api.Stage {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskDone {
-				return stage
-			}
 		}
 	}
 	return nil

@@ -39,7 +39,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if stage == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid stage %v", stageID))
 		}
-		activeStage := utils.GetActiveStageV2(stages)
+		activeStage := utils.GetActiveStage(stages)
 		if activeStage == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "all stages are done")
 		}

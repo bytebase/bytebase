@@ -129,7 +129,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
 							continue
 						}
-						activeStage := utils.GetActiveStageV2(stages)
+						activeStage := utils.GetActiveStage(stages)
 
 						if issue.Status != api.IssueOpen || activeStage == nil {
 							if err := r.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
@@ -548,7 +548,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 		return
 	}
 
-	activeStage := utils.GetActiveStageV2(stages)
+	activeStage := utils.GetActiveStage(stages)
 	if activeStage == nil {
 		return
 	}

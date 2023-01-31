@@ -207,7 +207,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStageV2(stages)
+			activeStage := utils.GetActiveStage(stages)
 			// When all stages have finished, assignee can be anyone such as creator.
 			if activeStage != nil {
 				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)

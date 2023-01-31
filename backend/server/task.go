@@ -178,7 +178,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStageV2(stages)
+			activeStage := utils.GetActiveStage(stages)
 			if activeStage == nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "All tasks are done already")
 			}

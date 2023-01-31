@@ -307,7 +307,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								if err != nil {
 									return
 								}
-								activeStage := utils.GetActiveStageV2(stages)
+								activeStage := utils.GetActiveStage(stages)
 								if activeStage != nil && activeStage.ID != task.StageID {
 									environmentID := activeStage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
