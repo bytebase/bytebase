@@ -9,6 +9,8 @@
         height: `${resizeParams.rect.height}px`,
       }"
     >
+      <Watermark />
+
       <div
         class="absolute overflow-visible origin-top-left"
         :style="{
@@ -47,6 +49,7 @@ import {
   provideSchemaDiagramContext,
   useSchemaDiagramContext,
 } from "../common";
+import Watermark from "@/components/misc/Watermark.vue";
 
 const props = defineProps({
   renderDesktop: {
