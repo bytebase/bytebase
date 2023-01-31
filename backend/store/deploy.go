@@ -242,3 +242,155 @@ func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *ap
 	}
 	return &cfg, nil
 }
+
+// UpsertDeploymentConfigMessage is the message to upsert a deployment config.
+type UpsertDeploymentConfigMessage struct {
+	ProjectUID       int
+	PrincipalUID     int
+	DeploymentConfig *DeploymentConfigMessage
+}
+
+// DeploymentConfigMessage is the message for deployment config.
+type DeploymentConfigMessage struct {
+	Name     string
+	Schedule *Schedule
+}
+
+// Schedule is the message for deployment schedule.
+type Schedule struct {
+	Deployments []*Deployment `json:"deployments"`
+}
+
+// Deployment is the message for deployment.
+type Deployment struct {
+	Name string          `json:"name"`
+	Spec *DeploymentSpec `json:"spec"`
+}
+
+// DeploymentSpec is the message for deployment specification.
+type DeploymentSpec struct {
+	Selector *LabelSelector `json:"selector"`
+}
+
+// LabelSelector is the message for label selector.
+type LabelSelector struct {
+	// MatchExpressions is a list of label selector requirements. The requirements are ANDed.
+	MatchExpressions []*LabelSelectorRequirement `json:"matchExpressions"`
+}
+
+// OperatorType is the type of label selector requirement operator.
+// Valid operators are In, Exists.
+// Note: NotIn and DoesNotExist are not supported initially.
+type OperatorType string
+
+const (
+	// InOperatorType is the operator type for In.
+	InOperatorType OperatorType = "In"
+	// ExistsOperatorType is the operator type for Exists.
+	ExistsOperatorType OperatorType = "Exists"
+)
+
+// LabelSelectorRequirement is the message for label selector.
+type LabelSelectorRequirement struct {
+	// Key is the label key that the selector applies to.
+	Key string `json:"key"`
+
+	// Operator represents a key's relationship to a set of values.
+	Operator OperatorType `json:"operator"`
+
+	// Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
+	Values []string `json:"values"`
+}
+
+// GetDeploymentConfigV2 returns the deployment config.
+func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*DeploymentConfigMessage, error) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
+
+	var deploymentConfig DeploymentConfigMessage
+	var payload string
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			name,
+			config
+		FROM deployment_config
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	).Scan(&deploymentConfig.Name, &payload); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	var schedule Schedule
+	if err := json.Unmarshal([]byte(payload), &schedule); err != nil {
+		return nil, err
+	}
+	deploymentConfig.Schedule = &schedule
+
+	return &deploymentConfig, nil
+}
+
+// UpsertDeploymentConfigV2 upserts the deployment config.
+func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDeploymentConfigMessage) (*DeploymentConfigMessage, error) {
+	payload, err := json.Marshal(upsert.DeploymentConfig.Schedule)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal deployment config")
+	}
+
+	query := `
+		INSERT INTO deployment_config (
+			creator_id,
+			updater_id,
+			project_id,
+			name,
+			config
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT(project_id) DO UPDATE SET
+			updater_id = excluded.updater_id,
+			name = excluded.name,
+			config = excluded.config
+		RETURNING name, config
+	`
+	var deploymentConfig DeploymentConfigMessage
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if err := tx.QueryRowContext(ctx, query,
+		upsert.PrincipalUID,
+		upsert.PrincipalUID,
+		upsert.ProjectUID,
+		upsert.DeploymentConfig.Name,
+		payload,
+	).Scan(&deploymentConfig.Name, &payload); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	if err := json.Unmarshal([]byte(payload), &deploymentConfig.Schedule); err != nil {
+		return nil, err
+	}
+	return &deploymentConfig, nil
+}
