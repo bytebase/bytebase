@@ -443,7 +443,7 @@
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
-          "description": "Display visible watermarks on pages, including username and ID."
+          "description": "Display watermarks on pages, including username and ID."
         },
         "enable-watermark": "Enable watermark"
       }
