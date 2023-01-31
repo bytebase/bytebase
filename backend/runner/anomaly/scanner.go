@@ -130,6 +130,10 @@ func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							return
 						}
 						for _, database := range databases {
+							// Skip deleted databases.
+							if database.SyncState != api.OK {
+								continue
+							}
 							s.checkDatabaseAnomaly(ctx, instance, database)
 							s.checkBackupAnomaly(ctx, environment, instance, database, backupPlanPolicyMap)
 						}
