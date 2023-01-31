@@ -152,7 +152,7 @@ const (
 	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
 
 	// SchemaRuleCommentLength limit comment length.
-	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
+	SchemaRuleCommentLength SQLReviewRuleType = "system.comment.length"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
