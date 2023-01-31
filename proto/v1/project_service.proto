@@ -100,16 +100,16 @@ service ProjectService {
     };
   }
 
-  rpc SetDeploymentConfigService(SetDeploymentConfigRequest) returns (DeploymentConfig) {
+  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {
-      patch: "/v1/{deployment_config.project=projects/*}/deployment_config"
-      body: "deployment_config"
+      get: "/v1/{name=projects/*/deploymentConfig}"
     };
   }
 
-  rpc GetDeploymentConfigService(GetDeploymentConfigRequest) returns (DeploymentConfig) {
+  rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {
-      get: "/v1/{project=projects/*}/deployment_config"
+      patch: "/v1/{config.name=projects/*/deploymentConfig}"
+      body: "config"
     };
   }
 }
@@ -196,17 +196,15 @@ message SetIamPolicyRequest {
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SetDeploymentConfigRequest {
-  DeploymentConfig deployment_config = 1 [(google.api.field_behavior) = REQUIRED]; 
-}
-
 message GetDeploymentConfigRequest{
-  // The name of the parent project resource.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the resource.
+  // Format: projects/{project}/deploymentConfig
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-
+message UpdateDeploymentConfigRequest {
+  DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED]; 
+}
 
 message Project {
   // The name of the project.
@@ -406,30 +404,27 @@ enum ReviewStatus {
 }
 
 message DeploymentConfig {
-  // The name of the parent project resource.
-  // Format: projects/{project}
-  string project = 1;
-  ProjectDeploymentConfig project_deployment_config = 2;
-}
-
-message ProjectDeploymentConfig {
-  // The name of the project deployment config. 
+  // The name of the resource.
+  // Format: projects/{project}/deploymentConfig
   string name = 1;
-  ProjectDeploymentSchedule project_deployment_schedules = 2;
-    
+
+  // The title of the deployment config.
+  string title = 2;
+
+  Schedule schedule = 3;
 }
 
-message ProjectDeploymentSchedule {
-  repeated ProjectDeployment project_deployments = 1;    
+message Schedule {
+  repeated ScheduleDeployment deployments = 1;    
 }
 
-message ProjectDeployment {
-  // The name of the project deployment.
-  string name = 1;
-  ProjectDeploymentSpec spec = 2;
+message ScheduleDeployment {
+  // The title of the deployment (stage) in a schedule.
+  string title = 1;
+  DeploymentSpec spec = 2;
 }
 
-message ProjectDeploymentSpec {
+message DeploymentSpec {
   LabelSelector label_selector = 1;
 }
 
