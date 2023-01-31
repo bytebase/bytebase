@@ -45,6 +45,12 @@ ruleList:
       number: 1000
   - type: statement.dml-dry-run
     level: WARNING
+  - type: statement.disallow-add-column-with-default
+    level: WARNING
+  - type: statement.add-check-not-valid
+    level: WARNING
+  - type: statement.disallow-add-not-null
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:
@@ -147,6 +153,14 @@ ruleList:
     level: WARNING
     payload:
       number: 5
+  - type: index.primary-key-type-allowlist
+    level: ERROR
+    payload:
+      list:
+        - SERIAL
+        - BIGSERIAL
+  - type: index.create-concurrently
+    level: WARNING
   - type: system.charset.allowlist
     level: ERROR
     payload:
@@ -157,3 +171,7 @@ ruleList:
     payload:
       list:
         - utf8mb4_0900_ai_ci
+  - type: system.comment.length
+    level: WARNING
+    payload:
+      number: 64

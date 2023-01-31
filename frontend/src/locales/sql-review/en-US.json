@@ -307,6 +307,18 @@
       "title": "Dry run DML statements",
       "description": "Dry run DML statements by EXPLAIN."
     },
+    "statement-disallow-add-column-with-default": {
+      "title": "Disallow add column with default",
+      "description": "The PostgreSQL will lock the table and rewrite the whole table when you adding column with default value. You can separate the adding column, setting default value and backfilling all existing rows."
+    },
+    "statement-add-check-not-valid": {
+      "title": "Add CHECK constraints with NOT VALID option",
+      "description": "Adding CHECK constraints without NOT VALID can cause downtime because it blocks reads and writes. You can manually verify all rows and validate the constraint after creating."
+    },
+    "statement-disallow-add-not-null": {
+      "title": "Disallow add NOT NULL constraints to an existing column",
+      "description": "It can cause downtime because it blocks reads and writes. You can add CHECK constraints with NOT VALID option to avoid this."
+    },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
@@ -345,6 +357,19 @@
         }
       }
     },
+    "index-primary-key-type-allowlist": {
+      "title": "Primary key type allow list",
+      "description": "",
+      "component": {
+        "list": {
+          "title": "Allow list"
+        }
+      }
+    },
+    "index-create-concurrently": {
+      "title": "Create indexes concurrently",
+      "description": "Creating indexes blocks writes (but not reads) on the table until it's done. Use CONCURRENTLY when creates indexes can allow writes to continue."
+    },
     "system-charset-allowlist": {
       "title": "Charset allow list",
       "description": "",
@@ -360,6 +385,15 @@
       "component": {
         "list": {
           "title": "Allow list"
+        }
+      }
+    },
+    "system-comment-length": {
+      "title": "Comment length limit",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "Maximum comment length"
         }
       }
     }

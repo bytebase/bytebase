@@ -9,7 +9,7 @@
   want:
     - status: WARN
       code: 1301
-      title: comment.length
+      title: system.comment.length
       content: The length of comment should be within 20 characters
       line: 1
 - statement: comment on table public is 'is a table name'
@@ -23,6 +23,6 @@
   want:
     - status: WARN
       code: 1301
-      title: comment.length
+      title: system.comment.length
       content: The length of comment should be within 20 characters
       line: 1
