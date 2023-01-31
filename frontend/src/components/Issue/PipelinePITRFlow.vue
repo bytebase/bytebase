@@ -1,10 +1,6 @@
 <template>
   <div class="divide-y">
-    <PipelineStageList>
-      <template #task-name-of-stage="{ stage }">
-        {{ taskNameOfStage(stage) }}
-      </template>
-    </PipelineStageList>
+    <PipelineStageList />
 
     <div
       v-if="taskList.length > 1"
@@ -73,7 +69,6 @@ import { computed } from "vue";
 import { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import {
   activeTask,
-  activeTaskInStage,
   extractDatabaseNameFromTask,
   taskSlug,
   bytesToString,
@@ -106,20 +101,6 @@ const isActiveTask = (task: Task | TaskCreate): boolean => {
   }
   task = task as Task;
   return activeTask(pipeline.value as Pipeline).id === task.id;
-};
-
-const taskNameOfStage = (stage: Stage | StageCreate) => {
-  if (create.value) {
-    return stage.taskList[0].status;
-  }
-  const activeTask = activeTaskInStage(stage as Stage);
-  const { taskList } = stage as Stage;
-  for (let i = 0; i < stage.taskList.length; i++) {
-    if (taskList[i].id == activeTask.id) {
-      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-    }
-  }
-  return activeTask.name;
 };
 
 const taskNameOfTask = (task: Task | TaskCreate) => {

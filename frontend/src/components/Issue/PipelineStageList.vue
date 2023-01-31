@@ -13,11 +13,16 @@
       />
 
       <div class="text" @click.prevent="onClickStage(stage, i)">
-        <span class="text-sm min-w-32 lg:min-w-fit">
+        <span class="text-sm min-w-32 lg:min-w-fit with-underline">
           {{ $t("common.stage") }} - {{ stage.name }}
         </span>
-        <span class="text-xs flex-1 ml-4 lg:ml-0 whitespace-pre-wrap break-all">
-          <slot name="task-name-of-stage" :stage="stage" :index="i" />
+        <span class="text-xs flex flex-col gap-1 md:flex-row md:items-center">
+          <slot name="task-name-of-stage" :stage="stage" :index="i">
+            <div class="whitespace-pre-wrap break-all with-underline">
+              {{ taskNameOfStage(stage) }}
+            </div>
+            <StageSummary :stage="(stage as Stage)" />
+          </slot>
         </span>
       </div>
 
@@ -61,7 +66,9 @@
 import { NPopover } from "naive-ui";
 import { Issue, Stage, StageCreate } from "@/types";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
+import StageSummary from "./StageSummary.vue";
 import { useIssueLogic } from "./logic";
+import { activeTaskInStage } from "@/utils";
 
 const {
   create,
@@ -109,6 +116,13 @@ const stageClass = (stage: Stage | StageCreate, index: number): string[] => {
   return classList;
 };
 
+const taskNameOfStage = (stage: Stage | StageCreate) => {
+  if (create.value) {
+    return stage.taskList[0].status;
+  }
+  return activeTaskInStage(stage as Stage).name;
+};
+
 const onClickStage = (stage: Stage | StageCreate, index: number) => {
   if (create.value) {
     selectStageOrTask(index);
@@ -128,10 +142,9 @@ const onClickStage = (stage: Stage | StageCreate, index: number) => {
 }
 
 .stage-item .text {
-  @apply cursor-pointer ml-4 flex items-center flex-1;
-  @apply lg:flex-col lg:items-start;
+  @apply cursor-pointer ml-4 flex-col space-y-1;
 }
-.stage-item.selected .text {
+.stage-item.selected .text .with-underline {
   @apply underline;
 }
 .stage-item.active .text {

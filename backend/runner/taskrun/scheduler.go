@@ -303,11 +303,12 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+								stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
 								if err != nil {
 									return
 								}
-								if activeStage := utils.GetActiveStage(composedPipeline); activeStage != nil && activeStage.ID != task.StageID {
+								activeStage := utils.GetActiveStage(stages)
+								if activeStage != nil && activeStage.ID != task.StageID {
 									environmentID := activeStage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
 									if err != nil {
@@ -449,7 +450,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 
 	// Update statement activity.
 	if taskPatch.Statement != nil {
-		oldStatement, err := utils.GetTaskStatement(task)
+		oldStatement, err := utils.GetTaskStatement(task.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -743,18 +744,16 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) 
 // scheduleAutoApprovedTasks schedules tasks that are approved automatically.
 func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
+	blocked := false
 	taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
-		StatusList: &taskStatusList,
+		StatusList:   &taskStatusList,
+		StageBlocked: &blocked,
 	})
 	if err != nil {
 		return err
 	}
 
 	for _, task := range taskList {
-		if task.StageBlocked {
-			continue
-		}
-
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 		if err != nil {
 			return err

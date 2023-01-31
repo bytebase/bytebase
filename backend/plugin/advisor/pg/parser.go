@@ -16,6 +16,7 @@ func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 					Code:    advisor.Internal,
 					Title:   "Parser conversion error",
 					Content: err.Error(),
+					Line:    calculateErrorLine(statement),
 				},
 			}
 		}
@@ -25,6 +26,7 @@ func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 				Code:    advisor.StatementSyntaxError,
 				Title:   advisor.SyntaxErrorTitle,
 				Content: err.Error(),
+				Line:    calculateErrorLine(statement),
 			},
 		}
 	}
@@ -35,4 +37,20 @@ func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 		}
 	}
 	return res, nil
+}
+
+func calculateErrorLine(statement string) int {
+	statementList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		//nolint:nilerr
+		return 1
+	}
+
+	for _, stmt := range statementList {
+		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, stmt.Text); err != nil {
+			return stmt.LastLine
+		}
+	}
+
+	return 0
 }

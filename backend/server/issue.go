@@ -203,11 +203,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return err
 			}
 			updateIssueMessage.Assignee = assignee
-			composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+			stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStage(composedPipeline)
+			activeStage := utils.GetActiveStage(stages)
 			// When all stages have finished, assignee can be anyone such as creator.
 			if activeStage != nil {
 				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
@@ -869,6 +869,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 	}
+	databaseMap := make(map[int]*store.DatabaseMessage)
+	for _, database := range databases {
+		databaseMap[database.UID] = database
+	}
+
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
 		migrationDetail := c.DetailList[0]
@@ -884,10 +889,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
-		databaseMap := make(map[int]*store.DatabaseMessage)
-		for _, database := range databases {
-			databaseMap[database.UID] = database
-		}
 		for _, d := range c.DetailList {
 			database, ok := databaseMap[d.DatabaseID]
 			if !ok {
@@ -909,7 +910,22 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 			}
 			for i, databaseList := range matrix {
-				aggregatedMatrix[i] = append(aggregatedMatrix[i], databaseList...)
+				if len(databaseList) == 0 {
+					continue
+				} else if len(databaseList) > 1 {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "should be at most one database in the matrix stage")
+				}
+				database := databaseList[0]
+				found := false
+				for _, v := range aggregatedMatrix[i] {
+					if v == database {
+						found = true
+						break
+					}
+				}
+				if !found {
+					aggregatedMatrix[i] = append(aggregatedMatrix[i], database)
+				}
 			}
 			databaseToMigrationList[database.UID] = append(databaseToMigrationList[database.UID], d)
 		}

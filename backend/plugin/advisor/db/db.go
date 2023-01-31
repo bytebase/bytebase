@@ -11,6 +11,7 @@ import (
 // nolint
 type Type string
 
+// TODO(d): use a centric database type.
 const (
 	// MySQL is the database type for MYSQL.
 	MySQL Type = "MYSQL"

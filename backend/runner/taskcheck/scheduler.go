@@ -256,7 +256,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	statement, err := utils.GetTaskStatement(task)
+	statement, err := utils.GetTaskStatement(task.Payload)
 	if err != nil {
 		return nil, err
 	}

@@ -47,6 +47,8 @@ import {
   useRouterStore,
   useDBSchemaStore,
   useConnectionTreeStore,
+  useOnboardingStateStore,
+  useTabStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -56,6 +58,7 @@ const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
+const SQL_EDITOR_HOME_MODULE = "sql-editor.home";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -129,10 +132,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
-                      // "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.instance.create",
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.user.manage",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -140,8 +140,6 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.user.manage",
                     ];
                 const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
@@ -149,9 +147,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
-                      // "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.instance.create",
-                      "quickaction.bb.project.create",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -159,21 +155,18 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
-                      "quickaction.bb.project.create",
                     ];
                 const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.project.create",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
-                      "quickaction.bb.project.create",
                     ];
                 return new Map([
                   ["OWNER", ownerList],
@@ -871,7 +864,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: "",
-        name: "sql-editor.home",
+        name: SQL_EDITOR_HOME_MODULE,
         meta: { title: () => "SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
@@ -984,6 +977,7 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_RESET_MODULE ||
     to.name === PASSWORD_FORGOT_MODULE
   ) {
+    useTabStore().reset();
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
@@ -1028,6 +1022,19 @@ router.beforeEach((to, from, next) => {
   ) {
     window.location.href = from.query.redirect;
     return;
+  }
+
+  if (to.name === SQL_EDITOR_HOME_MODULE) {
+    const onboardingStateStore = useOnboardingStateStore();
+    if (onboardingStateStore.getStateByKey("sql-editor")) {
+      // Open the "Sample Sheet" when the first time onboarding SQL Editor
+      onboardingStateStore.consume("sql-editor");
+      next({
+        path: `/sql-editor/sheet/sample-sheet-101`,
+        replace: true,
+      });
+      return;
+    }
   }
 
   const currentUser = authStore.currentUser;

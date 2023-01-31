@@ -38,9 +38,9 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 	if settingName == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
 	}
-
+	apiSettingName := api.SettingName(settingName)
 	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: api.SettingName(settingName),
+		Name: &apiSettingName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get setting: %v", err)

@@ -2,6 +2,7 @@ import { SQLResultSet } from "./sqlAdvice";
 import { ExecuteConfig, ExecuteOption } from "./tab";
 
 export type WebTerminalQueryItem = {
+  id: string;
   sql: string;
   executeParams?: {
     query: string;
