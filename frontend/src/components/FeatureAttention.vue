@@ -51,7 +51,7 @@ const actionText = computed(() => {
 
 const descriptionText = computed(() => {
   const startTrial = subscriptionStore.canUpgradeTrial
-    ? t("subscription.upgrade-trial").toLowerCase()
+    ? t("subscription.upgrade-trial")
     : t("subscription.trial-for-days", {
         days: subscriptionStore.trialingDays,
       });
@@ -64,7 +64,7 @@ const descriptionText = computed(() => {
     requiredPlan: t(
       `subscription.plan.${planTypeToString(requiredPlan)}.title`
     ),
-    startTrial: startTrial.toLowerCase(),
+    startTrial: startTrial,
   });
 
   return `${props.description}\n${trialText}`;
