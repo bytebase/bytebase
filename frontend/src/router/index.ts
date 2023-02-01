@@ -1039,6 +1039,36 @@ router.beforeEach((to, from, next) => {
 
   const currentUser = authStore.currentUser;
 
+  if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
+    if (
+      !hasWorkspacePermission(
+        "bb.permission.workspace.manage-im-integration",
+        currentUser.role
+      )
+    ) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
+  if (to.name?.toString().startsWith("setting.workspace.sso")) {
+    if (
+      !hasWorkspacePermission(
+        "bb.permission.workspace.manage-sso",
+        currentUser.role
+      )
+    ) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
   if (to.name?.toString().startsWith("setting.workspace.version-control")) {
     if (
       !hasWorkspacePermission(
