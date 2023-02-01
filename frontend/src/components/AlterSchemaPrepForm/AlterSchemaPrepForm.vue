@@ -33,6 +33,22 @@
                     (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
                   "
                 >
+                  <template
+                    #selection-all="{ databaseList: renderedDatabaseList }"
+                  >
+                    <input
+                      v-if="renderedDatabaseList.length > 0"
+                      type="checkbox"
+                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                      v-bind="getAllSelectionState(renderedDatabaseList)"
+                      @input="
+                        toggleAllDatabasesSelection(
+                          renderedDatabaseList,
+                          ($event.target as HTMLInputElement).checked
+                        )
+                      "
+                    />
+                  </template>
                   <template #selection="{ database }">
                     <input
                       type="checkbox"
@@ -53,7 +69,7 @@
                 <YAxisRadioGroup
                   v-else
                   v-model:label="state.label"
-                  class="text-sm mr-px mt-px"
+                  class="text-sm m-px"
                 />
               </template>
             </NTabs>
@@ -304,8 +320,14 @@ const databaseList = computed(() => {
 
 const flattenSelectedDatabaseIdList = computed(() => {
   const flattenDatabaseIdList: DatabaseId[] = [];
-  for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
-    flattenDatabaseIdList.push(...databaseIdList);
+  if (isTenantProject.value && state.alterType === "MULTI_DB") {
+    for (const db of state.selectedDatabaseIdListForTenantMode) {
+      flattenDatabaseIdList.push(db);
+    }
+  } else {
+    for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
+      flattenDatabaseIdList.push(...databaseIdList);
+    }
   }
   return flattenDatabaseIdList;
 });
@@ -413,6 +435,36 @@ const allowGenerateTenant = computed(() => {
 
   return true;
 });
+
+const getAllSelectionState = (
+  databaseList: Database[]
+): { checked: boolean; indeterminate: boolean } => {
+  const set = state.selectedDatabaseIdListForTenantMode;
+
+  const checked = databaseList.every((db) => set.has(db.id));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
+
+  return {
+    checked,
+    indeterminate,
+  };
+};
+
+const toggleAllDatabasesSelection = (
+  databaseList: Database[],
+  on: boolean
+): void => {
+  const set = state.selectedDatabaseIdListForTenantMode;
+  if (on) {
+    databaseList.forEach((db) => {
+      set.add(db.id);
+    });
+  } else {
+    databaseList.forEach((db) => {
+      set.delete(db.id);
+    });
+  }
+};
 
 const isDatabaseSelected = (database: Database): boolean => {
   return state.selectedDatabaseIdListForTenantMode.has(database.id);
