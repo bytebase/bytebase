@@ -1689,6 +1689,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "使用只读副本连接到只读数据源。"
+      },
+      "bb-feature-sso": {
+        "title": "Single sign-on (SSO)",
+        "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
       }
     }
   },

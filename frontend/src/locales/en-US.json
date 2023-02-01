@@ -403,7 +403,7 @@
     },
     "sso": {
       "create": "Create SSO",
-      "description": "Single sign-on (SSO) is an authentication method that enables users to sign in to multiple applications and websites with a single set of credentials.",
+      "description": "Single sign-on (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "deletion": "Delete this SSO",
       "form": {
         "redirect-url": "Authorization redirect url",
@@ -1688,6 +1688,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "Connect to a read replica for the read-only data source."
+      },
+      "bb-feature-sso": {
+        "title": "Single sign-on (SSO)",
+        "desc": "Enables users to securely authenticate with multiple applications and websites via a single set of credentials."
       }
     }
   },
