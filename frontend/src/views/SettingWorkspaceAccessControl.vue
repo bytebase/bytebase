@@ -69,9 +69,6 @@
             </div>
           </BBTableCell>
           <BBTableCell>
-            {{ humanizeTs(policy.updatedTs) }}
-          </BBTableCell>
-          <BBTableCell>
             <div class="flex items-center justify-center">
               <NPopconfirm @positive-click="handleRemove(policy)">
                 <template #trigger>
