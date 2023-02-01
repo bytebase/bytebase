@@ -5,8 +5,9 @@
         {{ $t("settings.sso.description") }}
       </div>
       <div>
-        <button class="btn-primary" @click="state.showCreatingSSOModal = true">
+        <button class="btn-primary" @click="handleCreateSSO">
           {{ $t("common.create") }}
+          <FeatureBadge :feature="'bb.feature.sso'" class="ml-2" />
         </button>
       </div>
     </div>
@@ -60,6 +61,12 @@
       @confirm="handleCreateIdentityProvider"
     />
   </BBModal>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.sso"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -70,8 +77,10 @@ import { useIdentityProviderStore } from "@/store/modules/idp";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
+import { featureToRef } from "@/store";
 
 interface LocalState {
+  showFeatureModal: boolean;
   showCreatingSSOModal: boolean;
   selectedIdentityProviderName: string;
 }
@@ -79,10 +88,12 @@ interface LocalState {
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
+  showFeatureModal: false,
   showCreatingSSOModal: false,
   selectedIdentityProviderName: "",
 });
 const identityProviderStore = useIdentityProviderStore();
+const hasSSOFeature = featureToRef("bb.feature.sso");
 
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
@@ -121,6 +132,14 @@ watch(
     }
   }
 );
+
+const handleCreateSSO = () => {
+  if (!hasSSOFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+  state.showCreatingSSOModal = true;
+};
 
 const hideCreateSSOModal = () => {
   state.showCreatingSSOModal = false;
