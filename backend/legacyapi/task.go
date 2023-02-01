@@ -285,7 +285,6 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
-	VCSPushEvent      *vcs.PushEvent
 }
 
 // TaskFind is the API message for finding tasks.

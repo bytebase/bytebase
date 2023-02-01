@@ -458,7 +458,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 		return true, nil
 	}
 
-	if vcsPushEvent != nil {
+	if vcsPushEvent == nil {
 		return false, nil
 	}
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
