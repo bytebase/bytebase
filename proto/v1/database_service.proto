@@ -65,7 +65,7 @@ service DatabaseService {
 
   rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {
-      patch: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"
+      patch: "/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"
       body: "setting"
     };
     option (google.api.method_signature) = "setting,update_mask";
@@ -159,10 +159,6 @@ message GetBackupSettingRequest {
 }
 
 message UpdateBackupSettingRequest {
-  // The name of the database backup setting.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
   // The database backup setting to update.
   BackupSetting setting = 2 [(google.api.field_behavior) = REQUIRED];
 
@@ -384,15 +380,19 @@ message DatabaseSchema {
 
 // BackupSetting is the setting for database backup.
 message BackupSetting {
+  // The name of the database backup setting.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+  string name = 1;
+
   // The default maximum age of a Backup created via this BackupPlan.
   // If specified, a Backup will be automatically deleted after its age reaches.
   // If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
   // It will be rounded up to the number of days.
-  google.protobuf.Duration backup_retain_duration = 1;
+  google.protobuf.Duration backup_retain_duration = 2;
 
   // Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
   // Support hour of day, day of week. (UTC time)
   // 
   // Default (empty): Disable automatic backup.
-  string cron_schedule = 2;
+  string cron_schedule = 3;
 }

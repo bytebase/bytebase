@@ -114,11 +114,6 @@ export interface GetBackupSettingRequest {
 }
 
 export interface UpdateBackupSettingRequest {
-  /**
-   * The name of the database to update the backup setting.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
-   */
-  name: string;
   /** The database backup setting to update. */
   setting?: BackupSetting;
   /** The list of fields to update. */
@@ -309,6 +304,11 @@ export interface DatabaseSchema {
 
 /** BackupSetting is the setting for database backup. */
 export interface BackupSetting {
+  /**
+   * The name of the database backup setting.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+   */
+  name: string;
   /**
    * The default maximum age of a Backup created via this BackupPlan.
    * If specified, a Backup will be automatically deleted after its age reaches.
@@ -829,14 +829,11 @@ export const GetBackupSettingRequest = {
 };
 
 function createBaseUpdateBackupSettingRequest(): UpdateBackupSettingRequest {
-  return { name: "", setting: undefined, updateMask: undefined };
+  return { setting: undefined, updateMask: undefined };
 }
 
 export const UpdateBackupSettingRequest = {
   encode(message: UpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
     if (message.setting !== undefined) {
       BackupSetting.encode(message.setting, writer.uint32(18).fork()).ldelim();
     }
@@ -853,9 +850,6 @@ export const UpdateBackupSettingRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
         case 2:
           message.setting = BackupSetting.decode(reader, reader.uint32());
           break;
@@ -872,7 +866,6 @@ export const UpdateBackupSettingRequest = {
 
   fromJSON(object: any): UpdateBackupSettingRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
       setting: isSet(object.setting) ? BackupSetting.fromJSON(object.setting) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
@@ -880,7 +873,6 @@ export const UpdateBackupSettingRequest = {
 
   toJSON(message: UpdateBackupSettingRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
     message.setting !== undefined &&
       (obj.setting = message.setting ? BackupSetting.toJSON(message.setting) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
@@ -889,7 +881,6 @@ export const UpdateBackupSettingRequest = {
 
   fromPartial(object: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
     const message = createBaseUpdateBackupSettingRequest();
-    message.name = object.name ?? "";
     message.setting = (object.setting !== undefined && object.setting !== null)
       ? BackupSetting.fromPartial(object.setting)
       : undefined;
@@ -1969,16 +1960,19 @@ export const DatabaseSchema = {
 };
 
 function createBaseBackupSetting(): BackupSetting {
-  return { backupRetainDuration: undefined, cronSchedule: "" };
+  return { name: "", backupRetainDuration: undefined, cronSchedule: "" };
 }
 
 export const BackupSetting = {
   encode(message: BackupSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
     if (message.backupRetainDuration !== undefined) {
-      Duration.encode(message.backupRetainDuration, writer.uint32(10).fork()).ldelim();
+      Duration.encode(message.backupRetainDuration, writer.uint32(18).fork()).ldelim();
     }
     if (message.cronSchedule !== "") {
-      writer.uint32(18).string(message.cronSchedule);
+      writer.uint32(26).string(message.cronSchedule);
     }
     return writer;
   },
@@ -1991,9 +1985,12 @@ export const BackupSetting = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
+          message.name = reader.string();
           break;
         case 2:
+          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
+          break;
+        case 3:
           message.cronSchedule = reader.string();
           break;
         default:
@@ -2006,6 +2003,7 @@ export const BackupSetting = {
 
   fromJSON(object: any): BackupSetting {
     return {
+      name: isSet(object.name) ? String(object.name) : "",
       backupRetainDuration: isSet(object.backupRetainDuration)
         ? Duration.fromJSON(object.backupRetainDuration)
         : undefined,
@@ -2015,6 +2013,7 @@ export const BackupSetting = {
 
   toJSON(message: BackupSetting): unknown {
     const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
     message.backupRetainDuration !== undefined && (obj.backupRetainDuration = message.backupRetainDuration
       ? Duration.toJSON(message.backupRetainDuration)
       : undefined);
@@ -2024,6 +2023,7 @@ export const BackupSetting = {
 
   fromPartial(object: DeepPartial<BackupSetting>): BackupSetting {
     const message = createBaseBackupSetting();
+    message.name = object.name ?? "";
     message.backupRetainDuration = (object.backupRetainDuration !== undefined && object.backupRetainDuration !== null)
       ? Duration.fromPartial(object.backupRetainDuration)
       : undefined;
