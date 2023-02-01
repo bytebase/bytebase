@@ -308,15 +308,15 @@
       "title": "试运行 DML 语句",
       "description": "使用 EXPLAIN 语句试运行 DML。"
     },
-    "statement.disallow-add-column-with-default": {
+    "statement-disallow-add-column-with-default": {
       "title": "增加列时不能同时设置默认值",
       "description": "增加列的同时设置默认值会导致 PostgreSQL 锁表并且重写所有行的数据。可以分别进行添加列、设置默认值和回填已有行操作避免可能的停机。"
     },
-    "statement.add-check-not-valid": {
+    "statement-add-check-not-valid": {
       "title": "添加 CHECK 约束时使用 NOT VALID 参数",
       "description": "添加 CHECK 约束时会阻塞读写操作，可能导致停机。可以使用 NOT VALID 参数在添加 CHECK 约束时跳过检查，并在之后分别进行手动检查已有数据和使约束生效来避免可能的停机。"
     },
-    "statement.disallow-add-not-null": {
+    "statement-disallow-add-not-null": {
       "title": "避免 NOT NULL 到已有列",
       "description": "添加 NOT NULL 到已有列会阻塞读写操作，可能导致停机。可以使用 CHECK (column IS NOT NULL) NOT VALID 绕过，避免可能的停机。"
     },
