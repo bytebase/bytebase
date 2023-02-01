@@ -159,7 +159,7 @@ message GetBackupSettingRequest {
 }
 
 message UpdateBackupSettingRequest {
-  // The name of the database to update the backup setting.
+  // The name of the database backup setting.
   // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
