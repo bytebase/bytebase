@@ -39,13 +39,13 @@
                 </span>
               </template>
               <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
-                {{ $t("subscription.upgrade-trial").toLowerCase() }}
+                {{ $t("subscription.upgrade-trial") }}
               </template>
               <template v-else #startTrial>
                 {{
                   $t("subscription.trial-for-days", {
                     days: subscriptionStore.trialingDays,
-                  }).toLowerCase()
+                  })
                 }}
               </template>
             </i18n-t>
