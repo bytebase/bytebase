@@ -4,6 +4,8 @@ import { TabMode } from "@/types";
 import { useTabStore, useWebTerminalStore } from "@/store";
 import { minmax } from "@/utils";
 
+const MAX_HISTORY_ITEM_COUNT = 1000;
+
 type HistoryItem = {
   statement: string;
 };
@@ -42,8 +44,12 @@ export const useHistory = () => {
   const push = (item: HistoryItem) => {
     const stack = currentStack();
     if (!stack) return;
-    stack.list.push(item);
-    stack.index = stack.list.length - 1;
+    const { list } = stack;
+    list.push(item);
+    if (list.length > MAX_HISTORY_ITEM_COUNT) {
+      list.shift();
+    }
+    stack.index = list.length - 1;
   };
 
   const move = (direction: "up" | "down") => {
