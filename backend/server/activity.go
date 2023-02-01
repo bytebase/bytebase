@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {
@@ -27,7 +28,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 
 		activityCreate.Level = api.ActivityInfo
 		activityCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		issue, err := s.store.GetIssueByID(ctx, activityCreate.ContainerID)
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &activityCreate.ContainerID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
 		}
@@ -36,7 +37,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
-			IssueName: issue.Name,
+			IssueName: issue.Title,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)

@@ -31,7 +31,7 @@ type Manager struct {
 
 // Metadata is the activity metadata.
 type Metadata struct {
-	Issue *api.Issue
+	Issue *store.IssueMessage
 }
 
 // NewManager creates an activity manager.
@@ -127,7 +127,7 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 	}
 	postInbox, err := shouldPostInbox(activity, create.Type)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.Issue.Name)
+		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.Issue.Title)
 	}
 	if postInbox {
 		if err := m.postInboxIssueActivity(ctx, meta.Issue, activity.ID); err != nil {
@@ -136,12 +136,12 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 	}
 
 	hookFind := &api.ProjectWebhookFind{
-		ProjectID:    &meta.Issue.ProjectID,
+		ProjectID:    &meta.Issue.Project.UID,
 		ActivityType: &create.Type,
 	}
 	webhookList, err := m.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", meta.Issue.Name)
+		return nil, errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", meta.Issue.Title)
 	}
 	if len(webhookList) == 0 {
 		return activity, nil
@@ -149,7 +149,7 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 
 	updater, err := m.store.GetUserByID(ctx, create.CreatorID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.Issue.Name)
+		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.Issue.Title)
 	}
 	if updater == nil {
 		return nil, errors.Errorf("updater user not found for ID %v", create.CreatorID)
@@ -158,7 +158,7 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
 	if err != nil {
 		log.Warn("Failed to get webhook context",
-			zap.String("issue_name", meta.Issue.Name),
+			zap.String("issue_name", meta.Issue.Title),
 			zap.Error(err))
 		return activity, nil
 	}
@@ -192,28 +192,28 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 	var webhookTaskResult *webhook.TaskResult
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s/issue/%s", m.profile.ExternalURL, api.IssueSlug(meta.Issue))
+	link := fmt.Sprintf("%s/issue/%s-%d", m.profile.ExternalURL, slug.Make(meta.Issue.Title), meta.Issue.UID)
 	switch activity.Type {
 	case api.ActivityIssueCreate:
-		title = fmt.Sprintf("Issue created - %s", meta.Issue.Name)
+		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)
 	case api.ActivityIssueStatusUpdate:
 		switch meta.Issue.Status {
 		case "OPEN":
-			title = fmt.Sprintf("Issue reopened - %s", meta.Issue.Name)
+			title = fmt.Sprintf("Issue reopened - %s", meta.Issue.Title)
 		case "DONE":
 			level = webhook.WebhookSuccess
-			title = fmt.Sprintf("Issue resolved - %s", meta.Issue.Name)
+			title = fmt.Sprintf("Issue resolved - %s", meta.Issue.Title)
 		case "CANCELED":
-			title = fmt.Sprintf("Issue canceled - %s", meta.Issue.Name)
+			title = fmt.Sprintf("Issue canceled - %s", meta.Issue.Title)
 		}
 	case api.ActivityIssueCommentCreate:
-		title = fmt.Sprintf("Comment created - %s", meta.Issue.Name)
+		title = fmt.Sprintf("Comment created - %s", meta.Issue.Title)
 		link += fmt.Sprintf("#activity%d", activity.ID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
 			log.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Name),
+				zap.String("issue_name", meta.Issue.Title),
 				zap.Error(err))
 			return webhookCtx, err
 		}
@@ -225,7 +225,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 					oldID, err := strconv.Atoi(update.OldValue)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, old assignee id is not number",
-							zap.String("issue_name", meta.Issue.Name),
+							zap.String("issue_name", meta.Issue.Title),
 							zap.String("old_assignee_id", update.OldValue),
 							zap.Error(err))
 						return webhookCtx, err
@@ -233,7 +233,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 					oldAssignee, err = m.store.GetUserByID(ctx, oldID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
-							zap.String("issue_name", meta.Issue.Name),
+							zap.String("issue_name", meta.Issue.Title),
 							zap.String("old_assignee_id", update.OldValue),
 							zap.Error(err))
 						return webhookCtx, err
@@ -241,7 +241,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 					if oldAssignee == nil {
 						err := errors.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
 						log.Warn(err.Error(),
-							zap.String("issue_name", meta.Issue.Name),
+							zap.String("issue_name", meta.Issue.Title),
 							zap.String("old_assignee_id", update.OldValue),
 							zap.Error(err))
 						return webhookCtx, err
@@ -252,7 +252,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 					newID, err := strconv.Atoi(update.NewValue)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
-							zap.String("issue_name", meta.Issue.Name),
+							zap.String("issue_name", meta.Issue.Title),
 							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
 						return webhookCtx, err
@@ -260,7 +260,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 					newAssignee, err = m.store.GetUserByID(ctx, newID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
-							zap.String("issue_name", meta.Issue.Name),
+							zap.String("issue_name", meta.Issue.Title),
 							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
 						return webhookCtx, err
@@ -268,34 +268,34 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 					if newAssignee == nil {
 						err := errors.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
 						log.Warn(err.Error(),
-							zap.String("issue_name", meta.Issue.Name),
+							zap.String("issue_name", meta.Issue.Title),
 							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
 						return webhookCtx, err
 					}
 
 					if oldAssignee != nil && newAssignee != nil {
-						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.Issue.Name)
+						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.Issue.Title)
 					} else if newAssignee != nil {
-						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.Issue.Name)
+						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.Issue.Title)
 					} else if oldAssignee != nil {
-						title = fmt.Sprintf("Unassigned issue from %s - %s", newAssignee.Name, meta.Issue.Name)
+						title = fmt.Sprintf("Unassigned issue from %s - %s", newAssignee.Name, meta.Issue.Title)
 					}
 				}
 			}
 		case api.IssueFieldDescription:
-			title = fmt.Sprintf("Changed issue description - %s", meta.Issue.Name)
+			title = fmt.Sprintf("Changed issue description - %s", meta.Issue.Title)
 		case api.IssueFieldName:
-			title = fmt.Sprintf("Changed issue name - %s", meta.Issue.Name)
+			title = fmt.Sprintf("Changed issue name - %s", meta.Issue.Title)
 		default:
-			title = fmt.Sprintf("Updated issue - %s", meta.Issue.Name)
+			title = fmt.Sprintf("Updated issue - %s", meta.Issue.Title)
 		}
 	case api.ActivityPipelineStageStatusUpdate:
 		payload := &api.ActivityPipelineStageStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
 			log.Warn(
 				"failed to post webhook event after stage status updating, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Name),
+				zap.String("issue_name", meta.Issue.Title),
 				zap.Error(err))
 			return webhookCtx, err
 		}
@@ -311,7 +311,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
 			log.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Name),
+				zap.String("issue_name", meta.Issue.Title),
 				zap.Error(err))
 			return webhookCtx, err
 		}
@@ -319,7 +319,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		task, err := m.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
 			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
-				zap.String("issue_name", meta.Issue.Name),
+				zap.String("issue_name", meta.Issue.Title),
 				zap.Int("task_id", update.TaskID),
 				zap.Error(err))
 			return webhookCtx, err
@@ -327,7 +327,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		if task == nil {
 			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
 			log.Warn(err.Error(),
-				zap.String("issue_name", meta.Issue.Name),
+				zap.String("issue_name", meta.Issue.Title),
 				zap.Int("task_id", update.TaskID),
 				zap.Error(err))
 			return webhookCtx, err
@@ -398,15 +398,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		ActivityType: string(activity.Type),
 		Title:        title,
 		Issue: &webhook.Issue{
-			ID:          meta.Issue.ID,
-			Name:        meta.Issue.Name,
+			ID:          meta.Issue.UID,
+			Name:        meta.Issue.Title,
 			Status:      string(meta.Issue.Status),
 			Type:        string(meta.Issue.Type),
 			Description: meta.Issue.Description,
 		},
 		Project: &webhook.Project{
-			ID:   meta.Issue.ProjectID,
-			Name: meta.Issue.Project.Name,
+			ID:   meta.Issue.Project.UID,
+			Name: meta.Issue.Project.Title,
 		},
 		TaskResult:   webhookTaskResult,
 		Description:  activity.Comment,
@@ -418,29 +418,29 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 	return webhookCtx, nil
 }
 
-func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *api.Issue, activityID int) error {
-	if issue.CreatorID != api.SystemBotID {
+func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.IssueMessage, activityID int) error {
+	if issue.Creator.ID != api.SystemBotID {
 		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.CreatorID,
+			ReceiverID: issue.Creator.ID,
 			ActivityID: activityID,
 		}
 		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
-			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
+			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.Creator.ID)
 		}
 	}
 
-	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
+	if issue.Assignee.ID != api.SystemBotID && issue.Assignee.ID != issue.Creator.ID {
 		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.AssigneeID,
+			ReceiverID: issue.Assignee.ID,
 			ActivityID: activityID,
 		}
 		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
-			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
+			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.Assignee.ID)
 		}
 	}
 
-	for _, subscriber := range issue.SubscriberList {
-		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.CreatorID && subscriber.ID != issue.AssigneeID {
+	for _, subscriber := range issue.Subscribers {
+		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.Creator.ID && subscriber.ID != issue.Assignee.ID {
 			inboxCreate := &api.InboxCreate{
 				ReceiverID: subscriber.ID,
 				ActivityID: activityID,
