@@ -358,7 +358,7 @@
         }
       }
     },
-    "index.primary-key-type-allowlist": {
+    "index-primary-key-type-allowlist": {
       "title": "主键列的类型限制",
       "description": "",
       "component": {
@@ -367,7 +367,7 @@
         }
       }
     },
-    "index.create-concurrently": {
+    "index-create-concurrently": {
       "title": "创建索引时使用 CONCURRENTLY 参数",
       "description": "创建索引会导致无法写表。可以使用 CONCURRENTLY 参数避免阻塞写表操作。"
     },
@@ -389,7 +389,7 @@
         }
       }
     },
-    "system.comment.length": {
+    "system-comment.length": {
       "title": "注释长度限制",
       "description": "",
       "component": {
