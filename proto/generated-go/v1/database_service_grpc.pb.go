@@ -29,7 +29,6 @@ type DatabaseServiceClient interface {
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
-	SearchBackupSetting(ctx context.Context, in *SearchBackupSettingRequest, opts ...grpc.CallOption) (*SearchBackupSettingResponse, error)
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	BatchUpdateBackupSetting(ctx context.Context, in *BatchUpdateBackupSettingRequest, opts ...grpc.CallOption) (*BatchUpdateSettingResponse, error)
 }
@@ -105,15 +104,6 @@ func (c *databaseServiceClient) GetBackupSetting(ctx context.Context, in *GetBac
 	return out, nil
 }
 
-func (c *databaseServiceClient) SearchBackupSetting(ctx context.Context, in *SearchBackupSettingRequest, opts ...grpc.CallOption) (*SearchBackupSettingResponse, error) {
-	out := new(SearchBackupSettingResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.DatabaseService/SearchBackupSetting", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *databaseServiceClient) UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error) {
 	out := new(BackupSetting)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.DatabaseService/UpdateBackupSetting", in, out, opts...)
@@ -143,7 +133,6 @@ type DatabaseServiceServer interface {
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
-	SearchBackupSetting(context.Context, *SearchBackupSettingRequest) (*SearchBackupSettingResponse, error)
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
 	BatchUpdateBackupSetting(context.Context, *BatchUpdateBackupSettingRequest) (*BatchUpdateSettingResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
@@ -173,9 +162,6 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *Ge
 }
 func (UnimplementedDatabaseServiceServer) GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBackupSetting not implemented")
-}
-func (UnimplementedDatabaseServiceServer) SearchBackupSetting(context.Context, *SearchBackupSettingRequest) (*SearchBackupSettingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchBackupSetting not implemented")
 }
 func (UnimplementedDatabaseServiceServer) UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBackupSetting not implemented")
@@ -322,24 +308,6 @@ func _DatabaseService_GetBackupSetting_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_SearchBackupSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchBackupSettingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).SearchBackupSetting(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.DatabaseService/SearchBackupSetting",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).SearchBackupSetting(ctx, req.(*SearchBackupSettingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DatabaseService_UpdateBackupSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateBackupSettingRequest)
 	if err := dec(in); err != nil {
@@ -410,10 +378,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBackupSetting",
 			Handler:    _DatabaseService_GetBackupSetting_Handler,
-		},
-		{
-			MethodName: "SearchBackupSetting",
-			Handler:    _DatabaseService_SearchBackupSetting_Handler,
 		},
 		{
 			MethodName: "UpdateBackupSetting",

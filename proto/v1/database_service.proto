@@ -63,12 +63,6 @@ service DatabaseService {
     };
   }
 
-  rpc SearchBackupSetting(SearchBackupSettingRequest) returns (SearchBackupSettingResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=environments/*/instances/*}/databases/backupSetting"
-    };
-  }
-
   rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {
       patch: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"
@@ -83,8 +77,6 @@ service DatabaseService {
       body: "*"
     };
   }
-
-
 }
 
 message GetDatabaseRequest {
@@ -171,39 +163,6 @@ message GetBackupSettingRequest {
   // The name of the database to retrieve backup setting.
   // Format: environments/{environment}/instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SearchBackupSettingRequest {
-  // The parent, which owns this collection of databases.
-  // Format: environments/{environment}/instances/{instance}
-  // Use "environments/-/instances/-" to list all databases from all environments.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Not used.The maximum number of databases to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 databases will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
-
-  // Not used. A page token, received from a previous `ListDatabases` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListDatabases` must match
-  // the call that provided the page token.
-  string page_token = 3;
-
-  // Filter is used to filter databases returned in the list.
-  // For example, "project = projects/{project}" can be used to list databases in a project.
-  string filter = 4;
-}
-
-message SearchBackupSettingResponse {
-  // The databases from the specified request.
-  repeated BackupSetting settings = 1;
-
-  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
 }
 
 message UpdateBackupSettingRequest {

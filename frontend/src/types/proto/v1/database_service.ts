@@ -113,45 +113,6 @@ export interface GetBackupSettingRequest {
   name: string;
 }
 
-export interface SearchBackupSettingRequest {
-  /**
-   * The parent, which owns this collection of databases.
-   * Format: environments/{environment}/instances/{instance}
-   * Use "environments/-/instances/-" to list all databases from all environments.
-   */
-  parent: string;
-  /**
-   * Not used.The maximum number of databases to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 databases will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   */
-  pageSize: number;
-  /**
-   * Not used. A page token, received from a previous `ListDatabases` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListDatabases` must match
-   * the call that provided the page token.
-   */
-  pageToken: string;
-  /**
-   * Filter is used to filter databases returned in the list.
-   * For example, "project = projects/{project}" can be used to list databases in a project.
-   */
-  filter: string;
-}
-
-export interface SearchBackupSettingResponse {
-  /** The databases from the specified request. */
-  settings: BackupSetting[];
-  /**
-   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
-}
-
 export interface UpdateBackupSettingRequest {
   /**
    * The name of the database to retrieve backup setting.
@@ -890,144 +851,6 @@ export const GetBackupSettingRequest = {
   fromPartial(object: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
     const message = createBaseGetBackupSettingRequest();
     message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseSearchBackupSettingRequest(): SearchBackupSettingRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
-}
-
-export const SearchBackupSettingRequest = {
-  encode(message: SearchBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
-    }
-    if (message.filter !== "") {
-      writer.uint32(34).string(message.filter);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchBackupSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchBackupSettingRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.parent = reader.string();
-          break;
-        case 2:
-          message.pageSize = reader.int32();
-          break;
-        case 3:
-          message.pageToken = reader.string();
-          break;
-        case 4:
-          message.filter = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchBackupSettingRequest {
-    return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      filter: isSet(object.filter) ? String(object.filter) : "",
-    };
-  },
-
-  toJSON(message: SearchBackupSettingRequest): unknown {
-    const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.filter !== undefined && (obj.filter = message.filter);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<SearchBackupSettingRequest>): SearchBackupSettingRequest {
-    const message = createBaseSearchBackupSettingRequest();
-    message.parent = object.parent ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    message.filter = object.filter ?? "";
-    return message;
-  },
-};
-
-function createBaseSearchBackupSettingResponse(): SearchBackupSettingResponse {
-  return { settings: [], nextPageToken: "" };
-}
-
-export const SearchBackupSettingResponse = {
-  encode(message: SearchBackupSettingResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.settings) {
-      BackupSetting.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchBackupSettingResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchBackupSettingResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.settings.push(BackupSetting.decode(reader, reader.uint32()));
-          break;
-        case 2:
-          message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchBackupSettingResponse {
-    return {
-      settings: Array.isArray(object?.settings) ? object.settings.map((e: any) => BackupSetting.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: SearchBackupSettingResponse): unknown {
-    const obj: any = {};
-    if (message.settings) {
-      obj.settings = message.settings.map((e) => e ? BackupSetting.toJSON(e) : undefined);
-    } else {
-      obj.settings = [];
-    }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<SearchBackupSettingResponse>): SearchBackupSettingResponse {
-    const message = createBaseSearchBackupSettingResponse();
-    message.settings = object.settings?.map((e) => BackupSetting.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
@@ -2520,14 +2343,6 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    searchBackupSetting: {
-      name: "SearchBackupSetting",
-      requestType: SearchBackupSettingRequest,
-      requestStream: false,
-      responseType: SearchBackupSettingResponse,
-      responseStream: false,
-      options: {},
-    },
     updateBackupSetting: {
       name: "UpdateBackupSetting",
       requestType: UpdateBackupSettingRequest,
@@ -2570,10 +2385,6 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: GetBackupSettingRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BackupSetting>>;
-  searchBackupSetting(
-    request: SearchBackupSettingRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchBackupSettingResponse>>;
   updateBackupSetting(
     request: UpdateBackupSettingRequest,
     context: CallContext & CallContextExt,
@@ -2610,10 +2421,6 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BackupSetting>;
-  searchBackupSetting(
-    request: DeepPartial<SearchBackupSettingRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchBackupSettingResponse>;
   updateBackupSetting(
     request: DeepPartial<UpdateBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,
