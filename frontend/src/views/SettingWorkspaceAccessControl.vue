@@ -369,10 +369,6 @@ const COLUMN_LIST = computed((): BBTableColumn[] => [
     title: t("common.instance"),
   },
   {
-    title: t("common.updated-at"),
-    nowrap: true,
-  },
-  {
     title: t("common.operation"),
     center: true,
     nowrap: true,
