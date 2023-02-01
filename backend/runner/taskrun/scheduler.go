@@ -571,11 +571,7 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 	if issue == nil {
 		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
 	}
-	composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
-	if err != nil {
-		return false, err
-	}
-	groupValue, err := s.getGroupValueForTask(ctx, issue, composedPipeline, task)
+	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get assignee group value for taskID %d", task.ID)
 	}
@@ -602,9 +598,13 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 	return false, nil
 }
 
-func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.IssueMessage, composedPipeline *api.Pipeline, task *store.TaskMessage) (*api.AssigneeGroupValue, error) {
+func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.IssueMessage, task *store.TaskMessage) (*api.AssigneeGroupValue, error) {
 	environmentID := api.UnknownID
-	for _, stage := range composedPipeline.StageList {
+	stages, err := s.store.ListStageV2(ctx, task.PipelineID)
+	if err != nil {
+		return nil, err
+	}
+	for _, stage := range stages {
 		if stage.ID == task.StageID {
 			environmentID = stage.EnvironmentID
 			break
