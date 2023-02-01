@@ -2,6 +2,7 @@
 import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
@@ -102,6 +103,82 @@ export interface GetDatabaseSchemaRequest {
    * Format: environments/{environment}/instances/{instance}/databases/{database}
    */
   name: string;
+}
+
+export interface GetBackupSettingRequest {
+  /**
+   * The name of the database to retrieve backup setting.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  name: string;
+}
+
+export interface SearchBackupSettingRequest {
+  /**
+   * The parent, which owns this collection of databases.
+   * Format: environments/{environment}/instances/{instance}
+   * Use "environments/-/instances/-" to list all databases from all environments.
+   */
+  parent: string;
+  /**
+   * Not used.The maximum number of databases to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListDatabases` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListDatabases` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+  /**
+   * Filter is used to filter databases returned in the list.
+   * For example, "project = projects/{project}" can be used to list databases in a project.
+   */
+  filter: string;
+}
+
+export interface SearchBackupSettingResponse {
+  /** The databases from the specified request. */
+  settings: BackupSetting[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface UpdateBackupSettingRequest {
+  /**
+   * The name of the database to retrieve backup setting.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
+   */
+  name: string;
+  /** The database backup setting to update. */
+  setting?: BackupSetting;
+  /** The list of fields to update. */
+  updateMask?: string[];
+}
+
+export interface BatchUpdateBackupSettingRequest {
+  /**
+   * The parent resource shared by all databases being updated.
+   * Format: environments/{environment}/instances/{instance}
+   * If the operation spans parents, a dash (-) may be accepted as a wildcard.
+   * We only support updating the project of databases for now.
+   */
+  parent: string;
+  /** The request message specifying the resources to update. */
+  requests: UpdateBackupSettingRequest[];
+}
+
+export interface BatchUpdateSettingResponse {
+  /** Backup settings updated. */
+  settings: BackupSetting[];
 }
 
 export interface Database {
@@ -284,6 +361,34 @@ export interface ForeignKeyMetadata {
 export interface DatabaseSchema {
   /** The schema dump from database. */
   schema: string;
+}
+
+export interface BackupRetentionPolicy {
+  /**
+   * The default maximum age of a Backup created via this BackupPlan.
+   * If specified, a Backup will be automatically deleted after its age reaches.
+   * If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
+   * It will be rounded up to the number of days.
+   */
+  backupRetainDuration?: Duration;
+}
+
+export interface BackupSchedule {
+  /**
+   * Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
+   * Support hour of day, day of week. (UTC time)
+   *
+   * Default (empty): Disable automatic backup.
+   */
+  cronSchedule: string;
+}
+
+/** BackupSetting is the setting for database backup. */
+export interface BackupSetting {
+  /** The retention policy for database backup. */
+  retentionPolicy?: BackupRetentionPolicy;
+  /** The schedule for database backup. */
+  schedule?: BackupSchedule;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -738,6 +843,378 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetBackupSettingRequest(): GetBackupSettingRequest {
+  return { name: "" };
+}
+
+export const GetBackupSettingRequest = {
+  encode(message: GetBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetBackupSettingRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
+    const message = createBaseGetBackupSettingRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchBackupSettingRequest(): SearchBackupSettingRequest {
+  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+}
+
+export const SearchBackupSettingRequest = {
+  encode(message: SearchBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
+          message.pageSize = reader.int32();
+          break;
+        case 3:
+          message.pageToken = reader.string();
+          break;
+        case 4:
+          message.filter = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchBackupSettingRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      filter: isSet(object.filter) ? String(object.filter) : "",
+    };
+  },
+
+  toJSON(message: SearchBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.filter !== undefined && (obj.filter = message.filter);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<SearchBackupSettingRequest>): SearchBackupSettingRequest {
+    const message = createBaseSearchBackupSettingRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchBackupSettingResponse(): SearchBackupSettingResponse {
+  return { settings: [], nextPageToken: "" };
+}
+
+export const SearchBackupSettingResponse = {
+  encode(message: SearchBackupSettingResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.settings) {
+      BackupSetting.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchBackupSettingResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchBackupSettingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.settings.push(BackupSetting.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.nextPageToken = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchBackupSettingResponse {
+    return {
+      settings: Array.isArray(object?.settings) ? object.settings.map((e: any) => BackupSetting.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: SearchBackupSettingResponse): unknown {
+    const obj: any = {};
+    if (message.settings) {
+      obj.settings = message.settings.map((e) => e ? BackupSetting.toJSON(e) : undefined);
+    } else {
+      obj.settings = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<SearchBackupSettingResponse>): SearchBackupSettingResponse {
+    const message = createBaseSearchBackupSettingResponse();
+    message.settings = object.settings?.map((e) => BackupSetting.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateBackupSettingRequest(): UpdateBackupSettingRequest {
+  return { name: "", setting: undefined, updateMask: undefined };
+}
+
+export const UpdateBackupSettingRequest = {
+  encode(message: UpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.setting !== undefined) {
+      BackupSetting.encode(message.setting, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.setting = BackupSetting.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateBackupSettingRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      setting: isSet(object.setting) ? BackupSetting.fromJSON(object.setting) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.setting !== undefined &&
+      (obj.setting = message.setting ? BackupSetting.toJSON(message.setting) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
+    const message = createBaseUpdateBackupSettingRequest();
+    message.name = object.name ?? "";
+    message.setting = (object.setting !== undefined && object.setting !== null)
+      ? BackupSetting.fromPartial(object.setting)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseBatchUpdateBackupSettingRequest(): BatchUpdateBackupSettingRequest {
+  return { parent: "", requests: [] };
+}
+
+export const BatchUpdateBackupSettingRequest = {
+  encode(message: BatchUpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    for (const v of message.requests) {
+      UpdateBackupSettingRequest.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchUpdateBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
+          message.requests.push(UpdateBackupSettingRequest.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchUpdateBackupSettingRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      requests: Array.isArray(object?.requests)
+        ? object.requests.map((e: any) => UpdateBackupSettingRequest.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchUpdateBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.requests) {
+      obj.requests = message.requests.map((e) => e ? UpdateBackupSettingRequest.toJSON(e) : undefined);
+    } else {
+      obj.requests = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<BatchUpdateBackupSettingRequest>): BatchUpdateBackupSettingRequest {
+    const message = createBaseBatchUpdateBackupSettingRequest();
+    message.parent = object.parent ?? "";
+    message.requests = object.requests?.map((e) => UpdateBackupSettingRequest.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseBatchUpdateSettingResponse(): BatchUpdateSettingResponse {
+  return { settings: [] };
+}
+
+export const BatchUpdateSettingResponse = {
+  encode(message: BatchUpdateSettingResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.settings) {
+      BackupSetting.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateSettingResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchUpdateSettingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.settings.push(BackupSetting.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchUpdateSettingResponse {
+    return {
+      settings: Array.isArray(object?.settings) ? object.settings.map((e: any) => BackupSetting.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: BatchUpdateSettingResponse): unknown {
+    const obj: any = {};
+    if (message.settings) {
+      obj.settings = message.settings.map((e) => e ? BackupSetting.toJSON(e) : undefined);
+    } else {
+      obj.settings = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<BatchUpdateSettingResponse>): BatchUpdateSettingResponse {
+    const message = createBaseBatchUpdateSettingResponse();
+    message.settings = object.settings?.map((e) => BackupSetting.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1812,6 +2289,176 @@ export const DatabaseSchema = {
   },
 };
 
+function createBaseBackupRetentionPolicy(): BackupRetentionPolicy {
+  return { backupRetainDuration: undefined };
+}
+
+export const BackupRetentionPolicy = {
+  encode(message: BackupRetentionPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.backupRetainDuration !== undefined) {
+      Duration.encode(message.backupRetainDuration, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BackupRetentionPolicy {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBackupRetentionPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BackupRetentionPolicy {
+    return {
+      backupRetainDuration: isSet(object.backupRetainDuration)
+        ? Duration.fromJSON(object.backupRetainDuration)
+        : undefined,
+    };
+  },
+
+  toJSON(message: BackupRetentionPolicy): unknown {
+    const obj: any = {};
+    message.backupRetainDuration !== undefined && (obj.backupRetainDuration = message.backupRetainDuration
+      ? Duration.toJSON(message.backupRetainDuration)
+      : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<BackupRetentionPolicy>): BackupRetentionPolicy {
+    const message = createBaseBackupRetentionPolicy();
+    message.backupRetainDuration = (object.backupRetainDuration !== undefined && object.backupRetainDuration !== null)
+      ? Duration.fromPartial(object.backupRetainDuration)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseBackupSchedule(): BackupSchedule {
+  return { cronSchedule: "" };
+}
+
+export const BackupSchedule = {
+  encode(message: BackupSchedule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.cronSchedule !== "") {
+      writer.uint32(10).string(message.cronSchedule);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BackupSchedule {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBackupSchedule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.cronSchedule = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BackupSchedule {
+    return { cronSchedule: isSet(object.cronSchedule) ? String(object.cronSchedule) : "" };
+  },
+
+  toJSON(message: BackupSchedule): unknown {
+    const obj: any = {};
+    message.cronSchedule !== undefined && (obj.cronSchedule = message.cronSchedule);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<BackupSchedule>): BackupSchedule {
+    const message = createBaseBackupSchedule();
+    message.cronSchedule = object.cronSchedule ?? "";
+    return message;
+  },
+};
+
+function createBaseBackupSetting(): BackupSetting {
+  return { retentionPolicy: undefined, schedule: undefined };
+}
+
+export const BackupSetting = {
+  encode(message: BackupSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.retentionPolicy !== undefined) {
+      BackupRetentionPolicy.encode(message.retentionPolicy, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.schedule !== undefined) {
+      BackupSchedule.encode(message.schedule, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BackupSetting {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBackupSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.retentionPolicy = BackupRetentionPolicy.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.schedule = BackupSchedule.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BackupSetting {
+    return {
+      retentionPolicy: isSet(object.retentionPolicy)
+        ? BackupRetentionPolicy.fromJSON(object.retentionPolicy)
+        : undefined,
+      schedule: isSet(object.schedule) ? BackupSchedule.fromJSON(object.schedule) : undefined,
+    };
+  },
+
+  toJSON(message: BackupSetting): unknown {
+    const obj: any = {};
+    message.retentionPolicy !== undefined &&
+      (obj.retentionPolicy = message.retentionPolicy
+        ? BackupRetentionPolicy.toJSON(message.retentionPolicy)
+        : undefined);
+    message.schedule !== undefined &&
+      (obj.schedule = message.schedule ? BackupSchedule.toJSON(message.schedule) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<BackupSetting>): BackupSetting {
+    const message = createBaseBackupSetting();
+    message.retentionPolicy = (object.retentionPolicy !== undefined && object.retentionPolicy !== null)
+      ? BackupRetentionPolicy.fromPartial(object.retentionPolicy)
+      : undefined;
+    message.schedule = (object.schedule !== undefined && object.schedule !== null)
+      ? BackupSchedule.fromPartial(object.schedule)
+      : undefined;
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -1865,6 +2512,38 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    getBackupSetting: {
+      name: "GetBackupSetting",
+      requestType: GetBackupSettingRequest,
+      requestStream: false,
+      responseType: BackupSetting,
+      responseStream: false,
+      options: {},
+    },
+    searchBackupSetting: {
+      name: "SearchBackupSetting",
+      requestType: SearchBackupSettingRequest,
+      requestStream: false,
+      responseType: SearchBackupSettingResponse,
+      responseStream: false,
+      options: {},
+    },
+    updateBackupSetting: {
+      name: "UpdateBackupSetting",
+      requestType: UpdateBackupSettingRequest,
+      requestStream: false,
+      responseType: BackupSetting,
+      responseStream: false,
+      options: {},
+    },
+    batchUpdateBackupSetting: {
+      name: "BatchUpdateBackupSetting",
+      requestType: BatchUpdateBackupSettingRequest,
+      requestStream: false,
+      responseType: BatchUpdateSettingResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1887,6 +2566,22 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: GetDatabaseSchemaRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<DatabaseSchema>>;
+  getBackupSetting(
+    request: GetBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BackupSetting>>;
+  searchBackupSetting(
+    request: SearchBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SearchBackupSettingResponse>>;
+  updateBackupSetting(
+    request: UpdateBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BackupSetting>>;
+  batchUpdateBackupSetting(
+    request: BatchUpdateBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BatchUpdateSettingResponse>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -1911,6 +2606,22 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetDatabaseSchemaRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<DatabaseSchema>;
+  getBackupSetting(
+    request: DeepPartial<GetBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BackupSetting>;
+  searchBackupSetting(
+    request: DeepPartial<SearchBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SearchBackupSettingResponse>;
+  updateBackupSetting(
+    request: DeepPartial<UpdateBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BackupSetting>;
+  batchUpdateBackupSetting(
+    request: DeepPartial<BatchUpdateBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BatchUpdateSettingResponse>;
 }
 
 declare var self: any | undefined;
