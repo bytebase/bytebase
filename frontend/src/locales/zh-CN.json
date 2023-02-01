@@ -639,7 +639,6 @@
   },
   "quick-action": {
     "create-db": "创建数据库",
-    "choose-db": "选择数据库",
     "new-db": "创建数据库",
     "add-instance": "@:common.add@:common.instance",
     "create-instance": "@:common.create@:common.instance",
