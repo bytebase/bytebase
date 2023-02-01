@@ -29,6 +29,7 @@ type Store struct {
 	issueByPipelineCache sync.Map // map[int]*IssueMessage
 	pipelineCache        sync.Map // map[int]*PipelineMessage
 	dbSchemaCache        sync.Map // map[int]*DBSchema
+	settingCache         sync.Map // map[string]*SettingMessage
 }
 
 // New creates a new instance of Store.
