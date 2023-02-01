@@ -23,10 +23,11 @@ var (
 )
 
 type tokenizer struct {
-	buffer []rune
-	cursor uint
-	len    uint
-	line   int
+	buffer         []rune
+	cursor         uint
+	len            uint
+	line           int
+	emptyStatement bool
 
 	// steaming API specific field
 	reader  *bufio.Reader
@@ -368,6 +369,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 	delimiter := []rune{';'}
 
 	t.skipBlank()
+	t.emptyStatement = true
 	startPos := t.cursor
 	for {
 		switch {
@@ -390,6 +392,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
 						LastLine: t.line - t.aboveNonBlankLineDistance(),
+						Empty:    t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -404,6 +407,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				res = append(res, SingleSQL{
 					Text:     text,
 					LastLine: t.line,
+					Empty:    t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -411,6 +415,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
 			t.skip(uint(len(delimiterRuneList)))
@@ -423,6 +428,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				res = append(res, SingleSQL{
 					Text:     text,
 					LastLine: t.line,
+					Empty:    false,
 				})
 			}
 			t.skipBlank()
@@ -430,6 +436,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			t.emptyStatement = true
 		case t.char(0) == '/' && t.char(1) == '*':
 			if err := t.scanComment(); err != nil {
 				return nil, err
@@ -446,15 +453,18 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			if err := t.scanString(t.char(0)); err != nil {
 				return nil, err
 			}
+			t.emptyStatement = false
 		case t.char(0) == '`':
 			if err := t.scanIdentifier('`'); err != nil {
 				return nil, err
 			}
+			t.emptyStatement = false
 		case t.char(0) == '\n':
 			t.line++
 			t.skip(1)
 		default:
 			t.skip(1)
+			t.emptyStatement = false
 		}
 	}
 }
@@ -479,6 +489,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 	var res []SingleSQL
 
 	t.skipBlank()
+	t.emptyStatement = true
 	startPos := t.cursor
 	for {
 		switch {
@@ -494,14 +505,17 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			if err := t.scanString('\''); err != nil {
 				return nil, err
 			}
+			t.emptyStatement = false
 		case t.char(0) == '$':
 			if err := t.scanDoubleDollarQuotedString(); err != nil {
 				return nil, err
 			}
+			t.emptyStatement = false
 		case t.char(0) == '"':
 			if err := t.scanIdentifier('"'); err != nil {
 				return nil, err
 			}
+			t.emptyStatement = false
 		case t.char(0) == ';':
 			t.skip(1)
 			text := t.getString(startPos, t.pos()-startPos)
@@ -509,6 +523,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 				res = append(res, SingleSQL{
 					Text:     text,
 					LastLine: t.line,
+					Empty:    t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -516,6 +531,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			t.emptyStatement = true
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
@@ -535,6 +551,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
 						LastLine: t.line - t.aboveNonBlankLineDistance(),
+						Empty:    t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -549,11 +566,13 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			if t.equalWordCaseInsensitive(atomicRuneList) {
 				return nil, errors.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it")
 			}
+			t.emptyStatement = false
 		case t.char(0) == '\n':
 			t.line++
 			t.skip(1)
 		default:
 			t.skip(1)
+			t.emptyStatement = false
 		}
 	}
 }
