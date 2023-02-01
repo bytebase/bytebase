@@ -18,9 +18,9 @@
     >
       <FocusButton
         :table="table"
+        :set-center="false"
         class="invisible group-hover:visible !absolute top-[50%] -mt-[9px] left-1 text-main group-hover:bg-white/70 group-hover:!text-main"
         focused-class="!text-white"
-        @toggle="(_, e) => e.stopPropagation()"
       />
 
       <template v-if="schema.name !== ''">

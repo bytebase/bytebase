@@ -22,15 +22,13 @@ const props = withDefaults(
   defineProps<{
     table: TableMetadata;
     focusedClass?: VueClass;
+    setCenter?: boolean;
   }>(),
   {
     focusedClass: "",
+    setCenter: true,
   }
 );
-
-const emits = defineEmits<{
-  (name: "toggle", on: boolean, e: Event): void;
-}>();
 
 const { zoom, focusedTables, events } = useSchemaDiagramContext();
 
@@ -39,18 +37,20 @@ const isFocused = computed(() => {
 });
 
 const toggleFocus = (e: Event) => {
-  const oldValue = isFocused.value;
-  if (oldValue) {
-    focusedTables.value.delete(props.table);
-  } else {
+  e.stopPropagation();
+  const on = !isFocused.value;
+  if (on) {
     focusedTables.value.add(props.table);
+  } else {
+    focusedTables.value.delete(props.table);
+  }
+  if (props.setCenter) {
     events.emit("set-center", {
       type: "table",
       target: props.table,
       padding: DEFAULT_PADDINGS,
-      zooms: expectedZoomRange(zoom.value, 0.5, 1),
+      zooms: on ? expectedZoomRange(zoom.value, 0.5, 1) : undefined,
     });
   }
-  emits("toggle", !oldValue, e);
 };
 </script>

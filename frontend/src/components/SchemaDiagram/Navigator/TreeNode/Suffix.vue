@@ -5,8 +5,8 @@
   <template v-if="node.type === 'table'">
     <FocusButton
       :table="(node as TreeNode<'table'>).data"
+      :set-center="true"
       class="focus-btn"
-      @toggle="(on, e) => on && e.stopPropagation()"
     />
   </template>
 </template>
