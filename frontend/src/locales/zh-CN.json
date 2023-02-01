@@ -406,7 +406,7 @@
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "deletion": "删除这个 SSO",
       "form": {
-        "callback-url": "回调地址",
+        "redirect-url": "回调地址",
         "use-template": "使用模版",
         "select-template": "选择模版",
         "type": "类型",
@@ -428,7 +428,8 @@
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "identifier": "唯一标识符",
         "display-name": "昵称"
-      }
+      },
+      "copy-redirect-url": "Redirect URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。"
     },
     "general": {
       "workspace": {
