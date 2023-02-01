@@ -35,6 +35,9 @@ export enum SQLAdviceCodeStatement {
   RedundantAlterTable = 207,
   DMLDryRunFailed = 208,
   AffectedRowExceedsLimit = 209,
+  StatementAddColumnWithDefault = 210,
+  StatementAddCheckWithValidation = 211,
+  StatementAddNotNull = 212,
 }
 
 // 301 ～ 399 naming error code
@@ -118,6 +121,7 @@ export enum SQLAdviceCodeIndex {
   SpatialIndexKeyNullable = 811,
   DuplicateColumnInIndex = 812,
   IndexCountExceedsLimit = 813,
+  CreateIndexUnconcurrently = 814,
 }
 
 // 1001 ~ 1099 charset error code.
