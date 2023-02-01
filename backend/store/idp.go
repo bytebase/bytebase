@@ -105,11 +105,17 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		return nil, FormatError(err)
 	}
 
+	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
 	return identityProvider, nil
 }
 
 // GetIdentityProvider gets an identity provider.
 func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProviderMessage) (*IdentityProviderMessage, error) {
+	if find.ResourceID != nil {
+		if identityProvider, ok := s.idpCache.Load(*find.ResourceID); ok {
+			return identityProvider.(*IdentityProviderMessage), nil
+		}
+	}
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
@@ -132,7 +138,10 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 	} else if len(identityProviders) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d identity providers with filter %+v, expect 1", len(identityProviders), find)}
 	}
-	return identityProviders[0], nil
+
+	identityProvider := identityProviders[0]
+	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
+	return identityProvider, nil
 }
 
 // ListIdentityProviders lists identity providers.
@@ -151,6 +160,9 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		return nil, FormatError(err)
 	}
 
+	for _, identityProvider := range identityProviders {
+		s.idpCache.Store(identityProvider.ResourceID, identityProvider)
+	}
 	return identityProviders, nil
 }
 
@@ -170,6 +182,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 		return nil, FormatError(err)
 	}
 
+	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
 	return identityProvider, nil
 }
 
