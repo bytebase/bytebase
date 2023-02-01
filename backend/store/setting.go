@@ -14,11 +14,12 @@ import (
 
 // CreateSettingIfNotExist creates an instance of Setting.
 func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, bool, error) {
-	settingRaw, created, err := s.createSettingRawIfNotExist(ctx, create)
+	setting, created, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
 	}
-	return settingRaw.toAPISetting(), created, nil
+	s.settingCache.Store(setting.Name, setting)
+	return setting.toAPISetting(), created, nil
 }
 
 // FindSetting finds a list of Setting instances.
@@ -161,6 +162,11 @@ func (sm *SettingMessage) toAPISetting() *api.Setting {
 
 // GetSettingV2 returns the setting by name.
 func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
+	if find.Name != nil {
+		if setting, ok := s.settingCache.Load(*find.Name); ok {
+			return setting.(*SettingMessage), nil
+		}
+	}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -197,6 +203,9 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	for _, setting := range settings {
+		s.settingCache.Store(setting.Name, setting)
 	}
 	return settings, nil
 }
@@ -239,6 +248,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
+	s.settingCache.Store(setting.Name, &setting)
 	return &setting, nil
 }
 
