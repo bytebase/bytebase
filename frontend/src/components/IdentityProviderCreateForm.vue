@@ -35,14 +35,23 @@
     >
       <template v-if="isCreating">
         <p class="textinfolabel !mt-4">
-          {{ $t("settings.sso.form.callback-url") }}
+          {{ $t("settings.sso.form.redirect-url") }}
         </p>
-        <input
-          type="text"
-          class="textfield mt-1 w-full"
-          readonly
-          :value="callbackUrl"
-        />
+        <div class="w-full relative mt-1">
+          <input
+            type="text"
+            class="textfield w-full"
+            readonly
+            :value="redirectUrl"
+          />
+          <button
+            tabindex="-1"
+            class="absolute right-0 top-1/2 -translate-y-1/2 mr-2 p-1 text-control-light rounded hover:bg-gray-100"
+            @click.prevent="copyRedirectUrl"
+          >
+            <heroicons-outline:clipboard class="w-5 h-5" />
+          </button>
+        </div>
         <p class="textinfolabel !mt-4">
           {{ $t("settings.sso.form.use-template") }}
         </p>
@@ -106,7 +115,7 @@
           {{ $t("settings.sso.form.identity-provider-information") }}
         </p>
         <ShowMoreIcon
-          class="inline-block ml-1 textinfolabel"
+          class="inline-block ml-1"
           :content="
             $t('settings.sso.form.identity-provider-information-description')
           "
@@ -212,7 +221,7 @@
           {{ $t("settings.sso.form.user-information-mapping") }}
         </p>
         <ShowMoreIcon
-          class="inline-block ml-1 textinfolabel"
+          class="inline-block ml-1"
           :content="
             $t('settings.sso.form.user-information-mapping-description')
           "
@@ -402,6 +411,8 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { ClientError } from "nice-grpc-common";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { useI18n } from "vue-i18n";
 import {
   computed,
   reactive,
@@ -428,9 +439,9 @@ import {
   isDev,
   openWindowForSSO,
 } from "@/utils";
-import ShowMoreIcon from "./ShowMoreIcon.vue";
 import { OAuthWindowEventPayload } from "@/types";
 import { identityProviderClient } from "@/grpcweb";
+import ShowMoreIcon from "./ShowMoreIcon.vue";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -446,6 +457,7 @@ const emit = defineEmits<{
   (e: "confirm", identityProvider: IdentityProvider): void;
 }>();
 
+const { t } = useI18n();
 const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   type: IdentityProviderType.OAUTH2,
@@ -474,7 +486,7 @@ const identityProviderTypeList = computed(() => {
   return list;
 });
 
-const callbackUrl = computed(() => {
+const redirectUrl = computed(() => {
   return `${
     useActuatorStore().serverInfo?.externalUrl || window.origin
   }/oauth/callback`;
@@ -649,6 +661,16 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
     module: "bytebase",
     style: "SUCCESS",
     title: "Test connection succeed",
+  });
+};
+
+const copyRedirectUrl = () => {
+  toClipboard(redirectUrl.value).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("settings.sso.copy-redirect-url"),
+    });
   });
 };
 
