@@ -406,7 +406,7 @@
       "description": "Single sign-on (SSO) is an authentication method that enables users to authenticate with other applications and websites.",
       "deletion": "Delete this SSO",
       "form": {
-        "callback-url": "Authorization callback url",
+        "redirect-url": "Authorization redirect url",
         "use-template": "Use template",
         "select-template": "Select template",
         "type": "Type",
@@ -428,7 +428,8 @@
         "user-information-mapping-description": "Field mapping saves the field names from user info API.",
         "identifier": "Identifier",
         "display-name": "Display name"
-      }
+      },
+      "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
     },
     "general": {
       "workspace": {
