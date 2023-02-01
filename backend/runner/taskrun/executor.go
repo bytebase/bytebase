@@ -328,50 +328,20 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			return true, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 		}
 	}
-	// If write-back feature is allowed in the Plan, on the presence of schema path template, we
-	// write back the latest schema after migration for VCS-based projects for
-	// 1) Non-wildcard branch filter and baseline migration for SDL.
-	// 2) all DDL/Ghost migrations.
-	writeBack := false
-	if license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
-		if repo != nil && repo.SchemaPathTemplate != "" {
-			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-				if task.Type == api.TaskDatabaseSchemaBaseline && !strings.Contains(repo.BranchFilter, "*") {
-					writeBack = true
-					// Transform the schema to standard style for SDL mode.
-					if instance.Engine == db.MySQL {
-						standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
-						if err != nil {
-							return true, nil, errors.Errorf("failed to transform to standard schema for database %q", database.DatabaseName)
-						}
-						schema = standardSchema
-					}
-				}
-			} else {
-				writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
-			}
-		}
+
+	writeBack, err := isWriteBack(ctx, stores, license, project, repo, task, vcsPushEvent)
+	if err != nil {
+		return true, nil, err
 	}
 
-	if writeBack && issue != nil {
-		if project.TenantMode == api.TenantModeTenant {
-			composedPipeline, err := stores.GetPipelineByID(ctx, issue.PipelineUID)
+	// Transform the schema to standard style for SDL mode.
+	if writeBack {
+		if instance.Engine == db.MySQL {
+			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
-				return true, nil, err
+				return true, nil, errors.Errorf("failed to transform to standard schema for database %q", database.DatabaseName)
 			}
-			// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
-			var lastTask *api.Task
-			for i := len(composedPipeline.StageList) - 1; i >= 0; i-- {
-				stage := composedPipeline.StageList[i]
-				if len(stage.TaskList) > 0 {
-					lastTask = stage.TaskList[len(stage.TaskList)-1]
-					break
-				}
-			}
-			// Not the last task yet.
-			if lastTask != nil && task.ID != lastTask.ID {
-				writeBack = false
-			}
+			schema = standardSchema
 		}
 	}
 
@@ -474,8 +444,52 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func isWriteBack(ctx context.Context, stores *store.Store) (bool, error) {
-	return false, nil
+func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *api.Repository, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (bool, error) {
+	if !license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
+		return false, nil
+	}
+	if repo == nil || repo.SchemaPathTemplate == "" {
+		return false, nil
+	}
+	if task.Type == api.TaskDatabaseSchemaBaseline {
+		if strings.Contains(repo.BranchFilter, "*") {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if vcsPushEvent != nil {
+		return false, nil
+	}
+	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
+		return false, nil
+	}
+
+	// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
+	if project.TenantMode == api.TenantModeTenant {
+		stages, err := stores.ListStageV2(ctx, task.PipelineID)
+		if err != nil {
+			return false, err
+		}
+		if len(stages) == 0 {
+			return false, nil
+		}
+		if stages[len(stages)-1].ID != task.StageID {
+			return false, nil
+		}
+		tasks, err := stores.ListTasks(ctx, &api.TaskFind{PipelineID: &task.PipelineID, StageID: &task.StageID})
+		if err != nil {
+			return false, err
+		}
+		if len(tasks) == 0 {
+			return false, nil
+		}
+		if tasks[len(tasks)-1].ID != task.ID {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
