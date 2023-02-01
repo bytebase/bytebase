@@ -1466,7 +1466,7 @@
     },
     "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。",
     "run-selected": "运行选中的语句",
-    "clear-history": "清除历史"
+    "clear-screen": "清屏"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
