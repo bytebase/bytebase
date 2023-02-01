@@ -229,11 +229,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, id)
-		if err != nil {
-			return err
-		}
-
 		// cancel external approval on assignee change
 		if issuePatch.AssigneeID != nil {
 			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonReassigned); err != nil {
@@ -288,12 +283,16 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Payload:     string(payload),
 			}
 			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-				Issue: composedIssue,
+				Issue: updatedIssue,
 			}); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Title)).SetInternal(err)
 			}
 		}
 
+		composedIssue, err := s.store.GetIssueByID(ctx, id)
+		if err != nil {
+			return err
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update issue response: %v", updatedIssue.Title)).SetInternal(err)
@@ -324,8 +323,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
-		updatedIssue, err := s.TaskScheduler.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
-		if err != nil {
+		if err := s.TaskScheduler.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 			} else if common.ErrorCode(err) == common.Conflict {
@@ -334,8 +332,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
+		updatedComposedIssue, err := s.store.GetIssueByID(ctx, id)
+		if err != nil {
+			return err
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedIssue); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedComposedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -445,7 +447,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Payload:     string(bytes),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: composedIssue,
+		Issue: issue,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
@@ -464,13 +466,13 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: composedIssue.PipelineID,
+			ContainerID: issue.PipelineUID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),
 		}
 		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: composedIssue,
+			Issue: issue,
 		}); err != nil {
 			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
