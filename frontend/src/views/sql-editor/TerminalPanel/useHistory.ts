@@ -1,18 +1,14 @@
 import { computed, watch } from "vue";
 
-import { TabMode } from "@/types";
+import { TabMode, WebTerminalQueryItem } from "@/types";
 import { useTabStore, useWebTerminalStore } from "@/store";
 import { minmax } from "@/utils";
 
 const MAX_HISTORY_ITEM_COUNT = 1000;
 
-type HistoryItem = {
-  statement: string;
-};
-
 type HistoryState = {
   index: number;
-  list: HistoryItem[];
+  list: WebTerminalQueryItem[];
 };
 
 export const useHistory = () => {
@@ -41,11 +37,11 @@ export const useHistory = () => {
     return initial;
   };
 
-  const push = (item: HistoryItem) => {
+  const push = (query: WebTerminalQueryItem) => {
     const stack = currentStack();
     if (!stack) return;
     const { list } = stack;
-    list.push(item);
+    list.push(query);
     if (list.length > MAX_HISTORY_ITEM_COUNT) {
       list.shift();
     }
@@ -64,9 +60,9 @@ export const useHistory = () => {
     if (nextIndex === list.length - 1) {
       currentQuery.value.sql = "";
     } else {
-      const history = list[nextIndex];
-      if (history) {
-        currentQuery.value.sql = history.statement;
+      const historyQuery = list[nextIndex];
+      if (historyQuery) {
+        currentQuery.value.sql = historyQuery.sql;
       }
     }
 
@@ -76,7 +72,7 @@ export const useHistory = () => {
   watch(
     () => currentQuery.value,
     (query) => {
-      push({ statement: query.sql });
+      push(query);
     },
     {
       immediate: true,
