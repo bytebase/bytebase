@@ -11,6 +11,7 @@
     :expand-on-click="true"
     :render-label="renderLabel"
     :render-prefix="renderPrefix"
+    :render-suffix="renderSuffix"
     :node-props="nodeProps"
   />
 </template>
@@ -21,9 +22,10 @@ import { NTree, type TreeOption } from "naive-ui";
 
 import { useSchemaDiagramContext } from "../common";
 import { TreeNode } from "./types";
-import { Label, Prefix } from "./TreeNode";
+import { Label, Prefix, Suffix } from "./TreeNode";
 import { isDescendantOf } from "@/utils";
 import { isTypedNode } from "./utils";
+import { DEFAULT_PADDINGS } from "../common/const";
 
 const props = withDefaults(
   defineProps<{
@@ -83,6 +85,12 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
   return h(Prefix, { node });
 };
 
+// Render icons after nodes.
+const renderSuffix = ({ option }: { option: TreeOption }) => {
+  const node = option as any as TreeNode;
+  return h(Suffix, { node });
+};
+
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as TreeNode;
   return {
@@ -96,6 +104,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
           events.emit("set-center", {
             type: "table",
             target: node.data,
+            padding: DEFAULT_PADDINGS,
           });
         }
       }
@@ -114,11 +123,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 }
 .bb-schema-diagram-nav-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
-}
-.bb-schema-diagram-nav-tree.project
-  .n-tree-node[data-node-type="project"]
-  .n-tree-node-content__prefix {
-  @apply hidden;
 }
 .bb-schema-diagram-nav-tree .n-tree-node-content__text {
   @apply truncate mr-1;

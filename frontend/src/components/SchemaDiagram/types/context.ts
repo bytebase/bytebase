@@ -9,7 +9,8 @@ import type {
 } from "@/types/proto/store/database";
 import type { Database } from "@/types";
 import type { Geometry, Point, Rect } from "./geometry";
-import { EditStatus } from "./edit";
+import type { EditStatus } from "./edit";
+import type { ForeignKey } from "./schema";
 
 // This is an abstract Schema Diagram context including states, methods and
 // events. This should be implemented in the root component of SchemaDiagram
@@ -21,12 +22,14 @@ export type SchemaDiagramContext = {
   editable: Ref<boolean>;
 
   // States
+  foreignKeys: Ref<ForeignKey[]>;
   dummy: Ref<boolean>;
   busy: Ref<boolean>;
   zoom: Ref<number>;
   position: Ref<Point>;
   panning: Ref<boolean>;
   geometries: Ref<Set<Geometry>>;
+  focusedTables: Ref<Set<TableMetadata>>;
 
   // Methods
   idOfTable: (table: TableMetadata) => string;
@@ -64,4 +67,5 @@ export type CenterTarget<T extends CenterTargetType = CenterTargetType> = {
     point: Point;
   }[T];
   padding?: number[]; // [T,R,B,L]
+  zooms?: number[]; // [min, max]
 };
