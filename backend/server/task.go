@@ -40,31 +40,24 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+
+		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
 		if err != nil {
 			return err
 		}
-
-		var taskPatchedList []*api.Task
-		for _, stage := range composedIssue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				// Skip gh-ost cutover task as this task has no statement.
-				if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
-					continue
-				}
-				taskPatch := *taskPatch
-				taskPatch.ID = task.ID
-				taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, composedIssue)
-				if httpErr != nil {
-					return httpErr
-				}
-				taskPatchedList = append(taskPatchedList, taskPatched)
+		for _, task := range tasks {
+			// Skip gh-ost cutover task as this task has no statement.
+			if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
+				continue
+			}
+			taskPatch := *taskPatch
+			taskPatch.ID = task.ID
+			// TODO(d): patch tasks in batch.
+			if _, err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue); err != nil {
+				return err
 			}
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", composedIssue.Pipeline.Name)).SetInternal(err)
-		}
 		return nil
 	})
 
@@ -87,7 +80,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
-		task, err := s.store.GetTaskByID(ctx, taskID)
+		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
 		}
@@ -102,10 +95,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
-		if err != nil {
-			return err
-		}
 
 		if taskPatch.Statement != nil {
 			// Tenant mode project don't allow updating SQL statement for a single task.
@@ -114,7 +103,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, composedIssue)
+		taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, issue)
 		if httpErr != nil {
 			return httpErr
 		}
