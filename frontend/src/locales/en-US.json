@@ -639,7 +639,6 @@
   },
   "quick-action": {
     "create-db": "Create database",
-    "choose-db": "Choose database",
     "new-db": "New DB",
     "add-instance": "@:common.add @:common.instance",
     "create-instance": "@:common.create @:common.instance",
