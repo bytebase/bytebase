@@ -57,19 +57,19 @@ service DatabaseService {
     };
   }
 
-  rpc GetDatabaseBackupSetting(GetDatabaseBackupSettingRequest) returns (DatabaseBackupSetting) {
+  rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {
       get: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"
     };
   }
 
-  rpc ListDatabaseBackupSetting(ListDatabaseBackupSettingRequest) returns (ListDatabaseBackupSettingResponse) {
+  rpc SearchBackupSetting(SearchBackupSettingRequest) returns (SearchBackupSettingResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=environments/*/instances/*}/databases/backupSetting"
     };
   }
 
-  rpc UpdateDatabaseBackupSetting(UpdateDatabaseBackupSettingRequest) returns (DatabaseBackupSetting) {
+  rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {
       patch: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"
       body: "setting"
@@ -77,9 +77,9 @@ service DatabaseService {
     option (google.api.method_signature) = "setting,update_mask";
   }
 
-  rpc BatchUpdateDatabaseBackupSetting(BatchUpdateDatabaseBackupSettingRequest) returns (BatchUpdateDatabaseSettingResponse) {
+  rpc BatchUpdateBackupSetting(BatchUpdateBackupSettingRequest) returns (BatchUpdateSettingResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=environments/*/instances/*}/databases/backupSetting:batchUpdate"
+      post: "/v1/{parent=environments/*/instances/*/databases/*}/backupSetting:batchUpdate"
       body: "*"
     };
   }
@@ -167,13 +167,13 @@ message GetDatabaseSchemaRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message GetDatabaseBackupSettingRequest {
+message GetBackupSettingRequest {
   // The name of the database to retrieve backup setting.
   // Format: environments/{environment}/instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListDatabaseBackupSettingRequest {
+message SearchBackupSettingRequest {
   // The parent, which owns this collection of databases.
   // Format: environments/{environment}/instances/{instance}
   // Use "environments/-/instances/-" to list all databases from all environments.
@@ -197,28 +197,28 @@ message ListDatabaseBackupSettingRequest {
   string filter = 4;
 }
 
-message ListDatabaseBackupSettingResponse {
+message SearchBackupSettingResponse {
   // The databases from the specified request.
-  repeated DatabaseBackupSetting settings = 1;
+  repeated BackupSetting settings = 1;
 
   // Not used. A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-message UpdateDatabaseBackupSettingRequest {
+message UpdateBackupSettingRequest {
   // The name of the database to retrieve backup setting.
   // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The database backup setting to update.
-  DatabaseBackupSetting setting = 2 [(google.api.field_behavior) = REQUIRED];
+  BackupSetting setting = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 3;
 }
 
-message BatchUpdateDatabaseBackupSettingRequest {
+message BatchUpdateBackupSettingRequest {
   // The parent resource shared by all databases being updated.
   // Format: environments/{environment}/instances/{instance}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
@@ -226,13 +226,13 @@ message BatchUpdateDatabaseBackupSettingRequest {
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The request message specifying the resources to update.
-  repeated UpdateDatabaseBackupSettingRequest requests = 2
+  repeated UpdateBackupSettingRequest requests = 2
     [(google.api.field_behavior) = REQUIRED];
 }
 
-message BatchUpdateDatabaseSettingResponse {
-  // Databases updated.
-  repeated DatabaseBackupSetting settings = 1;
+message BatchUpdateSettingResponse {
+  // Backup settings updated.
+  repeated BackupSetting settings = 1;
 }
 
 message Database {
@@ -447,7 +447,7 @@ message DatabaseSchema {
   string schema = 1;
 }
 
-message DatabaseBackupRetentionPolicy {
+message BackupRetentionPolicy {
   // The default maximum age of a Backup created via this BackupPlan.
   // If specified, a Backup will be automatically deleted after its age reaches.
   // If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
@@ -455,21 +455,18 @@ message DatabaseBackupRetentionPolicy {
   google.protobuf.Duration backup_retain_duration = 1;
 }
 
-message DatabaseBackupSchedule {
-  // A standard [cron](https://wikipedia.com/wiki/cron) string that defines a
-  // repeating schedule for creating Backups via this BackupPlan.
-  //
-  // Cron string that defines a repeating schedule for creating Backups.
+message BackupSchedule {
+  // Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
   // Support hour of day, day of week. (UTC time)
   // 
   // Default (empty): Disable automatic backup.
   string cron_schedule = 1;
 }
-// DatabaseBackupSetting is the setting for database backup.
-message DatabaseBackupSetting {
+// BackupSetting is the setting for database backup.
+message BackupSetting {
   // The retention policy for database backup.
-  DatabaseBackupRetentionPolicy retention_policy = 1;
+  BackupRetentionPolicy retention_policy = 1;
 
   // The schedule for database backup.
-  DatabaseBackupSchedule schedule = 2;
+  BackupSchedule schedule = 2;
 }
