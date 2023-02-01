@@ -50,6 +50,11 @@
                   :placeholder="$t('database.search-database')"
                   @change-text="(text: string) => (state.searchText = text)"
                 />
+                <YAxisRadioGroup
+                  v-else
+                  v-model:label="state.label"
+                  class="text-sm mr-px mt-px"
+                />
               </template>
             </NTabs>
           </template>
@@ -246,6 +251,7 @@ const state = reactive<LocalState>({
   selectedDatabaseIdListForEnvironment: new Map(),
   selectedDatabaseIdListForTenantMode: new Set<number>(),
   deployingTenantDatabaseList: [],
+  label: "bb.environment",
   searchText: "",
   showSchemaEditorModal: false,
   showFeatureModal: false,
