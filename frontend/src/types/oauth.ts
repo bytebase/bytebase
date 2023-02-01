@@ -1,5 +1,4 @@
 import { VCSType } from ".";
-import { randomString } from "../utils";
 
 export type OAuthConfig = {
   endpoint: string;
@@ -41,7 +40,7 @@ export function openWindowForOAuth(
   vcsType: VCSType
 ): Window | null {
   // we use type to determine oauth type when receiving the callback
-  const stateQueryParameter = `${type}.${vcsType}-${randomString(20)}`;
+  const stateQueryParameter = `${type}.${vcsType}-${applicationId}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   if (vcsType == "GITHUB_COM") {
