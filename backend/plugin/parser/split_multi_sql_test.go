@@ -34,6 +34,35 @@ func TestPGSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
 		{
+			statement: `select * from t;
+			/* sdfasdf */`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+				},
+			},
+		},
+		{
+			statement: `select * from t;
+			/* sdfasdf */;
+			select * from t;`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+					{
+						Text:     `select * from t;`,
+						LastLine: 3,
+					},
+				},
+			},
+		},
+		{
 			statement: bigSQL,
 			want: resData{
 				res: []SingleSQL{
@@ -237,6 +266,35 @@ func TestPGSplitMultiSQL(t *testing.T) {
 func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
+		{
+			statement: `select * from t;
+			/* sdfasdf */`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+				},
+			},
+		},
+		{
+			statement: `select * from t;
+			/* sdfasdf */;
+			select * from t;`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+					{
+						Text:     `select * from t;`,
+						LastLine: 3,
+					},
+				},
+			},
+		},
 		{
 			statement: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
