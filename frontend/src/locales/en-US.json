@@ -1567,7 +1567,7 @@
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
-    "start-n-days-trial": "Start {days} days trial",
+    "start-n-days-trial": "Start {days} days trial (no credit card required)",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
     "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
