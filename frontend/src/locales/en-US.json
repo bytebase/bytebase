@@ -1459,7 +1459,7 @@
     },
     "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode.",
     "run-selected": "Run selected",
-    "clear-history": "Clear history"
+    "clear-screen": "Clear screen"
   },
   "schema-editor": {
     "self": "Schema Editor",
