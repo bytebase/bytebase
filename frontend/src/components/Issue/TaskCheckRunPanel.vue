@@ -150,6 +150,9 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.STATEMENT_REDUNDANT_ALTER_TABLE:
         case SQLReviewPolicyErrorCode.STATEMENT_DML_DRY_RUN_FAILED:
         case SQLReviewPolicyErrorCode.STATEMENT_AFFECTED_ROW_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.STATEMENT_ADD_COLUMN_WITH_DEFAULT:
+        case SQLReviewPolicyErrorCode.STATEMENT_ADD_CHECK_WITH_VALIDATION:
+        case SQLReviewPolicyErrorCode.STATEMENT_ADD_NOT_NULL:
         case SQLReviewPolicyErrorCode.TABLE_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.COLUMN_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.INDEX_NAMING_MISMATCH:
@@ -202,6 +205,7 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.SPATIAL_INDEX_KEY_NULLABLE:
         case SQLReviewPolicyErrorCode.DUPLICATE_COLUMN_IN_INDEX:
         case SQLReviewPolicyErrorCode.INDEX_COUNT_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.CREATE_INDEX_UNCONCURRENTLY:
         case SQLReviewPolicyErrorCode.DISABLED_CHARSET:
         case SQLReviewPolicyErrorCode.INSERT_TOO_MANY_ROWS:
         case SQLReviewPolicyErrorCode.UPDATE_USE_LIMIT:
