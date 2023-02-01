@@ -54,7 +54,7 @@ const emit = defineEmits<{
     option?: ExecuteOption
   ): void;
   (e: "history", direction: "up" | "down"): void;
-  (e: "clear-history"): void;
+  (e: "clear-screen"): void;
 }>();
 
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
@@ -172,31 +172,33 @@ const handleEditorReady = async () => {
   editor?.addAction({
     id: "ExplainQuery",
     label: "Explain Query",
-    keybindings: [
-      monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyC,
-    ],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 2,
-    precondition: "!readonly",
-    run: () => {
-      emit("clear-history");
-    },
-  });
-
-  editor?.addAction({
-    id: "ClearHistory",
-    label: "Clear History",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
-    contextMenuOrder: 3,
+    contextMenuOrder: 1,
     precondition: "!readonly",
     run: async () => {
       emit(
         "execute",
         props.sql,
-        { databaseType: selectedInstanceEngine.value },
+        {
+          databaseType: selectedInstanceEngine.value,
+        },
         { explain: true }
       );
+    },
+  });
+
+  editor?.addAction({
+    id: "ClearScreen",
+    label: "Clear Screen",
+    keybindings: [
+      monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyC,
+    ],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 3,
+    precondition: "!readonly",
+    run: () => {
+      emit("clear-screen");
     },
   });
 
