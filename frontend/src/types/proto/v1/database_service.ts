@@ -108,14 +108,14 @@ export interface GetDatabaseSchemaRequest {
 export interface GetBackupSettingRequest {
   /**
    * The name of the database to retrieve backup setting.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
    */
   name: string;
 }
 
 export interface UpdateBackupSettingRequest {
   /**
-   * The name of the database to retrieve backup setting.
+   * The name of the database to update the backup setting.
    * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
    */
   name: string;
@@ -307,7 +307,8 @@ export interface DatabaseSchema {
   schema: string;
 }
 
-export interface BackupRetentionPolicy {
+/** BackupSetting is the setting for database backup. */
+export interface BackupSetting {
   /**
    * The default maximum age of a Backup created via this BackupPlan.
    * If specified, a Backup will be automatically deleted after its age reaches.
@@ -315,9 +316,6 @@ export interface BackupRetentionPolicy {
    * It will be rounded up to the number of days.
    */
   backupRetainDuration?: Duration;
-}
-
-export interface BackupSchedule {
   /**
    * Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
    * Support hour of day, day of week. (UTC time)
@@ -325,14 +323,6 @@ export interface BackupSchedule {
    * Default (empty): Disable automatic backup.
    */
   cronSchedule: string;
-}
-
-/** BackupSetting is the setting for database backup. */
-export interface BackupSetting {
-  /** The retention policy for database backup. */
-  retentionPolicy?: BackupRetentionPolicy;
-  /** The schedule for database backup. */
-  schedule?: BackupSchedule;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -1978,119 +1968,17 @@ export const DatabaseSchema = {
   },
 };
 
-function createBaseBackupRetentionPolicy(): BackupRetentionPolicy {
-  return { backupRetainDuration: undefined };
-}
-
-export const BackupRetentionPolicy = {
-  encode(message: BackupRetentionPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.backupRetainDuration !== undefined) {
-      Duration.encode(message.backupRetainDuration, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BackupRetentionPolicy {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBackupRetentionPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BackupRetentionPolicy {
-    return {
-      backupRetainDuration: isSet(object.backupRetainDuration)
-        ? Duration.fromJSON(object.backupRetainDuration)
-        : undefined,
-    };
-  },
-
-  toJSON(message: BackupRetentionPolicy): unknown {
-    const obj: any = {};
-    message.backupRetainDuration !== undefined && (obj.backupRetainDuration = message.backupRetainDuration
-      ? Duration.toJSON(message.backupRetainDuration)
-      : undefined);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<BackupRetentionPolicy>): BackupRetentionPolicy {
-    const message = createBaseBackupRetentionPolicy();
-    message.backupRetainDuration = (object.backupRetainDuration !== undefined && object.backupRetainDuration !== null)
-      ? Duration.fromPartial(object.backupRetainDuration)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseBackupSchedule(): BackupSchedule {
-  return { cronSchedule: "" };
-}
-
-export const BackupSchedule = {
-  encode(message: BackupSchedule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.cronSchedule !== "") {
-      writer.uint32(10).string(message.cronSchedule);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BackupSchedule {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBackupSchedule();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.cronSchedule = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BackupSchedule {
-    return { cronSchedule: isSet(object.cronSchedule) ? String(object.cronSchedule) : "" };
-  },
-
-  toJSON(message: BackupSchedule): unknown {
-    const obj: any = {};
-    message.cronSchedule !== undefined && (obj.cronSchedule = message.cronSchedule);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<BackupSchedule>): BackupSchedule {
-    const message = createBaseBackupSchedule();
-    message.cronSchedule = object.cronSchedule ?? "";
-    return message;
-  },
-};
-
 function createBaseBackupSetting(): BackupSetting {
-  return { retentionPolicy: undefined, schedule: undefined };
+  return { backupRetainDuration: undefined, cronSchedule: "" };
 }
 
 export const BackupSetting = {
   encode(message: BackupSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.retentionPolicy !== undefined) {
-      BackupRetentionPolicy.encode(message.retentionPolicy, writer.uint32(10).fork()).ldelim();
+    if (message.backupRetainDuration !== undefined) {
+      Duration.encode(message.backupRetainDuration, writer.uint32(10).fork()).ldelim();
     }
-    if (message.schedule !== undefined) {
-      BackupSchedule.encode(message.schedule, writer.uint32(18).fork()).ldelim();
+    if (message.cronSchedule !== "") {
+      writer.uint32(18).string(message.cronSchedule);
     }
     return writer;
   },
@@ -2103,10 +1991,10 @@ export const BackupSetting = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.retentionPolicy = BackupRetentionPolicy.decode(reader, reader.uint32());
+          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
           break;
         case 2:
-          message.schedule = BackupSchedule.decode(reader, reader.uint32());
+          message.cronSchedule = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -2118,32 +2006,28 @@ export const BackupSetting = {
 
   fromJSON(object: any): BackupSetting {
     return {
-      retentionPolicy: isSet(object.retentionPolicy)
-        ? BackupRetentionPolicy.fromJSON(object.retentionPolicy)
+      backupRetainDuration: isSet(object.backupRetainDuration)
+        ? Duration.fromJSON(object.backupRetainDuration)
         : undefined,
-      schedule: isSet(object.schedule) ? BackupSchedule.fromJSON(object.schedule) : undefined,
+      cronSchedule: isSet(object.cronSchedule) ? String(object.cronSchedule) : "",
     };
   },
 
   toJSON(message: BackupSetting): unknown {
     const obj: any = {};
-    message.retentionPolicy !== undefined &&
-      (obj.retentionPolicy = message.retentionPolicy
-        ? BackupRetentionPolicy.toJSON(message.retentionPolicy)
-        : undefined);
-    message.schedule !== undefined &&
-      (obj.schedule = message.schedule ? BackupSchedule.toJSON(message.schedule) : undefined);
+    message.backupRetainDuration !== undefined && (obj.backupRetainDuration = message.backupRetainDuration
+      ? Duration.toJSON(message.backupRetainDuration)
+      : undefined);
+    message.cronSchedule !== undefined && (obj.cronSchedule = message.cronSchedule);
     return obj;
   },
 
   fromPartial(object: DeepPartial<BackupSetting>): BackupSetting {
     const message = createBaseBackupSetting();
-    message.retentionPolicy = (object.retentionPolicy !== undefined && object.retentionPolicy !== null)
-      ? BackupRetentionPolicy.fromPartial(object.retentionPolicy)
+    message.backupRetainDuration = (object.backupRetainDuration !== undefined && object.backupRetainDuration !== null)
+      ? Duration.fromPartial(object.backupRetainDuration)
       : undefined;
-    message.schedule = (object.schedule !== undefined && object.schedule !== null)
-      ? BackupSchedule.fromPartial(object.schedule)
-      : undefined;
+    message.cronSchedule = object.cronSchedule ?? "";
     return message;
   },
 };
