@@ -120,14 +120,13 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <input
-                v-if="state.editing"
+                v-if="state.editing && !isSSOUser"
                 id="email"
                 required
                 autocomplete="off"
                 name="email"
                 type="text"
                 class="textfield"
-                :disabled="isSSOUser"
                 :value="state.editingPrincipal?.email"
                 @input="(e: any)=>updatePrincipal('email', e.target.value)"
               />
@@ -137,7 +136,7 @@
             </dd>
           </div>
 
-          <template v-if="state.editing">
+          <template v-if="state.editing && !isSSOUser">
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">
                 {{ $t("settings.profile.password") }}
