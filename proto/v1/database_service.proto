@@ -70,13 +70,6 @@ service DatabaseService {
     };
     option (google.api.method_signature) = "setting,update_mask";
   }
-
-  rpc BatchUpdateBackupSetting(BatchUpdateBackupSettingRequest) returns (BatchUpdateSettingResponse) {
-    option (google.api.http) = {
-      post: "/v1/{parent=environments/*/instances/*/databases/*}/backupSetting:batchUpdate"
-      body: "*"
-    };
-  }
 }
 
 message GetDatabaseRequest {
@@ -175,23 +168,6 @@ message UpdateBackupSettingRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 3;
-}
-
-message BatchUpdateBackupSettingRequest {
-  // The parent resource shared by all databases being updated.
-  // Format: environments/{environment}/instances/{instance}
-  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
-  // We only support updating the project of databases for now.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The request message specifying the resources to update.
-  repeated UpdateBackupSettingRequest requests = 2
-    [(google.api.field_behavior) = REQUIRED];
-}
-
-message BatchUpdateSettingResponse {
-  // Backup settings updated.
-  repeated BackupSetting settings = 1;
 }
 
 message Database {

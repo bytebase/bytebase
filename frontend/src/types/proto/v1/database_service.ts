@@ -125,23 +125,6 @@ export interface UpdateBackupSettingRequest {
   updateMask?: string[];
 }
 
-export interface BatchUpdateBackupSettingRequest {
-  /**
-   * The parent resource shared by all databases being updated.
-   * Format: environments/{environment}/instances/{instance}
-   * If the operation spans parents, a dash (-) may be accepted as a wildcard.
-   * We only support updating the project of databases for now.
-   */
-  parent: string;
-  /** The request message specifying the resources to update. */
-  requests: UpdateBackupSettingRequest[];
-}
-
-export interface BatchUpdateSettingResponse {
-  /** Backup settings updated. */
-  settings: BackupSetting[];
-}
-
 export interface Database {
   /**
    * The name of the database.
@@ -921,123 +904,6 @@ export const UpdateBackupSettingRequest = {
       ? BackupSetting.fromPartial(object.setting)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBaseBatchUpdateBackupSettingRequest(): BatchUpdateBackupSettingRequest {
-  return { parent: "", requests: [] };
-}
-
-export const BatchUpdateBackupSettingRequest = {
-  encode(message: BatchUpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    for (const v of message.requests) {
-      UpdateBackupSettingRequest.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateBackupSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateBackupSettingRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.parent = reader.string();
-          break;
-        case 2:
-          message.requests.push(UpdateBackupSettingRequest.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BatchUpdateBackupSettingRequest {
-    return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      requests: Array.isArray(object?.requests)
-        ? object.requests.map((e: any) => UpdateBackupSettingRequest.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: BatchUpdateBackupSettingRequest): unknown {
-    const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    if (message.requests) {
-      obj.requests = message.requests.map((e) => e ? UpdateBackupSettingRequest.toJSON(e) : undefined);
-    } else {
-      obj.requests = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<BatchUpdateBackupSettingRequest>): BatchUpdateBackupSettingRequest {
-    const message = createBaseBatchUpdateBackupSettingRequest();
-    message.parent = object.parent ?? "";
-    message.requests = object.requests?.map((e) => UpdateBackupSettingRequest.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseBatchUpdateSettingResponse(): BatchUpdateSettingResponse {
-  return { settings: [] };
-}
-
-export const BatchUpdateSettingResponse = {
-  encode(message: BatchUpdateSettingResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.settings) {
-      BackupSetting.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateSettingResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateSettingResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.settings.push(BackupSetting.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BatchUpdateSettingResponse {
-    return {
-      settings: Array.isArray(object?.settings) ? object.settings.map((e: any) => BackupSetting.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: BatchUpdateSettingResponse): unknown {
-    const obj: any = {};
-    if (message.settings) {
-      obj.settings = message.settings.map((e) => e ? BackupSetting.toJSON(e) : undefined);
-    } else {
-      obj.settings = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<BatchUpdateSettingResponse>): BatchUpdateSettingResponse {
-    const message = createBaseBatchUpdateSettingResponse();
-    message.settings = object.settings?.map((e) => BackupSetting.fromPartial(e)) || [];
     return message;
   },
 };
@@ -2351,14 +2217,6 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    batchUpdateBackupSetting: {
-      name: "BatchUpdateBackupSetting",
-      requestType: BatchUpdateBackupSettingRequest,
-      requestStream: false,
-      responseType: BatchUpdateSettingResponse,
-      responseStream: false,
-      options: {},
-    },
   },
 } as const;
 
@@ -2389,10 +2247,6 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: UpdateBackupSettingRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BackupSetting>>;
-  batchUpdateBackupSetting(
-    request: BatchUpdateBackupSettingRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateSettingResponse>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -2425,10 +2279,6 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BackupSetting>;
-  batchUpdateBackupSetting(
-    request: DeepPartial<BatchUpdateBackupSettingRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateSettingResponse>;
 }
 
 declare var self: any | undefined;

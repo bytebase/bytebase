@@ -30,7 +30,6 @@ type DatabaseServiceClient interface {
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
-	BatchUpdateBackupSetting(ctx context.Context, in *BatchUpdateBackupSettingRequest, opts ...grpc.CallOption) (*BatchUpdateSettingResponse, error)
 }
 
 type databaseServiceClient struct {
@@ -113,15 +112,6 @@ func (c *databaseServiceClient) UpdateBackupSetting(ctx context.Context, in *Upd
 	return out, nil
 }
 
-func (c *databaseServiceClient) BatchUpdateBackupSetting(ctx context.Context, in *BatchUpdateBackupSettingRequest, opts ...grpc.CallOption) (*BatchUpdateSettingResponse, error) {
-	out := new(BatchUpdateSettingResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.DatabaseService/BatchUpdateBackupSetting", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility
@@ -134,7 +124,6 @@ type DatabaseServiceServer interface {
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
-	BatchUpdateBackupSetting(context.Context, *BatchUpdateBackupSettingRequest) (*BatchUpdateSettingResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -165,9 +154,6 @@ func (UnimplementedDatabaseServiceServer) GetBackupSetting(context.Context, *Get
 }
 func (UnimplementedDatabaseServiceServer) UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBackupSetting not implemented")
-}
-func (UnimplementedDatabaseServiceServer) BatchUpdateBackupSetting(context.Context, *BatchUpdateBackupSettingRequest) (*BatchUpdateSettingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateBackupSetting not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 
@@ -326,24 +312,6 @@ func _DatabaseService_UpdateBackupSetting_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_BatchUpdateBackupSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchUpdateBackupSettingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).BatchUpdateBackupSetting(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.DatabaseService/BatchUpdateBackupSetting",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).BatchUpdateBackupSetting(ctx, req.(*BatchUpdateBackupSettingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -382,10 +350,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateBackupSetting",
 			Handler:    _DatabaseService_UpdateBackupSetting_Handler,
-		},
-		{
-			MethodName: "BatchUpdateBackupSetting",
-			Handler:    _DatabaseService_BatchUpdateBackupSetting_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
