@@ -403,7 +403,7 @@
     },
     "sso": {
       "create": "Create SSO",
-      "description": "Single sign-on (SSO) is an authentication method that enables users to authenticate with other applications and websites.",
+      "description": "Single sign-on (SSO) is an authentication method that enables users to sign in to multiple applications and websites with a single set of credentials.",
       "deletion": "Delete this SSO",
       "form": {
         "callback-url": "Authorization callback url",
