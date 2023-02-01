@@ -20,34 +20,67 @@ import (
 type SingleSQL struct {
 	Text     string
 	LastLine int
+	// The sql is empty, such as `/* comments */;` or just `;`.
+	Empty bool
 }
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error) {
+	var list []SingleSQL
+	var err error
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(statement)
-		return t.splitPostgreSQLMultiSQL()
+		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, TiDB:
 		t := newTokenizer(statement)
-		return t.splitMySQLMultiSQL()
+		list, err = t.splitMySQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []SingleSQL
+	for _, sql := range list {
+		if sql.Empty {
+			continue
+		}
+		result = append(result, sql)
+	}
+	return result, nil
 }
 
 // SplitMultiSQLStream splits statement stream into a slice of the single SQL.
 func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error) ([]SingleSQL, error) {
+	var list []SingleSQL
+	var err error
 	switch engineType {
 	case Postgres:
 		t := newStreamTokenizer(src, f)
-		return t.splitPostgreSQLMultiSQL()
+		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, TiDB:
 		t := newStreamTokenizer(src, f)
-		return t.splitMySQLMultiSQL()
+		list, err = t.splitMySQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []SingleSQL
+	for _, sql := range list {
+		if sql.Empty {
+			continue
+		}
+		result = append(result, sql)
+	}
+
+	return result, nil
 }
 
 // SetLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
