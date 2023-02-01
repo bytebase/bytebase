@@ -34,6 +34,4 @@ export function openWindowForSSO(
       `identity provider type ${identityProvider.type.toString()} is not supported`
     );
   }
-
-  return null;
 }

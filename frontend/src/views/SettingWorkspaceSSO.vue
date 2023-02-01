@@ -1,7 +1,7 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="textinfolabel max-w-xl">
+      <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}
       </div>
       <div>
