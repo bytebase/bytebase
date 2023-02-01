@@ -198,7 +198,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Postgres, sc, f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(parser.Postgres, sc, f, true /* filterEmptyStatement */); err != nil {
 		return err
 	}
 

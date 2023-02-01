@@ -348,7 +348,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f, true /* filterEmptyStatement */); err != nil {
 		return 0, err
 	}
 
@@ -446,7 +446,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement, true /* filterEmptyStatement */)
 	if err != nil {
 		return nil, err
 	}

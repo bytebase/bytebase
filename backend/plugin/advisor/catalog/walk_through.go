@@ -1312,7 +1312,7 @@ func (d *DatabaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughErr
 		return nodeList, nil
 	}
 
-	sqlList, err := parser.SplitMultiSQL(parser.MySQL, stmts)
+	sqlList, err := parser.SplitMultiSQL(parser.MySQL, stmts, true /* filterEmptyStatement */)
 	if err != nil {
 		return nil, NewParseError(err.Error())
 	}

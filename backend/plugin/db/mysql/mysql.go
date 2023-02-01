@@ -216,7 +216,7 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
-	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement, true /* filterEmptyStatement */)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func splitAndTransformDelimiter(statement string) ([]string, error) {
 	var trunks []string
 
 	var out bytes.Buffer
-	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement, true /* filterEmptyStatement */)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL statements")
 	}

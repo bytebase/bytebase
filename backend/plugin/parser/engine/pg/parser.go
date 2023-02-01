@@ -41,7 +41,7 @@ func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.N
 	}
 
 	// setting line stage
-	textList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	textList, err := parser.SplitMultiSQL(parser.Postgres, statement, true /* filterEmptyStatement */)
 	if err != nil {
 		return nil, err
 	}

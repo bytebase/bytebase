@@ -43,7 +43,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 	}
 
 	// setting line stage
-	sqlList, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	sqlList, err := parser.SplitMultiSQL(parser.MySQL, statement, true /* filterEmptyStatement */)
 	if err != nil {
 		return nil, []advisor.Advice{
 			{

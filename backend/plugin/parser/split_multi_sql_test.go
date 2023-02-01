@@ -34,6 +34,35 @@ func TestPGSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
 		{
+			statement: `select * from t;
+			/* sdfasdf */`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+				},
+			},
+		},
+		{
+			statement: `select * from t;
+			/* sdfasdf */;
+			select * from t;`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+					{
+						Text:     `select * from t;`,
+						LastLine: 3,
+					},
+				},
+			},
+		},
+		{
 			statement: bigSQL,
 			want: resData{
 				res: []SingleSQL{
@@ -218,14 +247,14 @@ func TestPGSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitMultiSQL(Postgres, test.statement)
+		res, err := SplitMultiSQL(Postgres, test.statement, true /* filterEmptyStatement */)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement), nil)
+		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement), nil, true /* filterEmptyStatement */)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()
@@ -237,6 +266,35 @@ func TestPGSplitMultiSQL(t *testing.T) {
 func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
+		{
+			statement: `select * from t;
+			/* sdfasdf */`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+				},
+			},
+		},
+		{
+			statement: `select * from t;
+			/* sdfasdf */;
+			select * from t;`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+					{
+						Text:     `select * from t;`,
+						LastLine: 3,
+					},
+				},
+			},
+		},
 		{
 			statement: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
@@ -481,14 +539,14 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitMultiSQL(MySQL, test.statement)
+		res, err := SplitMultiSQL(MySQL, test.statement, true /* filterEmptyStatement */)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement), nil)
+		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement), nil, true /* filterEmptyStatement */)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()
