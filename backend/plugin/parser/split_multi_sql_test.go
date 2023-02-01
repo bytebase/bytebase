@@ -247,14 +247,14 @@ func TestPGSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitMultiSQL(Postgres, test.statement, true /* filterEmptyStatement */)
+		res, err := SplitMultiSQL(Postgres, test.statement)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement), nil, true /* filterEmptyStatement */)
+		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement), nil)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()
@@ -539,14 +539,14 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitMultiSQL(MySQL, test.statement, true /* filterEmptyStatement */)
+		res, err := SplitMultiSQL(MySQL, test.statement)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement), nil, true /* filterEmptyStatement */)
+		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement), nil)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()

@@ -66,7 +66,7 @@ func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Ad
 }
 
 func getWarnWithLine(statement string, charset string, collation string) []advisor.Advice {
-	list, err := parser.SplitMultiSQL(parser.MySQL, statement, true /* filterEmptyStatement */)
+	list, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		return []advisor.Advice{{
 			Status:  advisor.Error,
@@ -97,7 +97,7 @@ func getWarnWithLine(statement string, charset string, collation string) []advis
 }
 
 func calculateErrorLine(statement string, charset string, collation string) int {
-	list, err := parser.SplitMultiSQL(parser.MySQL, statement, true /* filterEmptyStatement */)
+	list, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		//nolint:nilerr
 		return 1

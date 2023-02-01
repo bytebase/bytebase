@@ -25,7 +25,7 @@ type SingleSQL struct {
 }
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
-func SplitMultiSQL(engineType EngineType, statement string, filterEmptyStatement bool) ([]SingleSQL, error) {
+func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error) {
 	var list []SingleSQL
 	var err error
 	switch engineType {
@@ -45,7 +45,7 @@ func SplitMultiSQL(engineType EngineType, statement string, filterEmptyStatement
 
 	var result []SingleSQL
 	for _, sql := range list {
-		if filterEmptyStatement && sql.Empty {
+		if sql.Empty {
 			continue
 		}
 		result = append(result, sql)
@@ -54,7 +54,7 @@ func SplitMultiSQL(engineType EngineType, statement string, filterEmptyStatement
 }
 
 // SplitMultiSQLStream splits statement stream into a slice of the single SQL.
-func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error, filterEmptyStatement bool) ([]SingleSQL, error) {
+func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error) ([]SingleSQL, error) {
 	var list []SingleSQL
 	var err error
 	switch engineType {
@@ -74,7 +74,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 
 	var result []SingleSQL
 	for _, sql := range list {
-		if filterEmptyStatement && sql.Empty {
+		if sql.Empty {
 			continue
 		}
 		result = append(result, sql)
@@ -113,7 +113,7 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 	var unsupportStmts []string
 	var supportedStmts bytes.Buffer
 	// We use our bb tokenizer to help us split the multi-statements into statement list.
-	singleSQLs, err := SplitMultiSQL(MySQL, stmts, true /* filterEmptyStatement */)
+	singleSQLs, err := SplitMultiSQL(MySQL, stmts)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "cannot split multi sql %q via bytebase parser", stmts)
 	}
