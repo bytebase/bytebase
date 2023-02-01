@@ -36,9 +36,6 @@
         <div class="bb-grid-cell">
           {{ projectName(item.database.project) }}
         </div>
-        <div class="bb-grid-cell hidden md:flex">
-          {{ humanizeTs(item.policy.updatedTs) }}
-        </div>
         <div class="bb-grid-cell justify-center !px-2">
           <NPopconfirm @positive-click="removeSensitiveColumn(item)">
             <template #trigger>
@@ -209,11 +206,6 @@ const COLUMN_LIST = computed((): BBGridColumn[] => [
   {
     title: t("common.project"),
     width: "minmax(auto, 1fr)",
-  },
-  {
-    title: t("common.updated-at"),
-    width: { md: "minmax(auto, 8rem)" },
-    class: "hidden md:flex",
   },
   {
     title: t("common.operation"),
