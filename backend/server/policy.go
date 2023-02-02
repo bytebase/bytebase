@@ -460,6 +460,9 @@ func mergeSQLReviewRule(payload string) string {
 }
 
 func splitSQLReviewRule(payload *string) *string {
+	if payload == nil {
+		return nil
+	}
 	policy, err := api.UnmarshalSQLReviewPolicy(*payload)
 	if err != nil {
 		return payload
