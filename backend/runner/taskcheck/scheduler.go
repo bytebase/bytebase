@@ -103,7 +103,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							Status:    api.TaskCheckRunFailed,
 							Code:      common.Internal,
 						}
-						if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+						if err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 							log.Error("Failed to mark task check run as FAILED",
 								zap.Int("id", taskCheckRun.ID),
 								zap.Int("task_id", taskCheckRun.TaskID),
@@ -153,7 +153,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.Ok,
 								Result:    string(bytes),
 							}
-							if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+							if err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 								log.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
@@ -188,7 +188,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),
 							}
-							if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+							if err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 								log.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
@@ -217,7 +217,7 @@ func (s *Scheduler) Register(taskType api.TaskCheckType, executor Executor) {
 	s.executors[taskType] = executor
 }
 
-func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) ([]*store.TaskCheckRunCreate, error) {
+func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunCreate, error) {
 	var createList []*store.TaskCheckRunCreate
 
 	create, err := s.getLGTMTaskCheck(ctx, project, task, creatorID)
@@ -228,7 +228,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	create, err = s.getPITRTaskCheck(ctx, task, creatorID)
+	create, err = s.getPITRTaskCheck(task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
@@ -240,7 +240,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		return createList, nil
 	}
 
-	create, err = s.getGeneralTaskCheck(ctx, task, creatorID)
+	create, err = s.getGeneralTaskCheck(task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
@@ -248,7 +248,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	create, err = s.getGhostTaskCheck(ctx, task, creatorID)
+	create, err = s.getGhostTaskCheck(task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule gh-ost task check")
 	}
@@ -310,20 +310,15 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 }
 
 // ScheduleCheck schedules variouse task checks depending on the task type.
-func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) (*api.Task, error) {
+func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) error {
 	createList, err := s.getTaskCheck(ctx, project, task, creatorID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to getTaskCheck")
+		return errors.Wrap(err, "failed to getTaskCheck")
 	}
-	taskCheckRunList, err := s.store.BatchCreateTaskCheckRun(ctx, createList)
-	if err != nil {
-		return nil, err
-	}
-	task.TaskCheckRunList = taskCheckRunList
-	return task, err
+	return s.store.BatchCreateTaskCheckRun(ctx, createList)
 }
 
-func getStmtTypeTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
+func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
 	if !api.IsStatementTypeCheckSupported(instance.Engine) {
 		return nil, nil
 	}
@@ -346,7 +341,7 @@ func getStmtTypeTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSch
 	}, nil
 }
 
-func (*Scheduler) getSQLReviewTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
+func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
@@ -369,7 +364,7 @@ func (*Scheduler) getSQLReviewTaskCheck(task *api.Task, instance *store.Instance
 	}, nil
 }
 
-func getSyntaxCheckTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
+func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
 	if !api.IsSyntaxCheckSupported(instance.Engine) {
 		return nil, nil
 	}
@@ -392,7 +387,7 @@ func getSyntaxCheckTaskCheck(task *api.Task, instance *store.InstanceMessage, db
 	}, nil
 }
 
-func (*Scheduler) getGeneralTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*store.TaskCheckRunCreate, error) {
+func (*Scheduler) getGeneralTaskCheck(task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunCreate, error) {
 	return []*store.TaskCheckRunCreate{
 		{
 			CreatorID: creatorID,
@@ -407,7 +402,7 @@ func (*Scheduler) getGeneralTaskCheck(_ context.Context, task *api.Task, creator
 	}, nil
 }
 
-func (*Scheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*store.TaskCheckRunCreate, error) {
+func (*Scheduler) getGhostTaskCheck(task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return nil, nil
 	}
@@ -420,7 +415,7 @@ func (*Scheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID
 	}, nil
 }
 
-func (*Scheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*store.TaskCheckRunCreate, error) {
+func (*Scheduler) getPITRTaskCheck(task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseRestorePITRRestore {
 		return nil, nil
 	}
@@ -433,7 +428,7 @@ func (*Scheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID 
 	}, nil
 }
 
-func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) ([]*store.TaskCheckRunCreate, error) {
+func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunCreate, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 		return nil, nil
 	}
@@ -441,7 +436,15 @@ func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.Project
 		// don't schedule LGTM check if it's disabled.
 		return nil, nil
 	}
-	approvalPolicy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	if err != nil {
+		return nil, err
+	}
+	approvalPolicy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -459,19 +462,18 @@ func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.Project
 }
 
 // SchedulePipelineTaskCheck schedules the task checks for a pipeline.
-func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *store.ProjectMessage, pipeline *api.Pipeline) error {
+func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *store.ProjectMessage, pipelineID int) error {
 	var createList []*store.TaskCheckRunCreate
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			create, err := s.getTaskCheck(ctx, project, task, api.SystemBotID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
-			}
-			createList = append(createList, create...)
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &pipelineID})
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
+		create, err := s.getTaskCheck(ctx, project, task, api.SystemBotID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
 		}
+		createList = append(createList, create...)
 	}
-	if _, err := s.store.BatchCreateTaskCheckRun(ctx, createList); err != nil {
-		return errors.Wrap(err, "failed to batch insert TaskCheckRunCreate")
-	}
-	return nil
+	return s.store.BatchCreateTaskCheckRun(ctx, createList)
 }
