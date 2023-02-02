@@ -85,23 +85,6 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	return composedTask, nil
 }
 
-// FindTask finds a list of Task instances.
-func (s *Store) FindTask(ctx context.Context, find *api.TaskFind) ([]*api.Task, error) {
-	tasks, err := s.ListTasks(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Task list with TaskFind[%+v]", find)
-	}
-	var composedTasks []*api.Task
-	for _, task := range tasks {
-		composedTask, err := s.composeTask(ctx, task)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-		}
-		composedTasks = append(composedTasks, composedTask)
-	}
-	return composedTasks, nil
-}
-
 // PatchTask patches an instance of Task.
 func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
 	task, err := s.UpdateTaskV2(ctx, patch)

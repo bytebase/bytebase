@@ -66,7 +66,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
 		Payload:    "task.payload->>'threadID'!='' AND task.payload->>'rollbackError' IS NULL AND task.payload->>'rollbackStatement' IS NULL",
 	}
-	taskList, err := r.store.FindTask(ctx, find)
+	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return

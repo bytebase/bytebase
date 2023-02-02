@@ -637,7 +637,7 @@ func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.Issue
 // So we change their status to CANCELED before starting the scheduler.
 func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
-	runningTasks, err := s.store.FindTask(ctx, taskFind)
+	runningTasks, err := s.store.ListTasks(ctx, taskFind)
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}
