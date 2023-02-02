@@ -121,6 +121,7 @@
         "rbac": "RBAC 权限管理",
         "watermark": "水印设置",
         "sync-members-from-vcs": "从 GitLab 同步成员信息",
+        "sso": "SSO 单点登录",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",
