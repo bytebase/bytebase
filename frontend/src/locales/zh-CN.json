@@ -406,10 +406,12 @@
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "deletion": "删除这个 SSO",
       "form": {
+        "type": "类型",
+        "learn-more-with-user-doc": "了解更多如何配置",
         "redirect-url": "回调地址",
+        "redirect-url-description": "将会用于填写到 OAuth 提供商申请表单中的相应字段。",
         "use-template": "使用模版",
         "select-template": "选择模版",
-        "type": "类型",
         "basic-information": "基础信息",
         "name": "名称",
         "resource-id": "资源 ID",
@@ -426,8 +428,9 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
-        "identifier": "唯一标识符",
-        "display-name": "昵称"
+        "identifier": "Bytebase 用户的唯一标识符",
+        "display-name": "Bytebase 用户的昵称",
+        "email": "Bytebase 用户的 Email"
       },
       "copy-redirect-url": "Redirect URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。"
     },
@@ -1691,7 +1694,7 @@
         "desc": "使用只读副本连接到只读数据源。"
       },
       "bb-feature-sso": {
-        "title": "Single sign-on (SSO)",
+        "title": "Single Sign-On (SSO)",
         "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
       }
     }
