@@ -636,7 +636,6 @@
     "vcs-info": "VCS enabled. Selecting this will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
     "alter-multiple-db": "Manual Selection",
-    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments.",
     "alter-db-group": "By Deployment Config",
     "no-databases-in-project": "No databases in this project. Click New DB or Transfer in DB to add databases."
   },
