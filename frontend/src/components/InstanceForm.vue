@@ -476,7 +476,7 @@ import { computed, reactive, PropType } from "vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { SslCertificateForm } from "./InstanceForm";
-import { hasWorkspacePermission } from "../utils";
+import { clearObject, hasWorkspacePermission } from "../utils";
 import {
   InstancePatch,
   DataSourceType,
@@ -814,7 +814,9 @@ const updateInstanceDataSource = (dataSource: EditDataSource) => {
     delete newValue.sslKey;
   }
 
-  state.instance.dataSourceList[index] = newValue;
+  const oldValue = state.instance.dataSourceList[index];
+  clearObject(oldValue);
+  Object.assign(oldValue, newValue);
 };
 
 const handleCreateDataSource = (type: DataSourceType) => {
