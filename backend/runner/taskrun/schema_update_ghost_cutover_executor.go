@@ -70,7 +70,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 		return true, nil, err
 	}
 
-	syncTask, err := exec.store.GetTaskByID(ctx, syncTaskID)
+	syncTask, err := exec.store.GetTaskV2ByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get schema update gh-ost sync task for cutover task")
 	}
