@@ -60,26 +60,6 @@ func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
 	}
 }
 
-// BatchCreateTaskCheckRun inserts many TaskCheckRun instances, which is too slow otherwise to insert one by one.
-func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
-	if len(creates) == 0 {
-		return nil, nil
-	}
-	taskCheckRuns, err := s.batchCreateTaskCheckRunV1(ctx, creates)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create task check run %#v", creates)
-	}
-	var composedTaskCheckRuns []*api.TaskCheckRun
-	for _, run := range taskCheckRuns {
-		composedTaskCheckRun, err := s.composeTaskCheckRun(ctx, run)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose task check run %#v", run)
-		}
-		composedTaskCheckRuns = append(composedTaskCheckRuns, composedTaskCheckRun)
-	}
-	return composedTaskCheckRuns, nil
-}
-
 // FindTaskCheckRun finds a list of TaskCheckRun instances.
 func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, find)
@@ -208,23 +188,22 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskChec
 	return tx.Commit()
 }
 
-func (s *Store) batchCreateTaskCheckRunV1(ctx context.Context, creates []*TaskCheckRunCreate) ([]*TaskCheckRunMessage, error) {
+func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunCreate) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return FormatError(err)
 	}
 	defer tx.Rollback()
 
-	taskCheckRunList, err := s.createTaskCheckRunImpl(ctx, tx, creates...)
-	if err != nil {
-		return nil, err
+	if _, err := s.createTaskCheckRunImpl(ctx, tx, creates...); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return FormatError(err)
 	}
 
-	return taskCheckRunList, nil
+	return nil
 }
 
 func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) ([]*TaskCheckRunMessage, error) {
