@@ -98,20 +98,6 @@ func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task,
 	return composedTask, nil
 }
 
-// PatchTaskStatus patches a task status.
-func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
-	task, err := s.UpdateTaskStatusV2(ctx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	composedTask, err := s.composeTask(ctx, task)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-	}
-	return composedTask, nil
-}
-
 // BatchPatchTaskStatus patches status for a list of tasks.
 func (s *Store) BatchPatchTaskStatus(ctx context.Context, taskIDs []int, status api.TaskStatus, updaterID int) error {
 	var ids []string
