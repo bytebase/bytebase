@@ -70,6 +70,8 @@
         "schema-change-advanced-tooltip": "Normal migration + Online migration (gh-ost)",
         "migration-history": "Migration history",
         "sql-editor": "SQL Editor",
+        "schema-editor": "Schema Editor",
+        "schema-diagram": "Schema Diagram",
         "disaster-recovery": "Disaster recovery",
         "disaster-recovery-basic": "Basic",
         "disaster-recovery-basic-tooltip": "Database backup / restore",
