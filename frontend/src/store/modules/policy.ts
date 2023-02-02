@@ -3,6 +3,7 @@ import { computed, Ref, unref, watchEffect } from "vue";
 import axios from "axios";
 import {
   DatabaseId,
+  EMPTY_ID,
   EnvironmentId,
   MaybeRef,
   PolicyState,
@@ -61,6 +62,8 @@ function convert(
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };
+  if (result.id === UNKNOWN_ID) result.resourceId = UNKNOWN_ID;
+  if (result.id === EMPTY_ID) result.resourceId = EMPTY_ID;
   if (result.type === "bb.policy.pipeline-approval") {
     const payload = result.payload as PipelineApprovalPolicyPayload;
     if (!payload.assigneeGroupList) {
