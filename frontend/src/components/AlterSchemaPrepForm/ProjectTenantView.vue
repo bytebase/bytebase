@@ -38,13 +38,9 @@
           </i18n-t>
         </div>
         <template v-else>
-          <div class="flex justify-end items-center pb-2">
-            <YAxisRadioGroup v-model:label="label" class="text-sm" />
-          </div>
-
           <DeployDatabaseTable
             :database-list="databaseList"
-            :label="label"
+            :label="state.label"
             :environment-list="environmentList"
             :deployment="deployment!"
           />
@@ -57,7 +53,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, watchEffect, ref, h } from "vue";
+import { computed, watchEffect, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
 import type {
@@ -76,6 +72,7 @@ import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 export type State = {
   selectedDatabaseIdListForTenantMode: Set<DatabaseId>;
   deployingTenantDatabaseList: DatabaseId[];
+  label: LabelKeyType;
 };
 
 const props = defineProps<{
@@ -100,8 +97,6 @@ const fetchData = () => {
 };
 
 watchEffect(fetchData);
-
-const label = ref<LabelKeyType>("bb.environment");
 
 const deployment = computed(() => {
   if (props.project) {

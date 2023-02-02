@@ -7,7 +7,7 @@
         href="#"
         class="hover:text-gray-600"
         :class="{ 'text-gray-800': item.label === selectedLanguage }"
-        @click.prevent="changeLanuage(item)"
+        @click.prevent="changeLanguage(item)"
       >
         {{ item.label }}
       </a>
@@ -27,18 +27,19 @@ const { locale, setLocale } = useLanguage();
 const languageList = [
   {
     label: "English",
-    value: "en",
+    value: "en-US",
   },
   {
     label: "简体中文",
     value: "zh-CN",
   },
 ];
-const localeLabel = locale.value === "en" ? "English" : "简体中文";
+const localeLabel =
+  locale.value === "en-US" || locale.value === "en" ? "English" : "简体中文";
 const selectedLanguage = ref(localeLabel);
 const year = new Date().getFullYear();
 
-const changeLanuage = (item: any) => {
+const changeLanguage = (item: any) => {
   setLocale(item.value);
   selectedLanguage.value = item.label;
 };

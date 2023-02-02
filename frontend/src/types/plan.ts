@@ -4,7 +4,7 @@ import planData from "./plan.yaml";
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
   // Admin & Security
-  | "bb.feature.3rd-party-auth"
+  | "bb.feature.sso"
   | "bb.feature.rbac"
   | "bb.feature.watermark"
   // Branding

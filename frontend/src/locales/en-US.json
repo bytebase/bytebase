@@ -403,13 +403,15 @@
     },
     "sso": {
       "create": "Create SSO",
-      "description": "Single sign-on (SSO) is an authentication method that enables users to sign in to multiple applications and websites with a single set of credentials.",
+      "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "deletion": "Delete this SSO",
       "form": {
+        "type": "Type",
+        "learn-more-with-user-doc": "Learn more about the configuration",
         "redirect-url": "Authorization redirect url",
+        "redirect-url-description": "It will be used to fill in the appropriate field in the OAuth provider application form.",
         "use-template": "Use template",
         "select-template": "Select template",
-        "type": "Type",
         "basic-information": "Basic information",
         "name": "Name",
         "resource-id": "Resource ID",
@@ -425,9 +427,10 @@
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
         "user-information-mapping": "User information mapping",
-        "user-information-mapping-description": "Field mapping saves the field names from user info API.",
-        "identifier": "Identifier",
-        "display-name": "Display name"
+        "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
+        "identifier": "Bytebase User Identifier",
+        "display-name": "Bytebase User Display name",
+        "email": "Bytebase User Email"
       },
       "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
     },
@@ -639,7 +642,6 @@
   },
   "quick-action": {
     "create-db": "Create database",
-    "choose-db": "Choose database",
     "new-db": "New DB",
     "add-instance": "@:common.add @:common.instance",
     "create-instance": "@:common.create @:common.instance",
@@ -831,7 +833,6 @@
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
-      "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login",
       "sign-in-with-idp": "Sign in with {idp}"
     },
@@ -1466,7 +1467,7 @@
     },
     "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode.",
     "run-selected": "Run selected",
-    "clear-history": "Clear history"
+    "clear-screen": "Clear screen"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -1567,7 +1568,7 @@
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
-    "start-n-days-trial": "Start {days} days trial",
+    "start-n-days-trial": "Start {days} days trial (no credit card required)",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
     "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
@@ -1664,11 +1665,6 @@
         "title": "Schema drift",
         "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
       },
-      "bb-feature-3rd-party-auth": {
-        "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.",
-        "login": "@:{'subscription.upgrade'} to unlock this feature"
-      },
       "bb-feature-branding": {
         "title": "Branding",
         "desc": "Customize the logo."
@@ -1688,6 +1684,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "Connect to a read replica for the read-only data source."
+      },
+      "bb-feature-sso": {
+        "title": "Single Sign-On (SSO)",
+        "desc": "Enables users to securely authenticate with multiple applications and websites via a single set of credentials."
       }
     }
   },

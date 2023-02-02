@@ -69,14 +69,6 @@
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="$emit('cancel')"
-        >
-          {{ $t("common.dismiss") }}
-        </button>
-
         <template v-if="subscriptionStore.canTrial">
           <button
             v-if="subscriptionStore.canUpgradeTrial"

@@ -406,10 +406,12 @@
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "deletion": "删除这个 SSO",
       "form": {
+        "type": "类型",
+        "learn-more-with-user-doc": "了解更多如何配置",
         "redirect-url": "回调地址",
+        "redirect-url-description": "将会用于填写到 OAuth 提供商申请表单中的相应字段。",
         "use-template": "使用模版",
         "select-template": "选择模版",
-        "type": "类型",
         "basic-information": "基础信息",
         "name": "名称",
         "resource-id": "资源 ID",
@@ -426,8 +428,9 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
-        "identifier": "唯一标识符",
-        "display-name": "昵称"
+        "identifier": "Bytebase 用户的唯一标识符",
+        "display-name": "Bytebase 用户的昵称",
+        "email": "Bytebase 用户的 Email"
       },
       "copy-redirect-url": "Redirect URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。"
     },
@@ -639,7 +642,6 @@
   },
   "quick-action": {
     "create-db": "创建数据库",
-    "choose-db": "选择数据库",
     "new-db": "创建数据库",
     "add-instance": "@:common.add@:common.instance",
     "create-instance": "@:common.create@:common.instance",
@@ -831,7 +833,6 @@
       "demo-note": "请使用 demo 账号登录",
       "gitlab": "通过 GitLab 登录",
       "github": "通过 GitHub 登录",
-      "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录",
       "sign-in-with-idp": "通过 {idp} 登录"
     },
@@ -1466,7 +1467,7 @@
     },
     "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。",
     "run-selected": "运行选中的语句",
-    "clear-history": "清除历史"
+    "clear-screen": "清屏"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -1568,7 +1569,7 @@
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
-    "start-n-days-trial": "开启 {days} 天试用",
+    "start-n-days-trial": "开启 {days} 天试用 (无需信用卡)",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
@@ -1665,11 +1666,6 @@
         "title": "Schema 偏差",
         "desc": "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
       },
-      "bb-feature-3rd-party-auth": {
-        "title": "第三方认证 & 授权",
-        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。",
-        "login": "请@:{'subscription.upgrade'}来开启该功能"
-      },
       "bb-feature-branding": {
         "title": "自定义品牌信息",
         "desc": "定制 Logo"
@@ -1689,6 +1685,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "使用只读副本连接到只读数据源。"
+      },
+      "bb-feature-sso": {
+        "title": "Single Sign-On (SSO)",
+        "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
       }
     }
   },

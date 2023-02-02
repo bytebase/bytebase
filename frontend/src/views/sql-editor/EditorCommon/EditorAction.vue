@@ -23,11 +23,11 @@
         {{ $t("sql-editor.format") }} (⇧+⌥+F)
       </NButton>
       <NButton
-        v-if="showClearHistory"
+        v-if="showClearScreen"
         :disabled="queryList.length <= 1 || isExecutingSQL"
-        @click="handleClearHistory"
+        @click="handleClearScreen"
       >
-        {{ $t("sql-editor.clear-history") }} (⇧+⌥+C)
+        {{ $t("sql-editor.clear-screen") }} (⇧+⌥+C)
       </NButton>
     </div>
     <div class="action-right space-x-2 flex justify-end items-center">
@@ -86,7 +86,7 @@ const emit = defineEmits<{
     config: ExecuteConfig,
     option?: ExecuteOption
   ): void;
-  (e: "clear-history"): void;
+  (e: "clear-screen"): void;
 }>();
 
 const instanceStore = useInstanceStore();
@@ -137,7 +137,7 @@ const allowSave = computed(() => {
   return true;
 });
 
-const showClearHistory = computed(() => {
+const showClearScreen = computed(() => {
   return tabStore.currentTab.mode === TabMode.Admin;
 });
 
@@ -170,7 +170,7 @@ const handleFormatSQL = () => {
   sqlEditorStore.setShouldFormatContent(true);
 };
 
-const handleClearHistory = () => {
-  emit("clear-history");
+const handleClearScreen = () => {
+  emit("clear-screen");
 };
 </script>

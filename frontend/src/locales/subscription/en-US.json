@@ -120,7 +120,6 @@
         "terraform-provider": "Terraform Provider",
         "rbac": "RBAC (Owner, DBA, Developer role)",
         "watermark": "Watermark",
-        "3rd-party-auth": "Login with GitLab account",
         "sync-members-from-vcs": "Sync project membership from the linked GitLab project",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",

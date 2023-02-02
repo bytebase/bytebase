@@ -69,9 +69,6 @@
             </div>
           </BBTableCell>
           <BBTableCell>
-            {{ humanizeTs(policy.updatedTs) }}
-          </BBTableCell>
-          <BBTableCell>
             <div class="flex items-center justify-center">
               <NPopconfirm @positive-click="handleRemove(policy)">
                 <template #trigger>
@@ -370,10 +367,6 @@ const COLUMN_LIST = computed((): BBTableColumn[] => [
   },
   {
     title: t("common.instance"),
-  },
-  {
-    title: t("common.updated-at"),
-    nowrap: true,
   },
   {
     title: t("common.operation"),
