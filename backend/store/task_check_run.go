@@ -188,6 +188,7 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskChec
 	return tx.Commit()
 }
 
+// BatchCreateTaskCheckRun creates task check runs in batch.
 func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunCreate) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

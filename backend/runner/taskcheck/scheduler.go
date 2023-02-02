@@ -315,10 +315,7 @@ func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMes
 	if err != nil {
 		return errors.Wrap(err, "failed to getTaskCheck")
 	}
-	if err := s.store.BatchCreateTaskCheckRun(ctx, createList); err != nil {
-		return err
-	}
-	return nil
+	return s.store.BatchCreateTaskCheckRun(ctx, createList)
 }
 
 func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunCreate, error) {
@@ -478,8 +475,5 @@ func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *stor
 		}
 		createList = append(createList, create...)
 	}
-	if err := s.store.BatchCreateTaskCheckRun(ctx, createList); err != nil {
-		return errors.Wrap(err, "failed to batch insert TaskCheckRunCreate")
-	}
-	return nil
+	return s.store.BatchCreateTaskCheckRun(ctx, createList)
 }
