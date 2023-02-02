@@ -343,13 +343,15 @@ const sortedDatabaseList = computed(() => {
     list = list.filter((db) => db.syncStatus === "OK");
   } else {
     list.sort((a, b) => {
+      // Put NOT_FOUND databases to the top
       if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
         return -1;
       }
       if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
         return 1;
       }
-      return b.createdTs - a.createdTs;
+      // Fallback to `id` DESC
+      return -(a.id - b.id);
     });
   }
 
