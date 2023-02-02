@@ -116,8 +116,6 @@ export interface GetBackupSettingRequest {
 export interface UpdateBackupSettingRequest {
   /** The database backup setting to update. */
   setting?: BackupSetting;
-  /** The list of fields to update. */
-  updateMask?: string[];
 }
 
 export interface Database {
@@ -323,6 +321,8 @@ export interface BackupSetting {
    * Default (empty): Disable automatic backup.
    */
   cronSchedule: string;
+  /** hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. */
+  hookUrl: string;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -829,16 +829,13 @@ export const GetBackupSettingRequest = {
 };
 
 function createBaseUpdateBackupSettingRequest(): UpdateBackupSettingRequest {
-  return { setting: undefined, updateMask: undefined };
+  return { setting: undefined };
 }
 
 export const UpdateBackupSettingRequest = {
   encode(message: UpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.setting !== undefined) {
-      BackupSetting.encode(message.setting, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
+      BackupSetting.encode(message.setting, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -850,11 +847,8 @@ export const UpdateBackupSettingRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 2:
+        case 1:
           message.setting = BackupSetting.decode(reader, reader.uint32());
-          break;
-        case 3:
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -865,17 +859,13 @@ export const UpdateBackupSettingRequest = {
   },
 
   fromJSON(object: any): UpdateBackupSettingRequest {
-    return {
-      setting: isSet(object.setting) ? BackupSetting.fromJSON(object.setting) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
+    return { setting: isSet(object.setting) ? BackupSetting.fromJSON(object.setting) : undefined };
   },
 
   toJSON(message: UpdateBackupSettingRequest): unknown {
     const obj: any = {};
     message.setting !== undefined &&
       (obj.setting = message.setting ? BackupSetting.toJSON(message.setting) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -884,7 +874,6 @@ export const UpdateBackupSettingRequest = {
     message.setting = (object.setting !== undefined && object.setting !== null)
       ? BackupSetting.fromPartial(object.setting)
       : undefined;
-    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
@@ -1960,7 +1949,7 @@ export const DatabaseSchema = {
 };
 
 function createBaseBackupSetting(): BackupSetting {
-  return { name: "", backupRetainDuration: undefined, cronSchedule: "" };
+  return { name: "", backupRetainDuration: undefined, cronSchedule: "", hookUrl: "" };
 }
 
 export const BackupSetting = {
@@ -1973,6 +1962,9 @@ export const BackupSetting = {
     }
     if (message.cronSchedule !== "") {
       writer.uint32(26).string(message.cronSchedule);
+    }
+    if (message.hookUrl !== "") {
+      writer.uint32(34).string(message.hookUrl);
     }
     return writer;
   },
@@ -1993,6 +1985,9 @@ export const BackupSetting = {
         case 3:
           message.cronSchedule = reader.string();
           break;
+        case 4:
+          message.hookUrl = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -2008,6 +2003,7 @@ export const BackupSetting = {
         ? Duration.fromJSON(object.backupRetainDuration)
         : undefined,
       cronSchedule: isSet(object.cronSchedule) ? String(object.cronSchedule) : "",
+      hookUrl: isSet(object.hookUrl) ? String(object.hookUrl) : "",
     };
   },
 
@@ -2018,6 +2014,7 @@ export const BackupSetting = {
       ? Duration.toJSON(message.backupRetainDuration)
       : undefined);
     message.cronSchedule !== undefined && (obj.cronSchedule = message.cronSchedule);
+    message.hookUrl !== undefined && (obj.hookUrl = message.hookUrl);
     return obj;
   },
 
@@ -2028,6 +2025,7 @@ export const BackupSetting = {
       ? Duration.fromPartial(object.backupRetainDuration)
       : undefined;
     message.cronSchedule = object.cronSchedule ?? "";
+    message.hookUrl = object.hookUrl ?? "";
     return message;
   },
 };

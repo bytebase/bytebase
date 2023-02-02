@@ -806,3 +806,115 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 
 	return backupSettingRawList, nil
 }
+
+// BackupSettingMessage is the message for backup setting.
+type BackupSettingMessage struct {
+	// DatabaseUID is the UID of the database.
+	DatabaseUID int
+	// Enable is true if the backup setting is enabled.
+	Enabled bool
+	// HourOfDay is the hour field in cron string to trigger the backup.
+	HourOfDay int
+	// DayOfWeek is the day of week field in cron string to trigger the backup.
+	DayOfWeek int
+	// RetentionPeriodTs is the retention period in seconds.
+	RetentionPeriodTs int64
+
+	HookURL string
+}
+
+// GetBackupSettingV2 retrieves the backup setting for the given database.
+func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*BackupSettingMessage, error) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, databaseUID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var backupSetting BackupSettingMessage
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		SELECT
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		FROM backup_setting WHERE %s;`, strings.Join(where, " AND ")), args...).Scan(
+		&backupSetting.DatabaseUID,
+		&backupSetting.Enabled,
+		&backupSetting.HourOfDay,
+		&backupSetting.DayOfWeek,
+		&backupSetting.RetentionPeriodTs,
+		&backupSetting.HookURL,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	return &backupSetting, nil
+}
+
+// UpsertBackupSettingV2 upserts the backup setting for the given database.
+func (s *Store) UpsertBackupSettingV2(ctx context.Context, databaseUID int, principalUID int, upsert *BackupSettingMessage) (*BackupSettingMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var backupSetting BackupSettingMessage
+	if err := tx.QueryRowContext(ctx, `
+		INSERT INTO backup_setting (
+			creator_id,
+			updater_id,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (database_id)
+		DO UPDATE SET
+			enabled = EXCLUDED.enabled,
+			hour = EXCLUDED.hour,
+			day_of_week = EXCLUDED.day_of_week,
+			retention_period_ts = EXCLUDED.retention_period_ts,
+			updater_id = EXCLUDED.updater_id,
+			hook_url = EXCLUDED.hook_url
+		RETURNING database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
+		`,
+		principalUID,
+		principalUID,
+		upsert.DatabaseUID,
+		upsert.Enabled,
+		upsert.HourOfDay,
+		upsert.DayOfWeek,
+		upsert.RetentionPeriodTs,
+		upsert.HookURL,
+	).Scan(
+		&backupSetting.DatabaseUID,
+		&backupSetting.Enabled,
+		&backupSetting.HourOfDay,
+		&backupSetting.DayOfWeek,
+		&backupSetting.RetentionPeriodTs,
+		&backupSetting.HookURL,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	return &backupSetting, nil
+}
