@@ -30,6 +30,7 @@ categoryList:
       - terraform-provider
       - rbac
       - sync-members-from-vcs
+      - sso
       - dba-workflow
       - environment-tier
       - sensitive-data
@@ -206,6 +207,7 @@ planList:
       - type: rbac
       - type: watermark
       - type: sync-members-from-vcs
+      - type: sso
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
