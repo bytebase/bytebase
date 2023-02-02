@@ -7,23 +7,34 @@
       v-if="isCreating"
       class="w-full flex flex-col justify-start items-start"
     >
-      <p class="textinfolabel my-2">{{ $t("settings.sso.form.type") }}</p>
+      <div class="w-full flex flex-row justify-between items-center">
+        <p class="textlabel my-2">{{ $t("settings.sso.form.type") }}</p>
+        <a
+          v-if="userDocLink"
+          :href="userDocLink"
+          class="normal-link text-sm inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("settings.sso.form.learn-more-with-user-doc") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
+      </div>
       <div class="w-full flex flex-row justify-start items-start space-x-2">
         <label
           v-for="item in identityProviderTypeList"
           :key="item"
-          class="w-24 h-24 border rounded-md flex flex-col justify-center items-center cursor-pointer"
+          class="flex flex-row justify-center items-center cursor-pointer mr-2"
           :for="`radio-${item}`"
         >
-          <span>{{ identityProviderTypeToString(item) }}</span>
           <input
             :id="`radio-${item}`"
             v-model="state.type"
             type="radio"
-            class="btn mt-4"
+            class="btn mr-2"
             :value="item"
             :checked="state.type === item"
           />
+          <span>{{ identityProviderTypeToString(item) }}</span>
         </label>
       </div>
     </div>
@@ -34,45 +45,33 @@
       class="w-full flex flex-col justify-start items-start space-y-3"
     >
       <template v-if="isCreating">
-        <p class="textinfolabel !mt-4">
-          {{ $t("settings.sso.form.redirect-url") }}
-        </p>
-        <div class="w-full relative mt-1">
-          <input
-            type="text"
-            class="textfield w-full"
-            readonly
-            :value="redirectUrl"
-          />
-          <button
-            tabindex="-1"
-            class="absolute right-0 top-1/2 -translate-y-1/2 mr-2 p-1 text-control-light rounded hover:bg-gray-100"
-            @click.prevent="copyRedirectUrl"
-          >
-            <heroicons-outline:clipboard class="w-5 h-5" />
-          </button>
-        </div>
-        <p class="textinfolabel !mt-4">
+        <p class="textlabel mt-4">
           {{ $t("settings.sso.form.use-template") }}
         </p>
-        <BBSelect
-          class="w-full"
-          :selected-item="selectedTemplate"
-          :item-list="templateList"
-          :placeholder="$t('settings.sso.form.select-template')"
-          @select-item="handleTemplateSelect"
-        >
-          <template #menuItem="{ item: template }">
-            {{ template.title }}
-          </template>
-        </BBSelect>
+        <div class="w-full flex flex-row justify-start items-start space-x-2">
+          <label
+            v-for="template in templateList"
+            :key="template.title"
+            class="w-24 h-24 border rounded-md flex flex-col justify-center items-center cursor-pointer hover:bg-gray-100"
+            :for="`radio-${template.title}`"
+            @click="handleTemplateSelect(template)"
+          >
+            <span>{{ template.title }}</span>
+            <input
+              :id="`radio-${template.title}`"
+              type="radio"
+              class="btn mt-4"
+              :checked="selectedTemplate?.title === template.title"
+            />
+          </label>
+        </div>
       </template>
       <hr class="w-full bg-gray-50" />
-      <p class="textinfolabel !mt-4">
+      <p class="text-lg font-medium !mt-4">
         {{ $t("settings.sso.form.basic-information") }}
       </p>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           {{ $t("settings.sso.form.name") }}
           <span class="text-red-600">*</span>
         </p>
@@ -86,7 +85,7 @@
         v-if="isCreating"
         class="w-full flex flex-col justify-start items-start"
       >
-        <p>
+        <p class="textlabel">
           {{ $t("settings.sso.form.resource-id") }}
           <span class="text-red-600">*</span>
         </p>
@@ -98,7 +97,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           {{ $t("settings.sso.form.domain") }}
           <span class="text-red-600">*</span>
         </p>
@@ -110,19 +109,46 @@
         />
       </div>
 
-      <div class="w-full flex flex-row !mt-4">
-        <p class="textinfolabel">
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="text-lg font-medium mt-2">
           {{ $t("settings.sso.form.identity-provider-information") }}
         </p>
+        <p class="textinfolabel">
+          {{
+            $t("settings.sso.form.identity-provider-information-description")
+          }}
+        </p>
+      </div>
+      <div
+        v-if="isCreating"
+        class="w-full flex flex-row justify-start items-center"
+      >
+        <p class="textlabel">
+          {{ $t("settings.sso.form.redirect-url") }}
+        </p>
         <ShowMoreIcon
-          class="inline-block ml-1"
-          :content="
-            $t('settings.sso.form.identity-provider-information-description')
-          "
+          class="ml-1 mr-2"
+          :content="$t('settings.sso.form.redirect-url-description')"
         />
+        <div class="relative grow">
+          <input
+            type="text"
+            class="textfield w-full pr-10"
+            readonly
+            disabled
+            :value="redirectUrl"
+          />
+          <button
+            tabindex="-1"
+            class="absolute right-0 top-1/2 -translate-y-1/2 mr-2 p-1 text-control-light rounded hover:bg-gray-100"
+            @click.prevent="copyRedirectUrl"
+          >
+            <heroicons-outline:clipboard class="w-5 h-5" />
+          </button>
+        </div>
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           Client ID
           <span class="text-red-600">*</span>
         </p>
@@ -134,7 +160,7 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           Client secret
           <span class="text-red-600">*</span>
         </p>
@@ -149,19 +175,13 @@
           "
         />
       </div>
-
-      <div class="w-full flex flex-row !mt-4">
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.endpoints") }}
-        </p>
-      </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           Auth URL
           <span class="text-red-600">*</span>
-          <span class="textinfolabel"
-            >({{ $t("settings.sso.form.auth-url-description") }})</span
-          >
+          <span class="textinfolabel">
+            ({{ $t("settings.sso.form.auth-url-description") }})
+          </span>
         </p>
         <input
           v-model="configForOAuth2.authUrl"
@@ -171,12 +191,12 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           Scopes
           <span class="text-red-600">*</span>
-          <span class="textinfolabel"
-            >({{ $t("settings.sso.form.scopes-description") }})</span
-          >
+          <span class="textinfolabel">
+            ({{ $t("settings.sso.form.scopes-description") }})
+          </span>
         </p>
         <input
           v-model="scopesStringOfConfig"
@@ -186,12 +206,12 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           Token URL
           <span class="text-red-600">*</span>
-          <span class="textinfolabel"
-            >({{ $t("settings.sso.form.token-url-description") }})</span
-          >
+          <span class="textinfolabel">
+            ({{ $t("settings.sso.form.token-url-description") }})
+          </span>
         </p>
         <input
           v-model="configForOAuth2.tokenUrl"
@@ -201,12 +221,12 @@
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <p>
+        <p class="textlabel">
           User information URL
           <span class="text-red-600">*</span>
-          <span class="textinfolabel"
-            >({{ $t("settings.sso.form.user-info-url-description") }})</span
-          >
+          <span class="textinfolabel">
+            ({{ $t("settings.sso.form.user-info-url-description") }})
+          </span>
         </p>
         <input
           v-model="configForOAuth2.userInfoUrl"
@@ -216,50 +236,70 @@
         />
       </div>
 
-      <div class="w-full flex flex-row !mt-4">
-        <p class="textinfolabel">
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="text-lg font-medium mt-2">
           {{ $t("settings.sso.form.user-information-mapping") }}
         </p>
-        <ShowMoreIcon
-          class="inline-block ml-1"
-          :content="
-            $t('settings.sso.form.user-information-mapping-description')
-          "
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p>
-          {{ $t("settings.sso.form.identifier") }}
-          <span class="text-red-600">*</span>
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.user-information-mapping-description") }}
+          <a
+            href="https://www.bytebase.com/docs/administration/sso/oauth2#user-information-field-mapping?source=console"
+            class="normal-link text-sm inline-flex flex-row items-center"
+            target="_blank"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4" />
+          </a>
         </p>
+      </div>
+      <div class="w-full grid grid-cols-2">
         <input
           v-model="configForOAuth2.fieldMapping!.identifier"
           type="text"
           class="textfield mt-1 w-full"
           placeholder="ex. login"
         />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.identifier") }}
+            <span class="text-red-600">*</span>
+          </p>
+        </div>
       </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p>
-          {{ $t("settings.sso.form.display-name") }}
-        </p>
+      <div class="w-full grid grid-cols-2">
         <input
           v-model="configForOAuth2.fieldMapping!.displayName"
           type="text"
           class="textfield mt-1 w-full"
           placeholder="ex. name"
         />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.display-name") }}
+          </p>
+        </div>
       </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p>
-          {{ $t("common.email") }}
-        </p>
+      <div class="w-full grid grid-cols-2">
         <input
           v-model="configForOAuth2.fieldMapping!.email"
           type="text"
           class="textfield mt-1 w-full"
           placeholder="ex. email"
         />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.email") }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -409,7 +449,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, head, isEqual } from "lodash-es";
 import { ClientError } from "nice-grpc-common";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
@@ -421,6 +461,7 @@ import {
   ref,
   onMounted,
   onUnmounted,
+  watch,
 } from "vue";
 import {
   FieldMapping,
@@ -441,7 +482,6 @@ import {
 } from "@/utils";
 import { OAuthWindowEventPayload } from "@/types";
 import { identityProviderClient } from "@/grpcweb";
-import ShowMoreIcon from "./ShowMoreIcon.vue";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -494,6 +534,13 @@ const redirectUrl = computed(() => {
 
 const isCreating = computed(() => {
   return !props.identityProviderName || props.identityProviderName === "";
+});
+
+const userDocLink = computed(() => {
+  if (state.type === IdentityProviderType.OAUTH2) {
+    return "https://www.bytebase.com/docs/administration/sso/oauth2?source=console";
+  }
+  return "";
 });
 
 const templateList = computed(() => {
@@ -764,4 +811,23 @@ const handleUpdateButtonClick = async () => {
   });
   updateEditState(updatedIdentityProvider);
 };
+
+watch(
+  () => state.type,
+  () => {
+    if (!isCreating.value) {
+      return;
+    }
+    if (state.type === IdentityProviderType.OAUTH2) {
+      if (!selectedTemplate.value && head(templateList.value)) {
+        handleTemplateSelect(
+          head(templateList.value) as IdentityProviderTemplate
+        );
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>

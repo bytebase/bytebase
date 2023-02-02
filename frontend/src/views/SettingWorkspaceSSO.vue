@@ -3,6 +3,14 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}
+        <a
+          href="https://bytebase.com/docs/administration/sso?source=console"
+          class="normal-link inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
       </div>
       <div>
         <button class="btn-primary" @click="handleCreateSSO">

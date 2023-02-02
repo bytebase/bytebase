@@ -403,13 +403,15 @@
     },
     "sso": {
       "create": "Create SSO",
-      "description": "Single sign-on (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
+      "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "deletion": "Delete this SSO",
       "form": {
+        "type": "Type",
+        "learn-more-with-user-doc": "Learn more about the configuration",
         "redirect-url": "Authorization redirect url",
+        "redirect-url-description": "It will be used to fill in the appropriate field in the OAuth provider application form.",
         "use-template": "Use template",
         "select-template": "Select template",
-        "type": "Type",
         "basic-information": "Basic information",
         "name": "Name",
         "resource-id": "Resource ID",
@@ -425,9 +427,10 @@
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
         "user-information-mapping": "User information mapping",
-        "user-information-mapping-description": "Field mapping saves the field names from user info API.",
-        "identifier": "Identifier",
-        "display-name": "Display name"
+        "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
+        "identifier": "Bytebase User Identifier",
+        "display-name": "Bytebase User Display name",
+        "email": "Bytebase User Email"
       },
       "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
     },
@@ -1689,7 +1692,7 @@
         "desc": "Connect to a read replica for the read-only data source."
       },
       "bb-feature-sso": {
-        "title": "Single sign-on (SSO)",
+        "title": "Single Sign-On (SSO)",
         "desc": "Enables users to securely authenticate with multiple applications and websites via a single set of credentials."
       }
     }
