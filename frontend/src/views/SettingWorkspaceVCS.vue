@@ -16,14 +16,6 @@
       </button>
     </div>
     <div class="pt-4 border-t">
-      <FeatureAttention
-        v-if="!has3rdPartyLoginFeature && vcsList.length > 0"
-        custom-class="mb-5"
-        feature="bb.feature.3rd-party-auth"
-        :description="
-          $t('subscription.features.bb-feature-3rd-party-auth.desc')
-        "
-      />
       <div v-if="vcsList.length > 0" class="space-y-6">
         <template v-for="(vcs, index) in vcsList" :key="index">
           <VCSCard :vcs="vcs" />
@@ -41,7 +33,7 @@ import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
-import { featureToRef, useVCSStore } from "@/store";
+import { useVCSStore } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -73,13 +65,10 @@ export default defineComponent({
       });
     };
 
-    const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
-
     return {
       state,
       vcsList,
       addVCSProvider,
-      has3rdPartyLoginFeature,
     };
   },
 });
