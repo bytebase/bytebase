@@ -86,24 +86,6 @@ export interface UndeleteRoleRequest {
   name: string;
 }
 
-/** RoleAttribute is the attribute for role. Docs: https://www.postgresql.org/docs/current/role-attributes.html */
-export interface RoleAttribute {
-  /** A database superuser bypasses all permission checks, except the right to log in. */
-  superUser: boolean;
-  /** A role is given permission to inherit the privileges of roles it is a member of. To create a role without the permission, use "noInherit = true" */
-  noInherit: boolean;
-  /** A role must be explicitly given permission to create more roles (except for superusers, since those bypass all permission checks). */
-  createRole: boolean;
-  /** A role must be explicitly given permission to create databases (except for superusers, since those bypass all permission checks). */
-  createDb: boolean;
-  /** Only roles that have the LOGIN attribute can be used as the initial role name for a database connection. */
-  canLogin: boolean;
-  /** A role must explicitly be given permission to initiate streaming replication (except for superusers, since those bypass all permission checks). */
-  replication: boolean;
-  /** A role must be explicitly given permission to bypass every row-level security (RLS) policy (except for superusers, since those bypass all permission checks). */
-  bypassRls: boolean;
-}
-
 /** InstanceRole is the API message for instance role. */
 export interface InstanceRole {
   /**
@@ -126,8 +108,12 @@ export interface InstanceRole {
   validUntil?:
     | string
     | undefined;
-  /** The role attribute. */
-  attribute?: RoleAttribute;
+  /**
+   * The role attribute.
+   * For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+   * For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
+   */
+  attribute?: string | undefined;
 }
 
 function createBaseGetRoleRequest(): GetRoleRequest {
@@ -520,117 +506,6 @@ export const UndeleteRoleRequest = {
   },
 };
 
-function createBaseRoleAttribute(): RoleAttribute {
-  return {
-    superUser: false,
-    noInherit: false,
-    createRole: false,
-    createDb: false,
-    canLogin: false,
-    replication: false,
-    bypassRls: false,
-  };
-}
-
-export const RoleAttribute = {
-  encode(message: RoleAttribute, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.superUser === true) {
-      writer.uint32(8).bool(message.superUser);
-    }
-    if (message.noInherit === true) {
-      writer.uint32(16).bool(message.noInherit);
-    }
-    if (message.createRole === true) {
-      writer.uint32(24).bool(message.createRole);
-    }
-    if (message.createDb === true) {
-      writer.uint32(32).bool(message.createDb);
-    }
-    if (message.canLogin === true) {
-      writer.uint32(40).bool(message.canLogin);
-    }
-    if (message.replication === true) {
-      writer.uint32(48).bool(message.replication);
-    }
-    if (message.bypassRls === true) {
-      writer.uint32(56).bool(message.bypassRls);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RoleAttribute {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRoleAttribute();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.superUser = reader.bool();
-          break;
-        case 2:
-          message.noInherit = reader.bool();
-          break;
-        case 3:
-          message.createRole = reader.bool();
-          break;
-        case 4:
-          message.createDb = reader.bool();
-          break;
-        case 5:
-          message.canLogin = reader.bool();
-          break;
-        case 6:
-          message.replication = reader.bool();
-          break;
-        case 7:
-          message.bypassRls = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RoleAttribute {
-    return {
-      superUser: isSet(object.superUser) ? Boolean(object.superUser) : false,
-      noInherit: isSet(object.noInherit) ? Boolean(object.noInherit) : false,
-      createRole: isSet(object.createRole) ? Boolean(object.createRole) : false,
-      createDb: isSet(object.createDb) ? Boolean(object.createDb) : false,
-      canLogin: isSet(object.canLogin) ? Boolean(object.canLogin) : false,
-      replication: isSet(object.replication) ? Boolean(object.replication) : false,
-      bypassRls: isSet(object.bypassRls) ? Boolean(object.bypassRls) : false,
-    };
-  },
-
-  toJSON(message: RoleAttribute): unknown {
-    const obj: any = {};
-    message.superUser !== undefined && (obj.superUser = message.superUser);
-    message.noInherit !== undefined && (obj.noInherit = message.noInherit);
-    message.createRole !== undefined && (obj.createRole = message.createRole);
-    message.createDb !== undefined && (obj.createDb = message.createDb);
-    message.canLogin !== undefined && (obj.canLogin = message.canLogin);
-    message.replication !== undefined && (obj.replication = message.replication);
-    message.bypassRls !== undefined && (obj.bypassRls = message.bypassRls);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<RoleAttribute>): RoleAttribute {
-    const message = createBaseRoleAttribute();
-    message.superUser = object.superUser ?? false;
-    message.noInherit = object.noInherit ?? false;
-    message.createRole = object.createRole ?? false;
-    message.createDb = object.createDb ?? false;
-    message.canLogin = object.canLogin ?? false;
-    message.replication = object.replication ?? false;
-    message.bypassRls = object.bypassRls ?? false;
-    return message;
-  },
-};
-
 function createBaseInstanceRole(): InstanceRole {
   return {
     name: "",
@@ -660,7 +535,7 @@ export const InstanceRole = {
       writer.uint32(42).string(message.validUntil);
     }
     if (message.attribute !== undefined) {
-      RoleAttribute.encode(message.attribute, writer.uint32(50).fork()).ldelim();
+      writer.uint32(50).string(message.attribute);
     }
     return writer;
   },
@@ -688,7 +563,7 @@ export const InstanceRole = {
           message.validUntil = reader.string();
           break;
         case 6:
-          message.attribute = RoleAttribute.decode(reader, reader.uint32());
+          message.attribute = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -705,7 +580,7 @@ export const InstanceRole = {
       password: isSet(object.password) ? String(object.password) : undefined,
       connectionLimit: isSet(object.connectionLimit) ? Number(object.connectionLimit) : undefined,
       validUntil: isSet(object.validUntil) ? String(object.validUntil) : undefined,
-      attribute: isSet(object.attribute) ? RoleAttribute.fromJSON(object.attribute) : undefined,
+      attribute: isSet(object.attribute) ? String(object.attribute) : undefined,
     };
   },
 
@@ -716,8 +591,7 @@ export const InstanceRole = {
     message.password !== undefined && (obj.password = message.password);
     message.connectionLimit !== undefined && (obj.connectionLimit = Math.round(message.connectionLimit));
     message.validUntil !== undefined && (obj.validUntil = message.validUntil);
-    message.attribute !== undefined &&
-      (obj.attribute = message.attribute ? RoleAttribute.toJSON(message.attribute) : undefined);
+    message.attribute !== undefined && (obj.attribute = message.attribute);
     return obj;
   },
 
@@ -728,9 +602,7 @@ export const InstanceRole = {
     message.password = object.password ?? undefined;
     message.connectionLimit = object.connectionLimit ?? undefined;
     message.validUntil = object.validUntil ?? undefined;
-    message.attribute = (object.attribute !== undefined && object.attribute !== null)
-      ? RoleAttribute.fromPartial(object.attribute)
-      : undefined;
+    message.attribute = object.attribute ?? undefined;
     return message;
   },
 };
