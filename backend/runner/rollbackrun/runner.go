@@ -112,7 +112,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	if _, err := r.store.PatchTask(ctx, patch); err != nil {
+	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
 		return
 	}
