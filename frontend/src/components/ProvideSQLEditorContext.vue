@@ -37,6 +37,7 @@ import {
   isDatabaseAccessible,
   getDefaultTabNameFromConnection,
   isSimilarTab,
+  hasWorkspacePermission,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -94,6 +95,15 @@ const prepareAccessibleDatabaseList = async () => {
 
 const prepareConnectionTree = async () => {
   if (connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE) {
+    if (
+      !hasWorkspacePermission(
+        "bb.permission.workspace.manage-database",
+        currentUser.value.role
+      )
+    ) {
+      connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
+      return;
+    }
     const { databaseList } = state;
     const instanceList = uniqBy(
       databaseList.map((db) => db.instance),
@@ -363,11 +373,12 @@ onMounted(async () => {
     connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
-    await prepareConnectionTree();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
   }
 
-  watch(() => connectionTreeStore.tree.mode, prepareConnectionTree);
+  watch(() => connectionTreeStore.tree.mode, prepareConnectionTree, {
+    immediate: true,
+  });
 
   watch(currentUser, (user) => {
     if (user.id === UNKNOWN_ID) {
