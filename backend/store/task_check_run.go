@@ -163,13 +163,8 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskChec
 		return nil
 	}
 
-	list, err := s.createTaskCheckRunImpl(ctx, tx, create)
-	if err != nil {
+	if err := s.createTaskCheckRunImpl(ctx, tx, create); err != nil {
 		return err
-	}
-
-	if len(list) != 1 {
-		return &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task check runs, expect 1", len(list))}
 	}
 
 	return tx.Commit()
@@ -183,7 +178,7 @@ func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskChec
 	}
 	defer tx.Rollback()
 
-	if _, err := s.createTaskCheckRunImpl(ctx, tx, creates...); err != nil {
+	if err := s.createTaskCheckRunImpl(ctx, tx, creates...); err != nil {
 		return err
 	}
 
@@ -194,7 +189,7 @@ func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskChec
 	return nil
 }
 
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) ([]*TaskCheckRunMessage, error) {
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) error {
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
@@ -208,7 +203,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 			comment,
 			payload) VALUES
       `); err != nil {
-		return nil, err
+		return err
 	}
 	for i, create := range creates {
 		if create.Payload == "" {
@@ -226,42 +221,13 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
 	}
 	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
-		return nil, err
-	}
-	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`); err != nil {
-		return nil, err
+		return err
 	}
 
-	var taskCheckRuns []*TaskCheckRunMessage
-	rows, err := tx.QueryContext(ctx, query.String(), values...)
-	if err != nil {
-		return nil, FormatError(err)
+	if _, err := tx.ExecContext(ctx, query.String(), values...); err != nil {
+		return err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var run TaskCheckRunMessage
-		if err := rows.Scan(
-			&run.ID,
-			&run.CreatorID,
-			&run.CreatedTs,
-			&run.UpdaterID,
-			&run.UpdatedTs,
-			&run.TaskID,
-			&run.Status,
-			&run.Type,
-			&run.Code,
-			&run.Comment,
-			&run.Result,
-			&run.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		taskCheckRuns = append(taskCheckRuns, &run)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return taskCheckRuns, nil
+	return nil
 }
 
 // PatchTaskCheckRunStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
