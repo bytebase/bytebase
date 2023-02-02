@@ -217,6 +217,7 @@ planList:
     mainFeatureList:
       - sla
       - everything-in-team-plan
+      - sso
       - multi-tenancy
       - read-replica
       - dba-workflow
