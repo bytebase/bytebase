@@ -833,7 +833,6 @@
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
-      "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login",
       "sign-in-with-idp": "Sign in with {idp}"
     },
@@ -1665,11 +1664,6 @@
       "bb-feature-schema-drift": {
         "title": "Schema drift",
         "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
-      },
-      "bb-feature-3rd-party-auth": {
-        "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.",
-        "login": "@:{'subscription.upgrade'} to unlock this feature"
       },
       "bb-feature-branding": {
         "title": "Branding",

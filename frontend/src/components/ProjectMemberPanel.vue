@@ -83,11 +83,6 @@
     </div>
     <ProjectMemberTable :project="project" />
   </div>
-  <FeatureModal
-    v-if="state.showFeatureModal"
-    :feature="'bb.feature.3rd-party-auth'"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts">
@@ -119,7 +114,6 @@ interface LocalState {
   error: string;
   showModal: boolean;
   previewMember: boolean;
-  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -143,10 +137,7 @@ export default defineComponent({
       error: "",
       showModal: false,
       previewMember: false,
-      showFeatureModal: false,
     });
-
-    const has3rdPartyAuthFeature = featureToRef("bb.feature.3rd-party-auth");
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -246,7 +237,6 @@ export default defineComponent({
       clearValidationError,
       hasValidMember,
       addMember,
-      has3rdPartyAuthFeature,
     };
   },
 });

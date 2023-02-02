@@ -50,10 +50,6 @@ type FeatureType string
 const (
 	// Admin & Security.
 
-	// Feature3rdPartyAuth allows user to authenticate (login).
-	//
-	// Currently, we only support GitLab EE/CE auth.
-	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 	// FeatureSSO allows user to manage SSO provider and authenticate (login) with SSO.
 	FeatureSSO FeatureType = "bb.feature.sso"
 	// FeatureRBAC enables RBAC.
@@ -160,8 +156,6 @@ const (
 func (e FeatureType) Name() string {
 	switch e {
 	// Admin & Security
-	case Feature3rdPartyAuth:
-		return "3rd party auth"
 	case FeatureSSO:
 		return "SSO"
 	case FeatureRBAC:
@@ -240,10 +234,9 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	Feature3rdPartyAuth: {false, true, true},
-	FeatureSSO:          {false, false, true},
-	FeatureRBAC:         {false, true, true},
-	FeatureWatermark:    {false, false, true},
+	FeatureSSO:       {false, false, true},
+	FeatureRBAC:      {false, true, true},
+	FeatureWatermark: {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
