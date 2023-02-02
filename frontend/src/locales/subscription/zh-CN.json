@@ -160,6 +160,7 @@
     "sensitive-data": "数据脱敏",
     "database-access-control": "数据库访问控制",
     "roadmap": "Roadmap 优先考虑",
-    "custom-contract": "定制化 MSA 和 BAA"
+    "custom-contract": "定制化 MSA 和 BAA",
+    "sso": "单点登录 (SSO)"
   }
 }
