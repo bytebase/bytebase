@@ -636,7 +636,6 @@
     "vcs-info": "已开启 VCS 版本管理。选择该数据库会跳转到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
     "alter-multiple-db": "手动选择数据库",
-    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。",
     "alter-db-group": "按部署的配置",
     "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
