@@ -277,6 +277,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	return &v1pb.DatabaseSchema{Schema: string(dbSchema.Schema)}, nil
 }
 
+// GetBackupSetting gets the backup setting of a database.
 func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.GetBackupSettingRequest) (*v1pb.BackupSetting, error) {
 	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, backupSettingSuffix)
 	if err != nil {
@@ -322,6 +323,7 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
 }
 
+// UpdateBackupSetting updates the backup setting of a database.
 func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb.UpdateBackupSettingRequest) (*v1pb.BackupSetting, error) {
 	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Setting.Name, backupSettingSuffix)
 	if err != nil {
@@ -362,7 +364,7 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	backupSetting, err = s.store.UpsertBackupSettingV2(ctx, database.UID, principalID, backupSetting)
+	backupSetting, err = s.store.UpsertBackupSettingV2(ctx, principalID, backupSetting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

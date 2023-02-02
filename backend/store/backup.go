@@ -865,7 +865,7 @@ func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*Backu
 }
 
 // UpsertBackupSettingV2 upserts the backup setting for the given database.
-func (s *Store) UpsertBackupSettingV2(ctx context.Context, databaseUID int, principalUID int, upsert *BackupSettingMessage) (*BackupSettingMessage, error) {
+func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, upsert *BackupSettingMessage) (*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
