@@ -378,24 +378,6 @@ type QueryContext struct {
 	CurrentDatabase string
 }
 
-// DatabaseRoleAttributeMessage is the attribute for role. Docs: https://www.postgresql.org/docs/current/role-attributes.html
-type DatabaseRoleAttributeMessage struct {
-	// A database superuser bypasses all permission checks, except the right to log in.
-	SuperUser bool
-	// A role is given permission to inherit the privileges of roles it is a member of. To create a role without the permission, use "noInherit = true"
-	NoInherit bool
-	// A role must be explicitly given permission to create more roles (except for superusers, since those bypass all permission checks).
-	CreateRole bool
-	// A role must be explicitly given permission to create databases (except for superusers, since those bypass all permission checks).
-	CreateDb bool
-	// Only roles that have the LOGIN attribute can be used as the initial role name for a database connection.
-	CanLogin bool
-	// A role must explicitly be given permission to initiate streaming replication (except for superusers, since those bypass all permission checks).
-	Replication bool
-	// A role must be explicitly given permission to bypass every row-level security (RLS) policy (except for superusers, since those bypass all permission checks).
-	BypassRls bool
-}
-
 // DatabaseRoleMessage is the API message for database role.
 type DatabaseRoleMessage struct {
 	// The role unique name.
@@ -405,7 +387,7 @@ type DatabaseRoleMessage struct {
 	// The expiration for the role's password.
 	ValidUntil *string
 	// The role attribute.
-	Attribute *DatabaseRoleAttributeMessage
+	Attribute *string
 }
 
 // DatabaseRoleUpsertMessage is the API message for upserting a database role.
@@ -419,7 +401,7 @@ type DatabaseRoleUpsertMessage struct {
 	// The VALID UNTIL clause sets a date and time after which the role's password is no longer valid. If this clause is omitted the password will be valid for all time.
 	ValidUntil *string
 	// The role attribute.
-	Attribute *DatabaseRoleAttributeMessage
+	Attribute *string
 }
 
 // Driver is the interface for database driver.

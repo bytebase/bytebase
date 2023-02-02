@@ -123,15 +123,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 		Password:        request.Role.Password,
 		ConnectionLimit: request.Role.ConnectionLimit,
 		ValidUntil:      request.Role.ValidUntil,
-		Attribute: &db.DatabaseRoleAttributeMessage{
-			SuperUser:   request.Role.Attribute.SuperUser,
-			NoInherit:   request.Role.Attribute.NoInherit,
-			CreateRole:  request.Role.Attribute.CreateRole,
-			CreateDb:    request.Role.Attribute.CreateDb,
-			CanLogin:    request.Role.Attribute.CanLogin,
-			Replication: request.Role.Attribute.Replication,
-			BypassRls:   request.Role.Attribute.BypassRls,
-		},
+		Attribute:       request.Role.Attribute,
 	}
 	if err := validateRole(roleUpsert); err != nil {
 		return nil, err
@@ -191,15 +183,7 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 		case "role.valid_until":
 			upsert.ValidUntil = request.Role.ValidUntil
 		case "role.attribute":
-			upsert.Attribute = &db.DatabaseRoleAttributeMessage{
-				SuperUser:   request.Role.Attribute.SuperUser,
-				NoInherit:   request.Role.Attribute.NoInherit,
-				CreateRole:  request.Role.Attribute.CreateRole,
-				CreateDb:    request.Role.Attribute.CreateDb,
-				CanLogin:    request.Role.Attribute.CanLogin,
-				Replication: request.Role.Attribute.Replication,
-				BypassRls:   request.Role.Attribute.BypassRls,
-			}
+			upsert.Attribute = request.Role.Attribute
 		}
 	}
 	if err := validateRole(upsert); err != nil {
@@ -286,15 +270,7 @@ func convertToRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage
 		RoleName:        role.Name,
 		ConnectionLimit: &role.ConnectionLimit,
 		ValidUntil:      role.ValidUntil,
-		Attribute: &v1pb.RoleAttribute{
-			SuperUser:   role.Attribute.SuperUser,
-			NoInherit:   role.Attribute.NoInherit,
-			CreateRole:  role.Attribute.CreateRole,
-			CreateDb:    role.Attribute.CreateDb,
-			CanLogin:    role.Attribute.CanLogin,
-			Replication: role.Attribute.Replication,
-			BypassRls:   role.Attribute.BypassRls,
-		},
+		Attribute:       role.Attribute,
 	}
 }
 
