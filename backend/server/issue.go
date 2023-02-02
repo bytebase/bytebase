@@ -566,7 +566,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if issue == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", issueID))
 	}
-	task, err := s.store.GetTaskByID(ctx, taskID)
+	task, err := s.store.GetTaskV2ByID(ctx, taskID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get task with ID %d", taskID)).SetInternal(err)
 	}
@@ -576,8 +576,12 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if task.Type != api.TaskDatabaseDataUpdate {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
 	}
-	if task.Database.Instance.Engine != db.MySQL {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", task.Database.Instance.Engine))
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance.Engine != db.MySQL {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", instance.Engine))
 	}
 	if task.PipelineID != issue.PipelineUID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.UID))

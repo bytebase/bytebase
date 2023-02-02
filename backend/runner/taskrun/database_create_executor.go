@@ -198,7 +198,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		DatabaseID: &database.UID,
 		Statement:  &statement,
 	}
-	if _, err := exec.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
+	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
 	}
 
