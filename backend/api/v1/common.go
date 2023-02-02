@@ -25,6 +25,9 @@ const (
 	settingNamePrefix          = "settings/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
+	backupSettingSuffix    = "/backupSetting"
+	schemaSuffix           = "/schema"
+	metadataSuffix         = "/metadata"
 )
 
 var (
@@ -47,6 +50,14 @@ func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {
 		return "", err
 	}
 	return getProjectID(trimmed)
+}
+
+func trimSuffixAndGetEnvironmentInstanceDatabaseID(name string, suffix string) (string, string, string, error) {
+	trimmed, err := trimSuffix(name, suffix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return getEnvironmentInstanceDatabaseID(trimmed)
 }
 
 func getEnvironmentID(name string) (string, error) {
@@ -116,7 +127,7 @@ func trimSuffix(name, suffix string) (string, error) {
 	if !strings.HasSuffix(name, suffix) {
 		return "", errors.Errorf("invalid request %q with suffix %q", name, suffix)
 	}
-	return strings.TrimRight(name, suffix), nil
+	return strings.TrimSuffix(name, suffix), nil
 }
 
 func getNameParentTokens(name string, tokenPrefixes ...string) ([]string, error) {

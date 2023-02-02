@@ -125,30 +125,6 @@ message UndeleteRoleRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-// RoleAttribute is the attribute for role. Docs: https://www.postgresql.org/docs/current/role-attributes.html
-message RoleAttribute {
-  // A database superuser bypasses all permission checks, except the right to log in.
-  bool super_user = 1;
-
-  // A role is given permission to inherit the privileges of roles it is a member of. To create a role without the permission, use "noInherit = true"
-  bool no_inherit = 2;
-
-  // A role must be explicitly given permission to create more roles (except for superusers, since those bypass all permission checks).
-  bool create_role = 3;
-
-  // A role must be explicitly given permission to create databases (except for superusers, since those bypass all permission checks).
-  bool create_db = 4;
-
-  // Only roles that have the LOGIN attribute can be used as the initial role name for a database connection.
-  bool can_login = 5;
-
-  // A role must explicitly be given permission to initiate streaming replication (except for superusers, since those bypass all permission checks).
-  bool replication = 6;
-
-  // A role must be explicitly given permission to bypass every row-level security (RLS) policy (except for superusers, since those bypass all permission checks).
-  bool bypass_rls = 7;
-}
-
 // InstanceRole is the API message for instance role.
 message InstanceRole {
   // The name of the role.
@@ -169,5 +145,7 @@ message InstanceRole {
   optional string valid_until = 5;
 
   // The role attribute.
-  RoleAttribute attribute = 6;
+  // For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+  // For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
+  optional string attribute = 6;
 }

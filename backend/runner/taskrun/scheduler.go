@@ -341,10 +341,10 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // PatchTaskStatement patches the statement and earliest allowed time for a patch.
-func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) (*api.Task, error) {
+func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
 	if taskPatch.Statement != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
-			return nil, err
+			return err
 		}
 		if issue.Project.Workflow == api.UIWorkflow {
 			schemaVersion := common.DefaultMigrationVersion()
@@ -352,14 +352,14 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		}
 	}
 
-	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
+	taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
 	}
 	if issue.NeedAttention && issue.Project.Workflow == api.UIWorkflow {
 		needAttention := false
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
 		}
 	}
 
@@ -367,10 +367,10 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 	if taskPatch.Statement != nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if dbSchema == nil {
-			return nil, errors.Errorf("database schema ID not found %v", task.DatabaseID)
+			return errors.Errorf("database schema ID not found %v", task.DatabaseID)
 		}
 		// it's ok to fail.
 		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
@@ -393,7 +393,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if api.IsSyntaxCheckSupported(instance.Engine) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
@@ -403,7 +403,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 				Collation: dbSchema.Metadata.Collation,
 			})
 			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
+				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 			}
 			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
 				CreatorID: api.SystemBotID,
@@ -421,8 +421,8 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
-			if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
+			if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, instance, taskPatched); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 			}
 		}
 
@@ -434,7 +434,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 				Collation: dbSchema.Metadata.Collation,
 			})
 			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
+				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
 			}
 			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
 				CreatorID: api.SystemBotID,
@@ -456,7 +456,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 	if taskPatch.Statement != nil {
 		oldStatement, err := utils.GetTaskStatement(task.Payload)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		newStatement := *taskPatch.Statement
 
@@ -469,7 +469,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 			IssueName:    issue.Title,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
 			CreatorID:   taskPatched.CreatorID,
@@ -480,7 +480,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		}, &activity.Metadata{
 			Issue: issue,
 		}); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
 	// Earliest allowed time update activity.
@@ -494,7 +494,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 			IssueName:            issue.Title,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
+			return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   taskPatched.CreatorID,
@@ -506,13 +506,13 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,
 		}); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
-	return taskPatched, nil
+	return nil
 }
 
-func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
+func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, instance *store.InstanceMessage, task *store.TaskMessage) error {
 	dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 	if err != nil {
 		return err
@@ -523,7 +523,7 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
-		DbType:    task.Database.Instance.Engine,
+		DbType:    instance.Engine,
 		Charset:   dbSchema.Metadata.CharacterSet,
 		Collation: dbSchema.Metadata.Collation,
 	})
@@ -637,7 +637,7 @@ func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.Issue
 // So we change their status to CANCELED before starting the scheduler.
 func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
-	runningTasks, err := s.store.FindTask(ctx, taskFind)
+	runningTasks, err := s.store.ListTasks(ctx, taskFind)
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}

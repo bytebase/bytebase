@@ -43,7 +43,7 @@ const (
 	// BYPASSRLS is the role attribute for rolbypassrls.
 	BYPASSRLS RoleAttribute = "BYPASSRLS"
 	// NOBYPASSRLS is the role attribute for rolbypassrls.
-	NOBYPASSRLS RoleAttribute = "BYPASSRLS"
+	NOBYPASSRLS RoleAttribute = "NOBYPASSRLS"
 )
 
 // ToString returns the string value for role attribute.
@@ -202,27 +202,73 @@ func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*db.Datab
 	var roleList []*db.DatabaseRoleMessage
 
 	for rows.Next() {
-		inherit := false
-		role := &db.DatabaseRoleMessage{
-			Attribute: &db.DatabaseRoleAttributeMessage{},
-		}
-
+		var name string
+		var super, inherit, createRole, createDB, canLogin, replication, bypassRLS bool
+		var validUntil sql.NullString
+		var connectionLimit int32
 		if err := rows.Scan(
-			&role.Name,
-			&role.Attribute.SuperUser,
+			&name,
+			&super,
 			&inherit,
-			&role.Attribute.CreateRole,
-			&role.Attribute.CreateDb,
-			&role.Attribute.CanLogin,
-			&role.Attribute.Replication,
-			&role.Attribute.BypassRls,
-			&role.ValidUntil,
-			&role.ConnectionLimit,
+			&createRole,
+			&createDB,
+			&canLogin,
+			&replication,
+			&bypassRLS,
+			&validUntil,
+			&connectionLimit,
 		); err != nil {
 			return nil, util.FormatErrorWithQuery(err, statement)
 		}
 
-		role.Attribute.NoInherit = !inherit
+		var attributes []string
+		if super {
+			attributes = append(attributes, SUPERUSER.ToString())
+		} else {
+			attributes = append(attributes, NOSUPERUSER.ToString())
+		}
+		if inherit {
+			attributes = append(attributes, INHERIT.ToString())
+		} else {
+			attributes = append(attributes, NOINHERIT.ToString())
+		}
+		if createRole {
+			attributes = append(attributes, CREATEROLE.ToString())
+		} else {
+			attributes = append(attributes, NOCREATEROLE.ToString())
+		}
+		if createDB {
+			attributes = append(attributes, CREATEDB.ToString())
+		} else {
+			attributes = append(attributes, NOCREATEDB.ToString())
+		}
+		if canLogin {
+			attributes = append(attributes, LOGIN.ToString())
+		} else {
+			attributes = append(attributes, NOLOGIN.ToString())
+		}
+		if replication {
+			attributes = append(attributes, REPLICATION.ToString())
+		} else {
+			attributes = append(attributes, NOREPLICATION.ToString())
+		}
+		if bypassRLS {
+			attributes = append(attributes, BYPASSRLS.ToString())
+		} else {
+			attributes = append(attributes, NOBYPASSRLS.ToString())
+		}
+
+		attribute := strings.Join(attributes, " ")
+		role := &db.DatabaseRoleMessage{
+			Name:            name,
+			ConnectionLimit: connectionLimit,
+			Attribute:       &attribute,
+		}
+
+		if validUntil.Valid {
+			role.ValidUntil = &validUntil.String
+		}
+
 		roleList = append(roleList, role)
 	}
 
@@ -266,41 +312,7 @@ func convertToAttributeStatement(r *db.DatabaseRoleUpsertMessage) string {
 	attributeList := []string{}
 
 	if r.Attribute != nil {
-		if r.Attribute.SuperUser {
-			attributeList = append(attributeList, SUPERUSER.ToString())
-		} else {
-			attributeList = append(attributeList, NOSUPERUSER.ToString())
-		}
-		if r.Attribute.NoInherit {
-			attributeList = append(attributeList, NOINHERIT.ToString())
-		} else {
-			attributeList = append(attributeList, INHERIT.ToString())
-		}
-		if r.Attribute.CanLogin {
-			attributeList = append(attributeList, LOGIN.ToString())
-		} else {
-			attributeList = append(attributeList, NOLOGIN.ToString())
-		}
-		if r.Attribute.CreateRole {
-			attributeList = append(attributeList, CREATEROLE.ToString())
-		} else {
-			attributeList = append(attributeList, NOCREATEROLE.ToString())
-		}
-		if r.Attribute.CreateDb {
-			attributeList = append(attributeList, CREATEDB.ToString())
-		} else {
-			attributeList = append(attributeList, NOCREATEDB.ToString())
-		}
-		if r.Attribute.Replication {
-			attributeList = append(attributeList, REPLICATION.ToString())
-		} else {
-			attributeList = append(attributeList, NOREPLICATION.ToString())
-		}
-		if r.Attribute.BypassRls {
-			attributeList = append(attributeList, BYPASSRLS.ToString())
-		} else {
-			attributeList = append(attributeList, NOBYPASSRLS.ToString())
-		}
+		attributeList = append(attributeList, *r.Attribute)
 	}
 
 	if v := r.Password; v != nil {

@@ -12,13 +12,13 @@
   "upgrade": "升级订阅",
   "per-month": "/ 月",
   "price-unit-for-team": "/ 月起",
-  "start-from": "",
+  "start-at": "",
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
   "per-seat": "每个席位",
   "free-price-intro": "最多 10 个席位，5 个实例",
-  "team-price-intro": "含 5 个免费实例，根据席位按月付费",
+  "team-price-intro": "最多 10 个席位，10 个实例",
   "enterprise-price-intro": "自定义席位和实例，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
@@ -70,6 +70,8 @@
         "schema-change-advanced-tooltip": "普通变更 + 在线变更 (gh-ost)",
         "migration-history": "变更历史",
         "sql-editor": "SQL 编辑器",
+        "schema-editor": "Schema 编辑器",
+        "schema-diagram": "Schema 关系图",
         "disaster-recovery": "数据灾备",
         "disaster-recovery-basic": "基础",
         "disaster-recovery-basic-tooltip": "数据库备份和恢复",
@@ -121,6 +123,7 @@
         "rbac": "RBAC 权限管理",
         "watermark": "水印设置",
         "sync-members-from-vcs": "从 GitLab 同步成员信息",
+        "sso": "SSO 单点登录",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",
@@ -159,6 +162,7 @@
     "sensitive-data": "数据脱敏",
     "database-access-control": "数据库访问控制",
     "roadmap": "Roadmap 优先考虑",
-    "custom-contract": "定制化 MSA 和 BAA"
+    "custom-contract": "定制化 MSA 和 BAA",
+    "sso": "单点登录 (SSO)"
   }
 }

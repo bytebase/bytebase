@@ -4,10 +4,9 @@
     <div v-if="databaseList.length === 0" class="textinfolabel">
       {{ $t("alter-schema.no-databases-in-project") }}
     </div>
-    <div v-else class="textinfolabel">
-      {{ $t("alter-schema.alter-multiple-db-info") }}
-    </div>
-    <slot name="header"></slot>
+    <template v-else>
+      <slot name="header"></slot>
+    </template>
 
     <NCollapse
       class="overflow-y-auto"
@@ -73,14 +72,14 @@
             :key="dbIndex"
           >
             <label
-              class="border-control-border relative border p-3 flex flex-col md:pl-4 md:pr-6 md:grid md:grid-cols-2"
+              class="border-control-border relative border p-3 flex flex-col gap-y-2 md:flex-row md:pl-4 md:pr-6"
               :class="
                 database.syncStatus == 'OK'
                   ? 'cursor-pointer'
                   : 'cursor-not-allowed'
               "
             >
-              <div class="radio text-sm flex justify-start">
+              <div class="radio text-sm flex justify-start md:flex-1">
                 <input
                   type="checkbox"
                   class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
@@ -98,19 +97,14 @@
                   >{{ database.name }}</span
                 >
               </div>
-              <p
-                class="textinfolabel ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right"
+              <div
+                class="flex items-center gap-x-1 textinfolabel ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
               >
-                {{ $t("database.last-sync-status") }}:
-                <span
-                  :class="
-                    database.syncStatus == 'OK'
-                      ? 'textlabel'
-                      : 'text-sm font-medium text-error'
-                  "
-                  >{{ database.syncStatus }}</span
-                >
-              </p>
+                <InstanceEngineIcon :instance="database.instance" />
+                <span class="flex-1 whitespace-pre-wrap">
+                  {{ instanceName(database.instance) }}
+                </span>
+              </div>
             </label>
           </template>
         </div>

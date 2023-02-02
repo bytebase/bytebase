@@ -85,50 +85,6 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	return composedTask, nil
 }
 
-// FindTask finds a list of Task instances.
-func (s *Store) FindTask(ctx context.Context, find *api.TaskFind) ([]*api.Task, error) {
-	tasks, err := s.ListTasks(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Task list with TaskFind[%+v]", find)
-	}
-	var composedTasks []*api.Task
-	for _, task := range tasks {
-		composedTask, err := s.composeTask(ctx, task)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-		}
-		composedTasks = append(composedTasks, composedTask)
-	}
-	return composedTasks, nil
-}
-
-// PatchTask patches an instance of Task.
-func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
-	task, err := s.UpdateTaskV2(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch task %+v", patch)
-	}
-	composedTask, err := s.composeTask(ctx, task)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-	}
-	return composedTask, nil
-}
-
-// PatchTaskStatus patches a task status.
-func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
-	task, err := s.UpdateTaskStatusV2(ctx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	composedTask, err := s.composeTask(ctx, task)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-	}
-	return composedTask, nil
-}
-
 // BatchPatchTaskStatus patches status for a list of tasks.
 func (s *Store) BatchPatchTaskStatus(ctx context.Context, taskIDs []int, status api.TaskStatus, updaterID int) error {
 	var ids []string

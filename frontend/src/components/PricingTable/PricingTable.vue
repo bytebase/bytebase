@@ -321,8 +321,7 @@ const plans = computed((): LocalPlan[] => {
       plan.type === PlanType.ENTERPRISE
         ? t("subscription.contact-us")
         : `$${plan.unitPrice}`,
-    pricePrefix:
-      plan.type === PlanType.TEAM ? t("subscription.start-from") : "",
+    pricePrefix: plan.type === PlanType.TEAM ? t("subscription.start-at") : "",
     priceSuffix:
       plan.type === PlanType.TEAM
         ? t("subscription.price-unit-for-team")

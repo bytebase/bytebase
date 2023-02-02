@@ -8,6 +8,8 @@ categoryList:
       - sync-schema
       - migration-history
       - sql-editor
+      - schema-editor
+      - schema-diagram
       - disaster-recovery
       - archiving
       - sql-check
@@ -30,6 +32,7 @@ categoryList:
       - terraform-provider
       - rbac
       - sync-members-from-vcs
+      - sso
       - dba-workflow
       - environment-tier
       - sensitive-data
@@ -63,6 +66,8 @@ planList:
       - type: sync-schema
       - type: migration-history
       - type: sql-editor
+      - type: schema-editor
+      - type: schema-diagram
       - type: disaster-recovery
         content: disaster-recovery-basic
         tooltip: disaster-recovery-basic-tooltip
@@ -117,6 +122,8 @@ planList:
       - type: sync-schema
       - type: migration-history
       - type: sql-editor
+      - type: schema-editor
+      - type: schema-diagram
       - type: disaster-recovery
         content: disaster-recovery-advanced
         tooltip: disaster-recovery-advanced-tooltip
@@ -176,6 +183,8 @@ planList:
       - type: sync-schema
       - type: migration-history
       - type: sql-editor
+      - type: schema-editor
+      - type: schema-diagram
       - type: disaster-recovery
         content: disaster-recovery-advanced
         tooltip: disaster-recovery-advanced-tooltip
@@ -206,6 +215,7 @@ planList:
       - type: rbac
       - type: watermark
       - type: sync-members-from-vcs
+      - type: sso
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
@@ -215,6 +225,7 @@ planList:
     mainFeatureList:
       - sla
       - everything-in-team-plan
+      - sso
       - multi-tenancy
       - read-replica
       - dba-workflow
