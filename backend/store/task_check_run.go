@@ -190,6 +190,9 @@ func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskChec
 }
 
 func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) error {
+	if len(creates) == 0 {
+		return nil
+	}
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
