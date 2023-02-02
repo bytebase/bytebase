@@ -200,3 +200,9 @@ export function semverCompare(v1: string, v2: string) {
 
   return semver.gt(formatedV1, formatedV2);
 }
+
+export function clearObject(obj: any) {
+  const keys = Object.keys(obj);
+  keys.forEach((key) => delete obj[key]);
+  return obj;
+}
