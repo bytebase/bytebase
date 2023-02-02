@@ -258,7 +258,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							if _, err := s.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
+							if err := s.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 								log.Error("Failed to mark task as FAILED",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
@@ -286,7 +286,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							if _, err := s.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
+							if err := s.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
@@ -722,14 +722,11 @@ func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *store.TaskMessag
 		return nil
 	}
 
-	if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+	return s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 		ID:        task.ID,
 		UpdaterID: api.SystemBotID,
 		Status:    api.TaskRunning,
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) (bool, error) {
@@ -783,7 +780,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			return errors.Wrap(err, "failed to check if can auto-approve")
 		}
 		if ok {
-			if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+			if err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 				ID:        task.ID,
 				UpdaterID: api.SystemBotID,
 				Status:    api.TaskPending,
@@ -811,7 +808,7 @@ func (s *Scheduler) schedulePendingTasks(ctx context.Context) error {
 }
 
 // PatchTaskStatus patches a single task.
-func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage, taskStatusPatch *api.TaskStatusPatch) (err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
@@ -824,14 +821,14 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 	}()
 
 	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
-		return nil, &common.Error{
+		return &common.Error{
 			Code: common.Invalid,
 			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
 		}
 	}
 
 	if taskStatusPatch.Skipped != nil && *taskStatusPatch.Skipped && !allowedSkippedTaskStatus[task.Status] {
-		return nil, &common.Error{
+		return &common.Error{
 			Code: common.Invalid,
 			Err:  errors.Errorf("cannot skip task whose status is %v", task.Status),
 		}
@@ -839,27 +836,27 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 
 	if taskStatusPatch.Status == api.TaskCanceled {
 		if !taskCancellationImplemented[task.Type] {
-			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
+			return common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
 		}
 		cancelAny, ok := s.stateCfg.RunningTasksCancel.Load(task.ID)
 		cancel := cancelAny.(context.CancelFunc)
 		if !ok {
-			return nil, errors.New("failed to cancel task")
+			return errors.New("failed to cancel task")
 		}
 		cancel()
 		result, err := json.Marshal(api.TaskRunResultPayload{
 			Detail: "Task cancellation requested.",
 		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal TaskRunResultPayload")
+			return errors.Wrapf(err, "failed to marshal TaskRunResultPayload")
 		}
 		resultStr := string(result)
 		taskStatusPatch.Result = &resultStr
 	}
 
-	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+	taskPatched, err := s.store.UpdateTaskStatusV2(ctx, taskStatusPatch)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
+		return errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
@@ -867,28 +864,28 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
+		return errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
 	}
 
 	// Create an activity
 	if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, issue); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Cancel every task depending on the canceled task.
 	if taskPatched.Status == api.TaskCanceled {
 		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
-			return nil, errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
+			return errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
 		}
 	}
 
 	if issue != nil {
 		if err := s.onTaskPatched(ctx, issue, taskPatched); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return taskPatched, nil
+	return nil
 }
 
 func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
@@ -937,7 +934,7 @@ func (s *Scheduler) createTaskStatusUpdateActivity(ctx context.Context, task *st
 	return nil
 }
 
-func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *api.Task) error {
+func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *store.TaskMessage) error {
 	queue := []int{task.ID}
 	seen := map[int]bool{task.ID: true}
 	var idList []int
@@ -1109,7 +1106,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		// keep those tasks in the same state before the issue was canceled.
 		for _, task := range tasks {
 			if task.Status == api.TaskRunning {
-				if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+				if err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 					ID:        task.ID,
 					UpdaterID: updaterID,
 					Status:    api.TaskCanceled,
@@ -1165,41 +1162,47 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	return nil
 }
 
-func (s *Scheduler) onTaskPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *api.Task) error {
-	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+func (s *Scheduler) onTaskPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
+	stages, err := s.store.ListStageV2(ctx, taskPatched.PipelineID)
 	if err != nil {
 		return err
 	}
-	foundStage := false
-	stageTaskHasPendingApproval := false
-	stageTaskAllTerminated := true
-	stageTaskAllDone := true
-	var stageIndex int
-	for i, stage := range composedIssue.Pipeline.StageList {
+	var taskStage, nextStage *store.StageMessage
+	for _, stage := range stages {
 		if stage.ID == taskPatched.StageID {
-			foundStage = true
-			stageIndex = i
-			for _, task := range stage.TaskList {
-				if task.Status == api.TaskPendingApproval {
-					stageTaskHasPendingApproval = true
-				}
-				if task.Status != api.TaskDone {
-					stageTaskAllDone = false
-				}
-				if !terminatedTaskStatus[task.Status] {
-					stageTaskAllTerminated = false
-				}
-			}
+			taskStage = stage
+		}
+		if taskStage != nil {
+			nextStage = stage
 			break
 		}
 	}
-	if !foundStage {
+	if taskStage == nil {
 		return errors.New("failed to find corresponding stage of the task in the issue pipeline")
+	}
+
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &taskPatched.PipelineID, StageID: &taskPatched.StageID})
+	if err != nil {
+		return err
+	}
+	stageTaskHasPendingApproval := false
+	stageTaskAllTerminated := true
+	stageTaskAllDone := true
+	for _, task := range tasks {
+		if task.Status == api.TaskPendingApproval {
+			stageTaskHasPendingApproval = true
+		}
+		if task.Status != api.TaskDone {
+			stageTaskAllDone = false
+		}
+		if !terminatedTaskStatus[task.Status] {
+			stageTaskAllTerminated = false
+		}
 	}
 
 	// every task in the stage completes
 	// cancel external approval, it's ok if we failed.
-	if stageTaskAllDone {
+	if !taskStage.Active {
 		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonNoTaskPendingApproval); err != nil {
 			log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.UID), zap.Error(err))
 		}
@@ -1208,12 +1211,11 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *store.IssueMessage
 	// every task in the stage terminated
 	// create "stage ends" activity.
 	if stageTaskAllTerminated {
-		stage := composedIssue.Pipeline.StageList[stageIndex]
 		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               stage.ID,
+			StageID:               taskStage.ID,
 			StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
 			IssueName:             issue.Title,
-			StageName:             stage.Name,
+			StageName:             taskStage.Name,
 		}
 		bytes, err := json.Marshal(createActivityPayload)
 		if err != nil {
@@ -1235,13 +1237,12 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *store.IssueMessage
 
 	// every task in the stage completes and this is not the last stage.
 	// create "stage begins" activity.
-	if stageTaskAllDone && stageIndex+1 < len(composedIssue.Pipeline.StageList) {
-		stage := composedIssue.Pipeline.StageList[stageIndex+1]
+	if stageTaskAllDone && nextStage != nil {
 		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               stage.ID,
+			StageID:               nextStage.ID,
 			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
 			IssueName:             issue.Title,
-			StageName:             stage.Name,
+			StageName:             nextStage.Name,
 		}
 		bytes, err := json.Marshal(createActivityPayload)
 		if err != nil {

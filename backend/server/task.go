@@ -183,8 +183,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskStatusPatch.SkippedReason = taskStatusPatch.Comment
 		}
 
-		taskPatched, err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch)
-		if err != nil {
+		if err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
@@ -193,10 +192,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
+		composedTask, err := s.store.GetTaskByID(ctx, task.ID)
+		if err != nil {
+			return err
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatched); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskPatched.Name)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", task.Name)).SetInternal(err)
 		}
 		return nil
 	})
