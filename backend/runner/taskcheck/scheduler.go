@@ -103,7 +103,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							Status:    api.TaskCheckRunFailed,
 							Code:      common.Internal,
 						}
-						if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+						if err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 							log.Error("Failed to mark task check run as FAILED",
 								zap.Int("id", taskCheckRun.ID),
 								zap.Int("task_id", taskCheckRun.TaskID),
@@ -153,7 +153,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.Ok,
 								Result:    string(bytes),
 							}
-							if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+							if err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 								log.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
@@ -188,7 +188,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),
 							}
-							if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+							if err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 								log.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),

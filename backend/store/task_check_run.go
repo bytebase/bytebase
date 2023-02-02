@@ -77,19 +77,6 @@ func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([
 	return composedTaskCheckRuns, nil
 }
 
-// PatchTaskCheckRunStatus patches an instance of TaskCheckRunStatus.
-func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
-	taskCheckRun, err := s.patchTaskCheckRunStatusV1(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch task check run %#v", patch)
-	}
-	composedTaskCheckRun, err := s.composeTaskCheckRun(ctx, taskCheckRun)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose task check run %#v", taskCheckRun)
-	}
-	return composedTaskCheckRun, nil
-}
-
 func (s *Store) composeTaskCheckRun(ctx context.Context, run *TaskCheckRunMessage) (*api.TaskCheckRun, error) {
 	composedTaskCheckRun := run.toTaskCheckRun()
 
@@ -277,29 +264,8 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 	return taskCheckRuns, nil
 }
 
-// patchTaskCheckRunStatusV1 updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *Store) patchTaskCheckRunStatusV1(ctx context.Context, patch *TaskCheckRunStatusPatch) (*TaskCheckRunMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	taskCheckRun, err := s.patchTaskCheckRunStatusImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return taskCheckRun, nil
-}
-
-// patchTaskCheckRunStatusImpl updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskCheckRunStatusPatch) (*TaskCheckRunMessage, error) {
-	// Build UPDATE clause.
+// PatchTaskCheckRunStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
+func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) error {
 	if patch.Result == "" {
 		patch.Result = "{}"
 	}
@@ -308,40 +274,30 @@ func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *Ta
 	set, args = append(set, "code = $3"), append(args, patch.Code)
 	set, args = append(set, "result = $4"), append(args, patch.Result)
 
-	// Build WHERE clause.
 	where := []string{"TRUE"}
 	if v := patch.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	var taskCheckRun TaskCheckRunMessage
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE task_check_run
-		SET `+strings.Join(set, ", ")+`
-		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
-	`,
-		args...,
-	).Scan(
-		&taskCheckRun.ID,
-		&taskCheckRun.CreatorID,
-		&taskCheckRun.CreatedTs,
-		&taskCheckRun.UpdaterID,
-		&taskCheckRun.UpdatedTs,
-		&taskCheckRun.TaskID,
-		&taskCheckRun.Status,
-		&taskCheckRun.Type,
-		&taskCheckRun.Code,
-		&taskCheckRun.Comment,
-		&taskCheckRun.Result,
-		&taskCheckRun.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task check run ID not found: %d", *patch.ID)}
-		}
-		return nil, FormatError(err)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
 	}
-	return &taskCheckRun, nil
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+		UPDATE task_check_run
+		SET %s
+		WHERE %s`, strings.Join(set, ", "), strings.Join(where, " AND ")),
+		args...,
+	); err != nil {
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // ListTaskCheckRuns list task check runs.
