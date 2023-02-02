@@ -14,7 +14,7 @@
         <button
           type="button"
           class="btn-normal flex justify-center w-full h-10 mb-2 tooltip-wrapper"
-          :disabled="!has3rdPartyLoginFeature"
+          :disabled="!hasSSOFeature"
           @click="trySigninWithOAuth(authProvider)"
         >
           <img
@@ -30,12 +30,6 @@
                 : authProvider.name
             }}
           </span>
-          <span v-if="isDemo" class="tooltip">{{
-            $t("auth.sign-in.3rd-party-auth-demo")
-          }}</span>
-          <span v-else-if="!has3rdPartyLoginFeature" class="tooltip">{{
-            $t("subscription.features.bb-feature-3rd-party-auth.login")
-          }}</span>
         </button>
       </template>
 
@@ -185,16 +179,8 @@
           </span>
         </button>
       </template>
-
-      <span v-if="isDemo" class="tooltip">{{
-        $t("auth.sign-in.3rd-party-auth-demo")
-      }}</span>
-      <span v-else-if="!has3rdPartyLoginFeature" class="tooltip">{{
-        $t("subscription.features.bb-feature-3rd-party-auth.login")
-      }}</span>
     </div>
   </div>
-
   <AuthFooter />
 </template>
 
@@ -408,5 +394,4 @@ const trySigninWithIdentityProvider = (identityProvider: IdentityProvider) => {
 };
 
 const hasSSOFeature = featureToRef("bb.feature.sso");
-const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 </script>

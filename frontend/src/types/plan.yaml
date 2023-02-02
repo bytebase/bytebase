@@ -29,7 +29,6 @@ categoryList:
       - activity-log
       - terraform-provider
       - rbac
-      - 3rd-party-auth
       - sync-members-from-vcs
       - dba-workflow
       - environment-tier
@@ -143,7 +142,6 @@ planList:
       - type: activity-log
       - type: terraform-provider
       - type: rbac
-      - type: 3rd-party-auth
       - type: sync-members-from-vcs
     mainFeatureList:
       - email-support
@@ -207,7 +205,6 @@ planList:
       - type: terraform-provider
       - type: rbac
       - type: watermark
-      - type: 3rd-party-auth
       - type: sync-members-from-vcs
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
