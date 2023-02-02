@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -223,11 +228,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 
 // GetDatabaseMetadata gets the metadata of a database.
 func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
-	name, err := trimSuffix(request.Name, "/metadata")
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(name)
+	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, metadataSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -251,11 +252,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 
 // GetDatabaseSchema gets the schema of a database.
 func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
-	name, err := trimSuffix(request.Name, "/schema")
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(name)
+	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, schemaSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -278,6 +275,100 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 	return &v1pb.DatabaseSchema{Schema: string(dbSchema.Schema)}, nil
+}
+
+// GetBackupSetting gets the backup setting of a database.
+func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.GetBackupSettingRequest) (*v1pb.BackupSetting, error) {
+	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, backupSettingSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	backupSetting, err := s.store.GetBackupSettingV2(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if backupSetting == nil {
+		return nil, status.Errorf(codes.NotFound, "backup setting %q not found", databaseName)
+	}
+	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
+}
+
+// UpdateBackupSetting updates the backup setting of a database.
+func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb.UpdateBackupSettingRequest) (*v1pb.BackupSetting, error) {
+	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Setting.Name, backupSettingSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	backupSetting, err := validateAndConvertToStoreBackupSetting(request.Setting, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	backupSetting, err = s.store.UpsertBackupSettingV2(ctx, principalID, backupSetting)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
 }
 
 func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
@@ -415,4 +506,96 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 		log.Warn("failed to create activities for database project updates", zap.Error(err))
 	}
 	return nil
+}
+
+func convertToBackupSetting(backupSetting *store.BackupSettingMessage, environmentID, instanceID, databaseName string) (*v1pb.BackupSetting, error) {
+	period, err := convertPeriodTsToDuration(backupSetting.RetentionPeriodTs)
+	if err != nil {
+		return nil, err
+	}
+	cronSchedule := ""
+	if backupSetting.Enabled {
+		cronSchedule = buildSimpleCron(backupSetting.HourOfDay, backupSetting.DayOfWeek)
+	}
+	return &v1pb.BackupSetting{
+		Name:                 fmt.Sprintf("%s%s%s%s%s%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		BackupRetainDuration: period,
+		CronSchedule:         cronSchedule,
+		HookUrl:              backupSetting.HookURL,
+	}, nil
+}
+
+func validateAndConvertToStoreBackupSetting(backupSetting *v1pb.BackupSetting, databaseUID int) (*store.BackupSettingMessage, error) {
+	enable := backupSetting.CronSchedule != ""
+	hourOfDay := 0
+	dayOfWeek := -1
+	var err error
+	if enable {
+		hourOfDay, dayOfWeek, err = parseSimpleCron(backupSetting.CronSchedule)
+		if err != nil {
+			return nil, err
+		}
+	}
+	periodTs, err := convertDurationToPeriodTs(backupSetting.BackupRetainDuration)
+	if err != nil {
+		return nil, err
+	}
+	return &store.BackupSettingMessage{
+		DatabaseUID:       databaseUID,
+		Enabled:           enable,
+		HourOfDay:         hourOfDay,
+		DayOfWeek:         dayOfWeek,
+		RetentionPeriodTs: periodTs,
+		HookURL:           backupSetting.HookUrl,
+	}, nil
+}
+
+// parseSimpleCron parses a simple cron expression(only support hour of day and day of week), and returns them as int.
+func parseSimpleCron(cron string) (int, int, error) {
+	fields := strings.Fields(cron)
+	if len(fields) != 5 {
+		return 0, 0, errors.New("invalid cron expression")
+	}
+	hourOfDay, err := strconv.Atoi(fields[1])
+	if err != nil {
+		return 0, 0, errors.New("invalid cron hour field")
+	}
+	if hourOfDay < 0 || hourOfDay > 23 {
+		return 0, 0, errors.New("invalid cron hour range")
+	}
+	weekDay := fields[4]
+	// "*" means any day of week.
+	if weekDay == "*" {
+		return hourOfDay, -1, nil
+	}
+	dayOfWeek, err := strconv.Atoi(weekDay)
+	if err != nil {
+		return 0, 0, err
+	}
+	if dayOfWeek < 0 || dayOfWeek > 6 {
+		return 0, 0, errors.New("invalid cron day of week range")
+	}
+	return hourOfDay, dayOfWeek, nil
+}
+
+func buildSimpleCron(hourOfDay int, dayOfWeek int) string {
+	if dayOfWeek == -1 {
+		return fmt.Sprintf("0 %d * * *", hourOfDay)
+	}
+	return fmt.Sprintf("0 %d * * %d", hourOfDay, dayOfWeek)
+}
+
+func convertDurationToPeriodTs(duration *durationpb.Duration) (int64, error) {
+	if err := duration.CheckValid(); err != nil {
+		return 0, errors.Wrap(err, "invalid duration")
+	}
+	// Round up to days
+	return int64(duration.AsDuration().Round(time.Hour * 24).Seconds()), nil
+}
+
+func convertPeriodTsToDuration(periodTs int64) (*durationpb.Duration, error) {
+	if periodTs < 0 {
+		return nil, errors.New("invalid period")
+	}
+	return durationpb.New(time.Duration(periodTs) * time.Second), nil
 }
