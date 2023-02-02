@@ -70,6 +70,8 @@
         "schema-change-advanced-tooltip": "普通变更 + 在线变更 (gh-ost)",
         "migration-history": "变更历史",
         "sql-editor": "SQL 编辑器",
+        "schema-editor": "Schema 编辑器",
+        "schema-diagram": "Schema 关系图",
         "disaster-recovery": "数据灾备",
         "disaster-recovery-basic": "基础",
         "disaster-recovery-basic-tooltip": "数据库备份和恢复",
