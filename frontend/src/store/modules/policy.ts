@@ -3,6 +3,7 @@ import { computed, Ref, unref, watchEffect } from "vue";
 import axios from "axios";
 import {
   DatabaseId,
+  EMPTY_ID,
   EnvironmentId,
   MaybeRef,
   PolicyState,
@@ -61,6 +62,14 @@ function convert(
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };
+
+  // [GET]/api/policy/database/${databaseId}?type=${type} sometimes
+  // accidentally returns empty object with resourceId={databaseId} when the
+  // policy entity doesn't exist.
+  // So we need to rewrite the resourceId here to improve robustness.
+  if (result.id === UNKNOWN_ID) result.resourceId = UNKNOWN_ID;
+  if (result.id === EMPTY_ID) result.resourceId = EMPTY_ID;
+
   if (result.type === "bb.policy.pipeline-approval") {
     const payload = result.payload as PipelineApprovalPolicyPayload;
     if (!payload.assigneeGroupList) {
