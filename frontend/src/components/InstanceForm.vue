@@ -814,6 +814,8 @@ const updateInstanceDataSource = (dataSource: EditDataSource) => {
     delete newValue.sslKey;
   }
 
+  // Won't modify the obj ref, but modify its fields in-place, to avoid
+  // infinite loop caused by vue's reactivity.
   const oldValue = state.instance.dataSourceList[index];
   clearObject(oldValue);
   Object.assign(oldValue, newValue);
