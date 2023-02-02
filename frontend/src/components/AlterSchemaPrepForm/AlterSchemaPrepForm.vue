@@ -84,7 +84,7 @@
               @select-database="selectDatabase"
             >
               <template #header>
-                <div class="flex items-center justify-end my-2">
+                <div class="flex items-center justify-end mx-2 mb-2">
                   <BBTableSearch
                     class="m-px"
                     :placeholder="$t('database.search-database')"
@@ -104,13 +104,15 @@
             />
           </aside>
           <!-- a simple table -->
-          <DatabaseTable
-            mode="ALL_SHORT"
-            table-class="border"
-            :custom-click="true"
-            :database-list="databaseList"
-            @select-database="selectDatabase"
-          />
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
+            <DatabaseTable
+              mode="ALL_SHORT"
+              table-class="border"
+              :custom-click="true"
+              :database-list="databaseList"
+              @select-database="selectDatabase"
+            />
+          </div>
         </template>
       </div>
     </div>
