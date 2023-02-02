@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4 max-w-min overflow-x-hidden">
     <div class="overflow-x-auto">
-      <div class="w-192">
+      <div class="w-[calc(100vw-8rem)] lg:w-[56rem]">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
