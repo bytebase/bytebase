@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import {
   DatabaseId,
   InstanceId,
@@ -17,13 +17,33 @@ import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { emptyConnection } from "@/utils";
 import { useDBSchemaStore } from "./dbSchema";
+import { useLocalStorage } from "@vueuse/core";
+
+// Normalize value, fallback to ConnectionTreeMode.PROJECT
+const normalizeConnectionTreeMode = (raw: string) => {
+  if (raw === ConnectionTreeMode.INSTANCE) {
+    return raw;
+  }
+  return ConnectionTreeMode.PROJECT;
+};
 
 export const useConnectionTreeStore = defineStore("connectionTree", () => {
+  const treeModeInLocalStorage = useLocalStorage<ConnectionTreeMode>(
+    "bb.sql-editor.default-connection-tree-mode",
+    ConnectionTreeMode.PROJECT,
+    {
+      serializer: {
+        read: normalizeConnectionTreeMode,
+        write: normalizeConnectionTreeMode,
+      },
+    }
+  );
+
   // states
   const accessControlPolicyList = ref<Policy[]>([]);
   const tree = reactive({
     data: [] as ConnectionAtom[],
-    mode: ConnectionTreeMode.PROJECT,
+    mode: treeModeInLocalStorage.value,
     state: ConnectionTreeState.UNSET,
   });
   const expandedTreeNodeKeys = ref<string[]>([]);
@@ -92,6 +112,14 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     };
     return connectionAtom;
   };
+
+  watch(
+    () => tree.mode,
+    (mode) => {
+      treeModeInLocalStorage.value = mode;
+    },
+    { immediate: true }
+  );
 
   return {
     accessControlPolicyList,
