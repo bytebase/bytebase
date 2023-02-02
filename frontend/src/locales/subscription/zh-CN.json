@@ -12,7 +12,7 @@
   "upgrade": "升级订阅",
   "per-month": "/ 月",
   "price-unit-for-team": "/ 月起",
-  "start-from": "",
+  "start-at": "",
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
