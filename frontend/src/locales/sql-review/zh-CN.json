@@ -389,7 +389,7 @@
         }
       }
     },
-    "system-comment.length": {
+    "system-comment-length": {
       "title": "注释长度限制",
       "description": "",
       "component": {
