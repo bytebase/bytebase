@@ -561,7 +561,12 @@ func parseSimpleCron(cron string) (int, int, error) {
 	if hourOfDay < 0 || hourOfDay > 23 {
 		return 0, 0, errors.New("invalid cron hour range")
 	}
-	dayOfWeek, err := strconv.Atoi(fields[4])
+	weekDay := fields[4]
+	// "*" means any day of week.
+	if weekDay == "*" {
+		return hourOfDay, -1, nil
+	}
+	dayOfWeek, err := strconv.Atoi(weekDay)
 	if err != nil {
 		return 0, 0, err
 	}

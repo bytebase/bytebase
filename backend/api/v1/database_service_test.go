@@ -25,12 +25,22 @@ func TestSimpleParseCron(t *testing.T) {
 			cronStr: "* 24 * * 7",
 			wantErr: true,
 		},
+		// 8:00 AM on Saturday
 		{
 			cronStr: "* 8 * * 6",
 			wantErr: false,
 			want: result{
 				hourOfDay: 8,
 				dayOfWeek: 6,
+			},
+		},
+		// 8:00 AM every day
+		{
+			cronStr: "* 8 * * *",
+			wantErr: false,
+			want: result{
+				hourOfDay: 8,
+				dayOfWeek: -1,
 			},
 		},
 	}
