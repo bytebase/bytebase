@@ -214,29 +214,30 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
 		}
 
-		task, err := s.store.GetTaskByID(ctx, taskID)
+		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 		if task == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return err
 		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %v not found", task.Database.ProjectID))
-		}
+		project := issue.Project
 
-		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int))
-		if err != nil {
+		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
+		}
+		composedTask, err := s.store.GetTaskByID(ctx, task.ID)
+		if err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskUpdated); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskUpdated.Name)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", task.Name)).SetInternal(err)
 		}
 		return nil
 	})
