@@ -336,7 +336,7 @@ func convertToUserContent(upsert *db.DatabaseRoleUpsertMessage) (string, error) 
 	if upsert.ValidUntil != nil {
 		interval, err := strconv.Atoi(*upsert.ValidUntil)
 		if err != nil || interval < 0 {
-			return "", common.Wrapf(err, common.Invalid, "invalid MySQL expriation")
+			return "", common.Wrapf(err, common.Invalid, "invalid MySQL expiration")
 		}
 		if interval == 0 {
 			contentList = append(contentList, "PASSWORD EXPIRE NEVER")
@@ -355,7 +355,7 @@ func splitGrantStatement(stmts string) ([]parser.SingleSQL, error) {
 
 	grantReg := regexp.MustCompile("(?i)^GRANT ")
 	for _, sql := range list {
-		if len(grantReg.FindString(sql.Text)) <= 0 {
+		if len(grantReg.FindString(sql.Text)) == 0 {
 			return nil, common.Wrapf(err, common.Invalid, "\"%s\" is not the GRANT statement", sql.Text)
 		}
 	}
