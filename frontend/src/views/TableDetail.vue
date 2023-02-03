@@ -77,14 +77,13 @@
               <router-link :to="`/db/${databaseSlug}`" class="normal-link">{{
                 database.name
               }}</router-link>
-
-              <span class="ml-2 textlabel">
-                {{ $t("sql-editor.self") }}
-              </span>
-              <button class="ml-1 btn-icon" @click.prevent="gotoSQLEditor">
-                <heroicons-solid:terminal class="w-5 h-5" />
-              </button>
             </dd>
+            <SQLEditorButton
+              class="text-sm md:mr-4"
+              :database="database"
+              :label="true"
+              :disabled="!allowQuery"
+            />
           </dl>
         </div>
       </div>
@@ -189,24 +188,32 @@ import { computed, defineComponent, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   bytesToString,
-  connectionSlug,
+  hasWorkspacePermission,
   idFromSlug,
+  isDatabaseAccessible,
   isGhostTable,
 } from "@/utils";
 import {
+  useCurrentUser,
   useDatabaseStore,
   useDBSchemaStore,
   usePolicyByDatabaseAndType,
 } from "@/store";
-import { SensitiveData, SensitiveDataPolicyPayload } from "@/types";
+import {
+  DEFAULT_PROJECT_ID,
+  SensitiveData,
+  SensitiveDataPolicyPayload,
+  UNKNOWN_ID,
+} from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
 
 export default defineComponent({
   name: "TableDetail",
-  components: { ColumnTable, IndexTable, InstanceEngineIcon },
+  components: { ColumnTable, IndexTable, InstanceEngineIcon, SQLEditorButton },
   props: {
     databaseSlug: {
       required: true,
@@ -222,6 +229,7 @@ export default defineComponent({
     const router = useRouter();
     const databaseStore = useDatabaseStore();
     const dbSchemaStore = useDBSchemaStore();
+    const currentUser = useCurrentUser();
     const table = ref<TableMetadata>();
     const databaseId = idFromSlug(props.databaseSlug);
     const schemaName = (route.query.schema as string) || "";
@@ -231,6 +239,27 @@ export default defineComponent({
     });
     const instanceEngine = computed(() => {
       return database.value.instance.engine;
+    });
+
+    const accessControlPolicy = usePolicyByDatabaseAndType(
+      computed(() => ({
+        databaseId: database.value.id,
+        type: "bb.policy.access-control",
+      }))
+    );
+    const allowQuery = computed(() => {
+      if (
+        database.value.projectId === UNKNOWN_ID ||
+        database.value.projectId === DEFAULT_PROJECT_ID
+      ) {
+        return hasWorkspacePermission(
+          "bb.permission.workspace.manage-database",
+          currentUser.value.role
+        );
+      }
+      const policy = accessControlPolicy.value;
+      const list = policy ? [policy] : [];
+      return isDatabaseAccessible(database.value, list, currentUser.value);
     });
     const hasSchemaProperty = computed(
       () => instanceEngine.value === "POSTGRES"
@@ -260,14 +289,6 @@ export default defineComponent({
       }
     });
 
-    const gotoSQLEditor = () => {
-      const url = `/sql-editor/${connectionSlug(
-        database.value.instance,
-        database.value
-      )}`;
-      window.open(url);
-    };
-
     const sensitiveDataPolicy = usePolicyByDatabaseAndType(
       computed(() => ({
         databaseId: database.value.id,
@@ -287,8 +308,8 @@ export default defineComponent({
     return {
       table,
       database,
+      allowQuery,
       getTableName,
-      gotoSQLEditor,
       bytesToString,
       isGhostTable,
       sensitiveDataList,

@@ -53,8 +53,13 @@ import { hasWorkspacePermission } from "@/utils";
 
 const currentUser = useCurrentUser();
 const tabStore = useTabStore();
+const connectionTreeStore = useConnectionTreeStore();
 
-const tab = ref<"projects" | "instances" | "history">("projects");
+const tab = ref<"projects" | "instances" | "history">(
+  connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
+    ? "instances"
+    : "projects"
+);
 
 const hasInstanceView = computed((): boolean => {
   return hasWorkspacePermission(
@@ -62,8 +67,6 @@ const hasInstanceView = computed((): boolean => {
     currentUser.value.role
   );
 });
-
-const connectionTreeStore = useConnectionTreeStore();
 
 const showSchemaPanel = computed(() => {
   return tabStore.currentTab.connection.databaseId !== UNKNOWN_ID;
