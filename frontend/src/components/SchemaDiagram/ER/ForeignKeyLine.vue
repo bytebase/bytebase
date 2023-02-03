@@ -1,5 +1,7 @@
 <template>
   <SVGLine
+    class="transition-opacity"
+    :class="lineClasses"
     :path="path"
     :decorators="[startManyArrow]"
     :bb-edge-from="`${fk.from.table.name}.${fk.from.column}`"
@@ -15,6 +17,7 @@
 import { computed, onMounted, ref } from "vue";
 
 import { TableMetadata } from "@/types/proto/store/database";
+import type { VueClass } from "@/utils";
 import { Point, Rect, Path, ForeignKey } from "../types";
 import {
   segmentOverlap1D,
@@ -33,7 +36,8 @@ const props = withDefaults(
   {}
 );
 
-const { zoom, idOfTable, rectOfTable, events } = useSchemaDiagramContext();
+const { zoom, focusedTables, idOfTable, rectOfTable, events } =
+  useSchemaDiagramContext();
 const fromRect = ref<Rect>({ x: 0, y: 0, width: 0, height: 0 });
 const toRect = ref<Rect>({ x: 0, y: 0, width: 0, height: 0 });
 const path = computed((): Path => {
@@ -57,6 +61,23 @@ const path = computed((): Path => {
 
   return generateLine(from, fromPort, to, toPort);
 });
+
+const lineClasses = computed((): VueClass => {
+  const classes: string[] = [];
+  if (focusedTables.value.size > 0) {
+    const { from, to } = props.fk;
+    if (
+      focusedTables.value.has(from.table) ||
+      focusedTables.value.has(to.table)
+    ) {
+      classes.push("opacity-100");
+    } else {
+      classes.push("opacity-20");
+    }
+  }
+  return classes;
+});
+
 const findRect = (table: TableMetadata, columnName: string): Rect => {
   const id = idOfTable(table);
   const tableRect = rectOfTable(table);

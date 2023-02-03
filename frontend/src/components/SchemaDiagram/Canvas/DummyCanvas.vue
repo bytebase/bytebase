@@ -9,8 +9,6 @@
         height: `${resizeParams.rect.height}px`,
       }"
     >
-      <Watermark />
-
       <div
         class="absolute overflow-visible origin-top-left"
         :style="{
@@ -19,6 +17,7 @@
           transform: `scale(${resizeParams.zoom})`,
         }"
       >
+        <Watermark />
         <DesktopRenderer />
       </div>
 

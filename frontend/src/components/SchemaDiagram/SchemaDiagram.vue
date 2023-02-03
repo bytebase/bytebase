@@ -93,6 +93,7 @@ const zoom = ref(1);
 const position = ref<Point>({ x: 0, y: 0 });
 const panning = ref(false);
 const geometries = ref(new Set<Geometry>());
+const focusedTables = ref(new Set<TableMetadata>());
 
 const render = () => {
   nextTick(() => {
@@ -209,12 +210,14 @@ provideSchemaDiagramContext({
   database: toRef(props, "database"),
   databaseMetadata: toRef(props, "databaseMetadata"),
   editable: computed(() => props.editable),
+  foreignKeys,
   dummy,
   busy,
   zoom,
   position,
   panning,
   geometries,
+  focusedTables,
   idOfTable,
   rectOfTable,
   render,
@@ -229,6 +232,7 @@ provideSchemaDiagramContext({
 watch(
   () => props.databaseMetadata,
   async () => {
+    focusedTables.value = new Set();
     await layout();
     initialized.value = true;
     nextTick(() => {
