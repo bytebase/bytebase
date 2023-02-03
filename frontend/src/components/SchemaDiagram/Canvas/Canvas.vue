@@ -61,7 +61,7 @@ import ZoomButton from "./ZoomButton.vue";
 import { useDragCanvas, useFitView, useSetCenter } from "./composables";
 import DummyCanvas from "./DummyCanvas.vue";
 import { pushNotification } from "@/store";
-import { ZOOM_RANGE } from "./const";
+import { ZOOM_RANGE } from "../common/const";
 
 const slots = useSlots();
 

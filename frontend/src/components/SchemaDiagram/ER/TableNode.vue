@@ -1,6 +1,7 @@
 <template>
   <div
-    class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10]"
+    class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10] transition-opacity"
+    :class="tableClasses"
     bb-node-type="table"
     :bb-node-id="dummy ? `dummy-${idOfTable(table)}` : idOfTable(table)"
     :bb-status="tableStatus(table)"
@@ -15,6 +16,13 @@
         'background-color': tableColor,
       }"
     >
+      <FocusButton
+        :table="table"
+        :set-center="false"
+        class="invisible group-hover:visible !absolute top-[50%] -mt-[9px] left-1 text-main group-hover:bg-white/70 group-hover:!text-main"
+        focused-class="!text-white"
+      />
+
       <template v-if="schema.name !== ''">
         <span :class="[isTableDropped && 'line-through']">
           {{ schema.name }}
@@ -28,7 +36,7 @@
 
       <button
         v-if="editable"
-        class="invisible group-hover:visible absolute top-[50%] -mt-2 right-1 text-main bg-white/70 hover:bg-gray-200 p-0.5 rounded"
+        class="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-main bg-white/70 hover:bg-gray-200 p-0.5 rounded"
         @click="events.emit('edit-table', { schema, table })"
       >
         <heroicons-outline:pencil class="w-4 h-4" />
@@ -85,13 +93,15 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
+import type { VueClass } from "@/utils";
 import {
   useSchemaDiagramContext,
   isPrimaryKey,
   isIndex,
   useGeometry,
+  FocusButton,
 } from "../common";
-import { VueClass } from "@/utils";
+import { isFocusedForeignTable } from "./libs/isFocusedFKTable";
 
 const props = withDefaults(
   defineProps<{
@@ -100,9 +110,12 @@ const props = withDefaults(
   }>(),
   {}
 );
+
 const {
   dummy,
   editable,
+  focusedTables,
+  foreignKeys,
   idOfTable,
   rectOfTable,
   schemaStatus,
@@ -152,6 +165,22 @@ const isTableCreated = computed(() => {
 
 const isTableChanged = computed(() => {
   return tableStatus(props.table) === "changed";
+});
+
+const tableClasses = computed((): VueClass => {
+  const classes: string[] = [];
+  if (focusedTables.value.size > 0) {
+    if (focusedTables.value.has(props.table)) {
+      classes.push("opacity-100");
+    } else if (
+      isFocusedForeignTable(props.table, focusedTables.value, foreignKeys.value)
+    ) {
+      classes.push("opacity-100");
+    } else {
+      classes.push("opacity-20 hover:opacity-100");
+    }
+  }
+  return classes;
 });
 
 const columnClasses = (column: ColumnMetadata): VueClass => {
