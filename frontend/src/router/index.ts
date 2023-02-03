@@ -267,7 +267,7 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: () => import("../views/ProfileDashboard.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: () => import("../views/SettingSidebar.vue"),
             },
             props: { content: true },
           },
