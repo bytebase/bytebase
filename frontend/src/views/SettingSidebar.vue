@@ -56,6 +56,10 @@
           <router-link
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            :class="[
+              route.name === 'workspace.profile' &&
+                'router-link-active bg-link-hover',
+            ]"
             >{{ $t("settings.sidebar.members") }}</router-link
           >
           <router-link
@@ -133,11 +137,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { hasWorkspacePermission } from "../utils";
 import { useCurrentUser, useRouterStore } from "@/store";
 
 const routerStore = useRouterStore();
+const route = useRoute();
 const router = useRouter();
 const currentUser = useCurrentUser();
 
