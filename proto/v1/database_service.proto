@@ -68,7 +68,6 @@ service DatabaseService {
       patch: "/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"
       body: "setting"
     };
-    option (google.api.method_signature) = "setting,update_mask";
   }
 }
 
@@ -160,10 +159,7 @@ message GetBackupSettingRequest {
 
 message UpdateBackupSettingRequest {
   // The database backup setting to update.
-  BackupSetting setting = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 3;
+  BackupSetting setting = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Database {
@@ -395,4 +391,7 @@ message BackupSetting {
   // 
   // Default (empty): Disable automatic backup.
   string cron_schedule = 3;
+
+  // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
+  string hook_url = 4;
 }
