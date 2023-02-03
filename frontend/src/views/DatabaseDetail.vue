@@ -72,18 +72,13 @@
                 >{{ projectName(database.project) }}</router-link
               >
             </dd>
-            <dd
-              class="flex items-center text-sm md:mr-4"
-              :class="
-                allowQuery
-                  ? ['textlabel cursor-pointer hover:text-accent']
-                  : ['text-gray-400 cursor-not-allowed']
-              "
-              @click.prevent="gotoSQLEditor"
-            >
-              <span class="mr-1">{{ $t("sql-editor.self") }}</span>
-              <heroicons-solid:terminal class="w-5 h-5" />
-            </dd>
+            <SQLEditorButton
+              class="text-sm md:mr-4"
+              :database="database"
+              :label="true"
+              :disabled="!allowQuery"
+              @failed="handleGotoSQLEditorFailed"
+            />
             <dd
               v-if="hasSchemaDiagramFeature"
               class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
@@ -316,7 +311,6 @@ import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
-  connectionSlug,
   hasProjectPermission,
   hasWorkspacePermission,
   hidePrefix,
@@ -340,6 +334,7 @@ import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
   useCurrentUser,
@@ -704,25 +699,9 @@ const selectDatabaseTabOnHash = () => {
   }
 };
 
-const gotoSQLEditor = () => {
-  if (!allowQuery.value) {
-    return;
-  }
-
-  // SQL editors can only query databases in the projects available to the user.
-  if (
-    database.value.projectId === UNKNOWN_ID ||
-    database.value.projectId === DEFAULT_PROJECT_ID
-  ) {
-    state.editingProjectId = database.value.project.id;
-    state.showIncorrectProjectModal = true;
-  } else {
-    const url = `/sql-editor/${connectionSlug(
-      database.value.instance,
-      database.value
-    )}`;
-    window.open(url);
-  }
+const handleGotoSQLEditorFailed = () => {
+  state.editingProjectId = database.value.project.id;
+  state.showIncorrectProjectModal = true;
 };
 
 onMounted(() => {
