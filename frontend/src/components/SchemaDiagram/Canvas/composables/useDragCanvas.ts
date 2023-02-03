@@ -3,7 +3,7 @@ import { useEventListener } from "@vueuse/core";
 import normalizeWheel from "normalize-wheel";
 
 import type { Point } from "../../types";
-import { ZOOM_RANGE } from "../const";
+import { ZOOM_RANGE } from "../../common/const";
 import { useDraggable, useSchemaDiagramContext } from "../../common";
 import { minmax } from "@/utils";
 
