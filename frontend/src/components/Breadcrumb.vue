@@ -97,7 +97,7 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    const title = useTitle(null, { observe: true });
+    const documentTitle = useTitle(null, { observe: true });
 
     const routeHelpNameMapList = ref<RouteMapList>([]);
     const helpName = computed(
@@ -194,14 +194,26 @@ export default defineComponent({
           path: "/setting/sql-review",
         });
       }
-      const { overrideBreadcrumb } = currentRoute.value.meta;
-      if (title.value) {
-        const route = currentRoute.value;
+      const route = currentRoute.value;
+      const {
+        title: routeTitle,
+        overrideTitle,
+        overrideBreadcrumb,
+      } = route.meta;
+
+      // Dynamic title priorities
+      // 1. documentTitle - if (overrideTitle === true)
+      // 2. routeTitle - if (routeTitle !== undefined)
+      // 3. nothing - otherwise
+      const title = overrideTitle
+        ? documentTitle.value ?? ""
+        : routeTitle?.(route) ?? "";
+      if (title) {
         if (overrideBreadcrumb && overrideBreadcrumb(route)) {
           list.length = 0; // empty the array
         }
         list.push({
-          name: title.value,
+          name: title,
           // Set empty path for the current route to make the link not clickable.
           // We do this because clicking the current route path won't trigger reload and would
           // confuse user since UI won't change while we may have cleared all query parameters.
