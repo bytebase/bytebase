@@ -172,6 +172,10 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
 func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
+	if setting, ok := s.settingCache.Load(create.Name); ok {
+		return setting.(*SettingMessage), false, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to begin transaction")
@@ -189,8 +193,8 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 		return settings[0], false, nil
 	}
 
-	fields := []string{"creator_id", "updater_id", "name", "value"}
-	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, create.Name, create.Value, create.Description}
+	fields := []string{"creator_id", "updater_id", "name", "value", "description"}
+	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []interface{}{principalUID, principalUID, create.Name, create.Value, create.Description}
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
