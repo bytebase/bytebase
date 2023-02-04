@@ -14,6 +14,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
@@ -102,12 +103,11 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 		if len(settings) == 0 {
 			// We will create a new setting named SettingEnterpriseTrial to store the free trial license.
-			_, created, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-				CreatorID:   principalID,
+			_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 				Name:        api.SettingEnterpriseTrial,
 				Value:       string(value),
 				Description: "The trialing license.",
-			})
+			}, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 			}

@@ -12,16 +12,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// CreateSettingIfNotExist creates an instance of Setting.
-func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, bool, error) {
-	setting, created, err := s.createSettingRawIfNotExist(ctx, create)
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
-	}
-	s.settingCache.Store(setting.Name, setting)
-	return setting.toAPISetting(), created, nil
-}
-
 // FindSetting finds a list of Setting instances.
 func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
 	findV2 := &FindSettingMessage{Name: find.Name}
@@ -59,78 +49,6 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 		return nil, errors.Wrapf(err, "failed to patch setting with [%+v]", patch)
 	}
 	return setting.toAPISetting(), nil
-}
-
-//
-// private functions
-//
-
-// createSettingRawIfNotExist creates a new setting only if the named setting does not exist.
-// The returned bool means the resource is created successfully.
-func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.SettingCreate) (*SettingMessage, bool, error) {
-	// We do a find followed by a create if NOT found. Though SQLite supports UPSERT ON CONFLICT DO NOTHING syntax, it doesn't
-	// support RETURNING in such case. So we have to use separate SELECT and INSERT anyway.
-	find := &FindSettingMessage{
-		Name: &create.Name,
-	}
-	setting, err := s.GetSettingV2(ctx, find)
-	if err != nil {
-		return nil, false, err
-	}
-	if setting == nil {
-		tx, err := s.db.BeginTx(ctx, nil)
-		if err != nil {
-			return nil, false, FormatError(err)
-		}
-		defer tx.Rollback()
-
-		setting, err := createSettingImpl(ctx, tx, create)
-		if err != nil {
-			return nil, false, err
-		}
-
-		if err := tx.Commit(); err != nil {
-			return nil, false, FormatError(err)
-		}
-
-		return setting, true, nil
-	}
-
-	return setting, false, nil
-}
-
-// createSettingImpl creates a new setting.
-func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (*SettingMessage, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO setting (
-			creator_id,
-			updater_id,
-			name,
-			value,
-			description
-		)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING name, value, description
-	`
-	var settingMessage SettingMessage
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.Name,
-		create.Value,
-		create.Description,
-	).Scan(
-		&settingMessage.Name,
-		&settingMessage.Value,
-		&settingMessage.Description,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &settingMessage, nil
 }
 
 // FindSettingMessage is the message for finding setting.
@@ -250,6 +168,43 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	}
 	s.settingCache.Store(setting.Name, &setting)
 	return &setting, nil
+}
+
+// CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
+func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+	settings, err := listSettingV2Impl(ctx, tx, &FindSettingMessage{Name: &create.Name})
+	if err != nil {
+		return nil, false, errors.Wrap(err, "failed to list settings")
+	}
+	if len(settings) > 1 {
+		return nil, false, errors.Errorf("found settings for setting name: %v", create.Name)
+	}
+	if len(settings) == 1 {
+		// Don't create setting if the named setting already exists.
+		return settings[0], false, nil
+	}
+
+	fields := []string{"creator_id", "updater_id", "name", "value"}
+	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, create.Name, create.Value, create.Description}
+
+	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
+		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
+		RETURNING name, value, description`
+	var setting SettingMessage
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		return nil, false, FormatError(err)
+	}
+	s.settingCache.Store(setting.Name, &setting)
+	return &setting, true, nil
 }
 
 func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
