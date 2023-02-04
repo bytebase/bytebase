@@ -3,7 +3,7 @@
     <div class="textinfolabel">
       {{ $t("sql-review.description") }}
       <a
-        href="https://www.bytebase.com/docs/sql-review/review-rules/overview"
+        href="https://www.bytebase.com/docs/sql-review/review-rules"
         target="_blank"
         class="normal-link inline-flex flex-row items-center"
       >
