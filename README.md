@@ -66,7 +66,7 @@
 
 |   |   |
 | --- | --- |
-| <b>Standard Operating Procedure (SOP) </b><br />Standardize the database schema and data change process across different database systems, small or [large tables](https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql) and [different tenants](https://www.bytebase.com/docs/tenant-database-management/overview).<br /><br/><b>SQL Review</b><br />[100+ lint rules](https://www.bytebase.com/docs/sql-review/review-rules/overview) to detect SQL anti-patterns and enforce consistent SQL style in the organization.<br /><br /><b>GitOps</b><br />[Point-and-click GitHub and GitLab integration](https://www.bytebase.com/docs/vcs-integration/overview) to enable GitOps workflow for changing database.| <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/issue-detail.webp" /> |
+| <b>Standard Operating Procedure (SOP) </b><br />Standardize the database schema and data change process across different database systems, small or [large tables](https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql) and [different tenants](https://www.bytebase.com/docs/tenant-database-management/overview).<br /><br/><b>SQL Review</b><br />[100+ lint rules](https://www.bytebase.com/docs/sql-review/review-rules) to detect SQL anti-patterns and enforce consistent SQL style in the organization.<br /><br /><b>GitOps</b><br />[Point-and-click GitHub and GitLab integration](https://www.bytebase.com/docs/vcs-integration/overview) to enable GitOps workflow for changing database.| <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/issue-detail.webp" /> |
 
 <br />
 
