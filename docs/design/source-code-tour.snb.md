@@ -110,7 +110,7 @@ This detailed history schema info enables Bytebase to implement powerful feature
 Tasks may need to meet some pre-conditions before being scheduled. For example:
 
 1. The task needs to be [approved](https://www.bytebase.com/docs/administration/environment-policy/approval-policy).
-1. The SQL statement must conform to [defined policy](https://www.bytebase.com/docs/sql-review/review-rules/overview).
+1. The SQL statement must conform to [defined policy](https://www.bytebase.com/docs/sql-review/review-rules).
 
 This pre-condition is modeled as `Task Check`. Task checks are created before when the corresponding task becomes the next to-be-scheduled task in the pipeline:
 
