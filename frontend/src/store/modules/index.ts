@@ -40,6 +40,7 @@ export * from "./task";
 export * from "./uistate";
 export * from "./vcs";
 export * from "./sqlReview";
+export * from "./onboardingState";
 export * from "./onboardingGuide";
 export * from "./schemaEditor";
 export * from "./dbSchema";

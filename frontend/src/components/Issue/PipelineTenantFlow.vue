@@ -1,10 +1,6 @@
 <template>
   <div class="divide-y">
-    <PipelineStageList>
-      <template #task-name-of-stage="{ stage }">
-        {{ taskNameOfStage(stage) }}
-      </template>
-    </PipelineStageList>
+    <PipelineStageList />
 
     <div class="relative">
       <div
@@ -66,7 +62,7 @@ import type {
   TaskCreate,
   Database,
 } from "@/types";
-import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
+import { activeTask, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import { useDatabaseStore } from "@/store";
@@ -110,20 +106,6 @@ const selectedStageIdOrIndex = computed(() => {
     selectedStage.value as StageCreate
   );
 });
-
-const taskNameOfStage = (stage: Stage | StageCreate) => {
-  if (create.value) {
-    return stage.taskList[0].status;
-  }
-  const activeTask = activeTaskInStage(stage as Stage);
-  const { taskList } = stage as Stage;
-  for (let i = 0; i < stage.taskList.length; i++) {
-    if (taskList[i].id == activeTask.id) {
-      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-    }
-  }
-  return activeTask.name;
-};
 
 const taskClass = (task: Task | TaskCreate) => {
   const classes: string[] = [];

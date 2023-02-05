@@ -1,5 +1,10 @@
 <template>
   <div class="w-full mt-4 space-y-4">
+    <FeatureAttention
+      v-if="!hasAccessControlFeature"
+      feature="bb.feature.access-control"
+      :description="$t('subscription.features.bb-feature-access-control.desc')"
+    />
     <div class="flex justify-between">
       <i18n-t
         tag="div"
@@ -62,9 +67,6 @@
                 {{ instanceName(databaseOfPolicy(policy).instance) }}
               </span>
             </div>
-          </BBTableCell>
-          <BBTableCell>
-            {{ humanizeTs(policy.updatedTs) }}
           </BBTableCell>
           <BBTableCell>
             <div class="flex items-center justify-center">
@@ -365,10 +367,6 @@ const COLUMN_LIST = computed((): BBTableColumn[] => [
   },
   {
     title: t("common.instance"),
-  },
-  {
-    title: t("common.updated-at"),
-    nowrap: true,
   },
   {
     title: t("common.operation"),

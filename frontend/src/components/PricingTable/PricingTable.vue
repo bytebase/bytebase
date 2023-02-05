@@ -37,16 +37,26 @@
               <p
                 class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2"
               >
-                <span v-if="plan.pricePrefix" class="text-4xl">
+                <span v-if="plan.pricePrefix" class="text-3xl">
                   {{ plan.pricePrefix }}
                 </span>
-                <span class="text-4xl">
+                <span
+                  :class="[
+                    'font-bold',
+                    plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
+                  ]"
+                >
                   {{ plan.pricing }}
                 </span>
                 {{ plan.priceSuffix }}
               </p>
 
-              <div class="text-gray-400">
+              <div
+                :class="[
+                  'text-gray-600 h-12',
+                  plan.type == PlanType.TEAM ? 'font-bold' : '',
+                ]"
+              >
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
@@ -162,16 +172,26 @@
         </p>
 
         <p class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2">
-          <span v-if="plan.pricePrefix" class="text-4xl">
+          <span v-if="plan.pricePrefix" class="text-3xl">
             {{ plan.pricePrefix }}
           </span>
-          <span class="text-4xl">
+          <span
+            :class="[
+              'font-bold',
+              plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
+            ]"
+          >
             {{ plan.pricing }}
           </span>
           {{ plan.priceSuffix }}
         </p>
 
-        <div class="text-gray-400">
+        <div
+          :class="[
+            'text-gray-600',
+            plan.type == PlanType.TEAM ? 'font-bold' : '',
+          ]"
+        >
           {{ $t(`subscription.${plan.title}-price-intro`) }}
         </div>
 
@@ -301,8 +321,7 @@ const plans = computed((): LocalPlan[] => {
       plan.type === PlanType.ENTERPRISE
         ? t("subscription.contact-us")
         : `$${plan.unitPrice}`,
-    pricePrefix:
-      plan.type === PlanType.TEAM ? t("subscription.start-from") : "",
+    pricePrefix: plan.type === PlanType.TEAM ? t("subscription.start-at") : "",
     priceSuffix:
       plan.type === PlanType.TEAM
         ? t("subscription.price-unit-for-team")
@@ -336,7 +355,7 @@ const onButtonClick = (plan: Plan) => {
     );
   } else if (plan.type === PlanType.ENTERPRISE) {
     window.open(
-      "mailto:support@bytebase.com?subject=Request for enterprise plan"
+      "mailto:support@bytebase.com?subject=Request for enterprise plan&body=Hi Bytebase team,%0D%0A%0D%0AI would like to request for an enterprise plan. Please contact me at [your email].%0D%0A%0D%0AThanks"
     );
   } else {
     window.open("https://bytebase.com/docs?source=console", "_self");

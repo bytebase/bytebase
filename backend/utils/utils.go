@@ -206,12 +206,10 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 }
 
 // GetActiveStage returns an active stage among all stages.
-func GetActiveStage(pipeline *api.Pipeline) *api.Stage {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskDone {
-				return stage
-			}
+func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
+	for _, stage := range stages {
+		if stage.Active {
+			return stage
 		}
 	}
 	return nil
@@ -264,12 +262,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
 		databaseMap[database.UID] = database
-		if _, ok := idToLabels[database.UID]; !ok {
-			idToLabels[database.UID] = make(map[string]string)
-		}
-		for key, value := range database.Labels {
-			idToLabels[database.UID][key] = value
-		}
+		idToLabels[database.UID] = database.Labels
 	}
 
 	// idsSeen records database id which is already in a stage.
@@ -286,8 +279,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 				continue
 			}
 
-			labels := idToLabels[database.UID]
-			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
+			if isMatchExpressions(idToLabels[database.UID], deployment.Spec.Selector.MatchExpressions) {
 				matchedDatabaseList = append(matchedDatabaseList, database.UID)
 				idsSeen[database.UID] = true
 			}
@@ -325,11 +317,11 @@ func RefreshToken(ctx context.Context, store *store.Store, webURL string) common
 }
 
 // GetTaskStatement gets the statement of a task.
-func GetTaskStatement(task *api.Task) (string, error) {
+func GetTaskStatement(taskPayload string) (string, error) {
 	var taskStatement struct {
 		Statement string `json:"statement"`
 	}
-	if err := json.Unmarshal([]byte(task.Payload), &taskStatement); err != nil {
+	if err := json.Unmarshal([]byte(taskPayload), &taskStatement); err != nil {
 		return "", err
 	}
 	return taskStatement.Statement, nil

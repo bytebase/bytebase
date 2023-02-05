@@ -8,6 +8,8 @@ categoryList:
       - sync-schema
       - migration-history
       - sql-editor
+      - schema-editor
+      - schema-diagram
       - disaster-recovery
       - archiving
       - sql-check
@@ -29,12 +31,13 @@ categoryList:
       - activity-log
       - terraform-provider
       - rbac
-      - 3rd-party-auth
       - sync-members-from-vcs
+      - sso
       - dba-workflow
       - environment-tier
       - sensitive-data
       - database-access-control
+      - watermark
   - type: branding
     featureList:
       - branding-logo
@@ -63,6 +66,8 @@ planList:
       - type: sync-schema
       - type: migration-history
       - type: sql-editor
+      - type: schema-editor
+      - type: schema-diagram
       - type: disaster-recovery
         content: disaster-recovery-basic
         tooltip: disaster-recovery-basic-tooltip
@@ -117,6 +122,8 @@ planList:
       - type: sync-schema
       - type: migration-history
       - type: sql-editor
+      - type: schema-editor
+      - type: schema-diagram
       - type: disaster-recovery
         content: disaster-recovery-advanced
         tooltip: disaster-recovery-advanced-tooltip
@@ -142,7 +149,6 @@ planList:
       - type: activity-log
       - type: terraform-provider
       - type: rbac
-      - type: 3rd-party-auth
       - type: sync-members-from-vcs
     mainFeatureList:
       - email-support
@@ -177,6 +183,8 @@ planList:
       - type: sync-schema
       - type: migration-history
       - type: sql-editor
+      - type: schema-editor
+      - type: schema-diagram
       - type: disaster-recovery
         content: disaster-recovery-advanced
         tooltip: disaster-recovery-advanced-tooltip
@@ -205,8 +213,9 @@ planList:
       - type: activity-log
       - type: terraform-provider
       - type: rbac
-      - type: 3rd-party-auth
+      - type: watermark
       - type: sync-members-from-vcs
+      - type: sso
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
@@ -216,6 +225,7 @@ planList:
     mainFeatureList:
       - sla
       - everything-in-team-plan
+      - sso
       - multi-tenancy
       - read-replica
       - dba-workflow

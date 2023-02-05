@@ -40,31 +40,24 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+
+		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
 		if err != nil {
 			return err
 		}
-
-		var taskPatchedList []*api.Task
-		for _, stage := range composedIssue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				// Skip gh-ost cutover task as this task has no statement.
-				if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
-					continue
-				}
-				taskPatch := *taskPatch
-				taskPatch.ID = task.ID
-				taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, composedIssue)
-				if httpErr != nil {
-					return httpErr
-				}
-				taskPatchedList = append(taskPatchedList, taskPatched)
+		for _, task := range tasks {
+			// Skip gh-ost cutover task as this task has no statement.
+			if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
+				continue
+			}
+			taskPatch := *taskPatch
+			taskPatch.ID = task.ID
+			// TODO(d): patch tasks in batch.
+			if err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue); err != nil {
+				return err
 			}
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", composedIssue.Pipeline.Name)).SetInternal(err)
-		}
 		return nil
 	})
 
@@ -87,7 +80,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
-		task, err := s.store.GetTaskByID(ctx, taskID)
+		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
 		}
@@ -102,10 +95,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
-		if err != nil {
-			return err
-		}
 
 		if taskPatch.Statement != nil {
 			// Tenant mode project don't allow updating SQL statement for a single task.
@@ -114,14 +103,17 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, composedIssue)
-		if httpErr != nil {
-			return httpErr
+		if err := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, issue); err != nil {
+			return err
+		}
+		composedTaskPatched, err := s.store.GetTaskByID(ctx, task.ID)
+		if err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatched); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskPatched.Name)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedTaskPatched); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", task.Name)).SetInternal(err)
 		}
 		return nil
 	})
@@ -174,11 +166,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
 			}
-			composedPipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+			stages, err := s.store.ListStageV2(ctx, task.PipelineID)
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStage(composedPipeline)
+			activeStage := utils.GetActiveStage(stages)
+			if activeStage == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "All tasks are done already")
+			}
 			if task.StageID != activeStage.ID {
 				return echo.NewHTTPError(http.StatusBadRequest, "Tasks in the prior stage are not done yet")
 			}
@@ -191,8 +186,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskStatusPatch.SkippedReason = taskStatusPatch.Comment
 		}
 
-		taskPatched, err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch)
-		if err != nil {
+		if err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
@@ -201,10 +195,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
+		composedTask, err := s.store.GetTaskByID(ctx, task.ID)
+		if err != nil {
+			return err
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatched); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskPatched.Name)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", task.Name)).SetInternal(err)
 		}
 		return nil
 	})
@@ -216,29 +214,30 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
 		}
 
-		task, err := s.store.GetTaskByID(ctx, taskID)
+		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 		if task == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return err
 		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %v not found", task.Database.ProjectID))
-		}
+		project := issue.Project
 
-		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int))
-		if err != nil {
+		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
+		}
+		composedTask, err := s.store.GetTaskByID(ctx, task.ID)
+		if err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskUpdated); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskUpdated.Name)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", task.Name)).SetInternal(err)
 		}
 		return nil
 	})

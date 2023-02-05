@@ -39,13 +39,13 @@
                 </span>
               </template>
               <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
-                {{ $t("subscription.upgrade-trial").toLowerCase() }}
+                {{ $t("subscription.upgrade-trial") }}
               </template>
               <template v-else #startTrial>
                 {{
                   $t("subscription.trial-for-days", {
                     days: subscriptionStore.trialingDays,
-                  }).toLowerCase()
+                  })
                 }}
               </template>
             </i18n-t>
@@ -69,14 +69,6 @@
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="$emit('cancel')"
-        >
-          {{ $t("common.dismiss") }}
-        </button>
-
         <template v-if="subscriptionStore.canTrial">
           <button
             v-if="subscriptionStore.canUpgradeTrial"

@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-4 overflow-x-hidden w-208 max-w-full transition-all">
     <!-- Project and base, target database selectors -->
-    <div class="w-full flex flex-col justify-start items-start">
-      <div class="w-176">
-        <div class="w-full mb-2">
-          <span>{{ $t("database.sync-schema.select-project") }}</span>
+    <div class="mt-2 w-full flex flex-col space-y-4">
+      <div class="flex space-x-4">
+        <div class="flex w-48 items-center">
+          {{ $t("database.sync-schema.select-project") }}
         </div>
         <div class="w-full flex flex-row justify-start items-center px-px">
           <ProjectSelect
@@ -17,9 +17,10 @@
           />
         </div>
       </div>
-      <div class="w-full">
-        <div class="w-full mt-4 mb-2 flex flex-row justify-start items-center">
-          <span>{{ $t("database.sync-schema.select-schema") }}</span>
+
+      <div class="w-full flex space-x-4">
+        <div class="flex w-48 items-center">
+          {{ $t("database.sync-schema.select-database") }}
         </div>
         <div
           class="w-full flex flex-row justify-start items-center px-px relative"
@@ -30,86 +31,13 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-48 mr-2 shrink-0"
-            name="environment"
-            :selected-id="state.baseSchemaInfo.environmentId"
-            :select-default="false"
-            @select-environment-id="handleBaseEnvironmentSelect"
-          />
-          <DatabaseSelect
-            class="!w-80 mr-2 shrink-0"
-            :selected-id="(state.baseSchemaInfo.databaseId as DatabaseId)"
-            :mode="'USER'"
-            :environment-id="state.baseSchemaInfo.environmentId"
-            :project-id="state.projectId"
-            :engine-type-list="allowedEngineTypeList"
-            :sync-status="'OK'"
-            :customize-item="true"
-            @select-database-id="handleBaseDatabaseSelect"
-          >
-            <template #customizeItem="{ database }">
-              <div class="w-full flex items-center truncate">
-                <InstanceEngineIcon
-                  class="shrink-0"
-                  :instance="database.instance"
-                />
-                <span class="mx-2">{{ database.name }}</span>
-                <span>({{ database.instance.name }})</span>
-              </div>
-            </template>
-          </DatabaseSelect>
-          <BBSelect
-            class="!grow"
-            :selected-item="state.baseSchemaInfo.migrationHistory"
-            :item-list="
-                databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
-              "
-            :placeholder="$t('change-history.select')"
-            :show-prefix-item="true"
-            @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
-          >
-            <template #menuItem="{ item: migrationHistory }">
-              <!-- To enable the ellipsis function only when 
-                overflow happens, we have to set a fixed width. -->
-              <NEllipsis style="max-width: 160px">
-                {{ migrationHistory.version }}
-              </NEllipsis>
-            </template>
-            <template v-if="shouldShowMoreVersionButton" #suffixItem>
-              <div
-                class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
-                @click="() => (state.showFeatureModal = true)"
-              >
-                {{ $t("database.sync-schema.more-version") }}
-              </div>
-            </template>
-          </BBSelect>
-        </div>
-      </div>
-      <hr class="mt-4 w-full" />
-      <div class="w-full">
-        <div
-          class="w-full mt-4 mb-2 leading-6 flex flex-row justify-start items-center"
-        >
-          <span>{{ $t("database.sync-schema.select-database") }}</span>
-        </div>
-        <div
-          class="w-full flex flex-row justify-start items-center px-px relative"
-          :class="isValidId(state.projectId) ? '' : 'opacity-50'"
-        >
-          <div
-            class="absolute top-0 left-0 w-full h-full z-10 cursor-not-allowed"
-            :class="isValidId(state.projectId) ? 'hidden' : ''"
-          ></div>
-          <EnvironmentSelect
-            class="!w-48 mr-2 shrink-0"
+            class="!w-48 mr-4 shrink-0"
             name="environment"
             :selected-id="state.targetDatabaseInfo.environmentId"
             :select-default="false"
             @select-environment-id="handleTargetEnvironmentSelect"
           />
           <DatabaseSelect
-            class="!w-96"
             :selected-id="(state.targetDatabaseInfo.databaseId as DatabaseId)"
             :mode="'USER'"
             :environment-id="state.targetDatabaseInfo.environmentId"
@@ -127,6 +55,92 @@
               </div>
             </template>
           </DatabaseSelect>
+        </div>
+      </div>
+      <hr class="mt-4 w-full" />
+      <div class="w-full flex space-x-4">
+        <div class="flex w-48 items-center">
+          {{ $t("database.sync-schema.from-database") }}
+        </div>
+        <div
+          class="w-full flex flex-row justify-start items-center px-px relative"
+          :class="isValidId(state.projectId) ? '' : 'opacity-50'"
+        >
+          <div
+            class="absolute top-0 left-0 w-full h-full z-10 cursor-not-allowed"
+            :class="isValidId(state.projectId) ? 'hidden' : ''"
+          ></div>
+          <EnvironmentSelect
+            class="!w-48 mr-4 shrink-0"
+            name="environment"
+            :selected-id="state.baseSchemaInfo.environmentId"
+            :select-default="false"
+            @select-environment-id="handleBaseEnvironmentSelect"
+          />
+          <DatabaseSelect
+            :selected-id="(state.baseSchemaInfo.databaseId as DatabaseId)"
+            :mode="'USER'"
+            :environment-id="state.baseSchemaInfo.environmentId"
+            :project-id="state.projectId"
+            :engine-type-list="allowedEngineTypeList"
+            :sync-status="'OK'"
+            :customize-item="true"
+            @select-database-id="handleBaseDatabaseSelect"
+          >
+            <template #customizeItem="{ database }">
+              <div class="flex items-center">
+                <InstanceEngineIcon :instance="database.instance" />
+                <span class="mx-2">{{ database.name }}</span>
+                <span>({{ database.instance.name }})</span>
+              </div>
+            </template>
+          </DatabaseSelect>
+        </div>
+      </div>
+      <div class="w-full flex space-x-4">
+        <div class="flex w-48 items-center">
+          {{ $t("common.schema-version") }}
+        </div>
+        <div
+          class="w-full flex flex-row justify-start items-center px-px relative"
+          :class="isValidId(state.projectId) ? '' : 'opacity-50'"
+        >
+          <BBSelect
+            class="!grow"
+            :selected-item="state.baseSchemaInfo.migrationHistory"
+            :item-list="
+                databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
+              "
+            :placeholder="$t('change-history.select')"
+            :show-prefix-item="true"
+            @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
+          >
+            <template #menuItem="{ item: migrationHistory }">
+              <div class="flex justify-between mr-2">
+                <!-- To enable the ellipsis function only when 
+                overflow happens, we have to set a fixed width. -->
+                <NEllipsis style="max-width: 460px">
+                  {{ migrationHistory.version }}
+                  - {{ migrationHistory.description }}
+                </NEllipsis>
+                <span class="text-control-light">
+                  {{
+                    dayjs(migrationHistory.updatedTs * 1000).format(
+                      "YYYY-MM-DD HH:mm:ss"
+                    )
+                  }}
+                </span>
+              </div>
+            </template>
+            <template v-if="shouldShowMoreVersionButton" #suffixItem>
+              <div
+                class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
+                @click="() => (state.showFeatureModal = true)"
+              >
+                {{ $t("database.sync-schema.more-version") }}
+              </div>
+            </template>
+          </BBSelect>
         </div>
       </div>
     </div>
@@ -311,8 +325,12 @@ useEventListener(window, "keydown", (e) => {
 
 const state = reactive<LocalState>({
   projectId: props.projectId,
-  baseSchemaInfo: {},
-  targetDatabaseInfo: {},
+  baseSchemaInfo: {
+    databaseId: UNKNOWN_ID,
+  },
+  targetDatabaseInfo: {
+    databaseId: UNKNOWN_ID,
+  },
   recommandStatement: "",
   editStatement: "",
   showFeatureModal: false,
@@ -413,14 +431,14 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
 
 const handleBaseEnvironmentSelect = async (environmentId: EnvironmentId) => {
   if (environmentId !== state.baseSchemaInfo.environmentId) {
-    state.baseSchemaInfo.databaseId = undefined;
+    state.baseSchemaInfo.databaseId = UNKNOWN_ID;
   }
   state.baseSchemaInfo.environmentId = environmentId;
 };
 
 const handleTargetEnvironmentSelect = async (environmentId: EnvironmentId) => {
   if (environmentId !== state.targetDatabaseInfo.environmentId) {
-    state.targetDatabaseInfo.databaseId = undefined;
+    state.targetDatabaseInfo.databaseId = UNKNOWN_ID;
   }
   state.targetDatabaseInfo.environmentId = environmentId;
 };
@@ -567,13 +585,11 @@ watch(
     const databaseId = state.baseSchemaInfo.databaseId;
     if (!isValidId(databaseId)) {
       state.baseSchemaInfo.migrationHistory = undefined;
-      state.engineType = undefined;
       return;
     }
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     if (database) {
-      state.engineType = database.instance.engine;
       const migrationHistoryList = (
         await instanceStore.fetchMigrationHistory({
           instanceId: database.instance.id,
@@ -584,18 +600,6 @@ watch(
       );
       // Default select the first migration history.
       state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
-
-      if (isValidId(state.targetDatabaseInfo.databaseId)) {
-        const targetDatabase = databaseStore.getDatabaseById(
-          state.targetDatabaseInfo.databaseId as DatabaseId
-        );
-        if (
-          !targetDatabase ||
-          state.engineType !== targetDatabase.instance.engine
-        ) {
-          state.targetDatabaseInfo.databaseId = undefined;
-        }
-      }
     } else {
       state.baseSchemaInfo.migrationHistory = undefined;
     }
@@ -607,18 +611,30 @@ watch(
   async () => {
     const databaseId = state.targetDatabaseInfo.databaseId;
     if (!isValidId(databaseId)) {
+      state.engineType = undefined;
       return;
     }
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     state.targetDatabaseInfo.currentSchema = undefined;
-    if (database && state.engineType === database.instance.engine) {
+    if (database) {
+      state.engineType = database.instance.engine;
       const currentSchema = await useDatabaseStore().fetchDatabaseSchemaById(
         database.id
       );
       state.targetDatabaseInfo.currentSchema = currentSchema;
-    } else {
-      state.targetDatabaseInfo.databaseId = undefined;
+
+      if (isValidId(state.baseSchemaInfo.databaseId)) {
+        const baseDatabase = databaseStore.getDatabaseById(
+          state.baseSchemaInfo.databaseId as DatabaseId
+        );
+        if (
+          !baseDatabase ||
+          state.engineType !== baseDatabase.instance.engine
+        ) {
+          state.baseSchemaInfo.databaseId = UNKNOWN_ID;
+        }
+      }
     }
   }
 );

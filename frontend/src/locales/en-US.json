@@ -218,6 +218,7 @@
     "want-help": "Want help",
     "operation": "Operation",
     "rollback": "Rollback",
+    "total": "Total",
     "discard-changes": "Discard changes",
     "error-message": "Error message"
   },
@@ -267,7 +268,7 @@
     "invoker": "Invoker",
     "started": "Started",
     "ended": "Ended",
-    "view-migration": "View migration",
+    "view-change": "View change",
     "view-change-history": "View change history",
     "status": {
       "running": "Running",
@@ -401,21 +402,37 @@
       "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "sso": {
+      "create": "Create SSO",
+      "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "deletion": "Delete this SSO",
       "form": {
-        "callback-url": "Authorization callback url",
+        "type": "Type",
+        "learn-more-with-user-doc": "Learn more about the configuration",
+        "redirect-url": "Authorization redirect url",
+        "redirect-url-description": "It will be used to fill in the appropriate field in the OAuth provider application form.",
         "use-template": "Use template",
         "select-template": "Select template",
-        "type": "Type",
         "basic-information": "Basic information",
         "name": "Name",
-        "domain": "Domain",
         "resource-id": "Resource ID",
+        "resource-id-description": "An unique string, and valid characters are /[a-z][0-9]-/",
+        "domain": "Domain",
+        "domain-description": "The identity provider's domain name",
+        "identity-provider-information": "Identity provider information",
+        "identity-provider-information-description": "The information is provided by your OAuth provider.",
         "endpoints": "Endpoints",
+        "endpoints-description": "The related urls provided by your OAuth provider.",
+        "auth-url-description": "The link to OAuth login page",
+        "scopes-description": "The scope parameter carried when accessing the Auth URL",
+        "token-url-description": "The API address for obtaining accessToken",
+        "user-info-url-description": "The API address for obtaining user information by accessToken",
         "user-information-mapping": "User information mapping",
-        "identifier": "Identifier",
-        "display-name": "Display name"
-      }
+        "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
+        "identifier": "Bytebase User Identifier",
+        "display-name": "Bytebase User Display name",
+        "email": "Bytebase User Email"
+      },
+      "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
     },
     "general": {
       "workspace": {
@@ -426,7 +443,14 @@
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
-        "logo-upload-succeed": "Successfully updated the logo"
+        "logo-upload-succeed": "Successfully updated the logo",
+        "watermark": {
+          "self": "Watermark",
+          "update-success": "Watermark setting updated",
+          "description": "Display watermarks on pages, including username and ID.",
+          "only-owner-can-edit": "Only workspace owner can update watermark setting."
+        },
+        "enable-watermark": "Enable watermark"
       }
     },
     "sensitive-data": {
@@ -612,13 +636,11 @@
     "vcs-info": "VCS enabled. Selecting this will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
     "alter-multiple-db": "Manual Selection",
-    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments.",
     "alter-db-group": "By Deployment Config",
     "no-databases-in-project": "No databases in this project. Click New DB or Transfer in DB to add databases."
   },
   "quick-action": {
     "create-db": "Create database",
-    "choose-db": "Choose database",
     "new-db": "New DB",
     "add-instance": "@:common.add @:common.instance",
     "create-instance": "@:common.create @:common.instance",
@@ -810,7 +832,6 @@
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
-      "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login",
       "sign-in-with-idp": "Sign in with {idp}"
     },
@@ -1001,10 +1022,10 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Synchronize Schema",
-      "select-project": "Step 1. Select project",
-      "select-schema": "Step 2. Select schema",
-      "select-database": "Step 3. Apply to database",
-      "schema-diff": "The diff",
+      "select-project": "Select project",
+      "select-database": "Apply to database",
+      "from-database": "From database",
+      "schema-diff": "The schema diff",
       "synchronize-statements": "The DDL statements",
       "synchronize-statements-description": "You can further edit the generated DDL statements.",
       "select-schema-and-target-database-tip": "Please select the schema and database first.",
@@ -1444,7 +1465,8 @@
       "self": "Admin mode"
     },
     "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode.",
-    "run-selected": "Run selected"
+    "run-selected": "Run selected",
+    "clear-screen": "Clear screen"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -1533,7 +1555,7 @@
     "setting": {
       "description": "A label is a key-value pair that helps you identify the tenant for a database. {link}."
     },
-    "db-name-template-tips": "If your tenant databases follow a naming template, you can specify it here. Otherwise, please uncheck the box. {link}.",
+    "db-name-template-tips": "If your tenant databases follow a naming template, you can specify it here. For example, the databases are named as db1__SH, db1__BJ, db1__GZ, then the template could be {placeholder}. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
@@ -1545,11 +1567,11 @@
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
-    "start-n-days-trial": "Start {days} days trial",
+    "start-n-days-trial": "Start {days} days trial (no credit card required)",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
     "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
-    "required-plan-with-trial": "This feature requires {requiredPlan}, but {startTrial}.",
+    "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}.",
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required",
     "upgrade-trial": "You can upgrade your free trial to this plan",
@@ -1634,14 +1656,13 @@
         "title": "Role management",
         "desc": "Role management can assign a particular role (e.g. DBA) to a member."
       },
+      "bb-feature-watermark": {
+        "title": "Watermark",
+        "desc": "Display visible watermarks on pages, including username and ID."
+      },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
-        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection"
-      },
-      "bb-feature-3rd-party-auth": {
-        "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.",
-        "login": "@:{'subscription.upgrade'} to unlock this feature"
+        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
       },
       "bb-feature-branding": {
         "title": "Branding",
@@ -1662,6 +1683,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "Connect to a read replica for the read-only data source."
+      },
+      "bb-feature-sso": {
+        "title": "Single Sign-On (SSO)",
+        "desc": "Enables users to securely authenticate with multiple applications and websites via a single set of credentials."
       }
     }
   },

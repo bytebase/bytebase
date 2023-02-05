@@ -2,6 +2,7 @@
 import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
@@ -102,6 +103,19 @@ export interface GetDatabaseSchemaRequest {
    * Format: environments/{environment}/instances/{instance}/databases/{database}
    */
   name: string;
+}
+
+export interface GetBackupSettingRequest {
+  /**
+   * The name of the database to retrieve backup setting.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
+   */
+  name: string;
+}
+
+export interface UpdateBackupSettingRequest {
+  /** The database backup setting to update. */
+  setting?: BackupSetting;
 }
 
 export interface Database {
@@ -284,6 +298,31 @@ export interface ForeignKeyMetadata {
 export interface DatabaseSchema {
   /** The schema dump from database. */
   schema: string;
+}
+
+/** BackupSetting is the setting for database backup. */
+export interface BackupSetting {
+  /**
+   * The name of the database backup setting.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+   */
+  name: string;
+  /**
+   * The default maximum age of a Backup created via this BackupPlan.
+   * If specified, a Backup will be automatically deleted after its age reaches.
+   * If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
+   * It will be rounded up to the number of days.
+   */
+  backupRetainDuration?: Duration;
+  /**
+   * Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
+   * Support hour of day, day of week. (UTC time)
+   *
+   * Default (empty): Disable automatic backup.
+   */
+  cronSchedule: string;
+  /** hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. */
+  hookUrl: string;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -738,6 +777,103 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetBackupSettingRequest(): GetBackupSettingRequest {
+  return { name: "" };
+}
+
+export const GetBackupSettingRequest = {
+  encode(message: GetBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetBackupSettingRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
+    const message = createBaseGetBackupSettingRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateBackupSettingRequest(): UpdateBackupSettingRequest {
+  return { setting: undefined };
+}
+
+export const UpdateBackupSettingRequest = {
+  encode(message: UpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.setting !== undefined) {
+      BackupSetting.encode(message.setting, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.setting = BackupSetting.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateBackupSettingRequest {
+    return { setting: isSet(object.setting) ? BackupSetting.fromJSON(object.setting) : undefined };
+  },
+
+  toJSON(message: UpdateBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.setting !== undefined &&
+      (obj.setting = message.setting ? BackupSetting.toJSON(message.setting) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
+    const message = createBaseUpdateBackupSettingRequest();
+    message.setting = (object.setting !== undefined && object.setting !== null)
+      ? BackupSetting.fromPartial(object.setting)
+      : undefined;
     return message;
   },
 };
@@ -1812,6 +1948,88 @@ export const DatabaseSchema = {
   },
 };
 
+function createBaseBackupSetting(): BackupSetting {
+  return { name: "", backupRetainDuration: undefined, cronSchedule: "", hookUrl: "" };
+}
+
+export const BackupSetting = {
+  encode(message: BackupSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.backupRetainDuration !== undefined) {
+      Duration.encode(message.backupRetainDuration, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.cronSchedule !== "") {
+      writer.uint32(26).string(message.cronSchedule);
+    }
+    if (message.hookUrl !== "") {
+      writer.uint32(34).string(message.hookUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BackupSetting {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBackupSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.cronSchedule = reader.string();
+          break;
+        case 4:
+          message.hookUrl = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BackupSetting {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      backupRetainDuration: isSet(object.backupRetainDuration)
+        ? Duration.fromJSON(object.backupRetainDuration)
+        : undefined,
+      cronSchedule: isSet(object.cronSchedule) ? String(object.cronSchedule) : "",
+      hookUrl: isSet(object.hookUrl) ? String(object.hookUrl) : "",
+    };
+  },
+
+  toJSON(message: BackupSetting): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.backupRetainDuration !== undefined && (obj.backupRetainDuration = message.backupRetainDuration
+      ? Duration.toJSON(message.backupRetainDuration)
+      : undefined);
+    message.cronSchedule !== undefined && (obj.cronSchedule = message.cronSchedule);
+    message.hookUrl !== undefined && (obj.hookUrl = message.hookUrl);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<BackupSetting>): BackupSetting {
+    const message = createBaseBackupSetting();
+    message.name = object.name ?? "";
+    message.backupRetainDuration = (object.backupRetainDuration !== undefined && object.backupRetainDuration !== null)
+      ? Duration.fromPartial(object.backupRetainDuration)
+      : undefined;
+    message.cronSchedule = object.cronSchedule ?? "";
+    message.hookUrl = object.hookUrl ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -1865,6 +2083,22 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    getBackupSetting: {
+      name: "GetBackupSetting",
+      requestType: GetBackupSettingRequest,
+      requestStream: false,
+      responseType: BackupSetting,
+      responseStream: false,
+      options: {},
+    },
+    updateBackupSetting: {
+      name: "UpdateBackupSetting",
+      requestType: UpdateBackupSettingRequest,
+      requestStream: false,
+      responseType: BackupSetting,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1887,6 +2121,14 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: GetDatabaseSchemaRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<DatabaseSchema>>;
+  getBackupSetting(
+    request: GetBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BackupSetting>>;
+  updateBackupSetting(
+    request: UpdateBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BackupSetting>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -1911,6 +2153,14 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetDatabaseSchemaRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<DatabaseSchema>;
+  getBackupSetting(
+    request: DeepPartial<GetBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BackupSetting>;
+  updateBackupSetting(
+    request: DeepPartial<UpdateBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BackupSetting>;
 }
 
 declare var self: any | undefined;

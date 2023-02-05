@@ -21,12 +21,12 @@
       <i18n-t keypath="label.db-name-template-tips">
         <template #placeholder>
           <!-- prettier-ignore -->
-          <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
+          <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}__{{TENANT}}</code>
         </template>
         <template #link>
           <a
             class="normal-link inline-flex items-center"
-            href="https://www.bytebase.com/docs/tenant-database-management/overview#database-name-template?source=console"
+            href="https://www.bytebase.com/docs/tenant-database-management/overview?source=console#database-name-template"
             target="__BLANK"
           >
             {{ $t("common.learn-more") }}

@@ -30,20 +30,12 @@
         </div>
         <div class="bb-grid-cell">
           <div class="flex items-center space-x-2">
-            <button
-              v-if="showSQLEditorLink"
-              class="btn-icon tooltip-wrapper disabled:hover:text-control"
+            <SQLEditorButton
+              :database="database"
               :disabled="!allowQuery(database)"
-              @click.stop="gotoSQLEditor(database)"
-            >
-              <heroicons-solid:terminal class="w-5 h-5" />
-              <div
-                v-if="allowQuery(database)"
-                class="tooltip whitespace-nowrap"
-              >
-                {{ $t("sql-editor.self") }}
-              </div>
-            </button>
+              :tooltip="true"
+              @failed="handleGotoSQLEditorFailed"
+            />
             <span>{{ database.name }}</span>
             <BBBadge
               v-if="isPITRDatabase(database)"
@@ -241,17 +233,16 @@ import { NTooltip, NPagination } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import cloneDeep from "lodash-es/cloneDeep";
 import {
-  connectionSlug,
   databaseSlug,
   isDatabaseAccessible,
   isPITRDatabase,
   VueClass,
 } from "../utils";
-import type { Database, Policy } from "../types";
-import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
+import { Database, Policy } from "../types";
 import { BBGridColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
 import { useCurrentUser, usePolicyStore } from "@/store";
 import {
   ColumnDef,
@@ -343,13 +334,15 @@ const sortedDatabaseList = computed(() => {
     list = list.filter((db) => db.syncStatus === "OK");
   } else {
     list.sort((a, b) => {
+      // Put NOT_FOUND databases to the top
       if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
         return -1;
       }
       if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
         return 1;
       }
-      return b.createdTs - a.createdTs;
+      // Fallback to `id` DESC
+      return -(a.id - b.id);
     });
   }
 
@@ -536,21 +529,9 @@ const showTenantIcon = computed(() => {
   return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
 });
 
-const gotoSQLEditor = (database: Database) => {
-  if (!allowQuery(database)) {
-    return;
-  }
-  // SQL editors can only query databases in the projects available to the user.
-  if (
-    database.projectId === UNKNOWN_ID ||
-    database.projectId === DEFAULT_PROJECT_ID
-  ) {
-    state.warningDatabase = database;
-    state.showIncorrectProjectModal = true;
-  } else {
-    const url = `/sql-editor/${connectionSlug(database.instance, database)}`;
-    window.open(url);
-  }
+const handleGotoSQLEditorFailed = (database: Database) => {
+  state.warningDatabase = database;
+  state.showIncorrectProjectModal = true;
 };
 
 const handleIncorrectProjectModalConfirm = () => {

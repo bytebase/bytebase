@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -53,6 +54,19 @@ service DatabaseService {
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {
       get: "/v1/{name=environments/*/instances/*/databases/*/schema}"
+    };
+  }
+
+  rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"
+    };
+  }
+
+  rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
+    option (google.api.http) = {
+      patch: "/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"
+      body: "setting"
     };
   }
 }
@@ -135,6 +149,17 @@ message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
   // Format: environments/{environment}/instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetBackupSettingRequest {
+  // The name of the database to retrieve backup setting.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateBackupSettingRequest {
+  // The database backup setting to update.
+  BackupSetting setting = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Database {
@@ -347,4 +372,26 @@ message ForeignKeyMetadata {
 message DatabaseSchema {
   // The schema dump from database.
   string schema = 1;
+}
+
+// BackupSetting is the setting for database backup.
+message BackupSetting {
+  // The name of the database backup setting.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+  string name = 1;
+
+  // The default maximum age of a Backup created via this BackupPlan.
+  // If specified, a Backup will be automatically deleted after its age reaches.
+  // If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
+  // It will be rounded up to the number of days.
+  google.protobuf.Duration backup_retain_duration = 2;
+
+  // Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
+  // Support hour of day, day of week. (UTC time)
+  // 
+  // Default (empty): Disable automatic backup.
+  string cron_schedule = 3;
+
+  // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
+  string hook_url = 4;
 }

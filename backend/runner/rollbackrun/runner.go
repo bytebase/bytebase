@@ -66,7 +66,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
 		Payload:    "task.payload->>'threadID'!='' AND task.payload->>'rollbackError' IS NULL AND task.payload->>'rollbackStatement' IS NULL",
 	}
-	taskList, err := r.store.FindTask(ctx, find)
+	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return
@@ -112,7 +112,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	if _, err := r.store.PatchTask(ctx, patch); err != nil {
+	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
 		return
 	}

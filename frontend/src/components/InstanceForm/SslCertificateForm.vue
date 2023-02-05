@@ -18,10 +18,10 @@
       :tab="$t('data-source.ssl.ca-cert')"
       display-directive="show"
     >
-      <textarea
-        v-model="state.value.sslCa"
-        class="textarea block w-full resize-none whitespace-pre-wrap h-24"
-        placeholder="YOUR_CA_CERTIFICATE"
+      <DroppableTextarea
+        v-model:value="state.value.sslCa"
+        class="block w-full resize-none whitespace-pre-wrap h-24"
+        placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
       />
     </NTabPane>
     <NTabPane
@@ -30,10 +30,10 @@
       :tab="$t('data-source.ssl.client-key')"
       display-directive="show"
     >
-      <textarea
-        v-model="state.value.sslKey"
-        class="textarea block w-full resize-none whitespace-pre-wrap h-24"
-        placeholder="YOUR_CLIENT_KEY"
+      <DroppableTextarea
+        v-model:value="state.value.sslKey"
+        class="block w-full resize-none whitespace-pre-wrap h-24"
+        placeholder="Input or drag and drop YOUR_CLIENT_KEY"
       />
     </NTabPane>
     <NTabPane
@@ -42,10 +42,10 @@
       :tab="$t('data-source.ssl.client-cert')"
       display-directive="show"
     >
-      <textarea
-        v-model="state.value.sslCert"
-        class="textarea block w-full resize-none whitespace-pre-wrap h-24"
-        placeholder="YOUR_CLIENT_CERT"
+      <DroppableTextarea
+        v-model:value="state.value.sslCert"
+        class="block w-full resize-none whitespace-pre-wrap h-24"
+        placeholder="Input or drag and drop YOUR_CLIENT_CERT"
       />
     </NTabPane>
   </NTabs>
@@ -56,6 +56,8 @@ import { PropType, reactive, watch } from "vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
+
+import DroppableTextarea from "../misc/DroppableTextarea.vue";
 
 const SslTypes = ["NONE", "CA", "CA+KEY+CERT"] as const;
 

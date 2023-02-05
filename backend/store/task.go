@@ -40,7 +40,6 @@ type TaskMessage struct {
 	Payload           string
 	EarliestAllowedTs int64
 	BlockedBy         []int
-	StageBlocked      bool
 }
 
 func (task *TaskMessage) toTask() *api.Task {
@@ -66,7 +65,6 @@ func (task *TaskMessage) toTask() *api.Task {
 		Type:              task.Type,
 		Payload:           task.Payload,
 		EarliestAllowedTs: task.EarliestAllowedTs,
-		StageBlocked:      task.StageBlocked,
 	}
 	for _, block := range task.BlockedBy {
 		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
@@ -80,50 +78,6 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Task with ID %d", id)
 	}
-	composedTask, err := s.composeTask(ctx, task)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-	}
-	return composedTask, nil
-}
-
-// FindTask finds a list of Task instances.
-func (s *Store) FindTask(ctx context.Context, find *api.TaskFind) ([]*api.Task, error) {
-	tasks, err := s.ListTasks(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Task list with TaskFind[%+v]", find)
-	}
-	var composedTasks []*api.Task
-	for _, task := range tasks {
-		composedTask, err := s.composeTask(ctx, task)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-		}
-		composedTasks = append(composedTasks, composedTask)
-	}
-	return composedTasks, nil
-}
-
-// PatchTask patches an instance of Task.
-func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
-	task, err := s.UpdateTaskV2(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch task %+v", patch)
-	}
-	composedTask, err := s.composeTask(ctx, task)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
-	}
-	return composedTask, nil
-}
-
-// PatchTaskStatus patches a task status.
-func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
-	task, err := s.UpdateTaskStatusV2(ctx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
 	composedTask, err := s.composeTask(ctx, task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose task %+v", task)
@@ -378,6 +332,9 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
+	if v := find.StageBlocked; v != nil {
+		where = append(where, "(SELECT COUNT(1) > 0 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') = FALSE")
+	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -401,7 +358,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.type,
 			task.payload,
 			task.earliest_allowed_ts,
-			(SELECT COUNT(1) FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') as block_count,
 			ARRAY_AGG (task_dag.from_task_id) blocked_by
 		FROM task
 		LEFT JOIN task_dag ON task.id = task_dag.to_task_id
@@ -418,7 +374,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
-		var blockCount int
 		var blockedBy []sql.NullInt32
 		if err := rows.Scan(
 			&task.ID,
@@ -435,13 +390,9 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
-			&blockCount,
 			pq.Array(&blockedBy),
 		); err != nil {
 			return nil, err
-		}
-		if blockCount > 0 {
-			task.StageBlocked = true
 		}
 		for _, v := range blockedBy {
 			if v.Valid {

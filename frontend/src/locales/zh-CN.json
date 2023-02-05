@@ -218,6 +218,7 @@
     "want-help": "加入用户群",
     "operation": "操作",
     "rollback": "回滚",
+    "total": "共计",
     "discard-changes": "取消修改",
     "error-message": "错误信息"
   },
@@ -266,7 +267,7 @@
     "invoker": "执行者",
     "started": "开始于",
     "ended": "结束于",
-    "view-migration": "查看变更",
+    "view-change": "查看变更",
     "view-change-history": "查看变更历史",
     "earliest-allowed-time-unset": "未设置",
     "status": {
@@ -401,21 +402,37 @@
       "feishu-updated-tip": "飞书配置更新成功"
     },
     "sso": {
+      "create": "创建 SSO",
+      "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "deletion": "删除这个 SSO",
       "form": {
-        "callback-url": "回调地址",
+        "type": "类型",
+        "learn-more-with-user-doc": "了解更多如何配置",
+        "redirect-url": "回调地址",
+        "redirect-url-description": "将会用于填写到 OAuth 提供商申请表单中的相应字段。",
         "use-template": "使用模版",
         "select-template": "选择模版",
-        "type": "类型",
         "basic-information": "基础信息",
         "name": "名称",
-        "domain": "域名",
         "resource-id": "资源 ID",
-        "endpoints": "Endpoints",
+        "resource-id-description": "唯一的字符串，有效字符为 /[a-z][0-9]-/",
+        "domain": "域名",
+        "domain-description": "OAuth 提供商的域名",
+        "identity-provider-information": "OAuth 提供商信息",
+        "identity-provider-information-description": "这些信息是由你的 OAuth 提供商提供的。",
+        "endpoints": "链接信息",
+        "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
+        "auth-url-description": "登录页面的链接",
+        "scopes-description": "访问 Auth URL 时携带的范围参数",
+        "token-url-description": "用于获取 accessToken 的 API 地址",
+        "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
-        "identifier": "唯一标识符",
-        "display-name": "昵称"
-      }
+        "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "identifier": "Bytebase 用户的唯一标识符",
+        "display-name": "Bytebase 用户的昵称",
+        "email": "Bytebase 用户的 Email"
+      },
+      "copy-redirect-url": "Redirect URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。"
     },
     "general": {
       "workspace": {
@@ -426,7 +443,14 @@
         "select-logo": "选择",
         "drag-logo": "或拖拽文件",
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
-        "logo-upload-succeed": "Logo 更新完成"
+        "logo-upload-succeed": "Logo 更新完成",
+        "watermark": {
+          "self": "水印",
+          "update-success": "水印设置已更新",
+          "description": "在页面上显示水印，包含用户名和 ID。",
+          "only-owner-can-edit": "仅管理员可以更新水印设置"
+        },
+        "enable-watermark": "开启水印"
       }
     },
     "sensitive-data": {
@@ -612,13 +636,11 @@
     "vcs-info": "已开启 VCS 版本管理。选择该数据库会跳转到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
     "alter-multiple-db": "手动选择数据库",
-    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。",
     "alter-db-group": "按部署的配置",
     "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
   "quick-action": {
     "create-db": "创建数据库",
-    "choose-db": "选择数据库",
     "new-db": "创建数据库",
     "add-instance": "@:common.add@:common.instance",
     "create-instance": "@:common.create@:common.instance",
@@ -810,7 +832,6 @@
       "demo-note": "请使用 demo 账号登录",
       "gitlab": "通过 GitLab 登录",
       "github": "通过 GitHub 登录",
-      "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录",
       "sign-in-with-idp": "通过 {idp} 登录"
     },
@@ -1001,9 +1022,9 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "select-project": "步骤 1. 选择项目",
-      "select-schema": "步骤 2. 选择 Schema",
-      "select-database": "步骤 3. 选择待同步的数据库",
+      "select-project": "选择项目",
+      "select-database": "选择待同步的数据库",
+      "from-database": "选择源数据库",
       "schema-diff": "Schema 对比结果",
       "synchronize-statements": "DDL 语句",
       "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
@@ -1444,7 +1465,8 @@
       "self": "管理员模式"
     },
     "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。",
-    "run-selected": "运行选中的语句"
+    "run-selected": "运行选中的语句",
+    "clear-screen": "清屏"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -1534,7 +1556,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。否则就让它为空。{link}。",
+    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。例如：数据库名字为 db1__SH, db1__BJ, db1__GZ，此时命名模板可以是 {placeholder}。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
@@ -1546,7 +1568,7 @@
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
-    "start-n-days-trial": "开启 {days} 天试用",
+    "start-n-days-trial": "开启 {days} 天试用 (无需信用卡)",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
@@ -1635,14 +1657,13 @@
         "title": "角色管理",
         "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
       },
+      "bb-feature-watermark": {
+        "title": "水印设置",
+        "desc": "在页面上显示水印，包含用户名和 ID。"
+      },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
         "desc": "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
-      },
-      "bb-feature-3rd-party-auth": {
-        "title": "第三方认证 & 授权",
-        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。",
-        "login": "请@:{'subscription.upgrade'}来开启该功能"
       },
       "bb-feature-branding": {
         "title": "自定义品牌信息",
@@ -1663,6 +1684,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "使用只读副本连接到只读数据源。"
+      },
+      "bb-feature-sso": {
+        "title": "Single Sign-On (SSO)",
+        "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
       }
     }
   },

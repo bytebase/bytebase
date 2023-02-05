@@ -19,6 +19,7 @@
         block-line
         :data="treeData"
         :pattern="searchPattern"
+        :expand-on-click="true"
         :selected-keys="selectedKeys"
         :expanded-keys="connectionTreeStore.expandedTreeNodeKeys"
         :render-label="renderLabel"
@@ -273,9 +274,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
-        if (atom.type === "project") {
-          maybeExpandKey(`project-${atom.id}`);
-        } else {
+        if (atom.type === "instance" || atom.type === "database") {
           setConnection(atom);
         }
       }
@@ -329,11 +328,15 @@ watch(
     isLoggedIn,
     () => tabStore.currentTab.connection.instanceId,
     () => tabStore.currentTab.connection.databaseId,
+    () => connectionTreeStore.tree.state,
   ],
-  ([isLoggedIn, instanceId, databaseId]) => {
+  ([isLoggedIn, instanceId, databaseId, treeState]) => {
     if (!isLoggedIn) {
       // Don't go further and cleanup the state if we signed out.
       connectionTreeStore.expandedTreeNodeKeys = [];
+      return;
+    }
+    if (treeState !== ConnectionTreeState.LOADED) {
       return;
     }
 
@@ -349,7 +352,7 @@ watch(
 
     scrollToConnectedNode(instanceId, databaseId);
   },
-  { immediate: true, flush: "pre" }
+  { immediate: true }
 );
 </script>
 

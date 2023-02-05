@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -386,24 +385,7 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
-	engine := v1pb.Engine_ENGINE_UNSPECIFIED
-	switch instance.Engine {
-	case db.ClickHouse:
-		engine = v1pb.Engine_CLICKHOUSE
-	case db.MySQL:
-		engine = v1pb.Engine_MYSQL
-	case db.Postgres:
-		engine = v1pb.Engine_POSTGRES
-	case db.Snowflake:
-		engine = v1pb.Engine_SNOWFLAKE
-	case db.SQLite:
-		engine = v1pb.Engine_SQLITE
-	case db.TiDB:
-		engine = v1pb.Engine_TIDB
-	case db.MongoDB:
-		engine = v1pb.Engine_MONGODB
-	}
-
+	engine := convertToEngine(instance.Engine)
 	dataSourceList := []*v1pb.DataSource{}
 	for _, ds := range instance.DataSources {
 		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
@@ -439,26 +421,6 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 }
 
 func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
-	var engine db.Type
-	switch instance.Engine {
-	case v1pb.Engine_CLICKHOUSE:
-		engine = db.ClickHouse
-	case v1pb.Engine_MYSQL:
-		engine = db.MySQL
-	case v1pb.Engine_POSTGRES:
-		engine = db.Postgres
-	case v1pb.Engine_SNOWFLAKE:
-		engine = db.Snowflake
-	case v1pb.Engine_SQLITE:
-		engine = db.SQLite
-	case v1pb.Engine_TIDB:
-		engine = db.TiDB
-	case v1pb.Engine_MONGODB:
-		engine = db.MongoDB
-	default:
-		return nil, errors.Errorf("invalid instance engine %v", instance.Engine)
-	}
-
 	datasources, err := s.convertToDataSourceMessages(instance.DataSources)
 	if err != nil {
 		return nil, err
@@ -467,7 +429,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	return &store.InstanceMessage{
 		ResourceID:   instanceID,
 		Title:        instance.Title,
-		Engine:       engine,
+		Engine:       convertEngine(instance.Engine),
 		ExternalLink: instance.ExternalLink,
 		DataSources:  datasources,
 	}, nil

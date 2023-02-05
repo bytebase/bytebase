@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4 max-w-min overflow-x-hidden">
     <div class="overflow-x-auto">
-      <div class="w-192">
+      <div class="w-[calc(100vw-8rem)] lg:w-[56rem]">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
@@ -33,6 +33,22 @@
                     (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
                   "
                 >
+                  <template
+                    #selection-all="{ databaseList: renderedDatabaseList }"
+                  >
+                    <input
+                      v-if="renderedDatabaseList.length > 0"
+                      type="checkbox"
+                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                      v-bind="getAllSelectionState(renderedDatabaseList)"
+                      @input="
+                        toggleAllDatabasesSelection(
+                          renderedDatabaseList,
+                          ($event.target as HTMLInputElement).checked
+                        )
+                      "
+                    />
+                  </template>
                   <template #selection="{ database }">
                     <input
                       type="checkbox"
@@ -50,6 +66,11 @@
                   :placeholder="$t('database.search-database')"
                   @change-text="(text: string) => (state.searchText = text)"
                 />
+                <YAxisRadioGroup
+                  v-else
+                  v-model:label="state.label"
+                  class="text-sm m-px"
+                />
               </template>
             </NTabs>
           </template>
@@ -63,7 +84,7 @@
               @select-database="selectDatabase"
             >
               <template #header>
-                <div class="flex items-center justify-end my-2">
+                <div class="flex items-center justify-end mx-2 mb-2">
                   <BBTableSearch
                     class="m-px"
                     :placeholder="$t('database.search-database')"
@@ -83,13 +104,15 @@
             />
           </aside>
           <!-- a simple table -->
-          <DatabaseTable
-            mode="ALL_SHORT"
-            table-class="border"
-            :custom-click="true"
-            :database-list="databaseList"
-            @select-database="selectDatabase"
-          />
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
+            <DatabaseTable
+              mode="ALL_SHORT"
+              table-class="border"
+              :custom-click="true"
+              :database-list="databaseList"
+              @select-database="selectDatabase"
+            />
+          </div>
         </template>
       </div>
     </div>
@@ -246,6 +269,7 @@ const state = reactive<LocalState>({
   selectedDatabaseIdListForEnvironment: new Map(),
   selectedDatabaseIdListForTenantMode: new Set<number>(),
   deployingTenantDatabaseList: [],
+  label: "bb.environment",
   searchText: "",
   showSchemaEditorModal: false,
   showFeatureModal: false,
@@ -298,8 +322,14 @@ const databaseList = computed(() => {
 
 const flattenSelectedDatabaseIdList = computed(() => {
   const flattenDatabaseIdList: DatabaseId[] = [];
-  for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
-    flattenDatabaseIdList.push(...databaseIdList);
+  if (isTenantProject.value && state.alterType === "MULTI_DB") {
+    for (const db of state.selectedDatabaseIdListForTenantMode) {
+      flattenDatabaseIdList.push(db);
+    }
+  } else {
+    for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
+      flattenDatabaseIdList.push(...databaseIdList);
+    }
   }
   return flattenDatabaseIdList;
 });
@@ -407,6 +437,36 @@ const allowGenerateTenant = computed(() => {
 
   return true;
 });
+
+const getAllSelectionState = (
+  databaseList: Database[]
+): { checked: boolean; indeterminate: boolean } => {
+  const set = state.selectedDatabaseIdListForTenantMode;
+
+  const checked = databaseList.every((db) => set.has(db.id));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
+
+  return {
+    checked,
+    indeterminate,
+  };
+};
+
+const toggleAllDatabasesSelection = (
+  databaseList: Database[],
+  on: boolean
+): void => {
+  const set = state.selectedDatabaseIdListForTenantMode;
+  if (on) {
+    databaseList.forEach((db) => {
+      set.add(db.id);
+    });
+  } else {
+    databaseList.forEach((db) => {
+      set.delete(db.id);
+    });
+  }
+};
 
 const isDatabaseSelected = (database: Database): boolean => {
   return state.selectedDatabaseIdListForTenantMode.has(database.id);

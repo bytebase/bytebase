@@ -337,7 +337,6 @@ const createInstance = () => {
 
 const alterSchema = () => {
   state.modalTitle = t("database.alter-schema");
-  state.modalSubtitle = t("quick-action.choose-db");
   state.quickActionType = "quickaction.bb.database.schema.update";
   state.showModal = true;
 };
@@ -350,7 +349,6 @@ const syncDatabaseSchema = () => {
 
 const changeData = () => {
   state.modalTitle = t("database.change-data");
-  state.modalSubtitle = t("quick-action.choose-db");
   state.quickActionType = "quickaction.bb.database.data.update";
   state.showModal = true;
 };

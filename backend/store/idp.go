@@ -49,7 +49,6 @@ type FindIdentityProviderMessage struct {
 
 // UpdateIdentityProviderMessage is the message for updating an identity provider.
 type UpdateIdentityProviderMessage struct {
-	UpdaterID  int
 	ResourceID string
 
 	Title  *string
@@ -59,7 +58,7 @@ type UpdateIdentityProviderMessage struct {
 }
 
 // CreateIdentityProvider creates an identity provider.
-func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage, creatorID int) (*IdentityProviderMessage, error) {
+func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage) (*IdentityProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,19 +78,15 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO idp (
-				creator_id,
-				updater_id,
 				resource_id,
 				name,
 				domain,
 				type,
 				config
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id
 		`,
-		creatorID,
-		creatorID,
 		create.ResourceID,
 		create.Title,
 		create.Domain,
@@ -110,11 +105,17 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		return nil, FormatError(err)
 	}
 
+	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
 	return identityProvider, nil
 }
 
 // GetIdentityProvider gets an identity provider.
 func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProviderMessage) (*IdentityProviderMessage, error) {
+	if find.ResourceID != nil {
+		if identityProvider, ok := s.idpCache.Load(*find.ResourceID); ok {
+			return identityProvider.(*IdentityProviderMessage), nil
+		}
+	}
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
@@ -137,7 +138,10 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 	} else if len(identityProviders) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d identity providers with filter %+v, expect 1", len(identityProviders), find)}
 	}
-	return identityProviders[0], nil
+
+	identityProvider := identityProviders[0]
+	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
+	return identityProvider, nil
 }
 
 // ListIdentityProviders lists identity providers.
@@ -156,6 +160,9 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		return nil, FormatError(err)
 	}
 
+	for _, identityProvider := range identityProviders {
+		s.idpCache.Store(identityProvider.ResourceID, identityProvider)
+	}
 	return identityProviders, nil
 }
 
@@ -175,11 +182,12 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 		return nil, FormatError(err)
 	}
 
+	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
 	return identityProvider, nil
 }
 
 func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+	set, args := []string{}, []interface{}{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

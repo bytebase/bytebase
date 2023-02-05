@@ -50,15 +50,16 @@ type FeatureType string
 const (
 	// Admin & Security.
 
-	// Feature3rdPartyAuth allows user to authenticate (login) and authorize (sync project member)
-	//
-	// Currently, we only support GitLab EE/CE auth.
-	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
+	// FeatureSSO allows user to manage SSO provider and authenticate (login) with SSO.
+	FeatureSSO FeatureType = "bb.feature.sso"
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
 	// - Project level RBAC.
 	FeatureRBAC FeatureType = "bb.feature.rbac"
+
+	// FeatureWatermark enables full-screen watermark.
+	FeatureWatermark FeatureType = "bb.feature.watermark"
 
 	// Branding.
 
@@ -147,17 +148,21 @@ const (
 	FeatureEnvironmentTierPolicy FeatureType = "bb.feature.environment-tier-policy"
 	// FeatureSensitiveData allows user to annotate and protect sensitive data.
 	FeatureSensitiveData FeatureType = "bb.feature.sensitive-data"
+	// FeatureAccessControl allows user to config the access control.
+	FeatureAccessControl FeatureType = "bb.feature.access-control"
 )
 
 // Name returns a readable name of the feature.
 func (e FeatureType) Name() string {
 	switch e {
 	// Admin & Security
-	case Feature3rdPartyAuth:
-		return "3rd party auth"
+	case FeatureSSO:
+		return "SSO"
 	case FeatureRBAC:
 		return "RBAC"
 	// Branding
+	case FeatureWatermark:
+		return "Watermark"
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
@@ -202,6 +207,8 @@ func (e FeatureType) Name() string {
 		return "Environment tier"
 	case FeatureSensitiveData:
 		return "Sensitive data"
+	case FeatureAccessControl:
+		return "Access Control"
 	}
 	return ""
 }
@@ -227,8 +234,9 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	Feature3rdPartyAuth: {false, true, true},
-	FeatureRBAC:         {false, true, true},
+	FeatureSSO:       {false, false, true},
+	FeatureRBAC:      {false, true, true},
+	FeatureWatermark: {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -254,6 +262,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureBackupPolicy:          {false, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
+	FeatureAccessControl:         {false, false, true},
 }
 
 // Plan is the API message for a plan.

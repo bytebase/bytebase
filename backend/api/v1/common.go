@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/ebnf"
 
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -22,6 +23,11 @@ const (
 	userNamePrefix             = "users/"
 	identityProviderNamePrefix = "idps/"
 	settingNamePrefix          = "settings/"
+
+	deploymentConfigSuffix = "/deploymentConfig"
+	backupSettingSuffix    = "/backupSetting"
+	schemaSuffix           = "/schema"
+	metadataSuffix         = "/metadata"
 )
 
 var (
@@ -36,6 +42,22 @@ func getProjectID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
+}
+
+func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {
+	trimmed, err := trimSuffix(name, suffix)
+	if err != nil {
+		return "", err
+	}
+	return getProjectID(trimmed)
+}
+
+func trimSuffixAndGetEnvironmentInstanceDatabaseID(name string, suffix string) (string, string, string, error) {
+	trimmed, err := trimSuffix(name, suffix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return getEnvironmentInstanceDatabaseID(trimmed)
 }
 
 func getEnvironmentID(name string) (string, error) {
@@ -105,7 +127,7 @@ func trimSuffix(name, suffix string) (string, error) {
 	if !strings.HasSuffix(name, suffix) {
 		return "", errors.Errorf("invalid request %q with suffix %q", name, suffix)
 	}
-	return strings.TrimRight(name, suffix), nil
+	return strings.TrimSuffix(name, suffix), nil
 }
 
 func getNameParentTokens(name string, tokenPrefixes ...string) ([]string, error) {
@@ -161,4 +183,44 @@ func getFilter(filter, filterKey string) (string, error) {
 		return token.String, nil
 	}
 	return "", retErr
+}
+
+func convertToEngine(engine db.Type) v1pb.Engine {
+	switch engine {
+	case db.ClickHouse:
+		return v1pb.Engine_CLICKHOUSE
+	case db.MySQL:
+		return v1pb.Engine_MYSQL
+	case db.Postgres:
+		return v1pb.Engine_POSTGRES
+	case db.Snowflake:
+		return v1pb.Engine_SNOWFLAKE
+	case db.SQLite:
+		return v1pb.Engine_SQLITE
+	case db.TiDB:
+		return v1pb.Engine_TIDB
+	case db.MongoDB:
+		return v1pb.Engine_MONGODB
+	}
+	return v1pb.Engine_ENGINE_UNSPECIFIED
+}
+
+func convertEngine(engine v1pb.Engine) db.Type {
+	switch engine {
+	case v1pb.Engine_CLICKHOUSE:
+		return db.ClickHouse
+	case v1pb.Engine_MYSQL:
+		return db.MySQL
+	case v1pb.Engine_POSTGRES:
+		return db.Postgres
+	case v1pb.Engine_SNOWFLAKE:
+		return db.Snowflake
+	case v1pb.Engine_SQLITE:
+		return db.SQLite
+	case v1pb.Engine_TIDB:
+		return db.TiDB
+	case v1pb.Engine_MONGODB:
+		return db.MongoDB
+	}
+	return db.UnknownType
 }

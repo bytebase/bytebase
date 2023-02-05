@@ -99,6 +99,19 @@ service ProjectService {
       body: "*"
     };
   }
+
+  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*/deploymentConfig}"
+    };
+  }
+
+  rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
+    option (google.api.http) = {
+      patch: "/v1/{config.name=projects/*/deploymentConfig}"
+      body: "config"
+    };
+  }
 }
 
 message GetProjectRequest {
@@ -181,6 +194,16 @@ message SetIamPolicyRequest {
   string project = 1 [(google.api.field_behavior) = REQUIRED];
 
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetDeploymentConfigRequest{
+  // The name of the resource.
+  // Format: projects/{project}/deploymentConfig
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateDeploymentConfigRequest {
+  DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED]; 
 }
 
 message Project {
@@ -378,4 +401,48 @@ enum ReviewStatus {
   OPEN = 1;
   DONE = 2;
   CANCELED = 3;
+}
+
+message DeploymentConfig {
+  // The name of the resource.
+  // Format: projects/{project}/deploymentConfig
+  string name = 1;
+
+  // The title of the deployment config.
+  string title = 2;
+
+  Schedule schedule = 3;
+}
+
+message Schedule {
+  repeated ScheduleDeployment deployments = 1;    
+}
+
+message ScheduleDeployment {
+  // The title of the deployment (stage) in a schedule.
+  string title = 1;
+  DeploymentSpec spec = 2;
+}
+
+message DeploymentSpec {
+  LabelSelector label_selector = 1;
+}
+
+message LabelSelector {
+  repeated LabelSelectorRequirement match_expressions = 1;
+}
+
+message LabelSelectorRequirement{
+  string key = 1;
+  OperatorType operator = 2;
+  repeated string values = 3;
+}
+
+enum OperatorType {
+  // The operator is not specified.
+  OPERATOR_TYPE_UNSPECIFIED = 0;
+  // The operator is "In".
+  OPERATOR_TYPE_IN = 1;
+  // The operator is "Exists".
+  OPERATOR_TYPE_EXISTS = 2;
 }

@@ -1,10 +1,21 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="textinfolabel"></div>
+      <div class="textinfolabel mr-4">
+        {{ $t("settings.sso.description") }}
+        <a
+          href="https://bytebase.com/docs/administration/sso?source=console"
+          class="normal-link inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
+      </div>
       <div>
-        <button class="btn-primary" @click="state.showCreatingSSOModal = true">
+        <button class="btn-primary" @click="handleCreateSSO">
           {{ $t("common.create") }}
+          <FeatureBadge :feature="'bb.feature.sso'" class="ml-2" />
         </button>
       </div>
     </div>
@@ -50,7 +61,7 @@
 
   <BBModal
     v-if="state.showCreatingSSOModal"
-    title="Create SSO"
+    :title="$t('settings.sso.create')"
     @close="hideCreateSSOModal"
   >
     <IdentityProviderCreateForm
@@ -58,6 +69,12 @@
       @confirm="handleCreateIdentityProvider"
     />
   </BBModal>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.sso"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -68,8 +85,10 @@ import { useIdentityProviderStore } from "@/store/modules/idp";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
+import { featureToRef } from "@/store";
 
 interface LocalState {
+  showFeatureModal: boolean;
   showCreatingSSOModal: boolean;
   selectedIdentityProviderName: string;
 }
@@ -77,10 +96,12 @@ interface LocalState {
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
+  showFeatureModal: false,
   showCreatingSSOModal: false,
   selectedIdentityProviderName: "",
 });
 const identityProviderStore = useIdentityProviderStore();
+const hasSSOFeature = featureToRef("bb.feature.sso");
 
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
@@ -119,6 +140,14 @@ watch(
     }
   }
 );
+
+const handleCreateSSO = () => {
+  if (!hasSSOFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+  state.showCreatingSSOModal = true;
+};
 
 const hideCreateSSOModal = () => {
   state.showCreatingSSOModal = false;

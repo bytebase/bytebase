@@ -72,10 +72,12 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
-	ID                         *int
-	Email                      *string
-	Role                       *api.Role
-	ShowDeleted                bool
+	ID          *int
+	Email       *string
+	Role        *api.Role
+	ShowDeleted bool
+	// IdentityProviderResourceID is the name of the identity provider related with the user.
+	// If set with empty string, then only those users that are not from the idp will be found.
 	IdentityProviderResourceID *string
 	// Available only if the IdentityProviderResourceID is not nil.
 	IdentityProviderUserIdentifier string
@@ -236,8 +238,10 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 
 	var userMessages []*UserMessage
-	if common.FeatureFlag(common.FeatureFlagNoop) {
-		if find.IdentityProviderResourceID != nil {
+	if find.IdentityProviderResourceID != nil {
+		if *find.IdentityProviderResourceID == "" {
+			where = append(where, "principal.idp_id IS NULL")
+		} else {
 			// Get identity provider's UID with resource id.
 			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
 				ResourceID: find.IdentityProviderResourceID,
@@ -248,7 +252,8 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
 			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 		}
-		rows, err := tx.QueryContext(ctx, `
+	}
+	rows, err := tx.QueryContext(ctx, `
 			SELECT
 				principal.id AS user_id,
 				principal.email,
@@ -263,98 +268,50 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 			LEFT JOIN member ON principal.id = member.principal_id
 			LEFT JOIN idp ON principal.idp_id = idp.id
 			WHERE `+strings.Join(where, " AND "),
-			args...,
-		)
-		if err != nil {
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var userMessage UserMessage
+		var role, rowStatus, idpResourceID sql.NullString
+		var idpUserInfo string
+		if err := rows.Scan(
+			&userMessage.ID,
+			&userMessage.Email,
+			&userMessage.Name,
+			&userMessage.Type,
+			&userMessage.PasswordHash,
+			&idpUserInfo,
+			&role,
+			&rowStatus,
+			&idpResourceID,
+		); err != nil {
 			return nil, FormatError(err)
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var userMessage UserMessage
-			var role, rowStatus, idpResourceID sql.NullString
-			var idpUserInfo string
-			if err := rows.Scan(
-				&userMessage.ID,
-				&userMessage.Email,
-				&userMessage.Name,
-				&userMessage.Type,
-				&userMessage.PasswordHash,
-				&idpUserInfo,
-				&role,
-				&rowStatus,
-				&idpResourceID,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-			if role.Valid {
-				userMessage.Role = api.Role(role.String)
-			} else if userMessage.ID == api.SystemBotID {
-				userMessage.Role = api.Owner
-			} else {
-				userMessage.Role = api.Developer
-			}
-			if rowStatus.Valid {
-				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-			} else if userMessage.ID != api.SystemBotID {
-				userMessage.MemberDeleted = true
-			}
-			if idpResourceID.Valid {
-				userMessage.IdentityProviderResourceID = &idpResourceID.String
-				var identityProviderUserInfo storepb.IdentityProviderUserInfo
-				if err := json.Unmarshal([]byte(idpUserInfo), &identityProviderUserInfo); err != nil {
-					return nil, err
-				}
-				userMessage.IdentityProviderUserInfo = &identityProviderUserInfo
-			}
-			userMessages = append(userMessages, &userMessage)
+		if role.Valid {
+			userMessage.Role = api.Role(role.String)
+		} else if userMessage.ID == api.SystemBotID {
+			userMessage.Role = api.Owner
+		} else {
+			userMessage.Role = api.Developer
 		}
-	} else {
-		rows, err := tx.QueryContext(ctx, `
-			SELECT
-				principal.id AS user_id,
-				principal.email,
-				principal.name,
-				principal.type,
-				principal.password_hash,
-				member.role,
-				member.row_status AS row_status
-			FROM principal
-			LEFT JOIN member ON principal.id = member.principal_id
-			WHERE `+strings.Join(where, " AND "),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
+		if rowStatus.Valid {
+			userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+		} else if userMessage.ID != api.SystemBotID {
+			userMessage.MemberDeleted = true
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var userMessage UserMessage
-			var role, rowStatus sql.NullString
-			if err := rows.Scan(
-				&userMessage.ID,
-				&userMessage.Email,
-				&userMessage.Name,
-				&userMessage.Type,
-				&userMessage.PasswordHash,
-				&role,
-				&rowStatus,
-			); err != nil {
-				return nil, FormatError(err)
+		if idpResourceID.Valid {
+			userMessage.IdentityProviderResourceID = &idpResourceID.String
+			var identityProviderUserInfo storepb.IdentityProviderUserInfo
+			if err := json.Unmarshal([]byte(idpUserInfo), &identityProviderUserInfo); err != nil {
+				return nil, err
 			}
-			if role.Valid {
-				userMessage.Role = api.Role(role.String)
-			} else if userMessage.ID == api.SystemBotID {
-				userMessage.Role = api.Owner
-			} else {
-				userMessage.Role = api.Developer
-			}
-			if rowStatus.Valid {
-				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-			} else if userMessage.ID != api.SystemBotID {
-				userMessage.MemberDeleted = true
-			}
-			userMessages = append(userMessages, &userMessage)
+			userMessage.IdentityProviderUserInfo = &identityProviderUserInfo
 		}
+		userMessages = append(userMessages, &userMessage)
 	}
 	return userMessages, nil
 }
@@ -373,21 +330,19 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
 	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
 	// Set idp fields into principal only when the related id is not null.
-	if common.FeatureFlag(common.FeatureFlagNoop) {
-		if create.IdentityProviderResourceID != nil {
-			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
-				ResourceID: create.IdentityProviderResourceID,
-			})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", *create.IdentityProviderResourceID)
-			}
-			set, args = append(set, "idp_id"), append(args, identityProvider.UID)
-			userInfoBytes, err := protojson.Marshal(create.IdentityProviderUserInfo)
-			if err != nil {
-				return nil, err
-			}
-			set, args = append(set, "idp_user_info"), append(args, string(userInfoBytes))
+	if create.IdentityProviderResourceID != nil {
+		identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+			ResourceID: create.IdentityProviderResourceID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", *create.IdentityProviderResourceID)
 		}
+		set, args = append(set, "idp_id"), append(args, identityProvider.UID)
+		userInfoBytes, err := protojson.Marshal(create.IdentityProviderUserInfo)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, "idp_user_info"), append(args, string(userInfoBytes))
 	}
 	placeholder := []string{}
 	for index := range set {
@@ -444,16 +399,14 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	user := &UserMessage{
-		ID:           userID,
-		Email:        create.Email,
-		Name:         create.Name,
-		Type:         create.Type,
-		PasswordHash: create.PasswordHash,
-		Role:         role,
-	}
-	if common.FeatureFlag(common.FeatureFlagNoop) {
-		user.IdentityProviderResourceID = create.IdentityProviderResourceID
-		user.IdentityProviderUserInfo = create.IdentityProviderUserInfo
+		ID:                         userID,
+		Email:                      create.Email,
+		Name:                       create.Name,
+		Type:                       create.Type,
+		PasswordHash:               create.PasswordHash,
+		Role:                       role,
+		IdentityProviderResourceID: create.IdentityProviderResourceID,
+		IdentityProviderUserInfo:   create.IdentityProviderUserInfo,
 	}
 	s.userIDCache.Store(user.ID, user)
 	s.userEmailCache.Store(user.Email, user)

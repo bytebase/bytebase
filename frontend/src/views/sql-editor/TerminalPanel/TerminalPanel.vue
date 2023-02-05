@@ -2,7 +2,7 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
   >
-    <EditorAction @execute="handleExecute" />
+    <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
 
     <ConnectionPathBar />
 
@@ -16,13 +16,14 @@
         class="w-full flex flex-col"
         :data-height="queryListHeight"
       >
-        <div v-for="(query, i) in queryList" :key="i" class="relative">
+        <div v-for="query in queryList" :key="query.id" class="relative">
           <CompactSQLEditor
             v-model:sql="query.sql"
             class="min-h-[2rem]"
             :readonly="!isEditableQueryItem(query)"
             @execute="handleExecute"
             @history="handleHistory"
+            @clear-screen="handleClearScreen"
           />
           <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
             <TableView
@@ -59,11 +60,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import { ExecuteConfig, ExecuteOption, WebTerminalQueryItem } from "@/types";
-import { useTabStore, useWebTerminalStore } from "@/store";
+import type {
+  ExecuteConfig,
+  ExecuteOption,
+  WebTerminalQueryItem,
+} from "@/types";
+import { createQueryItem, useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
   EditorAction,
@@ -73,20 +78,13 @@ import {
 } from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
-import { minmax } from "@/components/SchemaDiagram/common";
-
-type LocalState = {
-  historyIndex: number;
-};
+import { useHistory } from "./useHistory";
 
 const QUERY_TIMEOUT_MS = 5000;
+const MAX_QUERY_ITEM_COUNT = 20;
 
 const tabStore = useTabStore();
 const webTerminalStore = useWebTerminalStore();
-
-const state = reactive<LocalState>({
-  historyIndex: -1,
-});
 
 const queryList = computed(() => {
   return webTerminalStore.getQueryListByTab(tabStore.currentTab);
@@ -101,11 +99,22 @@ const currentQuery = computed(
 
 const { execute } = useExecuteSQL();
 
+const { move: moveHistory } = useHistory();
+
 const queryTimer = useCancelableTimeout(QUERY_TIMEOUT_MS);
 const { expired } = queryTimer;
 
 const isEditableQueryItem = (query: WebTerminalQueryItem): boolean => {
   return query === currentQuery.value && query.status === "IDLE";
+};
+
+const pushQueryItem = () => {
+  const list = queryList.value;
+  list.push(createQueryItem());
+
+  if (list.length > MAX_QUERY_ITEM_COUNT) {
+    list.shift();
+  }
 };
 
 const handleExecute = async (
@@ -134,10 +143,7 @@ const handleExecute = async (
     // which means it hasn't been cancelled.
     if (queryItem === currentQuery.value) {
       queryItem.queryResult = sqlResultSet;
-      queryList.value.push({
-        sql: "",
-        status: "IDLE",
-      });
+      pushQueryItem();
       // Clear the tab's statement and keep it sync with the latest query
       tabStore.currentTab.statement = "";
       tabStore.currentTab.selectedStatement = "";
@@ -151,41 +157,24 @@ const handleExecute = async (
   }
 };
 
-watch(
-  () => queryList.value.length,
-  (len) => {
-    state.historyIndex = len - 1;
-  },
-  { immediate: true }
-);
+const handleClearScreen = () => {
+  const list = queryList.value;
+  while (list.length > 1) {
+    list.shift();
+  }
+};
+
 const handleHistory = (direction: "up" | "down") => {
   if (currentQuery.value.status !== "IDLE") {
     return;
   }
-  const list = queryList.value;
-  const delta = direction === "up" ? -1 : 1;
-  const nextIndex = minmax(state.historyIndex + delta, 0, list.length - 1);
-  if (nextIndex === state.historyIndex) {
-    return;
-  }
-  if (nextIndex === list.length - 1) {
-    currentQuery.value.sql = "";
-  } else {
-    const historyQuery = list[nextIndex];
-    if (historyQuery) {
-      currentQuery.value.sql = historyQuery.sql;
-    }
-  }
-  state.historyIndex = nextIndex;
+  moveHistory(direction);
 };
 
 const handleCancelQuery = async () => {
   queryTimer.stop();
   currentQuery.value.status = "CANCELLED";
-  queryList.value.push({
-    sql: "",
-    status: "IDLE",
-  });
+  pushQueryItem();
   // Clear the tab's statement and keep it sync with the latest query
   tabStore.currentTab.statement = "";
   tabStore.currentTab.selectedStatement = "";

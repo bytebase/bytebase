@@ -54,10 +54,10 @@ export const getDefaultTabNameFromConnection = (conn: Connection) => {
   const instance = useInstanceStore().getInstanceById(conn.instanceId);
   const database = useDatabaseStore().getDatabaseById(conn.databaseId);
   if (database.id !== UNKNOWN_ID) {
-    return `[${database.name}]`;
+    return `${database.name}`;
   }
   if (instance.id !== UNKNOWN_ID) {
-    return `[${instance.name}]`;
+    return `${instance.name}`;
   }
   return defaultTabName.value;
 };

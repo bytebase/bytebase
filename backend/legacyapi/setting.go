@@ -20,6 +20,8 @@ const (
 	SettingEnterpriseTrial SettingName = "bb.enterprise.trial"
 	// SettingAppIM is the setting name for IM applications.
 	SettingAppIM SettingName = "bb.app.im"
+	// SettingWatermark is the setting name for watermark displaying.
+	SettingWatermark SettingName = "bb.workspace.watermark"
 )
 
 // IMType is the type of IM.
@@ -30,8 +32,6 @@ const IMTypeFeishu IMType = "im.feishu"
 
 // Setting is the API message for a setting.
 type Setting struct {
-	ID int `jsonapi:"primary,setting"`
-
 	// Domain specific fields
 	Name        SettingName `jsonapi:"attr,name"`
 	Value       string      `jsonapi:"attr,value"`

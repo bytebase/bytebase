@@ -203,11 +203,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return err
 			}
 			updateIssueMessage.Assignee = assignee
-			composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+			stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
 			if err != nil {
 				return err
 			}
-			activeStage := utils.GetActiveStage(composedPipeline)
+			activeStage := utils.GetActiveStage(stages)
 			// When all stages have finished, assignee can be anyone such as creator.
 			if activeStage != nil {
 				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
@@ -229,11 +229,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
 		}
-		composedIssue, err := s.store.GetIssueByID(ctx, id)
-		if err != nil {
-			return err
-		}
-
 		// cancel external approval on assignee change
 		if issuePatch.AssigneeID != nil {
 			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonReassigned); err != nil {
@@ -288,12 +283,16 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Payload:     string(payload),
 			}
 			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-				Issue: composedIssue,
+				Issue: updatedIssue,
 			}); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Title)).SetInternal(err)
 			}
 		}
 
+		composedIssue, err := s.store.GetIssueByID(ctx, id)
+		if err != nil {
+			return err
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update issue response: %v", updatedIssue.Title)).SetInternal(err)
@@ -324,8 +323,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
-		updatedIssue, err := s.TaskScheduler.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
-		if err != nil {
+		if err := s.TaskScheduler.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 			} else if common.ErrorCode(err) == common.Conflict {
@@ -334,8 +332,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
+		updatedComposedIssue, err := s.store.GetIssueByID(ctx, id)
+		if err != nil {
+			return err
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedIssue); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedComposedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -425,7 +427,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, project, composedIssue.Pipeline); err != nil {
+	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, project, pipeline.ID); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
 	}
 
@@ -445,7 +447,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Payload:     string(bytes),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: composedIssue,
+		Issue: issue,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
@@ -464,13 +466,13 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: composedIssue.PipelineID,
+			ContainerID: issue.PipelineUID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),
 		}
 		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: composedIssue,
+			Issue: issue,
 		}); err != nil {
 			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
@@ -564,7 +566,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if issue == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", issueID))
 	}
-	task, err := s.store.GetTaskByID(ctx, taskID)
+	task, err := s.store.GetTaskV2ByID(ctx, taskID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get task with ID %d", taskID)).SetInternal(err)
 	}
@@ -574,8 +576,12 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if task.Type != api.TaskDatabaseDataUpdate {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
 	}
-	if task.Database.Instance.Engine != db.MySQL {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", task.Database.Instance.Engine))
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance.Engine != db.MySQL {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", instance.Engine))
 	}
 	if task.PipelineID != issue.PipelineUID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.UID))
@@ -869,6 +875,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 	}
+	databaseMap := make(map[int]*store.DatabaseMessage)
+	for _, database := range databases {
+		databaseMap[database.UID] = database
+	}
+
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
 		migrationDetail := c.DetailList[0]
@@ -884,10 +895,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
-		databaseMap := make(map[int]*store.DatabaseMessage)
-		for _, database := range databases {
-			databaseMap[database.UID] = database
-		}
 		for _, d := range c.DetailList {
 			database, ok := databaseMap[d.DatabaseID]
 			if !ok {
@@ -909,7 +916,22 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 			}
 			for i, databaseList := range matrix {
-				aggregatedMatrix[i] = append(aggregatedMatrix[i], databaseList...)
+				if len(databaseList) == 0 {
+					continue
+				} else if len(databaseList) > 1 {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "should be at most one database in the matrix stage")
+				}
+				database := databaseList[0]
+				found := false
+				for _, v := range aggregatedMatrix[i] {
+					if v == database {
+						found = true
+						break
+					}
+				}
+				if !found {
+					aggregatedMatrix[i] = append(aggregatedMatrix[i], database)
+				}
 			}
 			databaseToMigrationList[database.UID] = append(databaseToMigrationList[database.UID], d)
 		}

@@ -17,6 +17,7 @@
           transform: `scale(${resizeParams.zoom})`,
         }"
       >
+        <Watermark />
         <DesktopRenderer />
       </div>
 
@@ -47,6 +48,7 @@ import {
   provideSchemaDiagramContext,
   useSchemaDiagramContext,
 } from "../common";
+import Watermark from "@/components/misc/Watermark.vue";
 
 const props = defineProps({
   renderDesktop: {

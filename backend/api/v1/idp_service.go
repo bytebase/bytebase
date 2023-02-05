@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
@@ -61,7 +60,6 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, request *v1pb.CreateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.IdentityProvider == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider must be set")
 	}
@@ -79,7 +77,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		Type:       storepb.IdentityProviderType(request.IdentityProvider.Type),
 		Config:     convertIdentityProviderConfigToStore(request.IdentityProvider.GetConfig()),
 	}
-	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage, principalID)
+	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -88,7 +86,6 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 
 // UpdateIdentityProvider updates an identity provider.
 func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, request *v1pb.UpdateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.IdentityProvider == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider must be set")
 	}
@@ -105,7 +102,6 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
-		UpdaterID:  principalID,
 		ResourceID: identityProvider.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
@@ -133,8 +129,6 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 
 // DeleteIdentityProvider deletes an identity provider.
 func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, request *v1pb.DeleteIdentityProviderRequest) (*emptypb.Empty, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-
 	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -144,7 +138,6 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
-		UpdaterID:  principalID,
 		ResourceID: identityProvider.ResourceID,
 		Delete:     &deletePatch,
 	}
@@ -156,8 +149,6 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 
 // UndeleteIdentityProvider undeletes an identity provider.
 func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, request *v1pb.UndeleteIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-
 	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -167,7 +158,6 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
-		UpdaterID:  principalID,
 		ResourceID: identityProvider.ResourceID,
 		Delete:     &deletePatch,
 	}
@@ -262,7 +252,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					TokenUrl:     v.TokenUrl,
 					UserInfoUrl:  v.UserInfoUrl,
 					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
+					ClientSecret: "", // SECURITY: We do not expose the client secret
 					Scopes:       v.Scopes,
 					FieldMapping: &fieldMapping,
 				},
@@ -279,15 +269,14 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 				OidcConfig: &v1pb.OIDCIdentityProviderConfig{
 					Issuer:       v.Issuer,
 					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
+					ClientSecret: "", // SECURITY: We do not expose the client secret
 					Scopes:       oidc.DefaultScopes,
 					FieldMapping: &fieldMapping,
 				},
 			},
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityProviderConfig) *storepb.IdentityProviderConfig {
