@@ -201,7 +201,7 @@ func TestGetFileInfo(t *testing.T) {
 		)
 		require.NoError(t, err)
 		assert.Equal(t, 1, repo.ID)
-		assert.Equal(t, migrationFileType, fileType)
+		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
 			Version:     "0001",
@@ -230,7 +230,7 @@ func TestGetFileInfo(t *testing.T) {
 		)
 		require.NoError(t, err)
 		assert.Equal(t, 1, repo.ID)
-		assert.Equal(t, migrationFileType, fileType)
+		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
 			Version:     "0001",
@@ -262,7 +262,7 @@ func TestGetFileInfo(t *testing.T) {
 		)
 		require.NoError(t, err)
 		assert.Equal(t, 1, repo.ID)
-		assert.Equal(t, migrationFileType, fileType)
+		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
 			Version:     "0001",
