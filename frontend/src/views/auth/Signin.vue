@@ -337,7 +337,10 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
     return;
   }
 
-  if (state.activeIdentityProvider.type === IdentityProviderType.OAUTH2) {
+  if (
+    state.activeIdentityProvider.type === IdentityProviderType.OAUTH2 ||
+    state.activeIdentityProvider.type === IdentityProviderType.OIDC
+  ) {
     const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
     if (payload.error) {
       return;
@@ -355,8 +358,6 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       web: true,
     });
     router.push("/");
-  } else if (state.activeIdentityProvider.type === IdentityProviderType.OIDC) {
-    // TODO
   }
 };
 

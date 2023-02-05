@@ -20,6 +20,10 @@
     "helpName": ""
   },
   {
+    "routeName": "oidc-callback",
+    "helpName": ""
+  },
+  {
     "routeName": "workspace.home",
     "helpName": ""
   },
