@@ -336,6 +336,7 @@ func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType,
 	return nil
 }
 
+// GetIdentityProviderEndpoint returns the endpoint of an identity provider connection.
 func (s *IdentityProviderService) GetIdentityProviderEndpoint(ctx context.Context, request *v1pb.GetIdentityProviderEndpointRequest) (*v1pb.GetIdentityProviderEndpointResponse, error) {
 	idp, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
