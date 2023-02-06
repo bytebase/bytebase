@@ -237,7 +237,7 @@
               <template v-if="state.instance.engine === 'SPANNER'">
                 {{ $t("common.credentials") }}
                 <span class="text-red-600">*</span>
-                <p class="text-sm text-gray-500 mt-1">
+                <p class="textinfolabel mt-1">
                   {{ $t("instance.create-gcp-credentials") }}
                   <a
                     href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
