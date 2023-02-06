@@ -53,6 +53,18 @@ export type VCSFileCommit = {
   added: string;
 };
 
+export type VCSCommit = {
+  ID: string;
+  Title: string;
+  Message: string;
+  CreatedTs: number;
+  URL: string;
+  AuthorName: string;
+  AuthorEmail: string;
+  AddedList: string[];
+  ModifiedList: string[];
+};
+
 export type VCSPushEvent = {
   vcsType: VCSType;
   ref: string;
@@ -61,6 +73,7 @@ export type VCSPushEvent = {
   repositoryFullPath: string;
   authorName: string;
   fileCommit: VCSFileCommit;
+  commits: VCSCommit[];
 };
 
 export function isValidVCSApplicationIdOrSecret(

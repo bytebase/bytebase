@@ -52,21 +52,18 @@
               `${vcsBranch}@${pushEvent.repositoryFullPath}`
             }}</a>
 
-            <i18n-t keypath="issue.commit-by-at" tag="span">
+            <i18n-t v-if="commit" keypath="issue.commit-by-at" tag="span">
               <template #id>
-                <a
-                  :href="pushEvent.fileCommit.url"
-                  target="_blank"
-                  class="normal-link"
-                  >{{ pushEvent.fileCommit.id.substring(0, 7) }}:</a
+                <a :href="commit.URL" target="_blank" class="normal-link"
+                  >{{ commit.ID.substring(0, 7) }}:</a
                 >
               </template>
               <template #title>
-                <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
+                <span class="text-main">{{ commit.Title }}</span>
               </template>
               <template #author>{{ pushEvent.authorName }}</template>
               <template #time>{{
-                dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL")
+                dayjs(commit.CreatedTs * 1000).format("LLL")
               }}</template>
             </i18n-t>
           </p>
@@ -92,6 +89,7 @@ import {
   VCSPushEvent,
 } from "@/types";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import { head } from "lodash-es";
 
 interface LocalState {
   editing: boolean;
@@ -126,6 +124,10 @@ const pushEvent = computed((): VCSPushEvent | undefined => {
     return payload?.pushEvent;
   }
   return undefined;
+});
+
+const commit = computed(() => {
+  return head(pushEvent.value?.commits);
 });
 
 const vcsBranch = computed((): string => {
