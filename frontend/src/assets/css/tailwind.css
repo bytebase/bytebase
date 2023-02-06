@@ -316,6 +316,15 @@
   @apply opacity-0;
 }
 
+.slide-up-enter-active,
+.slide-up-leave-active {
+  @apply transition-transform ease-in-out duration-150;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  @apply translate-y-full;
+}
+
 @keyframes thumb-up {
   33% {
     transform: rotate(-15deg);
