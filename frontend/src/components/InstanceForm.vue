@@ -620,7 +620,7 @@ const instanceLink = computed(() => {
       }.snowflakecomputing.com/console`;
     }
   }
-  return currentDataSource.value.host || "";
+  return state.instance.externalLink || "";
 });
 
 const showDatabase = computed((): boolean => {

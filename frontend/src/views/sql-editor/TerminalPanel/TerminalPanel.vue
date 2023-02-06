@@ -25,8 +25,9 @@
             @history="handleHistory"
             @clear-screen="handleClearScreen"
           />
-          <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
+          <div v-if="query.queryResult" class="max-h-[20rem] flex flex-col">
             <TableView
+              class="flex-1 overflow-hidden"
               :query-result="query.queryResult.data"
               :loading="query.status === 'RUNNING'"
               :dark="true"
