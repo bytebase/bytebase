@@ -574,17 +574,16 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
+func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
 	// initial branding
-	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
-	}); err != nil {
+	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
 
@@ -595,56 +594,51 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate random JWT secret")
 	}
-	authSetting, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
+	authSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAuthSecret,
 		Value:       value,
 		Description: "Random string used to sign the JWT auth token.",
-	})
+	}, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}
 	conf.secret = authSetting.Value
 
 	// initial workspace
-	workspaceSetting, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
+	workspaceSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
 		Description: "The workspace identifier",
-	})
+	}, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}
 	conf.workspaceID = workspaceSetting.Value
 
 	// initial license
-	if _, _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
+	if _, _, err = datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingEnterpriseLicense,
 		Value:       "",
 		Description: "Enterprise license",
-	}); err != nil {
+	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
 
 	// initial feishu app
-	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAppIM,
 		Value:       "",
 		Description: "",
-	}); err != nil {
+	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
 
 	// initial watermark setting
-	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWatermark,
 		Value:       "0",
 		Description: "Display watermark",
-	}); err != nil {
+	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
 
