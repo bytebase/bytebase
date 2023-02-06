@@ -1,7 +1,13 @@
 <template>
-  <NTooltip trigger="hover" :delay="500">
+  <NTooltip trigger="hover" :delay="500" :animated="false">
     <template #trigger>
-      <NButton quaternary size="tiny" v-bind="$attrs" @click="gotoAlterSchema">
+      <NButton
+        quaternary
+        size="tiny"
+        class="!px-1"
+        v-bind="$attrs"
+        @click="gotoAlterSchema"
+      >
         <heroicons-outline:pencil-alt class="w-4 h-4" />
       </NButton>
     </template>

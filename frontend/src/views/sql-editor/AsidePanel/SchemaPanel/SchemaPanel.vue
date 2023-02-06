@@ -2,19 +2,23 @@
   <div class="w-full h-full relative overflow-hidden">
     <template v-if="databaseMetadata">
       <DatabaseSchema
-        v-show="!state.selected"
         :database="database"
         :database-metadata="databaseMetadata"
+        :header-clickable="state.selected !== undefined"
+        @click-header="state.selected = undefined"
         @select-table="handleSelectTable"
       />
-      <TableSchema
-        v-if="state.selected"
-        :database="database"
-        :database-metadata="databaseMetadata"
-        :schema="state.selected.schema"
-        :table="state.selected.table"
-        @close="state.selected = undefined"
-      />
+      <Transition name="slide-up" appear>
+        <TableSchema
+          v-if="state.selected"
+          class="absolute bottom-0 w-full h-[calc(100%-41px)] bg-white"
+          :database="database"
+          :database-metadata="databaseMetadata"
+          :schema="state.selected.schema"
+          :table="state.selected.table"
+          @close="state.selected = undefined"
+        />
+      </Transition>
     </template>
 
     <div

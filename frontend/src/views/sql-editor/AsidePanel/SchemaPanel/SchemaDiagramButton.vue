@@ -1,9 +1,10 @@
 <template>
-  <NTooltip trigger="hover" :delay="500">
+  <NTooltip trigger="hover" :delay="500" :animated="false">
     <template #trigger>
       <NButton
         quaternary
         size="tiny"
+        class="!px-1"
         v-bind="$attrs"
         @click="state.show = true"
       >

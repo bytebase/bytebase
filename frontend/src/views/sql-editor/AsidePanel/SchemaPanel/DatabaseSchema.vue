@@ -1,63 +1,38 @@
 <template>
   <div v-if="databaseMetadata" class="h-full overflow-hidden flex flex-col">
-    <div class="flex items-center justify-between p-2 border-b">
-      <div class="flex items-center truncate">
-        <heroicons-outline:database class="h-4 w-4 mr-1" />
-        <a
-          :href="`/db/${databaseSlug(database)}`"
-          target="__BLANK"
-          class="font-semibold anchor-link"
-        >
-          {{ databaseMetadata.name }}
-        </a>
+    <div class="flex items-center justify-between p-2 border-b gap-x-1">
+      <div
+        class="flex items-center flex-1 truncate"
+        :class="[headerClickable && 'cursor-pointer']"
+        @click="handleClickHeader"
+      >
+        <heroicons-outline:database class="h-4 w-4 mr-1 flex-shrink-0" />
+        <span class="font-semibold">{{ databaseMetadata.name }}</span>
       </div>
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-x-0.5">
         <SchemaDiagramButton
           :database="database"
           :database-metadata="databaseMetadata"
+        />
+        <ExternalLinkButton
+          :link="`/db/${databaseSlug(database)}`"
+          :tooltip="$t('common.detail')"
         />
         <AlterSchemaButton :database="database" />
       </div>
     </div>
 
-    <div class="px-2 py-2 border-b text-gray-500 text-xs space-y-1">
-      <div v-if="showCharset" class="flex items-center justify-between">
-        <span>
-          {{
-            engine == "POSTGRES" ? $t("db.encoding") : $t("db.character-set")
-          }}
-        </span>
-        <span>{{ databaseMetadata.characterSet }}</span>
-      </div>
-      <div v-if="showCollation" class="flex items-center justify-between">
-        <span>
-          {{ $t("db.collation") }}
-        </span>
-        <span>{{ databaseMetadata.collation }}</span>
-      </div>
-    </div>
-
-    <div class="flex-1 px-2 overflow-y-auto flex flex-col gap-y-2">
-      <div class="mt-2 text-sm text-gray-500">
-        {{
-          database.instance.engine !== "MONGODB"
-            ? $t("db.tables")
-            : $t("db.collections")
-        }}
-      </div>
-
+    <div class="flex-1 p-1 overflow-y-auto flex flex-col gap-y-2">
       <template v-for="(schema, i) in databaseMetadata.schemas" :key="i">
-        <div v-for="(table, j) in schema.tables" :key="j" class="text-xs">
+        <div v-for="(table, j) in schema.tables" :key="j" class="text-sm">
           <div
-            class="inline-block text-gray-600 whitespace-pre-wrap break-words"
+            class="flex items-center h-6 px-1 text-gray-600 whitespace-pre-wrap break-words rounded-sm"
             :class="
-              rowClickable && [
-                'hover:text-[var(--color-accent)]',
-                'cursor-pointer',
-              ]
+              rowClickable && ['hover:bg-[rgb(243,243,245)]', 'cursor-pointer']
             "
             @click="handleClickTable(schema, table)"
           >
+            <heroicons-outline:table class="h-4 w-4 mr-1" />
             <span v-if="schema.name">{{ schema.name }}.</span>
             <span>{{ table.name }}</span>
           </div>
@@ -77,34 +52,29 @@ import type {
 } from "@/types/proto/store/database";
 import type { Database } from "@/types";
 import { databaseSlug } from "@/utils";
+import ExternalLinkButton from "./ExternalLinkButton.vue";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
 
 const props = defineProps<{
   database: Database;
   databaseMetadata: DatabaseMetadata;
+  headerClickable: boolean;
 }>();
 
 const emit = defineEmits<{
+  (e: "click-header"): void;
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
 }>();
 
 const engine = computed(() => props.database.instance.engine);
 
-const showCharset = computed(
-  () =>
-    engine.value !== "CLICKHOUSE" &&
-    engine.value !== "SNOWFLAKE" &&
-    engine.value !== "MONGODB"
-);
-const showCollation = computed(
-  () =>
-    engine.value !== "CLICKHOUSE" &&
-    engine.value !== "SNOWFLAKE" &&
-    engine.value !== "MONGODB"
-);
-
 const rowClickable = computed(() => engine.value !== "MONGODB");
+
+const handleClickHeader = () => {
+  if (!props.headerClickable) return;
+  emit("click-header");
+};
 
 const handleClickTable = (schema: SchemaMetadata, table: TableMetadata) => {
   if (!rowClickable.value) {
