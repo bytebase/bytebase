@@ -15,7 +15,10 @@ import { computed } from "vue";
 
 import { TabMode } from "@/types";
 import { useCurrentUser, useTabStore, useWebTerminalStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import {
+  getDefaultTabNameFromConnection,
+  hasWorkspacePermission,
+} from "@/utils";
 import { last } from "lodash-es";
 
 const emit = defineEmits<{
@@ -44,6 +47,7 @@ const enterAdminMode = () => {
   const target = {
     connection: current.connection,
     mode: TabMode.Admin,
+    name: getDefaultTabNameFromConnection(current.connection),
   };
   tabStore.selectOrAddSimilarTab(target, /* beside */ true);
   tabStore.updateCurrentTab({
