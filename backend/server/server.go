@@ -36,7 +36,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
-	datastore "github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -575,12 +574,12 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
+func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
 	// initial branding
-	if _, _, err := store.CreateSettingIfNotExistV2(ctx, &datastore.SettingMessage{
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
@@ -595,7 +594,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate random JWT secret")
 	}
-	authSetting, _, err := store.CreateSettingIfNotExistV2(ctx, &datastore.SettingMessage{
+	authSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAuthSecret,
 		Value:       value,
 		Description: "Random string used to sign the JWT auth token.",
@@ -606,7 +605,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 	conf.secret = authSetting.Value
 
 	// initial workspace
-	workspaceSetting, _, err := store.CreateSettingIfNotExistV2(ctx, &datastore.SettingMessage{
+	workspaceSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
 		Description: "The workspace identifier",
@@ -617,7 +616,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 	conf.workspaceID = workspaceSetting.Value
 
 	// initial license
-	if _, _, err = store.CreateSettingIfNotExistV2(ctx, &datastore.SettingMessage{
+	if _, _, err = datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingEnterpriseLicense,
 		Value:       "",
 		Description: "Enterprise license",
@@ -626,7 +625,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 	}
 
 	// initial feishu app
-	if _, _, err := store.CreateSettingIfNotExistV2(ctx, &datastore.SettingMessage{
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAppIM,
 		Value:       "",
 		Description: "",
@@ -635,7 +634,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, 
 	}
 
 	// initial watermark setting
-	if _, _, err := store.CreateSettingIfNotExistV2(ctx, &datastore.SettingMessage{
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWatermark,
 		Value:       "0",
 		Description: "Display watermark",
