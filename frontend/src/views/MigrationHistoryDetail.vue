@@ -302,13 +302,13 @@ export default defineComponent({
 
       // The returned migration history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
       // We can obtain prevMigrationHistoryList by cutting up the array by the `migrationHistoryId`.
-      let met = false;
-      return migrationHistoryList.filter((mh) => {
-        if (mh.id === migrationHistoryId) {
-          met = true;
-        }
-        return met;
-      });
+      const idx = migrationHistoryList.findIndex(
+        (mh) => mh.id === migrationHistoryId
+      );
+      if (idx === -1) {
+        return [];
+      }
+      return migrationHistoryList.slice(idx);
     });
 
     // migrationHistory is the latest migration NOW.
