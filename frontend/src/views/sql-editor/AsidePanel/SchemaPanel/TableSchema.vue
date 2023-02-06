@@ -1,53 +1,38 @@
 <template>
-  <div class="h-full overflow-hidden flex flex-col">
-    <div class="flex items-center justify-between p-2 border-b">
-      <div class="flex items-center truncate">
-        <heroicons-outline:table class="h-4 w-4 mr-1" />
-        <a
-          :href="tableDetailLink"
-          target="__BLANK"
-          class="font-semibold anchor-link"
-        >
-          <span v-if="schema.name">{{ schema.name }}.</span>
-          <span>{{ table.name }}</span>
-        </a>
+  <div class="overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between p-2 pl-4 border-b">
+      <div
+        class="flex items-center flex-1 truncate cursor-pointer"
+        @click="emit('close')"
+      >
+        <heroicons-outline:table class="h-4 w-4 mr-1 flex-shrink-0" />
+        <span v-if="schema.name" class="font-semibold">{{ schema.name }}.</span>
+        <span class="font-semibold">{{ table.name }}</span>
       </div>
 
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-x-0.5">
+        <ExternalLinkButton
+          :link="tableDetailLink"
+          :tooltip="$t('common.detail')"
+        />
         <AlterSchemaButton
           :database="database"
           :schema="schema"
           :table="table"
         />
-
-        <NButton quaternary size="tiny" @click="handleClose">
-          <heroicons-outline:x class="w-4 h-4" />
-        </NButton>
-      </div>
-    </div>
-
-    <div class="px-2 py-2 border-b text-gray-500 text-xs space-y-1">
-      <div class="flex items-center justify-between">
-        <span class="mr-1">{{ $t("database.row-count-est") }}</span>
-        <span>{{ table.rowCount }}</span>
       </div>
     </div>
 
     <div
-      class="grid px-2 overflow-y-auto gap-x-1 gap-y-2"
+      class="grid py-1 pl-4 pr-4 overflow-y-auto gap-x-1 gap-y-2"
       style="grid-template-columns: minmax(4rem, 2fr) minmax(4rem, 1fr)"
     >
-      <div class="mt-2 text-sm text-gray-500">{{ $t("database.columns") }}</div>
-      <div class="mt-2 text-right text-sm text-gray-500">
-        {{ $t("database.data-type") }}
-      </div>
-
       <template v-for="(column, index) in table.columns" :key="index">
-        <div class="text-xs text-gray-600whitespace-pre-wrap break-words">
+        <div class="text-sm text-gray-600whitespace-pre-wrap break-words">
           {{ column.name }}
         </div>
         <div
-          class="text-right text-xs text-gray-400 overflow-x-hidden whitespace-nowrap"
+          class="text-right text-sm text-gray-400 overflow-x-hidden whitespace-nowrap"
         >
           {{ column.type }}
         </div>
@@ -57,8 +42,6 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -68,6 +51,7 @@ import type { Database } from "@/types";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import { computed } from "vue";
 import { databaseSlug } from "@/utils";
+import ExternalLinkButton from "./ExternalLinkButton.vue";
 
 const props = defineProps<{
   database: Database;
@@ -91,8 +75,4 @@ const tableDetailLink = computed((): string => {
 
   return url;
 });
-
-const handleClose = () => {
-  emit("close");
-};
 </script>
