@@ -207,6 +207,10 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 	); err != nil {
 		return nil, false, FormatError(err)
 	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, false, errors.Wrap(err, "failed to commit transaction")
+	}
 	s.settingCache.Store(setting.Name, &setting)
 	return &setting, true, nil
 }
