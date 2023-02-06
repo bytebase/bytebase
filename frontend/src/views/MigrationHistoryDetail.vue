@@ -300,7 +300,7 @@ export default defineComponent({
         instanceStore.fetchInstanceList();
       }
 
-      // The returned migration history list has been ordered by `sequence` DESC.
+      // The returned migration history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
       // We can obtain prevMigrationHistoryList by cutting up the array by the `migrationHistoryId`.
       let met = false;
       return migrationHistoryList.filter((mh) => {
