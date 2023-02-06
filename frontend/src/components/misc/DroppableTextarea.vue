@@ -7,13 +7,22 @@
     <textarea
       v-model="state.value"
       class="textarea"
+      :class="[rounded && 'rounded-md']"
       :placeholder="placeholder"
       v-bind="$attrs"
     />
 
     <div
+      v-if="!state.value"
+      class="absolute bottom-2 left-[50%] -translate-x-1/2 pointer-events-none flex flex-col items-center justify-center border border-control-border border-dashed text-xs text-control-placeholder p-2 rounded-md"
+    >
+      Or drag and drop files here.
+    </div>
+
+    <div
       v-if="isOverDropZone || state.reading"
       class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center bg-white/50 border border-accent border-dashed"
+      :class="[rounded && 'rounded-md']"
     >
       <heroicons-outline:arrow-up-tray v-if="isOverDropZone" class="w-8 h-8" />
       <BBSpin v-if="state.reading" />
@@ -46,10 +55,12 @@ const props = withDefaults(
     value: string | undefined;
     placeholder?: string;
     maxFileSize?: number; // in MB
+    rounded?: boolean;
   }>(),
   {
     placeholder: undefined,
     maxFileSize: 1,
+    rounded: false,
   }
 );
 
