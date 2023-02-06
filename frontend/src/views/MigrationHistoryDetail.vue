@@ -300,7 +300,15 @@ export default defineComponent({
         instanceStore.fetchInstanceList();
       }
 
-      return migrationHistoryList.filter((mh) => mh.id <= migrationHistoryId);
+      // The returned migration history list has been ordered by `sequence` DESC.
+      // We can obtain prevMigrationHistoryList by cutting up the array by the `migrationHistoryId`.
+      let met = false;
+      return migrationHistoryList.filter((mh) => {
+        if (mh.id === migrationHistoryId) {
+          met = true;
+        }
+        return met;
+      });
     });
 
     // migrationHistory is the latest migration NOW.
