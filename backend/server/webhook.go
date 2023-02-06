@@ -648,9 +648,9 @@ func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repositoryList
 type fileType int
 
 const (
-	unknownFileType fileType = iota
-	migrationFileType
-	schemaFileType
+	fileTypeUnknown fileType = iota
+	fileTypeMigration
+	fileTypeSchema
 )
 
 // getFileInfo processes the file item against the candidate list of
@@ -694,11 +694,11 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		}
 		if mi != nil {
 			if fileItem.IsYAML && mi.Type != db.Data {
-				return nil, unknownFileType, nil, errors.New("only DML is allowed for YAML files in a tenant project")
+				return nil, fileTypeUnknown, nil, errors.New("only DML is allowed for YAML files in a tenant project")
 			}
 
 			migrationInfo = mi
-			fType = migrationFileType
+			fType = fileTypeMigration
 			fileRepositoryList = append(fileRepositoryList, repository)
 			continue
 		}
@@ -713,7 +713,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		}
 		if si != nil {
 			migrationInfo = si
-			fType = schemaFileType
+			fType = fileTypeSchema
 			fileRepositoryList = append(fileRepositoryList, repository)
 			continue
 		}
@@ -721,7 +721,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 
 	switch len(fileRepositoryList) {
 	case 0:
-		return nil, unknownFileType, nil, errors.Errorf("file change is not associated with any project")
+		return nil, fileTypeUnknown, nil, errors.Errorf("file change is not associated with any project")
 	case 1:
 		return migrationInfo, fType, fileRepositoryList[0], nil
 	default:
@@ -729,7 +729,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		for _, repository := range fileRepositoryList {
 			projectList = append(projectList, repository.Project.Name)
 		}
-		return nil, unknownFileType, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
+		return nil, fileTypeUnknown, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
 	}
 }
 
@@ -751,7 +751,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 	for _, fileInfo := range fileInfoList {
-		if fileInfo.fType == schemaFileType {
+		if fileInfo.fType == fileTypeSchema {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
 				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
@@ -768,7 +768,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			} else {
 				log.Debug("Ignored schema file for non-SDL project", zap.String("fileName", fileInfo.item.FileName), zap.String("type", string(fileInfo.item.ItemType)))
 			}
-		} else { // fileInfo.fType == migrationFileType
+		} else { // fileInfo.fType == fileTypeMigration
 			// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
 			// For DDL schema change type project, this is expected.
 			// For SDL schema change type project, we allow it because:
