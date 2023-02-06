@@ -70,11 +70,21 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 .hovering {
   @apply bg-gray-50;
 }
+.tab-item.admin {
+  @apply !bg-dark-bg;
+}
 
 .body {
   @apply flex items-center justify-between gap-x-1 pl-2 pr-1 py-1 border-t-2 border-t-transparent;
 }
 .current .body {
   @apply relative bg-white text-accent border-t-accent;
+}
+
+.tab-item.admin .body {
+  @apply text-[var(--color-matrix-green)];
+}
+.tab-item.admin.current .body {
+  @apply !bg-dark-bg border-[var(--color-matrix-green)];
 }
 </style>
