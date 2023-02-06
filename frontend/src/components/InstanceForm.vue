@@ -254,6 +254,7 @@
               </template>
             </label>
             <BBCheckbox
+              v-if="allowUsingEmptyPassword"
               :title="$t('common.empty')"
               :value="currentDataSource.useEmptyPassword"
               @toggle="handleToggleUseEmptyPassword"
@@ -554,6 +555,10 @@ const allowEdit = computed(() => {
       currentUser.value.role
     )
   );
+});
+
+const allowUsingEmptyPassword = computed(() => {
+  return state.instance.engine !== "SPANNER";
 });
 
 const valueChanged = computed(() => {
