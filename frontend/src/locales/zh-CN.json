@@ -717,6 +717,8 @@
     "name": "名称",
     "host-or-socket": "Host 或 Socket",
     "project-id-and-instance-id": "项目 ID 与实例 ID",
+    "project-id": "项目 ID",
+    "instance-id": "实例 ID",
     "your-snowflake-account-name": "您的 Snowflake @:{'instance.account'}@:{'instance.name'}",
     "port": "端口",
     "instance-name": "@:common.instance@:instance.name",

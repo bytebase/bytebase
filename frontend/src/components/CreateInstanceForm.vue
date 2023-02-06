@@ -67,54 +67,44 @@
         </div>
 
         <div class="sm:col-span-3 sm:col-start-1">
-          <label for="host" class="textlabel block">
-            <template v-if="state.instance.engine == 'SNOWFLAKE'">
-              {{ $t("instance.account-name") }}
-              <span style="color: red">*</span>
-            </template>
-            <template v-else-if="state.instance.engine == 'SPANNER'">
-              {{ $t("instance.project-id-and-instance-id") }}
-              <span style="color: red">*</span>
-              <p class="text-sm text-gray-500 mt-1">
-                {{ $t("instance.find-gcp-project-id-and-instance-id") }}
-                <a
-                  href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
-                  target="_blank"
-                  class="normal-link inline-flex items-center"
-                >
-                  {{ $t("common.detailed-guide")
-                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
-                /></a>
-              </p>
-            </template>
-            <template v-else>
-              {{ $t("instance.host-or-socket") }}
-              <span style="color: red">*</span>
-            </template>
-          </label>
-          <input
-            id="host"
-            required
-            type="text"
-            name="host"
-            :placeholder="
-              state.instance.engine == 'SNOWFLAKE'
-                ? $t('instance.your-snowflake-account-name')
-                : state.instance.engine === 'SPANNER'
-                ? 'projects/<projectID>/instances/<instanceID>'
-                : $t('instance.sentence.host.snowflake')
-            "
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :value="state.instance.host"
-            @input="handleInstanceHostInput"
+          <template v-if="state.instance.engine !== 'SPANNER'">
+            <label for="host" class="textlabel block">
+              <template v-if="state.instance.engine == 'SNOWFLAKE'">
+                {{ $t("instance.account-name") }}
+                <span style="color: red">*</span>
+              </template>
+              <template v-else>
+                {{ $t("instance.host-or-socket") }}
+                <span style="color: red">*</span>
+              </template>
+            </label>
+            <input
+              id="host"
+              required
+              type="text"
+              name="host"
+              :placeholder="
+                state.instance.engine == 'SNOWFLAKE'
+                  ? $t('instance.your-snowflake-account-name')
+                  : $t('instance.sentence.host.snowflake')
+              "
+              class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
+              :value="state.instance.host"
+              @input="handleInstanceHostInput"
+            />
+            <div
+              v-if="state.instance.engine == 'SNOWFLAKE'"
+              class="mt-2 textinfolabel"
+            >
+              {{ $t("instance.sentence.proxy.snowflake") }}
+            </div>
+          </template>
+          <SpannerHostInput
+            v-else
+            v-model:host="state.instance.host"
+            :allow-edit="allowEdit"
           />
-          <div
-            v-if="state.instance.engine == 'SNOWFLAKE'"
-            class="mt-2 textinfolabel"
-          >
-            {{ $t("instance.sentence.proxy.snowflake") }}
-          </div>
         </div>
 
         <template v-if="state.instance.engine !== 'SPANNER'">
@@ -369,7 +359,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
-import { SslCertificateForm } from "./InstanceForm";
+import { SpannerHostInput, SslCertificateForm } from "./InstanceForm";
 import { instanceSlug, isDev } from "../utils";
 import {
   InstanceCreate,

@@ -717,6 +717,8 @@
     "name": "Name",
     "host-or-socket": "Host or Socket",
     "project-id-and-instance-id": "Project ID and instance ID",
+    "project-id": "Project ID",
+    "instance-id": "Instance ID",
     "your-snowflake-account-name": "your Snowflake account name",
     "port": "Port",
     "authentication-database": "Authentication Database",
