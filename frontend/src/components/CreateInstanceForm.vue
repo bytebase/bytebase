@@ -196,26 +196,13 @@
           </div>
         </template>
 
-        <div class="sm:col-span-1 sm:col-start-1">
+        <div
+          v-if="state.instance.engine !== 'SPANNER'"
+          class="sm:col-span-1 sm:col-start-1"
+        >
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              <template v-if="state.instance.engine == 'SPANNER'">
-                {{ $t("common.credentials") }}
-                <span class="text-red-600">*</span>
-                <p class="textinfolabel mt-1">
-                  {{ $t("instance.create-gcp-credentials") }}
-                  <a
-                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
-                    target="_blank"
-                    class="normal-link inline-flex items-center"
-                    >{{ $t("common.detailed-guide") }}
-                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
-                  /></a>
-                </p>
-              </template>
-              <template v-else>
-                {{ $t("common.password") }}
-              </template>
+              {{ $t("common.password") }}
             </label>
           </div>
           <input
@@ -224,15 +211,19 @@
             type="text"
             class="textfield mt-1 w-full"
             autocomplete="off"
-            :placeholder="
-              state.instance.engine === 'SPANNER'
-                ? $t('instance.credentials-write-only')
-                : $t('instance.password-write-only')
-            "
+            :placeholder="$t('instance.password-write-only')"
             :value="state.instance.password"
             @input="handleInstancePasswordInput"
           />
         </div>
+
+        <SpannerCredentialInput
+          v-else
+          :value="state.instance.password ?? ''"
+          :write-only="false"
+          class="mt-2 sm:col-span-3 sm:col-start-1"
+          @update:value="(value) => (state.instance.password = value)"
+        />
 
         <div v-if="showDatabase" class="sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
@@ -359,7 +350,11 @@ import { computed, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
-import { SpannerHostInput, SslCertificateForm } from "./InstanceForm";
+import {
+  SpannerHostInput,
+  SpannerCredentialInput,
+  SslCertificateForm,
+} from "./InstanceForm";
 import { instanceSlug, isDev } from "../utils";
 import {
   InstanceCreate,

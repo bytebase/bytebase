@@ -764,7 +764,8 @@
       }
     },
     "no-password": "无密码",
-    "credentials-write-only": "CREDENTIALS - 仅写入",
+    "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
+    "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",

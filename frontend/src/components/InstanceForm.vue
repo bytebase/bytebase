@@ -231,27 +231,14 @@
           </div>
         </template>
 
-        <div class="mt-2 sm:col-span-1 sm:col-start-1">
+        <div
+          v-if="state.instance.engine !== 'SPANNER'"
+          class="mt-2 sm:col-span-1 sm:col-start-1"
+        >
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              <template v-if="state.instance.engine === 'SPANNER'">
-                {{ $t("common.credentials") }}
-                <span class="text-red-600">*</span>
-                <p class="textinfolabel mt-1">
-                  {{ $t("instance.create-gcp-credentials") }}
-                  <a
-                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
-                    target="_blank"
-                    class="normal-link inline-flex items-center"
-                    >{{ $t("common.detailed-guide") }}
-                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
-                  /></a>
-                </p>
-              </template>
-              <template v-else>
-                {{ $t("common.password") }}
-                <span class="text-red-600">*</span>
-              </template>
+              {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <BBCheckbox
               v-if="allowUsingEmptyPassword"
@@ -269,8 +256,6 @@
             :placeholder="
               currentDataSource.useEmptyPassword
                 ? $t('instance.no-password')
-                : state.instance.engine === 'SPANNER'
-                ? $t('instance.credentials-write-only')
                 : $t('instance.password-write-only')
             "
             :disabled="!allowEdit || currentDataSource.useEmptyPassword"
@@ -282,6 +267,14 @@
             @input="handleCurrentDataSourcePasswordInput"
           />
         </div>
+
+        <SpannerCredentialInput
+          v-else
+          :value="currentDataSource.updatedPassword"
+          :write-only="true"
+          class="mt-2 sm:col-span-3 sm:col-start-1"
+          @update:value="handleUpdateSpannerCredential"
+        />
 
         <template v-if="showAuthenticationDatabase">
           <div class="sm:col-span-1 sm:col-start-1">
@@ -467,7 +460,11 @@ import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { SpannerHostInput, SslCertificateForm } from "./InstanceForm";
+import {
+  SpannerHostInput,
+  SpannerCredentialInput,
+  SslCertificateForm,
+} from "./InstanceForm";
 import { clearObject, hasWorkspacePermission } from "../utils";
 import {
   InstancePatch,
@@ -693,6 +690,11 @@ const handleToggleUseEmptyPassword = (on: boolean) => {
 const handleCurrentDataSourcePasswordInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.updatedPassword = str;
+  updateInstanceDataSource(currentDataSource.value);
+};
+
+const handleUpdateSpannerCredential = (credential: string) => {
+  currentDataSource.value.updatedPassword = credential;
   updateInstanceDataSource(currentDataSource.value);
 };
 
