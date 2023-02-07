@@ -501,5 +501,5 @@ message Backup {
   BackupType backup_type = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The comment of the backup.
-  string comment = 6; // The comment of the backup.
+  string comment = 6;
 }

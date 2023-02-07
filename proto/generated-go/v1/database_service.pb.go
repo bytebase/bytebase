@@ -1946,7 +1946,7 @@ type Backup struct {
 	// The type of the backup.
 	BackupType Backup_BackupType `protobuf:"varint,5,opt,name=backup_type,json=backupType,proto3,enum=bytebase.v1.Backup_BackupType" json:"backup_type,omitempty"`
 	// The comment of the backup.
-	Comment string `protobuf:"bytes,6,opt,name=comment,proto3" json:"comment,omitempty"` // The comment of the backup.
+	Comment string `protobuf:"bytes,6,opt,name=comment,proto3" json:"comment,omitempty"`
 }
 
 func (x *Backup) Reset() {
