@@ -17,6 +17,7 @@ import {
   ResourceObject,
   RowStatus,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
@@ -136,6 +137,15 @@ export const useProjectStore = defineStore("project", {
       }
 
       return this.projectById.get(projectId) || (unknown("PROJECT") as Project);
+    },
+
+    async getOrFetchProjectById(projectId: ProjectId): Promise<Project> {
+      if (projectId === EMPTY_ID) return empty("PROJECT");
+      if (projectId === UNKNOWN_ID) return unknown("PROJECT");
+      if (!this.projectById.has(projectId)) {
+        await this.fetchProjectById(projectId);
+      }
+      return this.getProjectById(projectId);
     },
 
     async fetchAllProjectList() {
