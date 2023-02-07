@@ -46,7 +46,7 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
-    freeInstanceCount: 3
+    freeInstanceCount: 10
     freeSeatCount: 10
     maximumInstanceCount: 3
     maximumSeatCount: 10
@@ -54,7 +54,7 @@ planList:
     pricePerInstancePerMonth: 79
     featureList:
       - type: instance-count
-        content: instance-maximum-3
+        content: instance-maximum-10
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
