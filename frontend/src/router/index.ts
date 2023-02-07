@@ -111,6 +111,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/OAuthCallback.vue"),
   },
   {
+    path: "/oidc/callback",
+    name: "oidc-callback",
+    component: () => import("../views/OAuthCallback.vue"),
+  },
+  {
     path: "/",
     component: DashboardLayout,
     children: [
@@ -962,12 +967,14 @@ router.beforeEach((to, from, next) => {
     routerStore.setBackPath(from.fullPath);
   }
 
-  // OAuth callback route is a relay to receive the OAuth callback and dispatch the corresponding OAuth event. It's called in the following scenarios:
-  // - Login via OAuth
+  // SSO callback routes are relayes to handle the IdP callback and dispatch the subsequent events.
+  // They are called in the following scenarios:
+  // - Login via OAuth / OIDC
   // - Setup VCS provider
   // - Setup GitOps workflow in a project
-  if (to.name === "oauth-callback") {
+  if (to.name === "oauth-callback" || to.name === "oidc-callback") {
     next();
+    return;
   }
 
   if (

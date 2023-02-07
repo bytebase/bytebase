@@ -18,7 +18,6 @@ import (
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
-	// for now, we only support Gitlab
 	g.GET("/auth/provider", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		vcsFind := &api.VCSFind{}
