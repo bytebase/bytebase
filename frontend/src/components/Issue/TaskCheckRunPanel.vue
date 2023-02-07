@@ -37,10 +37,7 @@
           {{ row.category }}
         </BBTableCell>
         <BBTableCell class="w-[12rem] break-all">
-          <template v-if="row.checkResult.code === 202">
-            {{ row.title }}
-          </template>
-          <template v-else> Disallow add column with default (404)</template>
+          {{ row.title }}
         </BBTableCell>
         <BBTableCell class="w-auto">
           {{ row.checkResult.content }}
