@@ -13,6 +13,7 @@ import {
   pushNotification,
   useActuatorStore,
   useAuthStore,
+  useIdentityProviderStore,
   useSubscriptionStore,
 } from "./store";
 import {
@@ -153,6 +154,11 @@ const initFeatureMatrix = () => {
   const subscriptionStore = useSubscriptionStore();
   return subscriptionStore.fetchFeatureMatrix();
 };
+// Initial identity providers to provide sso options in signin page and user's related domain name.
+const initIdentityProvider = () => {
+  const idpStore = useIdentityProviderStore();
+  return idpStore.fetchIdentityProviderList();
+};
 const restoreUser = () => {
   const authStore = useAuthStore();
   return authStore.restoreUser();
@@ -161,6 +167,7 @@ Promise.all([
   initActuator(),
   initFeatureMatrix(),
   initSubscription(),
+  initIdentityProvider(),
   restoreUser(),
 ]).finally(() => {
   // Install router after the necessary data fetching is complete.
