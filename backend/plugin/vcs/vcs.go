@@ -44,15 +44,15 @@ type OAuthToken struct {
 
 // Commit records the commit data.
 type Commit struct {
-	ID           string
-	Title        string
-	Message      string
-	CreatedTs    int64
-	URL          string
-	AuthorName   string
-	AuthorEmail  string
-	AddedList    []string
-	ModifiedList []string
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	Message      string   `json:"message"`
+	CreatedTs    int64    `json:"createdTs"`
+	URL          string   `json:"url"`
+	AuthorName   string   `json:"authorName"`
+	AuthorEmail  string   `json:"authorEmail"`
+	AddedList    []string `json:"addedList"`
+	ModifiedList []string `json:"modifiedList"`
 }
 
 // FileCommit is the API message for a VCS file commit.
