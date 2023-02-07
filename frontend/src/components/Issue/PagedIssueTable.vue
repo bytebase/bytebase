@@ -112,6 +112,10 @@ const condition = computed(() => {
 });
 
 const fetchData = (refresh = false) => {
+  if (!isLoggedIn.value) {
+    return;
+  }
+
   state.loading = true;
 
   const isFirstFetch = state.paginationToken === "";
