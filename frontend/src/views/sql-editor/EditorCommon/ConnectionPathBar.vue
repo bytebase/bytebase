@@ -6,10 +6,7 @@
     <div
       class="flex justify-start items-center px-4 py-1 rounded-br-md bg-white"
     >
-      <NPopover
-        v-if="selectedInstance.id !== UNKNOWN_ID && !hasReadonlyDataSource"
-        trigger="hover"
-      >
+      <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
         <template #trigger>
           <heroicons-outline:exclamation
             class="h-6 w-6 flex-shrink-0 mr-2"
@@ -29,78 +26,43 @@
         </p>
       </NPopover>
 
-      <NPopover trigger="hover" placement="bottom" :show-arrow="false">
-        <template #trigger>
-          <label class="flex items-center text-sm space-x-1">
-            <div
-              v-if="selectedInstance.id !== UNKNOWN_ID"
-              class="flex items-center"
-            >
-              <span class="">{{ selectedInstance.environment.name }}</span>
-              <ProtectedEnvironmentIcon
-                :environment="selectedInstance.environment"
-                class="ml-1"
-                :class="[isProtectedEnvironment && '~!text-yellow-700']"
-              />
-            </div>
-            <div
-              v-if="selectedInstance.id !== UNKNOWN_ID"
-              class="flex items-center"
-            >
-              <span class="mx-2">
-                <heroicons-solid:chevron-right
-                  class="flex-shrink-0 h-4 w-4 text-control-light"
-                />
-              </span>
-              <InstanceEngineIcon :instance="selectedInstance" show-status />
-              <span class="ml-2">{{ selectedInstance.name }}</span>
-            </div>
-            <div
-              v-if="selectedDatabase.id !== UNKNOWN_ID"
-              class="flex items-center"
-            >
-              <span class="mx-2">
-                <heroicons-solid:chevron-right
-                  class="flex-shrink-0 h-4 w-4 text-control-light"
-                />
-              </span>
-              <heroicons-outline:database />
-              <span class="ml-2">{{ selectedDatabase.name }}</span>
-            </div>
-          </label>
-        </template>
-        <section>
-          <div class="space-y-2">
-            <div
-              v-if="selectedInstance.id !== UNKNOWN_ID"
-              class="flex flex-col"
-            >
-              <h1 class="text-gray-400">{{ $t("common.environment") }}</h1>
-              <span class="flex items-center">
-                {{ selectedInstance.environment.name }}
-                <ProtectedEnvironmentIcon
-                  :environment="selectedInstance.environment"
-                  class="ml-1"
-                />
-              </span>
-            </div>
-            <div
-              v-if="selectedInstance.id !== UNKNOWN_ID"
-              class="flex flex-col"
-            >
-              <h1 class="text-gray-400">{{ $t("common.instance") }}</h1>
-              <span>{{ selectedInstance.name }}</span>
-            </div>
-            <div
-              v-if="selectedDatabase.id !== UNKNOWN_ID"
-              class="flex flex-col"
-            >
-              <h1 class="text-gray-400">{{ $t("common.database") }}</h1>
-              <span>{{ selectedDatabase.name }}</span>
-            </div>
-          </div>
-        </section>
-      </NPopover>
+      <label class="flex items-center text-sm space-x-1">
+        <div
+          v-if="selectedInstance.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          <span class="">{{ selectedInstance.environment.name }}</span>
+          <ProtectedEnvironmentIcon
+            :environment="selectedInstance.environment"
+            class="ml-1"
+            :class="[isProtectedEnvironment && '~!text-yellow-700']"
+          />
+        </div>
+        <div
+          v-if="selectedInstance.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          <span class="mx-2">
+            <heroicons-solid:chevron-right
+              class="flex-shrink-0 h-4 w-4 text-control-light"
+            />
+          </span>
+          <InstanceEngineIcon :instance="selectedInstance" show-status />
+          <span class="ml-2">{{ selectedInstance.name }}</span>
+        </div>
+        <div
+          v-if="selectedDatabase.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          <span class="mx-2">
+            <heroicons-solid:chevron-right
+              class="flex-shrink-0 h-4 w-4 text-control-light"
+            />
+          </span>
+          <heroicons-outline:database />
+          <span class="ml-2">{{ selectedDatabase.name }}</span>
+        </div>
+      </label>
     </div>
 
     <div
@@ -118,7 +80,7 @@ import { NPopover } from "naive-ui";
 import { useRouter } from "vue-router";
 
 import { useTabStore, useInstanceById, useDatabaseById } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { TabMode, UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils";
 
 const router = useRouter();
@@ -146,6 +108,14 @@ const hasReadonlyDataSource = computed(() => {
     }
   }
   return false;
+});
+
+const showReadonlyDatasourceWarning = computed(() => {
+  return (
+    tabStore.currentTab.mode === TabMode.ReadOnly &&
+    selectedInstance.value.id !== UNKNOWN_ID &&
+    !hasReadonlyDataSource.value
+  );
 });
 
 const gotoInstanceDetailPage = () => {
