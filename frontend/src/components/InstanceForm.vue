@@ -857,6 +857,9 @@ const handleCreateDataSource = (type: DataSourceType) => {
       srv: false,
     },
   } as DataSource;
+  if (state.instance.engine === "SPANNER") {
+    tempDataSource.host = adminDataSource.value.host;
+  }
   state.dataSourceList.push({
     ...tempDataSource,
     updatedPassword: "",
