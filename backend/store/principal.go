@@ -423,6 +423,25 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, err
 	}
 
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	user, err := s.updateUserImpl(ctx, tx, userID, patch, updaterID)
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	s.userIDCache.Delete(oldUser.ID)
+	s.userEmailCache.Delete(oldUser.Email)
+	s.userIDCache.Store(user.ID, user)
+	s.userEmailCache.Store(user.Email, user)
+	return user, nil
+}
+
+func (s *Store) updateUserImpl(ctx context.Context, tx *Tx, userID int, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
@@ -447,12 +466,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		memberSet, memberArgs = append(memberSet, fmt.Sprintf(`"row_status" = $%d`, len(memberArgs)+1)), append(memberArgs, rowStatus)
 	}
 	memberArgs = append(memberArgs, userID)
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
 
 	user := &UserMessage{}
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
@@ -492,12 +505,5 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, FormatError(err)
 	}
 	user.MemberDeleted = convertRowStatusToDeleted(rowStatus)
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-	s.userEmailCache.Delete(oldUser.Email)
-	s.userIDCache.Store(user.ID, user)
-	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }

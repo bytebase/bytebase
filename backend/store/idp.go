@@ -186,7 +186,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 	return identityProvider, nil
 }
 
-func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
+func (s *Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
 	set, args := []string{}, []interface{}{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -246,6 +246,24 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
 	identityProvider.Config = convertIdentityProviderConfigString(identityProvider.Type, identityProviderConfig)
 	identityProvider.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	if identityProvider.Deleted {
+		userList, err := s.listUserImpl(ctx, tx, &FindUserMessage{
+			IdentityProviderResourceID: &identityProvider.ResourceID,
+		})
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		deleted := true
+		for _, user := range userList {
+			_, err := s.updateUserImpl(ctx, tx, user.ID, &UpdateUserMessage{
+				Delete: &deleted,
+			}, api.SystemBotID)
+			if err != nil {
+				return nil, FormatError(err)
+			}
+		}
+	}
 	return identityProvider, nil
 }
 
