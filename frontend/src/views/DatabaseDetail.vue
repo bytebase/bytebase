@@ -556,6 +556,13 @@ const changeDataText = computed(() => {
 });
 
 const tabItemList = computed((): BBTabFilterItem[] => {
+  if (database.value.instance.engine === "SPANNER") {
+    return databaseTabItemList
+      .filter((item) => item.hash !== "backup-and-restore")
+      .map((item) => {
+        return { title: item.name, alert: false };
+      });
+  }
   return databaseTabItemList.map((item) => {
     return { title: item.name, alert: false };
   });
