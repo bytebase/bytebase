@@ -438,7 +438,7 @@ func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, req
 func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	identityProviderID, err := getIdentityProviderID(request.IdpName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "get identity provider ID: %v", err)
 	}
 
 	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
@@ -448,14 +448,14 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		return nil, status.Errorf(codes.Internal, "failed to get identity provider: %v", err)
 	}
 	if identityProvider == nil {
-		return nil, status.Error(codes.NotFound, "identity provider not found")
+		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
 	if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
-			return nil, status.Error(codes.InvalidArgument, "missing OAuth2 context")
+			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProvider.Config.GetOauth2Config())
 		if err != nil {
@@ -473,7 +473,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	} else if identityProvider.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
-			return nil, status.Error(codes.InvalidArgument, "missing OAuth2 context")
+			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 
 		idp, err := oidc.NewIdentityProvider(
