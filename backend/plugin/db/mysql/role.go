@@ -2,39 +2,380 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("create role for MySQL is not implemented yet")
+func (driver *Driver) CreateRole(ctx context.Context, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	if err := createRoleImpl(ctx, txn, upsert); err != nil {
+		return nil, err
+	}
+
+	roles, err := driver.findRoleImpl(ctx, &upsert.Name)
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", upsert.Name))
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return roles[0], nil
 }
 
 // UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("update role for MySQL is not implemented yet")
+func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	if err := alterRoleImpl(ctx, txn, roleName, upsert); err != nil {
+		return nil, err
+	}
+
+	roles, err := driver.findRoleImpl(ctx, &upsert.Name)
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", upsert.Name))
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return roles[0], nil
 }
 
 // FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("find role for MySQL is not implemented yet")
+func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.DatabaseRoleMessage, error) {
+	roles, err := driver.findRoleImpl(ctx, &roleName)
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", roleName))
+	}
+
+	return roles[0], nil
 }
 
 // ListRole lists the role.
-func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("list role for MySQL is not implemented yet")
+func (driver *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
+	roles, err := driver.findRoleImpl(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return roles, nil
 }
 
 // DeleteRole deletes the role by name.
-func (*Driver) DeleteRole(_ context.Context, _ string) error {
-	return errors.Errorf("delete role for MySQL is not implemented yet")
+func (driver *Driver) DeleteRole(ctx context.Context, roleName string) error {
+	statement := fmt.Sprintf(`DROP USER IF EXISTS %s`, roleName)
+	if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+		return util.FormatErrorWithQuery(err, statement)
+	}
+
+	return nil
+}
+
+func (driver *Driver) findRoleImpl(ctx context.Context, name *string) ([]*db.DatabaseRoleMessage, error) {
+	if name != nil {
+		attribute, err := driver.findRoleGrant(ctx, *name)
+		if err != nil {
+			return nil, err
+		}
+
+		user, host := parseNameAndHost(*name)
+		maxUserConnection, lifetime, err := driver.findConnectionLimitAndExpiration(ctx, user, host)
+		if err != nil {
+			return nil, err
+		}
+
+		var lifetimeString *string
+		if lifetime != nil {
+			day := fmt.Sprintf("%d", *lifetime)
+			lifetimeString = &day
+		}
+		return []*db.DatabaseRoleMessage{
+			{
+				Name:            *name,
+				Attribute:       &attribute,
+				ConnectionLimit: maxUserConnection,
+				ValidUntil:      lifetimeString,
+			},
+		}, nil
+	}
+
+	query := `
+	  SELECT
+			user,
+			host
+		FROM mysql.user
+		WHERE user NOT LIKE 'mysql.%'
+	`
+	roleRows, err := driver.db.QueryContext(ctx, query)
+
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer roleRows.Close()
+
+	var result []*db.DatabaseRoleMessage
+
+	for roleRows.Next() {
+		var user string
+		var host string
+		if err := roleRows.Scan(
+			&user,
+			&host,
+		); err != nil {
+			return nil, err
+		}
+
+		name := fmt.Sprintf("'%s'@'%s'", user, host)
+		attribute, err := driver.findRoleGrant(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+
+		maxUserConnection, lifetime, err := driver.findConnectionLimitAndExpiration(ctx, user, host)
+		if err != nil {
+			return nil, err
+		}
+
+		var lifetimeString *string
+		if lifetime != nil {
+			day := fmt.Sprintf("%d", *lifetime)
+			lifetimeString = &day
+		}
+
+		result = append(result, &db.DatabaseRoleMessage{
+			Name:            name,
+			Attribute:       &attribute,
+			ConnectionLimit: maxUserConnection,
+			ValidUntil:      lifetimeString,
+		})
+	}
+	if err := roleRows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (driver *Driver) findConnectionLimitAndExpiration(ctx context.Context, user string, host string) (int32, *int32, error) {
+	statement := fmt.Sprintf(`SELECT max_user_connections, password_lifetime FROM mysql.user WHERE user = '%s' AND host = '%s'`, user, host)
+	rows, err := driver.db.QueryContext(ctx, statement)
+	if err != nil {
+		return 0, nil, util.FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	type result struct {
+		maxUserConnection int32
+		lifetime          sql.NullInt32
+	}
+	var list []result
+
+	for rows.Next() {
+		var row result
+		if err := rows.Scan(
+			&row.maxUserConnection,
+			&row.lifetime,
+		); err != nil {
+			return 0, nil, util.FormatErrorWithQuery(err, statement)
+		}
+		list = append(list, row)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, nil, err
+	}
+
+	if len(list) == 0 {
+		return 0, nil, common.Errorf(common.NotFound, "role '%s'@'%s' not found", user, host)
+	}
+
+	// never catch
+	if len(list) > 1 {
+		return 0, nil, common.Errorf(common.Internal, "role '%s'@'%s' is not unique", user, host)
+	}
+
+	lifetime := (*int32)(nil)
+	if list[0].lifetime.Valid {
+		lifetime = &list[0].lifetime.Int32
+	}
+	return list[0].maxUserConnection, lifetime, nil
+}
+
+// parseNameAndHost parses the MySQL role name, there are two cases:
+// 1. user@host: specify host
+// 2. user: do not specify host, the host will be `%`
+// user and host can be surrounded by quotes('), double-quotes("), black-quotes(`) or not.
+func parseNameAndHost(in string) (string, string) {
+	reg := regexp.MustCompile("(.*)@(.*)")
+	list := reg.FindStringSubmatch(in)
+	trimFunc := func(r rune) bool {
+		return r == '`' || r == '"' || r == '\''
+	}
+	if len(list) != 3 {
+		// Case Two: do not specify host
+		return strings.TrimFunc(in, trimFunc), "%"
+	}
+	// Case One: specify host
+	return strings.TrimFunc(list[1], trimFunc), strings.TrimFunc(list[2], trimFunc)
+}
+
+func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *db.DatabaseRoleUpsertMessage) error {
+	if roleName != upsert.Name {
+		renameStatement := fmt.Sprintf(`RENAME USER %s to %s`, roleName, upsert.Name)
+		if _, err := txn.ExecContext(ctx, renameStatement); err != nil {
+			return util.FormatErrorWithQuery(err, renameStatement)
+		}
+	}
+
+	content, err := convertToUserContent(upsert)
+	if err != nil {
+		return err
+	}
+
+	if content != "" {
+		alterStatement := fmt.Sprintf(`ALTER USER IF EXISTS %s %s`, upsert.Name, content)
+		if _, err := txn.ExecContext(ctx, alterStatement); err != nil {
+			return util.FormatErrorWithQuery(err, alterStatement)
+		}
+	}
+
+	if upsert.Attribute != nil {
+		revokeStatement := fmt.Sprintf(`REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s`, upsert.Name)
+		if _, err := txn.ExecContext(ctx, revokeStatement); err != nil {
+			return util.FormatErrorWithQuery(err, revokeStatement)
+		}
+
+		if len(*upsert.Attribute) > 0 {
+			list, err := splitGrantStatement(*upsert.Attribute)
+			if err != nil {
+				return err
+			}
+			for _, sql := range list {
+				if _, err := txn.ExecContext(ctx, sql.Text); err != nil {
+					return util.FormatErrorWithQuery(err, sql.Text)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *db.DatabaseRoleUpsertMessage) error {
+	content, err := convertToUserContent(upsert)
+	if err != nil {
+		return err
+	}
+	statement := fmt.Sprintf(`CREATE USER IF NOT EXISTS %s %s`, upsert.Name, content)
+
+	if _, err := txn.ExecContext(ctx, statement); err != nil {
+		return util.FormatErrorWithQuery(err, statement)
+	}
+
+	if upsert.Attribute != nil && len(*upsert.Attribute) > 0 {
+		list, err := splitGrantStatement(*upsert.Attribute)
+		if err != nil {
+			return err
+		}
+		for _, sql := range list {
+			if _, err := txn.ExecContext(ctx, sql.Text); err != nil {
+				return util.FormatErrorWithQuery(err, sql.Text)
+			}
+		}
+	}
+
+	return nil
+}
+
+func convertToUserContent(upsert *db.DatabaseRoleUpsertMessage) (string, error) {
+	var contentList []string
+	if upsert.Password != nil {
+		contentList = append(contentList, fmt.Sprintf(`IDENTIFIED BY '%s'`, *upsert.Password))
+	}
+	if upsert.ConnectionLimit != nil {
+		contentList = append(contentList, fmt.Sprintf(`WITH MAX_USER_CONNECTIONS %d`, *upsert.ConnectionLimit))
+	}
+	if upsert.ValidUntil != nil {
+		interval, err := strconv.Atoi(*upsert.ValidUntil)
+		if err != nil || interval < 0 {
+			return "", common.Wrapf(err, common.Invalid, "invalid MySQL expiration")
+		}
+		if interval == 0 {
+			contentList = append(contentList, "PASSWORD EXPIRE NEVER")
+		} else {
+			contentList = append(contentList, fmt.Sprintf("PASSWORD EXPIRE INTERVAL %d DAY", interval))
+		}
+	}
+	return strings.Join(contentList, " "), nil
+}
+
+func splitGrantStatement(stmts string) ([]parser.SingleSQL, error) {
+	list, err := parser.SplitMultiSQL(parser.MySQL, stmts)
+	if err != nil {
+		return nil, common.Wrapf(err, common.Invalid, "failed to split grant statement")
+	}
+
+	grantReg := regexp.MustCompile("(?i)^GRANT ")
+	for _, sql := range list {
+		if len(grantReg.FindString(sql.Text)) == 0 {
+			return nil, common.Wrapf(err, common.Invalid, "\"%s\" is not the GRANT statement", sql.Text)
+		}
+	}
+
+	return list, nil
+}
+
+func (driver *Driver) findRoleGrant(ctx context.Context, name string) (string, error) {
+	grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
+	grantRows, err := driver.db.QueryContext(ctx, grantQuery)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, grantQuery)
+	}
+	defer grantRows.Close()
+
+	grantList := []string{}
+	for grantRows.Next() {
+		var grant string
+		if err := grantRows.Scan(&grant); err != nil {
+			return "", err
+		}
+		grantList = append(grantList, grant)
+	}
+	if err := grantRows.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, grantQuery)
+	}
+
+	return strings.Join(grantList, ";\n"), nil
 }
 
 func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
