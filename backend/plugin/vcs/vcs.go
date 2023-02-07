@@ -144,15 +144,6 @@ type UserInfo struct {
 	State       State  `json:"state"`
 }
 
-// RepositoryMember is the API message for  repository member info.
-type RepositoryMember struct {
-	Email   string             `json:"email"`
-	Name    string             `json:"name"`
-	State   State              `json:"state"`
-	Role    common.ProjectRole `json:"role"`
-	VCSRole string             `json:"vcsRole"`
-}
-
 // Repository is the API message for repository info.
 type Repository struct {
 	ID       int64  `json:"id"`
@@ -221,18 +212,6 @@ type Provider interface {
 	// beforeCommit: the previous commit
 	// afterCommit: the current commit
 	GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]FileDiff, error)
-	// Fetch the user info of the given userID
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	// user: the ID or username of the desired user
-	FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, user string) (*UserInfo, error)
-	// Fetch all active members of a given repository
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*RepositoryMember, error)
 
 	// Fetch all repository within a given user's scope
 	//
