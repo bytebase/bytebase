@@ -15,6 +15,7 @@ export type Principal = {
   email: string;
   role: RoleType;
   serviceKey: string;
+  identityProviderName: string;
 };
 
 export type PrincipalCreate = {
