@@ -63,13 +63,6 @@ service IdentityProviderService {
       body: "*"
     };
   }
-
-  rpc GetIdentityProviderEndpoint(GetIdentityProviderEndpointRequest) returns (GetIdentityProviderEndpointResponse) {
-    option (google.api.http) = {
-      get: "/v1/idps/{name=idps/*}/endpoint"
-    };
-    option (google.api.method_signature) = "name";
-  }
 }
 
 message GetIdentityProviderRequest {
@@ -145,16 +138,6 @@ message TestIdentityProviderRequest {
   oneof context {
     OAuth2IdentityProviderTestRequestContext oauth2_context = 2;
   }
-}
-
-message GetIdentityProviderEndpointRequest {
-  // The name of the identity provider to get endpoint.
-  // Format: idps/{identity_provider}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message GetIdentityProviderEndpointResponse {
-  string auth_url = 1;
 }
 
 message OAuth2IdentityProviderTestRequestContext {

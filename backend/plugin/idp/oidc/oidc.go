@@ -26,15 +26,6 @@ type IdentityProviderConfig struct {
 	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
 }
 
-// GetEndpoint returns endpoint URLs for the given issuer.
-func GetEndpoint(issuer string) (oauth2.Endpoint, error) {
-	p, err := oidc.NewProvider(context.Background(), issuer)
-	if err != nil {
-		return oauth2.Endpoint{}, errors.Wrap(err, "create new provider")
-	}
-	return p.Endpoint(), nil
-}
-
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
 // configuration.
 func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*IdentityProvider, error) {

@@ -127,18 +127,6 @@ export interface TestIdentityProviderRequest {
   oauth2Context?: OAuth2IdentityProviderTestRequestContext | undefined;
 }
 
-export interface GetIdentityProviderEndpointRequest {
-  /**
-   * The name of the identity provider to get endpoint.
-   * Format: idps/{identity_provider}
-   */
-  name: string;
-}
-
-export interface GetIdentityProviderEndpointResponse {
-  authUrl: string;
-}
-
 export interface OAuth2IdentityProviderTestRequestContext {
   /** Authorize code from website. */
   code: string;
@@ -663,100 +651,6 @@ export const TestIdentityProviderRequest = {
     message.oauth2Context = (object.oauth2Context !== undefined && object.oauth2Context !== null)
       ? OAuth2IdentityProviderTestRequestContext.fromPartial(object.oauth2Context)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseGetIdentityProviderEndpointRequest(): GetIdentityProviderEndpointRequest {
-  return { name: "" };
-}
-
-export const GetIdentityProviderEndpointRequest = {
-  encode(message: GetIdentityProviderEndpointRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetIdentityProviderEndpointRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetIdentityProviderEndpointRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetIdentityProviderEndpointRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetIdentityProviderEndpointRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<GetIdentityProviderEndpointRequest>): GetIdentityProviderEndpointRequest {
-    const message = createBaseGetIdentityProviderEndpointRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseGetIdentityProviderEndpointResponse(): GetIdentityProviderEndpointResponse {
-  return { authUrl: "" };
-}
-
-export const GetIdentityProviderEndpointResponse = {
-  encode(message: GetIdentityProviderEndpointResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.authUrl !== "") {
-      writer.uint32(10).string(message.authUrl);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetIdentityProviderEndpointResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetIdentityProviderEndpointResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.authUrl = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetIdentityProviderEndpointResponse {
-    return { authUrl: isSet(object.authUrl) ? String(object.authUrl) : "" };
-  },
-
-  toJSON(message: GetIdentityProviderEndpointResponse): unknown {
-    const obj: any = {};
-    message.authUrl !== undefined && (obj.authUrl = message.authUrl);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<GetIdentityProviderEndpointResponse>): GetIdentityProviderEndpointResponse {
-    const message = createBaseGetIdentityProviderEndpointResponse();
-    message.authUrl = object.authUrl ?? "";
     return message;
   },
 };
@@ -1355,14 +1249,6 @@ export const IdentityProviderServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    getIdentityProviderEndpoint: {
-      name: "GetIdentityProviderEndpoint",
-      requestType: GetIdentityProviderEndpointRequest,
-      requestStream: false,
-      responseType: GetIdentityProviderEndpointResponse,
-      responseStream: false,
-      options: {},
-    },
   },
 } as const;
 
@@ -1395,10 +1281,6 @@ export interface IdentityProviderServiceImplementation<CallContextExt = {}> {
     request: TestIdentityProviderRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<TestIdentityProviderResponse>>;
-  getIdentityProviderEndpoint(
-    request: GetIdentityProviderEndpointRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetIdentityProviderEndpointResponse>>;
 }
 
 export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
@@ -1430,10 +1312,6 @@ export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<TestIdentityProviderRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<TestIdentityProviderResponse>;
-  getIdentityProviderEndpoint(
-    request: DeepPartial<GetIdentityProviderEndpointRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<GetIdentityProviderEndpointResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

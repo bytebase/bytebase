@@ -4,6 +4,8 @@ import {
   IdentityProvider,
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
+import axios from "axios";
+import { trimEnd } from "lodash-es";
 
 export async function openWindowForSSO(
   identityProvider: IdentityProvider
@@ -36,12 +38,17 @@ export async function openWindowForSSO(
       return null;
     }
 
-    const endpoint = await getIdentityProviderEndpoint(identityProvider);
+    const openidConfig = (
+      await axios.get(
+        `${trimEnd(oidcConfig.issuer, "/")}/.well-known/openid-configuration`
+      )
+    ).data;
+
     const redirectUrl = encodeURIComponent(
       `${window.location.origin}/oidc/callback`
     );
     return window.open(
-      `${endpoint.authUrl}?client_id=${
+      `${openidConfig.authorization_endpoint}?client_id=${
         oidcConfig.clientId
       }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
         oidcConfig.scopes.join(" ")

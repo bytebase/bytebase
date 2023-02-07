@@ -30,7 +30,6 @@ type IdentityProviderServiceClient interface {
 	DeleteIdentityProvider(ctx context.Context, in *DeleteIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteIdentityProvider(ctx context.Context, in *UndeleteIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
 	TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error)
-	GetIdentityProviderEndpoint(ctx context.Context, in *GetIdentityProviderEndpointRequest, opts ...grpc.CallOption) (*GetIdentityProviderEndpointResponse, error)
 }
 
 type identityProviderServiceClient struct {
@@ -104,15 +103,6 @@ func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context
 	return out, nil
 }
 
-func (c *identityProviderServiceClient) GetIdentityProviderEndpoint(ctx context.Context, in *GetIdentityProviderEndpointRequest, opts ...grpc.CallOption) (*GetIdentityProviderEndpointResponse, error) {
-	out := new(GetIdentityProviderEndpointResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.IdentityProviderService/GetIdentityProviderEndpoint", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // IdentityProviderServiceServer is the server API for IdentityProviderService service.
 // All implementations must embed UnimplementedIdentityProviderServiceServer
 // for forward compatibility
@@ -124,7 +114,6 @@ type IdentityProviderServiceServer interface {
 	DeleteIdentityProvider(context.Context, *DeleteIdentityProviderRequest) (*emptypb.Empty, error)
 	UndeleteIdentityProvider(context.Context, *UndeleteIdentityProviderRequest) (*IdentityProvider, error)
 	TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error)
-	GetIdentityProviderEndpoint(context.Context, *GetIdentityProviderEndpointRequest) (*GetIdentityProviderEndpointResponse, error)
 	mustEmbedUnimplementedIdentityProviderServiceServer()
 }
 
@@ -152,9 +141,6 @@ func (UnimplementedIdentityProviderServiceServer) UndeleteIdentityProvider(conte
 }
 func (UnimplementedIdentityProviderServiceServer) TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestIdentityProvider not implemented")
-}
-func (UnimplementedIdentityProviderServiceServer) GetIdentityProviderEndpoint(context.Context, *GetIdentityProviderEndpointRequest) (*GetIdentityProviderEndpointResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetIdentityProviderEndpoint not implemented")
 }
 func (UnimplementedIdentityProviderServiceServer) mustEmbedUnimplementedIdentityProviderServiceServer() {
 }
@@ -296,24 +282,6 @@ func _IdentityProviderService_TestIdentityProvider_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _IdentityProviderService_GetIdentityProviderEndpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetIdentityProviderEndpointRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(IdentityProviderServiceServer).GetIdentityProviderEndpoint(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.IdentityProviderService/GetIdentityProviderEndpoint",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IdentityProviderServiceServer).GetIdentityProviderEndpoint(ctx, req.(*GetIdentityProviderEndpointRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // IdentityProviderService_ServiceDesc is the grpc.ServiceDesc for IdentityProviderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -348,10 +316,6 @@ var IdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TestIdentityProvider",
 			Handler:    _IdentityProviderService_TestIdentityProvider_Handler,
-		},
-		{
-			MethodName: "GetIdentityProviderEndpoint",
-			Handler:    _IdentityProviderService_GetIdentityProviderEndpoint_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
