@@ -67,6 +67,9 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	}
+	if user.IdentityProviderResourceID != nil {
+		principal.IdentityProviderName = *user.IdentityProviderResourceID
+	}
 	return principal, nil
 }
 
