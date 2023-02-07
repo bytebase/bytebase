@@ -117,6 +117,16 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		if err := validIdentityProviderConfig(v1pb.IdentityProviderType(identityProvider.Type), request.IdentityProvider.Config); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		// Don't update client secret if it's empty string.
+		if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
+			if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
+				patch.Config.GetOauth2Config().ClientSecret = identityProvider.Config.GetOauth2Config().ClientSecret
+			}
+		} else if identityProvider.Type == storepb.IdentityProviderType_OIDC {
+			if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
+				patch.Config.GetOidcConfig().ClientSecret = identityProvider.Config.GetOidcConfig().ClientSecret
+			}
+		}
 	}
 
 	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
