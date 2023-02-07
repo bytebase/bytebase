@@ -30,11 +30,17 @@
             </template>
           </div>
         </BBTableCell>
-        <BBTableCell v-if="showCategoryColumn" class="w-[6rem]">
+        <BBTableCell
+          v-if="showCategoryColumn"
+          class="min-w-[4rem] max-w-[6rem] whitespace-nowrap"
+        >
           {{ row.category }}
         </BBTableCell>
-        <BBTableCell class="w-[18rem] break-all">
-          {{ row.title }}
+        <BBTableCell class="w-[12rem] break-all">
+          <template v-if="row.checkResult.code === 202">
+            {{ row.title }}
+          </template>
+          <template v-else> Disallow add column with default (404)</template>
         </BBTableCell>
         <BBTableCell class="w-auto">
           {{ row.checkResult.content }}
