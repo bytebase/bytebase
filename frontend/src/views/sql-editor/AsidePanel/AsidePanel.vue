@@ -8,10 +8,10 @@
           :dbl-click-splitter="false"
         >
           <Pane>
-            <DatabaseTree />
+            <DatabaseTree @alter-schema="$emit('alter-schema', $event)" />
           </Pane>
           <Pane v-if="showSchemaPanel" :size="40">
-            <SchemaPanel />
+            <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -26,10 +26,10 @@
           :dbl-click-splitter="false"
         >
           <Pane>
-            <DatabaseTree />
+            <DatabaseTree @alter-schema="$emit('alter-schema', $event)" />
           </Pane>
           <Pane v-if="showSchemaPanel" :size="40">
-            <SchemaPanel />
+            <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -48,8 +48,15 @@ import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
 import { Splitpanes, Pane } from "splitpanes";
-import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
+import { ConnectionTreeMode, DatabaseId, UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermission } from "@/utils";
+
+defineEmits<{
+  (
+    event: "alter-schema",
+    params: { databaseId: DatabaseId; schema: string; table: string }
+  ): void;
+}>();
 
 const currentUser = useCurrentUser();
 const tabStore = useTabStore();
