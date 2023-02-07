@@ -250,9 +250,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 				return nil, err
 			}
 			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
-			if find.IdentityProviderUserIdentifier != "" {
-				where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
-			}
+			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 		}
 	}
 	rows, err := tx.QueryContext(ctx, `
