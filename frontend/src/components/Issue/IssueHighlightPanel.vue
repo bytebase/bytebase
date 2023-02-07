@@ -53,7 +53,7 @@
             }}</a>
 
             <i18n-t
-              v-if="commit && commit.id"
+              v-if="commit && commit.id && commit.url"
               keypath="issue.commit-by-at"
               tag="span"
             >
