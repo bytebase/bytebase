@@ -32,7 +32,7 @@
     <BBModal
       v-if="state.showModal"
       :title="$t('task.check-result.title', { name: task.name })"
-      class="!w-[54rem]"
+      class="!w-[56rem]"
       header-class="whitespace-pre-wrap break-all gap-x-1"
       @close="dismissDialog"
     >

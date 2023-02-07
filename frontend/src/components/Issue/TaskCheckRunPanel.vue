@@ -30,10 +30,10 @@
             </template>
           </div>
         </BBTableCell>
-        <BBTableCell v-if="showCategoryColumn" class="w-32">
+        <BBTableCell v-if="showCategoryColumn" class="w-[6rem]">
           {{ row.category }}
         </BBTableCell>
-        <BBTableCell class="w-48 break-all">
+        <BBTableCell class="w-[18rem] break-all">
           {{ row.title }}
         </BBTableCell>
         <BBTableCell class="w-auto">
@@ -143,7 +143,7 @@ const categoryAndTitle = (checkResult: TaskCheckResult): [string, string] => {
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
       const category = t(key);
       const title = `${ruleLocalization.title} (${checkResult.code})`;
-      return [`[${category}]`, title];
+      return [category, title];
     } else {
       return ["", `${checkResult.title} (${checkResult.code})`];
     }
