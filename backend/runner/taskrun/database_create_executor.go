@@ -94,12 +94,16 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 			return true, nil, err
 		}
 		schemaVersion = sv
-		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
-		if err != nil {
-			return true, nil, err
-		}
-		if !strings.Contains(payload.Statement, connectionStmt) {
-			statement = fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, schema)
+		if instance.Engine == db.Spanner {
+			statement = fmt.Sprintf("%s;%s", statement, schema)
+		} else {
+			connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
+			if err != nil {
+				return true, nil, err
+			}
+			if !strings.Contains(payload.Statement, connectionStmt) {
+				statement = fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, schema)
+			}
 		}
 	}
 	if schemaVersion == "" {

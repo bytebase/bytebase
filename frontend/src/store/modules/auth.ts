@@ -14,6 +14,7 @@ import {
   PrincipalId,
   AuthProvider,
   BytebaseLoginInfo,
+  UNKNOWN_ID,
 } from "@/types";
 import { getIntCookie } from "@/utils";
 import { authServiceClient } from "@/grpcweb";
@@ -178,5 +179,7 @@ export const useCurrentUser = (): Ref<Principal> => {
 
 export const useIsLoggedIn = (): Ref<boolean> => {
   const store = useAuthStore();
-  return computed(() => store.isLoggedIn());
+  return computed(
+    () => store.isLoggedIn() && store.currentUser.id !== UNKNOWN_ID
+  );
 };

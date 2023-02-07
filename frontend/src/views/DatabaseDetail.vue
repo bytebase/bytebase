@@ -1,5 +1,9 @@
 <template>
-  <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
+  <div
+    class="flex-1 overflow-auto focus:outline-none"
+    tabindex="0"
+    v-bind="$attrs"
+  >
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
       <div
@@ -552,6 +556,13 @@ const changeDataText = computed(() => {
 });
 
 const tabItemList = computed((): BBTabFilterItem[] => {
+  if (database.value.instance.engine === "SPANNER") {
+    return databaseTabItemList
+      .filter((item) => item.hash !== "backup-and-restore")
+      .map((item) => {
+        return { title: item.name, alert: false };
+      });
+  }
   return databaseTabItemList.map((item) => {
     return { title: item.name, alert: false };
   });
