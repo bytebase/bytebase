@@ -235,6 +235,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("idp.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
 	var userMessages []*UserMessage
