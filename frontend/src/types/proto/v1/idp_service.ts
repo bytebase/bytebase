@@ -171,6 +171,7 @@ export interface OIDCIdentityProviderConfig {
   issuer: string;
   clientId: string;
   clientSecret: string;
+  scopes: string[];
   fieldMapping?: FieldMapping;
 }
 
@@ -187,9 +188,9 @@ export interface OIDCIdentityProviderConfig {
 export interface FieldMapping {
   /** Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. */
   identifier: string;
-  /** DisplayName is the field name of display name in 3rd-party idp user info. Required. */
+  /** DisplayName is the field name of display name in 3rd-party idp user info. */
   displayName: string;
-  /** Email is the field name of primary email in 3rd-party idp user info. Required. */
+  /** Email is the field name of primary email in 3rd-party idp user info. */
   email: string;
 }
 
@@ -1029,7 +1030,7 @@ export const OAuth2IdentityProviderConfig = {
 };
 
 function createBaseOIDCIdentityProviderConfig(): OIDCIdentityProviderConfig {
-  return { issuer: "", clientId: "", clientSecret: "", fieldMapping: undefined };
+  return { issuer: "", clientId: "", clientSecret: "", scopes: [], fieldMapping: undefined };
 }
 
 export const OIDCIdentityProviderConfig = {
@@ -1043,8 +1044,11 @@ export const OIDCIdentityProviderConfig = {
     if (message.clientSecret !== "") {
       writer.uint32(26).string(message.clientSecret);
     }
+    for (const v of message.scopes) {
+      writer.uint32(34).string(v!);
+    }
     if (message.fieldMapping !== undefined) {
-      FieldMapping.encode(message.fieldMapping, writer.uint32(34).fork()).ldelim();
+      FieldMapping.encode(message.fieldMapping, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -1066,6 +1070,9 @@ export const OIDCIdentityProviderConfig = {
           message.clientSecret = reader.string();
           break;
         case 4:
+          message.scopes.push(reader.string());
+          break;
+        case 5:
           message.fieldMapping = FieldMapping.decode(reader, reader.uint32());
           break;
         default:
@@ -1081,6 +1088,7 @@ export const OIDCIdentityProviderConfig = {
       issuer: isSet(object.issuer) ? String(object.issuer) : "",
       clientId: isSet(object.clientId) ? String(object.clientId) : "",
       clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
+      scopes: Array.isArray(object?.scopes) ? object.scopes.map((e: any) => String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
     };
   },
@@ -1090,6 +1098,11 @@ export const OIDCIdentityProviderConfig = {
     message.issuer !== undefined && (obj.issuer = message.issuer);
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
+    if (message.scopes) {
+      obj.scopes = message.scopes.map((e) => e);
+    } else {
+      obj.scopes = [];
+    }
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
     return obj;
@@ -1100,6 +1113,7 @@ export const OIDCIdentityProviderConfig = {
     message.issuer = object.issuer ?? "";
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
+    message.scopes = object.scopes?.map((e) => e) || [];
     message.fieldMapping = (object.fieldMapping !== undefined && object.fieldMapping !== null)
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
