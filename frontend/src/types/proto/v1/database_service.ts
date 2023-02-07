@@ -2,6 +2,7 @@
 import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Operation } from "../google/longrunning/operations";
 import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -116,6 +117,41 @@ export interface GetBackupSettingRequest {
 export interface UpdateBackupSettingRequest {
   /** The database backup setting to update. */
   setting?: BackupSetting;
+}
+
+/** CreateBackupRequest is the request message for CreateBackup. */
+export interface CreateBackupRequest {
+  backup?: Backup;
+}
+
+/** ListBackupRequest is the request message for ListBackup. */
+export interface ListBackupRequest {
+  parent: string;
+  /**
+   * Not used. The maximum number of backups to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 backups will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListBackup` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListBackup` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListBackupResponse {
+  /** The backups from the specified request. */
+  backups: Backup[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
 }
 
 export interface Database {
@@ -323,6 +359,132 @@ export interface BackupSetting {
   cronSchedule: string;
   /** hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. */
   hookUrl: string;
+}
+
+/**
+ * OperationMetadata is the metadata for database operations.
+ * Empty for now.
+ */
+export interface OperationMetadata {
+}
+
+/** The message of the backup. */
+export interface Backup {
+  /**
+   * The name of the database backup.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
+   */
+  name: string;
+  /** The timestamp when the backup resource was pending to create. */
+  pendingCreateTime?: Date;
+  /** The timestamp when the backup resource was updated. */
+  updateTime?: Date;
+  /** The state of the backup. */
+  state: Backup_BackupState;
+  /** The type of the backup. */
+  backupType: Backup_BackupType;
+  /** The comment of the backup. */
+  comment: string;
+}
+
+/** The type of the backup. */
+export enum Backup_BackupType {
+  /** BACKUP_TYPE_UNSPECIFIED - The type of the backup is unknown. */
+  BACKUP_TYPE_UNSPECIFIED = 0,
+  /** MANUAL - The backup is created by user. */
+  MANUAL = 1,
+  /** AUTOMATIC - The backup is created by automatic backup. */
+  AUTOMATIC = 2,
+  /** PITR - The backup is created automatically after doing PITR. */
+  PITR = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function backup_BackupTypeFromJSON(object: any): Backup_BackupType {
+  switch (object) {
+    case 0:
+    case "BACKUP_TYPE_UNSPECIFIED":
+      return Backup_BackupType.BACKUP_TYPE_UNSPECIFIED;
+    case 1:
+    case "MANUAL":
+      return Backup_BackupType.MANUAL;
+    case 2:
+    case "AUTOMATIC":
+      return Backup_BackupType.AUTOMATIC;
+    case 3:
+    case "PITR":
+      return Backup_BackupType.PITR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Backup_BackupType.UNRECOGNIZED;
+  }
+}
+
+export function backup_BackupTypeToJSON(object: Backup_BackupType): string {
+  switch (object) {
+    case Backup_BackupType.BACKUP_TYPE_UNSPECIFIED:
+      return "BACKUP_TYPE_UNSPECIFIED";
+    case Backup_BackupType.MANUAL:
+      return "MANUAL";
+    case Backup_BackupType.AUTOMATIC:
+      return "AUTOMATIC";
+    case Backup_BackupType.PITR:
+      return "PITR";
+    case Backup_BackupType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** The state of the backup. */
+export enum Backup_BackupState {
+  /** BACKUP_STATE_UNSPECIFIED - The state of the backup is unknown. */
+  BACKUP_STATE_UNSPECIFIED = 0,
+  /** PENDING_CREATE - The backup is being pending to create. */
+  PENDING_CREATE = 1,
+  /** DONE - The backup is ready to use. */
+  DONE = 2,
+  /** FAILED - The backup is being deleted. */
+  FAILED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function backup_BackupStateFromJSON(object: any): Backup_BackupState {
+  switch (object) {
+    case 0:
+    case "BACKUP_STATE_UNSPECIFIED":
+      return Backup_BackupState.BACKUP_STATE_UNSPECIFIED;
+    case 1:
+    case "PENDING_CREATE":
+      return Backup_BackupState.PENDING_CREATE;
+    case 2:
+    case "DONE":
+      return Backup_BackupState.DONE;
+    case 3:
+    case "FAILED":
+      return Backup_BackupState.FAILED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Backup_BackupState.UNRECOGNIZED;
+  }
+}
+
+export function backup_BackupStateToJSON(object: Backup_BackupState): string {
+  switch (object) {
+    case Backup_BackupState.BACKUP_STATE_UNSPECIFIED:
+      return "BACKUP_STATE_UNSPECIFIED";
+    case Backup_BackupState.PENDING_CREATE:
+      return "PENDING_CREATE";
+    case Backup_BackupState.DONE:
+      return "DONE";
+    case Backup_BackupState.FAILED:
+      return "FAILED";
+    case Backup_BackupState.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -874,6 +1036,184 @@ export const UpdateBackupSettingRequest = {
     message.setting = (object.setting !== undefined && object.setting !== null)
       ? BackupSetting.fromPartial(object.setting)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateBackupRequest(): CreateBackupRequest {
+  return { backup: undefined };
+}
+
+export const CreateBackupRequest = {
+  encode(message: CreateBackupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.backup !== undefined) {
+      Backup.encode(message.backup, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateBackupRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateBackupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.backup = Backup.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateBackupRequest {
+    return { backup: isSet(object.backup) ? Backup.fromJSON(object.backup) : undefined };
+  },
+
+  toJSON(message: CreateBackupRequest): unknown {
+    const obj: any = {};
+    message.backup !== undefined && (obj.backup = message.backup ? Backup.toJSON(message.backup) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<CreateBackupRequest>): CreateBackupRequest {
+    const message = createBaseCreateBackupRequest();
+    message.backup = (object.backup !== undefined && object.backup !== null)
+      ? Backup.fromPartial(object.backup)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseListBackupRequest(): ListBackupRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListBackupRequest = {
+  encode(message: ListBackupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListBackupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
+          message.pageSize = reader.int32();
+          break;
+        case 3:
+          message.pageToken = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListBackupRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListBackupRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<ListBackupRequest>): ListBackupRequest {
+    const message = createBaseListBackupRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListBackupResponse(): ListBackupResponse {
+  return { backups: [], nextPageToken: "" };
+}
+
+export const ListBackupResponse = {
+  encode(message: ListBackupResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.backups) {
+      Backup.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListBackupResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.backups.push(Backup.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.nextPageToken = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListBackupResponse {
+    return {
+      backups: Array.isArray(object?.backups) ? object.backups.map((e: any) => Backup.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListBackupResponse): unknown {
+    const obj: any = {};
+    if (message.backups) {
+      obj.backups = message.backups.map((e) => e ? Backup.toJSON(e) : undefined);
+    } else {
+      obj.backups = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<ListBackupResponse>): ListBackupResponse {
+    const message = createBaseListBackupResponse();
+    message.backups = object.backups?.map((e) => Backup.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
@@ -2030,6 +2370,139 @@ export const BackupSetting = {
   },
 };
 
+function createBaseOperationMetadata(): OperationMetadata {
+  return {};
+}
+
+export const OperationMetadata = {
+  encode(_: OperationMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OperationMetadata {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOperationMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): OperationMetadata {
+    return {};
+  },
+
+  toJSON(_: OperationMetadata): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(_: DeepPartial<OperationMetadata>): OperationMetadata {
+    const message = createBaseOperationMetadata();
+    return message;
+  },
+};
+
+function createBaseBackup(): Backup {
+  return { name: "", pendingCreateTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "" };
+}
+
+export const Backup = {
+  encode(message: Backup, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.pendingCreateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.pendingCreateTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.state !== 0) {
+      writer.uint32(32).int32(message.state);
+    }
+    if (message.backupType !== 0) {
+      writer.uint32(40).int32(message.backupType);
+    }
+    if (message.comment !== "") {
+      writer.uint32(50).string(message.comment);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Backup {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBackup();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.pendingCreateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 3:
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 4:
+          message.state = reader.int32() as any;
+          break;
+        case 5:
+          message.backupType = reader.int32() as any;
+          break;
+        case 6:
+          message.comment = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Backup {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      pendingCreateTime: isSet(object.pendingCreateTime) ? fromJsonTimestamp(object.pendingCreateTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      state: isSet(object.state) ? backup_BackupStateFromJSON(object.state) : 0,
+      backupType: isSet(object.backupType) ? backup_BackupTypeFromJSON(object.backupType) : 0,
+      comment: isSet(object.comment) ? String(object.comment) : "",
+    };
+  },
+
+  toJSON(message: Backup): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.pendingCreateTime !== undefined && (obj.pendingCreateTime = message.pendingCreateTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.state !== undefined && (obj.state = backup_BackupStateToJSON(message.state));
+    message.backupType !== undefined && (obj.backupType = backup_BackupTypeToJSON(message.backupType));
+    message.comment !== undefined && (obj.comment = message.comment);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<Backup>): Backup {
+    const message = createBaseBackup();
+    message.name = object.name ?? "";
+    message.pendingCreateTime = object.pendingCreateTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
+    message.state = object.state ?? 0;
+    message.backupType = object.backupType ?? 0;
+    message.comment = object.comment ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -2099,6 +2572,22 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    createBackup: {
+      name: "CreateBackup",
+      requestType: CreateBackupRequest,
+      requestStream: false,
+      responseType: Operation,
+      responseStream: false,
+      options: {},
+    },
+    listBackup: {
+      name: "ListBackup",
+      requestType: ListBackupRequest,
+      requestStream: false,
+      responseType: ListBackupResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -2129,6 +2618,11 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: UpdateBackupSettingRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BackupSetting>>;
+  createBackup(request: CreateBackupRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Operation>>;
+  listBackup(
+    request: ListBackupRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListBackupResponse>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -2161,6 +2655,11 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BackupSetting>;
+  createBackup(request: DeepPartial<CreateBackupRequest>, options?: CallOptions & CallOptionsExt): Promise<Operation>;
+  listBackup(
+    request: DeepPartial<ListBackupRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListBackupResponse>;
 }
 
 declare var self: any | undefined;
