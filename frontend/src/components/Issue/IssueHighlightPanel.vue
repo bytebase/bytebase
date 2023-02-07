@@ -131,7 +131,10 @@ const pushEvent = computed((): VCSPushEvent | undefined => {
 });
 
 const commit = computed(() => {
-  return head(pushEvent.value?.commits);
+  // Use commits[0] for new format
+  // Use fileCommit for legacy data (if possible)
+  // Use undefined otherwise
+  return head(pushEvent.value?.commits) ?? pushEvent.value?.fileCommit;
 });
 
 const vcsBranch = computed((): string => {
