@@ -1,5 +1,9 @@
 <template>
-  <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
+  <div
+    class="flex-1 overflow-auto focus:outline-none"
+    tabindex="0"
+    v-bind="$attrs"
+  >
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
       <div
