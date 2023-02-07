@@ -15,10 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type roleFind struct {
-	Name *string
-}
-
 // CreateRole creates the role.
 func (driver *Driver) CreateRole(ctx context.Context, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
@@ -31,9 +27,7 @@ func (driver *Driver) CreateRole(ctx context.Context, upsert *db.DatabaseRoleUps
 		return nil, err
 	}
 
-	roles, err := driver.findRoleImpl(ctx, &roleFind{
-		Name: &upsert.Name,
-	})
+	roles, err := driver.findRoleImpl(ctx, &upsert.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +54,7 @@ func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *d
 		return nil, err
 	}
 
-	roles, err := driver.findRoleImpl(ctx, &roleFind{
-		Name: &upsert.Name,
-	})
+	roles, err := driver.findRoleImpl(ctx, &upsert.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +71,7 @@ func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *d
 
 // FindRole finds the role by name.
 func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.DatabaseRoleMessage, error) {
-	roles, err := driver.findRoleImpl(ctx, &roleFind{Name: &roleName})
+	roles, err := driver.findRoleImpl(ctx, &roleName)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +84,7 @@ func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.Databa
 
 // ListRole lists the role.
 func (driver *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	roles, err := driver.findRoleImpl(ctx, &roleFind{})
+	roles, err := driver.findRoleImpl(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +102,14 @@ func (driver *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-func (driver *Driver) findRoleImpl(ctx context.Context, find *roleFind) ([]*db.DatabaseRoleMessage, error) {
-	if find.Name != nil {
-		attribute, err := driver.findRoleGrant(ctx, *find.Name)
+func (driver *Driver) findRoleImpl(ctx context.Context, name *string) ([]*db.DatabaseRoleMessage, error) {
+	if name != nil {
+		attribute, err := driver.findRoleGrant(ctx, *name)
 		if err != nil {
 			return nil, err
 		}
 
-		user, host := parseNameAndHost(*find.Name)
+		user, host := parseNameAndHost(*name)
 		maxUserConnection, lifetime, err := driver.findConnectionLimitAndExpiration(ctx, user, host)
 		if err != nil {
 			return nil, err
@@ -130,7 +122,7 @@ func (driver *Driver) findRoleImpl(ctx context.Context, find *roleFind) ([]*db.D
 		}
 		return []*db.DatabaseRoleMessage{
 			{
-				Name:            *find.Name,
+				Name:            *name,
 				Attribute:       &attribute,
 				ConnectionLimit: maxUserConnection,
 				ValidUntil:      lifetimeString,
