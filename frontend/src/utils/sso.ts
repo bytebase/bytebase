@@ -1,5 +1,4 @@
 import { OAuthStateSessionKey } from "@/types";
-import { getIdentityProviderEndpoint } from "@/store";
 import {
   IdentityProvider,
   IdentityProviderType,
