@@ -224,6 +224,9 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 // GetUserByEmailV2 gets an instance of Principal.
 func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
+	// Do not to select those archived IdP user.
+	where, args = append(where, fmt.Sprintf("principal.idp_id IS NULL OR idp.row_status = $%d", len(args)+1)), append(args, api.Normal)
+
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -235,7 +238,6 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
-		where, args = append(where, fmt.Sprintf("idp.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
 	var userMessages []*UserMessage
