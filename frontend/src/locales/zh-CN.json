@@ -1455,7 +1455,7 @@
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
     "visualize-explain": "可视化 Explain",
-    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。",
+    "sql-execute-in-protected-environment": "小心，你正在操作生产环境下的数据库。",
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",

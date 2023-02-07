@@ -1,10 +1,11 @@
 <template>
   <div
     v-if="!tabStore.isDisconnected"
-    class="w-full py-1 px-4 flex justify-between items-center border-b"
-    :class="[isProtectedEnvironment && 'bg-yellow-50']"
+    class="w-full flex justify-between items-center"
   >
-    <div class="flex justify-start items-center">
+    <div
+      class="flex justify-start items-center px-4 py-1 rounded-br-md bg-white"
+    >
       <NPopover
         v-if="selectedInstance.id !== UNKNOWN_ID && !hasReadonlyDataSource"
         trigger="hover"
@@ -102,10 +103,11 @@
       </NPopover>
     </div>
 
-    <div :class="[isProtectedEnvironment ? 'text-yellow-700' : 'text-main']">
-      <template v-if="isProtectedEnvironment">
-        {{ $t("sql-editor.sql-execute-in-protected-environment") }}
-      </template>
+    <div
+      v-if="isProtectedEnvironment"
+      class="flex justify-start items-center px-4 py-1 rounded-bl-md text-white bg-error"
+    >
+      {{ $t("sql-editor.sql-execute-in-protected-environment") }}
     </div>
   </div>
 </template>
@@ -127,9 +129,11 @@ const connection = computed(() => tabStore.currentTab.connection);
 const selectedInstance = useInstanceById(
   computed(() => connection.value.instanceId)
 );
+
 const selectedDatabase = useDatabaseById(
   computed(() => connection.value.databaseId)
 );
+
 const isProtectedEnvironment = computed(() => {
   const instance = selectedInstance.value;
   return instance.environment.tier === "PROTECTED";
