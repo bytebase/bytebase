@@ -1,11 +1,9 @@
 <template>
   <div
     v-if="!tabStore.isDisconnected"
-    class="w-full flex justify-between items-center"
+    class="w-full flex justify-between items-start"
   >
-    <div
-      class="flex justify-start items-center px-4 py-1 rounded-br-md bg-white"
-    >
+    <div class="flex justify-start items-center h-8 px-4 rounded-br bg-white">
       <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
         <template #trigger>
           <heroicons-outline:exclamation
@@ -67,7 +65,7 @@
 
     <div
       v-if="isProtectedEnvironment"
-      class="flex justify-start items-center px-4 py-1 rounded-bl-md text-white bg-error"
+      class="flex justify-start items-center h-8 px-4 rounded-bl text-white bg-error"
     >
       {{ $t("sql-editor.sql-execute-in-protected-environment") }}
     </div>
@@ -101,6 +99,10 @@ const isProtectedEnvironment = computed(() => {
   return instance.environment.tier === "PROTECTED";
 });
 
+const isAdminMode = computed(() => {
+  return tabStore.currentTab.mode === TabMode.Admin;
+});
+
 const hasReadonlyDataSource = computed(() => {
   for (const ds of selectedInstance.value.dataSourceList) {
     if (ds.type === "RO") {
@@ -112,7 +114,7 @@ const hasReadonlyDataSource = computed(() => {
 
 const showReadonlyDatasourceWarning = computed(() => {
   return (
-    tabStore.currentTab.mode === TabMode.ReadOnly &&
+    !isAdminMode.value &&
     selectedInstance.value.id !== UNKNOWN_ID &&
     !hasReadonlyDataSource.value
   );
