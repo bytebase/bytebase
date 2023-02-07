@@ -52,18 +52,22 @@
               `${vcsBranch}@${pushEvent.repositoryFullPath}`
             }}</a>
 
-            <i18n-t v-if="commit" keypath="issue.commit-by-at" tag="span">
+            <i18n-t
+              v-if="commit && commit.id"
+              keypath="issue.commit-by-at"
+              tag="span"
+            >
               <template #id>
-                <a :href="commit.URL" target="_blank" class="normal-link"
-                  >{{ commit.ID.substring(0, 7) }}:</a
+                <a :href="commit.url" target="_blank" class="normal-link"
+                  >{{ commit.id.substring(0, 7) }}:</a
                 >
               </template>
               <template #title>
-                <span class="text-main">{{ commit.Title }}</span>
+                <span class="text-main">{{ commit.title }}</span>
               </template>
               <template #author>{{ pushEvent.authorName }}</template>
               <template #time>{{
-                dayjs(commit.CreatedTs * 1000).format("LLL")
+                dayjs(commit.createdTs * 1000).format("LLL")
               }}</template>
             </i18n-t>
           </p>

@@ -54,15 +54,15 @@ export type VCSFileCommit = {
 };
 
 export type VCSCommit = {
-  ID: string;
-  Title: string;
-  Message: string;
-  CreatedTs: number;
-  URL: string;
-  AuthorName: string;
-  AuthorEmail: string;
-  AddedList: string[];
-  ModifiedList: string[];
+  id: string;
+  title: string;
+  message: string;
+  createdTs: number;
+  url: string;
+  authorName: string;
+  authorEmail: string;
+  addedList: string[];
+  modifiedList: string[];
 };
 
 export type VCSPushEvent = {
