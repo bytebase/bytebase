@@ -74,7 +74,10 @@
             />
             <!-- pb-1.5 is to avoid flicking when entering/existing the editing state -->
             <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
-              {{ principal.name }}
+              {{ principal.name
+              }}<span class="text-gray-400">{{
+                getUserRelatedDomainName()
+              }}</span>
             </h1>
             <span
               v-if="principal.type === 'SERVICE_ACCOUNT'"
@@ -200,6 +203,7 @@ import { hasWorkspacePermission } from "../utils";
 import {
   featureToRef,
   useCurrentUser,
+  useIdentityProviderStore,
   usePrincipalStore,
   useUserStore,
 } from "@/store";
@@ -218,6 +222,7 @@ const props = defineProps<{
 const currentUser = useCurrentUser();
 const principalStore = usePrincipalStore();
 const userStore = useUserStore();
+const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   editing: false,
 });
@@ -264,6 +269,16 @@ const isSSOUser = computed(() => {
   const name = `users/${principal.value.id}`;
   return userStore.userMapByName.get(name)?.identityProvider !== "";
 });
+
+const getUserRelatedDomainName = () => {
+  const idp = identityProviderStore.getIdentityProviderByName(
+    `idps/${principal.value.identityProviderName}`
+  );
+  if (!idp) {
+    return "";
+  }
+  return `@${idp.domain}`;
+};
 
 // User can change her own info.
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.

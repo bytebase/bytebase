@@ -1047,7 +1047,6 @@
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
-    "branch-specify-tip": "诀窍: 可以使用空字符串跟踪所有分支的变更.",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
@@ -1258,7 +1257,7 @@
   "version-control": {
     "setting": {
       "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
-      "description-highlight": "配置 VCS 后，在付费版订阅下，Bytebase 将自动开启通过 VCS 的第三方认证登录",
+      "description-highlight": "如果你想通过你配置的VCS启用第三方登录，请在SSO中进行配置。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
         "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
+	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -279,6 +280,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					Issuer:       v.Issuer,
 					ClientId:     v.ClientId,
 					ClientSecret: "", // SECURITY: We do not expose the client secret
+					Scopes:       oidc.DefaultScopes,
 					FieldMapping: &fieldMapping,
 				},
 			},

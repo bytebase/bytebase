@@ -25,6 +25,7 @@ function convert(principal: ResourceObject): Principal {
     email: principal.attributes.email as string,
     role: principal.attributes.role as RoleType,
     serviceKey: principal.attributes.serviceKey as string,
+    identityProviderName: principal.attributes.identityProviderName as string,
   };
 }
 
