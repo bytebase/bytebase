@@ -6,6 +6,7 @@ export type ServerInfo = {
   externalUrl: string;
   needAdminSetup: boolean;
   startedTs: number;
+  disallowSignup: boolean;
 };
 
 export type Release = {
