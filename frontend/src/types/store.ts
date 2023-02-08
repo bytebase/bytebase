@@ -171,7 +171,7 @@ export interface VCSState {
 }
 
 export interface RepositoryState {
-  // repositoryListByVCSId are used in workspace version control panel, while repositoryByProjectId are used in project version control panel.
+  // repositoryListByVCSId are used in workspace GitOps panel, while repositoryByProjectId are used in project GitOps panel.
   // Because they are used separately, so we don't need to worry about repository inconsistency issue between them.
   repositoryListByVCSId: Map<VCSId, Repository[]>;
   repositoryByProjectId: Map<ProjectId, Repository>;

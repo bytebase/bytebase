@@ -1,13 +1,13 @@
 <template>
   <div class="text-lg leading-6 font-medium text-main">
-    <i18n-t keypath="repository.version-control-status">
+    <i18n-t keypath="repository.gitops-status">
       <template #status>
         <span class="text-success"> {{ $t("common.enabled") }} </span>
       </template>
     </i18n-t>
   </div>
   <div class="mt-2 textinfolabel">
-    <i18n-t keypath="repository.version-control-description-file-path">
+    <i18n-t keypath="repository.gitops-description-file-path">
       <template #fullPath>
         <a class="normal-link" :href="repository.webUrl" target="_blank">{{
           repository.fullPath
@@ -22,7 +22,7 @@
       </template>
     </i18n-t>
     <span>&nbsp;</span>
-    <i18n-t keypath="repository.version-control-description-branch">
+    <i18n-t keypath="repository.gitops-description-branch">
       <template #branch>
         <span class="font-medium text-main">
           <template v-if="state.repositoryConfig.branchFilter">
@@ -36,9 +36,7 @@
     </i18n-t>
     <template v-if="state.repositoryConfig.schemaPathTemplate">
       <span>&nbsp;</span>
-      <i18n-t
-        keypath="repository.version-control-description-description-schema-path"
-      >
+      <i18n-t keypath="repository.gitops-description-description-schema-path">
         <template #schemaPathTemplate>
           <span class="font-medium text-main">{{
             state.repositoryConfig.schemaPathTemplate
@@ -488,7 +486,7 @@ export default defineComponent({
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("repository.update-version-control-config-success"),
+        title: t("repository.update-gitops-config-success"),
       });
     };
 
