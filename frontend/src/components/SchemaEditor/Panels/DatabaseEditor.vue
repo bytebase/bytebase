@@ -1,62 +1,86 @@
 <template>
   <div class="flex flex-col w-full h-full overflow-y-auto">
-    <div
-      class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
-    >
-      <span
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedSubtab === 'table-list' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('table-list')"
-        >{{ $t("schema-editor.table-list") }}</span
-      >
-      <span
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedSubtab === 'raw-sql' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('raw-sql')"
-        >{{ $t("schema-editor.raw-sql") }}</span
-      >
-      <span
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedSubtab === 'schema-diagram' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('schema-diagram')"
-        >{{ $t("schema-diagram.self") }}</span
-      >
+    <div class="py-2 w-full flex flex-row justify-between items-center">
+      <div>
+        <div
+          v-if="state.selectedSubtab === 'table-list'"
+          class="w-full flex justify-between items-center space-x-2"
+        >
+          <div class="flex flex-row justify-start items-center">
+            <div
+              v-if="shouldShowSchemaSelector"
+              class="ml-2 flex flex-row justify-start items-center mr-3 text-sm"
+            >
+              <span class="mr-1">Schema:</span>
+              <n-select
+                v-model:value="state.selectedSchemaId"
+                class="min-w-[8rem]"
+                :options="schemaSelectorOptionList"
+              />
+            </div>
+            <button
+              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!allowCreateTable"
+              @click="handleCreateNewTable"
+            >
+              <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+              {{ $t("schema-editor.actions.create-table") }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end items-center">
+        <NInput
+          v-if="state.selectedSubtab === 'table-list'"
+          v-model:value="searchPattern"
+          class="!w-48 mr-3"
+          :placeholder="$t('schema-editor.search-table')"
+        >
+          <template #prefix>
+            <heroicons-outline:search class="w-4 h-auto text-gray-300" />
+          </template>
+        </NInput>
+        <div
+          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
+        >
+          <button
+            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
+            :class="
+              state.selectedSubtab === 'table-list' &&
+              'bg-gray-200 text-gray-800'
+            "
+            @click="handleChangeTab('table-list')"
+          >
+            <heroicons-outline:queue-list class="inline w-4 h-auto mr-1" />
+            {{ $t("schema-editor.tables") }}
+          </button>
+          <button
+            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
+            :class="
+              state.selectedSubtab === 'raw-sql' && 'bg-gray-200 text-gray-800'
+            "
+            @click="handleChangeTab('raw-sql')"
+          >
+            <heroicons-outline:clipboard class="inline w-4 h-auto mr-1" />
+            {{ $t("schema-editor.raw-sql") }}
+          </button>
+          <button
+            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
+            :class="
+              state.selectedSubtab === 'schema-diagram' &&
+              'bg-gray-200 text-gray-800'
+            "
+            @click="handleChangeTab('schema-diagram')"
+          >
+            <SchemaDiagramIcon class="mr-1" />
+            {{ $t("schema-diagram.self") }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- List view -->
     <template v-if="state.selectedSubtab === 'table-list'">
-      <div class="py-2 w-full flex justify-between items-center space-x-2">
-        <div class="flex flex-row justify-start items-center">
-          <div
-            v-if="shouldShowSchemaSelector"
-            class="ml-2 flex flex-row justify-start items-center mr-3 text-sm"
-          >
-            <span class="mr-1">Schema:</span>
-            <n-select
-              v-model:value="state.selectedSchemaId"
-              class="min-w-[8rem]"
-              :options="schemaSelectorOptionList"
-            />
-          </div>
-          <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="!allowCreateTable"
-            @click="handleCreateNewTable"
-          >
-            <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-            {{ $t("schema-editor.actions.create-table") }}
-          </button>
-        </div>
-      </div>
       <!-- table list -->
       <div
         class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
@@ -76,7 +100,7 @@
         <!-- table body -->
         <div class="w-full">
           <div
-            v-for="(table, index) in tableList"
+            v-for="(table, index) in shownTableList"
             :key="`${index}-${table.name}`"
             class="grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] text-sm even:bg-gray-50"
             :class="
@@ -181,7 +205,7 @@
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, reactive, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
@@ -204,7 +228,7 @@ import {
 } from "@/utils/schemaEditor/diffSchema";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
-import SchemaDiagram from "@/components/SchemaDiagram";
+import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 import {
   ColumnMetadata,
@@ -229,6 +253,7 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
+const searchPattern = ref("");
 const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const state = reactive<LocalState>({
   selectedSubtab:
@@ -254,6 +279,11 @@ const selectedSchema = computed(() => {
 });
 const tableList = computed(() => {
   return selectedSchema.value?.tableList ?? [];
+});
+const shownTableList = computed(() => {
+  return tableList.value.filter((table) =>
+    table.name.includes(searchPattern.value.trim())
+  );
 });
 
 const shouldShowSchemaSelector = computed(() => {
