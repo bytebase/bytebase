@@ -99,10 +99,10 @@
       <template v-if="repositoryList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
-          :button-text="$t('version-control.setting.git-provider.delete')"
+          :button-text="$t('gitops.setting.git-provider.delete')"
           :ok-text="$t('common.delete')"
           :confirm-title="
-            $t('version-control.setting.git-provider.delete-confirm', {
+            $t('gitops.setting.git-provider.delete-confirm', {
               name: vcs.name,
             })
           "
@@ -112,7 +112,7 @@
       </template>
       <template v-else>
         <div class="mt-1 textinfolabel">
-          {{ $t("version-control.setting.git-provider.delete-forbidden") }}
+          {{ $t("gitops.setting.git-provider.delete-forbidden") }}
         </div>
       </template>
       <div>
