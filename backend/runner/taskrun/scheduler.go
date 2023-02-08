@@ -368,8 +368,13 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		if *taskPatch.RollbackEnabled {
 			s.stateCfg.RollbackGenerateMap.Store(taskPatched.ID, taskPatched)
 		} else {
-			// TODO(p0ny): also cancel running rollback sql generation.
-			s.stateCfg.RollbackGenerateMap.Delete(taskPatched.ID)
+			// Cancel running rollback sql generation.
+			if v, ok := s.stateCfg.RollbacksCancel.Load(taskPatched.ID); ok {
+				if cancel, ok := v.(context.CancelFunc); ok {
+					cancel()
+				}
+			}
+			// We don't erase the keys for RollbacksCancel and RollbackGenerateMap here because they will eventually be erased by the rollback runner.
 		}
 	}
 

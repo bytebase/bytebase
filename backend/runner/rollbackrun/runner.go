@@ -48,8 +48,12 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			r.stateCfg.RollbackGenerateMap.Range(func(key, value any) bool {
 				task := value.(*store.TaskMessage)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
+				ctx, cancel := context.WithCancel(ctx)
+				r.stateCfg.RollbacksCancel.Store(task.ID, cancel)
 				r.generateRollbackSQL(ctx, task)
+				cancel()
 				r.stateCfg.RollbackGenerateMap.Delete(key)
+				r.stateCfg.RollbacksCancel.Delete(task.ID)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute
@@ -120,6 +124,9 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 }
 
 func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
 	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", err

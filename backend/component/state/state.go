@@ -17,6 +17,8 @@ type State struct {
 
 	// RollbackGenerateMap is the set of tasks for generating rollback statements.
 	RollbackGenerateMap sync.Map // map[task.ID]*store.TaskMessage
+	// RollbacksCancel cancels the running rollback SQL generation for task taskID.
+	RollbacksCancel sync.Map // map[taskID]context.CancelFunc
 
 	// TaskProgress is the map from task ID to task progress.
 	TaskProgress sync.Map // map[taskID]api.Progress
