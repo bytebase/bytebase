@@ -336,9 +336,7 @@
     :ok-text="warningModalOkText"
     :title="$t('instance.connection-info-seems-to-be-incorrect')"
     :description="state.createInstanceWarning"
-    :in-progress="
-      shouldShowCreateEmbeddedPostgresButton && isCreatingEmbeddedInstance
-    "
+    :in-progress="shouldShowAddSamplePostgresButton && isAddingSampleInstance"
     :progress-text="$t('common.creating')"
     @ok="handleWarningModalOkClick"
     @cancel="state.showCreateInstanceWarningModal = false"
@@ -431,9 +429,9 @@ const state = reactive<LocalState>({
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
 
-const isCreatingEmbeddedInstance = ref(false);
+const isAddingSampleInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
-const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
+const samplePostgresInstance = ref<Partial<InstanceCreate>>();
 
 const allowCreate = computed(() => {
   if (state.instance.engine === "SPANNER") {
@@ -489,8 +487,8 @@ const isInOnboaringCreateDatabaseGuide = computed(() => {
   return guideName === "create-database";
 });
 
-const shouldShowCreateEmbeddedPostgresButton = computed(() => {
-  const tempInstance = embeddedPostgresInstance.value;
+const shouldShowAddSamplePostgresButton = computed(() => {
+  const tempInstance = samplePostgresInstance.value;
   return (
     isInOnboaringCreateDatabaseGuide.value &&
     (!tempInstance ||
@@ -503,7 +501,7 @@ const shouldShowCreateEmbeddedPostgresButton = computed(() => {
 });
 
 const warningModalOkText = computed(() => {
-  if (shouldShowCreateEmbeddedPostgresButton.value) {
+  if (shouldShowAddSamplePostgresButton.value) {
     return t("instance.add-a-postgresql-sample-instance");
   } else {
     return t("instance.ignore-and-create");
@@ -603,13 +601,12 @@ const updateInstance = (field: string, value: string | boolean) => {
 };
 
 const handleWarningModalOkClick = async () => {
-  // When user get the warning of incorrect instance info in creating database onboarding guide,
-  // we'd like to display the `create an embedded PostgreSQL database` button instead of `ignore and create`.
-  if (shouldShowCreateEmbeddedPostgresButton.value) {
-    isCreatingEmbeddedInstance.value = true;
-    const connectionInfo =
-      await useInstanceStore().createEmbeddedPostgresInstance();
-    embeddedPostgresInstance.value = {
+  // When user gets the warning of incorrect instance info in creating database onboarding guide,
+  // we'd like to display the `add a sample PostgreSQL database` button instead of `ignore and create`.
+  if (shouldShowAddSamplePostgresButton.value) {
+    isAddingSampleInstance.value = true;
+    const connectionInfo = await useInstanceStore().getSamplePostgresInstance();
+    samplePostgresInstance.value = {
       engine: "POSTGRES",
       host: connectionInfo.host,
       port: String(connectionInfo.port),
@@ -618,14 +615,14 @@ const handleWarningModalOkClick = async () => {
     };
     state.instance = {
       ...state.instance,
-      ...embeddedPostgresInstance.value,
+      ...samplePostgresInstance.value,
     };
-    isCreatingEmbeddedInstance.value = false;
+    isAddingSampleInstance.value = false;
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.success"),
-      description: t("instance.successfully-created-postgresql-instance"),
+      description: t("instance.successfully-added-postgresql-instance"),
       // This is a bit magic to the user, so do not auto dismiss the notification.
       manualHide: true,
     });
