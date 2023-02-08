@@ -40,6 +40,7 @@ export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
 export type BackupPlanPolicyPayload = {
   schedule: BackupPlanPolicySchedule;
+  retentionPeriodTs: number;
 };
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
