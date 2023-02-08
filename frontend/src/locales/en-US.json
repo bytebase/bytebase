@@ -1504,12 +1504,12 @@
       "select": "Select schema",
       "name": "Schema Name"
     },
-    "table-list": "Table List",
+    "tables": "Tables",
     "table": {
       "select": "Select table",
       "name": "Table Name"
     },
-    "column-list": "Column List",
+    "columns": "Columns",
     "column": {
       "select": "Select column",
       "name": "Name",

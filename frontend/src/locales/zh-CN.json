@@ -1505,12 +1505,12 @@
       "select": "选择 schema",
       "name": "Schema 名称"
     },
-    "table-list": "表",
+    "tables": "表",
     "table": {
       "select": "选择表",
       "name": "表名"
     },
-    "column-list": "列",
+    "columns": "列",
     "column": {
       "select": "选择列",
       "name": "名称",

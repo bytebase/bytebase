@@ -52,7 +52,7 @@
             @click="handleChangeTab('table-list')"
           >
             <heroicons-outline:queue-list class="inline w-4 h-auto mr-1" />
-            {{ $t("schema-editor.table-list") }}
+            {{ $t("schema-editor.tables") }}
           </button>
           <button
             class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
