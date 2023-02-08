@@ -30,9 +30,9 @@
   <template v-if="hash === 'activity'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
-  <template v-else-if="hash === 'version-control'">
+  <template v-else-if="hash === 'gitops'">
     <ProjectVersionControlPanel
-      id="version-control"
+      id="gitops"
       :project="project"
       :allow-edit="allowEdit"
     />

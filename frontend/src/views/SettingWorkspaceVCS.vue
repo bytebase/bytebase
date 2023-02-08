@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-4">
     <div class="textinfolabel">
-      {{ $t("version-control.setting.description") }}
+      {{ $t("gitops.setting.description") }}
       <a
         class="text-accent hover:opacity-80"
         href="https://www.bytebase.com/docs/administration/sso/overview?source=console"
-        >{{ $t("version-control.setting.description-highlight") }}</a
+        >{{ $t("gitops.setting.description-highlight") }}</a
       >
     </div>
     <div v-if="vcsList.length > 0" class="flex items-center justify-end">
@@ -14,7 +14,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addVCSProvider"
       >
-        {{ $t("version-control.setting.add-git-provider.self") }}
+        {{ $t("gitops.setting.add-git-provider.self") }}
       </button>
     </div>
     <div class="pt-4 border-t">
@@ -63,7 +63,7 @@ export default defineComponent({
 
     const addVCSProvider = () => {
       router.push({
-        name: "setting.workspace.version-control.create",
+        name: "setting.workspace.gitops.create",
       });
     };
 

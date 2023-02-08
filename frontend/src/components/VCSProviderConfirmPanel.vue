@@ -5,15 +5,11 @@
     >
       <div class="px-4 py-5 sm:px-6">
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{
-            $t("version-control.setting.add-git-provider.confirm.confirm-info")
-          }}
+          {{ $t("gitops.setting.add-git-provider.confirm.confirm-info") }}
         </h3>
         <p class="mt-1 textinfolabel">
           {{
-            $t(
-              "version-control.setting.add-git-provider.confirm.confirm-description"
-            )
+            $t("gitops.setting.add-git-provider.confirm.confirm-description")
           }}
         </p>
       </div>
@@ -28,11 +24,7 @@
           >
             <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
             <div class="whitespace-nowrap">
-              {{
-                $t(
-                  "version-control.setting.add-git-provider.gitlab-self-host-ce-ee"
-                )
-              }}
+              {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
             </div>
           </div>
           <div

@@ -128,7 +128,7 @@
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "enabled": "开启",
     "default": "默认",
-    "version-control": "版本控制",
+    "gitops": "GitOps",
     "restore": "恢复",
     "detailed-guide": "详细指南",
     "workspace": "工作空间",
@@ -339,7 +339,7 @@
       "members": "成员",
       "im-integration": "IM 集成管理",
       "sso": "SSO",
-      "version-control": "版本控制",
+      "gitops": "GitOps",
       "subscription": "订阅",
       "labels": "标签",
       "debug-log": "Debug 日志",
@@ -696,7 +696,7 @@
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「变更 schema」来记录这个实例上的数据库 schema 变更。如果没有设置「变更 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
+    "bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「变更 schema」来记录这个实例上的数据库 schema 变更。如果没有设置「变更 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
     "please-contact-your-dba-to-configure-it": "请联系 DBA 配置。",
     "please-check-the-instance-connection-info-is-correct": "请检查实例连接信息是否正确。",
     "users": "用户",
@@ -961,7 +961,7 @@
     "updated-backup-webhook-url-for-database-props-database-name": "更新了数据库'{0}'的 webhook URL。",
     "last-sync-status": "最后一次同步状态",
     "last-sync-status-long": "最后一次同步在{1}，状态为{0}",
-    "version-control-enabled": "已启用版本控制",
+    "gitops-enabled": "已启用 GitOps",
     "restore-backup": "恢复备份'{0}'到一个新的数据库中",
     "nullable": "可为空",
     "restore": "恢复",
@@ -1076,15 +1076,15 @@
     "sql-review-ci-remove-modal": "SQL 审核 CI 已禁用。您可以手动删除 {repository} 的 {vcs} 文件。",
     "sql-review-ci-restore-modal": "恢复到 UI 工作流后，SQL 审核 CI 将会被禁用，您可以手动删除 {repository} 的 {vcs} 文件。",
     "git-provider": "Git 提供方",
-    "version-control-status": "@.capitalize:common.version-control 已{status}",
-    "version-control-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
-    "version-control-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
-    "version-control-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
+    "gitops-status": "@.capitalize:common.gitops 已{status}",
+    "gitops-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
+    "gitops-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
+    "gitops-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
     "restore-to-ui-workflow": "恢复到 UI 工作流",
     "restore-ui-workflow-description": "当使用 UI 工作流时，开发者会通过 Bytebase\n\n控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。",
     "restore-ui-workflow-success": "成功恢复到 UI 工作流",
-    "update-version-control-config-success": "成功更新@:common.version-control配置",
-    "setup-wizard-guide": "如果您在过程中遇到问题, 请参考{guide}",
+    "update-gitops-config-success": "成功更新 @:common.gitops 配置",
+    "setup-wizard-guide": "如果您在过程中遇到问题, 请参考 {guide}",
     "add-git-provider": "添加 Git 提供方",
     "choose-git-provider": "选择 Git 提供方",
     "select-repository": "选择仓库",
@@ -1133,7 +1133,7 @@
     "dashboard": {
       "modal": {
         "title": "如何创建您的'@:{'common.project'}' ?",
-        "content": "在 Bytebase 中，项目的概念与其他常见的的开发工具类似\n\n一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目\n\n同时，一个项目可以关联一个代码仓库，并以此来进行版本控制",
+        "content": "在 Bytebase 中，项目的概念与其他常见的的开发工具类似\n\n一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目\n\n同时，一个项目可以关联一个代码仓库，并以此来开启 GitOps 工作流",
         "cancel": "关闭",
         "confirm": "不再出现"
       },
@@ -1254,7 +1254,7 @@
     "mark-all-as-read": "全部标记为已读",
     "view-older": "查看更早"
   },
-  "version-control": {
+  "gitops": {
     "setting": {
       "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
       "description-highlight": "如果你想通过你配置的VCS启用第三方登录，请在SSO中进行配置。",
@@ -1299,7 +1299,7 @@
         },
         "confirm": {
           "confirm-info": "确认信息",
-          "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「版本控制」Tab 下，可以被项目所有者选中。"
+          "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「GitOps」Tab 下，可以被项目所有者选中。"
         }
       },
       "git-provider": {
