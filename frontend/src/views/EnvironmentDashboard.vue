@@ -81,6 +81,7 @@ import type {
   EnvironmentCreate,
   Policy,
   PolicyUpsert,
+  PipelineApprovalPolicyPayload,
   BackupPlanPolicyPayload,
   EnvironmentTierPolicyPayload,
 } from "../types";
@@ -116,6 +117,7 @@ const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
 const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
   payload: {
     schedule: DefaultSchedulePolicy,
+    retentionPeriodTs: 0,
   },
 };
 
@@ -228,7 +230,8 @@ const doCreate = (
   environmentTierPolicy: Policy
 ) => {
   if (
-    !isEqual(approvalPolicy, DEFAULT_NEW_APPROVAL_POLICY) &&
+    (approvalPolicy.payload as PipelineApprovalPolicyPayload).value ===
+      "MANUAL_APPROVAL_NEVER" &&
     !hasFeature("bb.feature.approval-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.approval-policy";
