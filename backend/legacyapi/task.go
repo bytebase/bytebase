@@ -324,12 +324,15 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	DatabaseID *int
-	// Statement/SchemaVersion and Payload cannot be set at the same time.
-	Statement         *string `jsonapi:"attr,statement"`
-	SchemaVersion     *string
-	Payload           *string
+	DatabaseID        *int
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
+
+	// Payload and others cannot be set at the same time.
+	Payload *string
+
+	Statement       *string `jsonapi:"attr,statement"`
+	SchemaVersion   *string
+	RollbackEnabled *bool `jsonapi:"attr,rollbackEnabled"`
 }
 
 // TaskStatusPatch is the API message for patching a task status.

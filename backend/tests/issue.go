@@ -129,6 +129,25 @@ func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (
 	return issue, nil
 }
 
+// patchTask patches a task.
+func (ctl *controller) patchTask(taskPatch api.TaskPatch, pipelineID int, taskID int) (*api.Task, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &taskPatch); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal taskPatch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d", pipelineID, taskID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	task := new(api.Task)
+	if err = jsonapi.UnmarshalPayload(body, task); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal patchTask response")
+	}
+	return task, nil
+}
+
 // patchTaskStatus patches the status of a task in the pipeline stage.
 func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int, taskID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)

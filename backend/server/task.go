@@ -53,7 +53,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskPatch := *taskPatch
 			taskPatch.ID = task.ID
 			// TODO(d): patch tasks in batch.
-			if err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue); err != nil {
+			if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
 				return err
 			}
 		}
@@ -103,7 +103,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.TaskScheduler.PatchTaskStatement(ctx, task, taskPatch, issue); err != nil {
+		if err := s.TaskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
 			return err
 		}
 		composedTaskPatched, err := s.store.GetTaskByID(ctx, task.ID)
