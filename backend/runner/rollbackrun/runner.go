@@ -93,6 +93,8 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
+	payload.RollbackStatement = ""
+	payload.RollbackError = ""
 
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
