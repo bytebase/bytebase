@@ -280,7 +280,7 @@ export default defineComponent({
         state.password &&
         !state.showPasswordMismatchError &&
         state.acceptTermsAndPolicy &&
-        !disallowSignup
+        !disallowSignup.value
       );
     });
 
