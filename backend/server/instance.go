@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -490,28 +489,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	// Initial and start an embedded postgres instance and there should be only one currently.
-	// Its port and dataDir are fixed values.
-	g.POST("/instance/new-embedded-pg", func(c echo.Context) error {
-		pgUser := "postgres"
-		port := 23333
-		dataDir := fmt.Sprintf("%s/%s", s.profile.DataDir, "tmp-pgdata")
-
-		// If the data dir does not exist, then we will start a PostgreSQL instance with a fixed port temporarily.
-		if _, err := os.Stat(dataDir); os.IsNotExist(err) {
-			if err := postgres.InitDB(s.pgBinDir, dataDir, pgUser); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
-			}
-
-			if err := postgres.Start(port, s.pgBinDir, dataDir, false /* serverLog */); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
-			}
-		}
-
+	// Returns the sample embedded postgres instance connection info.
+	g.GET("/instance/sample-pg", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, pgConnectionInfo{
 			Host:     common.GetPostgresSocketDir(),
-			Port:     port,
-			Username: pgUser,
+			Port:     s.profile.SampleDatabasePort,
+			Username: postgres.SampleUser,
 		})
 	})
 }
