@@ -147,12 +147,17 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	}
 
 	errorMsg := make([]byte, 1024)
-	readSize, readErr := errReader.Read(errorMsg)
-	if readErr != nil && readErr != io.EOF {
-		return err
-	}
-	if readSize > 0 {
-		log.Warn(string(errorMsg))
+	for {
+		readSize, readErr := errReader.Read(errorMsg)
+		if readSize > 0 {
+			log.Warn(string(errorMsg))
+		}
+		if readErr != nil {
+			if readErr == io.EOF {
+				break
+			}
+			return err
+		}
 	}
 	err = cmd.Wait()
 	if err != nil {
