@@ -115,16 +115,20 @@
       <template v-if="repositoryList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
-          :button-text="'Delete this Git provider'"
-          :ok-text="'Delete'"
-          :confirm-title="`Delete Git provider '${vcs.name}'?`"
+          :button-text="$t('version-control.setting.git-provider.delete')"
+          :ok-text="$t('common.delete')"
+          :confirm-title="
+            $t('version-control.setting.git-provider.delete-confirm', {
+              name: vcs.name,
+            })
+          "
           :require-confirm="true"
           @confirm="deleteVCS"
         />
       </template>
       <template v-else>
         <div class="mt-1 textinfolabel">
-          {{ $t("version-control.setting.git-provider.delete") }}
+          {{ $t("version-control.setting.git-provider.delete-forbidden") }}
         </div>
       </template>
       <div>

@@ -1308,7 +1308,9 @@
         "secret-label-gitlab": "注册为 GitLab 实例级 OAuth 应用的 Secret。",
         "github-application-id-label": "注册为 GitHub 组织级别 OAuth 应用的 Client ID。",
         "secret-label-github": "注册为 GitHub 组织级别 OAuth 应用的 Client secret。",
-        "delete": "删除这个提供方前，需要先解除所有仓库的关联。"
+        "delete-forbidden": "删除这个提供方前，需要先解除所有仓库的关联。",
+        "delete": "删除 Git 提供方",
+        "delete-confirm": "删除 Git 提供方 \"{name}\"？"
       }
     }
   },
