@@ -4,7 +4,7 @@
       <i18n-t keypath="repository.setup-wizard-guide">
         <template #guide>
           <a
-            href="https://bytebase.com/docs/vcs-integration/enable-version-control-workflow?source=console"
+            href="https://bytebase.com/docs/vcs-integration/enable-gitops-workflow?source=console"
             target="_blank"
             class="normal-link"
           >
@@ -377,7 +377,7 @@ export default defineComponent({
         params: {
           projectSlug: projectSlug(props.project),
         },
-        hash: "#version-control",
+        hash: "#gitops",
       });
     };
 

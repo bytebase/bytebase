@@ -6,11 +6,7 @@
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
-          {{
-            $t(
-              "version-control.setting.add-git-provider.gitlab-self-host-ce-ee"
-            )
-          }}
+          {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
@@ -39,15 +35,11 @@
 
     <div>
       <label for="name" class="textlabel">
-        {{
-          $t("version-control.setting.add-git-provider.basic-info.display-name")
-        }}
+        {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
       </label>
       <p class="mt-1 textinfolabel">
         {{
-          $t(
-            "version-control.setting.add-git-provider.basic-info.display-name-label"
-          )
+          $t("gitops.setting.add-git-provider.basic-info.display-name-label")
         }}
       </p>
       <input
@@ -65,21 +57,13 @@
       </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{
-            $t(
-              "version-control.setting.git-provider.gitlab-application-id-label"
-            )
-          }}
+          {{ $t("gitops.setting.git-provider.gitlab-application-id-label") }}
           <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
-            $t("version-control.setting.git-provider.view-in-gitlab")
+            $t("gitops.setting.git-provider.view-in-gitlab")
           }}</a>
         </template>
         <template v-if="vcs.type == 'GITHUB_COM'">
-          {{
-            $t(
-              "version-control.setting.git-provider.github-application-id-label"
-            )
-          }}
+          {{ $t("gitops.setting.git-provider.github-application-id-label") }}
         </template>
       </p>
       <input
@@ -95,10 +79,10 @@
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t("version-control.setting.git-provider.secret-label-gitlab") }}
+          {{ $t("gitops.setting.git-provider.secret-label-gitlab") }}
         </template>
         <template v-if="vcs.type == 'GITHUB_COM'">
-          {{ $t("version-control.setting.git-provider.secret-label-github") }}
+          {{ $t("gitops.setting.git-provider.secret-label-github") }}
         </template>
       </p>
       <input
@@ -124,7 +108,7 @@
       </template>
       <template v-else>
         <div class="mt-1 textinfolabel">
-          {{ $t("version-control.setting.git-provider.delete") }}
+          {{ $t("gitops.setting.git-provider.delete") }}
         </div>
       </template>
       <div>
@@ -356,7 +340,7 @@ export default defineComponent({
 
     const cancel = () => {
       router.push({
-        name: "setting.workspace.version-control",
+        name: "setting.workspace.gitops",
       });
     };
 
@@ -369,7 +353,7 @@ export default defineComponent({
           title: `Successfully deleted '${name}'`,
         });
         router.push({
-          name: "setting.workspace.version-control",
+          name: "setting.workspace.gitops",
         });
       });
     };

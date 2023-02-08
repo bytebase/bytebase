@@ -30,7 +30,7 @@
           <div v-if="project.workflowType === 'VCS'" class="tooltip-wrapper">
             <heroicons-outline:collection class="ml-1 w-4 h-4 text-control" />
             <span class="tooltip whitespace-nowrap">
-              {{ $t("database.version-control-enabled") }}
+              {{ $t("database.gitops-enabled") }}
             </span>
           </div>
         </span>

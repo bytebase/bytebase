@@ -135,7 +135,7 @@ export default defineComponent({
       const tableName = routeSlug.tableName;
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
-      const versionControlSlug = routeSlug.vcsSlug;
+      const vcsSlug = routeSlug.vcsSlug;
       const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
 
       const list: Array<BreadcrumbItem> = [];
@@ -183,10 +183,10 @@ export default defineComponent({
             });
           }
         }
-      } else if (versionControlSlug) {
+      } else if (vcsSlug) {
         list.push({
-          name: t("common.version-control"),
-          path: "/setting/version-control",
+          name: t("common.gitops"),
+          path: "/setting/gitops",
         });
       } else if (sqlReviewPolicySlug) {
         list.push({
