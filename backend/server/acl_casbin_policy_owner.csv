@@ -53,7 +53,7 @@ p, OWNER, /instance/{instanceID}/role/{roleName}, GET
 p, OWNER, /instance/{instanceID}/role/{roleName}, PATCH
 p, OWNER, /instance/{instanceID}/role/{roleName}, DELETE
 p, OWNER, /instances/{instanceName}/databases/{database}, PATCH
-p, OWNER, /instance/new-embedded-pg, POST
+p, OWNER, /instance/sample-pg, GET
 p, OWNER, /database, GET
 p, OWNER, /database/{databaseID}, GET
 p, OWNER, /database/{databaseID}, PATCH

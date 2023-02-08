@@ -771,7 +771,7 @@
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
     "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance instead",
-    "successfully-created-postgresql-instance": "Successfully created a PostgreSQL sample instance and filled connection info.",
+    "successfully-added-postgresql-instance": "Successfully added a PostgreSQL sample instance and filled connection info.",
     "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
     "new-instance": "New Instance",
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
