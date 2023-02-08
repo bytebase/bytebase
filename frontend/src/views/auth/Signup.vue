@@ -272,14 +272,15 @@ export default defineComponent({
       }
     });
 
-    const { needAdminSetup } = storeToRefs(actuatorStore);
+    const { needAdminSetup, disallowSignup } = storeToRefs(actuatorStore);
 
     const allowSignup = computed(() => {
       return (
         isValidEmail(state.email) &&
         state.password &&
         !state.showPasswordMismatchError &&
-        state.acceptTermsAndPolicy
+        state.acceptTermsAndPolicy &&
+        !disallowSignup
       );
     });
 

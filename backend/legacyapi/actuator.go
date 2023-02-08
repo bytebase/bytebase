@@ -11,6 +11,7 @@ type ServerInfo struct {
 	Port           string `json:"port"`
 	ExternalURL    string `json:"externalUrl"`
 	NeedAdminSetup bool   `json:"needAdminSetup"`
+	DisallowSignup bool   `json:"disallowSignup"`
 	// Rand may be based on the server start time, thus exposing startedTs to the client may cause security issues (e.g. jwt key is based on Rand).
 	// StartedTs   int64  `json:"startedTs"`
 }
