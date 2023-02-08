@@ -155,10 +155,10 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /setting/version-control/:vcsId
+        // /setting/gitops/:vcsId
         // Total 2 elements, 2nd element is the version control system id
         const vcsComponents = currentRoute.path.match(
-          "/setting/version-control/([0-9a-zA-Z_-]+)"
+          "/setting/gitops/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (vcsComponents[1]) {
           return {
