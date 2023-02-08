@@ -1476,6 +1476,9 @@
     "preview-issue": "Preview issue",
     "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
+    "search-database-and-table": "Search database and table",
+    "search-table": "Search table",
+    "search-column": "Search column",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",

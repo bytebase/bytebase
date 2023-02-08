@@ -1476,6 +1476,9 @@
     "preview-issue": "预览工单",
     "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
+    "search-database-and-table": "搜索数据库和表",
+    "search-table": "搜索表",
+    "search-column": "搜索列",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",
