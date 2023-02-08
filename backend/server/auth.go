@@ -129,9 +129,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 				// Create a new user if not exist
 				if user == nil {
-					if s.profile.DisallowSignup {
-						return echo.NewHTTPError(http.StatusForbidden, "Sign up is disallowed")
-					}
 					if userInfo.PublicEmail == "" {
 						profileLink := "https://docs.github.com/en/account-and-profile"
 						if authProvider == api.PrincipalAuthProviderGitlabSelfHost {
