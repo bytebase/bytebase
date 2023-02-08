@@ -39,6 +39,9 @@ export const useActuatorStore = defineStore("actuator", {
     needConfigureExternalUrl: (state) => {
       return state.serverInfo?.externalUrl === EXTERNAL_URL_PLACEHOLDER;
     },
+    disallowSignup: (state) => {
+      return state.serverInfo?.disallowSignup || false;
+    },
     hasNewRelease: (state) => {
       return (
         (state.serverInfo?.version === "development" &&

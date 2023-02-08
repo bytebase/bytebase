@@ -1308,7 +1308,9 @@
         "secret-label-gitlab": "Secret for the registered GitLab instance-wide OAuth application.",
         "github-application-id-label": "Client ID for the registered GitHub organization-wide OAuth application.",
         "secret-label-github": "Client secret for the registered GitHub organization-wide OAuth application.",
-        "delete": "To delete this provider, unlink all repositories first."
+        "delete-forbidden": "To delete this provider, unlink all repositories first.",
+        "delete": "Delete this Git provider",
+        "delete-confirm": "Delete Git provider \"{name}\"?"
       }
     }
   },
