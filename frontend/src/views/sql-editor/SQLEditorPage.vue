@@ -3,7 +3,7 @@
     <TabList />
     <Splitpanes class="default-theme flex flex-col flex-1 overflow-hidden">
       <Pane size="20">
-        <AsidePanel />
+        <AsidePanel @alter-schema="handleAlterSchema" />
       </Pane>
       <Pane size="80" class="relative">
         <template v-if="allowAccess">
@@ -65,19 +65,28 @@
         </div>
       </Pane>
     </Splitpanes>
+
+    <SchemaEditorModal
+      v-if="alterSchemaState.showModal"
+      :database-id-list="alterSchemaState.databaseIdList"
+      :new-window="true"
+      alter-type="SINGLE_DB"
+      @close="alterSchemaState.showModal = false"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 
-import { TabMode, UNKNOWN_ID } from "@/types";
+import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
   useConnectionTreeStore,
   useCurrentUser,
   useDatabaseStore,
   useInstanceById,
+  useProjectStore,
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
@@ -88,6 +97,12 @@ import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import { isDatabaseAccessible } from "@/utils";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
+import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
+
+type AlterSchemaState = {
+  showModal: boolean;
+  databaseIdList: DatabaseId[];
+};
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
@@ -125,6 +140,19 @@ const allowReadOnlyMode = computed(() => {
   }
   return true;
 });
+
+const alterSchemaState = reactive<AlterSchemaState>({
+  showModal: false,
+  databaseIdList: [],
+});
+
+const handleAlterSchema = async (params: { databaseId: DatabaseId }) => {
+  const { databaseId } = params;
+  const database = databaseStore.getDatabaseById(databaseId);
+  await useProjectStore().getOrFetchProjectById(database.project.id);
+  alterSchemaState.databaseIdList = [databaseId];
+  alterSchemaState.showModal = true;
+};
 </script>
 
 <style>

@@ -7,6 +7,7 @@
         :header-clickable="state.selected !== undefined"
         @click-header="state.selected = undefined"
         @select-table="handleSelectTable"
+        @alter-schema="emit('alter-schema', $event)"
       />
       <Transition name="slide-up" appear>
         <TableSchema
@@ -17,6 +18,7 @@
           :schema="state.selected.schema"
           :table="state.selected.table"
           @close="state.selected = undefined"
+          @alter-schema="emit('alter-schema', $event)"
         />
       </Transition>
     </template>
@@ -34,7 +36,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 
-import { UNKNOWN_ID } from "@/types";
+import { DatabaseId, UNKNOWN_ID } from "@/types";
 import {
   DatabaseMetadata,
   SchemaMetadata,
@@ -47,6 +49,13 @@ import TableSchema from "./TableSchema.vue";
 type LocalState = {
   selected?: { schema: SchemaMetadata; table: TableMetadata };
 };
+
+const emit = defineEmits<{
+  (
+    event: "alter-schema",
+    params: { databaseId: DatabaseId; schema: string; table: string }
+  ): void;
+}>();
 
 const state = reactive<LocalState>({
   selected: undefined,
