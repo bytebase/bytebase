@@ -146,7 +146,6 @@ func (ctl *controller) patchTask(taskPatch api.TaskPatch, pipelineID int, taskID
 		return nil, errors.Wrap(err, "fail to unmarshal patchTask response")
 	}
 	return task, nil
-
 }
 
 // patchTaskStatus patches the status of a task in the pipeline stage.
