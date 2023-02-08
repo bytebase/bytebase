@@ -171,6 +171,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 					DELETE FROM t WHERE id = 1;
 					UPDATE t SET name = 'unknown\nunknown';
 				`,
+				RollbackEnabled: true,
 			},
 		},
 	})
