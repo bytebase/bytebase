@@ -340,8 +340,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// PatchTaskStatement patches the statement and earliest allowed time for a patch.
-func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
+// PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.
+func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
 	if taskPatch.Statement != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
@@ -360,6 +360,16 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		needAttention := false
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+		}
+	}
+
+	if taskPatch.RollbackEnabled != nil {
+		// Enqueue the task
+		if *taskPatch.RollbackEnabled {
+			s.stateCfg.RollbackGenerateMap.Store(taskPatched.ID, taskPatched)
+		} else {
+			// TODO(p0ny): also cancel running rollback sql generation.
+			s.stateCfg.RollbackGenerateMap.Delete(taskPatched.ID)
 		}
 	}
 
