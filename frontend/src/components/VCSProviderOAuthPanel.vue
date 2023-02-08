@@ -4,14 +4,14 @@
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
         {{
           $t(
-            "version-control.setting.add-git-provider.oauth-info.gitlab-register-oauth-application"
+            "gitops.setting.add-git-provider.oauth-info.gitlab-register-oauth-application"
           )
         }}
       </template>
       <template v-if="config.type == 'GITHUB_COM'">
         {{
           $t(
-            "version-control.setting.add-git-provider.oauth-info.github-register-oauth-application"
+            "gitops.setting.add-git-provider.oauth-info.github-register-oauth-application"
           )
         }}
       </template>
@@ -22,7 +22,7 @@
           1.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.gitlab-login-as-admin"
+              "gitops.setting.add-git-provider.oauth-info.gitlab-login-as-admin"
             )
           }}
           <img class="w-auto" src="../assets/gitlab_admin_area.png" />
@@ -31,7 +31,7 @@
           2.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.gitlab-visit-admin-page"
+              "gitops.setting.add-git-provider.oauth-info.gitlab-visit-admin-page"
             )
           }}
           <a
@@ -39,18 +39,14 @@
             target="_blank"
             class="normal-link"
             >{{
-              $t(
-                "version-control.setting.add-git-provider.oauth-info.direct-link"
-              )
+              $t("gitops.setting.add-git-provider.oauth-info.direct-link")
             }}</a
           >
         </li>
         <li>
           3.
           {{
-            $t(
-              "version-control.setting.add-git-provider.oauth-info.create-oauth-app"
-            )
+            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
           }}
           <div class="m-4 flex justify-center">
             <dl
@@ -102,7 +98,7 @@
           4.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
+              "gitops.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
             )
           }}
         </li>
@@ -112,7 +108,7 @@
           1.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.github-login-as-admin"
+              "gitops.setting.add-git-provider.oauth-info.github-login-as-admin"
             )
           }}
           <img class="w-auto" src="../assets/github_admin_settings.png" />
@@ -121,16 +117,14 @@
           2.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.github-visit-admin-page"
+              "gitops.setting.add-git-provider.oauth-info.github-visit-admin-page"
             )
           }}
         </li>
         <li>
           3.
           {{
-            $t(
-              "version-control.setting.add-git-provider.oauth-info.create-oauth-app"
-            )
+            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
           }}
           <div class="m-4 flex justify-center">
             <dl
@@ -179,7 +173,7 @@
           4.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.github-paste-oauth-info"
+              "gitops.setting.add-git-provider.oauth-info.github-paste-oauth-info"
             )
           }}
         </li>
@@ -289,7 +283,7 @@ export default defineComponent({
           module: "bytebase",
           style: "INFO",
           title: t(
-            "version-control.setting.add-git-provider.oauth-info.copy-homepage-url"
+            "gitops.setting.add-git-provider.oauth-info.copy-homepage-url"
           ),
         });
       });
@@ -301,7 +295,7 @@ export default defineComponent({
           module: "bytebase",
           style: "INFO",
           title: t(
-            "version-control.setting.add-git-provider.oauth-info.copy-redirect-uri"
+            "gitops.setting.add-git-provider.oauth-info.copy-redirect-uri"
           ),
         });
       });
@@ -384,11 +378,11 @@ export default defineComponent({
     const applicationIdErrorDescription = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return t(
-          "version-control.setting.add-git-provider.oauth-info.gitlab-application-id-error"
+          "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
         );
       } else if (props.config.type == "GITHUB_COM") {
         return t(
-          "version-control.setting.add-git-provider.oauth-info.github-application-id-error"
+          "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
         );
       }
       return "";
@@ -397,11 +391,11 @@ export default defineComponent({
     const secretErrorDescription = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return t(
-          "version-control.setting.add-git-provider.oauth-info.gitlab-secret-error"
+          "gitops.setting.add-git-provider.oauth-info.gitlab-secret-error"
         );
       } else if (props.config.type == "GITHUB_COM") {
         return t(
-          "version-control.setting.add-git-provider.oauth-info.github-secret-error"
+          "gitops.setting.add-git-provider.oauth-info.github-secret-error"
         );
       }
       return "";
