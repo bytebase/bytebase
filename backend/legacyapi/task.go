@@ -177,6 +177,8 @@ type TaskDatabaseDataUpdatePayload struct {
 
 	// MySQL rollback SQL related.
 
+	// Build the RollbackStatement if RollbackEnabled.
+	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
 	// ThreadID is the ID of the connection executing the migration.
 	// We use it to filter the binlog events of the migration transaction.
 	ThreadID string `json:"threadId,omitempty"`
