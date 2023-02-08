@@ -1203,7 +1203,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			Statement: &statement,
 			UpdaterID: api.SystemBotID,
 		}
-		if err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue); err != nil {
+		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
 			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID), zap.Error(err))
 			return nil
 		}
