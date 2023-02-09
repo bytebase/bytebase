@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"regexp"
 	"strings"
@@ -40,7 +41,11 @@ type BinlogEvent struct {
 type BinlogTransaction []BinlogEvent
 
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
-func ParseBinlogStream(stream io.Reader, threadID string) ([]BinlogTransaction, error) {
+func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string) ([]BinlogTransaction, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	reader := bufio.NewReader(stream)
 	var event BinlogEvent
 	var txns []BinlogTransaction
@@ -48,6 +53,10 @@ func ParseBinlogStream(stream io.Reader, threadID string) ([]BinlogTransaction, 
 	var bodyBuf strings.Builder
 	seenEvent := false
 	for {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
 			return nil, errors.Wrap(err, "failed to read line from the stream")
