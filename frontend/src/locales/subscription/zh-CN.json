@@ -50,8 +50,8 @@
     }
   },
   "feature-sections": {
-    "database-management": {
-      "title": "数据库管理",
+    "change-management": {
+      "title": "变更管理",
       "features": {
         "instance-count": "实例数",
         "instance-customized": "自定义",
@@ -62,8 +62,6 @@
         "instance-unlimited": "无限制",
         "environment-count": "环境数",
         "environment-unlimited": "无限制",
-        "task-count-in-issue": "单个工单的任务数",
-        "task-unlimited": "无限制",
         "schema-change": "Schema 和数据变更",
         "schema-change-basic": "基础",
         "schema-change-basic-tooltip": "普通变更",
@@ -75,29 +73,34 @@
         "batch-change-advanced": "高级",
         "batch-change-advanced-tooltip": "多环境 + 多地域 / 多租户变更",
         "change-history": "变更历史",
-        "sql-editor": "SQL 编辑器",
-        "schema-editor": "Schema 编辑器",
-        "schema-diagram": "Schema 关系图",
         "disaster-recovery": "数据灾备",
         "disaster-recovery-basic": "基础",
         "disaster-recovery-basic-tooltip": "数据库备份和恢复",
         "disaster-recovery-advanced": "高级",
         "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
-        "archiving": "归档",
-        "sql-check": "SQL 检查 / Schema 审核",
+        "sql-check": "SQL 自动检查",
         "sql-check-basic": "基础",
         "sql-check-basic-tooltip": "语法检查、数据库连接检查",
         "sql-check-advanced": "高级",
         "sql-check-advanced-tooltip": "基础版功能 + 自定义 SQL 审核规则",
-        "anomaly-detection": "异常检测",
-        "anomaly-detection-basic": "基础",
-        "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",
-        "anomaly-detection-advanced": "高级",
-        "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
         "schedule-change": "设定任务执行时间",
-        "review-and-backup-policy": "审核和备份策略",
-        "read-replica": "为只读操作提供单独连接",
-        "sync-schema": "库表同步"
+        "sync-schema": "库表同步",
+        "terraform-provider": "Terraform 集成"
+      }
+    },
+    "sql-editor": {
+      "title": "SQL 编辑器",
+      "features": {
+        "auto-complete": "自动补全",
+        "schema-editor": "Schema 编辑器",
+        "schema-diagram": "Schema 关系图",
+        "export": "CSV / JSON 导出",
+        "saved-sql-script": "保存 SQL 脚本",
+        "saved-sql-script-basic": "基础",
+        "saved-sql-script-advanced": "高级",
+        "saved-sql-script-advanced-tooltip": "基础 + 从 VCS 同步脚本",
+        "admin-mode": "管理员模式",
+        "read-replica": "为只读操作提供单独连接"
       }
     },
     "collaboration": {
@@ -108,37 +111,49 @@
         "seat-customized": "自定义",
         "ui-based-sql-review": "基于 UI 的 SQL 审查",
         "vsc-workflow": "GitOps 工作流",
-        "shareable-query-link": "分享查询链接",
-        "im-integration": "IM 集成",
-        "im-integration-basic": "基础",
-        "im-integration-basic-tooltip": "Webhook",
-        "im-integration-advanced": "高级",
-        "im-integration-advanced-tooltip": "基础版功能 + 飞书集成",
+        "shared-sql-script": "共享 SQL 脚本",
+        "webhook-integration": "IM 集成",
+        "webhook-integration-basic": "基础",
+        "webhook-integration-basic-tooltip": "IM + 自定义Webhook",
+        "webhook-integration-advanced": "高级",
+        "webhook-integration-advanced-tooltip": "基础版功能 + IM 审批",
         "inbox-notification": "站内信通知",
         "vsc-workflow-basic": "基础",
         "vsc-workflow-advanced": "高级",
         "vsc-workflow-advanced-tooltip": "基础版功能 + 回写最新 Schema 快照，SQL 脚本同步，SQL 审核 CI"
       }
     },
-    "admin-and-security": {
-      "title": "管理与安全",
+    "data-security-and-governance": {
+      "title": "数据安全和治理",
       "features": {
-        "activity-log": "活动日志",
-        "terraform-provider": "Terraform Provider",
+        "audit-log": "审计日志",
         "rbac": "RBAC 权限管理",
-        "watermark": "水印设置",
+        "watermark": "水印",
         "sso": "SSO 单点登录",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",
+        "approval-and-backup-policy": "审核和备份策略",
         "sensitive-data": "数据脱敏",
-        "database-access-control": "数据库访问控制"
+        "database-access-control": "数据库访问控制",
+        "anomaly-detection": "异常检测",
+        "anomaly-detection-basic": "基础",
+        "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",
+        "anomaly-detection-advanced": "高级",
+        "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
+        "archiving": "归档"
       }
     },
-    "branding": {
-      "title": "自定义品牌信息",
+    "bespoke": {
+      "title": "定制化",
       "features": {
-        "branding-logo": "自定义 Logo"
+        "support": "支持方式",
+        "support-community": "社区支持",
+        "support-email": "Email 支持",
+        "support-sla": "专属客户成功经理以及 SLA 支持",
+        "branding-logo": "自定义 Logo",
+        "roadmap": "Roadmap 优先考虑",
+        "contract": "定制化合同"
       }
     }
   },
@@ -149,14 +164,14 @@
     "pitr": "恢复到指定时间点 (PITR)",
     "sql-editor": "SQL 编辑器",
     "database-backup-restore": "数据库备份和恢复",
-    "im-integration": "IM 集成 (Slack, Discord 等)",
+    "webhook-integration": "IM 集成 (Slack, Discord 等)",
     "email-support": "邮件支持",
     "everything-in-free-plan": "所有免费版的功能",
     "rbac": "RBAC 权限管理",
     "gitlab-login": "通过 GitLab 登录",
     "online-schema-migration": "在线大表结构变更",
     "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
-    "review-and-backup-policy": "审核和备份策略",
+    "approval-and-backup-policy": "审核和备份策略",
     "sla": "专属客户成功经理以及 SLA 支持",
     "everything-in-team-plan": "所有团队版的功能",
     "batch-change-multi-environment": "多环境批量变更",

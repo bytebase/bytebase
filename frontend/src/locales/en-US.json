@@ -336,7 +336,7 @@
       "workspace": "Workspace",
       "general": "General",
       "members": "Members",
-      "im-integration": "IM Integration",
+      "webhook-integration": "IM Integration",
       "sso": "SSO",
       "gitops": "GitOps",
       "subscription": "Subscription",
@@ -395,7 +395,7 @@
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account"
     },
-    "im-integration": {
+    "webhook-integration": {
       "enable": "Enable",
       "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
