@@ -462,7 +462,7 @@
       "add-rule": "添加规则",
       "remove-policy-tips": "删除这条规则？",
       "inactive-rules": "无效的规则",
-      "inactive-rules-description": "这些规则不再生效，因为所属环境不是生产环境。",
+      "inactive-rules-description": "这些规则不再生效，因为不属于生产环境。",
       "no-database-in-production-environment": "请确保{production_environment}中有数据库。"
     },
     "release": {
