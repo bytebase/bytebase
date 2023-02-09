@@ -84,7 +84,7 @@
       <BBTableCell class="table-cell w-36">
         <div class="flex items-center">
           {{ activeEnvironmentName(issue) }}
-          <ProtectedEnvironmentIcon
+          <ProductionEnvironmentIcon
             class="ml-1"
             :environment="activeEnvironment(issue.pipeline)"
           />
@@ -147,7 +147,7 @@ import {
   stageSlug,
   activeTaskInStage,
 } from "@/utils";
-import ProtectedEnvironmentIcon from "../Environment/ProtectedEnvironmentIcon.vue";
+import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { useCurrentUser } from "@/store";
 

@@ -204,7 +204,9 @@ message OIDCIdentityProviderConfig {
 
   string client_secret = 3;
 
-  FieldMapping field_mapping = 4;
+  repeated string scopes = 4;
+
+  FieldMapping field_mapping = 5;
 }
 
 // FieldMapping saves the field names from user info API of identity provider.
@@ -219,9 +221,9 @@ message FieldMapping {
   // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
-  // DisplayName is the field name of display name in 3rd-party idp user info. Required.
+  // DisplayName is the field name of display name in 3rd-party idp user info.
   string display_name = 2;
 
-  // Email is the field name of primary email in 3rd-party idp user info. Required.
+  // Email is the field name of primary email in 3rd-party idp user info.
   string email = 3;
 }

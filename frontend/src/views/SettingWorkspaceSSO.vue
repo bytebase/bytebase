@@ -79,7 +79,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { computed, onMounted, reactive, watch, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
@@ -111,10 +111,6 @@ const selectedIdentityProvider = computed(() => {
   return identityProviderList.value.find(
     (idp) => idp.name === state.selectedIdentityProviderName
   );
-});
-
-onMounted(async () => {
-  await identityProviderStore.fetchIdentityProviderList();
 });
 
 watchEffect(() => {

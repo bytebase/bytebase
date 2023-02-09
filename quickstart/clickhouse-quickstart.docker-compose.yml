@@ -14,7 +14,7 @@ services:
     command: ["--data", "/var/opt/bytebase", "--port", "8080"]
 
   clickhouse-db:
-    image: yandex/clickhouse-server
+    image: clickhouse/clickhouse-server
     platform: linux/amd64
     ulimits:
       nofile:

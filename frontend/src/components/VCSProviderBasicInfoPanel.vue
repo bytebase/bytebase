@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="textlabel">
-    {{ $t("version-control.setting.add-git-provider.choose") }}
+    {{ $t("gitops.setting.add-git-provider.choose") }}
     <span class="text-red-600">*</span>
   </div>
   <div class="pt-4 radio-set-row">
@@ -17,9 +17,7 @@
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
-        >{{
-          $t("version-control.setting.add-git-provider.gitlab-self-host-ce-ee")
-        }}
+        >{{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
       </label>
     </div>
     <div class="radio space-x-2">
@@ -62,9 +60,7 @@
   </div>
   <p class="mt-1 textinfolabel">
     {{
-      $t(
-        "version-control.setting.add-git-provider.basic-info.gitlab-instance-url-label"
-      )
+      $t("gitops.setting.add-git-provider.basic-info.gitlab-instance-url-label")
     }}
   </p>
   <BBTextField
@@ -75,21 +71,13 @@
     @input="changeUrl(($event.target as HTMLInputElement).value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
-    {{
-      $t(
-        "version-control.setting.add-git-provider.basic-info.instance-url-error"
-      )
-    }}
+    {{ $t("gitops.setting.add-git-provider.basic-info.instance-url-error") }}
   </p>
   <div class="mt-4 textlabel">
-    {{ $t("version-control.setting.add-git-provider.basic-info.display-name") }}
+    {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
   </div>
   <p class="mt-1 textinfolabel">
-    {{
-      $t(
-        "version-control.setting.add-git-provider.basic-info.display-name-label"
-      )
-    }}
+    {{ $t("gitops.setting.add-git-provider.basic-info.display-name-label") }}
   </p>
   <BBTextField
     class="mt-2 w-full"
@@ -140,7 +128,7 @@ export default defineComponent({
 
     const namePlaceholder = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
-        return t("version-control.setting.add-git-provider.gitlab-self-host");
+        return t("gitops.setting.add-git-provider.gitlab-self-host");
       } else if (props.config.type == "GITHUB_COM") {
         return "GitHub.com";
       }
@@ -150,11 +138,11 @@ export default defineComponent({
     const instanceUrlLabel = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return t(
-          "version-control.setting.add-git-provider.basic-info.gitlab-instance-url"
+          "gitops.setting.add-git-provider.basic-info.gitlab-instance-url"
         );
       } else if (props.config.type == "GITHUB_COM") {
         return t(
-          "version-control.setting.add-git-provider.basic-info.github-instance-url"
+          "gitops.setting.add-git-provider.basic-info.github-instance-url"
         );
       }
       return "";
@@ -207,7 +195,7 @@ export default defineComponent({
         props.config.instanceUrl = "";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = t(
-          "version-control.setting.add-git-provider.gitlab-self-host"
+          "gitops.setting.add-git-provider.gitlab-self-host"
         );
       } else if (props.config.type == "GITHUB_COM") {
         // eslint-disable-next-line vue/no-mutating-props

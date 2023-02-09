@@ -14,7 +14,9 @@
           {{ $t("common.statement") }}
         </template>
         <span v-if="create" class="text-red-600">*</span>
-        <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
+        <span v-if="sqlHint" class="ml-1 text-accent">{{
+          `(${sqlHint})`
+        }}</span>
       </div>
       <button
         v-if="allowApplyTaskStateToOthers"

@@ -45,11 +45,15 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			r.stateCfg.RollbackGenerateMap.Range(func(key, value any) bool {
+			r.stateCfg.RollbackGenerate.Range(func(key, value any) bool {
 				task := value.(*store.TaskMessage)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
+				ctx, cancel := context.WithCancel(ctx)
+				r.stateCfg.RollbackCancel.Store(task.ID, cancel)
 				r.generateRollbackSQL(ctx, task)
-				r.stateCfg.RollbackGenerateMap.Delete(key)
+				cancel()
+				r.stateCfg.RollbackGenerate.Delete(key)
+				r.stateCfg.RollbackCancel.Delete(task.ID)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute
@@ -64,7 +68,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "task.payload->>'threadID'!='' AND task.payload->>'rollbackError' IS NULL AND task.payload->>'rollbackStatement' IS NULL",
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND COALESCE(task.payload->>'rollbackError', '')='' AND COALESCE(task.payload->>'rollbackStatement', '')=''",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
@@ -73,7 +77,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 	for _, task := range taskList {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
-		r.stateCfg.RollbackGenerateMap.Store(task.ID, task)
+		r.stateCfg.RollbackGenerate.Store(task.ID, task)
 	}
 }
 
@@ -93,6 +97,8 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
+	payload.RollbackStatement = ""
+	payload.RollbackError = ""
 
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
@@ -120,6 +126,9 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 }
 
 func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
 	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", err

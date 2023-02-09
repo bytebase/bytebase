@@ -342,6 +342,10 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if instance.Deleted {
 			continue
 		}
+		// backup for Spanner is not supported.
+		if instance.Engine == db.Spanner {
+			continue
+		}
 		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			log.Error("Failed to get environment", zap.Error(err))

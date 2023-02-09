@@ -14,11 +14,12 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 
 		serverInfo := api.ServerInfo{
-			Version:     s.profile.Version,
-			GitCommit:   s.profile.GitCommit,
-			Readonly:    s.profile.Readonly,
-			DemoName:    s.profile.DemoName,
-			ExternalURL: s.profile.ExternalURL,
+			Version:        s.profile.Version,
+			GitCommit:      s.profile.GitCommit,
+			Readonly:       s.profile.Readonly,
+			DemoName:       s.profile.DemoName,
+			ExternalURL:    s.profile.ExternalURL,
+			DisallowSignup: s.profile.DisallowSignup,
 		}
 
 		findRole := api.Owner

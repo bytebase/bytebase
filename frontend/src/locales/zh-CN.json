@@ -121,14 +121,13 @@
     "repository": "仓库",
     "change": "变更",
     "branch": "分支",
-    "config-guide": "配置指南",
     "required-placeholder": "必需的占位符",
     "optional-placeholder": "可选的占位符",
     "optional-directory-wildcard": "可选的目录通配符",
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "enabled": "开启",
     "default": "默认",
-    "version-control": "版本控制",
+    "gitops": "GitOps",
     "restore": "恢复",
     "detailed-guide": "详细指南",
     "workspace": "工作空间",
@@ -339,7 +338,7 @@
       "members": "成员",
       "im-integration": "IM 集成管理",
       "sso": "SSO",
-      "version-control": "版本控制",
+      "gitops": "GitOps",
       "subscription": "订阅",
       "labels": "标签",
       "debug-log": "Debug 日志",
@@ -458,12 +457,12 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     },
     "access-control": {
-      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。{link}",
+      "description": "允许开发者通过 SQL 编辑器对下列生产环境中的数据库执行查询。{link}",
       "add-rule": "添加规则",
       "remove-policy-tips": "删除这条规则？",
       "inactive-rules": "无效的规则",
-      "inactive-rules-description": "这些规则不再生效，因为所属环境不是受保护的。",
-      "no-database-in-protected-environment": "请确保{protected_environment}中有数据库。"
+      "inactive-rules-description": "这些规则不再生效，因为不属于生产环境。",
+      "no-database-in-production-environment": "请确保{production_environment}中有数据库。"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -619,7 +618,7 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
-      "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
+      "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
     "rollback-from": "当前任务回滚自 {link}。",
@@ -696,7 +695,7 @@
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「变更 schema」来记录这个实例上的数据库 schema 变更。如果没有设置「变更 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
+    "bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「变更 schema」来记录这个实例上的数据库 schema 变更。如果没有设置「变更 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
     "please-contact-your-dba-to-configure-it": "请联系 DBA 配置。",
     "please-check-the-instance-connection-info-is-correct": "请检查实例连接信息是否正确。",
     "users": "用户",
@@ -717,6 +716,8 @@
     "name": "名称",
     "host-or-socket": "Host 或 Socket",
     "project-id-and-instance-id": "项目 ID 与实例 ID",
+    "project-id": "项目 ID",
+    "instance-id": "实例 ID",
     "your-snowflake-account-name": "您的 Snowflake @:{'instance.account'}@:{'instance.name'}",
     "port": "端口",
     "instance-name": "@:common.instance@:instance.name",
@@ -762,12 +763,13 @@
       }
     },
     "no-password": "无密码",
-    "credentials-write-only": "CREDENTIALS - 仅写入",
+    "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
+    "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
-    "add-a-postgresql-sample-instance": "创建一个 PostgreSQL 样本实例",
-    "successfully-created-postgresql-instance": "成功创建了 PostgreSQL 样本实例。并且填好了连接信息。",
+    "add-a-postgresql-sample-instance": "添加一个 PostgreSQL 样本实例",
+    "successfully-added-postgresql-instance": "成功添加了 PostgreSQL 样本实例。并且填好了连接信息。",
     "connection-info-seems-to-be-incorrect": "连接信息似乎错误",
     "new-instance": "新实例",
     "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{0}",
@@ -791,12 +793,11 @@
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
-    "protected": "受保护的",
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
     },
-    "protected-environment": "受保护的环境"
+    "production-environment": "生产环境"
   },
   "quick-start": {
     "view-an-issue": "查看工单",
@@ -878,7 +879,7 @@
     "environment-tier": {
       "name": "环境级别",
       "description": "使该环境在显示上不同于其他环境。{newline}默认情况下，开发者无法通过 SQL 编辑器在这个环境的数据库上执行任何查询。",
-      "mark-env-as-protected": "标记为受保护的环境"
+      "mark-env-as-production": "标记为生产环境"
     }
   },
   "change-history": {
@@ -958,7 +959,7 @@
     "updated-backup-webhook-url-for-database-props-database-name": "更新了数据库'{0}'的 webhook URL。",
     "last-sync-status": "最后一次同步状态",
     "last-sync-status-long": "最后一次同步在{1}，状态为{0}",
-    "version-control-enabled": "已启用版本控制",
+    "gitops-enabled": "已启用 GitOps",
     "restore-backup": "恢复备份'{0}'到一个新的数据库中",
     "nullable": "可为空",
     "restore": "恢复",
@@ -1044,7 +1045,6 @@
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
-    "branch-specify-tip": "诀窍: 可以使用空字符串跟踪所有分支的变更.",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
@@ -1074,15 +1074,15 @@
     "sql-review-ci-remove-modal": "SQL 审核 CI 已禁用。您可以手动删除 {repository} 的 {vcs} 文件。",
     "sql-review-ci-restore-modal": "恢复到 UI 工作流后，SQL 审核 CI 将会被禁用，您可以手动删除 {repository} 的 {vcs} 文件。",
     "git-provider": "Git 提供方",
-    "version-control-status": "@.capitalize:common.version-control 已{status}",
-    "version-control-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
-    "version-control-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
-    "version-control-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
+    "gitops-status": "@.capitalize:common.gitops 已{status}",
+    "gitops-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
+    "gitops-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
+    "gitops-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
     "restore-to-ui-workflow": "恢复到 UI 工作流",
     "restore-ui-workflow-description": "当使用 UI 工作流时，开发者会通过 Bytebase\n\n控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。",
     "restore-ui-workflow-success": "成功恢复到 UI 工作流",
-    "update-version-control-config-success": "成功更新@:common.version-control配置",
-    "setup-wizard-guide": "如果您在过程中遇到问题, 请参考{guide}",
+    "update-gitops-config-success": "成功更新 @:common.gitops 配置",
+    "setup-wizard-guide": "如果您在过程中遇到问题, 请参考 {guide}",
     "add-git-provider": "添加 Git 提供方",
     "choose-git-provider": "选择 Git 提供方",
     "select-repository": "选择仓库",
@@ -1131,7 +1131,7 @@
     "dashboard": {
       "modal": {
         "title": "如何创建您的'@:{'common.project'}' ?",
-        "content": "在 Bytebase 中，项目的概念与其他常见的的开发工具类似\n\n一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目\n\n同时，一个项目可以关联一个代码仓库，并以此来进行版本控制",
+        "content": "在 Bytebase 中，项目的概念与其他常见的的开发工具类似\n\n一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目\n\n同时，一个项目可以关联一个代码仓库，并以此来开启 GitOps 工作流",
         "cancel": "关闭",
         "confirm": "不再出现"
       },
@@ -1252,10 +1252,10 @@
     "mark-all-as-read": "全部标记为已读",
     "view-older": "查看更早"
   },
-  "version-control": {
+  "gitops": {
     "setting": {
       "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
-      "description-highlight": "配置 VCS 后，在付费版订阅下，Bytebase 将自动开启通过 VCS 的第三方认证登录",
+      "description-highlight": "如果你想通过你配置的VCS启用第三方登录，请在SSO中进行配置。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
         "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",
@@ -1297,7 +1297,7 @@
         },
         "confirm": {
           "confirm-info": "确认信息",
-          "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「版本控制」Tab 下，可以被项目所有者选中。"
+          "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「GitOps」Tab 下，可以被项目所有者选中。"
         }
       },
       "git-provider": {
@@ -1306,7 +1306,9 @@
         "secret-label-gitlab": "注册为 GitLab 实例级 OAuth 应用的 Secret。",
         "github-application-id-label": "注册为 GitHub 组织级别 OAuth 应用的 Client ID。",
         "secret-label-github": "注册为 GitHub 组织级别 OAuth 应用的 Client secret。",
-        "delete": "删除这个提供方前，需要先解除所有仓库的关联。"
+        "delete-forbidden": "删除这个提供方前，需要先解除所有仓库的关联。",
+        "delete": "删除 Git 提供方",
+        "delete-confirm": "删除 Git 提供方 \"{name}\"？"
       }
     }
   },
@@ -1452,7 +1454,7 @@
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
     "visualize-explain": "可视化 Explain",
-    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。",
+    "sql-execute-in-production-environment": "小心，你正在操作生产环境下的数据库。",
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",
@@ -1474,6 +1476,9 @@
     "preview-issue": "预览工单",
     "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
+    "search-database-and-table": "搜索数据库和表",
+    "search-table": "搜索表",
+    "search-column": "搜索列",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",
@@ -1500,12 +1505,12 @@
       "select": "选择 schema",
       "name": "Schema 名称"
     },
-    "table-list": "表",
+    "tables": "表",
     "table": {
       "select": "选择表",
       "name": "表名"
     },
-    "column-list": "列",
+    "columns": "列",
     "column": {
       "select": "选择列",
       "name": "名称",
@@ -1619,7 +1624,7 @@
       },
       "bb-feature-environment-tier-policy": {
         "title": "环境级别",
-        "desc": "「环境级别」可以将环境标记为受保护的"
+        "desc": "「环境级别」可以将环境标记为生产环境"
       },
       "bb-feature-sensitive-data": {
         "title": "敏感数据",
@@ -1627,7 +1632,7 @@
       },
       "bb-feature-access-control": {
         "title": "访问控制",
-        "desc": "可以修改受保护的环境中的数据库的查询权限。"
+        "desc": "可以修改生产环境中的数据库的查询权限。"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",

@@ -1,31 +1,11 @@
 <template>
   <div class="flex flex-col w-full h-full overflow-y-auto">
-    <div
-      class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
-    >
-      <span
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedSubtab === 'column-list' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('column-list')"
-        >{{ $t("schema-editor.column-list") }}</span
-      >
-      <span
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedSubtab === 'raw-sql' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('raw-sql')"
-        >{{ $t("schema-editor.raw-sql") }}</span
-      >
-    </div>
-
-    <template v-if="state.selectedSubtab === 'column-list'">
-      <div class="w-full py-2 flex flex-row justify-between items-center">
-        <div>
+    <div class="py-2 w-full flex flex-row justify-between items-center">
+      <div>
+        <div
+          v-if="state.selectedSubtab === 'column-list'"
+          class="w-full flex justify-between items-center space-x-2"
+        >
           <button
             class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="disableChangeTable"
@@ -34,8 +14,6 @@
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-column") }}
           </button>
-        </div>
-        <div class="w-auto flex flex-row justify-end items-center space-x-3">
           <button
             v-if="table.status !== 'created'"
             class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
@@ -49,7 +27,46 @@
           </button>
         </div>
       </div>
+      <div class="flex justify-end items-center">
+        <NInput
+          v-if="state.selectedSubtab === 'column-list'"
+          v-model:value="searchPattern"
+          class="!w-48 mr-3"
+          :placeholder="$t('schema-editor.search-column')"
+        >
+          <template #prefix>
+            <heroicons-outline:search class="w-4 h-auto text-gray-300" />
+          </template>
+        </NInput>
+        <div
+          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
+        >
+          <button
+            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
+            :class="
+              state.selectedSubtab === 'column-list' &&
+              'bg-gray-200 text-gray-800'
+            "
+            @click="handleChangeTab('column-list')"
+          >
+            <heroicons-outline:queue-list class="inline w-4 h-auto mr-1" />
+            {{ $t("schema-editor.columns") }}
+          </button>
+          <button
+            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
+            :class="
+              state.selectedSubtab === 'raw-sql' && 'bg-gray-200 text-gray-800'
+            "
+            @click="handleChangeTab('raw-sql')"
+          >
+            <heroicons-outline:clipboard class="inline w-4 h-auto mr-1" />
+            {{ $t("schema-editor.raw-sql") }}
+          </button>
+        </div>
+      </div>
+    </div>
 
+    <template v-if="state.selectedSubtab === 'column-list'">
       <!-- column table -->
       <div
         id="table-editor-container"
@@ -59,7 +76,7 @@
         <!-- column table header -->
         <div
           class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
-          :class="table.columnList.length > 0 && 'border-b'"
+          :class="shownColumnList.length > 0 && 'border-b'"
         >
           <span
             v-for="header in columnHeaderList"
@@ -72,7 +89,7 @@
         <!-- column table body -->
         <div class="w-full">
           <div
-            v-for="(column, index) in table.columnList"
+            v-for="(column, index) in shownColumnList"
             :key="`${index}-${column.id}`"
             class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
             :class="[
@@ -317,9 +334,15 @@ const foreignKeyList = computed(() => {
   ) as ForeignKey[];
 });
 
+const searchPattern = ref("");
 const tableEditorContainerRef = ref<HTMLDivElement>();
 const editForeignKeyColumn = ref<Column>();
 
+const shownColumnList = computed(() => {
+  return table.value.columnList.filter((column) =>
+    column.name.includes(searchPattern.value.trim())
+  );
+});
 const isDroppedSchema = computed(() => {
   return schema.value.status === "dropped";
 });

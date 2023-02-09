@@ -252,7 +252,7 @@
           </a>
         </p>
       </div>
-      <div class="w-full grid grid-cols-2">
+      <div class="w-full grid grid-cols-[256px_1fr]">
         <input
           v-model="configForOAuth2.fieldMapping!.identifier"
           type="text"
@@ -269,7 +269,7 @@
           </p>
         </div>
       </div>
-      <div class="w-full grid grid-cols-2">
+      <div class="w-full grid grid-cols-[256px_1fr]">
         <input
           v-model="configForOAuth2.fieldMapping!.displayName"
           type="text"
@@ -285,7 +285,7 @@
           </p>
         </div>
       </div>
-      <div class="w-full grid grid-cols-2">
+      <div class="w-full grid grid-cols-[256px_1fr]">
         <input
           v-model="configForOAuth2.fieldMapping!.email"
           type="text"
@@ -570,20 +570,21 @@ const isFormCompleted = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
     if (
       !configForOAuth2.value.clientId ||
-      !configForOAuth2.value.clientSecret ||
       !configForOAuth2.value.authUrl ||
       !configForOAuth2.value.tokenUrl ||
       !configForOAuth2.value.userInfoUrl ||
-      !configForOAuth2.value.fieldMapping?.identifier
+      !configForOAuth2.value.fieldMapping?.identifier ||
+      // Only request client secret when creating.
+      (isCreating.value && !configForOAuth2.value.clientSecret)
     ) {
       return false;
     }
   } else if (state.type === IdentityProviderType.OIDC) {
     if (
       !configForOIDC.value.clientId ||
-      !configForOIDC.value.clientSecret ||
       !configForOIDC.value.issuer ||
-      !configForOIDC.value.fieldMapping?.identifier
+      !configForOIDC.value.fieldMapping?.identifier ||
+      (isCreating.value && !configForOIDC.value.clientSecret)
     ) {
       return false;
     }
@@ -603,7 +604,7 @@ const allowCreate = computed(() => {
 
 const allowTestConnection = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
-    if (isFormCompleted.value) {
+    if (isFormCompleted.value && configForOAuth2.value.clientSecret) {
       return true;
     }
   }

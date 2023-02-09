@@ -1,7 +1,7 @@
 <template>
   <NConfigProvider
     v-bind="naiveUIConfig"
-    class="relative flex flex-col justify-start items-start h-full p-2"
+    class="relative flex flex-col justify-start items-start p-2"
     :class="dark && 'dark bg-dark-bg'"
   >
     <div
@@ -32,6 +32,17 @@
         </span>
       </div>
       <div class="flex justify-between items-center gap-x-3">
+        <NPagination
+          v-if="showPagination"
+          :item-count="table.getCoreRowModel().rows.length"
+          :page="table.getState().pagination.pageIndex + 1"
+          :page-size="table.getState().pagination.pageSize"
+          :show-quick-jumper="true"
+          :show-size-picker="true"
+          :page-sizes="[20, 50, 100]"
+          @update-page="handleChangePage"
+          @update-page-size="(ps) => table.setPageSize(ps)"
+        />
         <NButton
           v-if="showVisualizeButton"
           text
@@ -55,7 +66,15 @@
       </div>
     </div>
 
-    <DataTable v-show="!showPlaceholder" :columns="columns" :data="data" />
+    <div class="flex-1 w-full flex flex-col overflow-y-auto">
+      <DataTable
+        v-show="!showPlaceholder"
+        ref="dataTable"
+        :table="table"
+        :columns="columns"
+        :data="data"
+      />
+    </div>
 
     <div
       v-if="showPlaceholder"
@@ -74,19 +93,25 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { debouncedRef } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
-import { darkTheme, NConfigProvider } from "naive-ui";
+import { darkTheme, NConfigProvider, NPagination } from "naive-ui";
 
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { useTabStore, useInstanceStore } from "@/store";
 import { createExplainToken } from "@/utils";
 import DataTable from "./DataTable.vue";
 import { RESULT_ROWS_LIMIT } from "@/store";
+import {
+  ColumnDef,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useVueTable,
+} from "@tanstack/vue-table";
 
 interface State {
   search: string;
@@ -109,6 +134,9 @@ const props = defineProps({
   },
 });
 
+const PAGE_SIZES = [20, 50, 100];
+const DEFAULT_PAGE_SIZE = 50;
+
 const { t } = useI18n();
 const tabStore = useTabStore();
 const instanceStore = useInstanceStore();
@@ -116,6 +144,8 @@ const instanceStore = useInstanceStore();
 const state = reactive<State>({
   search: "",
 });
+
+const dataTable = ref<InstanceType<typeof DataTable>>();
 
 const showSearchFeature = computed(() => {
   const instance = instanceStore.getInstanceById(
@@ -141,14 +171,12 @@ const columns = computed(() => {
   if (!props.queryResult) {
     return [];
   }
-
   const columns = props.queryResult[0];
-  return columns.map((d) => {
-    return {
-      title: d,
-      key: d,
-    };
-  });
+  return columns.map<ColumnDef<string[]>>((col, index) => ({
+    id: `${col}@${index}`,
+    accessorFn: (item) => item[index],
+    header: col,
+  }));
 });
 
 const data = computed(() => {
@@ -166,6 +194,19 @@ const data = computed(() => {
   }
   return temp;
 });
+
+const table = useVueTable<string[]>({
+  get data() {
+    return data.value;
+  },
+  get columns() {
+    return columns.value;
+  },
+  getCoreRowModel: getCoreRowModel(),
+  getPaginationRowModel: getPaginationRowModel(),
+});
+
+table.setPageSize(DEFAULT_PAGE_SIZE);
 
 const showPlaceholder = computed(() => {
   if (!props.queryResult) return true;
@@ -190,7 +231,7 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   let rawText = "";
 
   if (format === "csv") {
-    const csvFields = columns.value.map((item) => item.key);
+    const csvFields = columns.value.map((col) => col.header as string);
     const csvData = data.value.map((d) => {
       const temp: any[] = [];
       for (const k in d) {
@@ -245,5 +286,12 @@ const visualizeExplain = () => {
   } catch {
     // nothing
   }
+};
+
+const showPagination = computed(() => data.value.length > PAGE_SIZES[0]);
+
+const handleChangePage = (page: number) => {
+  table.setPageIndex(page - 1);
+  dataTable.value?.scrollTo(0, 0);
 };
 </script>

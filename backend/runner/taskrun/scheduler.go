@@ -340,8 +340,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// PatchTaskStatement patches the statement and earliest allowed time for a patch.
-func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
+// PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.
+func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
 	if taskPatch.Statement != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
@@ -352,6 +352,14 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		}
 	}
 
+	// Reset rollbackStatement and rollbackError because we are trying to build
+	// the rollbackStatement again and there could be previous runs.
+	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
+		empty := ""
+		taskPatch.RollbackStatement = &empty
+		taskPatch.RollbackError = &empty
+	}
+
 	taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
@@ -360,6 +368,21 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *store.TaskMess
 		needAttention := false
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+		}
+	}
+
+	if taskPatch.RollbackEnabled != nil {
+		// Enqueue the task
+		if *taskPatch.RollbackEnabled {
+			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
+		} else {
+			// Cancel running rollback sql generation.
+			if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
+				if cancel, ok := v.(context.CancelFunc); ok {
+					cancel()
+				}
+			}
+			// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 		}
 	}
 

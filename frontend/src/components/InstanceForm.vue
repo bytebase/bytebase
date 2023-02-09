@@ -43,54 +43,45 @@
         </div>
 
         <div class="sm:col-span-3 sm:col-start-1">
-          <label for="host" class="textlabel block">
-            <template v-if="state.instance.engine == 'SNOWFLAKE'">
-              {{ $t("instance.account-name") }}
-              <span class="text-red-600 mr-2">*</span>
-            </template>
-            <template v-else-if="state.instance.engine === 'SPANNER'">
-              {{ $t("instance.project-id-and-instance-id") }}
-              <span style="color: red">*</span>
-              <p class="text-sm text-gray-500 mt-1">
-                {{ $t("instance.find-gcp-project-id-and-instance-id") }}
-                <a
-                  href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
-                  target="_blank"
-                  class="normal-link inline-flex items-center"
-                >
-                  {{ $t("common.detailed-guide")
-                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
-                /></a>
-              </p>
-            </template>
-            <template v-else>
-              {{ $t("instance.host-or-socket") }}
-              <span class="text-red-600 mr-2">*</span>
-            </template>
-          </label>
-          <input
-            id="host"
-            required
-            type="text"
-            name="host"
-            :placeholder="
-              state.instance.engine == 'SNOWFLAKE'
-                ? $t('instance.your-snowflake-account-name')
-                : state.instance.engine === 'SPANNER'
-                ? 'projects/<projectID>/instances/<instanceID>'
-                : $t('instance.sentence.host.snowflake')
-            "
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :value="adminDataSource.host"
-            @input="handleInstanceHostInput"
+          <template v-if="state.instance.engine !== 'SPANNER'">
+            <label for="host" class="textlabel block">
+              <template v-if="state.instance.engine == 'SNOWFLAKE'">
+                {{ $t("instance.account-name") }}
+                <span class="text-red-600 mr-2">*</span>
+              </template>
+              <template v-else>
+                {{ $t("instance.host-or-socket") }}
+                <span class="text-red-600 mr-2">*</span>
+              </template>
+            </label>
+            <input
+              id="host"
+              required
+              type="text"
+              name="host"
+              :placeholder="
+                state.instance.engine == 'SNOWFLAKE'
+                  ? $t('instance.your-snowflake-account-name')
+                  : $t('instance.sentence.host.snowflake')
+              "
+              class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
+              :value="adminDataSource.host"
+              @input="handleInstanceHostInput"
+            />
+            <div
+              v-if="state.instance.engine == 'SNOWFLAKE'"
+              class="mt-2 textinfolabel"
+            >
+              {{ $t("instance.sentence.proxy.snowflake") }}
+            </div>
+          </template>
+          <SpannerHostInput
+            v-else
+            :host="adminDataSource.host"
+            :allow-edit="allowEdit"
+            @update:host="handleUpdateSpannerHost"
           />
-          <div
-            v-if="state.instance.engine == 'SNOWFLAKE'"
-            class="mt-2 textinfolabel"
-          >
-            {{ $t("instance.sentence.proxy.snowflake") }}
-          </div>
         </div>
         <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="sm:col-span-1">
@@ -240,29 +231,17 @@
           </div>
         </template>
 
-        <div class="mt-2 sm:col-span-1 sm:col-start-1">
+        <div
+          v-if="state.instance.engine !== 'SPANNER'"
+          class="mt-2 sm:col-span-1 sm:col-start-1"
+        >
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              <template v-if="state.instance.engine === 'SPANNER'">
-                {{ $t("common.credentials") }}
-                <span class="text-red-600">*</span>
-                <p class="text-sm text-gray-500 mt-1">
-                  {{ $t("instance.create-gcp-credentials") }}
-                  <a
-                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
-                    target="_blank"
-                    class="normal-link inline-flex items-center"
-                    >{{ $t("common.detailed-guide") }}
-                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
-                  /></a>
-                </p>
-              </template>
-              <template v-else>
-                {{ $t("common.password") }}
-                <span class="text-red-600">*</span>
-              </template>
+              {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <BBCheckbox
+              v-if="allowUsingEmptyPassword"
               :title="$t('common.empty')"
               :value="currentDataSource.useEmptyPassword"
               @toggle="handleToggleUseEmptyPassword"
@@ -277,8 +256,6 @@
             :placeholder="
               currentDataSource.useEmptyPassword
                 ? $t('instance.no-password')
-                : state.instance.engine === 'SPANNER'
-                ? $t('instance.credentials-write-only')
                 : $t('instance.password-write-only')
             "
             :disabled="!allowEdit || currentDataSource.useEmptyPassword"
@@ -290,6 +267,14 @@
             @input="handleCurrentDataSourcePasswordInput"
           />
         </div>
+
+        <SpannerCredentialInput
+          v-else
+          :value="currentDataSource.updatedPassword"
+          :write-only="true"
+          class="mt-2 sm:col-span-3 sm:col-start-1"
+          @update:value="handleUpdateSpannerCredential"
+        />
 
         <template v-if="showAuthenticationDatabase">
           <div class="sm:col-span-1 sm:col-start-1">
@@ -340,8 +325,16 @@
           </label>
         </div>
 
-        <template v-if="state.currentDataSourceType === 'RO'">
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+        <template
+          v-if="
+            state.currentDataSourceType === 'RO' &&
+            (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
+          "
+        >
+          <div
+            v-if="hasReadonlyReplicaHost"
+            class="mt-2 sm:col-span-1 sm:col-start-1"
+          >
             <div class="flex flex-row items-center space-x-2">
               <label for="host" class="textlabel block">
                 {{ $t("data-source.read-replica-host") }}
@@ -358,7 +351,10 @@
             />
           </div>
 
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+          <div
+            v-if="hasReadonlyReplicaPort"
+            class="mt-2 sm:col-span-1 sm:col-start-1"
+          >
             <div class="flex flex-row items-center space-x-2">
               <label for="port" class="textlabel block">
                 {{ $t("data-source.read-replica-port") }}
@@ -475,7 +471,11 @@ import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { SslCertificateForm } from "./InstanceForm";
+import {
+  SpannerHostInput,
+  SpannerCredentialInput,
+  SslCertificateForm,
+} from "./InstanceForm";
 import { clearObject, hasWorkspacePermission } from "../utils";
 import {
   InstancePatch,
@@ -565,6 +565,10 @@ const allowEdit = computed(() => {
   );
 });
 
+const allowUsingEmptyPassword = computed(() => {
+  return state.instance.engine !== "SPANNER";
+});
+
 const valueChanged = computed(() => {
   return !isEqual(state.instance, state.originalInstance);
 });
@@ -632,6 +636,14 @@ const instanceLink = computed(() => {
   return state.instance.externalLink || "";
 });
 
+const hasReadonlyReplicaHost = computed((): boolean => {
+  return state.instance.engine !== "SPANNER";
+});
+
+const hasReadonlyReplicaPort = computed((): boolean => {
+  return state.instance.engine !== "SPANNER";
+});
+
 const showDatabase = computed((): boolean => {
   return (
     state.instance.engine === "POSTGRES" &&
@@ -658,6 +670,11 @@ const handleInstanceNameInput = (event: Event) => {
 
 const handleInstanceHostInput = (event: Event) => {
   adminDataSource.value.host = (event.target as HTMLInputElement).value;
+  updateInstanceDataSource(adminDataSource.value);
+};
+
+const handleUpdateSpannerHost = (host: string) => {
+  adminDataSource.value.host = host;
   updateInstanceDataSource(adminDataSource.value);
 };
 
@@ -692,6 +709,11 @@ const handleToggleUseEmptyPassword = (on: boolean) => {
 const handleCurrentDataSourcePasswordInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.updatedPassword = str;
+  updateInstanceDataSource(currentDataSource.value);
+};
+
+const handleUpdateSpannerCredential = (credential: string) => {
+  currentDataSource.value.updatedPassword = credential;
   updateInstanceDataSource(currentDataSource.value);
 };
 
@@ -835,6 +857,9 @@ const handleCreateDataSource = (type: DataSourceType) => {
       srv: false,
     },
   } as DataSource;
+  if (state.instance.engine === "SPANNER") {
+    tempDataSource.host = adminDataSource.value.host;
+  }
   state.dataSourceList.push({
     ...tempDataSource,
     updatedPassword: "",

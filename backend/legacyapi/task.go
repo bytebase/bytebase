@@ -177,6 +177,8 @@ type TaskDatabaseDataUpdatePayload struct {
 
 	// MySQL rollback SQL related.
 
+	// Build the RollbackStatement if RollbackEnabled.
+	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
 	// ThreadID is the ID of the connection executing the migration.
 	// We use it to filter the binlog events of the migration transaction.
 	ThreadID string `json:"threadId,omitempty"`
@@ -322,12 +324,17 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	DatabaseID *int
-	// Statement/SchemaVersion and Payload cannot be set at the same time.
+	DatabaseID        *int
+	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
+
+	// Payload and others cannot be set at the same time.
+	Payload *string
+
 	Statement         *string `jsonapi:"attr,statement"`
 	SchemaVersion     *string
-	Payload           *string
-	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
+	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
+	RollbackStatement *string
+	RollbackError     *string
 }
 
 // TaskStatusPatch is the API message for patching a task status.
