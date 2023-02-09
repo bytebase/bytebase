@@ -372,8 +372,8 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	if taskPatch.RollbackEnabled != nil {
-		// Enqueue the task
-		if *taskPatch.RollbackEnabled {
+		// Enqueue the task if it's done.
+		if *taskPatch.RollbackEnabled && taskPatched.Status == api.TaskDone {
 			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 		} else {
 			// Cancel running rollback sql generation.
