@@ -121,6 +121,11 @@ export interface UpdateBackupSettingRequest {
 
 /** CreateBackupRequest is the request message for CreateBackup. */
 export interface CreateBackupRequest {
+  /**
+   * The parent resource where this backup will be created.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  parent: string;
   backup?: Backup;
 }
 
@@ -371,12 +376,12 @@ export interface OperationMetadata {
 /** The message of the backup. */
 export interface Backup {
   /**
-   * The name of the database backup.
+   * The resource name of the database backup. backup-name is specified by the client.
    * Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
    */
   name: string;
-  /** The timestamp when the backup resource was pending to create. */
-  pendingCreateTime?: Date;
+  /** The timestamp when the backup resource was created - initally. */
+  createTime?: Date;
   /** The timestamp when the backup resource was updated. */
   updateTime?: Date;
   /** The state of the backup. */
@@ -1041,13 +1046,16 @@ export const UpdateBackupSettingRequest = {
 };
 
 function createBaseCreateBackupRequest(): CreateBackupRequest {
-  return { backup: undefined };
+  return { parent: "", backup: undefined };
 }
 
 export const CreateBackupRequest = {
   encode(message: CreateBackupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
     if (message.backup !== undefined) {
-      Backup.encode(message.backup, writer.uint32(10).fork()).ldelim();
+      Backup.encode(message.backup, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1060,6 +1068,9 @@ export const CreateBackupRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
           message.backup = Backup.decode(reader, reader.uint32());
           break;
         default:
@@ -1071,17 +1082,22 @@ export const CreateBackupRequest = {
   },
 
   fromJSON(object: any): CreateBackupRequest {
-    return { backup: isSet(object.backup) ? Backup.fromJSON(object.backup) : undefined };
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      backup: isSet(object.backup) ? Backup.fromJSON(object.backup) : undefined,
+    };
   },
 
   toJSON(message: CreateBackupRequest): unknown {
     const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
     message.backup !== undefined && (obj.backup = message.backup ? Backup.toJSON(message.backup) : undefined);
     return obj;
   },
 
   fromPartial(object: DeepPartial<CreateBackupRequest>): CreateBackupRequest {
     const message = createBaseCreateBackupRequest();
+    message.parent = object.parent ?? "";
     message.backup = (object.backup !== undefined && object.backup !== null)
       ? Backup.fromPartial(object.backup)
       : undefined;
@@ -2410,7 +2426,7 @@ export const OperationMetadata = {
 };
 
 function createBaseBackup(): Backup {
-  return { name: "", pendingCreateTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "" };
+  return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "" };
 }
 
 export const Backup = {
@@ -2418,8 +2434,8 @@ export const Backup = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.pendingCreateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.pendingCreateTime), writer.uint32(18).fork()).ldelim();
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(18).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
@@ -2447,7 +2463,7 @@ export const Backup = {
           message.name = reader.string();
           break;
         case 2:
-          message.pendingCreateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 3:
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
@@ -2472,7 +2488,7 @@ export const Backup = {
   fromJSON(object: any): Backup {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      pendingCreateTime: isSet(object.pendingCreateTime) ? fromJsonTimestamp(object.pendingCreateTime) : undefined,
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       state: isSet(object.state) ? backup_BackupStateFromJSON(object.state) : 0,
       backupType: isSet(object.backupType) ? backup_BackupTypeFromJSON(object.backupType) : 0,
@@ -2483,7 +2499,7 @@ export const Backup = {
   toJSON(message: Backup): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.pendingCreateTime !== undefined && (obj.pendingCreateTime = message.pendingCreateTime.toISOString());
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.state !== undefined && (obj.state = backup_BackupStateToJSON(message.state));
     message.backupType !== undefined && (obj.backupType = backup_BackupTypeToJSON(message.backupType));
@@ -2494,7 +2510,7 @@ export const Backup = {
   fromPartial(object: DeepPartial<Backup>): Backup {
     const message = createBaseBackup();
     message.name = object.name ?? "";
-    message.pendingCreateTime = object.pendingCreateTime ?? undefined;
+    message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.state = object.state ?? 0;
     message.backupType = object.backupType ?? 0;

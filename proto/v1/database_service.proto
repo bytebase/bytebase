@@ -73,7 +73,7 @@ service DatabaseService {
 
   rpc CreateBackup(CreateBackupRequest) returns (google.longrunning.Operation) {
     option (google.api.http) = {
-      post: "/v1/{backup.name=environments/*/instances/*/databases/*/backups/*}"
+      post: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
       body: "backup"
     };
     option (google.api.method_signature) = "backup";
@@ -184,7 +184,11 @@ message UpdateBackupSettingRequest {
 
 // CreateBackupRequest is the request message for CreateBackup.
 message CreateBackupRequest {
-  Backup backup = 1 [(google.api.field_behavior) = REQUIRED]; 
+  // The parent resource where this backup will be created.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  Backup backup = 2 [(google.api.field_behavior) = REQUIRED]; 
 }
 
 // ListBackupRequest is the request message for ListBackup.
@@ -484,12 +488,12 @@ message Backup {
     FAILED = 3;
   }
 
-  // The name of the database backup.
+  // The resource name of the database backup. backup-name is specified by the client.
   // Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
   string name = 1;
 
-  // The timestamp when the backup resource was pending to create.
-  google.protobuf.Timestamp pending_create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The timestamp when the backup resource was created - initally.
+  google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the backup resource was updated.
   google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

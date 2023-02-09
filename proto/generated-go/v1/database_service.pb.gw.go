@@ -564,14 +564,14 @@ func request_DatabaseService_CreateBackup_0(ctx context.Context, marshaler runti
 		_   = err
 	)
 
-	val, ok = pathParams["backup.name"]
+	val, ok = pathParams["parent"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "backup.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "backup.name", val)
+	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "backup.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
 	msg, err := client.CreateBackup(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -598,14 +598,14 @@ func local_request_DatabaseService_CreateBackup_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["backup.name"]
+	val, ok = pathParams["parent"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "backup.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "backup.name", val)
+	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "backup.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
 	msg, err := server.CreateBackup(ctx, &protoReq)
@@ -897,7 +897,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{backup.name=environments/*/instances/*/databases/*/backups/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/backups"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1162,7 +1162,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{backup.name=environments/*/instances/*/databases/*/backups/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/backups"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1220,7 +1220,7 @@ var (
 
 	pattern_DatabaseService_UpdateBackupSetting_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 4, 7, 5, 5}, []string{"v1", "environments", "instances", "databases", "backupSetting", "setting.name"}, ""))
 
-	pattern_DatabaseService_CreateBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5}, []string{"v1", "environments", "instances", "databases", "backups", "backup.name"}, ""))
+	pattern_DatabaseService_CreateBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "environments", "instances", "databases", "parent", "backups"}, ""))
 
 	pattern_DatabaseService_ListBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "environments", "instances", "databases", "parent", "backups"}, ""))
 )
