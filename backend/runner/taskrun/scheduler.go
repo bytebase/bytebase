@@ -862,10 +862,10 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 			return common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
 		}
 		cancelAny, ok := s.stateCfg.RunningTasksCancel.Load(task.ID)
-		cancel := cancelAny.(context.CancelFunc)
 		if !ok {
 			return errors.New("failed to cancel task")
 		}
+		cancel := cancelAny.(context.CancelFunc)
 		cancel()
 		result, err := json.Marshal(api.TaskRunResultPayload{
 			Detail: "Task cancellation requested.",
