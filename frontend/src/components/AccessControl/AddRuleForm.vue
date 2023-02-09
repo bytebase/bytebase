@@ -53,7 +53,7 @@
         tag="div"
         class="text-sm leading-6 text-gray-500 max-w-[15rem] whitespace-pre-wrap text-center"
       >
-        <template #protected_environment>
+        <template #production_environment>
           <a
             href="https://www.bytebase.com/docs/administration/database-access-control"
             class="normal-link lowercase"
