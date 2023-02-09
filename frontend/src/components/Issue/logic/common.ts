@@ -146,12 +146,17 @@ export const useCommonLogic = () => {
     // if not creating, we are allowed to edit sql statement only when:
     // 1. issue.status is OPEN
     // 2. AND currentUser is the creator
+    // 3. AND workflowType is UI
     if (issueEntity.status !== "OPEN") {
       return false;
     }
     if (issueEntity.creator.id !== currentUser.value.id) {
       return false;
     }
+    if (issueEntity.project.workflowType !== "UI") {
+      return false;
+    }
+
     return isTaskEditable(selectedTask.value as Task);
   });
 
