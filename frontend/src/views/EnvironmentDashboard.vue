@@ -12,7 +12,7 @@
       >
         <div class="flex items-center">
           {{ item.title }}
-          <ProtectedEnvironmentIcon :environment="item.data!" class="ml-1" />
+          <ProductionEnvironmentIcon :environment="item.data!" class="ml-1" />
         </div>
       </template>
 
@@ -98,7 +98,7 @@ import {
   useEnvironmentStore,
   useEnvironmentList,
 } from "@/store";
-import ProtectedEnvironmentIcon from "../components/Environment/ProtectedEnvironmentIcon.vue";
+import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",

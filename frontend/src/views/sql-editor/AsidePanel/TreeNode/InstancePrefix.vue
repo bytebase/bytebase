@@ -3,7 +3,7 @@
   <span class="text-sm -mr-0.5" :class="[!disabled && 'text-gray-500']">
     (
   </span>
-  <ProtectedEnvironmentIcon
+  <ProductionEnvironmentIcon
     :environment="instance.environment"
     class="w-4 h-4 text-inherit"
   />

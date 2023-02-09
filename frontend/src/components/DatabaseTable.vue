@@ -106,7 +106,7 @@
         <div v-if="showEnvironmentColumn" class="bb-grid-cell">
           <div class="flex items-center">
             {{ environmentName(database.instance.environment) }}
-            <ProtectedEnvironmentIcon
+            <ProductionEnvironmentIcon
               class="ml-1"
               :environment="database.instance.environment"
             />

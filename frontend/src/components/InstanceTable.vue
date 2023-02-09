@@ -15,7 +15,7 @@
       <div class="bb-grid-cell">
         <div class="flex items-center gap-x-1">
           {{ environmentNameFromId(instance.environment.id) }}
-          <ProtectedEnvironmentIcon :environment="instance.environment" />
+          <ProductionEnvironmentIcon :environment="instance.environment" />
         </div>
       </div>
       <div class="bb-grid-cell">
@@ -44,12 +44,12 @@ import { urlfy, instanceSlug, environmentName } from "@/utils";
 import { EnvironmentId, Instance } from "@/types";
 import { useEnvironmentStore } from "@/store";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import ProtectedEnvironmentIcon from "./Environment/ProtectedEnvironmentIcon.vue";
+import ProductionEnvironmentIcon from "./Environment/ProductionEnvironmentIcon.vue";
 import { BBGridColumn } from "@/bbkit";
 
 export default defineComponent({
   name: "InstanceTable",
-  components: { InstanceEngineIcon, ProtectedEnvironmentIcon },
+  components: { InstanceEngineIcon, ProductionEnvironmentIcon },
   props: {
     instanceList: {
       required: true,
