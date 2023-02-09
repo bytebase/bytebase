@@ -336,7 +336,7 @@
       "workspace": "Workspace",
       "general": "General",
       "members": "Members",
-      "webhook-integration": "IM Integration",
+      "im-integration": "IM Integration",
       "sso": "SSO",
       "gitops": "GitOps",
       "subscription": "Subscription",
