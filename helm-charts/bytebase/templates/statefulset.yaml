@@ -41,9 +41,6 @@ spec:
           ports:
             - containerPort: {{ $port }}
               name: web
-          volumeMounts:
-            - mountPath: {{ $data }}
-              name: bytebase
           readinessProbe:
             httpGet:
               path: /api/actuator/info
@@ -57,15 +54,53 @@ spec:
             initialDelaySeconds: 300
             periodSeconds: 300
             timeoutSeconds: 60
+          volumeMounts:
+            - mountPath: {{ $data }}
+              {{ if .Values.bytebase.persistence.existingClaim }}
+              # If user specifies an existing PVC, use that instead of "bytebase-volume".
+              name: {{ .Values.bytebase.persistence.existingClaim | quote }}
+              {{ else }}
+              # Either user disable persistence or enable persistence but not specify an existing PVC, use "bytebase-volume" as the volume name. It means
+              # that we will request to create a PVC with the specified storage class with name "bytebase-volume".
+              name: bytebase-volume
+              {{ end }}
       volumes:
-        - name: data
+        {{ if .Values.bytebase.persistence.enabled }}
+        {{ if .Values.bytebase.persistence.existingClaim }}
+        # If user specifies an existing PVC, use that instead of "bytebase-volume".
+        - name: {{ .Values.bytebase.persistence.existingClaim | quote }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.bytebase.persistence.existingClaim | quote }}
+        {{ else }}
+        # If user enable persistence, but not specify an existing PVC, create a PVC with the specified storage class with name "bytebase-volume".
+        - name: bytebase-volume
+          persistentVolumeClaim:
+            claimName: bytebase-volume
+        {{ end }}
+        {{ else }}
+        # If user disable persistence, use an emptyDir volume.
+        - name: bytebase-volume
           emptyDir: {}
-  volumeClaimTemplates:
-    - metadata:
-        name: bytebase
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: "{{ .Values.bytebase.storage }}"
+        {{ end }}
+
+---
+{{ if .Values.bytebase.persistence.enabled }}
+{{ if not .Values.bytebase.persistence.existingClaim }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bytebase-volume
+  namespace: {{ template "bytebase.namespace" . }}
+  labels:
+    app.kubernetes.io/managed-by: helm
+    app: bytebase
+spec:
+  storageClassName: {{ .Values.bytebase.persistence.storageClass | quote }}
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.bytebase.persistence.storage }}
+{{ end }}
+{{ end }}
+

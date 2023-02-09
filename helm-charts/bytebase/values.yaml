@@ -10,4 +10,8 @@ bytebase:
     pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
   version: 1.7.0
-  storage: 2Gi
+  persistence:
+    storage: 2Gi
+    enabled: false
+    storageClass: ""
+    existingClaim: ""
