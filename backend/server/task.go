@@ -103,6 +103,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
+		if taskPatch.RollbackEnabled != nil && task.Type != api.TaskDatabaseDataUpdate {
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot generate rollback SQL statement for a non-DML task")
+		}
+
 		if err := s.TaskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
 			return err
 		}
