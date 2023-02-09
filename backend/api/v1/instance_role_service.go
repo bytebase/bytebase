@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -125,7 +126,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 		ValidUntil:      request.Role.ValidUntil,
 		Attribute:       request.Role.Attribute,
 	}
-	if err := validateRole(roleUpsert); err != nil {
+	if err := validateRole(instance.Engine, roleUpsert); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +187,7 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 			upsert.Attribute = request.Role.Attribute
 		}
 	}
-	if err := validateRole(upsert); err != nil {
+	if err := validateRole(instance.Engine, upsert); err != nil {
 		return nil, err
 	}
 
@@ -274,16 +275,28 @@ func convertToRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage
 	}
 }
 
-func validateRole(upsert *db.DatabaseRoleUpsertMessage) error {
+func validateRole(dbType db.Type, upsert *db.DatabaseRoleUpsertMessage) error {
 	if upsert.Name == "" {
 		return status.Errorf(codes.InvalidArgument, "Invalid role name, role name cannot be empty")
 	}
-	if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
-		return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
-	}
-	if v := upsert.ValidUntil; v != nil {
-		if _, err := time.Parse(time.RFC3339, *v); err != nil {
-			return status.Errorf(codes.InvalidArgument, "Invalid timestamp for valid_until, timestamp should in '2006-01-02T15:04:05+08:00' format.")
+	switch dbType {
+	case db.Postgres:
+		if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
+			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
+		}
+		if v := upsert.ValidUntil; v != nil {
+			if _, err := time.Parse(time.RFC3339, *v); err != nil {
+				return status.Errorf(codes.InvalidArgument, "Invalid timestamp for valid_until, timestamp should in '2006-01-02T15:04:05+08:00' format.")
+			}
+		}
+	case db.MySQL, db.TiDB:
+		if v := upsert.ConnectionLimit; v != nil && *v < int32(0) {
+			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
+		}
+		if v := upsert.ValidUntil; v != nil {
+			if _, err := strconv.Atoi(*v); err != nil {
+				return status.Error(codes.InvalidArgument, "Invalid number for valid_until, mysql valid_until should be an integer.")
+			}
 		}
 	}
 

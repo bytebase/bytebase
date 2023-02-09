@@ -325,8 +325,16 @@
           </label>
         </div>
 
-        <template v-if="state.currentDataSourceType === 'RO'">
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+        <template
+          v-if="
+            state.currentDataSourceType === 'RO' &&
+            (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
+          "
+        >
+          <div
+            v-if="hasReadonlyReplicaHost"
+            class="mt-2 sm:col-span-1 sm:col-start-1"
+          >
             <div class="flex flex-row items-center space-x-2">
               <label for="host" class="textlabel block">
                 {{ $t("data-source.read-replica-host") }}
@@ -343,7 +351,10 @@
             />
           </div>
 
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+          <div
+            v-if="hasReadonlyReplicaPort"
+            class="mt-2 sm:col-span-1 sm:col-start-1"
+          >
             <div class="flex flex-row items-center space-x-2">
               <label for="port" class="textlabel block">
                 {{ $t("data-source.read-replica-port") }}
@@ -625,6 +636,14 @@ const instanceLink = computed(() => {
   return state.instance.externalLink || "";
 });
 
+const hasReadonlyReplicaHost = computed((): boolean => {
+  return state.instance.engine !== "SPANNER";
+});
+
+const hasReadonlyReplicaPort = computed((): boolean => {
+  return state.instance.engine !== "SPANNER";
+});
+
 const showDatabase = computed((): boolean => {
   return (
     state.instance.engine === "POSTGRES" &&
@@ -838,6 +857,9 @@ const handleCreateDataSource = (type: DataSourceType) => {
       srv: false,
     },
   } as DataSource;
+  if (state.instance.engine === "SPANNER") {
+    tempDataSource.host = adminDataSource.value.host;
+  }
   state.dataSourceList.push({
     ...tempDataSource,
     updatedPassword: "",

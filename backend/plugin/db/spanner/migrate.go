@@ -135,14 +135,24 @@ func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, stat
 		// Switch back to the target database.
 		if !m.CreateDatabase {
 			if err := d.switchDatabase(ctx, m.Database); err != nil {
-				return "", "", err
+				return "", "", errors.Wrap(err, "failed to switch database")
 			}
 			if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
 				return "", "", util.FormatError(err)
 			}
 		} else {
-			if err := d.creataDatabase(ctx, statement, nil); err != nil {
-				return "", "", err
+			stmts, err := sanitizeSQL(statement)
+			if err != nil {
+				return "", "", errors.Wrapf(err, "failed to sanitize %v", statement)
+			}
+			if len(stmts) == 0 {
+				return "", "", errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
+			}
+			if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
+				return "", "", errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
+			}
+			if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
+				return "", "", errors.Wrap(err, "failed to create database")
 			}
 		}
 	}

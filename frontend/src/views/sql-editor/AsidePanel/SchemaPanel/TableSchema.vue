@@ -19,6 +19,13 @@
           :database="database"
           :schema="schema"
           :table="table"
+          @click="
+            emit('alter-schema', {
+              databaseId: database.id,
+              schema: schema.name,
+              table: table.name,
+            })
+          "
         />
       </div>
     </div>
@@ -47,7 +54,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { Database } from "@/types";
+import type { Database, DatabaseId } from "@/types";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import { computed } from "vue";
 import { databaseSlug } from "@/utils";
@@ -62,6 +69,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
+  (
+    event: "alter-schema",
+    params: { databaseId: DatabaseId; schema: string; table: string }
+  ): void;
 }>();
 
 const tableDetailLink = computed((): string => {

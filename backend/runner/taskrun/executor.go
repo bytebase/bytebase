@@ -192,8 +192,15 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
-		// The runner will periodically scan the map to generate rollback SQL asynchronously.
-		stateCfg.RollbackGenerateMap.Store(task.ID, updatedTask)
+
+		payload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+			return "", "", errors.Wrap(err, "invalid database data update payload")
+		}
+		if payload.RollbackEnabled {
+			// The runner will periodically scan the map to generate rollback SQL asynchronously.
+			stateCfg.RollbackGenerateMap.Store(task.ID, updatedTask)
+		}
 	}
 
 	return migrationID, schema, nil

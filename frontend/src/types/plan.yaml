@@ -31,7 +31,6 @@ categoryList:
       - activity-log
       - terraform-provider
       - rbac
-      - sync-members-from-vcs
       - sso
       - dba-workflow
       - environment-tier
@@ -47,7 +46,7 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
-    freeInstanceCount: 3
+    freeInstanceCount: 10
     freeSeatCount: 10
     maximumInstanceCount: 3
     maximumSeatCount: 10
@@ -55,7 +54,7 @@ planList:
     pricePerInstancePerMonth: 79
     featureList:
       - type: instance-count
-        content: instance-maximum-3
+        content: instance-maximum-10
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
@@ -149,12 +148,10 @@ planList:
       - type: activity-log
       - type: terraform-provider
       - type: rbac
-      - type: sync-members-from-vcs
     mainFeatureList:
       - email-support
       - everything-in-free-plan
       - rbac
-      - gitlab-login
       - sql-check-anomaly-detection
       - review-and-backup-policy
       - online-schema-migration
@@ -214,7 +211,6 @@ planList:
       - type: terraform-provider
       - type: rbac
       - type: watermark
-      - type: sync-members-from-vcs
       - type: sso
       - type: dba-workflow
         tooltip: dba-workflow-tooltip

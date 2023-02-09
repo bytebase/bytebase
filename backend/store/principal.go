@@ -67,6 +67,9 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	}
+	if user.IdentityProviderResourceID != nil {
+		principal.IdentityProviderName = *user.IdentityProviderResourceID
+	}
 	return principal, nil
 }
 
@@ -224,6 +227,8 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 // GetUserByEmailV2 gets an instance of Principal.
 func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
+	// Do not to select those archived IdP user.
+	where, args = append(where, fmt.Sprintf("(principal.idp_id IS NULL OR idp.row_status = $%d)", len(args)+1)), append(args, api.Normal)
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}

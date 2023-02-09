@@ -93,7 +93,7 @@
                   {{ $t("alter-schema.vcs-info") }}
                 </span>
                 <span v-else class="tooltip whitespace-nowrap">
-                  {{ $t("database.version-control-enabled") }}
+                  {{ $t("database.gitops-enabled") }}
                 </span>
 
                 <heroicons-outline:collection

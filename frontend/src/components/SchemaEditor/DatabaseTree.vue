@@ -3,7 +3,7 @@
     <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
       <NInput
         v-model:value="searchPattern"
-        :placeholder="$t('sql-editor.search-databases')"
+        :placeholder="$t('schema-editor.search-database-and-table')"
       >
         <template #prefix>
           <heroicons-outline:search class="w-4 h-auto text-gray-300" />

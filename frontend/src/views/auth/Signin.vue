@@ -136,7 +136,7 @@
             $t("auth.sign-in.demo-note")
           }}</span>
         </template>
-        <template v-else>
+        <template v-else-if="!disallowSignup">
           <span class="pl-2 bg-white text-control">{{
             $t("auth.sign-in.new-user")
           }}</span>
@@ -239,7 +239,7 @@ const state = reactive<LocalState>({
   password: "",
   showPassword: false,
 });
-const { isDemo } = storeToRefs(actuatorStore);
+const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
 
 const identityProviderList = computed(
   () => identityProviderStore.identityProviderList
@@ -249,7 +249,7 @@ onMounted(async () => {
   // Navigate to signup if needs admin setup.
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
-  if (actuatorStore.needAdminSetup) {
+  if (actuatorStore.needAdminSetup && !disallowSignup) {
     router.push({ name: "auth.signup", replace: true });
   }
 
@@ -337,7 +337,10 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
     return;
   }
 
-  if (state.activeIdentityProvider.type === IdentityProviderType.OAUTH2) {
+  if (
+    state.activeIdentityProvider.type === IdentityProviderType.OAUTH2 ||
+    state.activeIdentityProvider.type === IdentityProviderType.OIDC
+  ) {
     const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
     if (payload.error) {
       return;
@@ -355,8 +358,6 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       web: true,
     });
     router.push("/");
-  } else if (state.activeIdentityProvider.type === IdentityProviderType.OIDC) {
-    // TODO
   }
 };
 
@@ -388,9 +389,11 @@ const trySigninWithOAuth = (authProvider: AuthProvider) => {
   );
 };
 
-const trySigninWithIdentityProvider = (identityProvider: IdentityProvider) => {
+const trySigninWithIdentityProvider = async (
+  identityProvider: IdentityProvider
+) => {
   state.activeIdentityProvider = identityProvider;
-  openWindowForSSO(identityProvider);
+  await openWindowForSSO(identityProvider);
 };
 
 const hasSSOFeature = featureToRef("bb.feature.sso");

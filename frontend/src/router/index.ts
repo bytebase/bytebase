@@ -111,6 +111,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/OAuthCallback.vue"),
   },
   {
+    path: "/oidc/callback",
+    name: "oidc-callback",
+    component: () => import("../views/OAuthCallback.vue"),
+  },
+  {
     path: "/",
     component: DashboardLayout,
     children: [
@@ -361,23 +366,23 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "version-control",
-                name: "setting.workspace.version-control",
-                meta: { title: () => t("settings.sidebar.version-control") },
+                path: "gitops",
+                name: "setting.workspace.gitops",
+                meta: { title: () => t("settings.sidebar.gitops") },
                 component: () => import("../views/SettingWorkspaceVCS.vue"),
                 props: true,
               },
               {
-                path: "version-control/new",
-                name: "setting.workspace.version-control.create",
+                path: "gitops/new",
+                name: "setting.workspace.gitops.create",
                 meta: { title: () => t("repository.add-git-provider") },
                 component: () =>
                   import("../views/SettingWorkspaceVCSCreate.vue"),
                 props: true,
               },
               {
-                path: "version-control/:vcsSlug",
-                name: "setting.workspace.version-control.detail",
+                path: "gitops/:vcsSlug",
+                name: "setting.workspace.gitops.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
@@ -962,12 +967,14 @@ router.beforeEach((to, from, next) => {
     routerStore.setBackPath(from.fullPath);
   }
 
-  // OAuth callback route is a relay to receive the OAuth callback and dispatch the corresponding OAuth event. It's called in the following scenarios:
-  // - Login via OAuth
+  // SSO callback routes are relayes to handle the IdP callback and dispatch the subsequent events.
+  // They are called in the following scenarios:
+  // - Login via OAuth / OIDC
   // - Setup VCS provider
   // - Setup GitOps workflow in a project
-  if (to.name === "oauth-callback") {
+  if (to.name === "oauth-callback" || to.name === "oidc-callback") {
     next();
+    return;
   }
 
   if (
@@ -1069,7 +1076,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name?.toString().startsWith("setting.workspace.version-control")) {
+  if (to.name?.toString().startsWith("setting.workspace.gitops")) {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-vcs-provider",
@@ -1176,7 +1183,7 @@ router.beforeEach((to, from, next) => {
     to.name === "sql-editor.home" ||
     to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
-      to.name?.toString() != "setting.workspace.version-control.detail" &&
+      to.name?.toString() != "setting.workspace.gitops.detail" &&
       to.name?.toString() != "setting.workspace.sql-review.detail")
   ) {
     next();

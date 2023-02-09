@@ -7,7 +7,7 @@
       <div
         v-for="tab in tabList"
         :key="tab.id"
-        class="tab-container px-1 pl-2 py-2 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
+        class="relative px-1 pl-2 py-2 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
         :class="[
           `tab-${tab.id}`,
           tab.id === currentTab?.id && 'bg-white border-gray-200',
@@ -37,6 +37,10 @@
             @click.stop.prevent="handleCloseTab(tab)"
           />
         </span>
+        <div
+          v-if="tab.id === currentTab?.id"
+          class="absolute -bottom-px left-0 w-full h-[3px] bg-accent rounded"
+        ></div>
       </div>
     </div>
   </div>
@@ -124,9 +128,3 @@ const handleCloseTab = (tab: TabContext) => {
   editorStore.closeTab(tab.id);
 };
 </script>
-
-<style scoped>
-.tab-container:hover > .tab-close-button {
-  @apply flex;
-}
-</style>

@@ -50,6 +50,10 @@ func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*I
 	}, nil
 }
 
+// DefaultScopes is a list of scopes that are part of OIDC standard claims, see
+// https://auth0.com/docs/get-started/apis/scopes/openid-connect-scopes#standard-claims.
+var DefaultScopes = []string{oidc.ScopeOpenID, "profile", "email"}
+
 // ExchangeToken returns the exchanged OAuth2 token using the given redirect
 // URL and authorization code.
 func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code string) (*oauth2.Token, error) {
@@ -60,9 +64,7 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 
 		// Discovery returns the OAuth2 endpoints.
 		Endpoint: p.provider.Endpoint(),
-
-		// "openid" is a required scope for OpenID Connect flows.
-		Scopes: []string{oidc.ScopeOpenID, "profile", "email"},
+		Scopes:   DefaultScopes,
 	}
 	token, err := oauth2Config.Exchange(ctx, code)
 	if err != nil {

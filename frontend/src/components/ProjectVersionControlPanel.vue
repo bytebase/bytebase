@@ -41,9 +41,9 @@
           </div>
           <div class="flex space-x-4">
             <input
-              id="workflow-version-control"
+              id="workflow-gitops"
               v-model="state.workflowType"
-              name="Version control workflow"
+              name="GitOps workflow"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
@@ -51,7 +51,7 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-1">
-              <label for="workflow-version-control" class="textlabel">{{
+              <label for="workflow-gitops" class="textlabel">{{
                 $t("workflow.gitops-workflow")
               }}</label>
               <div class="mt-1 textinfolabel">

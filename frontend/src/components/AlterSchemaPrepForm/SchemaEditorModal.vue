@@ -174,6 +174,10 @@ const props = defineProps({
     type: String as PropType<"TENANT" | "MULTI_DB" | "SINGLE_DB">,
     required: true,
   },
+  newWindow: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits<{
@@ -491,13 +495,19 @@ const handlePreviewIssue = async () => {
     }
   }
 
-  router.push({
+  const routeInfo = {
     name: "workspace.issue.detail",
     params: {
       issueSlug: "new",
     },
     query,
-  });
+  };
+  if (props.newWindow) {
+    const route = router.resolve(routeInfo);
+    window.open(route.fullPath, "__blank");
+  } else {
+    router.push(routeInfo);
+  }
 };
 
 const generateIssueName = (

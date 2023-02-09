@@ -36,7 +36,7 @@ const (
 	// MaximumSeat is the maximum seat limit for the FREE and TEAM plan.
 	MaximumSeat = 10
 	// MaximumInstanceForFreePlan is the maximum instance limit for the FREE plan.
-	MaximumInstanceForFreePlan = 5
+	MaximumInstanceForFreePlan = 10
 	// MaximumInstanceForTeamPlan is the maximum instance limit for the TEAM plan.
 	MaximumInstanceForTeamPlan = 10
 )
