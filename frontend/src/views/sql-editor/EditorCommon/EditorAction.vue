@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex justify-between items-center p-4 border-b">
+  <div class="w-full flex justify-between items-center p-4 border-b bg-white">
     <div class="action-left space-x-2 flex items-center">
       <NButton
         type="primary"
