@@ -1,4 +1,13 @@
-import { Database, DataSourceType, Environment, Principal } from "../types";
+import { stringify } from "qs";
+import type {
+  Database,
+  DataSourceType,
+  Environment,
+  Principal,
+  Repository,
+} from "../types";
+import { baseDirectoryWebUrl } from "../types";
+import { useRepositoryStore } from "@/store";
 import { hasWorkspacePermission } from "./role";
 import { isDev, semverCompare } from "./util";
 
@@ -139,3 +148,48 @@ export function isArchivedDatabase(db: Database): boolean {
   }
   return false;
 }
+
+export const alterSchemaVCS = (
+  database: Database,
+  schema: string,
+  table: string
+) => {
+  const { project } = database;
+  if (project.workflowType === "VCS") {
+    useRepositoryStore()
+      .fetchRepositoryByProjectId(database.project.id)
+      .then((repository: Repository): void => {
+        window.open(
+          baseDirectoryWebUrl(repository, {
+            DB_NAME: database.name,
+            ENV_NAME: database.instance.environment.name,
+            TYPE: "ddl",
+          }),
+          "_blank"
+        );
+      });
+    return;
+  }
+
+  const exampleSQL = () => {
+    const parts = ["ALTER TABLE"];
+
+    if (table) {
+      if (schema) {
+        parts.push(`${schema}.${table}`);
+      } else {
+        parts.push(table);
+      }
+    }
+    return parts.join(" ");
+  };
+  const query = {
+    template: "bb.issue.database.schema.update",
+    name: `[${database.name}] Alter schema`,
+    project: database.project.id,
+    databaseList: database.id,
+    sql: exampleSQL(),
+  };
+  const url = `/issue/new?${stringify(query)}`;
+  window.open(url, "_blank");
+};
