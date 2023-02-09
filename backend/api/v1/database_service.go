@@ -318,7 +318,8 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if backupSetting == nil {
-		return nil, status.Errorf(codes.NotFound, "backup setting %q not found", databaseName)
+		// If the backup setting is not found, return the default backup setting.
+		return getDefaultBackupSetting(environment.ResourceID, instance.ResourceID, database.DatabaseName), nil
 	}
 	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
 }
@@ -506,6 +507,19 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 		log.Warn("failed to create activities for database project updates", zap.Error(err))
 	}
 	return nil
+}
+
+func getDefaultBackupSetting(environmentID, instanceID, databaseName string) *v1pb.BackupSetting {
+	sevenDays, err := convertPeriodTsToDuration(int64(time.Duration(7 * 24 * time.Hour).Seconds()))
+	if err != nil {
+		log.Warn("failed to convert period ts to duration", zap.Error(err))
+	}
+	return &v1pb.BackupSetting{
+		Name:                 fmt.Sprintf("%s%s%s%s%s%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		BackupRetainDuration: sevenDays,
+		CronSchedule:         "", /* Disable automatic backup */
+		HookUrl:              "",
+	}
 }
 
 func convertToBackupSetting(backupSetting *store.BackupSettingMessage, environmentID, instanceID, databaseName string) (*v1pb.BackupSetting, error) {
