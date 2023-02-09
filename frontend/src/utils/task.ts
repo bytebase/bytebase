@@ -6,7 +6,13 @@ import {
   Task,
   TaskCreate,
   TaskDatabaseCreatePayload,
+  TaskDatabaseDataUpdatePayload,
   TaskDatabasePITRRestorePayload,
+  TaskDatabaseSchemaBaselinePayload,
+  TaskDatabaseSchemaUpdateGhostSyncPayload,
+  TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseSchemaUpdateSDLPayload,
+  TaskType,
   unknown,
 } from "@/types";
 import { issueSlug, stageSlug, taskSlug } from "./slug";
@@ -144,5 +150,32 @@ export const isTaskSkipped = (task: Task): boolean => {
     const payload = task.payload as any;
     return payload?.skipped === true;
   }
+  return false;
+};
+
+export const isTaskTriggeredByVCS = (task: Task): boolean => {
+  const taskTypesWithPushEvent: TaskType[] = [
+    "bb.task.database.data.update",
+    "bb.task.database.schema.update",
+    "bb.task.database.schema.update-sdl",
+    "bb.task.database.schema.update.ghost.sync",
+    "bb.task.database.schema.baseline",
+  ];
+
+  type PayloadTypesWithPushEvent =
+    | TaskDatabaseDataUpdatePayload
+    | TaskDatabaseSchemaUpdatePayload
+    | TaskDatabaseSchemaUpdateSDLPayload
+    | TaskDatabaseSchemaUpdateGhostSyncPayload
+    | TaskDatabaseSchemaBaselinePayload;
+
+  if (taskTypesWithPushEvent.includes(task.type)) {
+    const payload = task.payload as PayloadTypesWithPushEvent | undefined;
+
+    if (payload && payload.pushEvent) {
+      return true;
+    }
+  }
+
   return false;
 };
