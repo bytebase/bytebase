@@ -172,8 +172,8 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 			create.CreatorID,
 			create.CreatorID,
 			create.TaskID,
-			create.Type,
 			api.TaskCheckRunRunning,
+			create.Type,
 			create.Payload,
 		)
 		const count = 6
