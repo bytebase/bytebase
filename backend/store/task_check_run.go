@@ -33,20 +33,6 @@ type TaskCheckRunMessage struct {
 	UpdatedTs int64
 }
 
-// TaskCheckRunCreate is the API message for creating a task check run.
-type TaskCheckRunCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Type    api.TaskCheckType
-	Payload string
-}
-
 // TaskCheckRunFind is the API message for finding task check runs.
 type TaskCheckRunFind struct {
 	// Related fields
