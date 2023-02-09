@@ -17,82 +17,20 @@ import (
 // TaskCheckRunMessage is the store model for a TaskCheckRun.
 // Fields have exactly the same meanings as TaskCheckRun.
 type TaskCheckRunMessage struct {
-	ID int
+	TaskID  int
+	Type    api.TaskCheckType
+	Payload string
+	Code    common.Code
+	Status  api.TaskCheckRunStatus
+	Comment string
+	Result  string
 
-	// Standard fields
+	// Output only.
+	ID        int
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
 	UpdatedTs int64
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Status  api.TaskCheckRunStatus
-	Type    api.TaskCheckType
-	Code    common.Code
-	Comment string
-	Result  string
-	Payload string
-}
-
-func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
-	return &api.TaskCheckRun{
-		ID: run.ID,
-
-		// Standard fields
-		CreatorID: run.CreatorID,
-		CreatedTs: run.CreatedTs,
-		UpdaterID: run.UpdaterID,
-		UpdatedTs: run.UpdatedTs,
-
-		// Related fields
-		TaskID: run.TaskID,
-
-		// Domain specific fields
-		Status:  run.Status,
-		Type:    run.Type,
-		Code:    run.Code,
-		Comment: run.Comment,
-		Result:  run.Result,
-		Payload: run.Payload,
-	}
-}
-
-// FindTaskCheckRun finds a list of TaskCheckRun instances.
-func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
-	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find TaskCheckRun list with TaskCheckRunFind[%+v]", find)
-	}
-	var composedTaskCheckRuns []*api.TaskCheckRun
-	for _, run := range taskCheckRuns {
-		composedTaskCheckRun, err := s.composeTaskCheckRun(ctx, run)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose task check run %#v", run)
-		}
-		composedTaskCheckRuns = append(composedTaskCheckRuns, composedTaskCheckRun)
-	}
-	return composedTaskCheckRuns, nil
-}
-
-func (s *Store) composeTaskCheckRun(ctx context.Context, run *TaskCheckRunMessage) (*api.TaskCheckRun, error) {
-	composedTaskCheckRun := run.toTaskCheckRun()
-
-	creator, err := s.GetPrincipalByID(ctx, composedTaskCheckRun.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	composedTaskCheckRun.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, composedTaskCheckRun.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	composedTaskCheckRun.Updater = updater
-
-	return composedTaskCheckRun, nil
 }
 
 // TaskCheckRunCreate is the API message for creating a task check run.
@@ -106,7 +44,6 @@ type TaskCheckRunCreate struct {
 
 	// Domain specific fields
 	Type    api.TaskCheckType
-	Comment string
 	Payload string
 }
 
@@ -132,8 +69,42 @@ type TaskCheckRunStatusPatch struct {
 	Result string
 }
 
+func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
+	return &api.TaskCheckRun{
+		ID: run.ID,
+
+		// Standard fields
+		UpdaterID: run.UpdaterID,
+		UpdatedTs: run.UpdatedTs,
+
+		// Related fields
+		TaskID: run.TaskID,
+
+		// Domain specific fields
+		Status:  run.Status,
+		Type:    run.Type,
+		Code:    run.Code,
+		Comment: run.Comment,
+		Result:  run.Result,
+		Payload: run.Payload,
+	}
+}
+
+// FindTaskCheckRun finds a list of TaskCheckRun instances.
+func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
+	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find TaskCheckRun list with TaskCheckRunFind[%+v]", find)
+	}
+	var composedTaskCheckRuns []*api.TaskCheckRun
+	for _, run := range taskCheckRuns {
+		composedTaskCheckRuns = append(composedTaskCheckRuns, run.toTaskCheckRun())
+	}
+	return composedTaskCheckRuns, nil
+}
+
 // CreateTaskCheckRunIfNeeded creates a new taskCheckRun.
-func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) error {
+func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -171,7 +142,7 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskChec
 }
 
 // BatchCreateTaskCheckRun creates task check runs in batch.
-func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunCreate) error {
+func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -189,7 +160,7 @@ func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskChec
 	return nil
 }
 
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) error {
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -203,7 +174,6 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 			task_id,
 			status,
 			type,
-			comment,
 			payload) VALUES
       `); err != nil {
 		return err
@@ -217,11 +187,11 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 			create.CreatorID,
 			create.TaskID,
 			create.Type,
-			create.Comment,
+			api.TaskCheckRunRunning,
 			create.Payload,
 		)
 		const count = 6
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
 	}
 	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
 		return err
