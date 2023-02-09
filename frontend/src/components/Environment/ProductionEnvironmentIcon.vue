@@ -25,7 +25,7 @@ import { Environment } from "@/types";
 import { featureToRef } from "@/store";
 
 export default defineComponent({
-  name: "ProtectedEnvironmentIcon",
+  name: "ProductionEnvironmentIcon",
   inheritAttrs: false,
   props: {
     environment: {

@@ -31,7 +31,7 @@
           class="flex items-center"
         >
           <span class="">{{ selectedInstance.environment.name }}</span>
-          <ProtectedEnvironmentIcon
+          <ProductionEnvironmentIcon
             :environment="selectedInstance.environment"
             class="ml-1"
             :class="[isProtectedEnvironment && '~!text-yellow-700']"

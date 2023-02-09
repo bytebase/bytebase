@@ -19,7 +19,7 @@
                 >
                   {{ database.name }}
 
-                  <ProtectedEnvironmentIcon
+                  <ProductionEnvironmentIcon
                     :environment="database.instance.environment"
                     tooltip
                     class="w-5 h-5"

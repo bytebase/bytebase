@@ -52,7 +52,7 @@
               {{
                 environmentName(databaseOfPolicy(policy).instance.environment)
               }}
-              <ProtectedEnvironmentIcon
+              <ProductionEnvironmentIcon
                 class="ml-1"
                 :environment="databaseOfPolicy(policy).instance.environment"
               />
@@ -128,7 +128,7 @@
                 {{
                   environmentName(databaseOfPolicy(policy).instance.environment)
                 }}
-                <ProtectedEnvironmentIcon
+                <ProductionEnvironmentIcon
                   class="ml-1"
                   :environment="databaseOfPolicy(policy).instance.environment"
                 />
