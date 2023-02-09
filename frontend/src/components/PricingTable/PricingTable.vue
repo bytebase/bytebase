@@ -95,7 +95,7 @@
         </template>
       </i18n-t>
     </div>
-    <table class="w-full h-px table-fixed mb-16">
+    <table class="w-full table-fixed mb-16 border-l border-r border-b">
       <caption class="sr-only">
         Feature comparison
       </caption>
@@ -103,7 +103,7 @@
         <template v-for="section in FEATURE_SECTIONS" :key="section.type">
           <tr>
             <th
-              class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
+              class="bg-gray-50 py-3 pl-6 text-base font-medium text-gray-900 text-left"
               colspan="4"
               scope="colgroup"
             >
@@ -137,7 +137,7 @@
       <tfoot>
         <tr class="border-t border-gray-200">
           <th class="sr-only" scope="row">Choose your plan</th>
-          <td v-for="plan in plans" :key="plan.type" class="pt-5 px-6">
+          <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
             <button
               v-if="!plan.isFreePlan"
               class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
@@ -228,11 +228,11 @@
         <caption class="sr-only">
           Feature comparison
         </caption>
-        <tbody class="border-t border-gray-200 divide-y divide-gray-200">
+        <tbody class="border border-gray-200 divide-y divide-gray-200">
           <template v-for="section in FEATURE_SECTIONS" :key="section.type">
             <tr>
               <th
-                class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
+                class="bg-gray-50 py-3 pl-6 text-base font-medium text-gray-900 text-left"
                 scope="colgroup"
               >
                 {{ $t(`subscription.feature-sections.${section.type}.title`) }}
