@@ -881,7 +881,7 @@
     "environment-tier": {
       "name": "环境级别",
       "description": "使该环境在显示上不同于其他环境。{newline}默认情况下，开发者无法通过 SQL 编辑器在这个环境的数据库上执行任何查询。",
-      "mark-env-as-protected": "标记为受保护的环境"
+      "mark-env-as-production": "标记为生产环境"
     }
   },
   "change-history": {

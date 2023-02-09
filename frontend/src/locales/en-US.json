@@ -881,7 +881,7 @@
     "environment-tier": {
       "name": "Environment tier",
       "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
-      "mark-env-as-protected": "Mark as protected environment"
+      "mark-env-as-production": "Mark as production environment"
     }
   },
   "change-history": {
