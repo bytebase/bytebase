@@ -799,7 +799,7 @@
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     },
-    "protected-environment": "Protected environment"
+    "production-environment": "Production environment"
   },
   "quick-start": {
     "view-an-issue": "View an issue",

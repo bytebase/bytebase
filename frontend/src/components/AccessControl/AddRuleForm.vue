@@ -57,7 +57,7 @@
           <a
             href="https://www.bytebase.com/docs/administration/database-access-control"
             class="normal-link lowercase"
-            target="__BLANK"
+            target="_BLANK"
           >
             {{ $t("environment.protected-environment") }}
             <heroicons-outline:external-link
