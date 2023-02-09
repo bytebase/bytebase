@@ -604,7 +604,7 @@ const allowCreate = computed(() => {
 
 const allowTestConnection = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
-    if (isFormCompleted.value && configForOAuth2.value.clientSecret) {
+    if (isFormCompleted.value) {
       return true;
     }
   }
