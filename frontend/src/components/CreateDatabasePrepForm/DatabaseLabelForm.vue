@@ -30,7 +30,6 @@
 
 import { capitalize } from "lodash-es";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import type {
   DatabaseLabel,
   LabelKeyType,
@@ -50,8 +49,6 @@ const props = defineProps<{
   labelList: DatabaseLabel[];
   filter: "required" | "optional";
 }>();
-
-const { t } = useI18n();
 
 const isDbNameTemplateMode = computed((): boolean => {
   return !!props.project.dbNameTemplate;
@@ -94,7 +91,7 @@ const getLabelPlaceholder = (key: LabelKeyType): string => {
   key = requiredLabelDict.value.has(key)
     ? `{{${hidePrefix(key).toUpperCase()}}}`
     : capitalize(hidePrefix(key));
-  return t("create-db.input-label-value", { key });
+  return key;
 };
 
 const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {

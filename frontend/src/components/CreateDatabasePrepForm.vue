@@ -16,35 +16,6 @@
         />
       </div>
 
-      <!-- Providing a preview of generated database name in template mode -->
-      <div v-if="isDbNameTemplateMode" class="w-full">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.generated-database-name") }}
-          <NTooltip trigger="hover" placement="top">
-            <template #trigger>
-              <heroicons-outline:question-mark-circle
-                class="w-4 h-4 inline-block"
-              />
-            </template>
-            <div class="whitespace-nowrap">
-              {{
-                $t("create-db.db-name-generated-by-template", {
-                  template: project.dbNameTemplate,
-                })
-              }}
-            </div>
-          </NTooltip>
-        </label>
-        <input
-          id="name"
-          disabled
-          name="name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :value="generatedDatabaseName"
-        />
-      </div>
-
       <div class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.new-database-name") }}
@@ -65,6 +36,12 @@
             </template>
           </i18n-t>
         </span>
+        <DatabaseNameTemplateTips
+          v-if="isDbNameTemplateMode"
+          :project="project"
+          :name="state.databaseName"
+          :label-list="state.labelList"
+        />
       </div>
 
       <div v-if="selectedInstance.engine == 'MONGODB'" class="w-full">
@@ -266,8 +243,10 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
-import { NTooltip } from "naive-ui";
-import { DatabaseLabelForm } from "./CreateDatabasePrepForm/";
+import {
+  DatabaseLabelForm,
+  DatabaseNameTemplateTips,
+} from "./CreateDatabasePrepForm/";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
@@ -292,11 +271,7 @@ import {
   InstanceUserId,
   PITRContext,
 } from "../types";
-import {
-  buildDatabaseNameByTemplateAndLabelList,
-  hasWorkspacePermission,
-  issueSlug,
-} from "../utils";
+import { hasWorkspacePermission, issueSlug } from "../utils";
 import { useEventListener } from "@vueuse/core";
 import {
   hasFeature,
@@ -326,13 +301,13 @@ interface LocalState {
 export default defineComponent({
   name: "CreateDatabasePrepForm",
   components: {
-    NTooltip,
     InstanceSelect,
     EnvironmentSelect,
     ProjectSelect,
     MemberSelect,
     InstanceEngineIcon,
     DatabaseLabelForm,
+    DatabaseNameTemplateTips,
   },
   props: {
     projectId: {
@@ -421,20 +396,6 @@ export default defineComponent({
 
       // true if dbNameTemplate is not empty
       return !!project.value.dbNameTemplate;
-    });
-
-    const generatedDatabaseName = computed((): string => {
-      if (!isDbNameTemplateMode.value) {
-        // don't modify anything if we are not in template mode
-        return state.databaseName;
-      }
-
-      return buildDatabaseNameByTemplateAndLabelList(
-        project.value.dbNameTemplate,
-        state.databaseName,
-        state.labelList,
-        true // keepEmpty: true to keep non-selected values as original placeholders
-      );
     });
 
     const allowCreate = computed(() => {
@@ -535,9 +496,7 @@ export default defineComponent({
 
       let newIssue: IssueCreate;
 
-      const databaseName = isDbNameTemplateMode.value
-        ? generatedDatabaseName.value
-        : state.databaseName;
+      const databaseName = state.databaseName;
       const tableName = state.tableName;
       const instanceId = state.instanceId as InstanceId;
       let owner = "";
@@ -609,19 +568,20 @@ export default defineComponent({
         };
       }
 
-      state.creating = true;
-      useIssueStore()
-        .createIssue(newIssue)
-        .then(
-          (createdIssue) => {
-            router.push(
-              `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
-            );
-          },
-          () => {
-            state.creating = false;
-          }
-        );
+      console.log(JSON.stringify(newIssue, null, "  "));
+      // state.creating = true;
+      // useIssueStore()
+      //   .createIssue(newIssue)
+      //   .then(
+      //     (createdIssue) => {
+      //       router.push(
+      //         `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
+      //       );
+      //     },
+      //     () => {
+      //       state.creating = false;
+      //     }
+      //   );
     };
 
     // update `state.labelList` when selected Environment changed
@@ -647,7 +607,6 @@ export default defineComponent({
       project,
       isTenantProject,
       isDbNameTemplateMode,
-      generatedDatabaseName,
       labelForm,
       allowCreate,
       allowEditProject,
