@@ -20,7 +20,7 @@
 
       <div class="w-full flex space-x-4">
         <div class="flex w-48 items-center">
-          {{ $t("database.sync-schema.select-database") }}
+          {{ $t("database.sync-schema.to-database") }}
         </div>
         <div
           class="w-full flex flex-row justify-start items-center px-px relative"
@@ -146,13 +146,17 @@
     </div>
 
     <!-- Schema diff container -->
-    <div class="w-full flex flex-col justify-start items-start">
+    <div class="pt-4 w-full flex flex-col justify-start items-start">
       <div class="w-full flex flex-row justify-start items-center mb-2">
-        <span>{{ $t("database.sync-schema.schema-diff") }}</span>
+        <span>{{ previewSchemaChangeMessage }}</span>
       </div>
       <div v-if="!shouldShowDiff" class="w-full border px-4 py-4">
-        <p class="w-full text-left py-2">
-          {{ $t("database.sync-schema.select-schema-and-target-database-tip") }}
+        <p class="w-full text-left text-warning py-2">
+          {{
+            isValidId(state.targetDatabaseInfo.databaseId)
+              ? $t("database.sync-schema.select-from-database-and-schema-tip")
+              : $t("database.sync-schema.select-to-database-tip")
+          }}
         </p>
       </div>
       <template v-else>
@@ -163,7 +167,7 @@
           "
           class="w-full border px-4 py-4"
         >
-          <p class="w-full text-left py-2">
+          <p class="w-full text-left text-gray-500 py-2">
             {{ $t("database.sync-schema.no-difference-tip") }}
           </p>
         </div>
@@ -254,6 +258,7 @@
 <script lang="ts" setup>
 import axios from "axios";
 import dayjs from "dayjs";
+import { useI18n } from "vue-i18n";
 import { head, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -310,6 +315,7 @@ const props = withDefaults(
   }
 );
 const emit = defineEmits(["dismiss"]);
+const { t } = useI18n();
 
 const router = useRouter();
 
@@ -410,6 +416,22 @@ const hasDiffBetweenCharactorSets = computed(() => {
     baseDatabase.instance.engine === targetDatabase.instance.engine &&
     baseDatabase.characterSet !== targetDatabase.characterSet
   );
+});
+
+const previewSchemaChangeMessage = computed(() => {
+  if (
+    !isValidId(state.baseSchemaInfo.databaseId) ||
+    !isValidId(state.targetDatabaseInfo.databaseId)
+  ) {
+    return t("database.sync-schema.schema-change-preview-no-database");
+  }
+
+  const baseDatabase = databaseStore.getDatabaseById(
+    state.baseSchemaInfo.databaseId as number
+  );
+  return t("database.sync-schema.schema-change-preview", {
+    database: `${baseDatabase.name} (${baseDatabase.instance.environment.name} - ${baseDatabase.instance.name})`,
+  });
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
