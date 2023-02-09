@@ -618,7 +618,7 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
-      "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
+      "dont-apply-to-database-in-baseline-migration": "Baselining only records the current schema in the change history and won't apply the SQL to the database",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
     "rollback-from": "This task rollbacks from {link}.",
