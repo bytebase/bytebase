@@ -216,10 +216,10 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 			return nil, err
 		}
 		extractor.fromFieldList = fromFieldList
-		defer func() {
-			extractor.fromFieldList = nil
-		}()
 	}
+	defer func() {
+		extractor.fromFieldList = nil
+	}()
 
 	var result []fieldInfo
 
