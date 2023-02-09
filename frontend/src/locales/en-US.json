@@ -463,7 +463,7 @@
       "remove-policy-tips": "Remove this rule?",
       "inactive-rules": "Inactive rules",
       "inactive-rules-description": "These rules are inactive because environment is not protected.",
-      "no-database-in-protected-environment": "Make sure there are databases in the {protected_environment}."
+      "no-database-in-production-environment": "Make sure there are databases in the {production_environment}."
     },
     "release": {
       "new-version-available": "New version is available",

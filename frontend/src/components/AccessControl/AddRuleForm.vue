@@ -49,7 +49,7 @@
       class="w-full flex flex-col py-6 justify-start items-center"
     >
       <i18n-t
-        keypath="settings.access-control.no-database-in-protected-environment"
+        keypath="settings.access-control.no-database-in-production-environment"
         tag="div"
         class="text-sm leading-6 text-gray-500 max-w-[15rem] whitespace-pre-wrap text-center"
       >
@@ -59,7 +59,7 @@
             class="normal-link lowercase"
             target="_BLANK"
           >
-            {{ $t("environment.protected-environment") }}
+            {{ $t("environment.production-environment") }}
             <heroicons-outline:external-link
               class="inline-block w-4 h-4 -mt-0.5 mr-0.5"
             />
