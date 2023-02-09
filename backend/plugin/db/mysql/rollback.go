@@ -26,6 +26,8 @@ var (
 	reDatabaseTable = regexp.MustCompile("(?s)`(.+)`\\.`(.+)`")
 )
 
+const binlogSizeLimit = 8 * 1024 * 1024
+
 // GetRollbackSQL generates the rollback SQL for the list of binlog events in the reversed order.
 func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string, error) {
 	if len(txn) == 0 {
@@ -100,7 +102,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 		return "", errors.Wrap(err, "failed to run mysqlbinlog")
 	}
 
-	txnList, err := ParseBinlogStream(ctx, pr, threadID)
+	txnList, err := ParseBinlogStream(ctx, pr, threadID, binlogSizeLimit)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to parse binlog stream")
 	}
