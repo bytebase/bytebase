@@ -186,7 +186,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 	}
 
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
-		// Find existed client secret for testing.
+		// Find client secret for those existed identity providers.
 		if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
 			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
 			if err != nil {
