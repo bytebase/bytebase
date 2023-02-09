@@ -121,7 +121,6 @@
     "repository": "Repository",
     "change": "Change",
     "branch": "Branch",
-    "config-guide": "config guide",
     "required-placeholder": "required placeholder",
     "optional-placeholder": "optional placeholder",
     "optional-directory-wildcard": "optional directory wildcard",
