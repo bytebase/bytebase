@@ -28,6 +28,9 @@ $ helm -n <YOUR_NAMESPACE> \
 --set "bytebase.option.external-url"={EXTERNAL_URL} \
 --set "bytebase.option.pg"={PGDSN} \
 --set "bytebase.version"={VERSION} \
+--set "bytebase.persistence.enabled"={TRUE/FALSE} \
+--set "bytebase.persistence.storage"={STORAGE_SIZE} \
+--set "bytebase.persistence.storageClass"={STORAGE_CLASS} \
 install <RELEASE_NAME> bytebase-repo/bytebase
 ```
 
@@ -38,7 +41,10 @@ $ helm -n bytebase \
 --set "bytebase.option.port"=443 \
 --set "bytebase.option.external-url"="https://bytebase.com" \
 --set "bytebase.option.pg"="postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" \
---set "bytebase.version"=1.7.0 \
+--set "bytebase.version"=1.12.0 \
+--set "bytebase.persistence.enabled"="true" \
+--set "bytebase.persistence.storage"="10Gi" \
+--set "bytebase.persistence.storageClass"="csi-disk" \
 install bytebase-release bytebase-repo/bytebase
 ```
 
@@ -58,8 +64,25 @@ helm -n <YOUR_NAMESPACE> \
 --set "bytebase.option.external-url"={NEW_EXTERNAL_URL} \
 --set "bytebase.option.pg"={NEW_PGDSN} \
 --set "bytebase.version"={NEW_VERSION} \
+--set "bytebase.persistence.enabled"={TRUE/FALSE} \
+--set "bytebase.persistence.storage"={STORAGE_SIZE} \
+--set "bytebase.persistence.storageClass"={STORAGE_CLASS} \
 upgrade bytebase-release bytebase-repo/bytebase
 ```
+
+## Parameters
+| Parameter | Description | Default Value |
+| :-------: | :---------: | :-----------: |
+| bytebase.option.port | Port where Bytebase server runs. | 8080 |
+| bytebase.option.external-url | The external URL where user visits Bytebase, must start with http:// or https://. | "https://www.bytebase.com/docs/get-started/install/external-url"
+| bytebase.option.pg | External PostgreSQL instance connection url(must provide dbname). | "postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" |
+| bytebase.version | The Bytebase version. | "1.12.0" |
+| bytebase.persistence.enabled | Persist bytebase data switch. | false |
+| bytebase.persistence.storageClass | The storage class used by Bytebase PVC. | "" |
+| bytebase.persistence.storage | The storage size of Bytebase PVC used. | "2Gi" |
+| bytebase.persistence.existingClaim | The existing PVC that bytebase need to use.  | "" |
+
+**If you enable bytebase persistence, you should provide storageClass and storage to bytebase to request a PVC, or provide the already existed PVC by existingClaim.**
 
 ## Need Help?
 
