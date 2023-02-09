@@ -28,7 +28,7 @@
         </div>
         <div class="bb-grid-cell">
           {{ environmentName(item.database.instance.environment) }}
-          <ProtectedEnvironmentIcon
+          <ProductionEnvironmentIcon
             class="ml-1 w-4 h-4"
             :environment="item.database.instance.environment"
           />
