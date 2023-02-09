@@ -17,6 +17,8 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
+import { head } from "lodash-es";
+
 import {
   Activity,
   ActivityProjectRepositoryPushPayload,
@@ -39,11 +41,17 @@ export default defineComponent({
         case "bb.project.repository.push": {
           const payload =
             activity.payload as ActivityProjectRepositoryPushPayload;
-          return {
-            title: payload.pushEvent.fileCommit.id.substring(0, 7),
-            path: payload.pushEvent.fileCommit.url,
-            external: true,
-          };
+          const commit =
+            head(payload.pushEvent.commits) ?? payload.pushEvent.fileCommit;
+          if (commit && commit.id && commit.url) {
+            return {
+              title: commit.id.substring(0, 7),
+              path: commit.url,
+              external: true,
+            };
+          }
+          // Downgrade for legacy data.
+          return undefined;
         }
         case "bb.project.database.transfer": {
           const payload =
