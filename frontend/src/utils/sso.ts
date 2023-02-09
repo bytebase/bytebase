@@ -44,7 +44,7 @@ export async function openWindowForSSO(
     ).data;
 
     // Some IdPs like authning.cn doesn't expose "username" as part of standard claims,
-    // so we need to request the claim explictly when possible.
+    // so we need to request the claim explicitly when possible.
     if (openidConfig.scopes_supported.includes("username")) {
       oidcConfig.scopes.push("username");
     }
