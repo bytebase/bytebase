@@ -99,22 +99,6 @@
         </button>
       </template>
 
-      <template
-        v-if="!create && (issue as Issue).project.workflowType === 'VCS'"
-      >
-        <!--
-          Show a virtual pencil icon in VCS workflow which opens a guide
-          when clicked.
-        -->
-        <button
-          type="button"
-          class="btn-icon"
-          @click.prevent="state.showVCSGuideModal = true"
-        >
-          <heroicons-solid:pencil class="h-5 w-5" />
-        </button>
-      </template>
-
       <IssueRollbackButton />
     </div>
   </div>
@@ -143,32 +127,6 @@
       @ready="handleMonacoEditorReady"
     />
   </div>
-
-  <BBModal
-    v-if="state.showVCSGuideModal"
-    :title="$t('issue.edit-sql-statement')"
-    @close="state.showVCSGuideModal = false"
-  >
-    <div class="space-y-4 max-w-[32rem] divide-y divide-block-border">
-      <div class="whitespace-pre-wrap">
-        {{ $t("issue.edit-sql-statement-in-vcs") }}
-      </div>
-
-      <div class="flex justify-end pt-4 gap-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="state.showVCSGuideModal = false"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-
-        <button type="button" class="btn-primary" @click.prevent="goToVCS">
-          {{ $t("common.go-now") }}
-        </button>
-      </div>
-    </div>
-  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -178,21 +136,12 @@ import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useDBSchemaStore,
-  useRepositoryStore,
   useSheetStore,
   useUIStateStore,
 } from "@/store";
 import { useIssueLogic, TaskTypeWithSheetId, sheetIdOfTask } from "./logic";
-import type {
-  Database,
-  Issue,
-  Repository,
-  SQLDialect,
-  Task,
-  TaskCreate,
-  TaskId,
-} from "@/types";
-import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
+import type { Database, SQLDialect, Task, TaskCreate, TaskId } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
@@ -203,7 +152,6 @@ import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 interface LocalState {
   editing: boolean;
   editStatement: string;
-  showVCSGuideModal: boolean;
   isUploadingFile: boolean;
 }
 
@@ -245,7 +193,6 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const state = reactive<LocalState>({
   editing: false,
   editStatement: statement.value,
-  showVCSGuideModal: false,
   isUploadingFile: false,
 });
 
@@ -631,23 +578,6 @@ const handleUploadLocalFileAsSheet = async (event: Event) => {
   } else {
     uploadStatementAsSheet(statement);
   }
-};
-
-const goToVCS = () => {
-  const issueEntity = issue.value as Issue;
-  useRepositoryStore()
-    .fetchRepositoryByProjectId(issueEntity.project.id)
-    .then((repository: Repository) => {
-      window.open(
-        baseDirectoryWebUrl(repository, {
-          DB_NAME: selectedDatabase.value?.name,
-          ENV_NAME: selectedDatabase.value?.instance.environment.name,
-        }),
-        "_blank"
-      );
-
-      state.showVCSGuideModal = false;
-    });
 };
 
 const onStatementChange = (value: string) => {
