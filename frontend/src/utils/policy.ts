@@ -20,7 +20,7 @@ export const isInstanceAccessible = (instance: Instance, user: Principal) => {
     return true;
   }
 
-  // See if the instance is in a protected environment
+  // See if the instance is in a production environment
   const { environment } = instance;
   if (environment.tier === "UNPROTECTED") {
     return true;

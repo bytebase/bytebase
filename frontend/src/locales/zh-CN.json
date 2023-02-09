@@ -458,11 +458,11 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     },
     "access-control": {
-      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。{link}",
+      "description": "允许开发者通过 SQL 编辑器对下列生产环境中的数据库执行查询。{link}",
       "add-rule": "添加规则",
       "remove-policy-tips": "删除这条规则？",
       "inactive-rules": "无效的规则",
-      "inactive-rules-description": "这些规则不再生效，因为所属环境不是受保护的。",
+      "inactive-rules-description": "这些规则不再生效，因为所属环境不是生产环境。",
       "no-database-in-production-environment": "请确保{production_environment}中有数据库。"
     },
     "release": {
@@ -794,7 +794,6 @@
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
-    "protected": "受保护的",
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
@@ -1456,7 +1455,7 @@
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
     "visualize-explain": "可视化 Explain",
-    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。",
+    "sql-execute-in-production-environment": "下面的 SQL 语句将会在生产环境中执行。",
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",
@@ -1626,7 +1625,7 @@
       },
       "bb-feature-environment-tier-policy": {
         "title": "环境级别",
-        "desc": "「环境级别」可以将环境标记为受保护的"
+        "desc": "「环境级别」可以将环境标记为生产环境"
       },
       "bb-feature-sensitive-data": {
         "title": "敏感数据",
@@ -1634,7 +1633,7 @@
       },
       "bb-feature-access-control": {
         "title": "访问控制",
-        "desc": "可以修改受保护的环境中的数据库的查询权限。"
+        "desc": "可以修改生产环境中的数据库的查询权限。"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
