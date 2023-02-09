@@ -9,7 +9,7 @@
           <heroicons-outline:exclamation
             class="h-6 w-6 flex-shrink-0 mr-2"
             :class="[
-              isProtectedEnvironment ? 'text-yellow-500' : 'text-yellow-500',
+              isProductionEnvironment ? 'text-yellow-500' : 'text-yellow-500',
             ]"
           />
         </template>
@@ -30,10 +30,10 @@
           class="flex items-center"
         >
           <span class="">{{ selectedInstance.environment.name }}</span>
-          <ProtectedEnvironmentIcon
+          <ProductionEnvironmentIcon
             :environment="selectedInstance.environment"
             class="ml-1"
-            :class="[isProtectedEnvironment && '~!text-yellow-700']"
+            :class="[isProductionEnvironment && '~!text-yellow-700']"
           />
         </div>
         <div
@@ -94,7 +94,7 @@ const selectedDatabase = useDatabaseById(
   computed(() => connection.value.databaseId)
 );
 
-const isProtectedEnvironment = computed(() => {
+const isProductionEnvironment = computed(() => {
   const instance = selectedInstance.value;
   return instance.environment.tier === "PROTECTED";
 });

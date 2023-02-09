@@ -457,12 +457,12 @@
       "remove-sensitive-column-tips": "Expose this column?"
     },
     "access-control": {
-      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor. {link}",
+      "description": "Allow developers to execute queries for the following databases in the production environments from SQL Editor. {link}",
       "add-rule": "Add rule",
       "remove-policy-tips": "Remove this rule?",
       "inactive-rules": "Inactive rules",
-      "inactive-rules-description": "These rules are inactive because environment is not protected.",
-      "no-database-in-protected-environment": "Make sure there are databases in the {protected_environment}."
+      "inactive-rules-description": "These rules are inactive because environment is not production.",
+      "no-database-in-production-environment": "Make sure there are databases in the {production_environment}."
     },
     "release": {
       "new-version-available": "New version is available",
@@ -793,12 +793,11 @@
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
-    "protected": "Protected",
     "disable-auto-backup": {
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     },
-    "protected-environment": "Protected environment"
+    "production-environment": "Production environment"
   },
   "quick-start": {
     "view-an-issue": "View an issue",
@@ -880,7 +879,7 @@
     "environment-tier": {
       "name": "Environment tier",
       "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
-      "mark-env-as-protected": "Mark as protected environment"
+      "mark-env-as-production": "Mark as production environment"
     }
   },
   "change-history": {
@@ -1455,7 +1454,7 @@
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
     "visualize-explain": "Visualize Explain",
-    "sql-execute-in-protected-environment": "Be careful, you are accessing a database in a production environment.",
+    "sql-execute-in-production-environment": "Be careful, you are accessing a database in a production environment.",
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
       "readonly": "Read-only",
@@ -1624,7 +1623,7 @@
       },
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
-        "desc": "Mark environment as protected."
+        "desc": "Mark environment as production."
       },
       "bb-feature-sensitive-data": {
         "title": "Sensitive data",
@@ -1632,7 +1631,7 @@
       },
       "bb-feature-access-control": {
         "title": "Access control",
-        "desc": "Change query permission for databases in the protected environments."
+        "desc": "Change query permission for databases in the production environments."
       },
       "bb-feature-lgtm": {
         "title": "LGTM check",
