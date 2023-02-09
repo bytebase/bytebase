@@ -556,7 +556,10 @@ const changeDataText = computed(() => {
 });
 
 const tabItemList = computed((): BBTabFilterItem[] => {
-  if (database.value.instance.engine === "SPANNER") {
+  if (
+    database.value.instance.engine === "SPANNER" ||
+    database.value.instance.engine === "MONGODB"
+  ) {
     return databaseTabItemList
       .filter((item) => item.hash !== "backup-and-restore")
       .map((item) => {

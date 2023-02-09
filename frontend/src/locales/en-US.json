@@ -336,7 +336,7 @@
       "workspace": "Workspace",
       "general": "General",
       "members": "Members",
-      "im-integration": "IM Integration",
+      "webhook-integration": "IM Integration",
       "sso": "SSO",
       "gitops": "GitOps",
       "subscription": "Subscription",
@@ -395,7 +395,7 @@
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account"
     },
-    "im-integration": {
+    "webhook-integration": {
       "enable": "Enable",
       "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
@@ -618,7 +618,7 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
-      "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
+      "dont-apply-to-database-in-baseline-migration": "Baselining only records the current schema in the change history and won't apply the SQL to the database",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
     "rollback-from": "This task rollbacks from {link}.",
@@ -884,7 +884,7 @@
   },
   "change-history": {
     "self": "Change History",
-    "select": "Select version",
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -1024,12 +1024,14 @@
     "sync-schema": {
       "title": "Synchronize Schema",
       "select-project": "Select project",
-      "select-database": "Apply to database",
+      "to-database": "Apply to database",
       "from-database": "From database",
-      "schema-diff": "The schema diff",
-      "synchronize-statements": "The DDL statements",
-      "synchronize-statements-description": "You can further edit the generated DDL statements.",
-      "select-schema-and-target-database-tip": "Please select the schema and database first.",
+      "schema-change-preview": "Preview Schema change for '{database}'",
+      "schema-change-preview-no-database": "Preview Schema change",
+      "synchronize-statements": "Corresponding generated DDL statements",
+      "synchronize-statements-description": "You can further edit the generated DDL statements",
+      "select-from-database-and-schema-tip": "Select the database and schema version to be synced from",
+      "select-to-database-tip": "Select the database to be applied to",
       "no-difference-tip": "No diff found.",
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",

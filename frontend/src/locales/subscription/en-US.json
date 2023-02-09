@@ -50,8 +50,8 @@
     }
   },
   "feature-sections": {
-    "database-management": {
-      "title": "Database Development",
+    "change-management": {
+      "title": "Change Management",
       "features": {
         "instance-count": "Instance count",
         "instance-customized": "Customized",
@@ -62,38 +62,45 @@
         "instance-unlimited": "Unlimited",
         "environment-count": "Environment count",
         "environment-unlimited": "Unlimited",
-        "task-count-in-issue": "Task count in an issue",
-        "task-unlimited": "Unlimited",
         "schema-change": "Schema and data change",
         "schema-change-basic": "Basic",
-        "schema-change-basic-tooltip": "Normal migration",
+        "schema-change-basic-tooltip": "Normal change",
         "schema-change-advanced": "Advanced",
-        "schema-change-advanced-tooltip": "Normal migration + Online migration (gh-ost)",
-        "migration-history": "Migration history",
-        "sql-editor": "SQL Editor",
-        "schema-editor": "Schema Editor",
-        "schema-diagram": "Schema Diagram",
+        "schema-change-advanced-tooltip": "Normal change + Online change (gh-ost)",
+        "batch-change": "Batch change",
+        "batch-change-basic": "Basic",
+        "batch-change-basic-tooltip": "Multi-environment change",
+        "batch-change-advanced": "Advanced",
+        "batch-change-advanced-tooltip": "Multi-environment + Multi-region / Multi-tenancy change",
+        "change-history": "Change history",
         "disaster-recovery": "Disaster recovery",
         "disaster-recovery-basic": "Basic",
         "disaster-recovery-basic-tooltip": "Database backup / restore",
         "disaster-recovery-advanced": "Advanced",
         "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
-        "archiving": "Archiving",
-        "sql-check": "SQL check / SQL review",
+        "sql-check": "Automated SQL check",
         "sql-check-basic": "Basic",
         "sql-check-basic-tooltip": "Syntax check, connection check",
         "sql-check-advanced": "Advanced",
         "sql-check-advanced-tooltip": "Basic + Customized SQL review rules",
-        "anomaly-detection": "Anomaly detection",
-        "anomaly-detection-basic": "Basic",
-        "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
-        "anomaly-detection-advanced": "Advanced",
-        "anomaly-detection-advanced-tooltip": "Basic + Schema drift detection",
         "schedule-change": "Scheduled change at specific time",
-        "review-and-backup-policy": "Review and backup policy",
-        "tenancy": "Multi-Region / Multi-Tenancy deployment",
-        "read-replica": "Separate connection for read-only operations",
-        "sync-schema": "Synchronize schema between databases"
+        "sync-schema": "Synchronize schema between databases",
+        "terraform-provider": "Terraform Integration"
+      }
+    },
+    "sql-editor": {
+      "title": "SQL Editor",
+      "features": {
+        "auto-complete": "Auto complete",
+        "schema-editor": "Schema Editor",
+        "schema-diagram": "Schema Diagram",
+        "export": "CSV / JSON export",
+        "saved-sql-script": "Saved SQL script",
+        "saved-sql-script-basic": "Basic",
+        "saved-sql-script-advanced": "Advanced",
+        "saved-sql-script-advanced-tooltip": "Basic + Sync scripts from VCS",
+        "admin-mode": "Admin Mode",
+        "read-replica": "Separate connection for read-only operations"
       }
     },
     "collaboration": {
@@ -103,38 +110,50 @@
         "seat-maximum-10": "Up to 10",
         "seat-customized": "Customized",
         "ui-based-sql-review": "UI based SQL review",
-        "vsc-workflow": "VCS workflow #GitOps",
-        "shareable-query-link": "Shareable query link",
-        "im-integration": "IM integration",
-        "im-integration-basic": "Basic",
-        "im-integration-basic-tooltip": "Webhook",
-        "im-integration-advanced": "Advanced",
-        "im-integration-advanced-tooltip": "Basic + Feishu Integration",
+        "vsc-workflow": "GitOps Workflow",
+        "shared-sql-script": "Shared SQL script",
+        "webhook-integration": "Webhook integration",
+        "webhook-integration-basic": "Basic",
+        "webhook-integration-basic-tooltip": "IM + Custom Webhook",
+        "webhook-integration-advanced": "Advanced",
+        "webhook-integration-advanced-tooltip": "Basic + IM Approval",
         "inbox-notification": "Inbox notification",
         "vsc-workflow-basic": "Basic",
         "vsc-workflow-advanced": "Advanced",
         "vsc-workflow-advanced-tooltip": "Basic + Latest Schema Write-back, SQL Scripts Sync, SQL Review CI"
       }
     },
-    "admin-and-security": {
-      "title": "Admin & Security",
+    "data-security-and-governance": {
+      "title": "Data Security & Governance",
       "features": {
-        "activity-log": "Activity log",
-        "terraform-provider": "Terraform Provider",
+        "audit-log": "Audit log",
         "rbac": "RBAC (Owner, DBA, Developer role)",
         "watermark": "Watermark",
         "sso": "Single Sign-On (SSO)",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
+        "approval-and-backup-policy": "Approval and backup policy",
         "sensitive-data": "Sensitive data masking",
-        "database-access-control": "Database access control"
+        "database-access-control": "Database access control",
+        "anomaly-detection": "Anomaly detection",
+        "anomaly-detection-basic": "Basic",
+        "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
+        "anomaly-detection-advanced": "Advanced",
+        "anomaly-detection-advanced-tooltip": "Basic + Schema drift detection",
+        "archiving": "Archiving"
       }
     },
-    "branding": {
-      "title": "Branding",
+    "bespoke": {
+      "title": "Bespoke",
       "features": {
-        "branding-logo": "Customize the logo"
+        "support": "Support",
+        "support-community": "Community",
+        "support-email": "Email",
+        "support-sla": "Dedicated CSM and SLA",
+        "branding-logo": "Custom logo",
+        "roadmap": "Roadmap prioritization",
+        "contract": "Custom MSA and BAA"
       }
     }
   },
@@ -145,17 +164,18 @@
     "pitr": "Point-in-Time-Recovery",
     "sql-editor": "SQL Editor",
     "database-backup-restore": "Database backup / restore",
-    "im-integration": "IM integration (e.g. Slack, Discord and etc)",
+    "webhook-integration": "IM integration (e.g. Slack, Discord and etc)",
     "email-support": "Email support",
     "everything-in-free-plan": "Everything in free plan",
     "rbac": "Owner, DBA and Developer roles",
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
-    "review-and-backup-policy": "Review and backup policy",
+    "approval-and-backup-policy": "Review and backup policy",
     "sla": "Dedicated CSM and SLA support",
     "everything-in-team-plan": "Everything in team plan",
-    "multi-tenancy": "Multi-Region / Multi-Tenancy deployment",
+    "batch-change-multi-environment": "Multi-environment batch change",
+    "batch-change-multi-tenancy": "Multi-region / Multi-tenancy batch change",
     "read-replica": "Separate read-only connection",
     "dba-workflow": "DBA workflow",
     "environment-tier": "Environment tier",

@@ -1,45 +1,52 @@
 categoryList:
-  - type: database-management
+  - type: change-management
     featureList:
       - instance-count
       - environment-count
-      - task-count-in-issue
       - schema-change
+      - sql-check
+      - disaster-recovery
+      - batch-change
+      - change-history
       - sync-schema
-      - migration-history
-      - sql-editor
+      - terraform-provider
+      - schedule-change
+  - type: sql-editor
+    featureList:
+      - auto-complete
       - schema-editor
       - schema-diagram
-      - disaster-recovery
-      - archiving
-      - sql-check
-      - anomaly-detection
-      - schedule-change
-      - review-and-backup-policy
+      - export
+      - admin-mode
       - read-replica
-      - tenancy
+      - saved-sql-script
   - type: collaboration
     featureList:
       - seat-count
+      - inbox-notification
       - ui-based-sql-review
       - vsc-workflow
-      - shareable-query-link
-      - im-integration
-      - inbox-notification
-  - type: admin-and-security
+      - shared-sql-script
+      - webhook-integration
+  - type: data-security-and-governance
     featureList:
-      - activity-log
-      - terraform-provider
+      - archiving
+      - anomaly-detection
       - rbac
+      - approval-and-backup-policy
       - sso
       - dba-workflow
       - environment-tier
       - sensitive-data
       - database-access-control
       - watermark
-  - type: branding
+      - audit-log
+  - type: bespoke
     featureList:
+      - support
       - branding-logo
+      - roadmap
+      - contract
 planList:
   - type: 0
     title: free
@@ -53,49 +60,62 @@ planList:
     pricePerSeatPerMonth: 19
     pricePerInstancePerMonth: 79
     featureList:
+      # Change Management
       - type: instance-count
         content: instance-maximum-10
       - type: environment-count
         content: environment-unlimited
-      - type: task-count-in-issue
-        content: task-unlimited
       - type: schema-change
         content: schema-change-basic
         tooltip: schema-change-basic-tooltip
-      - type: sync-schema
-      - type: migration-history
-      - type: sql-editor
-      - type: schema-editor
-      - type: schema-diagram
-      - type: disaster-recovery
-        content: disaster-recovery-basic
-        tooltip: disaster-recovery-basic-tooltip
-      - type: archiving
       - type: sql-check
         content: sql-check-basic
         tooltip: sql-check-basic-tooltip
-      - type: anomaly-detection
-        content: anomaly-detection-basic
-        tooltip: anomaly-detection-basic-tooltip
+      - type: disaster-recovery
+        content: disaster-recovery-basic
+        tooltip: disaster-recovery-basic-tooltip
+      - type: batch-change
+        content: batch-change-basic
+        tooltip: batch-change-basic-tooltip
+      - type: change-history
+      - type: sync-schema
+      - type: terraform-provider
+      # SQL Editor
+      - type: auto-complete
+      - type: schema-editor
+      - type: schema-diagram
+      - type: export
+      - type: admin-mode
+      - type: read-replica
+      - type: saved-sql-script
+        content: saved-sql-script-basic
+      # Collaboration
       - type: seat-count
         content: seat-maximum-10
+      - type: inbox-notification
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
-      - type: shareable-query-link
-      - type: im-integration
-        content: im-integration-basic
-        tooltip: im-integration-basic-tooltip
-      - type: inbox-notification
-      - type: activity-log
-      - type: terraform-provider
+      - type: shared-sql-script
+      - type: webhook-integration
+        content: webhook-integration-basic
+        tooltip: webhook-integration-basic-tooltip
+      # Data Security and Governance
+      - type: archiving
+      - type: anomaly-detection
+        content: anomaly-detection-basic
+        tooltip: anomaly-detection-basic-tooltip
+      # Bespoke
+      - type: support
+        content: support-community
     mainFeatureList:
       - community-support
       - review-workflow
+      - batch-change-multi-environment
       - gitops
       - sql-editor
       - database-backup-restore
-      - im-integration
+      - webhook-integration
   - type: 1
     title: team
     trialDays: 14
@@ -108,52 +128,64 @@ planList:
     pricePerSeatPerMonth: 19
     pricePerInstancePerMonth: 79
     featureList:
+      # Change Management
       - type: instance-count
         content: instance-maximum-10
         tooltip: instance-maximum-10-tooltip
       - type: environment-count
         content: environment-unlimited
-      - type: task-count-in-issue
-        content: task-unlimited
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
-      - type: sync-schema
-      - type: migration-history
-      - type: sql-editor
-      - type: schema-editor
-      - type: schema-diagram
-      - type: disaster-recovery
-        content: disaster-recovery-advanced
-        tooltip: disaster-recovery-advanced-tooltip
-      - type: archiving
       - type: sql-check
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
-      - type: anomaly-detection
-        content: anomaly-detection-basic
-        tooltip: anomaly-detection-basic-tooltip
+      - type: disaster-recovery
+        content: disaster-recovery-advanced
+        tooltip: disaster-recovery-advanced-tooltip
+      - type: batch-change
+        content: batch-change-basic
+        tooltip: batch-change-basic-tooltip
+      - type: change-history
+      - type: sync-schema
+      - type: terraform-provider
       - type: schedule-change
-      - type: review-and-backup-policy
+      # SQL Editor
+      - type: auto-complete
+      - type: schema-editor
+      - type: schema-diagram
+      - type: export
+      - type: admin-mode
+      - type: read-replica
+      - type: saved-sql-script
+        content: saved-sql-script-basic
+      # Collaboration
       - type: seat-count
         content: seat-maximum-10
+      - type: inbox-notification
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
-      - type: shareable-query-link
-      - type: im-integration
-        content: im-integration-basic
-        tooltip: im-integration-basic-tooltip
-      - type: inbox-notification
-      - type: activity-log
-      - type: terraform-provider
+      - type: shared-sql-script
+      - type: webhook-integration
+        content: webhook-integration-basic
+        tooltip: webhook-integration-basic-tooltip
+      # Data Security and Governance
+      - type: archiving
+      - type: anomaly-detection
+        content: anomaly-detection-basic
+        tooltip: anomaly-detection-basic-tooltip
       - type: rbac
+      - type: approval-and-backup-policy
+      # Bespoke
+      - type: support
+        content: support-email
     mainFeatureList:
       - email-support
       - everything-in-free-plan
       - rbac
       - sql-check-anomaly-detection
-      - review-and-backup-policy
+      - approval-and-backup-policy
       - online-schema-migration
       - pitr
   - type: 2
@@ -168,61 +200,75 @@ planList:
     pricePerSeatPerMonth: 19
     pricePerInstancePerMonth: 79
     featureList:
+      # Change Management
       - type: instance-count
         content: instance-customized
       - type: environment-count
         content: environment-unlimited
-      - type: task-count-in-issue
-        content: task-unlimited
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
-      - type: sync-schema
-      - type: migration-history
-      - type: sql-editor
-      - type: schema-editor
-      - type: schema-diagram
-      - type: disaster-recovery
-        content: disaster-recovery-advanced
-        tooltip: disaster-recovery-advanced-tooltip
-      - type: archiving
       - type: sql-check
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
-      - type: anomaly-detection
-        content: anomaly-detection-advanced
-        tooltip: anomaly-detection-advanced-tooltip
+      - type: disaster-recovery
+        content: disaster-recovery-advanced
+        tooltip: disaster-recovery-advanced-tooltip
+      - type: batch-change
+        content: batch-change-advanced
+        tooltip: batch-change-advanced-tooltip
+      - type: change-history
+      - type: sync-schema
+      - type: terraform-provider
       - type: schedule-change
-      - type: review-and-backup-policy
+      # SQL Editor
+      - type: auto-complete
+      - type: schema-editor
+      - type: schema-diagram
+      - type: export
+      - type: admin-mode
       - type: read-replica
-      - type: tenancy
+      - type: saved-sql-script
+        content: saved-sql-script-advanced
+        tooltip: saved-sql-script-advanced-tooltip
+      # Collaboration
       - type: seat-count
         content: seat-customized
+      - type: inbox-notification
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-advanced
         tooltip: vsc-workflow-advanced-tooltip
-      - type: shareable-query-link
-      - type: im-integration
-        content: im-integration-advanced
-        tooltip: im-integration-advanced-tooltip
-      - type: inbox-notification
-      - type: activity-log
-      - type: terraform-provider
+      - type: shared-sql-script
+      - type: webhook-integration
+        content: webhook-integration-advanced
+        tooltip: webhook-integration-advanced-tooltip
+      # Data Security and Governance
+      - type: archiving
+      - type: anomaly-detection
+        content: anomaly-detection-advanced
+        tooltip: anomaly-detection-advanced-tooltip
       - type: rbac
-      - type: watermark
+      - type: approval-and-backup-policy
       - type: sso
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
       - type: sensitive-data
       - type: database-access-control
+      - type: watermark
+      - type: audit-log
+      # Bespoke
+      - type: support
+        content: support-sla
       - type: branding-logo
+      - type: roadmap
+      - type: contract
     mainFeatureList:
       - sla
       - everything-in-team-plan
       - sso
-      - multi-tenancy
+      - batch-change-multi-tenancy
       - read-replica
       - dba-workflow
       - environment-tier
