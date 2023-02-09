@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	pgquery "github.com/pganalyze/pg_query_go/v2"
+
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"
-	pgquery "github.com/pganalyze/pg_query_go/v2"
 
 	"github.com/pkg/errors"
 
@@ -93,8 +94,18 @@ func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fie
 	return nil, nil
 }
 
+func pgNormalizeTableName(schemaName string, tableName string) string {
+	if tableName == "" {
+		return ""
+	}
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	return fmt.Sprintf("%s.%s", schemaName, tableName)
+}
+
 func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]fieldInfo, error) {
-	tableSchema, err := extractor.pgFindTableSchema(fmt.Sprintf("%s.%s", node.RangeVar.Schemaname, node.RangeVar.Relname))
+	tableSchema, err := extractor.pgFindTableSchema(pgNormalizeTableName(node.RangeVar.Schemaname, node.RangeVar.Relname))
 	if err != nil {
 		return nil, err
 	}
@@ -241,8 +252,12 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				if err != nil {
 					return nil, err
 				}
+				columnName := columnRef.ColumnName
+				if resTarget.ResTarget.Name != "" {
+					columnName = resTarget.ResTarget.Name
+				}
 				result = append(result, fieldInfo{
-					name:      columnRef.ColumnName,
+					name:      columnName,
 					sensitive: sensitive,
 				})
 			}
@@ -251,15 +266,11 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 		}
 	}
 
-	return nil, nil
+	return result, nil
 }
 
 func pgNormalizeColumnName(columnName *ast.ColumnNameDef) (string, string) {
-	schema := columnName.Table.Schema
-	if schema == "" {
-		schema = "public"
-	}
-	return fmt.Sprintf("%s.%s", schema, columnName.Table.Name), columnName.ColumnName
+	return pgNormalizeTableName(columnName.Table.Schema, columnName.Table.Name), columnName.ColumnName
 }
 
 func (extractor *sensitiveFieldExtractor) pgCheckFieldSensitive(tableName string, fieldName string) bool {

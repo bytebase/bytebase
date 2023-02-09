@@ -713,3 +713,99 @@ func TestExtractSensitiveField(t *testing.T) {
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
+
+func TestPostgreSQLExtractSensitiveField(t *testing.T) {
+	const (
+		defaultDatabase = "db"
+	)
+	var (
+		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+			DatabaseList: []db.DatabaseSchema{
+				{
+					Name: defaultDatabase,
+					TableList: []db.TableSchema{
+						{
+							Name: "public.t",
+							ColumnList: []db.ColumnInfo{
+								{
+									Name:      "a",
+									Sensitive: true,
+								},
+								{
+									Name:      "b",
+									Sensitive: false,
+								},
+								{
+									Name:      "c",
+									Sensitive: false,
+								},
+								{
+									Name:      "d",
+									Sensitive: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	)
+	tests := []struct {
+		statement  string
+		schemaInfo *db.SensitiveSchemaInfo
+		fieldList  []db.SensitiveField
+	}{
+		{
+			// Test for field name.
+			statement:  "select a, t.b, public.t.c, d as d1 from t",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d1",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for *.
+			statement:  "select * from t",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := extractSensitiveField(db.Postgres, test.statement, defaultDatabase, test.schemaInfo)
+		require.NoError(t, err)
+		require.Equal(t, test.fieldList, res, test.statement)
+	}
+}
