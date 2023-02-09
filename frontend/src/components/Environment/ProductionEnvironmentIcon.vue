@@ -15,7 +15,7 @@
       />
     </template>
 
-    <span>{{ $t("environment.protected") }}</span>
+    <span>{{ $t("environment.production-environment") }}</span>
   </NTooltip>
 </template>
 
