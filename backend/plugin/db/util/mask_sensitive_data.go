@@ -1,10 +1,14 @@
 package util
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
+	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"
+	pgquery "github.com/pganalyze/pg_query_go/v2"
 
 	"github.com/pkg/errors"
 
@@ -34,9 +38,384 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			schemaInfo:      schemaInfo,
 		}
 		return extractor.extractMySQLSensitiveField(statement)
+	case db.Postgres:
+		extractor := &sensitiveFieldExtractor{
+			schemaInfo: schemaInfo,
+		}
+		return extractor.extractPostgreSQLSensitiveField(statement)
 	default:
 		return nil, nil
 	}
+}
+
+func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statement string) ([]db.SensitiveField, error) {
+	res, err := pgquery.Parse(statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Stmts) != 1 {
+		return nil, errors.Errorf("expect one statement but found %d", len(res.Stmts))
+	}
+	node := res.Stmts[0]
+
+	switch node.Stmt.Node.(type) {
+	case *pgquery.Node_SelectStmt:
+	default:
+		return nil, errors.Errorf("expect a query statement but found %T", node)
+	}
+
+	fieldList, err := extractor.pgExtractNode(node.Stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	result := []db.SensitiveField{}
+	for _, field := range fieldList {
+		result = append(result, db.SensitiveField{
+			Name:      field.name,
+			Sensitive: field.sensitive,
+		})
+	}
+	return result, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fieldInfo, error) {
+	if in == nil {
+		return nil, nil
+	}
+
+	switch node := in.Node.(type) {
+	case *pgquery.Node_SelectStmt:
+		return extractor.pgExtractSelect(node)
+	case *pgquery.Node_RangeVar:
+		return extractor.pgExtractRangeVar(node)
+	}
+	return nil, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]fieldInfo, error) {
+	tableSchema, err := extractor.pgFindTableSchema(fmt.Sprintf("%s.%s", node.RangeVar.Schemaname, node.RangeVar.Relname))
+	if err != nil {
+		return nil, err
+	}
+
+	var res []fieldInfo
+	if node.RangeVar.Alias == nil {
+		for _, column := range tableSchema.ColumnList {
+			res = append(res, fieldInfo{
+				name:      column.Name,
+				table:     tableSchema.Name,
+				sensitive: column.Sensitive,
+			})
+		}
+	} else {
+		if len(node.RangeVar.Alias.Colnames) > 0 && len(node.RangeVar.Alias.Colnames) != len(tableSchema.ColumnList) {
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSchema.ColumnList))
+		}
+		var columnNameList []string
+		for _, item := range node.RangeVar.Alias.Colnames {
+			stringNode, yes := item.Node.(*pgquery.Node_String_)
+			if !yes {
+				return nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
+			}
+			columnNameList = append(columnNameList, stringNode.String_.Str)
+		}
+
+		for i, column := range tableSchema.ColumnList {
+			tableName := fmt.Sprintf("public.%s", node.RangeVar.Alias.Aliasname)
+			columnName := column.Name
+			if len(columnNameList) > 0 {
+				columnName = columnNameList[i]
+			}
+			res = append(res, fieldInfo{
+				name:      columnName,
+				table:     tableName,
+				sensitive: column.Sensitive,
+			})
+		}
+	}
+
+	return res, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgFindTableSchema(tableName string) (db.TableSchema, error) {
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(extractor.cteOuterSchemaInfo) - 1; i >= 0; i-- {
+		table := extractor.cteOuterSchemaInfo[i]
+		if table.Name == tableName {
+			return table, nil
+		}
+	}
+
+	for _, database := range extractor.schemaInfo.DatabaseList {
+		for _, table := range database.TableList {
+			if tableName == table.Name {
+				return table, nil
+			}
+		}
+	}
+	return db.TableSchema{}, errors.Errorf("Table %q not found", tableName)
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) ([]fieldInfo, error) {
+	// TODO(rebelice): consider the CTE.
+
+	// The VALUES case.
+	if len(node.SelectStmt.ValuesLists) > 0 {
+		var result []fieldInfo
+		for _, row := range node.SelectStmt.ValuesLists {
+			var sensitiveList []bool
+			list, yes := row.Node.(*pgquery.Node_List)
+			if !yes {
+				return nil, errors.Errorf("expect Node_List but found %T", row.Node)
+			}
+			for _, item := range list.List.Items {
+				sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(item)
+				if err != nil {
+					return nil, err
+				}
+				sensitiveList = append(sensitiveList, sensitive)
+			}
+			if len(result) == 0 {
+				for i, item := range sensitiveList {
+					result = append(result, fieldInfo{
+						name:      fmt.Sprintf("column%d", i+1),
+						sensitive: item,
+					})
+				}
+			}
+		}
+		return result, nil
+	}
+
+	var fromFieldList []fieldInfo
+	var err error
+	// Extract From field list.
+	for _, item := range node.SelectStmt.FromClause {
+		fromFieldList, err = extractor.pgExtractNode(item)
+		if err != nil {
+			return nil, err
+		}
+		extractor.fromFieldList = fromFieldList
+		defer func() {
+			extractor.fromFieldList = nil
+		}()
+	}
+
+	var result []fieldInfo
+
+	// Extract Target field list.
+	for _, field := range node.SelectStmt.TargetList {
+		resTarget, yes := field.Node.(*pgquery.Node_ResTarget)
+		if !yes {
+			return nil, errors.Errorf("expect Node_ResTarget but found %T", field.Node)
+		}
+		switch fieldNode := resTarget.ResTarget.Val.Node.(type) {
+		case *pgquery.Node_ColumnRef:
+			columnRef, err := pg.ConvertNodeListToColumnNameDef(fieldNode.ColumnRef.Fields)
+			if err != nil {
+				return nil, err
+			}
+			if columnRef.ColumnName == "*" {
+				// SELECT * FROM ... case.
+				if columnRef.Table.Name == "" {
+					result = append(result, fromFieldList...)
+				} else {
+					tableName, _ := pgNormalizeColumnName(columnRef)
+					for _, fromField := range fromFieldList {
+						if fromField.table == tableName {
+							result = append(result, fromField)
+						}
+					}
+				}
+			} else {
+				sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(resTarget.ResTarget.Val)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, fieldInfo{
+					name:      columnRef.ColumnName,
+					sensitive: sensitive,
+				})
+			}
+		default:
+			// TODO(rebelice): consider other cases.
+		}
+	}
+
+	return nil, nil
+}
+
+func pgNormalizeColumnName(columnName *ast.ColumnNameDef) (string, string) {
+	schema := columnName.Table.Schema
+	if schema == "" {
+		schema = "public"
+	}
+	return fmt.Sprintf("%s.%s", schema, columnName.Table.Name), columnName.ColumnName
+}
+
+func (extractor *sensitiveFieldExtractor) pgCheckFieldSensitive(tableName string, fieldName string) bool {
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
+		field := extractor.outerSchemaInfo[i]
+		sameTable := (tableName == field.table || tableName == "")
+		sameField := (fieldName == field.name)
+		if sameTable && sameField {
+			return field.sensitive
+		}
+	}
+
+	for _, field := range extractor.fromFieldList {
+		sameTable := (tableName == field.table || tableName == "")
+		sameField := (fieldName == field.name)
+		if sameTable && sameField {
+			return field.sensitive
+		}
+	}
+
+	return false
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquery.Node) (bool, error) {
+	if in == nil {
+		return false, nil
+	}
+
+	switch node := in.Node.(type) {
+	case *pgquery.Node_FuncCall:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.FuncCall.Args...)
+		nodeList = append(nodeList, node.FuncCall.AggOrder...)
+		nodeList = append(nodeList, node.FuncCall.AggFilter)
+		return extractor.pgExtractColumnRefFromExpressionNodeList(nodeList)
+	case *pgquery.Node_SortBy:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.SortBy.Node)
+	case *pgquery.Node_XmlExpr:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.XmlExpr.Args...)
+		nodeList = append(nodeList, node.XmlExpr.NamedArgs...)
+		return extractor.pgExtractColumnRefFromExpressionNodeList(nodeList)
+	case *pgquery.Node_ResTarget:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.ResTarget.Val)
+	case *pgquery.Node_TypeCast:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.TypeCast.Arg)
+	case *pgquery.Node_AConst:
+		return false, nil
+	case *pgquery.Node_ColumnRef:
+		columnNameDef, err := pg.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
+		if err != nil {
+			return false, err
+		}
+		return extractor.pgCheckFieldSensitive(pgNormalizeColumnName(columnNameDef)), nil
+	case *pgquery.Node_AExpr:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.AExpr.Lexpr)
+		nodeList = append(nodeList, node.AExpr.Rexpr)
+		return extractor.pgExtractColumnRefFromExpressionNodeList(nodeList)
+	case *pgquery.Node_CaseExpr:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.CaseExpr.Arg)
+		nodeList = append(nodeList, node.CaseExpr.Args...)
+		nodeList = append(nodeList, node.CaseExpr.Defresult)
+		return extractor.pgExtractColumnRefFromExpressionNodeList(nodeList)
+	case *pgquery.Node_CaseWhen:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.CaseWhen.Expr)
+		nodeList = append(nodeList, node.CaseWhen.Result)
+		return extractor.pgExtractColumnRefFromExpressionNodeList(nodeList)
+	case *pgquery.Node_AArrayExpr:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.AArrayExpr.Elements)
+	case *pgquery.Node_NullTest:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.NullTest.Arg)
+	case *pgquery.Node_XmlSerialize:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.XmlSerialize.Expr)
+	case *pgquery.Node_ParamRef:
+		return false, nil
+	case *pgquery.Node_BoolExpr:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.BoolExpr.Args)
+	case *pgquery.Node_SubLink:
+		sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(node.SubLink.Testexpr)
+		if err != nil {
+			return false, err
+		}
+		if sensitive {
+			return true, nil
+		}
+
+		// Subquery in SELECT fields is special.
+		// It can be the non-associated or associated subquery.
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
+		subqueryExtractor := &sensitiveFieldExtractor{
+			schemaInfo:      extractor.schemaInfo,
+			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
+		}
+		fieldList, err := subqueryExtractor.pgExtractNode(node.SubLink.Subselect)
+		if err != nil {
+			return false, err
+		}
+		for _, field := range fieldList {
+			if field.sensitive {
+				return true, nil
+			}
+		}
+		return false, nil
+	case *pgquery.Node_RowExpr:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.RowExpr.Args)
+	case *pgquery.Node_CoalesceExpr:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.CoalesceExpr.Args)
+	case *pgquery.Node_SetToDefault:
+		return false, nil
+	case *pgquery.Node_AIndirection:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.AIndirection.Arg)
+	case *pgquery.Node_CollateClause:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.CollateClause.Arg)
+	case *pgquery.Node_CurrentOfExpr:
+		return false, nil
+	case *pgquery.Node_SqlvalueFunction:
+		return false, nil
+	case *pgquery.Node_MinMaxExpr:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.MinMaxExpr.Args)
+	case *pgquery.Node_BooleanTest:
+		return extractor.pgExtractColumnRefFromExpressionNode(node.BooleanTest.Arg)
+	case *pgquery.Node_GroupingFunc:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.GroupingFunc.Args)
+	}
+	return false, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNodeList(list []*pgquery.Node) (bool, error) {
+	for _, node := range list {
+		sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(node)
+		if err != nil {
+			return false, err
+		}
+		if sensitive {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement string) ([]db.SensitiveField, error) {
