@@ -5,8 +5,9 @@ categoryList:
       - environment-count
       - task-count-in-issue
       - schema-change
+      - batch-change
       - sync-schema
-      - migration-history
+      - change-history
       - sql-editor
       - schema-editor
       - schema-diagram
@@ -17,7 +18,6 @@ categoryList:
       - schedule-change
       - review-and-backup-policy
       - read-replica
-      - tenancy
   - type: collaboration
     featureList:
       - seat-count
@@ -62,8 +62,11 @@ planList:
       - type: schema-change
         content: schema-change-basic
         tooltip: schema-change-basic-tooltip
+      - type: batch-change
+        content: batch-change-basic
+        tooltip: batch-change-basic-tooltip
       - type: sync-schema
-      - type: migration-history
+      - type: change-history
       - type: sql-editor
       - type: schema-editor
       - type: schema-diagram
@@ -92,6 +95,7 @@ planList:
     mainFeatureList:
       - community-support
       - review-workflow
+      - batch-change-multi-environment
       - gitops
       - sql-editor
       - database-backup-restore
@@ -118,8 +122,11 @@ planList:
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
+      - type: batch-change
+        content: batch-change-basic
+        tooltip: batch-change-basic-tooltip
       - type: sync-schema
-      - type: migration-history
+      - type: change-history
       - type: sql-editor
       - type: schema-editor
       - type: schema-diagram
@@ -177,8 +184,11 @@ planList:
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
+      - type: batch-change
+        content: batch-change-advanced
+        tooltip: batch-change-advanced-tooltip
       - type: sync-schema
-      - type: migration-history
+      - type: change-history
       - type: sql-editor
       - type: schema-editor
       - type: schema-diagram
@@ -195,7 +205,6 @@ planList:
       - type: schedule-change
       - type: review-and-backup-policy
       - type: read-replica
-      - type: tenancy
       - type: seat-count
         content: seat-customized
       - type: ui-based-sql-review
@@ -222,7 +231,7 @@ planList:
       - sla
       - everything-in-team-plan
       - sso
-      - multi-tenancy
+      - batch-change-multi-tenancy
       - read-replica
       - dba-workflow
       - environment-tier
