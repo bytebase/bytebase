@@ -1455,7 +1455,7 @@
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
     "visualize-explain": "Visualize Explain",
-    "sql-execute-in-protected-environment": "Be careful, you are accessing database in a production environment.",
+    "sql-execute-in-protected-environment": "Be careful, you are accessing a database in a production environment.",
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
       "readonly": "Read-only",
