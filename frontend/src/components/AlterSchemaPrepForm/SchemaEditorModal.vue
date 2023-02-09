@@ -84,9 +84,7 @@
         />
       </div>
     </div>
-    <div
-      class="w-full flex flex-row justify-between items-center mt-2 pr-1 pb-1"
-    >
+    <div class="w-full flex flex-row justify-between items-center mt-4 pr-px">
       <div class="">
         <div
           v-if="isTenantProject"
