@@ -64,10 +64,10 @@
     </div>
 
     <div
-      v-if="isProtectedEnvironment"
+      v-if="isProductionEnvironment"
       class="flex justify-start items-center h-8 px-4 rounded-bl text-white bg-error"
     >
-      {{ $t("sql-editor.sql-execute-in-protected-environment") }}
+      {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>
   </div>
 </template>
