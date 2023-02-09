@@ -576,7 +576,8 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 const createMigration = async (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  let mode: "online" | "normal" | false = "normal";
+  type AlterMode = "online" | "normal" | false;
+  let mode: AlterMode = "normal";
   if (type === "bb.issue.database.schema.update") {
     if (allowUsingSchemaEditor([database.value])) {
       state.showSchemaEditorModal = true;
