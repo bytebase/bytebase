@@ -1043,7 +1043,8 @@
       "select": "Select schema"
     },
     "show-missing-databases": "Show missing databases",
-    "n-selected-m-in-total": "({selected} selected, {total} in total)"
+    "n-selected-m-in-total": "({selected} selected, {total} in total)",
+    "doesnt-match-database-name-template": "Doesn't match tenant database name template"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

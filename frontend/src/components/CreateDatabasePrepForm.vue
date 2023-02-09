@@ -568,20 +568,19 @@ export default defineComponent({
         };
       }
 
-      console.log(JSON.stringify(newIssue, null, "  "));
-      // state.creating = true;
-      // useIssueStore()
-      //   .createIssue(newIssue)
-      //   .then(
-      //     (createdIssue) => {
-      //       router.push(
-      //         `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
-      //       );
-      //     },
-      //     () => {
-      //       state.creating = false;
-      //     }
-      //   );
+      state.creating = true;
+      useIssueStore()
+        .createIssue(newIssue)
+        .then(
+          (createdIssue) => {
+            router.push(
+              `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
+            );
+          },
+          () => {
+            state.creating = false;
+          }
+        );
     };
 
     // update `state.labelList` when selected Environment changed

@@ -9,36 +9,7 @@
       :disabled="true"
       :include-default-project="true"
       :selected-id="state.context.projectId"
-      @select-project-id="(id) => (state.context.projectId = id)"
-    />
-  </div>
-
-  <!-- Providing a preview of generated database name in template mode -->
-  <div v-if="isDbNameTemplateMode" class="space-y-2">
-    <label class="textlabel w-full flex items-center gap-1">
-      {{ $t("create-db.generated-database-name") }}
-      <NTooltip trigger="hover" placement="top">
-        <template #trigger>
-          <heroicons-outline:question-mark-circle
-            class="w-4 h-4 inline-block"
-          />
-        </template>
-        <div class="whitespace-nowrap">
-          {{
-            $t("create-db.db-name-generated-by-template", {
-              template: project.dbNameTemplate,
-            })
-          }}
-        </div>
-      </NTooltip>
-    </label>
-    <input
-      id="name"
-      disabled
-      name="name"
-      type="text"
-      class="textfield mt-1 w-full"
-      :value="generatedDatabaseName"
+      @select-project-id="(id: number) => (state.context.projectId = id)"
     />
   </div>
 
@@ -62,6 +33,12 @@
         </template>
       </i18n-t>
     </span>
+    <DatabaseNameTemplateTips
+      v-if="isDbNameTemplateMode"
+      :project="project"
+      :name="state.context.databaseName"
+      :label-list="state.context.labelList"
+    />
   </div>
 
   <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
@@ -82,7 +59,7 @@
       class="mt-1"
       :selected-id="state.context.environmentId"
       :disabled="true"
-      @select-environment-id="(id) => (state.context.environmentId = id)"
+      @select-environment-id="(id: number) => (state.context.environmentId = id)"
     />
   </div>
 
@@ -101,7 +78,7 @@
       :selected-id="state.context.instanceId"
       :environment-id="state.context.environmentId"
       :filter="instanceFilter"
-      @select-instance-id="(id) => (state.context.instanceId = id)"
+      @select-instance-id="(id: number) => (state.context.instanceId = id)"
     />
   </div>
 
@@ -159,9 +136,11 @@ import {
   defaultCollation,
 } from "@/types";
 import { CreatePITRDatabaseContext } from "./utils";
-import { DatabaseLabelForm } from "@/components/CreateDatabasePrepForm";
+import {
+  DatabaseLabelForm,
+  DatabaseNameTemplateTips,
+} from "@/components/CreateDatabasePrepForm";
 import { useInstanceStore, useProjectStore, useDBSchemaStore } from "@/store";
-import { buildDatabaseNameByTemplateAndLabelList } from "@/utils";
 import { isPITRAvailableOnInstance } from "@/plugins/pitr";
 
 interface LocalState {
@@ -237,20 +216,6 @@ const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
 const isDbNameTemplateMode = computed((): boolean => {
   // true if dbNameTemplate is not empty
   return !!project.value.dbNameTemplate;
-});
-
-const generatedDatabaseName = computed((): string => {
-  if (!isDbNameTemplateMode.value) {
-    // don't modify anything if we are not in template mode
-    return state.context.databaseName;
-  }
-
-  return buildDatabaseNameByTemplateAndLabelList(
-    project.value.dbNameTemplate,
-    state.context.databaseName,
-    state.context.labelList,
-    true // keepEmpty: true to keep non-selected values as original placeholders
-  );
 });
 
 const selectedInstance = computed((): Instance => {
