@@ -336,7 +336,7 @@
       "workspace": "工作空间",
       "general": "通用",
       "members": "成员",
-      "webhook-integration": "IM 集成管理",
+      "im-integration": "IM 集成管理",
       "sso": "SSO",
       "gitops": "GitOps",
       "subscription": "订阅",
