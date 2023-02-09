@@ -45,7 +45,7 @@
               "
             />
             <div>{{ environment.name }}</div>
-            <ProtectedEnvironmentIcon
+            <ProductionEnvironmentIcon
               class="w-4 h-4 -ml-1"
               :environment="environment"
             />

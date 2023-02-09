@@ -48,7 +48,7 @@
             />
             <div>
               <div class="textlabel">
-                {{ $t("policy.environment-tier.mark-env-as-protected") }}
+                {{ $t("policy.environment-tier.mark-env-as-production") }}
               </div>
             </div>
           </div>
