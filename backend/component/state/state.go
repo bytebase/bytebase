@@ -15,10 +15,10 @@ type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
 	InstanceDatabaseSyncChan chan *api.Instance
 
-	// RollbacksCancel cancels the running rollback SQL generation for task taskID.
-	RollbacksCancel sync.Map // map[taskID]context.CancelFunc
 	// RollbackGenerate is the set of tasks for generating rollback statements.
 	RollbackGenerate sync.Map // map[task.ID]*store.TaskMessage
+	// RollbackCancel cancels the running rollback SQL generation for task taskID.
+	RollbackCancel sync.Map // map[taskID]context.CancelFunc
 
 	// TaskProgress is the map from task ID to task progress.
 	TaskProgress sync.Map // map[taskID]api.Progress

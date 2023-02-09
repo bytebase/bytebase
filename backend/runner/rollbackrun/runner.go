@@ -49,11 +49,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				task := value.(*store.TaskMessage)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				ctx, cancel := context.WithCancel(ctx)
-				r.stateCfg.RollbacksCancel.Store(task.ID, cancel)
+				r.stateCfg.RollbackCancel.Store(task.ID, cancel)
 				r.generateRollbackSQL(ctx, task)
 				cancel()
-				r.stateCfg.RollbacksCancel.Delete(task.ID)
 				r.stateCfg.RollbackGenerate.Delete(key)
+				r.stateCfg.RollbackCancel.Delete(task.ID)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute

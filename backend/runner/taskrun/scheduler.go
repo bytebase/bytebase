@@ -369,7 +369,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 		} else {
 			// Cancel running rollback sql generation.
-			if v, ok := s.stateCfg.RollbacksCancel.Load(taskPatched.ID); ok {
+			if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
 				if cancel, ok := v.(context.CancelFunc); ok {
 					cancel()
 				}
