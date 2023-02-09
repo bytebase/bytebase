@@ -199,7 +199,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		}
 		if payload.RollbackEnabled {
 			// The runner will periodically scan the map to generate rollback SQL asynchronously.
-			stateCfg.RollbackGenerateMap.Store(task.ID, updatedTask)
+			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
 		}
 	}
 

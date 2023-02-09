@@ -352,6 +352,14 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
+	// Reset rollbackStatement and rollbackError because we are trying to build
+	// the rollbackStatement again and there could be previous runs.
+	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
+		empty := ""
+		taskPatch.RollbackStatement = &empty
+		taskPatch.RollbackError = &empty
+	}
+
 	taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
@@ -366,10 +374,15 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	if taskPatch.RollbackEnabled != nil {
 		// Enqueue the task
 		if *taskPatch.RollbackEnabled {
-			s.stateCfg.RollbackGenerateMap.Store(taskPatched.ID, taskPatched)
+			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 		} else {
-			// TODO(p0ny): also cancel running rollback sql generation.
-			s.stateCfg.RollbackGenerateMap.Delete(taskPatched.ID)
+			// Cancel running rollback sql generation.
+			if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
+				if cancel, ok := v.(context.CancelFunc); ok {
+					cancel()
+				}
+			}
+			// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 		}
 	}
 
