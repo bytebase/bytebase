@@ -330,9 +330,11 @@ type TaskPatch struct {
 	// Payload and others cannot be set at the same time.
 	Payload *string
 
-	Statement       *string `jsonapi:"attr,statement"`
-	SchemaVersion   *string
-	RollbackEnabled *bool `jsonapi:"attr,rollbackEnabled"`
+	Statement         *string `jsonapi:"attr,statement"`
+	SchemaVersion     *string
+	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
+	RollbackStatement *string
+	RollbackError     *string
 }
 
 // TaskStatusPatch is the API message for patching a task status.

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -376,7 +377,7 @@ BEGIN
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			txns, err := ParseBinlogStream(strings.NewReader(test.stream), "53771")
+			txns, err := ParseBinlogStream(context.Background(), strings.NewReader(test.stream), "53771")
 			if test.err {
 				a.Error(err)
 			} else {
