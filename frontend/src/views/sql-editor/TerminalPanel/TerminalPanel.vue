@@ -197,5 +197,8 @@ watch(queryListHeight, () => {
   });
 });
 
-useAttractFocus();
+useAttractFocus({
+  excluded: [{ tag: "textarea", selector: ".active-editor" }],
+  targetSelector: ".active-editor textarea",
+});
 </script>

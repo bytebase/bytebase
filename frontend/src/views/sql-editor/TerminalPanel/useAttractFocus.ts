@@ -1,5 +1,7 @@
+import { MaybeRef } from "@/types";
 import { isDescendantOf } from "@/utils";
 import { useEventListener } from "@vueuse/core";
+import { unref } from "vue";
 
 const FOCUS_ATTRACTIVE_KEYS: (RegExp | string)[] = [
   /^[A-Za-z0-9\s.`~!@#$%^&*()-=[\]\\;',./_+{}|:"<>?]$/,
@@ -27,7 +29,12 @@ const shouldAttractFocus = (e: KeyboardEvent) => {
   });
 };
 
-export const useAttractFocus = () => {
+export type AttractFocusOptions = {
+  excluded?: { tag: string; selector: string }[];
+  targetSelector: string;
+};
+
+export const useAttractFocus = (options: MaybeRef<AttractFocusOptions>) => {
   useEventListener("keydown", (e: KeyboardEvent) => {
     const sourceElement = e.target as Element;
     const tag = sourceElement.tagName.toLowerCase();
@@ -35,9 +42,10 @@ export const useAttractFocus = () => {
       // Don't rob the focus in other text boxes
       return;
     }
-    if (tag === "textarea") {
-      if (isDescendantOf(sourceElement, ".active-editor")) {
-        // The active editor is already focused
+    const { excluded = [], targetSelector } = unref(options);
+    for (let i = 0; i < excluded.length; i++) {
+      const rule = excluded[i];
+      if (tag === rule.tag && isDescendantOf(sourceElement, rule.selector)) {
         return;
       }
     }
@@ -46,9 +54,9 @@ export const useAttractFocus = () => {
     }
 
     const target = document.querySelector(
-      ".active-editor textarea"
+      targetSelector
     ) as HTMLTextAreaElement | null;
-    // monaco-editor will consume the focus event with key stroke
+    // monaco-editor will consume the focus event with key stroke11
     target?.focus();
   });
 };
