@@ -146,18 +146,14 @@ const alterSchemaState = reactive<AlterSchemaState>({
   databaseIdList: [],
 });
 
-const handleAlterSchema = async (params: {
-  databaseId: DatabaseId;
-  schema: string;
-  table: string;
-}) => {
-  const { databaseId, schema, table } = params;
+const handleAlterSchema = async (params: { databaseId: DatabaseId }) => {
+  const { databaseId } = params;
   const database = databaseStore.getDatabaseById(databaseId);
   const project = await useProjectStore().getOrFetchProjectById(
     database.project.id
   );
   if (project.workflowType === "VCS") {
-    alterSchemaVCS(database, schema, table);
+    alterSchemaVCS(database);
     return;
   }
   alterSchemaState.databaseIdList = [databaseId];

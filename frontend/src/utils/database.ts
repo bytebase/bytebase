@@ -1,4 +1,3 @@
-import { stringify } from "qs";
 import type {
   Database,
   DataSourceType,
@@ -149,11 +148,7 @@ export function isArchivedDatabase(db: Database): boolean {
   return false;
 }
 
-export const alterSchemaVCS = (
-  database: Database,
-  schema: string,
-  table: string
-) => {
+export const alterSchemaVCS = (database: Database) => {
   const { project } = database;
   if (project.workflowType === "VCS") {
     useRepositoryStore()
@@ -170,26 +165,4 @@ export const alterSchemaVCS = (
       });
     return;
   }
-
-  const exampleSQL = () => {
-    const parts = ["ALTER TABLE"];
-
-    if (table) {
-      if (schema) {
-        parts.push(`${schema}.${table}`);
-      } else {
-        parts.push(table);
-      }
-    }
-    return parts.join(" ");
-  };
-  const query = {
-    template: "bb.issue.database.schema.update",
-    name: `[${database.name}] Alter schema`,
-    project: database.project.id,
-    databaseList: database.id,
-    sql: exampleSQL(),
-  };
-  const url = `/issue/new?${stringify(query)}`;
-  window.open(url, "_blank");
 };
