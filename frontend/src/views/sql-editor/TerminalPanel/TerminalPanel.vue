@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
+    class="flex h-full w-full flex-col justify-start items-start overflow-hidden bg-dark-bg"
   >
     <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
 
