@@ -1,7 +1,7 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <div class="textinfolabel">
-      {{ $t("settings.im-integration.description") }}
+      {{ $t("settings.webhook-integration.description") }}
       <a
         class="normal-link inline-flex items-center"
         href="https://www.bytebase.com/docs/administration/webhook-integration/external-approval?source=console"
@@ -54,7 +54,7 @@
           class="!mt-4 !mb-2 w-128 max-w-full flex flex-row justify-start items-center"
         >
           <span class="textlabel mr-4">{{
-            $t("settings.im-integration.enable")
+            $t("settings.webhook-integration.enable")
           }}</span>
           <BBSwitch
             :value="state.feishuSetting.externalApproval.enabled"
@@ -175,7 +175,7 @@ const updateFeishuIntegration = async () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("settings.im-integration.feishu-updated-tip"),
+    title: t("settings.webhook-integration.feishu-updated-tip"),
   });
 };
 </script>
