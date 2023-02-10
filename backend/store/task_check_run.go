@@ -6,11 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
@@ -76,59 +72,8 @@ func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
 	}
 }
 
-// FindTaskCheckRun finds a list of TaskCheckRun instances.
-func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
-	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find TaskCheckRun list with TaskCheckRunFind[%+v]", find)
-	}
-	var composedTaskCheckRuns []*api.TaskCheckRun
-	for _, run := range taskCheckRuns {
-		composedTaskCheckRuns = append(composedTaskCheckRuns, run.toTaskCheckRun())
-	}
-	return composedTaskCheckRuns, nil
-}
-
-// CreateTaskCheckRunIfNeeded creates a new taskCheckRun.
-func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
-	taskCheckRunFind := &TaskCheckRunFind{
-		TaskID:     &create.TaskID,
-		Type:       &create.Type,
-		StatusList: &statusList,
-	}
-
-	taskCheckRunList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
-	if err != nil {
-		return err
-	}
-
-	if runningCount := len(taskCheckRunList); runningCount > 0 {
-		if runningCount > 1 {
-			// Normally, this should not happen, if it occurs, emit a warning
-			log.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),
-				zap.Int("task_id", create.TaskID),
-				zap.String("task_check_type", string(create.Type)),
-			)
-		}
-		return nil
-	}
-
-	if err := s.createTaskCheckRunImpl(ctx, tx, create); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// BatchCreateTaskCheckRun creates task check runs in batch.
-func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunMessage) error {
+// CreateTaskCheckRun creates task check runs in batch.
+func (s *Store) CreateTaskCheckRun(ctx context.Context, creates ...*TaskCheckRunMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)

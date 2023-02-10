@@ -30,7 +30,7 @@ type StatementTypeExecutor struct {
 }
 
 // Run will run the task check database connector executor once.
-func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementTypePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement type payload")

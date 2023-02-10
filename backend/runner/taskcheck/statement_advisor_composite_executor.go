@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -33,7 +35,7 @@ type StatementAdvisorCompositeExecutor struct {
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
-func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	if taskCheckRun.Type != api.TaskCheckDatabaseStatementAdvise {
 		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}
@@ -42,8 +44,22 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
 	}
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	if database == nil {
+		return nil, errors.Errorf("database %v not found", *task.DatabaseID)
+	}
+	environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
+	if err != nil {
+		return nil, err
+	}
+	if environment == nil {
+		return nil, errors.Errorf("environment %q not found", database.EnvironmentID)
+	}
 
-	policy, err := e.store.GetSQLReviewPolicy(ctx, task.Instance.EnvironmentID)
+	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{
@@ -73,12 +89,12 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if err != nil {
 		return nil, err
 	}
-	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, task.Database.Name)
+	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
 	defer driver.Close(ctx)
-	connection, err := driver.GetDBConnection(ctx, task.Database.Name)
+	connection, err := driver.GetDBConnection(ctx, database.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
