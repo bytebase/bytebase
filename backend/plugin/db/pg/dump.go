@@ -160,6 +160,10 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			}
 			return err
 		}
+		// We may store the error message in meta store, due to the performance concern, we only store the first 1024 bytes.
+		if len(allMsg) >= 1024 {
+			break
+		}
 	}
 	err = cmd.Wait()
 	if err != nil {
