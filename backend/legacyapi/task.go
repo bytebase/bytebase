@@ -187,13 +187,13 @@ type TaskDatabaseDataUpdatePayload struct {
 	MigrationID string `json:"migrationId,omitempty"`
 	// BinlogXxx are obtained before and after executing the migration.
 	// We use them to locate the range of binlog for the migration transaction.
-	BinlogFileStart string `json:"binlogFileStart,omitempty"`
-	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
-	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
-	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
-	RollbackError   string `json:"rollbackError,omitempty"`
+	BinlogFileStart string  `json:"binlogFileStart,omitempty"`
+	BinlogFileEnd   string  `json:"binlogFileEnd,omitempty"`
+	BinlogPosStart  int64   `json:"binlogPosStart,omitempty"`
+	BinlogPosEnd    int64   `json:"binlogPosEnd,omitempty"`
+	RollbackError   *string `json:"rollbackError,omitempty"`
 	// RollbackStatement is the generated rollback SQL statement for the DML task.
-	RollbackStatement string `json:"rollbackStatement,omitempty"`
+	RollbackStatement *string `json:"rollbackStatement,omitempty"`
 	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
 	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
 	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
@@ -333,8 +333,8 @@ type TaskPatch struct {
 	Statement         *string `jsonapi:"attr,statement"`
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
-	RollbackStatement *string
-	RollbackError     *string
+	RollbackStatement **string
+	RollbackError     **string
 }
 
 // TaskStatusPatch is the API message for patching a task status.

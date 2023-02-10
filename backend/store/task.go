@@ -434,10 +434,18 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackEnabled', to_jsonb($%d::BOOLEAN))`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.RollbackStatement; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackStatement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+		if *v == nil {
+			payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackStatement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, nil)
+		} else {
+			payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackStatement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, **v)
+		}
 	}
 	if v := patch.RollbackError; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackError', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+		if *v == nil {
+			payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackError', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, nil)
+		} else {
+			payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackError', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, **v)
+		}
 	}
 	if len(payloadSet) != 0 {
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))

@@ -597,12 +597,12 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	switch {
 	case !taskPayload.RollbackEnabled:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL is not requested to build.")
-	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
+	case taskPayload.RollbackStatement == nil && taskPayload.RollbackError == nil:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
-	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, taskPayload.RollbackError))
-	case taskPayload.RollbackStatement != "" && taskPayload.RollbackError != "":
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", taskPayload.RollbackStatement, taskPayload.RollbackError))
+	case taskPayload.RollbackStatement == nil && taskPayload.RollbackError != nil:
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, *taskPayload.RollbackError))
+	case taskPayload.RollbackStatement != nil && taskPayload.RollbackError != nil:
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", *taskPayload.RollbackStatement, *taskPayload.RollbackError))
 	}
 
 	issueCreateContext := &api.MigrationContext{
@@ -610,7 +610,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 			{
 				MigrationType: db.Data,
 				DatabaseID:    *task.DatabaseID,
-				Statement:     taskPayload.RollbackStatement,
+				Statement:     *taskPayload.RollbackStatement,
 			},
 		},
 	}

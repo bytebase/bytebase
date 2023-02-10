@@ -68,7 +68,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND COALESCE(task.payload->>'rollbackError', '')='' AND COALESCE(task.payload->>'rollbackStatement', '')=''",
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND task.payload->>'rollbackError' IS NULL AND task.payload->>'rollbackStatement' IS NULL",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
@@ -97,15 +97,16 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
-	payload.RollbackStatement = ""
-	payload.RollbackError = ""
+	payload.RollbackStatement = nil
+	payload.RollbackError = nil
 
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		payload.RollbackError = err.Error()
+		errStr := err.Error()
+		payload.RollbackError = &errStr
 	}
-	payload.RollbackStatement = rollbackSQL
+	payload.RollbackStatement = &rollbackSQL
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
