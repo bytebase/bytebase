@@ -60,11 +60,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				var err error
-				emptyIdP := ""
+				emptyIDP := ""
 				user, err = s.store.GetUser(ctx, &store.FindUserMessage{
 					Email:                      &login.Email,
 					ShowDeleted:                true,
-					IdentityProviderResourceID: &emptyIdP,
+					IdentityProviderResourceID: &emptyIDP,
 				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
