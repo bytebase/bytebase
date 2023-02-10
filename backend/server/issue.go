@@ -596,7 +596,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	}
 	switch {
 	case !taskPayload.RollbackEnabled:
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL is not requested to build.")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL is not enabled.")
 	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
 	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
