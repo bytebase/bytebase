@@ -95,7 +95,7 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
-import { alterSchemaVCS, isDatabaseAccessible } from "@/utils";
+import { isDatabaseAccessible } from "@/utils";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 
@@ -149,13 +149,7 @@ const alterSchemaState = reactive<AlterSchemaState>({
 const handleAlterSchema = async (params: { databaseId: DatabaseId }) => {
   const { databaseId } = params;
   const database = databaseStore.getDatabaseById(databaseId);
-  const project = await useProjectStore().getOrFetchProjectById(
-    database.project.id
-  );
-  if (project.workflowType === "VCS") {
-    alterSchemaVCS(database);
-    return;
-  }
+  await useProjectStore().getOrFetchProjectById(database.project.id);
   alterSchemaState.databaseIdList = [databaseId];
   alterSchemaState.showModal = true;
 };
