@@ -1575,7 +1575,7 @@
   "subscription": {
     "trial-start-modal": {
       "title": "已开启{plan}试用",
-      "content": "您的{plan}试用已开启！在 {date} 之前所有功能将不受限制。",
+      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
       "subscription-page": "订阅页面",
       "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
     },
