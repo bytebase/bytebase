@@ -485,7 +485,7 @@ message Backup {
   // Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
   string name = 1;
 
-  // The timestamp when the backup resource was created - initally.
+  // The timestamp when the backup resource was created initally.
   google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the backup resource was updated.
