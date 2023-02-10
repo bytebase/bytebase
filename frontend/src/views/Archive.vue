@@ -5,7 +5,7 @@
         :tab-item-list="tabItemList"
         :selected-index="state.selectedIndex"
         @select-index="
-          (index) => {
+          (index: number) => {
             state.selectedIndex = index;
           }
         "
@@ -20,7 +20,7 @@
             ? $t('archive.instance-search-bar-placeholder')
             : $t('archive.environment-search-bar-placeholder')
         "
-        @change-text="(text) => changeSearchText(text)"
+        @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
     <ProjectTable
@@ -34,6 +34,10 @@
     <EnvironmentTable
       v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
       :environment-list="filteredEnvironmentList(environmentList)"
+    />
+    <IdentityProviderTable
+      v-else-if="state.selectedIndex == SSO_TAB"
+      :identity-provider-list="filteredSSOList(deletedSSOList)"
     />
   </div>
 </template>
@@ -51,13 +55,17 @@ import {
   useCurrentUser,
   useEnvironmentList,
   useEnvironmentStore,
+  useIdentityProviderStore,
   useInstanceStore,
   useProjectStore,
 } from "@/store";
+import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
 const ENVIRONMENT_TAB = 2;
+const SSO_TAB = 3;
 
 interface LocalState {
   selectedIndex: number;
@@ -66,7 +74,12 @@ interface LocalState {
 
 export default defineComponent({
   name: "Archive",
-  components: { EnvironmentTable, InstanceTable, ProjectTable },
+  components: {
+    EnvironmentTable,
+    InstanceTable,
+    ProjectTable,
+    IdentityProviderTable,
+  },
   setup() {
     const { t } = useI18n();
     const instanceStore = useInstanceStore();
@@ -114,6 +127,10 @@ export default defineComponent({
 
     const environmentList = useEnvironmentList(["ARCHIVED"]);
 
+    const deletedSSOList = computed(() => {
+      return useIdentityProviderStore().deletedIdentityProviderList;
+    });
+
     const tabItemList = computed((): BBTabFilterItem[] => {
       const list: BBTabFilterItem[] = [
         { title: t("common.project"), alert: false },
@@ -135,6 +152,15 @@ export default defineComponent({
         )
       ) {
         list.push({ title: t("common.environment"), alert: false });
+      }
+
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-sso",
+          currentUser.value.role
+        )
+      ) {
+        list.push({ title: t("settings.sidebar.sso"), alert: false });
       }
 
       return list;
@@ -173,6 +199,17 @@ export default defineComponent({
       });
     };
 
+    const filteredSSOList = (list: IdentityProvider[]) => {
+      if (!state.searchText) {
+        return list;
+      }
+      return list.filter((identityProvider) => {
+        return identityProvider.name
+          .toLowerCase()
+          .includes(state.searchText.toLowerCase());
+      });
+    };
+
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
     };
@@ -181,14 +218,17 @@ export default defineComponent({
       PROJECT_TAB,
       INSTANCE_TAB,
       ENVIRONMENT_TAB,
+      SSO_TAB,
       state,
       projectList,
       instanceList,
       environmentList,
+      deletedSSOList,
       tabItemList,
       filteredProjectList,
       filteredInstanceList,
       filteredEnvironmentList,
+      filteredSSOList,
       changeSearchText,
     };
   },

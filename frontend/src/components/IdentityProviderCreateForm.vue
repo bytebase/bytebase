@@ -1,7 +1,6 @@
 <template>
   <div
     class="w-full flex flex-col justify-start items-start overflow-x-hidden px-1"
-    :class="[isCreating && '!w-128']"
   >
     <div
       v-if="isCreating"
@@ -569,7 +568,6 @@ import {
   defineProps,
   ref,
   onMounted,
-  onUnmounted,
   watch,
 } from "vue";
 import {
@@ -771,32 +769,6 @@ onMounted(async () => {
   }
 });
 
-onMounted(() => {
-  if (
-    state.type === IdentityProviderType.OAUTH2 ||
-    state.type === IdentityProviderType.OIDC
-  ) {
-    window.addEventListener(
-      `bb.oauth.signin.${editedIdentityProvider.value.name}`,
-      loginWithIdentityProviderEventListener,
-      false
-    );
-  }
-});
-
-onUnmounted(() => {
-  if (
-    state.type === IdentityProviderType.OAUTH2 ||
-    state.type === IdentityProviderType.OIDC
-  ) {
-    window.removeEventListener(
-      `bb.oauth.signin.${editedIdentityProvider.value.name}`,
-      loginWithIdentityProviderEventListener,
-      false
-    );
-  }
-});
-
 const loginWithIdentityProviderEventListener = async (event: Event) => {
   const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
   if (payload.error) {
@@ -949,6 +921,30 @@ watch(
       identityProvider.value.title = "";
       identityProvider.value.name = "";
       identityProvider.value.domain = "";
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  () => editedIdentityProvider.value.name,
+  (newName, oldName) => {
+    if (
+      state.type === IdentityProviderType.OAUTH2 ||
+      state.type === IdentityProviderType.OIDC
+    ) {
+      window.removeEventListener(
+        `bb.oauth.signin.${oldName}`,
+        loginWithIdentityProviderEventListener,
+        false
+      );
+      window.addEventListener(
+        `bb.oauth.signin.${newName}`,
+        loginWithIdentityProviderEventListener,
+        false
+      );
     }
   },
   {

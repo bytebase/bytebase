@@ -27,48 +27,35 @@
       <img src="../assets/illustration/no-data.webp" class="mt-12 w-96" />
     </div>
     <template v-else>
-      <div class="w-full flex flex-row justify-start items-start space-x-4">
+      <div class="w-full flex flex-col justify-start items-start space-y-4">
         <div
           v-for="identityProvider in identityProviderList"
           :key="identityProvider.name"
-          class="w-28 h-28 px-2 border rounded-md flex flex-col justify-center items-center cursor-pointer"
+          class="w-full flex flex-row justify-between items-center cursor-pointer border p-4 space-x-4"
           @click="state.selectedIdentityProviderName = identityProvider.name"
         >
-          <span class="max-w-full truncate">{{ identityProvider.title }}</span>
-          <span class="text-sm text-gray-400"
-            >({{ identityProviderTypeToString(identityProvider.type) }})</span
-          >
-          <input
-            type="radio"
-            class="btn mt-2"
-            :checked="
-              state.selectedIdentityProviderName === identityProvider.name
-            "
-          />
+          <div class="flex flex-col justify-start items-start">
+            <p>
+              <span class="max-w-full truncate">{{
+                identityProvider.title
+              }}</span>
+              <span class="text-sm text-gray-400 ml-1"
+                >({{
+                  identityProviderTypeToString(identityProvider.type)
+                }})</span
+              >
+            </p>
+            <p class="textinfolabel text-xs">
+              {{ $t("common.resource-id") }}: {{ identityProvider.name }}
+            </p>
+          </div>
+          <button class="btn-normal" @click="handleViewSSO(identityProvider)">
+            {{ $t("common.view") }}
+          </button>
         </div>
       </div>
     </template>
-
-    <!-- Edit form -->
-    <div v-if="selectedIdentityProvider" class="pb-6">
-      <IdentityProviderCreateForm
-        :key="selectedIdentityProvider.name"
-        :identity-provider-name="selectedIdentityProvider.name"
-        @delete="handleDeleteIdentityProvider"
-      />
-    </div>
   </div>
-
-  <BBModal
-    v-if="state.showCreatingSSOModal"
-    :title="$t('settings.sso.create')"
-    @close="hideCreateSSOModal"
-  >
-    <IdentityProviderCreateForm
-      @cancel="hideCreateSSOModal"
-      @confirm="handleCreateIdentityProvider"
-    />
-  </BBModal>
 
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -82,7 +69,6 @@ import { head } from "lodash-es";
 import { computed, reactive, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useIdentityProviderStore } from "@/store/modules/idp";
-import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
 import { featureToRef } from "@/store";
@@ -105,12 +91,6 @@ const hasSSOFeature = featureToRef("bb.feature.sso");
 
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
-});
-
-const selectedIdentityProvider = computed(() => {
-  return identityProviderList.value.find(
-    (idp) => idp.name === state.selectedIdentityProviderName
-  );
 });
 
 watchEffect(() => {
@@ -142,27 +122,21 @@ const handleCreateSSO = () => {
     state.showFeatureModal = true;
     return;
   }
-  state.showCreatingSSOModal = true;
+  router.push({
+    name: "setting.workspace.sso.create",
+  });
 };
 
-const hideCreateSSOModal = () => {
-  state.showCreatingSSOModal = false;
-};
-
-const handleDeleteIdentityProvider = async (
-  identityProvider: IdentityProvider
-) => {
-  await identityProviderStore.deleteIdentityProvider(identityProvider);
-  if (state.selectedIdentityProviderName === identityProvider.name) {
-    state.selectedIdentityProviderName =
-      head(identityProviderList.value)?.name || "";
+const handleViewSSO = (identityProvider: IdentityProvider) => {
+  if (!hasSSOFeature.value) {
+    state.showFeatureModal = true;
+    return;
   }
-};
-
-const handleCreateIdentityProvider = async (
-  identityProvider: IdentityProvider
-) => {
-  state.selectedIdentityProviderName = identityProvider.name;
-  hideCreateSSOModal();
+  router.push({
+    name: "setting.workspace.sso.detail",
+    params: {
+      name: identityProvider.name,
+    },
+  });
 };
 </script>

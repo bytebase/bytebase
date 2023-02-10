@@ -347,6 +347,20 @@ const routes: Array<RouteRecordRaw> = [
                 name: "setting.workspace.sso",
                 meta: { title: () => t("settings.sidebar.sso") },
                 component: () => import("../views/SettingWorkspaceSSO.vue"),
+              },
+              {
+                path: "sso/new",
+                name: "setting.workspace.sso.create",
+                meta: { title: () => t("settings.sidebar.sso") },
+                component: () =>
+                  import("../views/SettingWorkspaceSSODetail.vue"),
+              },
+              {
+                path: "sso/:name",
+                name: "setting.workspace.sso.detail",
+                meta: { title: () => t("settings.sidebar.sso") },
+                component: () =>
+                  import("../views/SettingWorkspaceSSODetail.vue"),
                 props: true,
               },
               {

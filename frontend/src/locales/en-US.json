@@ -219,7 +219,9 @@
     "rollback": "Rollback",
     "total": "Total",
     "discard-changes": "Discard changes",
-    "error-message": "Error message"
+    "error-message": "Error message",
+    "resource-id": "Resource ID",
+    "domain": "Domain"
   },
   "error-page": {
     "go-back-home": "Go back home"
