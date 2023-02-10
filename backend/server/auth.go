@@ -59,8 +59,9 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformed login request").SetInternal(err)
 				}
 
+				var err error
 				emptyIdp := ""
-				user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+				user, err = s.store.GetUser(ctx, &store.FindUserMessage{
 					Email:                      &login.Email,
 					ShowDeleted:                true,
 					IdentityProviderResourceID: &emptyIdp,
@@ -126,7 +127,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via VCS, user is Archived")
 				}
 
-				user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+				user, err = s.store.GetUser(ctx, &store.FindUserMessage{
 					Email:       &userInfo.PublicEmail,
 					ShowDeleted: true,
 				})
