@@ -53,7 +53,7 @@
   >
     <EnvironmentForm
       :create="true"
-      :environment="DEFAULT_NEW_ENVIRONMENT"
+      :environment="getEnvironmentCreate()"
       :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
       :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
       :environment-tier-policy="(DEFAULT_NEW_ENVIRONMENT_TIER_POLICY as any)"
@@ -72,7 +72,7 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { array_swap } from "../utils";
+import { array_swap, randomString } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import type {
@@ -99,10 +99,8 @@ import {
   useEnvironmentList,
 } from "@/store";
 import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
-
-const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
-  name: "New Env",
-};
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import { environmentTierFromJSON } from "@/types/proto/v1/environment_service";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
@@ -137,6 +135,7 @@ interface LocalState {
 }
 
 const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyStore = usePolicyStore();
 const router = useRouter();
@@ -217,12 +216,19 @@ const tabItemList = computed((): BBTabItem[] => {
   return [];
 });
 
+const getEnvironmentCreate = (): EnvironmentCreate => {
+  return {
+    name: "NewEnv",
+    resourceId: `env-${randomString(4).toLocaleLowerCase()}`,
+  };
+};
+
 const createEnvironment = () => {
   stopReorder();
   state.showCreateModal = true;
 };
 
-const doCreate = (
+const doCreate = async (
   newEnvironment: EnvironmentCreate,
   approvalPolicy: Policy,
   backupPolicy: Policy,
@@ -245,52 +251,53 @@ const doCreate = (
     return;
   }
 
-  environmentStore
-    .createEnvironment(newEnvironment)
-    .then((environment: Environment) => {
-      const requests = [
-        policyStore.upsertPolicyByEnvironmentAndType({
-          environmentId: environment.id,
-          type: "bb.policy.pipeline-approval",
-          policyUpsert: { payload: approvalPolicy.payload },
-        }),
-        policyStore.upsertPolicyByEnvironmentAndType({
-          environmentId: environment.id,
-          type: "bb.policy.backup-plan",
-          policyUpsert: { payload: backupPolicy.payload },
-        }),
-        policyStore.upsertPolicyByEnvironmentAndType({
-          environmentId: environment.id,
-          type: "bb.policy.environment-tier",
-          policyUpsert: { payload: environmentTierPolicy.payload },
-        }),
-      ];
-      // Also upsert the environment's access-control policy
-      const environmentTierPayload =
-        environmentTierPolicy.payload as EnvironmentTierPolicyPayload;
-      const disallowed = environmentTierPayload.environmentTier === "PROTECTED";
-      requests.push(
-        policyStore.upsertPolicyByEnvironmentAndType({
-          environmentId: environment.id,
-          type: "bb.policy.access-control",
-          policyUpsert: {
-            inheritFromParent: false,
-            payload: {
-              disallowRuleList: [
-                {
-                  fullDatabase: disallowed,
-                },
-              ],
+  const environmentTierPayload =
+    environmentTierPolicy.payload as EnvironmentTierPolicyPayload;
+  const environment = await environmentV1Store.createEnvironment({
+    name: newEnvironment.resourceId,
+    title: newEnvironment.name,
+    order: environmentList.value.length,
+    tier: environmentTierFromJSON(environmentTierPayload.environmentTier),
+  });
+  // After creating with v1 store, we need to fetch the latest data in old store.
+  // TODO(steven): using grpc store.
+  await environmentStore.fetchEnvironmentList();
+
+  const requests = [
+    policyStore.upsertPolicyByEnvironmentAndType({
+      environmentId: environment.uid,
+      type: "bb.policy.pipeline-approval",
+      policyUpsert: { payload: approvalPolicy.payload },
+    }),
+    policyStore.upsertPolicyByEnvironmentAndType({
+      environmentId: environment.uid,
+      type: "bb.policy.backup-plan",
+      policyUpsert: { payload: backupPolicy.payload },
+    }),
+    policyStore.upsertPolicyByEnvironmentAndType({
+      environmentId: environment.uid,
+      type: "bb.policy.environment-tier",
+      policyUpsert: { payload: environmentTierPayload },
+    }),
+    policyStore.upsertPolicyByEnvironmentAndType({
+      environmentId: environment.uid,
+      type: "bb.policy.access-control",
+      policyUpsert: {
+        inheritFromParent: false,
+        payload: {
+          disallowRuleList: [
+            {
+              fullDatabase:
+                environmentTierPayload.environmentTier === "PROTECTED",
             },
-          },
-        })
-      );
-      return Promise.all(requests);
-    })
-    .then(() => {
-      state.showCreateModal = false;
-      selectEnvironment(environmentList.value.length - 1);
-    });
+          ],
+        },
+      },
+    }),
+  ];
+  await Promise.all(requests);
+  state.showCreateModal = false;
+  selectEnvironment(environment.order);
 };
 
 const startReorder = () => {

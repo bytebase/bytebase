@@ -18,6 +18,27 @@
       </div>
 
       <div class="col-span-1">
+        <label for="name" class="textlabel">
+          {{ $t("environment.id") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <div class="mt-1 textinfolabel">
+          {{ $t("environment.id-description") }}
+        </div>
+        <BBTextField
+          class="mt-2 w-full"
+          :disabled="!create"
+          :required="true"
+          :value="state.environment.resourceId"
+          @input="
+            state.environment.resourceId = (
+              $event.target as HTMLInputElement
+            ).value
+          "
+        />
+      </div>
+
+      <div class="col-span-1">
         <label class="textlabel flex items-center">
           {{ $t("policy.environment-tier.name") }}
           <FeatureBadge
