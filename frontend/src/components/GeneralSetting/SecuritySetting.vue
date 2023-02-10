@@ -40,6 +40,7 @@
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <BBCheckbox
+            :disabled="!allowEdit"
             :value="disallowSignupEnabled"
             @toggle="handleDisallowSignupToggle"
           />
