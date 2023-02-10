@@ -8,7 +8,6 @@ package v1
 
 import (
 	context "context"
-	longrunning "google.golang.org/genproto/googleapis/longrunning"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -31,7 +30,7 @@ type DatabaseServiceClient interface {
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
-	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*longrunning.Operation, error)
+	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error)
 	ListBackup(ctx context.Context, in *ListBackupRequest, opts ...grpc.CallOption) (*ListBackupResponse, error)
 }
 
@@ -115,8 +114,8 @@ func (c *databaseServiceClient) UpdateBackupSetting(ctx context.Context, in *Upd
 	return out, nil
 }
 
-func (c *databaseServiceClient) CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*longrunning.Operation, error) {
-	out := new(longrunning.Operation)
+func (c *databaseServiceClient) CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error) {
+	out := new(Backup)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.DatabaseService/CreateBackup", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -145,7 +144,7 @@ type DatabaseServiceServer interface {
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
-	CreateBackup(context.Context, *CreateBackupRequest) (*longrunning.Operation, error)
+	CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error)
 	ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
@@ -178,7 +177,7 @@ func (UnimplementedDatabaseServiceServer) GetBackupSetting(context.Context, *Get
 func (UnimplementedDatabaseServiceServer) UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBackupSetting not implemented")
 }
-func (UnimplementedDatabaseServiceServer) CreateBackup(context.Context, *CreateBackupRequest) (*longrunning.Operation, error) {
+func (UnimplementedDatabaseServiceServer) CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBackup not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error) {

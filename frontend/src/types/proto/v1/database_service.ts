@@ -2,7 +2,6 @@
 import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { Operation } from "../google/longrunning/operations";
 import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -131,6 +130,10 @@ export interface CreateBackupRequest {
 
 /** ListBackupRequest is the request message for ListBackup. */
 export interface ListBackupRequest {
+  /**
+   * The parent resource where this backup will be created.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
   parent: string;
   /**
    * Not used. The maximum number of backups to return. The service may return fewer than
@@ -366,13 +369,6 @@ export interface BackupSetting {
   hookUrl: string;
 }
 
-/**
- * OperationMetadata is the metadata for database operations.
- * Empty for now.
- */
-export interface OperationMetadata {
-}
-
 /** The message of the backup. */
 export interface Backup {
   /**
@@ -380,7 +376,7 @@ export interface Backup {
    * Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
    */
   name: string;
-  /** The timestamp when the backup resource was created - initally. */
+  /** The timestamp when the backup resource was created initally. */
   createTime?: Date;
   /** The timestamp when the backup resource was updated. */
   updateTime?: Date;
@@ -2386,45 +2382,6 @@ export const BackupSetting = {
   },
 };
 
-function createBaseOperationMetadata(): OperationMetadata {
-  return {};
-}
-
-export const OperationMetadata = {
-  encode(_: OperationMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): OperationMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOperationMetadata();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(_: any): OperationMetadata {
-    return {};
-  },
-
-  toJSON(_: OperationMetadata): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  fromPartial(_: DeepPartial<OperationMetadata>): OperationMetadata {
-    const message = createBaseOperationMetadata();
-    return message;
-  },
-};
-
 function createBaseBackup(): Backup {
   return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "" };
 }
@@ -2592,7 +2549,7 @@ export const DatabaseServiceDefinition = {
       name: "CreateBackup",
       requestType: CreateBackupRequest,
       requestStream: false,
-      responseType: Operation,
+      responseType: Backup,
       responseStream: false,
       options: {},
     },
@@ -2634,7 +2591,7 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: UpdateBackupSettingRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BackupSetting>>;
-  createBackup(request: CreateBackupRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Operation>>;
+  createBackup(request: CreateBackupRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Backup>>;
   listBackup(
     request: ListBackupRequest,
     context: CallContext & CallContextExt,
@@ -2671,7 +2628,7 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BackupSetting>;
-  createBackup(request: DeepPartial<CreateBackupRequest>, options?: CallOptions & CallOptionsExt): Promise<Operation>;
+  createBackup(request: DeepPartial<CreateBackupRequest>, options?: CallOptions & CallOptionsExt): Promise<Backup>;
   listBackup(
     request: DeepPartial<ListBackupRequest>,
     options?: CallOptions & CallOptionsExt,
