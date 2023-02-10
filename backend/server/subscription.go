@@ -38,7 +38,6 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 		// clear the trialing setting for dev test
 		if patch.License == "" {
-			fmt.Println("clear trialing")
 			if err := s.store.DeleteSettingV2(ctx, api.SettingEnterpriseTrial); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete the trialing license").SetInternal(err)
 			}
