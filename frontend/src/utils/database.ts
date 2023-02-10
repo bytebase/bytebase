@@ -3,10 +3,7 @@ import type {
   DataSourceType,
   Environment,
   Principal,
-  Repository,
 } from "../types";
-import { baseDirectoryWebUrl } from "../types";
-import { useRepositoryStore } from "@/store";
 import { hasWorkspacePermission } from "./role";
 import { isDev, semverCompare } from "./util";
 
@@ -147,22 +144,3 @@ export function isArchivedDatabase(db: Database): boolean {
   }
   return false;
 }
-
-export const alterSchemaVCS = (database: Database) => {
-  const { project } = database;
-  if (project.workflowType === "VCS") {
-    useRepositoryStore()
-      .fetchRepositoryByProjectId(database.project.id)
-      .then((repository: Repository): void => {
-        window.open(
-          baseDirectoryWebUrl(repository, {
-            DB_NAME: database.name,
-            ENV_NAME: database.instance.environment.name,
-            TYPE: "ddl",
-          }),
-          "_blank"
-        );
-      });
-    return;
-  }
-};

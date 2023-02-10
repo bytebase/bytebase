@@ -135,11 +135,7 @@
             class="btn-normal"
             @click="createMigration('bb.issue.database.data.update')"
           >
-            <span>{{ changeDataText }}</span>
-            <heroicons-outline:external-link
-              v-if="database.project.workflowType == 'VCS'"
-              class="-mr-1 ml-2 h-5 w-5 text-control-light"
-            />
+            <span>{{ $t("database.change-data") }}</span>
           </button>
           <button
             v-if="allowAlterSchema"
@@ -147,11 +143,7 @@
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
           >
-            <span>{{ alterSchemaText }}</span>
-            <heroicons-outline:external-link
-              v-if="database.project.workflowType == 'VCS'"
-              class="-mr-1 ml-2 h-5 w-5 text-control-light"
-            />
+            <span>{{ $t("database.alter-schema") }}</span>
           </button>
         </div>
       </div>
@@ -328,8 +320,6 @@ import {
   ProjectId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
-  Repository,
-  baseDirectoryWebUrl,
   Database,
   DatabaseLabel,
   SQLResultSet,
@@ -345,7 +335,6 @@ import {
   useDatabaseStore,
   useDBSchemaStore,
   usePolicyByDatabaseAndType,
-  useRepositoryStore,
   useSQLStore,
 } from "@/store";
 import dayjs from "dayjs";
@@ -379,7 +368,6 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseStore();
-const repositoryStore = useRepositoryStore();
 const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -541,20 +529,6 @@ const allowEditDatabaseLabels = computed((): boolean => {
   return allowAdmin.value;
 });
 
-const alterSchemaText = computed(() => {
-  if (database.value.project.workflowType == "VCS") {
-    return t("database.alter-schema-in-vcs");
-  }
-  return t("database.alter-schema");
-});
-
-const changeDataText = computed(() => {
-  if (database.value.project.workflowType == "VCS") {
-    return t("database.change-data-in-vcs");
-  }
-  return t("database.change-data");
-});
-
 const tabItemList = computed((): BBTabFilterItem[] => {
   if (
     database.value.instance.engine === "SPANNER" ||
@@ -602,66 +576,52 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 const createMigration = async (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  if (database.value.project.workflowType == "UI") {
-    let mode: "online" | "normal" | false = "normal";
-    if (type === "bb.issue.database.schema.update") {
-      if (allowUsingSchemaEditor([database.value])) {
-        state.showSchemaEditorModal = true;
-        return;
-      }
-
-      // Check and show a normal/online selection modal dialog if needed.
-      mode = await isUsingGhostMigration([database.value]);
-    }
-    if (mode === false) return;
-
-    // Create a user friendly default issue name
-    const issueNameParts: string[] = [];
-    issueNameParts.push(`[${database.value.name}]`);
-    if (mode === "online") {
-      issueNameParts.push("Online schema change");
-    } else {
-      issueNameParts.push(
-        type === "bb.issue.database.schema.update"
-          ? `Alter schema`
-          : `Change data`
-      );
-    }
-    const datetime = dayjs().format("@MM-DD HH:mm");
-    const tz = "UTC" + dayjs().format("ZZ");
-    issueNameParts.push(`${datetime} ${tz}`);
-
-    const query: Record<string, any> = {
-      template: type,
-      name: issueNameParts.join(" "),
-      project: database.value.project.id,
-      databaseList: database.value.id,
-    };
-    if (mode === "online") {
-      query.ghost = "1";
+  type AlterMode = "online" | "normal" | false;
+  let mode: AlterMode = "normal";
+  if (type === "bb.issue.database.schema.update") {
+    if (allowUsingSchemaEditor([database.value])) {
+      state.showSchemaEditorModal = true;
+      return;
     }
 
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: "new",
-      },
-      query,
-    });
-  } else if (database.value.project.workflowType == "VCS") {
-    repositoryStore
-      .fetchRepositoryByProjectId(database.value.project.id)
-      .then((repository: Repository) => {
-        window.open(
-          baseDirectoryWebUrl(repository, {
-            DB_NAME: database.value.name,
-            ENV_NAME: database.value.instance.environment.name,
-            TYPE: type === "bb.issue.database.schema.update" ? "ddl" : "dml",
-          }),
-          "_blank"
-        );
-      });
+    // Check and show a normal/online selection modal dialog if needed.
+    mode = await isUsingGhostMigration([database.value]);
   }
+  if (mode === false) return;
+
+  // Create a user friendly default issue name
+  const issueNameParts: string[] = [];
+  issueNameParts.push(`[${database.value.name}]`);
+  if (mode === "online") {
+    issueNameParts.push("Online schema change");
+  } else {
+    issueNameParts.push(
+      type === "bb.issue.database.schema.update"
+        ? `Alter schema`
+        : `Change data`
+    );
+  }
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+
+  const query: Record<string, any> = {
+    template: type,
+    name: issueNameParts.join(" "),
+    project: database.value.project.id,
+    databaseList: database.value.id,
+  };
+  if (mode === "online") {
+    query.ghost = "1";
+  }
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
 };
 
 const updateProject = (newProjectId: ProjectId, labels?: DatabaseLabel[]) => {
