@@ -69,6 +69,20 @@ service DatabaseService {
       body: "setting"
     };
   }
+
+  rpc CreateBackup(CreateBackupRequest) returns (Backup) {
+    option (google.api.http) = {
+      post: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
+      body: "backup"
+    };
+  }
+
+  rpc ListBackup(ListBackupRequest) returns (ListBackupResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
+    };
+    option (google.api.method_signature) = "parent";
+  }
 }
 
 message GetDatabaseRequest {
@@ -160,6 +174,44 @@ message GetBackupSettingRequest {
 message UpdateBackupSettingRequest {
   // The database backup setting to update.
   BackupSetting setting = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// CreateBackupRequest is the request message for CreateBackup.
+message CreateBackupRequest {
+  // The parent resource where this backup will be created.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  Backup backup = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// ListBackupRequest is the request message for ListBackup.
+message ListBackupRequest {
+  // The parent resource where this backup will be created.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The maximum number of backups to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 backups will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `ListBackup` call.
+  // Provide this to retrieve the subsequent page.  
+  //
+  // When paginating, all other parameters provided to `ListBackup` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListBackupResponse {
+  // The backups from the specified request.
+  repeated Backup backups = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 message Database {
@@ -394,4 +446,56 @@ message BackupSetting {
 
   // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
   string hook_url = 4;
+}
+
+// The message of the backup.
+message Backup {
+  // The type of the backup.
+  enum BackupType {
+    // The type of the backup is unknown.
+    BACKUP_TYPE_UNSPECIFIED = 0;
+
+    // The backup is created by user.
+    MANUAL = 1;
+
+    // The backup is created by automatic backup.
+    AUTOMATIC = 2;
+
+    // The backup is created automatically after doing PITR.
+    PITR = 3;
+  }
+
+  // The state of the backup.
+  enum BackupState {
+    // The state of the backup is unknown.
+    BACKUP_STATE_UNSPECIFIED = 0;
+
+    // The backup is being pending to create.
+    PENDING_CREATE = 1;
+
+    // The backup is ready to use.
+    DONE = 2;
+
+    // The backup is being deleted.
+    FAILED = 3;
+  }
+
+  // The resource name of the database backup. backup-name is specified by the client.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
+  string name = 1;
+
+  // The timestamp when the backup resource was created initally.
+  google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the backup resource was updated.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The state of the backup.
+  BackupState state = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  
+  // The type of the backup.
+  BackupType backup_type = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The comment of the backup.
+  string comment = 6;
 }
