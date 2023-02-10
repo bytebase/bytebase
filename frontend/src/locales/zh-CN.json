@@ -1668,6 +1668,10 @@
         "title": "水印设置",
         "desc": "在页面上显示水印，包含用户名和 ID。"
       },
+      "bb-feature-audit-log": {
+        "title": "审计日志",
+        "desc": "记录和查询工作空间中的用户执行的操作。"
+      },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
         "desc": "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
