@@ -1573,7 +1573,7 @@
   },
   "subscription": {
     "trial-start-modal": {
-      "title": "Start your trialing for {plan}",
+      "title": "Start your {plan} trial",
       "content": "Your trialing for the {plan} has started! You can access unlimited features before {date}.",
       "subscription-page": "subscription page",
       "subscription": "Go to the {page} to learn these features and our plans."
