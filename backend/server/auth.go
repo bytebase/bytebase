@@ -60,7 +60,12 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				var err error
-				user, err = s.store.GetUserByEmail(ctx, login.Email)
+				emptyIDP := ""
+				user, err = s.store.GetUser(ctx, &store.FindUserMessage{
+					Email:                      &login.Email,
+					ShowDeleted:                true,
+					IdentityProviderResourceID: &emptyIDP,
+				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -122,7 +127,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via VCS, user is Archived")
 				}
 
-				user, err = s.store.GetUserByEmail(ctx, userInfo.PublicEmail)
+				user, err = s.store.GetUser(ctx, &store.FindUserMessage{
+					Email:       &userInfo.PublicEmail,
+					ShowDeleted: true,
+				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
