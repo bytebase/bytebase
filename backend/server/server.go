@@ -418,7 +418,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
-	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
 	s.registerOAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
@@ -466,6 +465,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			return nil
 		}))
+	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
@@ -484,6 +484,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {

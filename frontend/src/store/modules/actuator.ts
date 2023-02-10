@@ -1,6 +1,6 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { ActuatorState, ServerInfo, Release } from "@/types";
+import { ActuatorState, ServerInfo, ServerInfoPatch, Release } from "@/types";
 import { useLocalStorage } from "@vueuse/core";
 import { semverCompare } from "@/utils";
 
@@ -58,11 +58,27 @@ export const useActuatorStore = defineStore("actuator", {
       this.serverInfo = serverInfo;
     },
     async fetchServerInfo() {
-      const serverInfo = (await axios.get(`/api/actuator/info`))
-        .data as ServerInfo;
+      const { data: serverInfo } = await axios.get<ServerInfo>(
+        `/v1/actuator/info`
+      );
 
       this.setServerInfo(serverInfo);
 
+      return serverInfo;
+    },
+    async patchServerInfo(patch: ServerInfoPatch) {
+      const updateMasks = [];
+      if (patch.debug !== undefined) {
+        updateMasks.push("debug");
+      }
+      if (patch.disallowSignup !== undefined) {
+        updateMasks.push("actuator.disallow_signup");
+      }
+      const { data: serverInfo } = await axios.patch<ServerInfo>(
+        `/v1/actuator/info?update_mask=${updateMasks.join(",")}`,
+        patch
+      );
+      this.setServerInfo(serverInfo);
       return serverInfo;
     },
     async tryToRemindRelease(): Promise<boolean> {

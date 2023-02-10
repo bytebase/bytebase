@@ -1,4 +1,4 @@
 import BrandingSetting from "./BrandingSetting.vue";
-import WatermarkSetting from "./WatermarkSetting.vue";
+import SecuritySetting from "./SecuritySetting.vue";
 
-export { BrandingSetting, WatermarkSetting };
+export { BrandingSetting, SecuritySetting };

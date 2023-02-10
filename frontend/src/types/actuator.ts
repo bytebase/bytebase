@@ -7,6 +7,12 @@ export type ServerInfo = {
   needAdminSetup: boolean;
   startedTs: number;
   disallowSignup: boolean;
+  debug: boolean;
+};
+
+export type ServerInfoPatch = {
+  disallowSignup?: boolean;
+  debug?: boolean;
 };
 
 export type Release = {

@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "generated-go/v1";
+
+service ActuatorService {
+  rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
+    option (google.api.http) = {
+      get: "/v1/actuator/info"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
+    option (google.api.http) = {
+      patch: "/v1/actuator/info"
+      body: "actuator"
+    };
+    option (google.api.method_signature) = "actuator,update_mask";
+  }
+}
+
+message GetActuatorInfoRequest {
+}
+
+message UpdateActuatorInfoRequest {
+  // The actuator to update.
+  ActuatorInfo actuator = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message ActuatorInfo {
+  string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string git_commit = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool readonly = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string demo_name = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string host = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string port = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string external_url = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool need_admin_setup = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool disallow_signup = 9;
+
+  bool debug = 10;
+}

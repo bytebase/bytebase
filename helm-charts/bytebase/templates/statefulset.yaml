@@ -43,7 +43,7 @@ spec:
               name: web
           readinessProbe:
             httpGet:
-              path: /api/actuator/info
+              path: /v1/actuator/info
               port: web
             initialDelaySeconds: 2
             periodSeconds: 2

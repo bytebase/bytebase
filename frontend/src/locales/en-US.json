@@ -437,20 +437,27 @@
     "general": {
       "workspace": {
         "branding": "Branding",
-        "only-owner-can-edit": "Only workspace owner can update the branding.",
+        "only-owner-can-edit": "Only workspace owner can update the settings.",
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).",
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
         "logo-upload-succeed": "Successfully updated the logo",
+        "security": "Security",
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
           "description": "Display watermarks on pages, including username and ID.",
-          "only-owner-can-edit": "Only workspace owner can update watermark setting."
+          "only-owner-can-edit": "Only workspace owner can update watermark setting.",
+          "enable": "Enable watermark"
         },
-        "enable-watermark": "Enable watermark"
+        "disallow-signup": {
+          "enable": "Disallow self-service signup",
+          "description": "Once disallowed, users cannot self-service signup but only invited by the workspace owner.",
+          "only-owner-can-edit": "Only workspace owner can disallow the self-service signup."
+        },
+        "config-updated": "Configuration is updated"
       }
     },
     "sensitive-data": {
