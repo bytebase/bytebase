@@ -96,8 +96,90 @@ func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fie
 		return extractor.pgExtractRangeVar(node)
 	case *pgquery.Node_RangeSubselect:
 		return extractor.pgExtractRangeSubselect(node)
+	case *pgquery.Node_JoinExpr:
+		return extractor.pgExtractJoin(node)
 	}
 	return nil, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractJoin(in *pgquery.Node_JoinExpr) ([]fieldInfo, error) {
+	leftFieldInfo, err := extractor.pgExtractNode(in.JoinExpr.Larg)
+	if err != nil {
+		return nil, err
+	}
+	rightFieldInfo, err := extractor.pgExtractNode(in.JoinExpr.Rarg)
+	if err != nil {
+		return nil, err
+	}
+	return pgMergeJoinField(in, leftFieldInfo, rightFieldInfo)
+}
+
+func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightField []fieldInfo) ([]fieldInfo, error) {
+	leftFieldMap := make(map[string]fieldInfo)
+	rightFieldMap := make(map[string]fieldInfo)
+	var result []fieldInfo
+	for _, field := range leftField {
+		leftFieldMap[field.name] = field
+	}
+	for _, field := range rightField {
+		rightFieldMap[field.name] = field
+	}
+	if node.JoinExpr.IsNatural {
+		// Natural Join will merge the same column name field.
+		for _, field := range leftField {
+			// Merge the sensitive attribute for the same column name field.
+			if rField, exists := rightFieldMap[field.name]; exists && rField.sensitive {
+				field.sensitive = true
+			}
+			result = append(result, field)
+		}
+
+		for _, field := range rightField {
+			if _, exists := leftFieldMap[field.name]; !exists {
+				result = append(result, field)
+			}
+		}
+	} else {
+		if len(node.JoinExpr.UsingClause) > 0 {
+			// ... JOIN ... USING (...) will merge the column in USING.
+			var usingList []string
+			for _, nameNode := range node.JoinExpr.UsingClause {
+				name, yes := nameNode.Node.(*pgquery.Node_String_)
+				if !yes {
+					return nil, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
+				}
+				usingList = append(usingList, name.String_.Str)
+			}
+			usingMap := make(map[string]bool)
+			for _, column := range usingList {
+				usingMap[column] = true
+			}
+
+			for _, field := range leftField {
+				_, existsInUsingMap := usingMap[field.name]
+				rField, existsInRightField := rightFieldMap[field.name]
+				// Merge the sensitive attribute for the column name field in USING.
+				if existsInUsingMap && existsInRightField && rField.sensitive {
+					field.sensitive = true
+				}
+				result = append(result, field)
+			}
+
+			for _, field := range rightField {
+				_, existsInUsingMap := usingMap[field.name]
+				_, existsInLeftField := leftFieldMap[field.name]
+				if existsInUsingMap && existsInLeftField {
+					continue
+				}
+				result = append(result, field)
+			}
+		} else {
+			result = append(result, leftField...)
+			result = append(result, rightField...)
+		}
+	}
+
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]fieldInfo, error) {
@@ -334,6 +416,11 @@ func pgExtractFieldName(in *pgquery.Node) (string, error) {
 		return pgUnknownFieldName, nil
 	}
 	switch node := in.Node.(type) {
+	case *pgquery.Node_ResTarget:
+		if node.ResTarget.Name != "" {
+			return node.ResTarget.Name, nil
+		}
+		return pgExtractFieldName(node.ResTarget.Val)
 	case *pgquery.Node_ColumnRef:
 		columnRef, err := pg.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
 		if err != nil {
