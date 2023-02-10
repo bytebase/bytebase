@@ -28,7 +28,7 @@ type GhostSyncExecutor struct {
 }
 
 // Run will run the task check database connector executor once.
-func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *GhostSyncExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.
@@ -50,12 +50,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 			err = nil
 		}
 	}()
-	if task.Instance == nil {
-		return nil, common.Errorf(common.Internal, "failed to find instance %d", task.InstanceID)
-	}
-	if task.Database == nil {
-		return nil, common.Errorf(common.Internal, "failed to find database %d", task.DatabaseID)
-	}
+
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err

@@ -28,7 +28,7 @@ type PITRMySQLExecutor struct {
 }
 
 // Run will run the task check migration schema executor once.
-func (e *PITRMySQLExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *PITRMySQLExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 		return nil, errors.Wrapf(err, "invalid PITR restore payload: %s", task.Payload)
@@ -46,8 +46,15 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 		}, nil
 	}
 
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	if database == nil {
+		return nil, errors.Errorf("database %v not found", *task.DatabaseID)
+	}
 	instanceID := task.InstanceID
-	databaseName := task.Database.Name
+	databaseName := database.DatabaseName
 	if payload.TargetInstanceID != nil {
 		instanceID = *payload.TargetInstanceID
 		databaseName = *payload.DatabaseName
