@@ -79,6 +79,7 @@
           v-model="identityProvider.title"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="$t('settings.sso.form.name-description')"
         />
       </div>
       <div
@@ -156,7 +157,7 @@
           v-model="configForOAuth2.clientId"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. 6655asd77895265aa110ac0d3"
+          placeholder="e.g. 6655asd77895265aa110ac0d3"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -170,7 +171,7 @@
           class="textfield mt-1 w-full"
           :placeholder="
             isCreating
-              ? 'ex. 5bbezxc3972ca304de70c5d70a6aa932asd8'
+              ? 'e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8'
               : $t('common.sensitive-placeholder')
           "
         />
@@ -187,7 +188,7 @@
           v-model="configForOAuth2.authUrl"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. https://github.com/login/oauth/authorize"
+          placeholder="e.g. https://github.com/login/oauth/authorize"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -202,7 +203,7 @@
           v-model="scopesStringOfConfig"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. user"
+          placeholder="e.g. user"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -217,7 +218,7 @@
           v-model="configForOAuth2.tokenUrl"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. https://github.com/login/oauth/access_token"
+          placeholder="e.g. https://github.com/login/oauth/access_token"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -232,7 +233,7 @@
           v-model="configForOAuth2.userInfoUrl"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. https://api.github.com/user"
+          placeholder="e.g. https://api.github.com/user"
         />
       </div>
 
@@ -257,7 +258,7 @@
           v-model="configForOAuth2.fieldMapping!.identifier"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. login"
+          placeholder="e.g. login"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
           <heroicons-outline:arrow-right
@@ -274,7 +275,7 @@
           v-model="configForOAuth2.fieldMapping!.displayName"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. name"
+          placeholder="e.g. name"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
           <heroicons-outline:arrow-right
@@ -290,7 +291,7 @@
           v-model="configForOAuth2.fieldMapping!.email"
           type="text"
           class="textfield mt-1 w-full"
-          placeholder="ex. email"
+          placeholder="e.g. email"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
           <heroicons-outline:arrow-right
@@ -308,87 +309,195 @@
       v-else-if="state.type === IdentityProviderType.OIDC"
       class="w-full flex flex-col justify-start items-start space-y-3"
     >
-      <p class="textinfolabel !mt-4">
+      <p class="text-lg font-medium !mt-4">
         {{ $t("settings.sso.form.basic-information") }}
       </p>
       <div class="w-full flex flex-col justify-start items-start">
-        <label>{{ $t("settings.sso.form.name") }}</label>
+        <p class="textlabel">
+          {{ $t("settings.sso.form.name") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="identityProvider.title"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="$t('settings.sso.form.name-description')"
         />
       </div>
       <div
         v-if="isCreating"
         class="w-full flex flex-col justify-start items-start"
       >
-        <label>{{ $t("settings.sso.form.resource-id") }}</label>
+        <p class="textlabel">
+          {{ $t("settings.sso.form.resource-id") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="identityProvider.name"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="$t('settings.sso.form.resource-id-description')"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label>{{ $t("settings.sso.form.domain") }}</label>
+        <p class="textlabel">
+          {{ $t("settings.sso.form.domain") }}
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="identityProvider.domain"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="$t('settings.sso.form.domain-description')"
         />
       </div>
+
       <div class="w-full flex flex-col justify-start items-start">
-        <label>Issuer</label>
+        <p class="text-lg font-medium mt-2">
+          {{ $t("settings.sso.form.identity-provider-information") }}
+        </p>
+        <p class="textinfolabel">
+          {{
+            $t("settings.sso.form.identity-provider-information-description")
+          }}
+        </p>
+      </div>
+      <div
+        v-if="isCreating"
+        class="w-full flex flex-row justify-start items-center"
+      >
+        <p class="textlabel">
+          {{ $t("settings.sso.form.redirect-url") }}
+        </p>
+        <ShowMoreIcon
+          class="ml-1 mr-2"
+          :content="$t('settings.sso.form.redirect-url-description')"
+        />
+        <div class="relative grow">
+          <input
+            type="text"
+            class="textfield w-full pr-10"
+            readonly
+            disabled
+            :value="redirectUrl"
+          />
+          <button
+            tabindex="-1"
+            class="absolute right-0 top-1/2 -translate-y-1/2 mr-2 p-1 text-control-light rounded hover:bg-gray-100"
+            @click.prevent="copyRedirectUrl"
+          >
+            <heroicons-outline:clipboard class="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          Issuer
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="configForOIDC.issuer"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="e.g. https://acme.okta.com"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label>Client ID</label>
+        <p class="textlabel">
+          Client ID
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="configForOIDC.clientId"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="e.g. 6655asd77895265aa110ac0d3"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
-        <label>Client secret</label>
+        <p class="textlabel">
+          Client secret
+          <span class="text-red-600">*</span>
+        </p>
         <input
           v-model="configForOIDC.clientSecret"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="
+            isCreating
+              ? 'e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8'
+              : $t('common.sensitive-placeholder')
+          "
         />
       </div>
 
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="text-lg font-medium mt-2">
+          {{ $t("settings.sso.form.user-information-mapping") }}
+        </p>
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.user-information-mapping-description") }}
+          <a
+            href="https://www.bytebase.com/docs/administration/sso/oidc#configuration?source=console"
+            class="normal-link text-sm inline-flex flex-row items-center"
+            target="_blank"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4" />
+          </a>
+        </p>
+      </div>
       <p class="textinfolabel !mt-4">
         {{ $t("settings.sso.form.user-information-mapping") }}
       </p>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label>{{ $t("settings.sso.form.identifier") }}</label>
+      <div class="w-full grid grid-cols-[256px_1fr]">
         <input
           v-model="configForOIDC.fieldMapping!.identifier"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="e.g. preferred_username"
         />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.identifier") }}
+            <span class="text-red-600">*</span>
+          </p>
+        </div>
       </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label>{{ $t("settings.sso.form.display-name") }}</label>
+      <div class="w-full grid grid-cols-[256px_1fr]">
         <input
           v-model="configForOIDC.fieldMapping!.displayName"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="e.g. name"
         />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.display-name") }}
+          </p>
+        </div>
       </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <label>{{ $t("common.email") }}</label>
+      <div class="w-full grid grid-cols-[256px_1fr]">
         <input
           v-model="configForOIDC.fieldMapping!.email"
           type="text"
           class="textfield mt-1 w-full"
+          placeholder="e.g. email"
         />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.email") }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -477,7 +586,6 @@ import {
   IdentityProviderTemplate,
   identityProviderTemplateList,
   identityProviderTypeToString,
-  isDev,
   openWindowForSSO,
 } from "@/utils";
 import { OAuthWindowEventPayload } from "@/types";
@@ -519,11 +627,7 @@ const configForOIDC = ref<OIDCIdentityProviderConfig>(
 const selectedTemplate = ref<IdentityProviderTemplate>();
 
 const identityProviderTypeList = computed(() => {
-  const list = [IdentityProviderType.OAUTH2];
-  if (isDev()) {
-    list.push(IdentityProviderType.OIDC);
-  }
-  return list;
+  return [IdentityProviderType.OAUTH2, IdentityProviderType.OIDC];
 });
 
 const redirectUrl = computed(() => {
@@ -539,6 +643,8 @@ const isCreating = computed(() => {
 const userDocLink = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
     return "https://www.bytebase.com/docs/administration/sso/oauth2?source=console";
+  } else if (state.type === IdentityProviderType.OIDC) {
+    return "https://www.bytebase.com/docs/administration/sso/oidc?source=console";
   }
   return "";
 });
@@ -603,7 +709,10 @@ const allowCreate = computed(() => {
 });
 
 const allowTestConnection = computed(() => {
-  if (state.type === IdentityProviderType.OAUTH2) {
+  if (
+    state.type === IdentityProviderType.OAUTH2 ||
+    state.type === IdentityProviderType.OIDC
+  ) {
     if (isFormCompleted.value) {
       return true;
     }
@@ -663,7 +772,10 @@ onMounted(async () => {
 });
 
 onMounted(() => {
-  if (state.type === IdentityProviderType.OAUTH2) {
+  if (
+    state.type === IdentityProviderType.OAUTH2 ||
+    state.type === IdentityProviderType.OIDC
+  ) {
     window.addEventListener(
       `bb.oauth.signin.${editedIdentityProvider.value.name}`,
       loginWithIdentityProviderEventListener,
@@ -673,7 +785,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (state.type === IdentityProviderType.OAUTH2) {
+  if (
+    state.type === IdentityProviderType.OAUTH2 ||
+    state.type === IdentityProviderType.OIDC
+  ) {
     window.removeEventListener(
       `bb.oauth.signin.${editedIdentityProvider.value.name}`,
       loginWithIdentityProviderEventListener,
@@ -723,7 +838,10 @@ const copyRedirectUrl = () => {
 };
 
 const testConnection = () => {
-  if (state.type === IdentityProviderType.OAUTH2) {
+  if (
+    state.type === IdentityProviderType.OAUTH2 ||
+    state.type === IdentityProviderType.OIDC
+  ) {
     openWindowForSSO(editedIdentityProvider.value);
   }
 };
@@ -825,6 +943,12 @@ watch(
           head(templateList.value) as IdentityProviderTemplate
         );
       }
+    } else if (state.type === IdentityProviderType.OIDC) {
+      // NOTE: We do not yet have templates for OIDC providers so resetting
+      // leftover values when we switch from other provider types to not confuse users.
+      identityProvider.value.title = "";
+      identityProvider.value.name = "";
+      identityProvider.value.domain = "";
     }
   },
   {
