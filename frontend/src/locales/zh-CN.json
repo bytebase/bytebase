@@ -395,7 +395,7 @@
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "create-as-service-account": "创建为服务账号"
     },
-    "webhook-integration": {
+    "im-integration": {
       "enable": "启用",
       "description": "可以让用户在 IM 里直接审批工单。",
       "feishu-updated-tip": "飞书配置更新成功"
