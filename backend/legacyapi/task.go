@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -333,8 +334,8 @@ type TaskPatch struct {
 	Statement         *string `jsonapi:"attr,statement"`
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
-	RollbackStatement **string
-	RollbackError     **string
+	RollbackStatement *sql.NullString
+	RollbackError     *sql.NullString
 }
 
 // TaskStatusPatch is the API message for patching a task status.

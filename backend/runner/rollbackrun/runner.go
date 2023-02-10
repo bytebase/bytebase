@@ -3,6 +3,7 @@ package rollbackrun
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -98,14 +99,16 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		return
 	}
 
-	var rollbackStatement, rollbackError *string
+	var rollbackStatement, rollbackError sql.NullString
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		errStr := err.Error()
-		rollbackError = &errStr
+		rollbackError.Valid = true
+		rollbackError.String = err.Error()
+	} else {
+		rollbackStatement.Valid = true
+		rollbackStatement.String = rollbackSQL
 	}
-	rollbackStatement = &rollbackSQL
 
 	patch := &api.TaskPatch{
 		ID:                task.ID,

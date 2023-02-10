@@ -3,6 +3,7 @@ package taskrun
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -355,9 +356,8 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	// Reset rollbackStatement and rollbackError because we are trying to build
 	// the rollbackStatement again and there could be previous runs.
 	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
-		var ptrStr *string
-		taskPatch.RollbackStatement = &ptrStr
-		taskPatch.RollbackError = &ptrStr
+		taskPatch.RollbackStatement = &sql.NullString{}
+		taskPatch.RollbackError = &sql.NullString{}
 	}
 
 	taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
