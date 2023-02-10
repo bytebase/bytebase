@@ -70,7 +70,7 @@ export default defineComponent({
 
     const editVCS = () => {
       router.push({
-        name: "setting.workspace.version-control.detail",
+        name: "setting.workspace.gitops.detail",
         params: {
           vcsSlug: vcsSlug(props.vcs),
         },

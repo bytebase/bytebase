@@ -121,14 +121,13 @@
     "repository": "Repository",
     "change": "Change",
     "branch": "Branch",
-    "config-guide": "config guide",
     "required-placeholder": "required placeholder",
     "optional-placeholder": "optional placeholder",
     "optional-directory-wildcard": "optional directory wildcard",
     "sensitive-placeholder": "sensitive - write only",
     "enabled": "enabled",
     "default": "default",
-    "version-control": "Version Control",
+    "gitops": "GitOps",
     "restore": "Restore",
     "detailed-guide": "detailed guide",
     "workspace": "workspace",
@@ -339,7 +338,7 @@
       "members": "Members",
       "im-integration": "IM Integration",
       "sso": "SSO",
-      "version-control": "Version Control",
+      "gitops": "GitOps",
       "subscription": "Subscription",
       "labels": "Labels",
       "debug-log": "Debug Log",
@@ -409,28 +408,29 @@
         "type": "Type",
         "learn-more-with-user-doc": "Learn more about the configuration",
         "redirect-url": "Authorization redirect url",
-        "redirect-url-description": "It will be used to fill in the appropriate field in the OAuth provider application form.",
+        "redirect-url-description": "It will be used to fill in the appropriate field in the identity provider application form.",
         "use-template": "Use template",
         "select-template": "Select template",
         "basic-information": "Basic information",
         "name": "Name",
+        "name-description": "The display name to be shown to the users",
         "resource-id": "Resource ID",
         "resource-id-description": "An unique string, and valid characters are /[a-z][0-9]-/",
         "domain": "Domain",
         "domain-description": "The identity provider's domain name",
         "identity-provider-information": "Identity provider information",
-        "identity-provider-information-description": "The information is provided by your OAuth provider.",
+        "identity-provider-information-description": "The information is provided by your identity provider.",
         "endpoints": "Endpoints",
         "endpoints-description": "The related urls provided by your OAuth provider.",
         "auth-url-description": "The link to OAuth login page",
-        "scopes-description": "The scope parameter carried when accessing the Auth URL",
+        "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
         "user-information-mapping": "User information mapping",
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
-        "identifier": "Bytebase User Identifier",
-        "display-name": "Bytebase User Display name",
-        "email": "Bytebase User Email"
+        "identifier": "Bytebase user identifier",
+        "display-name": "Bytebase user display name",
+        "email": "Bytebase user email"
       },
       "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
     },
@@ -458,12 +458,12 @@
       "remove-sensitive-column-tips": "Expose this column?"
     },
     "access-control": {
-      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor. {link}",
+      "description": "Allow developers to execute queries for the following databases in the production environments from SQL Editor. {link}",
       "add-rule": "Add rule",
       "remove-policy-tips": "Remove this rule?",
       "inactive-rules": "Inactive rules",
-      "inactive-rules-description": "These rules are inactive because environment is not protected.",
-      "no-database-in-protected-environment": "Make sure there are databases in the {protected_environment}."
+      "inactive-rules-description": "These rules are inactive because environment is not production.",
+      "no-database-in-production-environment": "Make sure there are databases in the {production_environment}."
     },
     "release": {
       "new-version-available": "New version is available",
@@ -619,7 +619,7 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
-      "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
+      "dont-apply-to-database-in-baseline-migration": "Baselining only records the current schema in the change history and won't apply the SQL to the database",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
     "rollback-from": "This task rollbacks from {link}.",
@@ -696,7 +696,7 @@
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to record database schema migration on this instance. Without setting up the migration schema, you cannot alter schema or change data for any databases on the instance.",
+    "bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to record database schema migration on this instance. Without setting up the migration schema, you cannot alter schema or change data for any databases on the instance.",
     "please-contact-your-dba-to-configure-it": "Please contact your DBA to configure it.",
     "please-check-the-instance-connection-info-is-correct": "Please check the instance connection info is correct.",
     "users": "Users",
@@ -771,7 +771,7 @@
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
     "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance instead",
-    "successfully-created-postgresql-instance": "Successfully created a PostgreSQL sample instance and filled connection info.",
+    "successfully-added-postgresql-instance": "Successfully added a PostgreSQL sample instance and filled connection info.",
     "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
     "new-instance": "New Instance",
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
@@ -794,12 +794,11 @@
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
-    "protected": "Protected",
     "disable-auto-backup": {
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     },
-    "protected-environment": "Protected environment"
+    "production-environment": "Production environment"
   },
   "quick-start": {
     "view-an-issue": "View an issue",
@@ -881,12 +880,12 @@
     "environment-tier": {
       "name": "Environment tier",
       "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
-      "mark-env-as-protected": "Mark as protected environment"
+      "mark-env-as-production": "Mark as production environment"
     }
   },
   "change-history": {
     "self": "Change History",
-    "select": "Select version",
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -961,7 +960,7 @@
     "updated-backup-webhook-url-for-database-props-database-name": "Updated backup webhook URL for database '{0}'.",
     "last-sync-status": "Last sync status",
     "last-sync-status-long": "Last sync status {0} at {1}",
-    "version-control-enabled": "Version control enabled",
+    "gitops-enabled": "GitOps enabled",
     "restore-backup": "Restore backup '{0}' to a new database",
     "nullable": "Nullable",
     "restore": "Restore",
@@ -1026,12 +1025,14 @@
     "sync-schema": {
       "title": "Synchronize Schema",
       "select-project": "Select project",
-      "select-database": "Apply to database",
+      "to-database": "Apply to database",
       "from-database": "From database",
-      "schema-diff": "The schema diff",
-      "synchronize-statements": "The DDL statements",
-      "synchronize-statements-description": "You can further edit the generated DDL statements.",
-      "select-schema-and-target-database-tip": "Please select the schema and database first.",
+      "schema-change-preview": "Preview Schema change for '{database}'",
+      "schema-change-preview-no-database": "Preview Schema change",
+      "synchronize-statements": "Corresponding generated DDL statements",
+      "synchronize-statements-description": "You can further edit the generated DDL statements",
+      "select-from-database-and-schema-tip": "Select the database and schema version to be synced from",
+      "select-to-database-tip": "Select the database to be applied to",
       "no-difference-tip": "No diff found.",
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",
@@ -1076,14 +1077,14 @@
     "sql-review-ci-remove-modal": "SQL Review CI is disabled. You can remove the {vcs} file from {repository}.",
     "sql-review-ci-restore-modal": "Once you restore to the UI workflow, the SQL review CI will be disabled for your repository. You can remove the {vcs} file from {repository}.",
     "git-provider": "Git provider",
-    "version-control-status": "@.capitalize:common.version-control is {status}",
-    "version-control-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
-    "version-control-description-branch": "After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.",
-    "version-control-description-description-schema-path": "After applying the schema change, Bytebase will also write the latest schema to the specified schema path location {schemaPathTemplate}.",
+    "gitops-status": "@.capitalize:common.gitops is {status}",
+    "gitops-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
+    "gitops-description-branch": "After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.",
+    "gitops-description-description-schema-path": "After applying the schema change, Bytebase will also write the latest schema to the specified schema path location {schemaPathTemplate}.",
     "restore-to-ui-workflow": "Restore to UI workflow",
     "restore-ui-workflow-description": "When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase console and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.",
     "restore-ui-workflow-success": "Successfully restored to UI workflow",
-    "update-version-control-config-success": "Successfully updated @:common.version-control config",
+    "update-gitops-config-success": "Successfully updated @:common.gitops config",
     "setup-wizard-guide": "If you encounter errors during the process, please refer to our {guide}",
     "add-git-provider": "Add Git provider",
     "choose-git-provider": "Choose Git provider",
@@ -1133,7 +1134,7 @@
     "dashboard": {
       "modal": {
         "title": "How to setup '@:{'common.project'}' ?",
-        "content": "Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable version control workflow.",
+        "content": "Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable GitOps workflow.",
         "cancel": "Dismiss",
         "confirm": "Do not show again"
       },
@@ -1254,7 +1255,7 @@
     "mark-all-as-read": "Mark all as read",
     "view-older": "View older"
   },
-  "version-control": {
+  "gitops": {
     "setting": {
       "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase owners manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
       "description-highlight": "If you want to enable third party login via your configured VCSs, please configure it in SSO.",
@@ -1299,7 +1300,7 @@
         },
         "confirm": {
           "confirm-info": "Confirm the info",
-          "confirm-description": "After creation, this Git provider can be chosen under the project dashboard \"Version Control\" tab by the project owner."
+          "confirm-description": "After creation, this Git provider can be chosen under the project dashboard \"GitOps\" tab by the project owner."
         }
       },
       "git-provider": {
@@ -1308,7 +1309,9 @@
         "secret-label-gitlab": "Secret for the registered GitLab instance-wide OAuth application.",
         "github-application-id-label": "Client ID for the registered GitHub organization-wide OAuth application.",
         "secret-label-github": "Client secret for the registered GitHub organization-wide OAuth application.",
-        "delete": "To delete this provider, unlink all repositories first."
+        "delete-forbidden": "To delete this provider, unlink all repositories first.",
+        "delete": "Delete this Git provider",
+        "delete-confirm": "Delete Git provider \"{name}\"?"
       }
     }
   },
@@ -1454,7 +1457,7 @@
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
     "visualize-explain": "Visualize Explain",
-    "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment.",
+    "sql-execute-in-production-environment": "Be careful, you are accessing a database in a production environment.",
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
       "readonly": "Read-only",
@@ -1476,6 +1479,9 @@
     "preview-issue": "Preview issue",
     "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
+    "search-database-and-table": "Search database and table",
+    "search-table": "Search table",
+    "search-column": "Search column",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",
@@ -1501,12 +1507,12 @@
       "select": "Select schema",
       "name": "Schema Name"
     },
-    "table-list": "Table List",
+    "tables": "Tables",
     "table": {
       "select": "Select table",
       "name": "Table Name"
     },
-    "column-list": "Column List",
+    "columns": "Columns",
     "column": {
       "select": "Select column",
       "name": "Name",
@@ -1620,7 +1626,7 @@
       },
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
-        "desc": "Mark environment as protected."
+        "desc": "Mark environment as production."
       },
       "bb-feature-sensitive-data": {
         "title": "Sensitive data",
@@ -1628,7 +1634,7 @@
       },
       "bb-feature-access-control": {
         "title": "Access control",
-        "desc": "Change query permission for databases in the protected environments."
+        "desc": "Change query permission for databases in the production environments."
       },
       "bb-feature-lgtm": {
         "title": "LGTM check",
@@ -1661,6 +1667,10 @@
       "bb-feature-watermark": {
         "title": "Watermark",
         "desc": "Display visible watermarks on pages, including username and ID."
+      },
+      "bb-feature-audit-log": {
+        "title": "Audit log",
+        "desc": "Record and query operations performed by users in workspace."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",

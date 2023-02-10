@@ -47,6 +47,11 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
+	migrationStatement4 = `
+	CREATE TABLE book4 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);`
 	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
 	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]]]`
 	bookDataQuery       = `SELECT * FROM book;`
@@ -81,6 +86,23 @@ CREATE TABLE book2 (
 		name TEXT NULL
 	);
 CREATE TABLE book3 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+`
+	dumpedSchema4 = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book3 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book4 (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);

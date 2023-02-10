@@ -409,7 +409,11 @@ func (s *Server) hasAccessToUpsertPolicy(pType api.PolicyType, policyUpsert *api
 	}
 	switch pType {
 	case api.PolicyTypePipelineApproval:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy) {
+		payload, err := api.UnmarshalPipelineApprovalPolicy(*policyUpsert.Payload)
+		if err != nil {
+			return err
+		}
+		if payload.Value == api.PipelineApprovalValueManualNever && !s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy) {
 			return errors.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeBackupPlan:

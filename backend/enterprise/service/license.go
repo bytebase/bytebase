@@ -85,7 +85,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 			// -1 means not expire, just for free plan
 			ExpiresTs:     -1,
 			InstanceCount: config.MaximumInstanceForFreePlan,
-			Seat:          config.MaximumSeat,
+			Seat:          config.MaximumSeatForFreePlan,
 		}
 	}
 
@@ -240,19 +240,8 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
-	instanceCount := claims.InstanceCount
-	seatCount := claims.Seat
-	if planType == api.TEAM {
-		if instanceCount > config.MaximumInstanceForTeamPlan {
-			return nil, common.Errorf(common.Invalid, "license instance count '%v' is not valid, maximum instance is %d", instanceCount, config.MaximumInstanceForTeamPlan)
-		}
-		if seatCount > config.MaximumSeat {
-			return nil, common.Errorf(common.Invalid, "license seat count '%v' is not valid, maximum seat is %d", seatCount, config.MaximumSeat)
-		}
-	}
-
 	license := &enterpriseAPI.License{
-		InstanceCount: instanceCount,
+		InstanceCount: claims.InstanceCount,
 		Seat:          claims.Seat,
 		ExpiresTs:     claims.ExpiresAt.Unix(),
 		IssuedTs:      claims.IssuedAt.Unix(),

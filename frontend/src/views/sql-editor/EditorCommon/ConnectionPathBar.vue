@@ -1,16 +1,15 @@
 <template>
   <div
     v-if="!tabStore.isDisconnected"
-    class="w-full py-1 px-4 flex justify-between items-center border-b"
-    :class="[isProtectedEnvironment && 'bg-yellow-50']"
+    class="w-full flex justify-between items-start"
   >
-    <div class="flex justify-start items-center">
+    <div class="flex justify-start items-center h-8 px-4 rounded-br bg-white">
       <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
         <template #trigger>
           <heroicons-outline:exclamation
             class="h-6 w-6 flex-shrink-0 mr-2"
             :class="[
-              isProtectedEnvironment ? 'text-yellow-500' : 'text-yellow-500',
+              isProductionEnvironment ? 'text-yellow-500' : 'text-yellow-500',
             ]"
           />
         </template>
@@ -31,10 +30,10 @@
           class="flex items-center"
         >
           <span class="">{{ selectedInstance.environment.name }}</span>
-          <ProtectedEnvironmentIcon
+          <ProductionEnvironmentIcon
             :environment="selectedInstance.environment"
             class="ml-1"
-            :class="[isProtectedEnvironment && '~!text-yellow-700']"
+            :class="[isProductionEnvironment && '~!text-yellow-700']"
           />
         </div>
         <div
@@ -64,10 +63,11 @@
       </label>
     </div>
 
-    <div :class="[isProtectedEnvironment ? 'text-yellow-700' : 'text-main']">
-      <template v-if="isProtectedEnvironment">
-        {{ $t("sql-editor.sql-execute-in-protected-environment") }}
-      </template>
+    <div
+      v-if="isProductionEnvironment"
+      class="flex justify-start items-center h-8 px-4 rounded-bl text-white bg-error"
+    >
+      {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>
   </div>
 </template>
@@ -89,12 +89,18 @@ const connection = computed(() => tabStore.currentTab.connection);
 const selectedInstance = useInstanceById(
   computed(() => connection.value.instanceId)
 );
+
 const selectedDatabase = useDatabaseById(
   computed(() => connection.value.databaseId)
 );
-const isProtectedEnvironment = computed(() => {
+
+const isProductionEnvironment = computed(() => {
   const instance = selectedInstance.value;
   return instance.environment.tier === "PROTECTED";
+});
+
+const isAdminMode = computed(() => {
+  return tabStore.currentTab.mode === TabMode.Admin;
 });
 
 const hasReadonlyDataSource = computed(() => {
@@ -108,7 +114,7 @@ const hasReadonlyDataSource = computed(() => {
 
 const showReadonlyDatasourceWarning = computed(() => {
   return (
-    tabStore.currentTab.mode === TabMode.ReadOnly &&
+    !isAdminMode.value &&
     selectedInstance.value.id !== UNKNOWN_ID &&
     !hasReadonlyDataSource.value
   );

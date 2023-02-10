@@ -211,6 +211,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
+	log.Info(fmt.Sprintf("disallowSignup=%t", profile.DisallowSignup))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))

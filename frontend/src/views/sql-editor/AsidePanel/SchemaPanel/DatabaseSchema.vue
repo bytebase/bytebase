@@ -18,7 +18,16 @@
           :link="`/db/${databaseSlug(database)}`"
           :tooltip="$t('common.detail')"
         />
-        <AlterSchemaButton :database="database" />
+        <AlterSchemaButton
+          :database="database"
+          @click="
+            emit('alter-schema', {
+              databaseId: database.id,
+              schema: '',
+              table: '',
+            })
+          "
+        />
       </div>
     </div>
 
@@ -50,7 +59,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { Database } from "@/types";
+import type { Database, DatabaseId } from "@/types";
 import { databaseSlug } from "@/utils";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
@@ -65,6 +74,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "click-header"): void;
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
+  (
+    event: "alter-schema",
+    params: { databaseId: DatabaseId; schema: string; table: string }
+  ): void;
 }>();
 
 const engine = computed(() => props.database.instance.engine);

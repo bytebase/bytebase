@@ -6,108 +6,27 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // TaskCheckRunMessage is the store model for a TaskCheckRun.
 // Fields have exactly the same meanings as TaskCheckRun.
 type TaskCheckRunMessage struct {
-	ID int
+	TaskID  int
+	Type    api.TaskCheckType
+	Payload string
+	Code    common.Code
+	Status  api.TaskCheckRunStatus
+	Comment string
+	Result  string
 
-	// Standard fields
+	// Output only.
+	ID        int
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
 	UpdatedTs int64
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Status  api.TaskCheckRunStatus
-	Type    api.TaskCheckType
-	Code    common.Code
-	Comment string
-	Result  string
-	Payload string
-}
-
-func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
-	return &api.TaskCheckRun{
-		ID: run.ID,
-
-		// Standard fields
-		CreatorID: run.CreatorID,
-		CreatedTs: run.CreatedTs,
-		UpdaterID: run.UpdaterID,
-		UpdatedTs: run.UpdatedTs,
-
-		// Related fields
-		TaskID: run.TaskID,
-
-		// Domain specific fields
-		Status:  run.Status,
-		Type:    run.Type,
-		Code:    run.Code,
-		Comment: run.Comment,
-		Result:  run.Result,
-		Payload: run.Payload,
-	}
-}
-
-// FindTaskCheckRun finds a list of TaskCheckRun instances.
-func (s *Store) FindTaskCheckRun(ctx context.Context, find *TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
-	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find TaskCheckRun list with TaskCheckRunFind[%+v]", find)
-	}
-	var composedTaskCheckRuns []*api.TaskCheckRun
-	for _, run := range taskCheckRuns {
-		composedTaskCheckRun, err := s.composeTaskCheckRun(ctx, run)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose task check run %#v", run)
-		}
-		composedTaskCheckRuns = append(composedTaskCheckRuns, composedTaskCheckRun)
-	}
-	return composedTaskCheckRuns, nil
-}
-
-func (s *Store) composeTaskCheckRun(ctx context.Context, run *TaskCheckRunMessage) (*api.TaskCheckRun, error) {
-	composedTaskCheckRun := run.toTaskCheckRun()
-
-	creator, err := s.GetPrincipalByID(ctx, composedTaskCheckRun.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	composedTaskCheckRun.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, composedTaskCheckRun.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	composedTaskCheckRun.Updater = updater
-
-	return composedTaskCheckRun, nil
-}
-
-// TaskCheckRunCreate is the API message for creating a task check run.
-type TaskCheckRunCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Type    api.TaskCheckType
-	Comment string
-	Payload string
 }
 
 // TaskCheckRunFind is the API message for finding task check runs.
@@ -132,46 +51,29 @@ type TaskCheckRunStatusPatch struct {
 	Result string
 }
 
-// CreateTaskCheckRunIfNeeded creates a new taskCheckRun.
-func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
+	return &api.TaskCheckRun{
+		ID: run.ID,
 
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
-	taskCheckRunFind := &TaskCheckRunFind{
-		TaskID:     &create.TaskID,
-		Type:       &create.Type,
-		StatusList: &statusList,
-	}
+		// Standard fields
+		UpdaterID: run.UpdaterID,
+		UpdatedTs: run.UpdatedTs,
 
-	taskCheckRunList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
-	if err != nil {
-		return err
-	}
+		// Related fields
+		TaskID: run.TaskID,
 
-	if runningCount := len(taskCheckRunList); runningCount > 0 {
-		if runningCount > 1 {
-			// Normally, this should not happen, if it occurs, emit a warning
-			log.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),
-				zap.Int("task_id", create.TaskID),
-				zap.String("task_check_type", string(create.Type)),
-			)
-		}
-		return nil
+		// Domain specific fields
+		Status:  run.Status,
+		Type:    run.Type,
+		Code:    run.Code,
+		Comment: run.Comment,
+		Result:  run.Result,
+		Payload: run.Payload,
 	}
-
-	if err := s.createTaskCheckRunImpl(ctx, tx, create); err != nil {
-		return err
-	}
-
-	return tx.Commit()
 }
 
-// BatchCreateTaskCheckRun creates task check runs in batch.
-func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskCheckRunCreate) error {
+// CreateTaskCheckRun creates task check runs in batch.
+func (s *Store) CreateTaskCheckRun(ctx context.Context, creates ...*TaskCheckRunMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -189,7 +91,7 @@ func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*TaskChec
 	return nil
 }
 
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunCreate) error {
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -203,7 +105,6 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 			task_id,
 			status,
 			type,
-			comment,
 			payload) VALUES
       `); err != nil {
 		return err
@@ -216,12 +117,12 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 			create.CreatorID,
 			create.CreatorID,
 			create.TaskID,
+			api.TaskCheckRunRunning,
 			create.Type,
-			create.Comment,
 			create.Payload,
 		)
 		const count = 6
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
 	}
 	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
 		return err

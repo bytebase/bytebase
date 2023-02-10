@@ -885,7 +885,9 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 	creatorID := api.SystemBotID
 	if email != "" {
-		committerPrincipal, err := s.store.GetUserByEmail(ctx, email)
+		committerPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
+			Email: &email,
+		})
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
 		} else if committerPrincipal == nil {
@@ -1203,7 +1205,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			Statement: &statement,
 			UpdaterID: api.SystemBotID,
 		}
-		if err := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue); err != nil {
+		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
 			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID), zap.Error(err))
 			return nil
 		}

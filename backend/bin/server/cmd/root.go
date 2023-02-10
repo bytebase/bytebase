@@ -76,6 +76,8 @@ var (
 		// empty means no demo.
 		demoName string
 		debug    bool
+		// disallowSignup will disallow the sign up, users can only be invited by the owner.
+		disallowSignup bool
 		// pgURL must follow PostgreSQL connection URIs pattern.
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL string
@@ -122,6 +124,8 @@ func init() {
 	// Must be one of the subpath name in the ./store/demo/ directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
+	// Disallow signup
+	rootCmd.PersistentFlags().BoolVar(&flags.disallowSignup, "disallow-signup", false, "whether to disallow the sign up")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.

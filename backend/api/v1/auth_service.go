@@ -79,6 +79,9 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
+	if s.profile.DisallowSignup {
+		return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
+	}
 	if request.User == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
 	}
@@ -413,7 +416,12 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 }
 
 func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	user, err := s.store.GetUserByEmail(ctx, request.Email)
+	emptyIDP := ""
+	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+		Email:                      &request.Email,
+		ShowDeleted:                true,
+		IdentityProviderResourceID: &emptyIDP,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
 	}

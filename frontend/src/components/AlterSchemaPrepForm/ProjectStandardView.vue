@@ -45,7 +45,7 @@
               "
             />
             <div>{{ environment.name }}</div>
-            <ProtectedEnvironmentIcon
+            <ProductionEnvironmentIcon
               class="w-4 h-4 -ml-1"
               :environment="environment"
             />
@@ -126,7 +126,7 @@
 
 <script lang="ts">
 /* eslint-disable vue/no-mutating-props */
-import { defineComponent, watch, PropType, computed } from "vue";
+import { defineComponent, PropType, computed } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
 import {
@@ -170,25 +170,6 @@ export default defineComponent({
   },
   emits: ["select-database"],
   setup(props, { emit }) {
-    // MULTI_DB now supports selecting one database, which can be a replacement
-    // of SINGLE_DB.
-    // So SINGLE_DB is only needed and available for VCS workflow.
-    // And we won't provide a radio button group for single/multi selection in
-    // the future.
-    watch(
-      () => props.project?.workflowType,
-      (type) => {
-        if (type === "VCS") {
-          props.state.alterType = "SINGLE_DB";
-        } else {
-          props.state.alterType = "MULTI_DB";
-        }
-      },
-      {
-        immediate: true,
-      }
-    );
-
     const databaseListGroupByEnvironment = computed(() => {
       const listByEnv = props.environmentList.map((environment) => {
         const databaseList = props.databaseList.filter(

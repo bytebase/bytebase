@@ -118,7 +118,7 @@
     :title="$t('instance.create-migration-schema') + '?'"
     :description="
       $t(
-        'instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance'
+        'instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance'
       )
     "
     :in-progress="state.creatingMigrationSchema"
@@ -246,7 +246,7 @@ const attentionText = computed((): string => {
   if (state.migrationSetupStatus == "NOT_EXIST") {
     return (
       t(
-        "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
+        "instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance"
       ) +
       (hasWorkspacePermission(
         "bb.permission.workspace.manage-instance",
@@ -258,7 +258,7 @@ const attentionText = computed((): string => {
   } else if (state.migrationSetupStatus == "UNKNOWN") {
     return (
       t(
-        "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
+        "instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance"
       ) +
       (hasWorkspacePermission(
         "bb.permission.workspace.manage-instance",

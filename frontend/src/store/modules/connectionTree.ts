@@ -184,3 +184,18 @@ export const searchConnectionByName = (
 
   return connection;
 };
+
+export const isConnectableAtom = (atom: ConnectionAtom): boolean => {
+  if (atom.disabled) {
+    return false;
+  }
+  if (atom.type === "database") {
+    return true;
+  }
+  if (atom.type === "instance") {
+    const instance = useInstanceStore().getInstanceById(atom.id);
+    const { engine } = instance;
+    return engine === "MYSQL" || engine === "TIDB";
+  }
+  return false;
+};

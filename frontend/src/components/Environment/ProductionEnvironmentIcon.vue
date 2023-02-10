@@ -15,7 +15,7 @@
       />
     </template>
 
-    <span>{{ $t("environment.protected") }}</span>
+    <span>{{ $t("environment.production-environment") }}</span>
   </NTooltip>
 </template>
 
@@ -25,7 +25,7 @@ import { Environment } from "@/types";
 import { featureToRef } from "@/store";
 
 export default defineComponent({
-  name: "ProtectedEnvironmentIcon",
+  name: "ProductionEnvironmentIcon",
   inheritAttrs: false,
   props: {
     environment: {
