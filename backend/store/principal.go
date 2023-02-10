@@ -152,7 +152,6 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 
 	for _, user := range users {
 		s.userIDCache.Store(user.ID, user)
-		s.userEmailCache.Store(user.Email, user)
 	}
 	return users, nil
 }
@@ -185,46 +184,9 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	}
 
 	s.userIDCache.Store(user.ID, user)
-	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
 
-// GetUserByEmail gets the user by email.
-func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	// We use lower-case for emails.
-	email = strings.ToLower(email)
-
-	if user, ok := s.userEmailCache.Load(email); ok {
-		return user.(*UserMessage), nil
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{Email: &email, ShowDeleted: true})
-	if err != nil {
-		return nil, err
-	}
-	if len(users) == 0 {
-		return nil, nil
-	}
-	if len(users) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with email %q, expect 1", len(users), email)}
-	}
-	user := users[0]
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	s.userIDCache.Store(user.ID, user)
-	s.userEmailCache.Store(user.Email, user)
-	return user, nil
-}
-
-// GetUserByEmailV2 gets an instance of Principal.
 func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	// Do not to select those archived IdP user.
@@ -414,7 +376,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		IdentityProviderUserInfo:   create.IdentityProviderUserInfo,
 	}
 	s.userIDCache.Store(user.ID, user)
-	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
 
@@ -422,10 +383,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
 	if userID == api.SystemBotID {
 		return nil, errors.Errorf("cannot update system bot")
-	}
-	oldUser, err := s.GetUserByID(ctx, userID)
-	if err != nil {
-		return nil, err
 	}
 
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
@@ -501,8 +458,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-	s.userEmailCache.Delete(oldUser.Email)
 	s.userIDCache.Store(user.ID, user)
-	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
