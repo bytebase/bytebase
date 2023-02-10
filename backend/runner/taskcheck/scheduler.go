@@ -69,12 +69,12 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				taskCheckRunFind := &store.TaskCheckRunFind{
 					StatusList: &taskCheckRunStatusList,
 				}
-				taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+				taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, taskCheckRunFind)
 				if err != nil {
 					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
-				for _, taskCheckRun := range taskCheckRunList {
+				for _, taskCheckRun := range taskCheckRuns {
 					executor, ok := s.executors[taskCheckRun.Type]
 					if !ok {
 						log.Error("Skip running task check run with unknown type",
@@ -89,7 +89,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					task, err := s.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+					task, err := s.store.GetTaskV2ByID(ctx, taskCheckRun.TaskID)
 					if err != nil {
 						log.Error("Failed to get task for task check run",
 							zap.Int("task_check_run_id", taskCheckRun.ID),
@@ -123,7 +123,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					s.stateCfg.Unlock()
 
 					s.stateCfg.RunningTaskChecks.Store(taskCheckRun.ID, true)
-					go func(taskCheckRun *api.TaskCheckRun, task *api.Task) {
+					go func(taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) {
 						defer func() {
 							s.stateCfg.RunningTaskChecks.Delete(taskCheckRun.ID)
 							s.stateCfg.Lock()
@@ -315,7 +315,7 @@ func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMes
 	if err != nil {
 		return errors.Wrap(err, "failed to getTaskCheck")
 	}
-	return s.store.BatchCreateTaskCheckRun(ctx, createList)
+	return s.store.CreateTaskCheckRun(ctx, createList...)
 }
 
 func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
@@ -475,5 +475,5 @@ func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *stor
 		}
 		createList = append(createList, create...)
 	}
-	return s.store.BatchCreateTaskCheckRun(ctx, createList)
+	return s.store.CreateTaskCheckRun(ctx, createList...)
 }

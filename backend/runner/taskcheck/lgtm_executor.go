@@ -24,7 +24,7 @@ type LGTMExecutor struct {
 }
 
 // Run will run the task check LGTM executor once.
-func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *LGTMExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	issue, err := e.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
@@ -40,14 +40,7 @@ func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.T
 		}, nil
 	}
 
-	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, errors.Errorf("failed to find project %v", task.Database.ProjectID)
-	}
-
+	project := issue.Project
 	if project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
 		return []api.TaskCheckResult{
 			{
