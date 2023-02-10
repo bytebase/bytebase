@@ -296,7 +296,13 @@
     "n-similar-tasks": "({count} 个相似的任务)",
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
-    "task-checks": "任务检查项"
+    "task-checks": "任务检查项",
+    "rollback": {
+      "sql-rollback": "SQL 回滚",
+      "log": "记录",
+      "failed": "失败",
+      "logging": "记录中"
+    }
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
