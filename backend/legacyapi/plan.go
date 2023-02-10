@@ -61,7 +61,7 @@ const (
 	// FeatureWatermark enables full-screen watermark.
 	FeatureWatermark FeatureType = "bb.feature.watermark"
 
-	// FeatureWatermark enables viewing audit logs.
+	// FeatureAuditLog enables viewing audit logs.
 	FeatureAuditLog FeatureType = "bb.feature.audit-log"
 
 	// Branding.
