@@ -20,6 +20,9 @@
           <CompactSQLEditor
             v-model:sql="query.sql"
             class="min-h-[2rem]"
+            :class="[
+              isEditableQueryItem(query) ? 'active-editor' : 'read-only-editor',
+            ]"
             :readonly="!isEditableQueryItem(query)"
             @execute="handleExecute"
             @history="handleHistory"
@@ -80,6 +83,7 @@ import {
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { useHistory } from "./useHistory";
+import { useAttractFocus } from "./useAttractFocus";
 
 const QUERY_TIMEOUT_MS = 5000;
 const MAX_QUERY_ITEM_COUNT = 20;
@@ -191,5 +195,10 @@ watch(queryListHeight, () => {
       container.scrollTo(0, container.scrollHeight);
     }
   });
+});
+
+useAttractFocus({
+  excluded: [{ tag: "textarea", selector: ".active-editor" }],
+  targetSelector: ".active-editor textarea",
 });
 </script>

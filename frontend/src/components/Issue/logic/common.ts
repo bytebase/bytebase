@@ -34,7 +34,7 @@ import {
   SheetId,
 } from "@/types";
 import { useIssueLogic } from "./index";
-import { isDev, taskCheckRunSummary } from "@/utils";
+import { isDev, isTaskTriggeredByVCS, taskCheckRunSummary } from "@/utils";
 
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged } =
@@ -146,14 +146,15 @@ export const useCommonLogic = () => {
     // if not creating, we are allowed to edit sql statement only when:
     // 1. issue.status is OPEN
     // 2. AND currentUser is the creator
-    // 3. AND workflowType is UI
     if (issueEntity.status !== "OPEN") {
       return false;
     }
     if (issueEntity.creator.id !== currentUser.value.id) {
-      return false;
-    }
-    if (issueEntity.project.workflowType !== "UI") {
+      if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
+        // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
+        // We should "Allow" current user to edit the statement (via VCS).
+        return true;
+      }
       return false;
     }
 

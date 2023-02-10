@@ -41,7 +41,7 @@ type BinlogEvent struct {
 type BinlogTransaction []BinlogEvent
 
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
-func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string) ([]BinlogTransaction, error) {
+func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string, totalBodySizeLimit int) ([]BinlogTransaction, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -52,6 +52,7 @@ func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string) (
 	var txn BinlogTransaction
 	var bodyBuf strings.Builder
 	seenEvent := false
+	totalBodySize := 0
 	for {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -83,7 +84,11 @@ func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string) (
 			continue
 		default:
 			// Accumulate the body.
-			_, _ = bodyBuf.WriteString(line)
+			n, _ := bodyBuf.WriteString(line)
+			totalBodySize += n
+			if totalBodySize >= totalBodySizeLimit {
+				return nil, errors.Errorf("total body size exceeds limit %vB", totalBodySizeLimit)
+			}
 			continue
 		}
 

@@ -395,7 +395,7 @@
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "create-as-service-account": "创建为服务账号"
     },
-    "im-integration": {
+    "webhook-integration": {
       "enable": "启用",
       "description": "可以让用户在 IM 里直接审批工单。",
       "feishu-updated-tip": "飞书配置更新成功"
@@ -618,7 +618,7 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
-      "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
+      "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
     "rollback-from": "当前任务回滚自 {link}。",
@@ -884,7 +884,7 @@
   },
   "change-history": {
     "self": "变更历史",
-    "select": "选择版本",
+    "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
     "workflow": "工作流",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
@@ -1024,13 +1024,15 @@
     "sync-schema": {
       "title": "库表同步",
       "select-project": "选择项目",
-      "select-database": "选择待同步的数据库",
+      "to-database": "选择待同步的数据库",
       "from-database": "选择源数据库",
-      "schema-diff": "Schema 对比结果",
-      "synchronize-statements": "DDL 语句",
-      "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
-      "select-schema-and-target-database-tip": "请先选择 Schema 和数据库。",
-      "no-difference-tip": "没有发现差异。",
+      "schema-change-preview": "预览 '{database}' 的 Schema 变更",
+      "schema-change-preview-no-database": "预览 Schema 变更",
+      "synchronize-statements": "对应生成的 DDL 语句",
+      "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句",
+      "select-from-database-and-schema-tip": "选择源数据库和 Schema 版本",
+      "select-to-database-tip": "选择待同步的数据库",
+      "no-difference-tip": "没有发现差异",
       "more-version": "更多...",
       "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单"

@@ -372,8 +372,8 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	if taskPatch.RollbackEnabled != nil {
-		// Enqueue the task
-		if *taskPatch.RollbackEnabled {
+		// Enqueue the task if it's done.
+		if *taskPatch.RollbackEnabled && taskPatched.Status == api.TaskDone {
 			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 		} else {
 			// Cancel running rollback sql generation.
@@ -400,7 +400,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.UID), zap.Error(err))
 		}
 		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunMessage{
 				CreatorID: taskPatched.CreatorID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckGhostSync,
@@ -428,7 +428,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 			}
-			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunMessage{
 				CreatorID: api.SystemBotID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementSyntax,
@@ -459,7 +459,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
 			}
-			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+			if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunMessage{
 				CreatorID: api.SystemBotID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementType,
@@ -554,7 +554,7 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 
-	if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunCreate{
+	if err := s.store.CreateTaskCheckRunIfNeeded(ctx, &store.TaskCheckRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskID:    task.ID,
 		Type:      api.TaskCheckDatabaseStatementAdvise,
@@ -862,10 +862,10 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 			return common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
 		}
 		cancelAny, ok := s.stateCfg.RunningTasksCancel.Load(task.ID)
-		cancel := cancelAny.(context.CancelFunc)
 		if !ok {
 			return errors.New("failed to cancel task")
 		}
+		cancel := cancelAny.(context.CancelFunc)
 		cancel()
 		result, err := json.Marshal(api.TaskRunResultPayload{
 			Detail: "Task cancellation requested.",
