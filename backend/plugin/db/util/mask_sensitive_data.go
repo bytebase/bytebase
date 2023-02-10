@@ -336,6 +336,34 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 		return result, nil
 	}
 
+	switch node.SelectStmt.Op {
+	case pgquery.SetOperation_SETOP_UNION, pgquery.SetOperation_SETOP_INTERSECT, pgquery.SetOperation_SETOP_EXCEPT:
+		leftField, err := extractor.pgExtractSelect(&pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Larg})
+		if err != nil {
+			return nil, err
+		}
+		rightField, err := extractor.pgExtractSelect(&pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Rarg})
+		if err != nil {
+			return nil, err
+		}
+		if len(leftField) != len(rightField) {
+			return nil, errors.Errorf("each UNION/INTERSECT/EXCEPT query must have the same number of columns")
+		}
+		var result []fieldInfo
+		for i, field := range leftField {
+			result = append(result, fieldInfo{
+				name:      field.name,
+				table:     field.table,
+				sensitive: field.sensitive || rightField[i].sensitive,
+			})
+		}
+		return result, nil
+	case pgquery.SetOperation_SETOP_NONE:
+	default:
+		return nil, errors.Errorf("unknown select op %v", node.SelectStmt.Op)
+	}
+
+	// SetOperation_SETOP_NONE case
 	var fromFieldList []fieldInfo
 	var err error
 	// Extract From field list.

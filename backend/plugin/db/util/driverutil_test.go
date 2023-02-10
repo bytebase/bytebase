@@ -756,6 +756,52 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for UNION.
+			statement:  `select 1 as c1, 2 as c2, 3 as c3, 4 UNION ALL select * from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "c1",
+					Sensitive: true,
+				},
+				{
+					Name:      "c2",
+					Sensitive: false,
+				},
+				{
+					Name:      "c3",
+					Sensitive: false,
+				},
+				{
+					Name:      "?column?",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for UNION.
+			statement:  `select * from t UNION ALL select * from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for explicit schema name.
 			statement:  `select concat(public.t.a, public.t.b, public.t.c) from t`,
 			schemaInfo: defaultDatabaseSchema,
