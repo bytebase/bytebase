@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
+	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -185,6 +186,16 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 	}
 
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
+		// Find client secret for those existed identity providers.
+		if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
+			}
+			if storedIdentityProvider != nil {
+				request.IdentityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
+			}
+		}
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
@@ -279,6 +290,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					Issuer:       v.Issuer,
 					ClientId:     v.ClientId,
 					ClientSecret: "", // SECURITY: We do not expose the client secret
+					Scopes:       oidc.DefaultScopes,
 					FieldMapping: &fieldMapping,
 				},
 			},

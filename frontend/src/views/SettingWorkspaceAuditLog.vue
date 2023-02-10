@@ -1,8 +1,14 @@
 <template>
-  <div>
+  <div class="w-full mt-4 space-y-4">
+    <FeatureAttention
+      v-if="!hasAuditLogFeature"
+      feature="bb.feature.audit-log"
+      :description="$t('subscription.features.bb-feature-audit-log.desc')"
+    />
     <div class="flex justify-end items-center mt-1">
       <MemberSelect
         class="w-52"
+        :disabled="!hasAuditLogFeature"
         :show-all="true"
         :show-system-bot="true"
         :selected-id="selectedPrincipalId"
@@ -10,12 +16,14 @@
       />
       <div class="w-52 ml-2">
         <TypeSelect
+          :disabled="!hasAuditLogFeature"
           :selected-type-list="selectedAuditTypeList"
           @update-selected-type-list="selectAuditType"
         />
       </div>
     </div>
     <PagedAuditLogTable
+      v-if="hasAuditLogFeature"
       :activity-find="{
         typePrefix:
           selectedAuditTypeList.length > 0
@@ -31,6 +39,13 @@
         <AuditLogTable :audit-log-list="list" @view-detail="handleViewDetail" />
       </template>
     </PagedAuditLogTable>
+    <template v-else>
+      <AuditLogTable :audit-log-list="[]" />
+      <div class="w-full h-full flex flex-col items-center justify-center">
+        <img src="../assets/illustration/no-data.webp" class="max-h-[30vh]" />
+      </div>
+    </template>
+
     <BBDialog
       ref="dialog"
       :title="$t('audit-log.audit-log-detail')"
@@ -81,6 +96,7 @@ import { NGrid, NGi } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { BBDialog } from "@/bbkit";
 import { AuditActivityType, PrincipalId, EMPTY_ID } from "@/types";
+import { featureToRef } from "@/store";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({
@@ -91,6 +107,8 @@ const state = reactive({
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+
+const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
 const logKeyMap = {
   createdTs: t("audit-log.table.created-time"),

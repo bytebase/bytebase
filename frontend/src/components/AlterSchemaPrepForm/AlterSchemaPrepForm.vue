@@ -187,15 +187,7 @@ import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
-import {
-  baseDirectoryWebUrl,
-  Database,
-  DatabaseId,
-  Project,
-  ProjectId,
-  Repository,
-  UNKNOWN_ID,
-} from "@/types";
+import { Database, DatabaseId, Project, ProjectId, UNKNOWN_ID } from "@/types";
 import {
   allowGhostMigration,
   allowUsingSchemaEditor,
@@ -208,7 +200,6 @@ import {
   useDatabaseStore,
   useEnvironmentList,
   useProjectStore,
-  useRepositoryStore,
 } from "@/store";
 import ProjectStandardView, {
   State as ProjectStandardState,
@@ -246,7 +237,6 @@ const router = useRouter();
 
 const currentUser = useCurrentUser();
 const projectStore = useProjectStore();
-const repositoryStore = useRepositoryStore();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const schemaEditorContext = ref<{
@@ -265,7 +255,7 @@ const state = reactive<LocalState>({
   project: props.projectId
     ? projectStore.getProjectById(props.projectId)
     : undefined,
-  alterType: "SINGLE_DB",
+  alterType: "MULTI_DB",
   selectedDatabaseIdListForEnvironment: new Map(),
   selectedDatabaseIdListForTenantMode: new Set<number>(),
   deployingTenantDatabaseList: [],
@@ -493,123 +483,90 @@ const generateTenant = async () => {
 
   if (project.id === UNKNOWN_ID) return;
 
-  if (project.workflowType === "UI") {
-    const query: Record<string, any> = {
-      template: props.type,
-      project: project.id,
-      mode: "tenant",
-    };
-    if (state.alterType === "TENANT") {
-      const databaseList = useDatabaseStore().getDatabaseListByProjectId(
-        project.id
+  const query: Record<string, any> = {
+    template: props.type,
+    project: project.id,
+    mode: "tenant",
+  };
+  if (state.alterType === "TENANT") {
+    const databaseList = useDatabaseStore().getDatabaseListByProjectId(
+      project.id
+    );
+    if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
+      schemaEditorContext.value.databaseIdList = databaseList.map(
+        (database) => database.id
       );
-      if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
-        schemaEditorContext.value.databaseIdList = databaseList.map(
-          (database) => database.id
-        );
-        state.showSchemaEditorModal = true;
-        return;
-      }
-      // In tenant deploy pipeline, we use project name instead of database name
-      // if more than one databases are to be deployed.
-      const name =
-        databaseList.length > 1 ? project.name : databaseList[0].name;
-      query.name = generateIssueName([name], false);
-      query.databaseName = "";
-    } else {
-      const databaseList: Database[] = [];
-      const databaseStore = useDatabaseStore();
-      for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
-        databaseList.push(databaseStore.getDatabaseById(databaseId));
-      }
-      if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
-        schemaEditorContext.value.databaseIdList = Array.from(
-          state.selectedDatabaseIdListForTenantMode.values()
-        );
-        state.showSchemaEditorModal = true;
-        return;
-      }
-
-      query.name = generateIssueName(
-        databaseList.map((database) => database.name),
-        false
-      );
-      query.databaseList = Array.from(
-        state.selectedDatabaseIdListForTenantMode
-      ).join(",");
+      state.showSchemaEditorModal = true;
+      return;
     }
-
-    emit("dismiss");
-
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: "new",
-      },
-      query,
-    });
-  } else if (project.workflowType === "VCS") {
-    repositoryStore
-      .fetchRepositoryByProjectId(project.id)
-      .then((repository: Repository) => {
-        window.open(
-          baseDirectoryWebUrl(repository, {
-            TYPE:
-              props.type === "bb.issue.database.schema.update" ? "ddl" : "dml",
-          }),
-          "_blank"
-        );
-      });
-    emit("dismiss");
-  }
-};
-
-const selectDatabase = async (database: Database) => {
-  if (database.project.workflowType == "UI") {
-    if (isAlterSchema.value && allowUsingSchemaEditor([database])) {
-      schemaEditorContext.value.databaseIdList = [database.id];
+    // In tenant deploy pipeline, we use project name instead of database name
+    // if more than one databases are to be deployed.
+    const name = databaseList.length > 1 ? project.name : databaseList[0].name;
+    query.name = generateIssueName([name], false);
+    query.databaseName = "";
+  } else {
+    const databaseList: Database[] = [];
+    const databaseStore = useDatabaseStore();
+    for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
+      databaseList.push(databaseStore.getDatabaseById(databaseId));
+    }
+    if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
+      schemaEditorContext.value.databaseIdList = Array.from(
+        state.selectedDatabaseIdListForTenantMode.values()
+      );
       state.showSchemaEditorModal = true;
       return;
     }
 
-    const mode = await isUsingGhostMigration([database]);
-    if (mode === false) {
-      return;
-    }
-    emit("dismiss");
-
-    const query: Record<string, any> = {
-      template: props.type,
-      name: generateIssueName([database.name], mode === "online"),
-      project: database.project.id,
-      databaseList: database.id,
-    };
-    if (mode === "online") {
-      query.ghost = "1";
-    }
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: "new",
-      },
-      query,
-    });
-  } else if (database.project.workflowType == "VCS") {
-    repositoryStore
-      .fetchRepositoryByProjectId(database.project.id)
-      .then((repository: Repository) => {
-        window.open(
-          baseDirectoryWebUrl(repository, {
-            DB_NAME: database.name,
-            ENV_NAME: database.instance.environment.name,
-            TYPE:
-              props.type === "bb.issue.database.schema.update" ? "ddl" : "dml",
-          }),
-          "_blank"
-        );
-      });
-    emit("dismiss");
+    query.name = generateIssueName(
+      databaseList.map((database) => database.name),
+      false
+    );
+    query.databaseList = Array.from(
+      state.selectedDatabaseIdListForTenantMode
+    ).join(",");
   }
+
+  emit("dismiss");
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
+};
+
+const selectDatabase = async (database: Database) => {
+  if (isAlterSchema.value && allowUsingSchemaEditor([database])) {
+    schemaEditorContext.value.databaseIdList = [database.id];
+    state.showSchemaEditorModal = true;
+    return;
+  }
+
+  const mode = await isUsingGhostMigration([database]);
+  if (mode === false) {
+    return;
+  }
+  emit("dismiss");
+
+  const query: Record<string, any> = {
+    template: props.type,
+    name: generateIssueName([database.name], mode === "online"),
+    project: database.project.id,
+    databaseList: database.id,
+  };
+  if (mode === "online") {
+    query.ghost = "1";
+  }
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
 };
 
 const cancel = () => {

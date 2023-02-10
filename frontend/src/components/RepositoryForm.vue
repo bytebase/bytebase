@@ -57,9 +57,6 @@
         placeholder="e.g. main"
         :disabled="!allowEdit"
       />
-      <div class="mt-2 textinfolabel">
-        {{ $t("repository.branch-specify-tip") }}
-      </div>
     </div>
     <div>
       <div class="textlabel">{{ $t("repository.base-directory") }}</div>
@@ -107,16 +104,16 @@
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
-        <a
-          href="https://bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
-          target="__blank"
-          class="font-normal normal-link"
-        >
-          {{ $t("common.config-guide") }}</a
-        >
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.file-path-template-description") }}
+        <a
+          href="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
+          target="_BLANK"
+          class="font-normal normal-link ml-1"
+        >
+          {{ $t("common.learn-more") }}</a
+        >
       </div>
       <input
         id="filepathtemplate"
@@ -165,13 +162,6 @@
           feature="bb.feature.vcs-schema-write-back"
           class="text-accent"
         />
-        <a
-          href="https://bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
-          target="__blank"
-          class="font-normal normal-link"
-        >
-          {{ $t("common.config-guide") }}</a
-        >
       </div>
       <div class="mt-1 textinfolabel">
         <template v-if="isDev && !isProjectSchemaChangeTypeDDL">
@@ -183,6 +173,13 @@
             $t("repository.schema-writeback-protected-branch")
           }}</span>
         </template>
+        <a
+          href="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
+          target="_BLANK"
+          class="font-normal normal-link ml-1"
+        >
+          {{ $t("common.learn-more") }}</a
+        >
       </div>
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"

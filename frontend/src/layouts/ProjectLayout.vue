@@ -106,7 +106,7 @@ export default defineComponent({
           : { name: t("common.change-history"), hash: "change-history" },
 
         { name: t("common.activities"), hash: "activity" },
-        { name: t("common.version-control"), hash: "version-control" },
+        { name: t("common.gitops"), hash: "gitops" },
         { name: t("common.webhooks"), hash: "webhook" },
         { name: t("common.settings"), hash: "setting" },
       ];

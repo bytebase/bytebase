@@ -1,4 +1,9 @@
-import { Database, DataSourceType, Environment, Principal } from "../types";
+import type {
+  Database,
+  DataSourceType,
+  Environment,
+  Principal,
+} from "../types";
 import { hasWorkspacePermission } from "./role";
 import { isDev, semverCompare } from "./util";
 

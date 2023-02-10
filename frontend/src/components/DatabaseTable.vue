@@ -93,7 +93,7 @@
                   {{ $t("alter-schema.vcs-info") }}
                 </span>
                 <span v-else class="tooltip whitespace-nowrap">
-                  {{ $t("database.version-control-enabled") }}
+                  {{ $t("database.gitops-enabled") }}
                 </span>
 
                 <heroicons-outline:collection
@@ -106,7 +106,7 @@
         <div v-if="showEnvironmentColumn" class="bb-grid-cell">
           <div class="flex items-center">
             {{ environmentName(database.instance.environment) }}
-            <ProtectedEnvironmentIcon
+            <ProductionEnvironmentIcon
               class="ml-1"
               :environment="database.instance.environment"
             />

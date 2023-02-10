@@ -12,7 +12,7 @@
       >
         <div class="flex items-center">
           {{ item.title }}
-          <ProtectedEnvironmentIcon :environment="item.data!" class="ml-1" />
+          <ProductionEnvironmentIcon :environment="item.data!" class="ml-1" />
         </div>
       </template>
 
@@ -72,7 +72,6 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { isEqual } from "lodash-es";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
@@ -81,6 +80,7 @@ import type {
   EnvironmentCreate,
   Policy,
   PolicyUpsert,
+  PipelineApprovalPolicyPayload,
   BackupPlanPolicyPayload,
   EnvironmentTierPolicyPayload,
 } from "../types";
@@ -98,7 +98,7 @@ import {
   useEnvironmentStore,
   useEnvironmentList,
 } from "@/store";
-import ProtectedEnvironmentIcon from "../components/Environment/ProtectedEnvironmentIcon.vue";
+import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -116,6 +116,7 @@ const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
 const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
   payload: {
     schedule: DefaultSchedulePolicy,
+    retentionPeriodTs: 0,
   },
 };
 
@@ -228,7 +229,8 @@ const doCreate = (
   environmentTierPolicy: Policy
 ) => {
   if (
-    !isEqual(approvalPolicy, DEFAULT_NEW_APPROVAL_POLICY) &&
+    (approvalPolicy.payload as PipelineApprovalPolicyPayload).value ===
+      "MANUAL_APPROVAL_NEVER" &&
     !hasFeature("bb.feature.approval-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.approval-policy";

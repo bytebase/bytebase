@@ -33,12 +33,10 @@ const (
 	issuer = "bytebase"
 	// audience is the license token audience.
 	audience = "bb.license"
-	// MaximumSeat is the maximum seat limit for the FREE and TEAM plan.
-	MaximumSeat = 10
+	// MaximumSeatForFreePlan is the maximum seat limit for the FREE plan.
+	MaximumSeatForFreePlan = 10
 	// MaximumInstanceForFreePlan is the maximum instance limit for the FREE plan.
-	MaximumInstanceForFreePlan = 5
-	// MaximumInstanceForTeamPlan is the maximum instance limit for the TEAM plan.
-	MaximumInstanceForTeamPlan = 10
+	MaximumInstanceForFreePlan = 10
 )
 
 // NewConfig will create a new enterprise config instance.

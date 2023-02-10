@@ -76,15 +76,15 @@
     "helpName": "help.member"
   },
   {
-    "routeName": "setting.workspace.version-control",
+    "routeName": "setting.workspace.gitops",
     "helpName": ""
   },
   {
-    "routeName": "setting.workspace.version-control.create",
+    "routeName": "setting.workspace.gitops.create",
     "helpName": ""
   },
   {
-    "routeName": "setting.workspace.version-control.detail",
+    "routeName": "setting.workspace.gitops.detail",
     "helpName": ""
   },
   {

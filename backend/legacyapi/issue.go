@@ -153,6 +153,8 @@ type MigrationDetail struct {
 	// SchemaVersion is parsed from VCS file name.
 	// It is automatically generated in the UI workflow.
 	SchemaVersion string `json:"schemaVersion"`
+	// If RollbackEnabled, build the rollbackStatement of the task.
+	RollbackEnabled bool `json:"rollbackEnabled"`
 }
 
 // MigrationContext is the issue create context for database migration such as Migrate, Data.

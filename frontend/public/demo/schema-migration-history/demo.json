@@ -92,8 +92,8 @@
       "dialog": {
         "title": "",
         "description": {
-          "en-US": "This change task also detected schema drift. It means another client performed some schema changes which were out of version control.",
-          "zh-CN": "本次变更还检测到了 Schema 偏差，说明有数据库变更通过其他客户端发起，脱离了版本管控"
+          "en-US": "This change task also detected schema drift. It means some schema changes are performed via other client outside of Bytebase.",
+          "zh-CN": "本次变更还检测到了 Schema 偏差，说明有数据库变更通过其他客户端发起，脱离了 Bytebase 管控"
         },
         "alwaysShow": true,
         "position": "bottom"

@@ -50,7 +50,6 @@
 import { ref, computed, h, nextTick, watch } from "vue";
 import { NTree, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { stringify } from "qs";
 
 import type {
   ConnectionAtom,
@@ -61,6 +60,7 @@ import type {
 } from "@/types";
 import { ConnectionTreeState, TabMode, UNKNOWN_ID } from "@/types";
 import {
+  isConnectableAtom,
   useConnectionTreeStore,
   useCurrentUser,
   useDatabaseStore,
@@ -85,6 +85,13 @@ type Position = {
 type DropdownOptionWithConnectionAtom = DropdownOption & {
   item: ConnectionAtom;
 };
+
+const emit = defineEmits<{
+  (
+    event: "alter-schema",
+    params: { databaseId: DatabaseId; schema: string; table: string }
+  ): void;
+}>();
 
 const { t } = useI18n();
 
@@ -114,17 +121,26 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
     if (atom.disabled) {
       return [];
     }
-    const items = [
-      {
+
+    const items: DropdownOptionWithConnectionAtom[] = [];
+    if (isConnectableAtom(atom)) {
+      items.push({
         key: "connect",
         label: t("sql-editor.connect"),
         item: atom,
-      },
-    ];
-    if (allowAdmin.value) {
+      });
+      if (allowAdmin.value) {
+        items.push({
+          key: "connect-in-admin-mode",
+          label: t("sql-editor.connect-in-admin-mode"),
+          item: atom,
+        });
+      }
+    }
+    if (atom.type === "database") {
       items.push({
-        key: "connect-in-admin-mode",
-        label: t("sql-editor.connect-in-admin-mode"),
+        key: "alter-schema",
+        label: t("database.alter-schema"),
         item: atom,
       });
     }
@@ -219,32 +235,18 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   return h(Suffix, { atom });
 };
 
-const gotoAlterSchema = (option: ConnectionAtom) => {
-  const databaseId = option.parentId;
-  const database = databaseStore.getDatabaseById(databaseId);
-  if (database.id === UNKNOWN_ID) {
-    return;
-  }
-
-  const query = {
-    template: "bb.issue.database.schema.update",
-    name: `[${database.name}] Alter schema`,
-    project: database.project.id,
-    databaseList: databaseId,
-    sql: `ALTER TABLE ${option.label}`,
-  };
-  const url = `/issue/new?${stringify(query)}`;
-  window.open(url, "_blank");
-};
-
 const handleSelect = (key: string) => {
   const option = dropdownOptions.value.find((item) => item.key === key);
   if (!option) {
     return;
   }
 
-  if (key === "alter-table") {
-    gotoAlterSchema(option.item);
+  if (key === "alter-schema") {
+    emit("alter-schema", {
+      databaseId: option.item.id,
+      schema: "",
+      table: "",
+    });
   } else if (key === "connect") {
     setConnection(option.item);
   } else if (key === "connect-in-admin-mode") {
