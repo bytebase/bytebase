@@ -213,8 +213,9 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	// Run a rollback issue.
 	var rollbackIssue *api.Issue
 	rollbackCreateContext, err := json.Marshal(&api.RollbackContext{
-		IssueID:    issue.ID,
-		TaskIDList: []int{task.ID},
+		IssueID:             issue.ID,
+		TaskIDList:          []int{task.ID},
+		RollbackEnabledList: []bool{true},
 	})
 	a.NoError(err)
 	for i := 0; i < 10; i++ {
@@ -261,6 +262,63 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	}
 	want2 := []record{{1, "1\n1"}, {2, "2\n2"}, {3, "3\n3"}}
 	a.Equal(want2, records2)
+
+	// Rollback the rollback task
+	task = rollbackTask
+	issue = rollbackIssue
+	rollbackTask = nil
+	rollbackIssue = nil
+
+	rollbackCreateContext, err = json.Marshal(&api.RollbackContext{
+		IssueID:             issue.ID,
+		TaskIDList:          []int{task.ID},
+		RollbackEnabledList: []bool{false},
+	})
+	a.NoError(err)
+	for i := 0; i < 10; i++ {
+		// rollbackIssue, err = ctl.createRollbackIssue(issue.ID, []int{task.ID})
+		rollbackIssue, err = ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          "rollback rollback",
+			Type:          api.IssueDatabaseRollback,
+			AssigneeID:    api.SystemBotID,
+			CreateContext: string(rollbackCreateContext),
+		})
+		if err == nil {
+			break
+		}
+		// Wait for the rollback SQL generation and retry.
+		time.Sleep(3 * time.Second)
+	}
+	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
+	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
+	a.NoError(err)
+	a.Equal(api.TaskDone, status)
+	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
+	rollbackIssue, err = ctl.getIssue(rollbackIssue.ID)
+	a.NoError(err)
+	a.Len(rollbackIssue.Pipeline.StageList, 1)
+	a.Len(rollbackIssue.Pipeline.StageList[0].TaskList, 1)
+	rollbackTask = rollbackIssue.Pipeline.StageList[0].TaskList[0]
+	rollbackTaskPayload = &api.TaskDatabaseDataUpdatePayload{}
+	err = json.Unmarshal([]byte(rollbackTask.Payload), rollbackTaskPayload)
+	a.NoError(err)
+	a.Equal(issue.ID, rollbackTaskPayload.RollbackFromIssueID)
+	a.Equal(task.ID, rollbackTaskPayload.RollbackFromTaskID)
+
+	// Check that the data is restored.
+	rows3, err := dbMySQL.QueryContext(ctx, "SELECT * FROM t;")
+	a.NoError(err)
+	defer rows3.Close()
+	var records3 []record
+	for rows3.Next() {
+		var r record
+		err = rows3.Scan(&r.id, &r.name)
+		a.NoError(err)
+		records3 = append(records3, r)
+	}
+	want3 := []record{{2, "unknown\nunknown"}, {3, "unknown\nunknown"}}
+	a.Equal(want3, records3)
 }
 
 func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {

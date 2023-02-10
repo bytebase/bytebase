@@ -558,7 +558,11 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if len(c.TaskIDList) != 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
 	}
+	if len(c.TaskIDList) != len(c.RollbackEnabledList) {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "The rollback enabled list and task ID list must have the same length")
+	}
 	taskID := c.TaskIDList[0]
+	rollbackEnabled := c.RollbackEnabledList[0]
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with ID %d", issueID)).SetInternal(err)
@@ -608,9 +612,10 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	issueCreateContext := &api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
-				MigrationType: db.Data,
-				DatabaseID:    *task.DatabaseID,
-				Statement:     taskPayload.RollbackStatement,
+				MigrationType:   db.Data,
+				DatabaseID:      *task.DatabaseID,
+				Statement:       taskPayload.RollbackStatement,
+				RollbackEnabled: rollbackEnabled,
 			},
 		},
 	}

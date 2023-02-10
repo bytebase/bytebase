@@ -202,6 +202,8 @@ type RollbackContext struct {
 	IssueID int `json:"issueId"`
 	// TaskIDList is the list of task ids to rollback.
 	TaskIDList []int `json:"taskIdList"`
+	// RollbackEnabledList enables rollback generation of the corresponding task in taskIDList.
+	RollbackEnabledList []bool `json:"rollbackEnabledList"`
 }
 
 // IssuePatch is the API message for patching an issue.
