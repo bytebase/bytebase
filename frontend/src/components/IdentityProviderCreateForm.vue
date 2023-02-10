@@ -755,7 +755,7 @@ const handleCancelButtonClick = () => {
 };
 
 const updateEditState = (updatedIdentityProvider: IdentityProvider) => {
-  const tempIdentityProvider = updatedIdentityProvider;
+  const tempIdentityProvider = cloneDeep(updatedIdentityProvider);
   identityProvider.value = tempIdentityProvider;
   state.type = tempIdentityProvider.type;
   if (tempIdentityProvider.type === IdentityProviderType.OAUTH2) {
