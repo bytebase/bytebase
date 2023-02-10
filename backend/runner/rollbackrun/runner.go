@@ -97,27 +97,21 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
-	payload.RollbackStatement = nil
-	payload.RollbackError = nil
 
+	var rollbackStatement, rollbackError *string
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 		errStr := err.Error()
-		payload.RollbackError = &errStr
+		rollbackError = &errStr
 	}
-	payload.RollbackStatement = &rollbackSQL
+	rollbackStatement = &rollbackSQL
 
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Error("Failed to marshal task payload", zap.Error(err))
-		return
-	}
-	payloadString := string(payloadBytes)
 	patch := &api.TaskPatch{
-		ID:        task.ID,
-		UpdaterID: api.SystemBotID,
-		Payload:   &payloadString,
+		ID:                task.ID,
+		UpdaterID:         api.SystemBotID,
+		RollbackStatement: &rollbackStatement,
+		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
