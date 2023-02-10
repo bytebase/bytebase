@@ -24,6 +24,137 @@ func TestParseBinlogStream(t *testing.T) {
 			err:       false,
 		},
 		{
+			name:      "select 1",
+			sizeLimit: 8 * 1024 * 1024,
+			stream: `# The proper term is pseudo_replica_mode, but we use this compatibility alias
+# to make the statement usable on server versions 8.0.24 and older.
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
+/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
+DELIMITER /*!*/;
+# at 44161
+#230115 21:31:43 server id 1  end_log_pos 0 CRC32 0x59ab35ab 	Start: binlog v 4, server v 8.0.27 created 230115 21:31:43
+# at 44161
+#230210 15:08:45 server id 1  end_log_pos 44240 CRC32 0x5843f3bd 	Anonymous_GTID	last_committed=39	sequence_number=rbr_only=yes	original_committed_timestamp=1676012925154284immediate_commit_timestamp=16760129251542transaction_length=1333
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1676012925154284 (2023-02-10 15:08:45.154284 CST)
+# immediate_commit_timestamp=1676012925154284 (2023-02-10 15:08:45.154284 CST)
+/*!80001 SET @@session.original_commit_timestamp=1676012925154284*//*!*/;
+/*!80014 SET @@session.original_server_version=80027*//*!*/;
+/*!80014 SET @@session.immediate_server_version=80027*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 44240
+#230210 15:08:45 server id 1  end_log_pos 44315 CRC32 0xba444d9b 	Query	thread_id=8265	exec_time=0	error_code=0
+SET TIMESTAMP=1676012925/*!*/;
+SET @@session.pseudo_thread_id=8265/*!*/;
+SET @@session.foreign_key_checks=1, @@session.sql_auto_is_null=0, @@session.unique_checks=1, @@session.autocommit=1/*!*/;
+SET @@session.sql_mode=1168113696/*!*/;
+SET @@session.auto_increment_increment=1, @@session.auto_increment_offset=1/*!*/;
+/*!\C utf8mb4 *//*!*/;
+SET @@session.character_set_client=45,@@session.collation_connection=45,@@session.collation_server=255/*!*/;
+SET @@session.lc_time_names=0/*!*/;
+SET @@session.collation_database=DEFAULT/*!*/;
+/*!80011 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
+BEGIN
+/*!*/;
+# at 44315
+#230210 15:08:45 server id 1  end_log_pos 44419 CRC32 0x58fc3a39 	Table_map: ` + "`bytebase`.`migration_history`" + ` mapped to numb114
+# at 44419
+#230210 15:08:45 server id 1  end_log_pos 45463 CRC32 0xc479b87e 	Write_rows: table id 114 flags: STMT_END_F
+### INSERT INTO ` + "`bytebase`.`migration_history`" + `
+### SET
+###   @1=12
+###   @2='Me'
+###   @3=1676012925
+###   @4='Me'
+###   @5=1676012925
+###   @6='development'
+###   @7='test'
+###   @8=11
+###   @9='UI'
+###   @10='DATA'
+###   @11='PENDING'
+###   @12='0000.0000.0000-20230210150841'
+###   @13='[test] Change data @02-10 15:06 UTC+0800 - DML(data) for database "test"'
+###   @14='select 1'
+###   @15='SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKFOREIGN_KEY_CHECKS=0;\n--\n-- Table structure for ` + "`tbl`" + `\n--\nCREATE TABLE ` + "`tbl`" + ` (\n  ` + "`id`" + ` int NOT NULL COMMENT \'ID\',\PRIMARY KEY (` + "`id`" + `)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\nSFOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n'
+###   @16='SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKFOREIGN_KEY_CHECKS=0;\n--\n-- Table structure for ` + "`tbl`" + `\n--\nCREATE TABLE ` + "`tbl`" + ` (\n  ` + "`id`" + ` int NOT NULL COMMENT \'ID\',\PRIMARY KEY (` + "`id`" + `)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\nSFOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n'
+###   @17=0
+###   @18='119'
+###   @19=''
+# at 45463
+#230210 15:08:45 server id 1  end_log_pos 45494 CRC32 0x1ed8297c 	Xid = 51728
+COMMIT/*!*/;
+# at 45494
+#230210 15:08:45 server id 1  end_log_pos 45573 CRC32 0x92dbc581 	Anonymous_GTID	last_committed=40	sequence_number=rbr_only=yes	original_committed_timestamp=1676012925164545immediate_commit_timestamp=16760129251645transaction_length=2349
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1676012925164545 (2023-02-10 15:08:45.164545 CST)
+# immediate_commit_timestamp=1676012925164545 (2023-02-10 15:08:45.164545 CST)
+/*!80001 SET @@session.original_commit_timestamp=1676012925164545*//*!*/;
+/*!80014 SET @@session.original_server_version=80027*//*!*/;
+/*!80014 SET @@session.immediate_server_version=80027*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 45573
+#230210 15:08:45 server id 1  end_log_pos 45657 CRC32 0x5e18ab81 	Query	thread_id=8265	exec_time=0	error_code=0
+SET TIMESTAMP=1676012925/*!*/;
+BEGIN
+/*!*/;
+# at 45657
+#230210 15:08:45 server id 1  end_log_pos 45761 CRC32 0x7304d3c4 	Table_map: ` + "`bytebase`" + `.` + "`migration_history`" + ` mapped to numb114
+# at 45761
+#230210 15:08:45 server id 1  end_log_pos 47812 CRC32 0x130a8a04 	Update_rows: table id 114 flags: STMT_END_F
+### UPDATE ` + "`bytebase`" + `.` + "`migration_history`" + `
+### WHERE
+###   @1=12
+###   @2='Me'
+###   @3=1676012925
+###   @4='Me'
+###   @5=1676012925
+###   @6='development'
+###   @7='test'
+###   @8=11
+###   @9='UI'
+###   @10='DATA'
+###   @11='PENDING'
+###   @12='0000.0000.0000-20230210150841'
+###   @13='[test] Change data @02-10 15:06 UTC+0800 - DML(data) for database "test"'
+###   @14='select 1'
+###   @15='SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKFOREIGN_KEY_CHECKS=0;\n--\n-- Table structure for ` + "`tbl`" + `\n--\nCREATE TABLE ` + "`tbl`" + ` (\n  ` + "`id`" + ` int NOT NULL COMMENT \'ID\',\PRIMARY KEY (` + "`id`" + `)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\nSFOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n'
+###   @16='SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKFOREIGN_KEY_CHECKS=0;\n--\n-- Table structure for ` + "`tbl`" + `\n--\nCREATE TABLE ` + "`tbl`" + ` (\n  ` + "`id`" + ` int NOT NULL COMMENT \'ID\',\PRIMARY KEY (` + "`id`" + `)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\nSFOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n'
+###   @17=0
+###   @18='119'
+###   @19=''
+### SET
+###   @1=12
+###   @2='Me'
+###   @3=1676012925
+###   @4='Me'
+###   @5=1676012925
+###   @6='development'
+###   @7='test'
+###   @8=11
+###   @9='UI'
+###   @10='DATA'
+###   @11='DONE'
+###   @12='0000.0000.0000-20230210150841'
+###   @13='[test] Change data @02-10 15:06 UTC+0800 - DML(data) for database "test"'
+###   @14='select 1'
+###   @15='SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKFOREIGN_KEY_CHECKS=0;\n--\n-- Table structure for ` + "`tbl`" + `\n--\nCREATE TABLE ` + "`tbl`" + ` (\n  ` + "`id`" + ` int NOT NULL COMMENT \'ID\',\PRIMARY KEY (` + "`id`" + `)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\nSFOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n'
+###   @16='SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKFOREIGN_KEY_CHECKS=0;\n--\n-- Table structure for ` + "`tbl`" + `\n--\nCREATE TABLE ` + "`tbl`" + ` (\n  ` + "`id`" + ` int NOT NULL COMMENT \'ID\',\PRIMARY KEY (` + "`id`" + `)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\nSFOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n'
+###   @17=7351000
+###   @18='119'
+###   @19=''
+# at 47812
+#230210 15:08:45 server id 1  end_log_pos 47843 CRC32 0xcafe7260 	Xid = 51758
+COMMIT/*!*/;
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
+			want: nil,
+			err:  false,
+		},
+		{
 			name:      "exceeds limit",
 			sizeLimit: 1024,
 			// This is generated by the following SQL:
