@@ -756,6 +756,96 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for Non-Recursive Common Table Expression with RECURSIVE key words.
+			statement: `
+				with recursive t1 as (
+					select 1 as c1, 2 as c2, 3 as c3, 1 as n
+					union
+					select a, b, d, c from t
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "c1",
+					Sensitive: true,
+				},
+				{
+					Name:      "c2",
+					Sensitive: false,
+				},
+				{
+					Name:      "c3",
+					Sensitive: true,
+				},
+				{
+					Name:      "n",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for Recursive Common Table Expression dependent closures.
+			statement: `
+				with recursive t1(cc1, cc2, cc3, n) as (
+					select a as c1, b as c2, c as c3, 1 as n from t
+					union
+					select cc1 * cc2, cc2 + cc1, cc3 * cc2, n + 1 from t1 where n < 5
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "cc1",
+					Sensitive: true,
+				},
+				{
+					Name:      "cc2",
+					Sensitive: true,
+				},
+				{
+					Name:      "cc3",
+					Sensitive: true,
+				},
+				{
+					Name:      "n",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for Recursive Common Table Expression.
+			statement: `
+				with recursive t1 as (
+					select 1 as c1, 2 as c2, 3 as c3, 1 as n
+					union
+					select c1 * a, c2 * b, c3 * d, n + 1 from t1, t where n < 5
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "c1",
+					Sensitive: true,
+				},
+				{
+					Name:      "c2",
+					Sensitive: false,
+				},
+				{
+					Name:      "c3",
+					Sensitive: true,
+				},
+				{
+					Name:      "n",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test that Common Table Expression rename field names.
 			statement:  `with t1(d, c, b, a) as (select * from t) select * from t1`,
 			schemaInfo: defaultDatabaseSchema,

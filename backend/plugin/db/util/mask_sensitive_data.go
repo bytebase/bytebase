@@ -305,6 +305,82 @@ func (extractor *sensitiveFieldExtractor) pgFindTableSchema(tableName string) (d
 	return db.TableSchema{}, errors.Errorf("Table %q not found", tableName)
 }
 
+func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
+	switch selectNode := node.CommonTableExpr.Ctequery.Node.(type) {
+	case *pgquery.Node_SelectStmt:
+		if selectNode.SelectStmt.Op == pgquery.SetOperation_SETOP_UNION {
+			// For PostgreSQL, recursice CTE will be an UNION statement, and the left node is the initial part,
+			// the right node is the recursive part.
+			initialField, err := extractor.pgExtractSelect(&pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Larg})
+			if err != nil {
+				return db.TableSchema{}, err
+			}
+			if len(node.CommonTableExpr.Aliascolnames) > 0 {
+				if len(node.CommonTableExpr.Aliascolnames) != len(initialField) {
+					return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+				}
+				for i, nameNode := range node.CommonTableExpr.Aliascolnames {
+					stringNode, yes := nameNode.Node.(*pgquery.Node_String_)
+					if !yes {
+						return db.TableSchema{}, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
+					}
+					initialField[i].name = stringNode.String_.Str
+				}
+			}
+
+			cteInfo := db.TableSchema{Name: pgNormalizeTableName("public", node.CommonTableExpr.Ctename)}
+			for _, field := range initialField {
+				cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
+					Name:      field.name,
+					Sensitive: field.sensitive,
+				})
+			}
+
+			// Compute dependent closures.
+			// There are two ways to compute dependent closures:
+			//   1. find the all dependent edges, then use graph theory traversal to find the closure.
+			//   2. Iterate to simulate the CTE recursive process, each turn check whether the Sensitive state has changed, and stop if no change.
+			//
+			// Consider the option 2 can easy to implementation, because the simulate process has been written.
+			// On the other hand, the number of iterations of the entire algorithm will not exceed the length of fields.
+			// In actual use, the length of fields will not be more than 20 generally.
+			// So I think it's OK for now.
+			// If any performance issues in use, optimize here.
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteInfo)
+			defer func() {
+				extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:len(extractor.cteOuterSchemaInfo)-1]
+			}()
+			for {
+				fieldList, err := extractor.pgExtractSelect(&pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Rarg})
+				if err != nil {
+					return db.TableSchema{}, err
+				}
+				if len(fieldList) != len(cteInfo.ColumnList) {
+					return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+				}
+
+				changed := false
+				for i, field := range fieldList {
+					if field.sensitive && !cteInfo.ColumnList[i].Sensitive {
+						changed = true
+						cteInfo.ColumnList[i].Sensitive = true
+					}
+				}
+
+				if !changed {
+					break
+				}
+				extractor.cteOuterSchemaInfo[len(extractor.cteOuterSchemaInfo)-1] = cteInfo
+			}
+			return cteInfo, nil
+		} else {
+			return extractor.pgExtractNonRecursiveCTE(node)
+		}
+	default:
+		return extractor.pgExtractNonRecursiveCTE(node)
+	}
+}
+
 func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
 	fieldList, err := extractor.pgExtractNode(node.CommonTableExpr.Ctequery)
 	if err != nil {
@@ -348,16 +424,21 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
 		}()
 		for _, cte := range node.SelectStmt.WithClause.Ctes {
-			switch in := cte.Node.(type) {
-			case *pgquery.Node_CommonTableExpr:
-				cteTable, err := extractor.pgExtractNonRecursiveCTE(in)
-				if err != nil {
-					return nil, err
-				}
-				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
-			default:
-				// TODO(rebelice): we do not support INSERT/UPDATE/DELETE in CTE.
+			in, yes := cte.Node.(*pgquery.Node_CommonTableExpr)
+			if !yes {
+				return nil, errors.Errorf("expect CommonTableExpr but found %T", cte.Node)
 			}
+			var cteTable db.TableSchema
+			var err error
+			if node.SelectStmt.WithClause.Recursive {
+				cteTable, err = extractor.pgExtractRecursiveCTE(in)
+			} else {
+				cteTable, err = extractor.pgExtractNonRecursiveCTE(in)
+			}
+			if err != nil {
+				return nil, err
+			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
 		}
 	}
 
