@@ -213,7 +213,7 @@
       </template>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-1 grid-cols-3"
     >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.project") }}
