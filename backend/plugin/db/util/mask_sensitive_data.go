@@ -17,6 +17,10 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 )
 
+const (
+	pgUnknownFieldName = "?column?"
+)
+
 type sensitiveFieldExtractor struct {
 	currentDatabase    string
 	schemaInfo         *db.SensitiveSchemaInfo
@@ -90,8 +94,40 @@ func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fie
 		return extractor.pgExtractSelect(node)
 	case *pgquery.Node_RangeVar:
 		return extractor.pgExtractRangeVar(node)
+	case *pgquery.Node_RangeSubselect:
+		return extractor.pgExtractRangeSubselect(node)
 	}
 	return nil, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]fieldInfo, error) {
+	fieldList, err := extractor.pgExtractNode(node.RangeSubselect.Subquery)
+	if err != nil {
+		return nil, err
+	}
+	if node.RangeSubselect.Alias != nil {
+		var result []fieldInfo
+		aliasName, columnNameList, err := pgExtractAlias(node.RangeSubselect.Alias)
+		if err != nil {
+			return nil, err
+		}
+		if len(columnNameList) != 0 && len(columnNameList) != len(fieldList) {
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(columnNameList), len(fieldList))
+		}
+		for i, item := range fieldList {
+			columnName := item.name
+			if len(columnNameList) > 0 {
+				columnName = columnNameList[i]
+			}
+			result = append(result, fieldInfo{
+				table:     fmt.Sprintf("public.%s", aliasName),
+				name:      columnName,
+				sensitive: item.sensitive,
+			})
+		}
+		return result, nil
+	}
+	return fieldList, nil
 }
 
 func pgNormalizeTableName(schemaName string, tableName string) string {
@@ -102,6 +138,21 @@ func pgNormalizeTableName(schemaName string, tableName string) string {
 		schemaName = "public"
 	}
 	return fmt.Sprintf("%s.%s", schemaName, tableName)
+}
+
+func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
+	if alias == nil {
+		return "", nil, nil
+	}
+	var columnNameList []string
+	for _, item := range alias.Colnames {
+		stringNode, yes := item.Node.(*pgquery.Node_String_)
+		if !yes {
+			return "", nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
+		}
+		columnNameList = append(columnNameList, stringNode.String_.Str)
+	}
+	return alias.Aliasname, columnNameList, nil
 }
 
 func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]fieldInfo, error) {
@@ -120,20 +171,16 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 			})
 		}
 	} else {
-		if len(node.RangeVar.Alias.Colnames) > 0 && len(node.RangeVar.Alias.Colnames) != len(tableSchema.ColumnList) {
-			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSchema.ColumnList))
+		aliasName, columnNameList, err := pgExtractAlias(node.RangeVar.Alias)
+		if err != nil {
+			return nil, err
 		}
-		var columnNameList []string
-		for _, item := range node.RangeVar.Alias.Colnames {
-			stringNode, yes := item.Node.(*pgquery.Node_String_)
-			if !yes {
-				return nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
-			}
-			columnNameList = append(columnNameList, stringNode.String_.Str)
+		if len(columnNameList) != 0 && len(columnNameList) != len(tableSchema.ColumnList) {
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSchema.ColumnList))
 		}
 
 		for i, column := range tableSchema.ColumnList {
-			tableName := fmt.Sprintf("public.%s", node.RangeVar.Alias.Aliasname)
+			tableName := fmt.Sprintf("public.%s", aliasName)
 			columnName := column.Name
 			if len(columnNameList) > 0 {
 				columnName = columnNameList[i]
@@ -262,11 +309,170 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				})
 			}
 		default:
-			// TODO(rebelice): consider other cases.
+			sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(resTarget.ResTarget.Val)
+			if err != nil {
+				return nil, err
+			}
+			fieldName := resTarget.ResTarget.Name
+			if fieldName == "" {
+				if fieldName, err = pgExtractFieldName(resTarget.ResTarget.Val); err != nil {
+					return nil, err
+				}
+			}
+			result = append(result, fieldInfo{
+				name:      fieldName,
+				sensitive: sensitive,
+			})
 		}
 	}
 
 	return result, nil
+}
+
+func pgExtractFieldName(in *pgquery.Node) (string, error) {
+	if in == nil || in.Node == nil {
+		return pgUnknownFieldName, nil
+	}
+	switch node := in.Node.(type) {
+	case *pgquery.Node_ColumnRef:
+		columnRef, err := pg.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
+		if err != nil {
+			return "", err
+		}
+		return columnRef.ColumnName, nil
+	case *pgquery.Node_FuncCall:
+		lastNode, yes := node.FuncCall.Funcname[len(node.FuncCall.Funcname)-1].Node.(*pgquery.Node_String_)
+		if !yes {
+			return "", errors.Errorf("expect Node_string_ but found %T", node.FuncCall.Funcname[len(node.FuncCall.Funcname)-1].Node)
+		}
+		return lastNode.String_.Str, nil
+	case *pgquery.Node_XmlExpr:
+		switch node.XmlExpr.Op {
+		case pgquery.XmlExprOp_IS_XMLCONCAT:
+			return "xmlconcat", nil
+		case pgquery.XmlExprOp_IS_XMLELEMENT:
+			return "xmlelement", nil
+		case pgquery.XmlExprOp_IS_XMLFOREST:
+			return "xmlforest", nil
+		case pgquery.XmlExprOp_IS_XMLPARSE:
+			return "xmlparse", nil
+		case pgquery.XmlExprOp_IS_XMLPI:
+			return "xmlpi", nil
+		case pgquery.XmlExprOp_IS_XMLROOT:
+			return "xmlroot", nil
+		case pgquery.XmlExprOp_IS_XMLSERIALIZE:
+			return "xmlserialize", nil
+		case pgquery.XmlExprOp_IS_DOCUMENT:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_TypeCast:
+		// return the arg name
+		columnName, err := pgExtractFieldName(node.TypeCast.Arg)
+		if err != nil {
+			return "", err
+		}
+		if columnName != pgUnknownFieldName {
+			return columnName, nil
+		}
+		// return the type name
+		if node.TypeCast.TypeName != nil {
+			lastName, yes := node.TypeCast.TypeName.Names[len(node.TypeCast.TypeName.Names)-1].Node.(*pgquery.Node_String_)
+			if !yes {
+				return "", errors.Errorf("expect Node_string_ but found %T", node.TypeCast.TypeName.Names[len(node.TypeCast.TypeName.Names)-1].Node)
+			}
+			return lastName.String_.Str, nil
+		}
+	case *pgquery.Node_AConst:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_AExpr:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_CaseExpr:
+		return "case", nil
+	case *pgquery.Node_AArrayExpr:
+		return "array", nil
+	case *pgquery.Node_NullTest:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_XmlSerialize:
+		return "xmlserialize", nil
+	case *pgquery.Node_ParamRef:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_BoolExpr:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_SubLink:
+		switch node.SubLink.SubLinkType {
+		case pgquery.SubLinkType_EXISTS_SUBLINK:
+			return "exists", nil
+		case pgquery.SubLinkType_ARRAY_SUBLINK:
+			return "array", nil
+		case pgquery.SubLinkType_EXPR_SUBLINK:
+			if node.SubLink.Subselect != nil {
+				selectNode, yes := node.SubLink.Subselect.Node.(*pgquery.Node_SelectStmt)
+				if !yes {
+					return pgUnknownFieldName, nil
+				}
+				if len(selectNode.SelectStmt.TargetList) == 1 {
+					return pgExtractFieldName(selectNode.SelectStmt.TargetList[0])
+				}
+				return pgUnknownFieldName, nil
+			}
+		default:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_RowExpr:
+		return "row", nil
+	case *pgquery.Node_CoalesceExpr:
+		return "coalesce", nil
+	case *pgquery.Node_SetToDefault:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_AIndirection:
+		// TODO(rebelice): we do not deal with the A_Indirection. Fix it.
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_CollateClause:
+		return pgExtractFieldName(node.CollateClause.Arg)
+	case *pgquery.Node_CurrentOfExpr:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_SqlvalueFunction:
+		switch node.SqlvalueFunction.Op {
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_DATE:
+			return "current_date", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIME, pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIME_N:
+			return "current_time", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIMESTAMP, pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIMESTAMP_N:
+			return "current_timestamp", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_LOCALTIME, pgquery.SQLValueFunctionOp_SVFOP_LOCALTIME_N:
+			return "localtime", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_LOCALTIMESTAMP, pgquery.SQLValueFunctionOp_SVFOP_LOCALTIMESTAMP_N:
+			return "localtimestamp", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_ROLE:
+			return "current_role", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_USER:
+			return "current_user", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_USER:
+			return "user", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_SESSION_USER:
+			return "session_user", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_CATALOG:
+			return "current_catalog", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_SCHEMA:
+			return "current_schema", nil
+		default:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_MinMaxExpr:
+		switch node.MinMaxExpr.Op {
+		case pgquery.MinMaxOp_IS_GREATEST:
+			return "greatest", nil
+		case pgquery.MinMaxOp_IS_LEAST:
+			return "least", nil
+		default:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_BooleanTest:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_GroupingFunc:
+		return "grouping", nil
+	}
+	return pgUnknownFieldName, nil
 }
 
 func pgNormalizeColumnName(columnName *ast.ColumnNameDef) (string, string) {
@@ -313,6 +519,8 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 	}
 
 	switch node := in.Node.(type) {
+	case *pgquery.Node_List:
+		return extractor.pgExtractColumnRefFromExpressionNodeList(node.List.Items)
 	case *pgquery.Node_FuncCall:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.FuncCall.Args...)
