@@ -71,15 +71,10 @@ service DatabaseService {
     };
   }
 
-  rpc CreateBackup(CreateBackupRequest) returns (google.longrunning.Operation) {
+  rpc CreateBackup(CreateBackupRequest) returns (Backup) {
     option (google.api.http) = {
       post: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
       body: "backup"
-    };
-    option (google.api.method_signature) = "backup";
-    option (google.longrunning.operation_info) = {
-      response_type: "Backup"
-      metadata_type: "OperationMetadata"
     };
   }
 
@@ -188,11 +183,13 @@ message CreateBackupRequest {
   // Format: environments/{environment}/instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
-  Backup backup = 2 [(google.api.field_behavior) = REQUIRED]; 
+  Backup backup = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // ListBackupRequest is the request message for ListBackup.
 message ListBackupRequest {
+  // The parent resource where this backup will be created.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Not used. The maximum number of backups to return. The service may return fewer than
@@ -451,10 +448,6 @@ message BackupSetting {
   // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
   string hook_url = 4;
 }
-
-// OperationMetadata is the metadata for database operations.
-// Empty for now.
-message OperationMetadata {}
 
 // The message of the backup.
 message Backup {
