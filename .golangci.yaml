@@ -78,11 +78,6 @@ linters-settings:
         disabled: true
       - name: early-return
         disabled: true
-      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-naming
-      - name: var-naming
-        arguments:
-          - ["IdP"] # AllowList
-          - [] # DenyList
   gocritic:
     disabled-checks:
       - ifElseChain
