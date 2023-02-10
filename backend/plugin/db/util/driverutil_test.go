@@ -756,6 +756,79 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for functions.
+			statement:  `select max(a), a-b as c1, a=b as c2, a>b, b in (a, c, d) from (select * from t) result`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "max",
+					Sensitive: true,
+				},
+				{
+					Name:      "c1",
+					Sensitive: true,
+				},
+				{
+					Name:      "c2",
+					Sensitive: true,
+				},
+				{
+					Name:      "?column?",
+					Sensitive: true,
+				},
+				{
+					Name:      "?column?",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for sub-query
+			statement:  "select * from (select * from t) result LIMIT 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for sub-select.
+			statement:  "select * from (select a, t.b, public.t.c, d as d1 from public.t) result LIMIT 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d1",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for field name.
 			statement:  "select a, t.b, public.t.c, d as d1 from t",
 			schemaInfo: defaultDatabaseSchema,
@@ -800,6 +873,12 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 					Sensitive: true,
 				},
 			},
+		},
+		{
+			// Test for no FROM clause.
+			statement:  "select 1;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  []db.SensitiveField{{Name: "?column?", Sensitive: false}},
 		},
 	}
 
