@@ -1667,6 +1667,10 @@
         "title": "Watermark",
         "desc": "Display visible watermarks on pages, including username and ID."
       },
+      "bb-feature-audit-log": {
+        "title": "Audit log",
+        "desc": "Record and query operations performed by users in workspace."
+      },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
         "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
