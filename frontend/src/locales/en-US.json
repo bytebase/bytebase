@@ -395,7 +395,7 @@
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account"
     },
-    "webhook-integration": {
+    "im-integration": {
       "enable": "Enable",
       "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
