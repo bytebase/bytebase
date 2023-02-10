@@ -757,6 +757,29 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 	}{
 		{
 			// Test for field name.
+			statement:  "select * from (select a, t.b, public.t.c, d as d1 from public.t) result LIMIT 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d1",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for field name.
 			statement:  "select a, t.b, public.t.c, d as d1 from t",
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{

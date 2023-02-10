@@ -90,8 +90,40 @@ func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fie
 		return extractor.pgExtractSelect(node)
 	case *pgquery.Node_RangeVar:
 		return extractor.pgExtractRangeVar(node)
+	case *pgquery.Node_RangeSubselect:
+		return extractor.pgExtractRangeSubselect(node)
 	}
 	return nil, nil
+}
+
+func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]fieldInfo, error) {
+	fieldList, err := extractor.pgExtractNode(node.RangeSubselect.Subquery)
+	if err != nil {
+		return nil, err
+	}
+	if node.RangeSubselect.Alias != nil {
+		var result []fieldInfo
+		aliasName, columnNameList, err := pgExtractAlias(node.RangeSubselect.Alias)
+		if err != nil {
+			return nil, err
+		}
+		if len(columnNameList) != 0 && len(columnNameList) != len(fieldList) {
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(columnNameList), len(fieldList))
+		}
+		for i, item := range fieldList {
+			columnName := item.name
+			if len(columnNameList) > 0 {
+				columnName = columnNameList[i]
+			}
+			result = append(result, fieldInfo{
+				table:     fmt.Sprintf("public.%s", aliasName),
+				name:      columnName,
+				sensitive: item.sensitive,
+			})
+		}
+		return result, nil
+	}
+	return fieldList, nil
 }
 
 func pgNormalizeTableName(schemaName string, tableName string) string {
@@ -102,6 +134,21 @@ func pgNormalizeTableName(schemaName string, tableName string) string {
 		schemaName = "public"
 	}
 	return fmt.Sprintf("%s.%s", schemaName, tableName)
+}
+
+func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
+	if alias == nil {
+		return "", nil, nil
+	}
+	var columnNameList []string
+	for _, item := range alias.Colnames {
+		stringNode, yes := item.Node.(*pgquery.Node_String_)
+		if !yes {
+			return "", nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
+		}
+		columnNameList = append(columnNameList, stringNode.String_.Str)
+	}
+	return alias.Aliasname, columnNameList, nil
 }
 
 func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]fieldInfo, error) {
@@ -120,20 +167,16 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 			})
 		}
 	} else {
-		if len(node.RangeVar.Alias.Colnames) > 0 && len(node.RangeVar.Alias.Colnames) != len(tableSchema.ColumnList) {
-			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSchema.ColumnList))
+		aliasName, columnNameList, err := pgExtractAlias(node.RangeVar.Alias)
+		if err != nil {
+			return nil, err
 		}
-		var columnNameList []string
-		for _, item := range node.RangeVar.Alias.Colnames {
-			stringNode, yes := item.Node.(*pgquery.Node_String_)
-			if !yes {
-				return nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
-			}
-			columnNameList = append(columnNameList, stringNode.String_.Str)
+		if len(columnNameList) != 0 && len(columnNameList) != len(tableSchema.ColumnList) {
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSchema.ColumnList))
 		}
 
 		for i, column := range tableSchema.ColumnList {
-			tableName := fmt.Sprintf("public.%s", node.RangeVar.Alias.Aliasname)
+			tableName := fmt.Sprintf("public.%s", aliasName)
 			columnName := column.Name
 			if len(columnNameList) > 0 {
 				columnName = columnNameList[i]
