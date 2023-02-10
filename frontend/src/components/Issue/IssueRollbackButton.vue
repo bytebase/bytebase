@@ -28,13 +28,7 @@ import type {
 } from "@/types";
 import { useIssueLogic } from "./logic";
 import { useActivityStore, useCurrentUser, useIssueStore } from "@/store";
-import {
-  absolutifyLink,
-  buildIssueLinkWithTask,
-  hasProjectPermission,
-  hasWorkspacePermission,
-  isDev,
-} from "@/utils";
+import { hasProjectPermission, hasWorkspacePermission, isDev } from "@/utils";
 
 enum ButtonState {
   DEFAULT,
@@ -148,14 +142,8 @@ const tryRollbackTask = async () => {
       `@${datetime} ${tz}`,
     ].join(" ");
 
-    const originalIssueTaskLink = buildIssueLinkWithTask(
-      issueEntity,
-      task,
-      true /* Keep the URL short and clean */
-    );
     const description = [
-      `The original task: ${absolutifyLink(originalIssueTaskLink)}`,
-      `The original SQL statement: ${
+      `The original SQL statement:\n${
         (task.payload as TaskDatabaseDataUpdatePayload).statement
       }`,
     ].join("\n");
