@@ -265,6 +265,7 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 
 	// Save file.
 	pd.files[filePath] = fileCommit.Content
+	fmt.Printf("Barny3: %#v, %#v\n", filePath, fileCommit)
 
 	return c.String(http.StatusOK, "")
 }
@@ -562,6 +563,7 @@ func (gl *GitLab) GetFiles(projectID string, filePaths ...string) (map[string]st
 		return nil, errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
+	fmt.Printf("Barny1: %#v\n", pd.files)
 	// Get files
 	files := make(map[string]string, len(filePaths))
 	for _, path := range filePaths {
