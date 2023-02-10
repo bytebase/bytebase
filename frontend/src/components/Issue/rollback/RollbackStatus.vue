@@ -27,7 +27,6 @@
           class="btn-normal !px-3 !py-1"
           @click="tryRollbackTask"
         >
-          Preview rollback
           {{ $t("task.rollback.preview-rollback") }}
         </button>
       </template>
