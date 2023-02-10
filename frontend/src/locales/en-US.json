@@ -423,7 +423,7 @@
         "endpoints": "Endpoints",
         "endpoints-description": "The related urls provided by your OAuth provider.",
         "auth-url-description": "The link to OAuth login page",
-        "scopes-description": "The scope parameter carried when accessing the Auth URL",
+        "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
         "user-information-mapping": "User information mapping",
