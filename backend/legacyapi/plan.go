@@ -61,6 +61,9 @@ const (
 	// FeatureWatermark enables full-screen watermark.
 	FeatureWatermark FeatureType = "bb.feature.watermark"
 
+	// FeatureWatermark enables viewing audit logs.
+	FeatureAuditLog FeatureType = "bb.feature.audit-log"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -160,9 +163,11 @@ func (e FeatureType) Name() string {
 		return "SSO"
 	case FeatureRBAC:
 		return "RBAC"
-	// Branding
 	case FeatureWatermark:
 		return "Watermark"
+	case FeatureAuditLog:
+		return "Audit log"
+	// Branding
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
@@ -237,6 +242,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSSO:       {false, false, true},
 	FeatureRBAC:      {false, true, true},
 	FeatureWatermark: {false, false, true},
+	FeatureAuditLog:  {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
