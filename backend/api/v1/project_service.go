@@ -424,7 +424,10 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		for _, member := range binding.Members {
-			user, err := s.store.GetUserByEmail(ctx, getUserEmailFromIdentifier(member))
+			email := getUserEmailFromIdentifier(member)
+			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+				Email: &email,
+			})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
 			}
