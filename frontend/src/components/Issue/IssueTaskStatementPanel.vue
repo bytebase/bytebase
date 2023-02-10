@@ -72,7 +72,7 @@
       </template>
 
       <button
-        v-if="shouldShowStatementEditButton"
+        v-if="shouldShowStatementEditButtonForUI"
         type="button"
         class="btn-icon"
         @click.prevent="beginEdit"
@@ -99,9 +99,7 @@
         </button>
       </template>
 
-      <template
-        v-if="!create && (issue as Issue).project.workflowType === 'VCS'"
-      >
+      <template v-if="shouldShowVirtualStatementEditButtonForVCS">
         <!--
           Show a virtual pencil icon in VCS workflow which opens a guide
           when clicked.
@@ -197,7 +195,7 @@ import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
-import { useInstanceEditorLanguage } from "@/utils";
+import { isTaskTriggeredByVCS, useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 interface LocalState {
@@ -405,7 +403,7 @@ const isTaskHasSheetId = computed(() => {
   return !isUndefined(sheetIdOfTask(task as Task));
 });
 
-const shouldShowStatementEditButton = computed(() => {
+const shouldShowStatementEditButtonForUI = computed(() => {
   if (create.value) {
     return false;
   }
@@ -416,8 +414,34 @@ const shouldShowStatementEditButton = computed(() => {
   if (state.editing) {
     return false;
   }
+  if (!allowEditStatement.value) {
+    return false;
+  }
 
-  return allowEditStatement.value;
+  // If a task is triggered by VCS commit, we are NOT allowed to edit its
+  // SQL statements directly from UI, until we solved the edit and write-back
+  // problems.
+  const task = selectedTask.value as Task;
+  if (isTaskTriggeredByVCS(task)) {
+    return false;
+  }
+
+  return true;
+});
+
+const shouldShowVirtualStatementEditButtonForVCS = computed(() => {
+  if (shouldShowStatementEditButtonForUI.value) {
+    // This is mutual exclusive to another button for UI.
+    return false;
+  }
+  if (create.value) {
+    return false;
+  }
+  if (!allowEditStatement.value) {
+    return false;
+  }
+  const task = selectedTask.value as Task;
+  return isTaskTriggeredByVCS(task);
 });
 
 onMounted(() => {
