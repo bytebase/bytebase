@@ -21,7 +21,7 @@
       <div>
         <button
           class="btn-primary whitespace-nowrap"
-          :disabled="!allowAdmin"
+          :disabled="!allowAdmin || !hasAccessControlFeature"
           @click="state.showAddRuleModal = true"
         >
           {{ $t("settings.access-control.add-rule") }}
@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="relative min-h-[12rem]">
+    <div v-if="hasAccessControlFeature" class="relative min-h-[12rem]">
       <BBTable
         :column-list="COLUMN_LIST"
         :data-source="activePolicyList"
@@ -145,9 +145,6 @@
               </div>
             </BBTableCell>
             <BBTableCell>
-              {{ humanizeTs(policy.updatedTs) }}
-            </BBTableCell>
-            <BBTableCell>
               <div class="flex items-center justify-center">
                 <NPopconfirm @positive-click="handleRemove(policy)">
                   <template #trigger>
@@ -176,6 +173,20 @@
         <BBSpin />
       </div>
     </div>
+
+    <template v-else>
+      <BBTable
+        :column-list="COLUMN_LIST"
+        :data-source="[]"
+        :show-header="true"
+        :left-bordered="true"
+        :right-bordered="true"
+        :row-clickable="false"
+      />
+      <div class="w-full h-full flex flex-col items-center justify-center">
+        <img src="../assets/illustration/no-data.webp" class="max-h-[30vh]" />
+      </div>
+    </template>
   </div>
 
   <FeatureModal

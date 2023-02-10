@@ -7,6 +7,7 @@ export type FeatureType =
   | "bb.feature.sso"
   | "bb.feature.rbac"
   | "bb.feature.watermark"
+  | "bb.feature.audit-log"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
