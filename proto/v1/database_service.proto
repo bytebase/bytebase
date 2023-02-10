@@ -10,7 +10,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-import "google/longrunning/operations.proto";
 
 import "v1/common.proto";
 
