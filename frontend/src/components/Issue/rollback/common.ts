@@ -13,7 +13,6 @@ import type {
 import {
   hasProjectPermission,
   hasWorkspacePermission,
-  isDev,
   isTaskCreate,
   isTaskSkipped,
   semverCompare,
@@ -41,20 +40,13 @@ export const useRollbackLogic = () => {
 
   // Decide with type of UI should be displayed.
   const rollbackUIType = computed((): RollbackUIType => {
-    if (!isDev()) {
-      return "NONE";
-    }
-
     if (issue.value.type !== "bb.issue.database.data.update") {
       return "NONE";
     }
-
     if (task.value.type !== "bb.task.database.data.update") {
       return "NONE";
     }
-
     const database = databaseOfTask(task.value);
-
     const { engine, engineVersion } = database.instance;
     if (engine !== "MYSQL") {
       return "NONE";
