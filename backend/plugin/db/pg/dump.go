@@ -150,7 +150,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	allMsg := make([]byte, 0, 1024)
 	for {
 		errorMsg := make([]byte, 1024)
-		readSize, readErr := errPipe.Read(errorMsg)
+		readSize, readErr := errReader.Read(errorMsg)
 		if readSize > 0 {
 			log.Warn(string(errorMsg))
 			allMsg = append(allMsg, errorMsg[0:readSize]...)
