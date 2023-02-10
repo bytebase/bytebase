@@ -355,7 +355,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	// Reset rollbackStatement and rollbackError because we are trying to build
 	// the rollbackStatement again and there could be previous runs.
 	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
-		var ptrStr *string = nil
+		var ptrStr *string
 		taskPatch.RollbackStatement = &ptrStr
 		taskPatch.RollbackError = &ptrStr
 	}
