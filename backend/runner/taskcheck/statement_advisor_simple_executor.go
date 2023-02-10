@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // NewStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
@@ -21,7 +22,7 @@ type StatementAdvisorSimpleExecutor struct {
 }
 
 // Run will run the task check statement advisor executor once.
-func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheckRun, _ *api.Task) (result []api.TaskCheckResult, err error) {
+func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, _ *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
