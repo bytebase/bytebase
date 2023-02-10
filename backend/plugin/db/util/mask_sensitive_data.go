@@ -305,8 +305,61 @@ func (extractor *sensitiveFieldExtractor) pgFindTableSchema(tableName string) (d
 	return db.TableSchema{}, errors.Errorf("Table %q not found", tableName)
 }
 
+func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
+	fieldList, err := extractor.pgExtractNode(node.CommonTableExpr.Ctequery)
+	if err != nil {
+		return db.TableSchema{}, err
+	}
+	if len(node.CommonTableExpr.Aliascolnames) > 0 {
+		if len(node.CommonTableExpr.Aliascolnames) != len(fieldList) {
+			return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+		}
+		var nameList []string
+		for _, nameNode := range node.CommonTableExpr.Aliascolnames {
+			stringNode, yes := nameNode.Node.(*pgquery.Node_String_)
+			if !yes {
+				return db.TableSchema{}, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
+			}
+			nameList = append(nameList, stringNode.String_.Str)
+		}
+		for i := 0; i < len(fieldList); i++ {
+			fieldList[i].name = nameList[i]
+		}
+	}
+	result := db.TableSchema{
+		Name:       pgNormalizeTableName("public", node.CommonTableExpr.Ctename),
+		ColumnList: []db.ColumnInfo{},
+	}
+
+	for _, field := range fieldList {
+		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+			Name:      field.name,
+			Sensitive: field.sensitive,
+		})
+	}
+
+	return result, nil
+}
+
 func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) ([]fieldInfo, error) {
-	// TODO(rebelice): consider the CTE.
+	if node.SelectStmt.WithClause != nil {
+		cteOuterLength := len(extractor.cteOuterSchemaInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
+		}()
+		for _, cte := range node.SelectStmt.WithClause.Ctes {
+			switch in := cte.Node.(type) {
+			case *pgquery.Node_CommonTableExpr:
+				cteTable, err := extractor.pgExtractNonRecursiveCTE(in)
+				if err != nil {
+					return nil, err
+				}
+				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+			default:
+				// TODO(rebelice): we do not support INSERT/UPDATE/DELETE in CTE.
+			}
+		}
+	}
 
 	// The VALUES case.
 	if len(node.SelectStmt.ValuesLists) > 0 {
