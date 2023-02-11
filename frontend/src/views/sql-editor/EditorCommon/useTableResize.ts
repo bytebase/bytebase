@@ -175,7 +175,7 @@ const useTableResize = (options: TableResizeOptions) => {
       style: {
         width: state.isAutoAdjusting ? "auto" : `${column.width}px`,
       },
-      class: "truncate",
+      class: state.isAutoAdjusting ? "" : "truncate",
       "data-index": index,
     };
   };
