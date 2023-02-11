@@ -73,6 +73,7 @@
         :table="table"
         :columns="columns"
         :data="data"
+        :sensitive="sensitive"
       />
     </div>
 
@@ -194,6 +195,13 @@ const data = computed(() => {
     });
   }
   return temp;
+});
+
+const sensitive = computed(() => {
+  if (!props.queryResult) {
+    return [];
+  }
+  return props.queryResult[3] ?? [];
 });
 
 const table = useVueTable<string[]>({
