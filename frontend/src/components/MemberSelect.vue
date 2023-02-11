@@ -112,7 +112,9 @@ export default defineComponent({
       const list = memberStore.memberList
         .filter((member: Member) => {
           return (
-            member.status == "ACTIVE" && member.principal.type === "END_USER"
+            member.status == "ACTIVE" &&
+            member.rowStatus === "NORMAL" &&
+            member.principal.type === "END_USER"
           );
         })
         .map((member: Member) => {
