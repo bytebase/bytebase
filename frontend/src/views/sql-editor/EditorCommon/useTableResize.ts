@@ -173,21 +173,18 @@ const useTableResize = (options: TableResizeOptions) => {
     if (!column) return {};
     return {
       style: {
-        width: `${column.width}px`,
+        width: state.isAutoAdjusting ? "auto" : `${column.width}px`,
       },
-      class: "truncate",
+      class: state.isAutoAdjusting ? "" : "truncate",
       "data-index": index,
     };
   };
 
   const getTableProps = () => {
-    if (state.isAutoAdjusting) {
-      return {};
-    }
     const totalWidth = sumBy(state.columns, (col) => col.width);
     return {
       style: {
-        width: `${totalWidth}px`,
+        width: state.isAutoAdjusting ? "auto" : `${totalWidth}px`,
       },
     };
   };
