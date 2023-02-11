@@ -1057,7 +1057,7 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 		}
 		return &ast.UnconvertedExpressionDef{}, likeList, subqueryList, nil
 	case *pgquery.Node_ColumnRef:
-		columnDef, err := convertNodeListToColumnNameDef(in.ColumnRef.Fields)
+		columnDef, err := ConvertNodeListToColumnNameDef(in.ColumnRef.Fields)
 		return columnDef, nil, nil, err
 	case *pgquery.Node_FuncCall:
 		var likeList []*ast.PatternLikeDef
@@ -1730,7 +1730,7 @@ func convertDefElemNodeListToColumnNameDef(defElem *pgquery.DefElem) (*ast.Colum
 	if !ok {
 		return nil, parser.NewConvertErrorf("expected List but found %T", defElem.Arg.Node)
 	}
-	return convertNodeListToColumnNameDef(listNode.List.Items)
+	return ConvertNodeListToColumnNameDef(listNode.List.Items)
 }
 
 func convertDefElemNodeIntegerToBool(defElem *pgquery.DefElem) (bool, error) {
@@ -1779,7 +1779,8 @@ func convertDefElemToSeqType(defElem *pgquery.DefElem) (*ast.Integer, error) {
 	return intType, nil
 }
 
-func convertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, error) {
+// ConvertNodeListToColumnNameDef converts the node list to ColumnNameDef.
+func ConvertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, error) {
 	columnName := &ast.ColumnNameDef{Table: &ast.TableDef{}}
 	// There are three cases for column name:
 	//   1. schemaName.tableName.columnName

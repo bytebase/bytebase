@@ -119,6 +119,9 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 			userInfo.DisplayName = v
 		}
 	}
+	if userInfo.DisplayName == "" {
+		userInfo.DisplayName = userInfo.Identifier
+	}
 	if p.config.FieldMapping.Email != "" {
 		if v, ok := claims[p.config.FieldMapping.Email].(string); ok {
 			userInfo.Email = v

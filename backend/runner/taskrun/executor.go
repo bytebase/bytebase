@@ -336,13 +336,19 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		}
 	}
 
-	writeBack, err := isWriteBack(ctx, stores, license, project, repo, task, vcsPushEvent)
+	writebackBranch, err := isWriteBack(ctx, stores, license, project, repo, task, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
 
-	// Transform the schema to standard style for SDL mode.
-	if writeBack {
+	log.Debug("Post migration...",
+		zap.String("instance", instance.ResourceID),
+		zap.String("database", database.DatabaseName),
+		zap.String("writeback_branch", writebackBranch),
+	)
+
+	if writebackBranch != "" {
+		// Transform the schema to standard style for SDL mode.
 		if instance.Engine == db.MySQL {
 			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
@@ -350,18 +356,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			}
 			schema = standardSchema
 		}
-	}
 
-	log.Debug("Post migration...",
-		zap.String("instance", instance.ResourceID),
-		zap.String("database", database.DatabaseName),
-		zap.Bool("writeBack", writeBack),
-	)
-
-	if writeBack {
-		if err != nil {
-			return true, nil, errors.Wrapf(err, "failed to get BaseDatabaseName for instance %q, database %q", instance.ResourceID, database.DatabaseName)
-		}
 		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
@@ -380,7 +375,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", profile.ExternalURL, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -451,52 +446,58 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *api.Repository, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (bool, error) {
+func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *api.Repository, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (string, error) {
 	if !license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
-		return false, nil
+		return "", nil
+	}
+	if task.Type != api.TaskDatabaseSchemaBaseline && task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
+		return "", nil
 	}
 	if repo == nil || repo.SchemaPathTemplate == "" {
-		return false, nil
-	}
-	if task.Type == api.TaskDatabaseSchemaBaseline {
-		if strings.Contains(repo.BranchFilter, "*") {
-			return false, nil
-		}
-		return true, nil
+		return "", nil
 	}
 
-	if vcsPushEvent == nil {
-		return false, nil
+	branch := ""
+	// Prefer write back to the commit branch than the repo branch.
+	if !strings.Contains(repo.BranchFilter, "*") {
+		branch = repo.BranchFilter
 	}
-	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
-		return false, nil
+	if vcsPushEvent != nil && vcsPushEvent.Ref != "" {
+		b, err := vcsPlugin.Branch(vcsPushEvent.Ref)
+		if err != nil {
+			return "", err
+		}
+		branch = b
+	}
+	if branch == "" {
+		return "", nil
 	}
 
 	// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
 	if project.TenantMode == api.TenantModeTenant {
 		stages, err := stores.ListStageV2(ctx, task.PipelineID)
 		if err != nil {
-			return false, err
+			return "", err
 		}
 		if len(stages) == 0 {
-			return false, nil
+			return "", nil
 		}
 		if stages[len(stages)-1].ID != task.StageID {
-			return false, nil
+			return "", nil
 		}
 		tasks, err := stores.ListTasks(ctx, &api.TaskFind{PipelineID: &task.PipelineID, StageID: &task.StageID})
 		if err != nil {
-			return false, err
+			return "", err
 		}
 		if len(tasks) == 0 {
-			return false, nil
+			return "", nil
 		}
 		if tasks[len(tasks)-1].ID != task.ID {
-			return false, nil
+			return "", nil
 		}
 	}
 
-	return true, nil
+	return branch, nil
 }
 
 func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
@@ -511,9 +512,9 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 	return postMigration(ctx, store, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
-// Writes back the latest schema to the repository after migration
+// Writes back the latest schema to the repository after migration.
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, writebackBranch, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	schemaFileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
@@ -526,7 +527,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
 		latestSchemaFile,
-		pushEvent.Ref,
+		writebackBranch,
 	)
 
 	createSchemaFile := false
@@ -549,19 +550,21 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		if bytebaseURL != "" {
 			commitBody += "\n\n" + bytebaseURL
 		}
-		commitBody += "\n\n--------Original migration change--------\n\n"
-		if len(pushEvent.CommitList) == 0 {
-			// For legacy data in task payload stored in the database.
-			// TODO(dragonly): Remove the field FileCommit.
-			commitBody += fmt.Sprintf("%s\n\n%s",
-				pushEvent.FileCommit.URL,
-				pushEvent.FileCommit.Message,
-			)
-		} else {
-			commitBody += fmt.Sprintf("%s\n\n%s",
-				pushEvent.CommitList[0].URL,
-				pushEvent.CommitList[0].Message,
-			)
+		if pushEvent != nil {
+			commitBody += "\n\n--------Original migration change--------\n\n"
+			if len(pushEvent.CommitList) == 0 {
+				// For legacy data in task payload stored in the database.
+				// TODO(dragonly): Remove the field FileCommit.
+				commitBody += fmt.Sprintf("%s\n\n%s",
+					pushEvent.FileCommit.URL,
+					pushEvent.FileCommit.Message,
+				)
+			} else {
+				commitBody += fmt.Sprintf("%s\n\n%s",
+					pushEvent.CommitList[0].URL,
+					pushEvent.CommitList[0].Message,
+				)
+			}
 		}
 		commitMessage = fmt.Sprintf("%s\n\n%s", commitTitle, commitBody)
 	}
@@ -578,7 +581,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
-		Branch:        vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).GetBranchNameFromRef(pushEvent.Ref),
+		Branch:        writebackBranch,
 		CommitMessage: commitMessage,
 		Content:       schema,
 	}
@@ -652,7 +655,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		repo2.VCS.InstanceURL,
 		repo2.ExternalID,
 		latestSchemaFile,
-		pushEvent.Ref,
+		writebackBranch,
 	)
 
 	if err != nil {

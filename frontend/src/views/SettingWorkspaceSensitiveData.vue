@@ -1,10 +1,17 @@
 <template>
   <div class="w-full mt-4 space-y-4">
+    <FeatureAttention
+      v-if="!hasSensitiveDataFeature"
+      feature="bb.feature.sensitive-data"
+      :description="$t('subscription.features.bb-feature-sensitive-data.desc')"
+    />
+
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.description") }}
     </div>
 
     <BBGrid
+      v-if="hasSensitiveDataFeature"
       :column-list="COLUMN_LIST"
       :data-source="state.sensitiveColumnList"
       class="border"
@@ -55,6 +62,13 @@
         </div>
       </template>
     </BBGrid>
+
+    <template v-else>
+      <BBGrid :column-list="COLUMN_LIST" :data-source="[]" class="border" />
+      <div class="w-full h-full flex flex-col items-center justify-center">
+        <img src="../assets/illustration/no-data.webp" class="max-h-[30vh]" />
+      </div>
+    </template>
   </div>
 
   <FeatureModal

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -1218,11 +1217,6 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 		Content:      body,
 		LastCommitID: header.Get("x-gitlab-last-commit-id"),
 	}, nil
-}
-
-// GetBranchNameFromRef returns the branch name from the refs.
-func (*Provider) GetBranchNameFromRef(ref string) string {
-	return strings.TrimPrefix(ref, "refs/heads/")
 }
 
 // oauthContext is the request context for refreshing oauth token.
