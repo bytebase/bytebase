@@ -120,7 +120,7 @@ const useTableResize = (options: TableResizeOptions) => {
           cellList.forEach((cell) => {
             cell.style.whiteSpace = "";
             cell.style.overflow = "";
-            cell.style.width = ``;
+            cell.style.width = "";
             cell.style.maxWidth = "";
             cell.style.minWidth = "";
           });
