@@ -30,11 +30,12 @@ func NewActuatorService(store *store.Store, profile *config.Profile) *ActuatorSe
 	}
 }
 
-// GetActuator gets the actuator.
+// GetActuatorInfo gets the actuator info.
 func (s *ActuatorService) GetActuatorInfo(ctx context.Context, _ *v1pb.GetActuatorInfoRequest) (*v1pb.ActuatorInfo, error) {
 	return s.getServerInfo(ctx)
 }
 
+// UpdateActuatorInfo updates the actuator info.
 func (s *ActuatorService) UpdateActuatorInfo(ctx context.Context, request *v1pb.UpdateActuatorInfoRequest) (*v1pb.ActuatorInfo, error) {
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 
