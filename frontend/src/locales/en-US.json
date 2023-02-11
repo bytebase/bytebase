@@ -455,7 +455,7 @@
         "disallow-signup": {
           "enable": "Disallow self-service signup",
           "description": "Once disallowed, users cannot self-service signup but only invited by the workspace owner.",
-          "only-owner-can-edit": "Only workspace owner can disallow the self-service signup."
+          "only-owner-can-edit": "Only workspace owner can update the self-service signup."
         },
         "config-updated": "Configuration is updated"
       }
