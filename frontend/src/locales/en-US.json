@@ -583,7 +583,7 @@
     "stage-select": {
       "active": "{name} (active)"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "Can't {operation} to single database in tenant mode",
+    "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
       "title": "Migration mode",
       "normal": {

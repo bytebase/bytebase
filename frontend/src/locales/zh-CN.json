@@ -583,7 +583,7 @@
     "stage-select": {
       "active": "{name}（活动中）"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "在多租户模式下无法对单个数据库{operation}",
+    "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
       "title": "变更模式",
       "normal": {
