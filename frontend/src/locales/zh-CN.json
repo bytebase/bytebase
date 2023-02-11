@@ -455,7 +455,7 @@
         "disallow-signup": {
           "enable": "禁止自主注册",
           "description": "禁止之后，新用户将无法自主注册，只能通过管理员邀请来创建账户。",
-          "only-owner-can-edit": "仅管理员可以禁止自主注册"
+          "only-owner-can-edit": "仅管理员可以修改自主注册"
         },
         "config-updated": "配置已更新"
       }
