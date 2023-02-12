@@ -9,10 +9,10 @@
     <BannerSubscription />
   </template>
   <template v-if="shouldShowReadonlyBanner">
-    <div
-      class="px-3 py-1 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
-    >
-      {{ $t("banner.readonly") }}
+    <div class="bg-info">
+      <div class="text-center py-1 px-3 font-medium text-white truncate">
+        {{ $t("banner.readonly") }}
+      </div>
     </div>
   </template>
   <template v-if="shouldShowExternalUrlBanner">
