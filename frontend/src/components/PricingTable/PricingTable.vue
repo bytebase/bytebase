@@ -350,7 +350,7 @@ const onButtonClick = (plan: Plan) => {
       return;
     }
     window.open(
-      "https://bytebase.com/pricing?source=console.subscription",
+      "https://hub.bytebase.com/subscription?source=console.subscription",
       "__blank"
     );
   } else if (plan.type === PlanType.ENTERPRISE) {
