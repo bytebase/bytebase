@@ -4,7 +4,7 @@
       {{ $t("subscription.description") }}
       <a
         class="text-accent"
-        href="https://bytebase.com/pricing?source=console.subscription"
+        href="https://hub.bytebase.com/subscription?source=console.subscription"
         target="__blank"
       >
         {{ $t("subscription.purchase-license") }}
@@ -69,10 +69,8 @@
       />
       <button
         type="button"
-        :class="[
-          disabled ? 'cursor-not-allowed' : '',
-          'btn-primary inline-flex justify-center ml-auto mt-3',
-        ]"
+        class="btn-primary inline-flex justify-center ml-auto mt-3"
+        :disabled="disabled"
         target="_blank"
         @click="uploadLicense"
       >
