@@ -2,7 +2,7 @@
   <router-link
     v-if="!hasFeature"
     to="/setting/subscription"
-    exact-active-class
+    exact-active-class=""
     @click.prevent="noop"
   >
     <heroicons-solid:sparkles class="w-5 h-5" />
