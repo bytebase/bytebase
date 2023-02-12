@@ -8,9 +8,11 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -69,12 +71,21 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		if s.MetricReporter != nil {
+			principalType := api.EndUser
+			count, err := s.store.CountUsers(ctx, &store.FindUserMessage{
+				Type: &principalType,
+			})
+			if err != nil {
+				// it's okay to ignore the error to avoid workflow broken.
+				log.Debug("failed to count end users", zap.Error(err))
+			}
 			s.MetricReporter.Report(&metric.Metric{
 				Name:  metricAPI.MemberCreateMetricName,
 				Value: 1,
 				Labels: map[string]interface{}{
-					"type": principal.Type,
-					"role": principal.Role,
+					"type":  principal.Type,
+					"role":  principal.Role,
+					"count": count,
 				},
 			})
 		}

@@ -79,6 +79,7 @@ type FindUserMessage struct {
 	Email       *string
 	Role        *api.Role
 	ShowDeleted bool
+	Type        *api.PrincipalType
 	// IdentityProviderResourceID is the name of the identity provider related with the user.
 	// If set with empty string, then only those users that are not from the idp will be found.
 	IdentityProviderResourceID *string
@@ -187,22 +188,36 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	return user, nil
 }
 
+// CountUsers counts the principal.
+func (s *Store) CountUsers(ctx context.Context, find *FindUserMessage) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	where, args := getUserFindQuery(find)
+	count := 0
+
+	if err := tx.QueryRowContext(ctx, `
+	SELECT COUNT(*)
+	FROM principal
+	LEFT JOIN member ON principal.id = member.principal_id
+	LEFT JOIN idp ON principal.idp_id = idp.id
+	WHERE `+strings.Join(where, " AND "),
+		args...).Scan(&count); err != nil {
+		return 0, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
-	// Do not to select those archived IdP user.
-	where, args = append(where, fmt.Sprintf("(principal.idp_id IS NULL OR idp.row_status = $%d)", len(args)+1)), append(args, api.Normal)
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Role; v != nil {
-		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
-	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
-	}
+	where, args := getUserFindQuery(find)
 
 	var userMessages []*UserMessage
 	if find.IdentityProviderResourceID != nil {
@@ -460,4 +475,27 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	s.userIDCache.Store(user.ID, user)
 	return user, nil
+}
+
+func getUserFindQuery(find *FindUserMessage) ([]string, []interface{}) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	// Do not to select those archived IdP user.
+	where, args = append(where, fmt.Sprintf("(principal.idp_id IS NULL OR idp.row_status = $%d)", len(args)+1)), append(args, api.Normal)
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Email; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Role; v != nil {
+		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	return where, args
 }

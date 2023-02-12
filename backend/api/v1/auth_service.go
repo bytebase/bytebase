@@ -153,8 +153,8 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 			Labels: map[string]interface{}{
 				"email": user.Email,
 				"name":  user.Name,
-				// We only send lark notification for first principal registration.
-				// false mean not notified yet, then the notification will be triggered by the scheduler.
+				// We only send lark notification for the first principal registration.
+				// false means do not notify upfront. Later the notification will be triggered by the scheduler.
 				"lark_notified": !isFirstUser,
 			},
 		})
