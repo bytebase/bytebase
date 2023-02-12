@@ -354,8 +354,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Name:  metricAPI.IssueUpdateMetricName,
 				Value: 1,
 				Labels: map[string]interface{}{
-					"type":   updatedComposedIssue.Type,
-					"status": updatedComposedIssue.Status,
+					"type":  updatedComposedIssue.Type,
+					"key":   "status",
+					"value": updatedComposedIssue.Status,
 				},
 			})
 		}
