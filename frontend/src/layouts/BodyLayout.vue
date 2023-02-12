@@ -38,7 +38,7 @@
             <router-link
               v-if="!isFreePlan"
               to="/setting/subscription"
-              exact-active-class
+              exact-active-class=""
               class="text-sm flex"
             >
               {{ $t(currentPlan) }}
@@ -101,7 +101,7 @@
           <router-link
             v-if="!isFreePlan"
             to="/setting/subscription"
-            exact-active-class
+            exact-active-class=""
             class="text-sm flex whitespace-nowrap mr-1"
           >
             {{ $t(currentPlan) }}
