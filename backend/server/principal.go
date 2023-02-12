@@ -12,6 +12,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -64,6 +66,17 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount {
 			principal.ServiceKey = password
+		}
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.MemberCreateMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"type": principal.Type,
+					"role": principal.Role,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

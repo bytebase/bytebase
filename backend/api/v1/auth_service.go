@@ -145,14 +145,17 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, err
 	}
 
-	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {
+	if s.metricReporter != nil {
+		isFirstUser := user.ID == api.PrincipalIDForFirstUser
 		s.metricReporter.Report(&metric.Metric{
-			Name:  metricAPI.FirstPrincipalMetricName,
+			Name:  metricAPI.PrincipalRegistrationMetricName,
 			Value: 1,
 			Labels: map[string]interface{}{
-				"email":         user.Email,
-				"name":          user.Name,
-				"lark_notified": false,
+				"email": user.Email,
+				"name":  user.Name,
+				// We only send lark notification for first principal registration.
+				// false mean not notified yet, then the notification will be triggered by the scheduler.
+				"lark_notified": !isFirstUser,
 			},
 		})
 	}
