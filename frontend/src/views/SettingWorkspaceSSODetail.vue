@@ -1,4 +1,7 @@
 <template>
+  <div class="w-full sticky top-0">
+    <ArchiveBanner v-if="isDeleted" />
+  </div>
   <div class="w-full mt-4 space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
@@ -18,8 +21,7 @@
 
   <IdentityProviderCreateForm
     class="py-4"
-    :identity-provider-name="selectedIdentityProvider?.name"
-    @confirm="handleCreateIdentityProvider"
+    :identity-provider-name="currentIdentityProvider?.name"
   />
 
   <FeatureModal
@@ -30,77 +32,29 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
-import { computed, onMounted, reactive, watch, watchEffect } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, reactive } from "vue";
+import { useRoute } from "vue-router";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
-import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   showFeatureModal: boolean;
-  selectedIdentityProviderName: string;
 }
 
 const route = useRoute();
-const router = useRouter();
 const state = reactive<LocalState>({
   showFeatureModal: false,
-  selectedIdentityProviderName: "",
 });
 const identityProviderStore = useIdentityProviderStore();
 
-const identityProviderList = computed(() => {
-  return identityProviderStore.identityProviderList;
-});
-
-const selectedIdentityProvider = computed(() => {
-  return identityProviderList.value.find(
-    (idp) => idp.name === route.params.name
+const currentIdentityProvider = computed(() => {
+  return identityProviderStore.getIdentityProviderByName(
+    String(route.params.ssoName)
   );
 });
 
-onMounted(() => {
-  console.log("here");
+const isDeleted = computed(() => {
+  return currentIdentityProvider.value?.state == State.DELETED;
 });
-
-watchEffect(() => {
-  const hashValue = route.hash.slice(1);
-  const identityProviderNameList = identityProviderList.value.map(
-    (idp) => idp.name
-  );
-  if (identityProviderNameList.includes(hashValue)) {
-    state.selectedIdentityProviderName = hashValue;
-  } else {
-    state.selectedIdentityProviderName = head(identityProviderNameList) || "";
-  }
-});
-
-watch(
-  () => state.selectedIdentityProviderName,
-  () => {
-    const hashValue = `#${state.selectedIdentityProviderName}`;
-    if (route.hash !== hashValue) {
-      router.push({
-        hash: hashValue,
-      });
-    }
-  }
-);
-
-const handleDeleteIdentityProvider = async (
-  identityProvider: IdentityProvider
-) => {
-  await identityProviderStore.deleteIdentityProvider(identityProvider);
-  if (state.selectedIdentityProviderName === identityProvider.name) {
-    state.selectedIdentityProviderName =
-      head(identityProviderList.value)?.name || "";
-  }
-};
-
-const handleCreateIdentityProvider = async (
-  identityProvider: IdentityProvider
-) => {
-  state.selectedIdentityProviderName = identityProvider.name;
-};
 </script>

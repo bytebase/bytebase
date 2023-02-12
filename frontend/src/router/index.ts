@@ -49,6 +49,7 @@ import {
   useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
+  useIdentityProviderStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -356,9 +357,17 @@ const routes: Array<RouteRecordRaw> = [
                   import("../views/SettingWorkspaceSSODetail.vue"),
               },
               {
-                path: "sso/:name",
+                path: "sso/:ssoName",
                 name: "setting.workspace.sso.detail",
-                meta: { title: () => t("settings.sidebar.sso") },
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const name = route.params.ssoName as string;
+                    return (
+                      useIdentityProviderStore().getIdentityProviderByName(name)
+                        ?.title || t("settings.sidebar.sso")
+                    );
+                  },
+                },
                 component: () =>
                   import("../views/SettingWorkspaceSSODetail.vue"),
                 props: true,

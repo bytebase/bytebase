@@ -403,7 +403,8 @@
     "sso": {
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
-      "deletion": "删除这个 SSO",
+      "archive": "归档该 SSO",
+      "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
         "learn-more-with-user-doc": "了解更多如何配置",
@@ -420,6 +421,7 @@
         "domain-description": "OAuth 提供商的域名",
         "identity-provider-information": "OAuth 提供商信息",
         "identity-provider-information-description": "这些信息是由你的身份提供商提供的。",
+        "identity-provider-needed-information": "用以下信息创建你的 SSO 应用程序。",
         "endpoints": "链接信息",
         "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
         "auth-url-description": "登录页面的链接",

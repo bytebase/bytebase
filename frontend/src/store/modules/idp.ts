@@ -88,11 +88,27 @@ export const useIdentityProviderStore = defineStore("idp", {
       );
       return identityProvider;
     },
-    async deleteIdentityProvider(identityProvider: IdentityProvider) {
+    async deleteIdentityProvider(name: string) {
       await identityProviderClient().deleteIdentityProvider({
-        name: identityProvider.name,
+        name,
       });
-      this.identityProviderMapByName.delete(identityProvider.name);
+      const cachedData = this.getIdentityProviderByName(name);
+      if (cachedData) {
+        this.identityProviderMapByName.set(name, {
+          ...cachedData,
+          state: State.DELETED,
+        });
+      }
+    },
+    async undeleteIdentityProvider(name: string) {
+      const identityProvider =
+        await identityProviderClient().undeleteIdentityProvider({
+          name,
+        });
+      this.identityProviderMapByName.set(
+        identityProvider.name,
+        identityProvider
+      );
     },
   },
 });

@@ -54,7 +54,12 @@ const columnList = computed(() => [
 ]);
 
 const clickIdentityProvider = function (section: number, row: number) {
-  const idp = props.identityProviderList[row];
-  router.push(`/setting/sso/${idp.name}`);
+  const identityProvider = props.identityProviderList[row];
+  router.push({
+    name: "setting.workspace.sso.detail",
+    params: {
+      ssoName: identityProvider.name,
+    },
+  });
 };
 </script>

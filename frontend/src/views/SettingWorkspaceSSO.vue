@@ -13,7 +13,11 @@
         </a>
       </div>
       <div>
-        <button class="btn-primary" @click="handleCreateSSO">
+        <button
+          v-if="identityProviderList.length > 0"
+          class="btn-primary"
+          @click="handleCreateSSO"
+        >
           {{ $t("common.create") }}
           <FeatureBadge :feature="'bb.feature.sso'" class="ml-2" />
         </button>
@@ -24,34 +28,57 @@
       v-if="identityProviderList.length === 0"
       class="w-full flex flex-col justify-center items-center"
     >
-      <img src="../assets/illustration/no-data.webp" class="mt-12 w-96" />
+      <div
+        class="w-full border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
+      >
+        <div class="text-center flex flex-col justify-center items-center">
+          <img src="@/assets/illustration/no-data.webp" class="w-52" />
+          <div class="mt-6">
+            <button
+              type="button"
+              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              @click="handleCreateSSO"
+            >
+              {{ $t("settings.sso.create") }}
+              <FeatureBadge :feature="'bb.feature.sso'" class="ml-2" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <template v-else>
       <div class="w-full flex flex-col justify-start items-start space-y-4">
         <div
           v-for="identityProvider in identityProviderList"
           :key="identityProvider.name"
-          class="w-full flex flex-row justify-between items-center cursor-pointer border p-4 space-x-4"
+          class="w-full flex flex-col justify-start items-start border p-4"
           @click="state.selectedIdentityProviderName = identityProvider.name"
         >
-          <div class="flex flex-col justify-start items-start">
-            <p>
-              <span class="max-w-full truncate">{{
-                identityProvider.title
-              }}</span>
-              <span class="text-sm text-gray-400 ml-1"
-                >({{
-                  identityProviderTypeToString(identityProvider.type)
-                }})</span
-              >
-            </p>
-            <p class="textinfolabel text-xs">
-              {{ $t("common.resource-id") }}: {{ identityProvider.name }}
-            </p>
+          <div class="w-full flex flex-row justify-between items-center">
+            <span class="truncate">{{ identityProvider.title }}</span>
+            <button class="btn-normal" @click="handleViewSSO(identityProvider)">
+              {{ $t("common.view") }}
+            </button>
           </div>
-          <button class="btn-normal" @click="handleViewSSO(identityProvider)">
-            {{ $t("common.view") }}
-          </button>
+
+          <div
+            class="mt-3 pt-3 border-t w-full flex flex-row justify-start items-center"
+          >
+            <span class="textlabel w-48 opacity-60">{{
+              $t("settings.sso.form.type")
+            }}</span>
+            <span>{{
+              identityProviderTypeToString(identityProvider.type)
+            }}</span>
+          </div>
+          <div
+            class="mt-3 pt-3 border-t w-full flex flex-row justify-start items-center"
+          >
+            <span class="textlabel w-48 opacity-60">{{
+              $t("settings.sso.form.domain")
+            }}</span>
+            <span>{{ identityProvider.domain }}</span>
+          </div>
         </div>
       </div>
     </template>
@@ -65,9 +92,8 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
-import { computed, reactive, watch, watchEffect } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, reactive } from "vue";
+import { useRouter } from "vue-router";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
@@ -79,7 +105,6 @@ interface LocalState {
   selectedIdentityProviderName: string;
 }
 
-const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -92,30 +117,6 @@ const hasSSOFeature = featureToRef("bb.feature.sso");
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
 });
-
-watchEffect(() => {
-  const hashValue = route.hash.slice(1);
-  const identityProviderNameList = identityProviderList.value.map(
-    (idp) => idp.name
-  );
-  if (identityProviderNameList.includes(hashValue)) {
-    state.selectedIdentityProviderName = hashValue;
-  } else {
-    state.selectedIdentityProviderName = head(identityProviderNameList) || "";
-  }
-});
-
-watch(
-  () => state.selectedIdentityProviderName,
-  () => {
-    const hashValue = `#${state.selectedIdentityProviderName}`;
-    if (route.hash !== hashValue) {
-      router.push({
-        hash: hashValue,
-      });
-    }
-  }
-);
 
 const handleCreateSSO = () => {
   if (!hasSSOFeature.value) {
@@ -135,7 +136,7 @@ const handleViewSSO = (identityProvider: IdentityProvider) => {
   router.push({
     name: "setting.workspace.sso.detail",
     params: {
-      name: identityProvider.name,
+      ssoName: identityProvider.name,
     },
   });
 };
