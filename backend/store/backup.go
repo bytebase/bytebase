@@ -668,14 +668,7 @@ type BackupSettingMessage struct {
 	HookURL string
 }
 
-// FindBackupSettingMessage is the message for finding backup setting.
-type FindBackupSettingMessage struct {
-	// DatabaseUID is the UID of database.
-	DatabaseUID *int
-	// InstanceUID is the UID of instance.
-	InstanceUID *int
-}
-
+// ToAPIBackupSetting converts BackupSettingMessage to legacy api BackupSetting.
 func (b *BackupSettingMessage) ToAPIBackupSetting() *api.BackupSetting {
 	return &api.BackupSetting{
 		ID:                b.ID,
@@ -687,6 +680,14 @@ func (b *BackupSettingMessage) ToAPIBackupSetting() *api.BackupSetting {
 		RetentionPeriodTs: b.RetentionPeriodTs,
 		HookURL:           b.HookURL,
 	}
+}
+
+// FindBackupSettingMessage is the message for finding backup setting.
+type FindBackupSettingMessage struct {
+	// DatabaseUID is the UID of database.
+	DatabaseUID *int
+	// InstanceUID is the UID of instance.
+	InstanceUID *int
 }
 
 // GetBackupSettingV2 retrieves the backup setting for the given database.
