@@ -778,6 +778,7 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 	return &backupSetting, nil
 }
 
+// FindBackupSettingV2 finds the backup setting.
 func (s *Store) FindBackupSettingV2(ctx context.Context, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
