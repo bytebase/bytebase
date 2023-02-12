@@ -2,7 +2,12 @@
   <div class="flex items-center justify-between h-16">
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
-        <router-link to="/" class="select-none" active-class exact-active-class>
+        <router-link
+          to="/"
+          class="select-none"
+          active-class=""
+          exact-active-class=""
+        >
           <img
             class="h-12 w-auto"
             src="../assets/logo-full.svg"
@@ -124,7 +129,7 @@
           <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
           <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
         </div>
-        <router-link to="/inbox" exact-active-class>
+        <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.hasUnread"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
