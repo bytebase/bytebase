@@ -15,7 +15,7 @@
       </div>
     </div>
   </template>
-  <template v-if="true">
+  <template v-if="shouldShowExternalUrlBanner">
     <BannerExternalUrl />
   </template>
 </template>
