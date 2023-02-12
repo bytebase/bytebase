@@ -105,6 +105,7 @@
   </div>
 
   <BBModal
+    v-if="state.showTrialStartModal && subscriptionStore.subscription"
     :title="
       $t('subscription.trial-start-modal.title', {
         plan: $t(
@@ -115,7 +116,6 @@
       })
     "
     @close="onTrialingModalClose"
-    v-if="state.showTrialStartModal && subscriptionStore.subscription"
   >
     <div class="min-w-0 md:min-w-400 max-w-2xl">
       <div class="flex justify-center items-center">
