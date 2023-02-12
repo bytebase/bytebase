@@ -118,7 +118,7 @@
         </div>
         <div
           v-if="currentPlan === PlanType.FREE"
-          class="flex justify-between items-center min-w-fit px-4 py-2 bg-indigo-600 text-sm font-medium text-white rounded-md cursor-pointer"
+          class="flex justify-between items-center min-w-fit px-4 py-2 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
           @click="handleWantHelp"
         >
           <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
