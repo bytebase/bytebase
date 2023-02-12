@@ -163,18 +163,6 @@ func (s *Store) FindBackupSetting(ctx context.Context, find api.BackupSettingFin
 	return backupSettingList, nil
 }
 
-// GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID.
-func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.BackupSetting, error) {
-	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{DatabaseID: &id})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get backup setting by ID %d", id)
-	}
-	if backupSettingRaw == nil {
-		return nil, nil
-	}
-	return backupSettingRaw.toBackupSetting(), nil
-}
-
 // UpsertBackupSetting upserts an instance of backup setting.
 func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.upsertBackupSettingRaw(ctx, upsert)
@@ -560,28 +548,6 @@ func (*Store) patchBackupImpl(ctx context.Context, tx *Tx, patch *api.BackupPatc
 	return &backupRaw, nil
 }
 
-// getBackupSettingRaw finds the backup setting for a database.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSettingFind) (*backupSettingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := s.findBackupSettingImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
-	}
-	return list[0], nil
-}
-
 func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -809,8 +775,12 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 
 // BackupSettingMessage is the message for backup setting.
 type BackupSettingMessage struct {
+	// ID is the ID of the backup setting.
+	ID int
 	// DatabaseUID is the UID of the database.
 	DatabaseUID int
+	// UpdatedTs is the timestamp when the backup setting is updated.
+	UpdatedTs int64
 	// Enable is true if the backup setting is enabled.
 	Enabled bool
 	// HourOfDay is the hour field in cron string to trigger the backup.
@@ -818,9 +788,22 @@ type BackupSettingMessage struct {
 	// DayOfWeek is the day of week field in cron string to trigger the backup.
 	DayOfWeek int
 	// RetentionPeriodTs is the retention period in seconds.
-	RetentionPeriodTs int64
-
+	RetentionPeriodTs int
+	// HookURL is the URL to send the backup status.
 	HookURL string
+}
+
+func (b *BackupSettingMessage) ToAPIBackupSetting() *api.BackupSetting {
+	return &api.BackupSetting{
+		ID:                b.ID,
+		DatabaseID:        b.DatabaseUID,
+		UpdatedTs:         b.UpdatedTs,
+		Enabled:           b.Enabled,
+		Hour:              b.HourOfDay,
+		DayOfWeek:         b.DayOfWeek,
+		RetentionPeriodTs: b.RetentionPeriodTs,
+		HookURL:           b.HookURL,
+	}
 }
 
 // GetBackupSettingV2 retrieves the backup setting for the given database.
@@ -837,14 +820,18 @@ func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*Backu
 	var backupSetting BackupSettingMessage
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		SELECT
+			id,
 			database_id,
+			updated_ts,
 			enabled,
 			hour,
 			day_of_week,
 			retention_period_ts,
 			hook_url
 		FROM backup_setting WHERE %s;`, strings.Join(where, " AND ")), args...).Scan(
+		&backupSetting.ID,
 		&backupSetting.DatabaseUID,
+		&backupSetting.UpdatedTs,
 		&backupSetting.Enabled,
 		&backupSetting.HourOfDay,
 		&backupSetting.DayOfWeek,
@@ -892,7 +879,7 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 			retention_period_ts = EXCLUDED.retention_period_ts,
 			updater_id = EXCLUDED.updater_id,
 			hook_url = EXCLUDED.hook_url
-		RETURNING database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
+		RETURNING id, database_id, updated_ts, enabled, hour, day_of_week, retention_period_ts, hook_url
 		`,
 		principalUID,
 		principalUID,
@@ -903,7 +890,9 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 		upsert.RetentionPeriodTs,
 		upsert.HookURL,
 	).Scan(
+		&backupSetting.ID,
 		&backupSetting.DatabaseUID,
+		&backupSetting.UpdatedTs,
 		&backupSetting.Enabled,
 		&backupSetting.HourOfDay,
 		&backupSetting.DayOfWeek,
