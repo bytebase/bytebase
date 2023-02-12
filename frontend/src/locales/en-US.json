@@ -1323,7 +1323,8 @@
     "archived": "Archived",
     "project-search-bar-placeholder": "Search @.lower:{'common.project'} name",
     "instance-search-bar-placeholder": "Search @.lower:{'common.instance'} name",
-    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name"
+    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name",
+    "sso-search-bar-placeholder": "Search SSO name"
   },
   "deployment-config": {
     "stage-n": "Stage {n}",

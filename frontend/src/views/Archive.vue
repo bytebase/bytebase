@@ -13,13 +13,7 @@
       <BBTableSearch
         ref="searchField"
         class="w-56"
-        :placeholder="
-          state.selectedIndex == PROJECT_TAB
-            ? $t('archive.project-search-bar-placeholder')
-            : state.selectedIndex == INSTANCE_TAB
-            ? $t('archive.instance-search-bar-placeholder')
-            : $t('archive.environment-search-bar-placeholder')
-        "
+        :placeholder="searchFieldPlaceholder"
         @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
@@ -91,6 +85,20 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
+
+    const searchFieldPlaceholder = computed(() => {
+      if (state.selectedIndex == PROJECT_TAB) {
+        return t("archive.project-search-bar-placeholder");
+      } else if (state.selectedIndex == INSTANCE_TAB) {
+        return t("archive.instance-search-bar-placeholder");
+      } else if (state.selectedIndex == ENVIRONMENT_TAB) {
+        return t("archive.environment-search-bar-placeholder");
+      } else if (state.selectedIndex == SSO_TAB) {
+        return t("archive.sso-search-bar-placeholder");
+      } else {
+        return "";
+      }
+    });
 
     const prepareList = () => {
       // It will also be called when user logout
@@ -225,6 +233,7 @@ export default defineComponent({
       environmentList,
       deletedSSOList,
       tabItemList,
+      searchFieldPlaceholder,
       filteredProjectList,
       filteredInstanceList,
       filteredEnvironmentList,
