@@ -1,45 +1,40 @@
 <template>
-  <div class="bg-warning">
-    <div class="mx-auto py-3 px-3">
-      <div class="flex items-center justify-between flex-wrap">
-        <div class="w-0 flex-1 flex items-center">
-          <p class="ml-3 font-medium text-white truncate">
-            <span v-if="isExpired">
-              {{
-                $t("banner.license-expires", {
-                  plan: currentPlan,
-                  expireAt: expireAt,
-                })
-              }}
-            </span>
-            <span v-else-if="isTrialing">
-              {{
-                $t("banner.trial-expires", {
-                  plan: currentPlan,
-                  days: daysBeforeExpire,
-                  expireAt: expireAt,
-                })
-              }}
-            </span>
-          </p>
-        </div>
-        <div
-          class="order-3 mt-2 mr-3 flex-shrink-0 w-full sm:order-2 sm:mt-0 sm:w-auto"
-        >
-          <a
-            target="_self"
-            href="https://hub.bytebase.com/subscription?source=console.banner"
-            class="flex items-center justify-center p-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
-          >
+  <div class="bg-info">
+    <div class="mx-auto py-1 px-3">
+      <div class="flex items-center justify-center flex-wrap space-x-2">
+        <p class="ml-3 text-base font-medium text-white truncate">
+          <span v-if="isExpired">
             {{
-              $t(
-                isTrialing
-                  ? "subscription.purchase-license"
-                  : "banner.update-license"
-              )
+              $t("banner.license-expires", {
+                plan: currentPlan,
+                expireAt: expireAt,
+              })
             }}
-          </a>
-        </div>
+          </span>
+          <span v-else-if="isTrialing">
+            {{
+              $t("banner.trial-expires", {
+                plan: currentPlan,
+                days: daysBeforeExpire,
+                expireAt: expireAt,
+              })
+            }}
+          </span>
+        </p>
+        <router-link
+          to="/setting/subscription"
+          class="flex items-center justify-center py-1 text-base font-medium cursor-pointer text-white underline hover:opacity-80"
+          exact-active-class=""
+        >
+          {{
+            $t(
+              isTrialing
+                ? "subscription.purchase-license"
+                : "banner.update-license"
+            )
+          }}
+          <heroicons-outline:shopping-cart class="ml-1 h-6 w-6 text-white" />
+        </router-link>
       </div>
     </div>
   </div>
