@@ -526,7 +526,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	if user == nil {
 		// Backfill the existing user with same email for special case.
 		// TODO(steven): remove this after vcs->idp backfill done.
-		existBytebaseUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
+		existBytebaseUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 			Email:                      &userInfo.Email,
 			IdentityProviderResourceID: &emptyIdentityProvider,
 		})
@@ -534,7 +534,8 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			return nil, status.Errorf(codes.Internal, "failed to get user")
 		}
 
-		if existBytebaseUser != nil {
+		if len(existBytebaseUsers) == 1 {
+			existBytebaseUser := existBytebaseUsers[0]
 			user, err = s.store.UpdateUser(ctx, existBytebaseUser.ID, &store.UpdateUserMessage{
 				IdentityProviderID:       &identityProvider.UID,
 				IdentityProviderUserInfo: userInfo,
