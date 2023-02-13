@@ -65,6 +65,9 @@ type Profile struct {
 	MetricConnectionKey string
 	// DisableMetric will disable the metric collector.
 	DisableMetric bool
+
+	// Test only flag to skip generating onboarding data.
+	TestOnlySkipOnboardingData bool
 }
 
 // UseEmbedDB returns whether to use embedDB.
