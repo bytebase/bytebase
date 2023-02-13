@@ -411,6 +411,7 @@
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "archive": "归档该 SSO",
+      "archive-info": "已归档 SSO 不会显示，您可以通过点击页面左下方的 \"归档\"来恢复。",
       "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
@@ -801,7 +802,7 @@
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
-    "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
+    "archive-info": "已归档环境不会显示，您可以通过点击页面左下方的 \"归档\"来恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
@@ -1236,7 +1237,7 @@
       "developer": "@.upper:common.role.developer",
       "archive": {
         "title": "归档项目",
-        "description": "已归档的项目将不会显示在日常界面，但您仍然可以从归档页面中恢复他。",
+        "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
         "btn-text": "归档这个@:common.project"
       },
       "restore": {
