@@ -918,3 +918,152 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 	}
 	return &backupSetting, nil
 }
+
+// BackupMessage is the message for backup.
+type BackupMessage struct {
+	// Name is the name of the backup.
+	Name string
+	// Status is the status of the backup.
+	Status api.BackupStatus
+	// BackupType is the type of the backup.
+	BackupType api.BackupType
+	// Comment is the comment of the backup.
+	Comment string
+
+	// Input only fields.
+	//
+	// Storage Backend is the storage backend of the backup.
+	StorageBackend api.BackupStorageBackend
+	// MigrationHistoryVersion is the migration history version of the database.
+	MigrationHistoryVersion string
+	// Path is the path of the backup file.
+	Path string
+
+	// Output only fields.
+	//
+	// ID is the UID of the backup.
+	UID int
+	// CreatedTs is the timestamp when the backup is created.
+	CreatedTs int64
+	// UpdatedTs is the timestamp when the backup is updated.
+	UpdatedTs int64
+}
+
+// FindBackupMessage is the message for finding backup.
+type FindBackupMessage struct {
+	// DatabaseUID is the UID of the database.
+	DatabaseUID int
+	// Name is the name of the backup.
+	Name *string
+}
+
+// CreateBackupV2 creates a backup for the given database.
+func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, databaseUID int, principalUID int) (*BackupMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+	query := `
+		INSERT INTO backup (
+			creator_id,
+			updater_id,
+			database_id,
+			name,
+			status,
+			type,
+			storage_backend,
+			migration_history_version,
+			path,
+			comment
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, name, created_ts, updated_ts, status, type, comment
+	`
+	var backup BackupMessage
+	if err := tx.QueryRowContext(ctx, query,
+		principalUID,
+		principalUID,
+		databaseUID,
+		create.Name,
+		create.Status,
+		create.BackupType,
+		create.StorageBackend,
+		create.MigrationHistoryVersion,
+		create.Path,
+		create.Comment,
+	).Scan(
+		&backup.UID,
+		&backup.Name,
+		&backup.CreatedTs,
+		&backup.UpdatedTs,
+		&backup.Status,
+		&backup.BackupType,
+		&backup.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return &backup, nil
+}
+
+// ListBackupV2 lists the backups for the given database.
+func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*BackupMessage, error) {
+	// Build where clause.
+	where, args := []string{"TRUE"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, find.DatabaseUID)
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		SELECT
+			id,
+			name,
+			created_ts,
+			updated_ts,
+			status,
+			type,
+			comment
+		FROM backup WHERE %s;`, strings.Join(where, " AND ")), args...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var backupList []*BackupMessage
+	for rows.Next() {
+		var backup BackupMessage
+		if err := rows.Scan(
+			&backup.UID,
+			&backup.Name,
+			&backup.CreatedTs,
+			&backup.UpdatedTs,
+			&backup.Status,
+			&backup.BackupType,
+			&backup.Comment,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		backupList = append(backupList, &backup)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return backupList, nil
+}
