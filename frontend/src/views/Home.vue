@@ -103,6 +103,59 @@
       {{ $t("project.overview.view-all-closed") }}
     </router-link>
   </div>
+
+  <BBModal
+    v-if="state.showTrialStartModal && subscriptionStore.subscription"
+    :title="
+      $t('subscription.trial-start-modal.title', {
+        plan: $t(
+          `subscription.plan.${planTypeToString(
+            subscriptionStore.subscription.plan
+          ).toLowerCase()}.title`
+        ),
+      })
+    "
+    @close="onTrialingModalClose"
+  >
+    <div class="min-w-0 md:min-w-400 max-w-2xl">
+      <div class="flex justify-center items-center">
+        <img :src="planImage" class="w-56 p-4" />
+        <div class="text-lg space-y-2">
+          <p>
+            <i18n-t keypath="subscription.trial-start-modal.content">
+              <template #plan>
+                <strong>
+                  {{
+                    $t(
+                      `subscription.plan.${planTypeToString(
+                        subscriptionStore.subscription.plan
+                      ).toLowerCase()}.title`
+                    )
+                  }}
+                </strong>
+              </template>
+              <template #date>
+                <strong>{{ subscriptionStore.expireAt }}</strong>
+              </template>
+            </i18n-t>
+          </p>
+          <p>
+            <i18n-t keypath="subscription.trial-start-modal.subscription">
+              <template #page>
+                <router-link
+                  to="/setting/subscription"
+                  class="normal-link"
+                  exact-active-class=""
+                >
+                  {{ $t("subscription.trial-start-modal.subscription-page") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </p>
+        </div>
+      </div>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -111,12 +164,18 @@ import { useRoute, useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import { activeEnvironment } from "../utils";
-import { Environment, Issue } from "../types";
-import { useCurrentUser, useEnvironmentStore } from "@/store";
+import { Environment, Issue, planTypeToString, PlanType } from "../types";
+import {
+  useCurrentUser,
+  useEnvironmentStore,
+  useSubscriptionStore,
+  useOnboardingStateStore,
+} from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 interface LocalState {
   searchText: string;
+  showTrialStartModal: boolean;
 }
 
 const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
@@ -125,14 +184,33 @@ const MAX_CLOSED_ISSUE = 5;
 const searchField = ref();
 
 const environmentStore = useEnvironmentStore();
+const subscriptionStore = useSubscriptionStore();
+const onboardingStateStore = useOnboardingStateStore();
 const router = useRouter();
 const route = useRoute();
 
 const state = reactive<LocalState>({
   searchText: "",
+  showTrialStartModal: onboardingStateStore.getStateByKey(
+    "show-trialing-modal"
+  ),
 });
 
 const currentUser = useCurrentUser();
+
+const onTrialingModalClose = () => {
+  state.showTrialStartModal = false;
+  onboardingStateStore.consume("show-trialing-modal");
+};
+
+const planImage = computed(() => {
+  return new URL(
+    `../assets/plan-${planTypeToString(
+      subscriptionStore.subscription?.plan ?? PlanType.FREE
+    ).toLowerCase()}.png`,
+    import.meta.url
+  ).href;
+});
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
