@@ -9,23 +9,23 @@
       >
         <template v-if="language === 'sql'">
           {{ $t("common.sql") }}
-          <button
-            v-if="!hasFeature('bb.feature.sql-review')"
-            type="button"
-            class="ml-1 btn-small py-0.5 inline-flex items-center text-accent"
-            @click.prevent="
-              () => {
-                state.showFeatureModal = true;
-              }
-            "
-          >
-            🎈{{ $t("sql-review.unlock-full-feature") }}
-          </button>
         </template>
         <template v-else>
           {{ $t("common.statement") }}
         </template>
         <span v-if="create" class="text-red-600">*</span>
+        <button
+          v-if="!create && !hasFeature('bb.feature.sql-review')"
+          type="button"
+          class="ml-1 btn-small py-0.5 inline-flex items-center text-accent"
+          @click.prevent="
+            () => {
+              state.showFeatureModal = true;
+            }
+          "
+        >
+          🎈{{ $t("sql-review.unlock-full-feature") }}
+        </button>
         <span v-if="sqlHint" class="ml-1 text-accent">{{
           `(${sqlHint})`
         }}</span>
