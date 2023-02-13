@@ -68,7 +68,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND COALESCE(task.payload->>'rollbackError', '')='' AND COALESCE(task.payload->>'rollbackStatement', '')=''",
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND task.payload->>'rollbackStatus'='PENDING'",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
@@ -97,26 +97,26 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
-	payload.RollbackStatement = ""
-	payload.RollbackError = ""
+
+	var rollbackStatus api.RollbackStatus
+	var rollbackStatement, rollbackError string
 
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		payload.RollbackError = err.Error()
+		rollbackStatus = api.RollbackStatusFailed
+		rollbackError = err.Error()
+	} else {
+		rollbackStatus = api.RollbackStatusDone
+		rollbackStatement = rollbackSQL
 	}
-	payload.RollbackStatement = rollbackSQL
 
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Error("Failed to marshal task payload", zap.Error(err))
-		return
-	}
-	payloadString := string(payloadBytes)
 	patch := &api.TaskPatch{
-		ID:        task.ID,
-		UpdaterID: api.SystemBotID,
-		Payload:   &payloadString,
+		ID:                task.ID,
+		UpdaterID:         api.SystemBotID,
+		RollbackStatus:    &rollbackStatus,
+		RollbackStatement: &rollbackStatement,
+		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
