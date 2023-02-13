@@ -20,8 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -38,6 +40,16 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+		}
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.IssueCreateMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"type": issue.Type,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -336,6 +348,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedComposedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
