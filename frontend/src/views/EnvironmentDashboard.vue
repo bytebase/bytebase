@@ -72,7 +72,7 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { array_swap, randomString } from "../utils";
+import { arraySwap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import type {
@@ -218,8 +218,8 @@ const tabItemList = computed((): BBTabItem[] => {
 
 const getEnvironmentCreate = (): EnvironmentCreate => {
   return {
-    name: "NewEnv",
-    resourceId: `env-${randomString(4).toLocaleLowerCase()}`,
+    name: "",
+    resourceId: "",
   };
 };
 
@@ -311,7 +311,7 @@ const stopReorder = () => {
 };
 
 const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
-  array_swap(state.reorderedEnvironmentList, sourceIndex, targetIndex);
+  arraySwap(state.reorderedEnvironmentList, sourceIndex, targetIndex);
   selectEnvironment(targetIndex);
 };
 

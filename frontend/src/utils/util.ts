@@ -84,9 +84,9 @@ export function isUrl(str: string): boolean {
 }
 
 // Performs inline swap, also handles negative index (counting from the end)
-// array_swap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
-// array_swap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
-export function array_swap(arr: any[], old_index: number, new_index: number) {
+// arraySwap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
+// arraySwap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
+export function arraySwap(arr: any[], old_index: number, new_index: number) {
   while (old_index < 0) {
     old_index += arr.length;
   }
