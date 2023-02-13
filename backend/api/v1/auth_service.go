@@ -531,7 +531,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			IdentityProviderResourceID: &emptyIdentityProvider,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get user")
+			return nil, status.Errorf(codes.Internal, "failed to list users")
 		}
 
 		if len(existBytebaseUsers) == 1 {
