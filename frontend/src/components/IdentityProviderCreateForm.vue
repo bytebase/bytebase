@@ -536,7 +536,7 @@
             :button-text="$t('settings.sso.archive')"
             :ok-text="$t('common.archive')"
             :confirm-title="$t('settings.sso.archive')"
-            :confirm-description="''"
+            :confirm-description="$t('settings.sso.archive-info')"
             :require-confirm="true"
             @confirm="handleDeleteButtonClick"
           />
