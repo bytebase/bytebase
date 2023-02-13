@@ -476,7 +476,10 @@ func queryAdmin(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement st
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	// queryAdmin doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	sensitiveInfo := make([]bool, len(columnNames))
+	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
 func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
