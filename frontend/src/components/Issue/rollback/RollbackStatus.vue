@@ -10,25 +10,34 @@
       </button>
     </template>
     <template v-else>
-      <template v-if="payload?.rollbackError">
+      <template v-if="payload?.rollbackSqlStatus === 'FAILED'">
         <div class="tooltip-wrapper">
           <NTooltip>
             <template #trigger>
               <span class="text-error">{{ $t("task.rollback.failed") }}</span>
             </template>
 
-            <div class="max-w-[20rem]">{{ payload.rollbackError }}</div>
+            <div v-if="payload.rollbackError" class="max-w-[20rem]">
+              {{ payload.rollbackError }}
+            </div>
           </NTooltip>
         </div>
       </template>
-      <template v-else-if="payload?.rollbackStatement">
-        <button
-          :disabled="!allowRollback"
+      <template v-else-if="payload?.rollbackSqlStatus === 'DONE'">
+        <BBTooltipButton
+          :disabled="!allowPreviewRollback"
+          tooltip-mode="DISABLED-ONLY"
           class="btn-normal !px-3 !py-1"
           @click="tryRollbackTask"
         >
           {{ $t("task.rollback.preview-rollback") }}
-        </button>
+          <template v-if="!payload.rollbackStatement" #tooltip>
+            <div class="whitespace-pre-line">
+              The rollback statement is empty.
+              {{ $t("task.rollback.empty-rollback-statement") }}
+            </div>
+          </template>
+        </BBTooltipButton>
       </template>
       <template v-else>
         <div
@@ -52,6 +61,7 @@
 </template>
 <script lang="ts" setup>
 import { computed, reactive, type Ref } from "vue";
+import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
 import dayjs from "dayjs";
 
@@ -63,8 +73,8 @@ import type {
   Task,
   TaskDatabaseDataUpdatePayload,
 } from "@/types";
+import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
-import { useRouter } from "vue-router";
 import { useActivityStore, useIssueStore } from "@/store";
 import { absolutifyLink, buildIssueLinkWithTask } from "@/utils";
 import { useRollbackLogic } from "./common";
@@ -89,6 +99,16 @@ const payload = computed(
 const state = reactive<LocalState>({
   loading: false,
   rollbackIssue: undefined,
+});
+
+const allowPreviewRollback = computed(() => {
+  if (!allowRollback.value) {
+    return false;
+  }
+  if (!payload.value?.rollbackStatement) {
+    return false;
+  }
+  return true;
 });
 
 const tryRollbackTask = async () => {

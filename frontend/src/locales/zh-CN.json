@@ -301,7 +301,8 @@
       "sql-rollback": "SQL 回滚",
       "log": "记录",
       "failed": "失败",
-      "logging": "记录中"
+      "logging": "记录中",
+      "empty-rollback-statement": "回滚语句为空"
     }
   },
   "banner": {
