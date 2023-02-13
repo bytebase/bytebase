@@ -524,7 +524,8 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		return nil, status.Errorf(codes.Internal, "failed to get principal")
 	}
 	if user == nil {
-		// Backfill the existing user with same email for special case.
+		// Find the existing user who has the same email, and update her
+		// with identity provider id and userinfo.
 		// TODO(steven): remove this after vcs->idp backfill done.
 		existBytebaseUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 			Email:                      &userInfo.Email,
