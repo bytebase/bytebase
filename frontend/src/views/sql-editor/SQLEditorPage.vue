@@ -154,7 +154,7 @@ const handleAlterSchema = async (params: {
 }) => {
   const { databaseId, schema, table } = params;
   const database = databaseStore.getDatabaseById(databaseId);
-  if (false && allowUsingSchemaEditor([database])) {
+  if (allowUsingSchemaEditor([database])) {
     await useProjectStore().getOrFetchProjectById(database.project.id);
     // TODO: support open selected database tab directly in Schema Editor.
     alterSchemaState.databaseIdList = [databaseId];
@@ -165,7 +165,7 @@ const handleAlterSchema = async (params: {
       if (schema) {
         exampleSQL.push(`${schema}.${table}`);
       } else {
-        exampleSQL.push(table);
+        exampleSQL.push(`${table}`);
       }
     }
     const query = {
