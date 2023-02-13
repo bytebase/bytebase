@@ -465,26 +465,3 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	s.userIDCache.Store(user.ID, user)
 	return user, nil
 }
-
-func getUserFindQuery(find *FindUserMessage) ([]string, []interface{}) {
-	where, args := []string{"TRUE"}, []interface{}{}
-	// Do not to select those archived IdP user.
-	where, args = append(where, fmt.Sprintf("(principal.idp_id IS NULL OR idp.row_status = $%d)", len(args)+1)), append(args, api.Normal)
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Role; v != nil {
-		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
-	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
-	}
-
-	return where, args
-}
