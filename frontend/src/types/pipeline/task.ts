@@ -112,6 +112,8 @@ export type TaskDatabasePITRDeletePayload = {
   // more input and output parameters in the future
 };
 
+export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
+
 export type TaskDatabaseDataUpdatePayload = {
   skipped: boolean;
   skippedReason: string;
@@ -119,6 +121,7 @@ export type TaskDatabaseDataUpdatePayload = {
   sheetId: SheetId;
   pushEvent?: VCSPushEvent;
   rollbackEnabled: boolean;
+  rollbackSqlStatus?: RollbackSQLStatus;
   rollbackStatement?: string;
   rollbackError?: string;
   rollbackFromIssueId?: IssueId;
