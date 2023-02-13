@@ -146,17 +146,29 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		}
 	}
 
-	errorMsg := make([]byte, 1024)
-	readSize, readErr := errReader.Read(errorMsg)
-	if readErr != nil && readErr != io.EOF {
-		return err
-	}
-	if readSize > 0 {
-		log.Warn(string(errorMsg))
+	// We init allMsg with 1024 bytes cap to avoid \x00 in the error message.
+	allMsg := make([]byte, 0, 1024)
+	for {
+		errorMsg := make([]byte, 1024)
+		readSize, readErr := errReader.Read(errorMsg)
+		if readSize > 0 {
+			log.Warn(string(errorMsg))
+			allMsg = append(allMsg, errorMsg[0:readSize]...)
+		}
+		if readErr != nil {
+			if readErr == io.EOF {
+				break
+			}
+			return err
+		}
+		// We may store the error message in meta store, due to the performance concern, we only store the first 1024 bytes.
+		if len(allMsg) >= 1024 {
+			break
+		}
 	}
 	err = cmd.Wait()
 	if err != nil {
-		return errors.Wrapf(err, "error message: %s", errorMsg)
+		return errors.Wrapf(err, "error message: %s", allMsg)
 	}
 	return nil
 }

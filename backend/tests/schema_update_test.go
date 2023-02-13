@@ -270,7 +270,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 }
 
-func TestVCS(t *testing.T) {
+func TestVCS1(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -363,6 +363,8 @@ func TestVCS(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
+			err = ctl.setLicense()
+			a.NoError(err)
 
 			// Create a VCS.
 			apiVCS, err := ctl.createVCS(
@@ -434,6 +436,14 @@ func TestVCS(t *testing.T) {
 			databaseName := "testVCSSchemaUpdate"
 			err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
+			// Expecting project to have 1 database.
+			databases, err := ctl.getDatabases(api.DatabaseFind{
+				ProjectID: &project.ID,
+			})
+			a.NoError(err)
+			a.Equal(1, len(databases))
+			database := databases[0]
+			a.Equal(instance.ID, database.Instance.ID)
 
 			// Simulate Git commits for schema update.
 			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
@@ -560,6 +570,36 @@ func TestVCS(t *testing.T) {
 			)
 			a.NoError(err)
 
+			// Schema change from UI.
+			// Create an issue that updates database schema.
+			createContext, err := json.Marshal(&api.MigrationContext{
+				DetailList: []*api.MigrationDetail{
+					{
+						MigrationType: db.Migrate,
+						DatabaseID:    database.ID,
+						Statement:     migrationStatement4,
+					},
+				},
+			})
+			a.NoError(err)
+			issue, err = ctl.createIssue(api.IssueCreate{
+				ProjectID:     project.ID,
+				Name:          fmt.Sprintf("update schema for database %q", databaseName),
+				Type:          api.IssueDatabaseSchemaUpdate,
+				Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
+				AssigneeID:    api.SystemBotID,
+				CreateContext: string(createContext),
+			})
+			a.NoError(err)
+			status, err = ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, prodEnvironment.Name, database.Name)
+			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
+			a.NoError(err)
+			a.Len(files, 1)
+			a.Equal(dumpedSchema4, files[latestFileName])
+
 			// Get migration history.
 			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 			a.NoError(err)
@@ -570,6 +610,14 @@ func TestVCS(t *testing.T) {
 			}
 
 			wantHistories := []api.MigrationHistory{
+				{
+					Database:   databaseName,
+					Source:     db.UI,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     dumpedSchema4,
+					SchemaPrev: dumpedSchema3,
+				},
 				{
 					Database:   databaseName,
 					Source:     db.VCS,
@@ -625,10 +673,10 @@ func TestVCS(t *testing.T) {
 				a.Equalf(wantHistories[i], got, "got histories %+v", historiesDeref)
 				a.NotEmpty(history.Version)
 			}
-			a.Equal("ver4", histories[0].Version)
-			a.Equal("ver3", histories[1].Version)
-			a.Equal("ver2", histories[2].Version)
-			a.Equal("ver1", histories[3].Version)
+			a.Equal("ver4", histories[1].Version)
+			a.Equal("ver3", histories[2].Version)
+			a.Equal("ver2", histories[3].Version)
+			a.Equal("ver1", histories[4].Version)
 		})
 	}
 }
