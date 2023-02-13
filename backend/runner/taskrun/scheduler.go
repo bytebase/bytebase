@@ -352,13 +352,19 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
-	// Reset rollbackStatement and rollbackError because we are trying to build
+	// Reset because we are trying to build
 	// the rollbackStatement again and there could be previous runs.
 	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
 		empty := ""
+		pending := api.RollbackSQLStatusPending
+		taskPatch.RollbackSQLStatus = &pending
 		taskPatch.RollbackStatement = &empty
 		taskPatch.RollbackError = &empty
 	}
+	// if *taskPatch.RollbackEnabled == false, we don't reset
+	// 1. they are meaningless anyway if rollback is disabled
+	// 2. they will be reset when enabling
+	// 3. we cancel the generation after writing to db. The rollback sql generation may finish and write to db, too.
 
 	taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
 	if err != nil {
@@ -371,8 +377,9 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
+	// enqueue or cancel after it's written to the database.
 	if taskPatch.RollbackEnabled != nil {
-		// Enqueue the task if it's done.
+		// Enqueue the rollback sql generation if the task done.
 		if *taskPatch.RollbackEnabled && taskPatched.Status == api.TaskDone {
 			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 		} else {

@@ -296,7 +296,13 @@
     "n-similar-tasks": "({count} 个相似的任务)",
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
-    "task-checks": "任务检查项"
+    "task-checks": "任务检查项",
+    "rollback": {
+      "sql-rollback": "SQL 回滚",
+      "log": "记录",
+      "failed": "失败",
+      "logging": "记录中"
+    }
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -403,7 +409,8 @@
     "sso": {
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
-      "deletion": "删除这个 SSO",
+      "archive": "归档该 SSO",
+      "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
         "learn-more-with-user-doc": "了解更多如何配置",
@@ -420,6 +427,7 @@
         "domain-description": "OAuth 提供商的域名",
         "identity-provider-information": "OAuth 提供商信息",
         "identity-provider-information-description": "这些信息是由你的身份提供商提供的。",
+        "identity-provider-needed-information": "用以下信息创建你的 SSO 应用程序。",
         "endpoints": "链接信息",
         "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
         "auth-url-description": "登录页面的链接",
@@ -583,7 +591,7 @@
     "stage-select": {
       "active": "{name}（活动中）"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "在多租户模式下无法对单个数据库{operation}",
+    "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
       "title": "变更模式",
       "normal": {
@@ -1318,8 +1326,9 @@
   "archive": {
     "archived": "已归档",
     "project-search-bar-placeholder": "搜索@.lower:{'common.project'}的名称",
-    "instance-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
-    "environment-bar-placeholder": "搜索@.lower:{'common.environment'}的名称"
+    "instance-search-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
+    "environment-search-bar-placeholder": "搜索@.lower:{'common.environment'}的名称",
+    "sso-search-bar-placeholder": "搜索 SSO 的名称"
   },
   "deployment-config": {
     "stage-n": "阶段 {n}",
@@ -1573,6 +1582,12 @@
     "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
+    "trial-start-modal": {
+      "title": "已开启{plan}试用",
+      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
+      "subscription-page": "订阅页面",
+      "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
+    },
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",

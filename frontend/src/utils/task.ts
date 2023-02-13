@@ -179,3 +179,12 @@ export const isTaskTriggeredByVCS = (task: Task): boolean => {
 
   return false;
 };
+
+export const isTaskEntity = (task: Task | TaskCreate): task is Task => {
+  const obj = task as any;
+  return typeof obj["id"] === "number";
+};
+
+export const isTaskCreate = (task: Task | TaskCreate): task is TaskCreate => {
+  return !isTaskEntity(task);
+};

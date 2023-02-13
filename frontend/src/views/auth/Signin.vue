@@ -249,7 +249,7 @@ onMounted(async () => {
   // Navigate to signup if needs admin setup.
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
-  if (actuatorStore.needAdminSetup && !disallowSignup) {
+  if (actuatorStore.needAdminSetup && !disallowSignup.value) {
     router.push({ name: "auth.signup", replace: true });
   }
 

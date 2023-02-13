@@ -164,6 +164,18 @@ type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 }
 
+// RollbackSQLStatus is the status of a rollback SQL generation task.
+type RollbackSQLStatus string
+
+const (
+	// RollbackSQLStatusPending means the rollback SQL generation task is pending.
+	RollbackSQLStatusPending RollbackSQLStatus = "PENDING"
+	// RollbackSQLStatusDone means the rollback SQL generation task finished and has no error.
+	RollbackSQLStatusDone RollbackSQLStatus = "DONE"
+	// RollbackSQLStatusFailed means the rollback SQL generation task failed.
+	RollbackSQLStatusFailed RollbackSQLStatus = "FAILED"
+)
+
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	// Common fields
@@ -179,6 +191,8 @@ type TaskDatabaseDataUpdatePayload struct {
 
 	// Build the RollbackStatement if RollbackEnabled.
 	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
+	// RollbackSQLStatus is the status of the rollback generation.
+	RollbackSQLStatus RollbackSQLStatus `json:"rollbackSqlStatus,omitempty"`
 	// ThreadID is the ID of the connection executing the migration.
 	// We use it to filter the binlog events of the migration transaction.
 	ThreadID string `json:"threadId,omitempty"`
@@ -333,6 +347,7 @@ type TaskPatch struct {
 	Statement         *string `jsonapi:"attr,statement"`
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
+	RollbackSQLStatus *RollbackSQLStatus
 	RollbackStatement *string
 	RollbackError     *string
 }
