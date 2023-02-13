@@ -304,7 +304,8 @@
       "log": "Log",
       "failed": "Failed",
       "preview-rollback": "Preview rollback",
-      "logging": "Logging"
+      "logging": "Logging",
+      "empty-rollback-statement": "The rollback statement is empty"
     }
   },
   "banner": {
@@ -413,6 +414,7 @@
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "archive": "Archive this SSO",
+      "archive-info": "Archived SSO will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
       "restore": "Restore this SSO",
       "form": {
         "type": "Type",
@@ -458,7 +460,7 @@
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
-          "description": "Display watermarks on pages, including username and ID.",
+          "description": "Display watermarks on pages, including username, ID and email.",
           "only-owner-can-edit": "Only workspace owner can update watermark setting."
         },
         "enable-watermark": "Enable watermark"
@@ -719,7 +721,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-this-instance": "Archive this instance",
     "archive-instance-instance-name": "Archive instance '{0}'?",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.",
+    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
     "restore-this-instance": "Restore this instance",
     "restore": "Restore",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
@@ -799,9 +801,11 @@
     "used-for-testing-connection": "Used for testing connections only"
   },
   "environment": {
+    "id": "Environment ID",
+    "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
     "archive": "Archive this environment",
-    "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
+    "archive-info": "Archived environment will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
@@ -1236,7 +1240,7 @@
       "developer": "@.upper:common.role.developer",
       "archive": {
         "title": "Archive project",
-        "description": "Archived project will not be shown on the normal interface. You can still restore later from the Archive page.",
+        "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
         "btn-text": "Archive this @.lower:{'common.project'}"
       },
       "restore": {
@@ -1684,7 +1688,7 @@
       },
       "bb-feature-watermark": {
         "title": "Watermark",
-        "desc": "Display visible watermarks on pages, including username and ID."
+        "desc": "Display visible watermarks on pages, including username, ID and email."
       },
       "bb-feature-audit-log": {
         "title": "Audit log",
@@ -1864,5 +1868,8 @@
       "title": "Test OAuth2 Connection",
       "start-test": "Click sign in to get start testing"
     }
+  },
+  "sensitive-data": {
+    "self": "Sensitive Data"
   }
 }

@@ -20,8 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -38,6 +40,16 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+		}
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.IssueCreateMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"type": issue.Type,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -336,6 +348,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedComposedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
@@ -596,13 +609,11 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	}
 	switch {
 	case !taskPayload.RollbackEnabled:
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL is not requested to build.")
-	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL generation is not enabled.")
+	case taskPayload.RollbackSQLStatus == api.RollbackSQLStatusPending:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
-	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
+	case taskPayload.RollbackSQLStatus == api.RollbackSQLStatusFailed:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, taskPayload.RollbackError))
-	case taskPayload.RollbackStatement != "" && taskPayload.RollbackError != "":
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", taskPayload.RollbackStatement, taskPayload.RollbackError))
 	}
 
 	issueCreateContext := &api.MigrationContext{
@@ -1100,11 +1111,12 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("DML(data) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
-			Statement:       d.Statement,
-			SheetID:         d.SheetID,
-			SchemaVersion:   schemaVersion,
-			VCSPushEvent:    vcsPushEvent,
-			RollbackEnabled: d.RollbackEnabled,
+			Statement:         d.Statement,
+			SheetID:           d.SheetID,
+			SchemaVersion:     schemaVersion,
+			VCSPushEvent:      vcsPushEvent,
+			RollbackEnabled:   d.RollbackEnabled,
+			RollbackSQLStatus: api.RollbackSQLStatusPending,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {

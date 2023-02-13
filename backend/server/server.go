@@ -51,6 +51,8 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
@@ -338,7 +340,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
 
-		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile)
+		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
@@ -458,6 +460,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
+			if s.profile.TestOnlySkipOnboardingData {
+				return nil
+			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
 				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
@@ -752,6 +757,48 @@ func (s *Server) GetWorkspaceID() string {
 	return s.workspaceID
 }
 
+// getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
+func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
+	policy := &advisor.SQLReviewPolicy{
+		Name: "SQL Review Sample Policy",
+	}
+
+	ruleList := []*advisor.SQLReviewRule{}
+
+	// Add DropEmptyDatabase rule for MySQL and TiDB.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleDropEmptyDatabase,
+			Level:   advisor.SchemaRuleLevelError,
+			Engine:  e,
+			Payload: "{}",
+		})
+	}
+
+	// Add ColumnNotNull rule for MySQL, TiDB and Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleColumnNotNull,
+			Level:   advisor.SchemaRuleLevelWarning,
+			Engine:  e,
+			Payload: "{}",
+		})
+	}
+
+	// Add TableDropNamingConvention rule for MySQL, TiDB and Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleTableDropNamingConvention,
+			Level:   advisor.SchemaRuleLevelError,
+			Engine:  e,
+			Payload: "{\"format\":\"_del$\"}",
+		})
+	}
+
+	policy.RuleList = ruleList
+	return policy
+}
+
 // generateOnboardingData generates onboarding data after the first signup.
 func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
@@ -828,6 +875,26 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to sync sample database schema")
 	}
 
+	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
+	// change issue to demonstrate the SQL Review feature.
+	policyPayload, err := json.Marshal(*getSampleSQLReviewPolicy())
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal onboarding SQL Review policy")
+	}
+
+	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       api.DefaultProdEnvironmentUID,
+		ResourceType:      api.PolicyResourceTypeEnvironment,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeSQLReview,
+		InheritFromParent: true,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
+	}
+
 	// Create a schema update issue.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
@@ -835,7 +902,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 				{
 					MigrationType: db.Migrate,
 					DatabaseID:    database.UID,
-					Statement:     "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT NOT NULL DEFAULT '';",
+					// This will violate the NOT NULL SQL Review policy configured above and emit a
+					// warning. Thus to demonstrate the SQL Review capability.
+					Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 				},
 			},
 		})

@@ -187,17 +187,6 @@ type BackupSetting struct {
 	HookURL string `jsonapi:"attr,hookUrl"`
 }
 
-// BackupSettingFind is the message to get a backup settings.
-type BackupSettingFind struct {
-	ID *int
-
-	// Related fields
-	DatabaseID *int
-
-	// Domain specific fields
-	InstanceID *int
-}
-
 // BackupSettingUpsert is the message to upsert a backup settings.
 // NOTE: We use PATCH for Upsert, this is inspired by https://google.aip.dev/134#patch-and-put
 type BackupSettingUpsert struct {

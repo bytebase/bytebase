@@ -13,8 +13,8 @@ export type Advice = {
 };
 
 export type SQLResultSet = {
-  // [columnNames: string[], types: string[], data: any[][]]
-  data: [string[], string[], any[][]];
+  // [columnNames: string[], types: string[], data: any[][], sensitive?: boolean[]]
+  data: [string[], string[], any[][], boolean[]];
   error: string;
   adviceList: Advice[];
 };

@@ -110,14 +110,7 @@ export const useEnvironmentStore = defineStore("environment", {
         })
       ).data;
       const createdEnvironment = convert(data.data, data.included);
-
       this.upsertEnvironmentList([createdEnvironment]);
-
-      await usePolicyStore().fetchPolicyByEnvironmentAndType({
-        environmentId: createdEnvironment.id,
-        type: "bb.policy.pipeline-approval",
-      });
-
       return createdEnvironment;
     },
     async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {

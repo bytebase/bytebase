@@ -19,11 +19,13 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	"github.com/bytebase/bytebase/backend/store"
@@ -373,7 +375,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		var sensitiveSchemaInfo *db.SensitiveSchemaInfo
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+		switch instance.Engine {
+		case db.MySQL, db.TiDB:
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
@@ -383,6 +386,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
+		case db.Postgres:
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{exec.DatabaseName}, exec.DatabaseName)
 		}
 
 		start := time.Now().UnixNano()
@@ -488,6 +493,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.SQLEditorExecutionMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"engine":     instance.Engine,
+					"readonly":   exec.Readonly,
+					"admin_mode": false,
+				},
+			})
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
@@ -589,6 +606,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					zap.String("statement", exec.Statement),
 				)
 			}
+		}
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.SQLEditorExecutionMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"engine":     instance.Engine,
+					"readonly":   exec.Readonly,
+					"admin_mode": true,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -786,6 +815,9 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 				tableSchema := db.TableSchema{
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
+				}
+				if instance.Engine == db.Postgres {
+					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{

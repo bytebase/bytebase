@@ -145,14 +145,17 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, err
 	}
 
-	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {
+	if s.metricReporter != nil {
+		isFirstUser := user.ID == api.PrincipalIDForFirstUser
 		s.metricReporter.Report(&metric.Metric{
-			Name:  metricAPI.FirstPrincipalMetricName,
+			Name:  metricAPI.PrincipalRegistrationMetricName,
 			Value: 1,
 			Labels: map[string]interface{}{
-				"email":         user.Email,
-				"name":          user.Name,
-				"lark_notified": false,
+				"email": user.Email,
+				"name":  user.Name,
+				// We only send lark notification for the first principal registration.
+				// false means do not notify upfront. Later the notification will be triggered by the scheduler.
+				"lark_notified": !isFirstUser,
 			},
 		})
 	}
@@ -544,7 +547,17 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 		}
 		user = newUser
-	} else if user.MemberDeleted {
+	} else {
+		// Update the latest IdP userinfo synchronously.
+		_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
+			IdentityProviderUserInfo: userInfo,
+		}, api.SystemBotID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update user info, error: %v", err)
+		}
+	}
+
+	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
 	return user, nil

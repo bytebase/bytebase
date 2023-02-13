@@ -249,7 +249,11 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 			return nil, err
 		}
 	}
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+
+	// spanner doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	sensitiveInfo := make([]bool, len(columnNames))
+	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
 func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{}, error) {

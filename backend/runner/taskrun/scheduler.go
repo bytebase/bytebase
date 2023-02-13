@@ -22,7 +22,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/apprun"
+	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -56,7 +59,15 @@ var (
 )
 
 // NewScheduler creates a new task scheduler.
-func NewScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) *Scheduler {
+func NewScheduler(
+	store *store.Store,
+	applicationRunner *apprun.Runner,
+	schemaSyncer *schemasync.Syncer,
+	activityManager *activity.Manager,
+	licenseService enterpriseAPI.LicenseService,
+	stateCfg *state.State,
+	profile config.Profile,
+	metricReporter *metricreport.Reporter) *Scheduler {
 	return &Scheduler{
 		store:             store,
 		applicationRunner: applicationRunner,
@@ -66,6 +77,7 @@ func NewScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSy
 		profile:           profile,
 		stateCfg:          stateCfg,
 		executorMap:       make(map[api.TaskType]Executor),
+		metricReporter:    metricReporter,
 	}
 }
 
@@ -79,6 +91,7 @@ type Scheduler struct {
 	stateCfg          *state.State
 	profile           config.Profile
 	executorMap       map[api.TaskType]Executor
+	metricReporter    *metricreport.Reporter
 }
 
 // Register will register a task executor factory.
@@ -328,6 +341,17 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 										}
 									}
 								}
+
+								if s.metricReporter != nil {
+									s.metricReporter.Report(&metric.Metric{
+										Name:  metricAPI.TaskStatusMetricName,
+										Value: 1,
+										Labels: map[string]interface{}{
+											"type":  task.Type,
+											"value": taskStatusPatch.Status,
+										},
+									})
+								}
 							}
 							return
 						}
@@ -352,13 +376,19 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
-	// Reset rollbackStatement and rollbackError because we are trying to build
+	// Reset because we are trying to build
 	// the rollbackStatement again and there could be previous runs.
 	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
 		empty := ""
+		pending := api.RollbackSQLStatusPending
+		taskPatch.RollbackSQLStatus = &pending
 		taskPatch.RollbackStatement = &empty
 		taskPatch.RollbackError = &empty
 	}
+	// if *taskPatch.RollbackEnabled == false, we don't reset
+	// 1. they are meaningless anyway if rollback is disabled
+	// 2. they will be reset when enabling
+	// 3. we cancel the generation after writing to db. The rollback sql generation may finish and write to db, too.
 
 	taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
 	if err != nil {
@@ -371,8 +401,9 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
+	// enqueue or cancel after it's written to the database.
 	if taskPatch.RollbackEnabled != nil {
-		// Enqueue the task if it's done.
+		// Enqueue the rollback sql generation if the task done.
 		if *taskPatch.RollbackEnabled && taskPatched.Status == api.TaskDone {
 			s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 		} else {
