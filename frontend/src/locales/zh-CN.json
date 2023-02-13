@@ -797,6 +797,8 @@
     "used-for-testing-connection": "仅作测试连接用"
   },
   "environment": {
+    "id": "环境 ID",
+    "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",

@@ -5,7 +5,7 @@
       v-model:value="selector.key"
       :options="keys"
       :disabled="!editable"
-      :modifier="hidePrefix"
+      :modifier="labelKeyModifier"
       :capitalize="true"
       class="select key"
     />
@@ -86,10 +86,24 @@ export default defineComponent({
       props.selector.values = [];
     };
 
+    const labelKeyModifier = (key: string) => {
+      const formatedKey = hidePrefix(key);
+      if (formatedKey === "environment") {
+        return "Environment ID";
+      }
+      return formatedKey;
+    };
+
     watch(() => props.selector.key, resetValues);
     watch(() => props.selector.operator, resetValues);
 
-    return { OPERATORS, hidePrefix, lowerCase, keys, values };
+    return {
+      OPERATORS,
+      labelKeyModifier,
+      lowerCase,
+      keys,
+      values,
+    };
   },
 });
 </script>
