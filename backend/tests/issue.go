@@ -299,6 +299,9 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 				return api.TaskDone, nil
 			}
 			if err := approveFunc(issue); err != nil {
+				if strings.Contains(err.Error(), "The task has not passed all the checks yet") {
+					continue
+				}
 				return api.TaskFailed, err
 			}
 			approved = true
