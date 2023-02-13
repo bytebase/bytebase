@@ -37,7 +37,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
-			affectedRows:      `[[],null,[]]`,
+			affectedRows:      `[[],null,[],[]]`,
 		},
 		{
 			databaseName:      "Test3",
@@ -51,7 +51,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
-			affectedRows:      `[[],null,[]]`,
+			affectedRows:      `[[],null,[],[]]`,
 		},
 	}
 

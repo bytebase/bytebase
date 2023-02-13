@@ -391,7 +391,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
-	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]]]", origin)
+	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]],[false]]", origin)
 	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
