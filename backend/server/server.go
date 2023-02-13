@@ -870,7 +870,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to find onboarding instance")
 	}
 
-	// Need to sync database schema so we can create the schema update issue later.
+	// Need to sync database schema so we can configure sensitive data policy and create the schema
+	// update issue later.
 	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync sample database schema")
 	}
@@ -937,6 +938,35 @@ Click "Approve" button to apply the schema update.`,
 		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
 	}); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
+	}
+
+	// Add a sensitive data policy to pair it with the sample query below. So that user can
+	// experience the sensitive data masking feature from SQL Editor.
+	sensitiveDataPolicy := api.SensitiveDataPolicy{
+		SensitiveDataList: []api.SensitiveData{
+			{
+				Table:  "salary",
+				Column: "amount",
+				Type:   api.SensitiveDataMaskTypeDefault,
+			},
+		},
+	}
+	policyPayload, err = json.Marshal(sensitiveDataPolicy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
+	}
+
+	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       database.UID,
+		ResourceType:      api.PolicyResourceTypeDatabase,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeSensitiveData,
+		InheritFromParent: true,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding sensitive data policy")
 	}
 
 	// Create a SQL sheet with sample queries.
