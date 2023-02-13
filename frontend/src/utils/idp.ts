@@ -60,7 +60,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "username",
         displayName: "name",
-        email: "public_email",
+        email: "email",
       },
     },
   },
