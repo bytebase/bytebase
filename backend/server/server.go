@@ -460,6 +460,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
+			if s.profile.TestOnlySkipOnboardingData {
+				return nil
+			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
 				if err := s.generateOnboardingData(ctx, user.ID); err != nil {

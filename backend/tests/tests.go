@@ -171,6 +171,7 @@ type config struct {
 	vcsProviderCreator      fake.VCSProviderCreator
 	feishuProverdierCreator fake.FeishuProviderCreator
 	readOnly                bool
+	skipOnboardingData      bool
 }
 
 var (
@@ -235,7 +236,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL), config.skipOnboardingData)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -293,20 +294,21 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData bool) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                 testReleaseMode,
-		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:             port + 1,
-		SampleDatabasePort:   port + 2,
-		PgUser:               pgUser,
-		DataDir:              dataDir,
-		ResourceDir:          resourceDir,
-		AppRunnerInterval:    1 * time.Second,
-		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
-		FeishuAPIURL:         feishuAPIURL,
-		PgURL:                pgURL,
+		Mode:                       testReleaseMode,
+		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:                   port + 1,
+		SampleDatabasePort:         port + 2,
+		PgUser:                     pgUser,
+		DataDir:                    dataDir,
+		ResourceDir:                resourceDir,
+		AppRunnerInterval:          1 * time.Second,
+		BackupRunnerInterval:       10 * time.Second,
+		BackupStorageBackend:       api.BackupStorageBackendLocal,
+		FeishuAPIURL:               feishuAPIURL,
+		PgURL:                      pgURL,
+		TestOnlySkipOnboardingData: skipOnboardingData,
 	}
 }
 
