@@ -1863,5 +1863,8 @@
       "title": "测试 OAuth2 连接性",
       "start-test": "点击登录按钮开始测试"
     }
+  },
+  "sensitive-data": {
+    "self": "敏感数据"
   }
 }

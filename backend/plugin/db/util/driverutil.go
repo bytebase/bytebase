@@ -409,6 +409,15 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
 
+	var fieldMaskInfo []bool
+	for i := range columnNames {
+		if len(fieldList) > 0 && fieldList[i].Sensitive {
+			fieldMaskInfo = append(fieldMaskInfo, true)
+		} else {
+			fieldMaskInfo = append(fieldMaskInfo, false)
+		}
+	}
+
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, FormatError(err)
@@ -430,7 +439,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	return []interface{}{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
 }
 
 // query will execute a query.
@@ -467,7 +476,10 @@ func queryAdmin(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement st
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	// queryAdmin doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	sensitiveInfo := make([]bool, len(columnNames))
+	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
 func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
