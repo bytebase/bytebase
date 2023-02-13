@@ -2,6 +2,7 @@ import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderClient } from "@/grpcweb";
+import { State } from "@/types/proto/v1/common";
 
 interface IdentityProviderState {
   identityProviderMapByName: Map<string, IdentityProvider>;
@@ -13,13 +14,22 @@ export const useIdentityProviderStore = defineStore("idp", {
   }),
   getters: {
     identityProviderList(state) {
-      return Array.from(state.identityProviderMapByName.values());
+      return Array.from(state.identityProviderMapByName.values()).filter(
+        (idp) => idp.state === State.ACTIVE
+      );
+    },
+    deletedIdentityProviderList(state) {
+      return Array.from(state.identityProviderMapByName.values()).filter(
+        (idp) => idp.state === State.DELETED
+      );
     },
   },
   actions: {
     async fetchIdentityProviderList() {
       const { identityProviders } =
-        await identityProviderClient().listIdentityProviders({});
+        await identityProviderClient().listIdentityProviders({
+          showDeleted: true,
+        });
       for (const identityProvider of identityProviders) {
         this.identityProviderMapByName.set(
           identityProvider.name,
@@ -78,11 +88,27 @@ export const useIdentityProviderStore = defineStore("idp", {
       );
       return identityProvider;
     },
-    async deleteIdentityProvider(identityProvider: IdentityProvider) {
+    async deleteIdentityProvider(name: string) {
       await identityProviderClient().deleteIdentityProvider({
-        name: identityProvider.name,
+        name,
       });
-      this.identityProviderMapByName.delete(identityProvider.name);
+      const cachedData = this.getIdentityProviderByName(name);
+      if (cachedData) {
+        this.identityProviderMapByName.set(name, {
+          ...cachedData,
+          state: State.DELETED,
+        });
+      }
+    },
+    async undeleteIdentityProvider(name: string) {
+      const identityProvider =
+        await identityProviderClient().undeleteIdentityProvider({
+          name,
+        });
+      this.identityProviderMapByName.set(
+        identityProvider.name,
+        identityProvider
+      );
     },
   },
 });

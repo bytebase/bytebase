@@ -169,7 +169,7 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 
 	patch := &store.UpdateIdentityProviderMessage{
 		ResourceID: identityProvider.ResourceID,
-		Delete:     &deletePatch,
+		Delete:     &undeletePatch,
 	}
 	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
 	if err != nil {
