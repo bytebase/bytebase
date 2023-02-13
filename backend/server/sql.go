@@ -373,7 +373,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		var sensitiveSchemaInfo *db.SensitiveSchemaInfo
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+		switch instance.Engine {
+		case db.MySQL, db.TiDB:
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
@@ -383,6 +384,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
+		case db.Postgres:
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{exec.DatabaseName}, exec.DatabaseName)
 		}
 
 		start := time.Now().UnixNano()
@@ -786,6 +789,9 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 				tableSchema := db.TableSchema{
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
+				}
+				if instance.Engine == db.Postgres {
+					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{
