@@ -72,5 +72,5 @@ defineProps({
 defineEmits(["select"]);
 
 const getTemplateImage = (id: string) =>
-  new URL(`../../../assets/${id}.png`, import.meta.url).href;
+  new URL(`../../../assets/${id}.webp`, import.meta.url).href;
 </script>

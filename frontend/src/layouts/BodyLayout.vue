@@ -38,7 +38,7 @@
             <router-link
               v-if="!isFreePlan"
               to="/setting/subscription"
-              exact-active-class
+              exact-active-class=""
               class="text-sm flex"
             >
               {{ $t(currentPlan) }}
@@ -101,7 +101,7 @@
           <router-link
             v-if="!isFreePlan"
             to="/setting/subscription"
-            exact-active-class
+            exact-active-class=""
             class="text-sm flex whitespace-nowrap mr-1"
           >
             {{ $t(currentPlan) }}
@@ -171,14 +171,14 @@
             </div>
             <div
               v-if="route.name === 'workspace.home'"
-              class="mt-6 hidden md:flex"
+              class="mt-8 hidden md:flex"
             >
               <a
                 href="/sql-editor"
                 target="_blank"
-                class="btn-primary items-center !px-6 !py-3 !text-xl"
+                class="btn-normal items-center !px-4 !text-base"
               >
-                <heroicons-solid:terminal class="w-6 h-6 mr-2" />
+                <heroicons-solid:terminal class="text-accent w-6 h-6 mr-2" />
                 <span class="whitespace-nowrap">{{
                   $t("sql-editor.self")
                 }}</span>

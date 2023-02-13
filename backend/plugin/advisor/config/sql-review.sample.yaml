@@ -1,0 +1,10 @@
+id: bb.sql-review.sample
+ruleList:
+  - type: database.drop-empty-database
+    level: ERROR
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+  - type: column.no-null
+    level: WARNING
