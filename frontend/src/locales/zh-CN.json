@@ -456,7 +456,7 @@
         "watermark": {
           "self": "水印",
           "update-success": "水印设置已更新",
-          "description": "在页面上显示水印，包含用户名和 ID。",
+          "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "only-owner-can-edit": "仅管理员可以更新水印设置"
         },
         "enable-watermark": "开启水印"
@@ -1685,7 +1685,7 @@
       },
       "bb-feature-watermark": {
         "title": "水印设置",
-        "desc": "在页面上显示水印，包含用户名和 ID。"
+        "desc": "在页面上显示水印，包含用户名、ID 和 Email。"
       },
       "bb-feature-audit-log": {
         "title": "审计日志",
