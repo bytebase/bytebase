@@ -124,8 +124,6 @@
           <heroicons-solid:pencil class="h-5 w-5" />
         </button>
       </template>
-
-      <IssueRollbackButton />
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
@@ -212,7 +210,6 @@ import type {
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
 import { isTaskTriggeredByVCS, useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
