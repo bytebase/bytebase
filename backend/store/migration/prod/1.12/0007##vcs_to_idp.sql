@@ -35,7 +35,7 @@ SELECT
     'scopes',
     jsonb_build_array('api'),
     'fieldMapping',
-    '{"email": "public_email", "identifier": "username", "displayName": "name"}' :: jsonb
+    '{"email": "email", "identifier": "email", "displayName": "name"}' :: jsonb
   ) AS config
 FROM
   vcs
