@@ -38,8 +38,8 @@ const (
 	IssueUpdateMetricName metric.Name = "bb.issue.update"
 	// SQLEditorExecutionMetricName is the metric name for SQL Editor execution event.
 	SQLEditorExecutionMetricName metric.Name = "bb.sql-editor.execute"
-	// MemberCreateMetricName is the metric name for member creation event.
-	MemberCreateMetricName metric.Name = "bb.member.create"
+	// PrincipalCreateMetricName is the metric name for principal creation event.
+	PrincipalCreateMetricName metric.Name = "bb.principal.create"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count.
