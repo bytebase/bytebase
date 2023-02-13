@@ -92,6 +92,7 @@ type UpdateUserMessage struct {
 	Name                     *string
 	PasswordHash             *string
 	Role                     *api.Role
+	IdentityProviderID       *int
 	IdentityProviderUserInfo *storepb.IdentityProviderUserInfo
 	Delete                   *bool
 }
@@ -395,6 +396,9 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
+	if v := patch.IdentityProviderID; v != nil {
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("idp_id = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
 	if v := patch.IdentityProviderUserInfo; v != nil {
 		userInfoBytes, err := protojson.Marshal(v)
