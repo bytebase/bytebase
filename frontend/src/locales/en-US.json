@@ -800,6 +800,8 @@
     "used-for-testing-connection": "Used for testing connections only"
   },
   "environment": {
+    "id": "Environment ID",
+    "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
     "archive": "Archive this environment",
     "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
