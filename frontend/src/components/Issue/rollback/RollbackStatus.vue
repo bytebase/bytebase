@@ -66,7 +66,6 @@ import type {
 import { useIssueLogic } from "../logic";
 import { useRouter } from "vue-router";
 import { useActivityStore, useIssueStore } from "@/store";
-import { absolutifyLink, buildIssueLinkWithTask } from "@/utils";
 import { useRollbackLogic } from "./common";
 
 type LocalState = {
@@ -121,15 +120,8 @@ const tryRollbackTask = async () => {
       `@${datetime} ${tz}`,
     ].join(" ");
 
-    const originalIssueTaskLink = buildIssueLinkWithTask(
-      issue.value,
-      task.value,
-      true /* Keep the URL short and clean */
-    );
-    const description = [
-      `The original task: ${absolutifyLink(originalIssueTaskLink)}`,
-      `The original SQL statement: ${payload.value!.statement}`,
-    ].join("\n");
+    const description = `The original SQL statement:
+${payload.value!.statement}`;
 
     const issueCreate: IssueCreate = {
       type: "bb.issue.database.rollback",
