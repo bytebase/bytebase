@@ -6,8 +6,10 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -91,7 +93,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	}
 
 	if idToken.Nonce != nonce {
-		return nil, errors.Errorf("mismatched nonce")
+		return nil, errors.Errorf("mismatched nonce, want %q but got %q", nonce, idToken.Nonce)
 	}
 
 	rawUserInfo, err := p.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
@@ -104,6 +106,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
+	log.Debug("User info", zap.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
