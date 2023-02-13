@@ -353,7 +353,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 										},
 									})
 								}
-
 							}
 							return
 						}
