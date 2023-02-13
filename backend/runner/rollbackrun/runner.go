@@ -68,7 +68,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND task.payload->>'rollbackStatus'='PENDING'",
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND task.payload->>'rollbackSqlStatus'='PENDING'",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
@@ -98,23 +98,23 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		return
 	}
 
-	var rollbackStatus api.RollbackStatus
+	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		rollbackStatus = api.RollbackStatusFailed
+		rollbackSQLStatus = api.RollbackSQLStatusFailed
 		rollbackError = err.Error()
 	} else {
-		rollbackStatus = api.RollbackStatusDone
+		rollbackSQLStatus = api.RollbackSQLStatusDone
 		rollbackStatement = rollbackSQL
 	}
 
 	patch := &api.TaskPatch{
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
-		RollbackStatus:    &rollbackStatus,
+		RollbackSQLStatus: &rollbackSQLStatus,
 		RollbackStatement: &rollbackStatement,
 		RollbackError:     &rollbackError,
 	}

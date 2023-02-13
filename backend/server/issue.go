@@ -597,9 +597,9 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	switch {
 	case !taskPayload.RollbackEnabled:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL generation is not enabled.")
-	case taskPayload.RollbackStatus == api.RollbackStatusPending:
+	case taskPayload.RollbackSQLStatus == api.RollbackSQLStatusPending:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
-	case taskPayload.RollbackStatus == api.RollbackStatusFailed:
+	case taskPayload.RollbackSQLStatus == api.RollbackSQLStatusFailed:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, taskPayload.RollbackError))
 	}
 
@@ -1098,12 +1098,12 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("DML(data) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
-			Statement:       d.Statement,
-			SheetID:         d.SheetID,
-			SchemaVersion:   schemaVersion,
-			VCSPushEvent:    vcsPushEvent,
-			RollbackEnabled: d.RollbackEnabled,
-			RollbackStatus:  api.RollbackStatusPending,
+			Statement:         d.Statement,
+			SheetID:           d.SheetID,
+			SchemaVersion:     schemaVersion,
+			VCSPushEvent:      vcsPushEvent,
+			RollbackEnabled:   d.RollbackEnabled,
+			RollbackSQLStatus: api.RollbackSQLStatusPending,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
