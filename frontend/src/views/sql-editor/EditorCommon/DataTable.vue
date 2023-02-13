@@ -26,11 +26,11 @@
                 v-bind="tableResize.getColumnProps(header.index)"
               >
                 <div class="flex items-center overflow-hidden">
+                  <span> {{ header.column.columnDef.header }}</span>
                   <SensitiveDataIcon
                     v-if="isSensitiveColumn(header.index)"
-                    class="mr-0.5 shrink-0"
+                    class="ml-0.5 shrink-0"
                   />
-                  <span> {{ header.column.columnDef.header }}</span>
                 </div>
 
                 <!-- The drag-to-resize handler -->
