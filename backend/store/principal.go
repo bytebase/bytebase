@@ -425,7 +425,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	defer tx.Rollback()
 
 	user := &UserMessage{}
-	var idpResourceID sql.NullString
+	var idpID sql.NullInt32
 	var idpUserInfo string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE principal
@@ -440,7 +440,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		&user.Name,
 		&user.Type,
 		&user.PasswordHash,
-		&idpResourceID,
+		&idpID,
 		&idpUserInfo,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -448,8 +448,15 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		}
 		return nil, FormatError(err)
 	}
-	if idpResourceID.Valid {
-		user.IdentityProviderResourceID = &idpResourceID.String
+	if idpID.Valid {
+		value := int(idpID.Int32)
+		idp, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+			UID: &value,
+		})
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		user.IdentityProviderResourceID = &idp.ResourceID
 		var identityProviderUserInfo storepb.IdentityProviderUserInfo
 		if err := json.Unmarshal([]byte(idpUserInfo), &identityProviderUserInfo); err != nil {
 			return nil, err
