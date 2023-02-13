@@ -459,7 +459,7 @@
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
-          "description": "Display watermarks on pages, including username and ID.",
+          "description": "Display watermarks on pages, including username, ID and email.",
           "only-owner-can-edit": "Only workspace owner can update watermark setting."
         },
         "enable-watermark": "Enable watermark"
@@ -1687,7 +1687,7 @@
       },
       "bb-feature-watermark": {
         "title": "Watermark",
-        "desc": "Display visible watermarks on pages, including username and ID."
+        "desc": "Display visible watermarks on pages, including username, ID and email."
       },
       "bb-feature-audit-log": {
         "title": "Audit log",
