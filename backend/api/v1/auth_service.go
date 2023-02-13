@@ -545,7 +545,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		}
 		user = newUser
 	} else {
-		// Update the latest idp userinfo synchronously.
+		// Update the latest IdP userinfo synchronously.
 		_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
 			IdentityProviderUserInfo: userInfo,
 		}, api.SystemBotID)
