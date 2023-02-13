@@ -347,9 +347,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 										Name:  metricAPI.TaskStatusMetricName,
 										Value: 1,
 										Labels: map[string]interface{}{
-											"type":   issue.Type,
-											"status": "status",
-											"value":  taskStatusPatch.Status,
+											"type":  issue.Type,
+											"value": taskStatusPatch.Status,
 										},
 									})
 								}
