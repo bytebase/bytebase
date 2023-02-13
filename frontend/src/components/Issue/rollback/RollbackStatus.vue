@@ -33,7 +33,6 @@
           {{ $t("task.rollback.preview-rollback") }}
           <template v-if="!payload.rollbackStatement" #tooltip>
             <div class="whitespace-pre-line">
-              The rollback statement is empty.
               {{ $t("task.rollback.empty-rollback-statement") }}
             </div>
           </template>
