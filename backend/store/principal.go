@@ -79,6 +79,7 @@ type FindUserMessage struct {
 	Email       *string
 	Role        *api.Role
 	ShowDeleted bool
+	Type        *api.PrincipalType
 	// IdentityProviderResourceID is the name of the identity provider related with the user.
 	// If set with empty string, then only those users that are not from the idp will be found.
 	IdentityProviderResourceID *string
@@ -197,6 +198,9 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 	if v := find.Email; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Role; v != nil {
 		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
