@@ -219,7 +219,9 @@
     "rollback": "Rollback",
     "total": "Total",
     "discard-changes": "Discard changes",
-    "error-message": "Error message"
+    "error-message": "Error message",
+    "resource-id": "Resource ID",
+    "domain": "Domain"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -403,7 +405,8 @@
     "sso": {
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
-      "deletion": "Delete this SSO",
+      "archive": "Archive this SSO",
+      "restore": "Restore this SSO",
       "form": {
         "type": "Type",
         "learn-more-with-user-doc": "Learn more about the configuration",
@@ -420,6 +423,7 @@
         "domain-description": "The identity provider's domain name",
         "identity-provider-information": "Identity provider information",
         "identity-provider-information-description": "The information is provided by your identity provider.",
+        "identity-provider-needed-information": "Create your SSO application with the following information.",
         "endpoints": "Endpoints",
         "endpoints-description": "The related urls provided by your OAuth provider.",
         "auth-url-description": "The link to OAuth login page",
@@ -1319,7 +1323,8 @@
     "archived": "Archived",
     "project-search-bar-placeholder": "Search @.lower:{'common.project'} name",
     "instance-search-bar-placeholder": "Search @.lower:{'common.instance'} name",
-    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name"
+    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name",
+    "sso-search-bar-placeholder": "Search SSO name"
   },
   "deployment-config": {
     "stage-n": "Stage {n}",
