@@ -119,7 +119,12 @@ export default defineComponent({
 
     const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
     const showSensitiveColumn = computed(() => {
-      return hasSensitiveDataFeature.value && engine.value === "MYSQL";
+      return (
+        hasSensitiveDataFeature.value &&
+        (engine.value === "MYSQL" ||
+          engine.value === "TIDB" ||
+          engine.value === "POSTGRES")
+      );
     });
 
     const currentUser = useCurrentUser();
