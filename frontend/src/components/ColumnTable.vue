@@ -177,26 +177,36 @@ export default defineComponent({
       }
       return columnList;
     });
-    const POSTGRES_COLUMN_LIST = computed((): BBTableColumn[] => [
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("common.type"),
-      },
-      {
-        title: t("common.Default"),
-      },
-      {
-        title: t("database.nullable"),
-      },
-      {
-        title: t("db.collation"),
-      },
-      {
-        title: t("database.comment"),
-      },
-    ]);
+    const POSTGRES_COLUMN_LIST = computed(() => {
+      const columnList: BBTableColumn[] = [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.type"),
+        },
+        {
+          title: t("common.Default"),
+        },
+        {
+          title: t("database.nullable"),
+        },
+        {
+          title: t("db.collation"),
+        },
+        {
+          title: t("database.comment"),
+        },
+      ];
+      if (showSensitiveColumn.value) {
+        columnList.unshift({
+          title: t("database.sensitive"),
+          center: true,
+          nowrap: true,
+        });
+      }
+      return columnList;
+    });
     const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
       {
         title: t("common.name"),
