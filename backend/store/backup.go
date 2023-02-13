@@ -702,7 +702,7 @@ func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*Backu
 		DatabaseUID: &databaseUID,
 	}
 
-	backupSettings, err := s.findBackupSettingImplV2(ctx, tx, find)
+	backupSettings, err := s.listBackupSettingImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup setting with %+v", find)
 	}
@@ -778,15 +778,15 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 	return &backupSetting, nil
 }
 
-// FindBackupSettingV2 finds the backup setting.
-func (s *Store) FindBackupSettingV2(ctx context.Context, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
+// ListBackupSettingV2 finds the backup setting.
+func (s *Store) ListBackupSettingV2(ctx context.Context, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	backupSettings, err := s.findBackupSettingImplV2(ctx, tx, find)
+	backupSettings, err := s.listBackupSettingImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup setting with %+v", find)
 	}
@@ -798,7 +798,7 @@ func (s *Store) FindBackupSettingV2(ctx context.Context, find *FindBackupSetting
 	return backupSettings, nil
 }
 
-func (*Store) findBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
+func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.DatabaseUID; v != nil {
