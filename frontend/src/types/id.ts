@@ -1,7 +1,8 @@
-// Use number as the ID type, though the ID type could be transparent to the client and just
-// use string, however, that requires server to do string to int conversion since we store
-// ID as auto incremental int in the database.
-export type IdType = number;
+// ResourceId is an unique identifier.
+export type ResourceId = string;
+
+// IdType includes auto incremental int in database and resource id.
+export type IdType = number | ResourceId;
 
 export type ExecutionId = IdType;
 

@@ -73,6 +73,7 @@
         :table="table"
         :columns="columns"
         :data="data"
+        :sensitive="sensitive"
       />
     </div>
 
@@ -112,12 +113,13 @@ import {
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
+import { SQLResultSet } from "@/types";
 
 interface State {
   search: string;
 }
 
-type QueryResult = [string[], string[], any[][]];
+type QueryResult = SQLResultSet["data"];
 
 const props = defineProps({
   queryResult: {
@@ -193,6 +195,13 @@ const data = computed(() => {
     });
   }
   return temp;
+});
+
+const sensitive = computed(() => {
+  if (!props.queryResult) {
+    return [];
+  }
+  return props.queryResult[3] ?? [];
 });
 
 const table = useVueTable<string[]>({

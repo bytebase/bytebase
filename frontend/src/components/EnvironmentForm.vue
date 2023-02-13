@@ -11,9 +11,24 @@
           :disabled="!allowEdit"
           :required="true"
           :value="state.environment.name"
-          @input="
-            state.environment.name = ($event.target as HTMLInputElement).value
-          "
+          @input="handleEnvironmentNameChange"
+        />
+      </div>
+
+      <div class="col-span-1">
+        <label for="name" class="textlabel">
+          {{ $t("environment.id") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <div class="mt-1 textinfolabel">
+          {{ $t("environment.id-description") }}
+        </div>
+        <BBTextField
+          class="mt-2 w-full"
+          :disabled="!create"
+          :required="true"
+          :value="state.environment.resourceId"
+          @input="handleEnvironmentResourceIdChange"
         />
       </div>
 
@@ -308,9 +323,11 @@ import type {
 import { hasWorkspacePermission, sqlReviewPolicySlug } from "../utils";
 import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
+import { convertToResourceId } from "@/utils";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
+  isResourceIdChanged: boolean;
   approvalPolicy: Policy;
   backupPolicy: Policy;
   environmentTierPolicy: Policy;
@@ -351,6 +368,7 @@ const emit = defineEmits([
 ]);
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
+  isResourceIdChanged: false,
   approvalPolicy: cloneDeep(props.approvalPolicy),
   backupPolicy: cloneDeep(props.backupPolicy),
   environmentTierPolicy: cloneDeep(props.environmentTierPolicy),
@@ -380,6 +398,18 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
   }
   return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
 });
+
+const handleEnvironmentNameChange = (event: InputEvent) => {
+  state.environment.name = (event.target as HTMLInputElement).value;
+  if (!state.isResourceIdChanged) {
+    state.environment.resourceId = convertToResourceId(state.environment.name);
+  }
+};
+
+const handleEnvironmentResourceIdChange = (event: InputEvent) => {
+  state.environment.resourceId = (event.target as HTMLInputElement).value;
+  state.isResourceIdChanged = true;
+};
 
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {

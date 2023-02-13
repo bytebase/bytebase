@@ -949,7 +949,7 @@ WHERE table_type = 'BASE TABLE'
         ('pg_catalog', 'information_schema');
 `)
 			a.NoError(err)
-			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]]]`, result)
+			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]],[false]]`, result)
 
 			// Get migration history
 			const initialSchema = `
@@ -1467,6 +1467,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
+				// We check against empty SQL Review policy, while our onboarding data generation
+				// will create a SQL Review policy. Thus we need to skip onboarding data generation.
+				skipOnboardingData: true,
 			})
 			a.NoError(err)
 			defer func() {

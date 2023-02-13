@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 
 	// Import pg driver.
@@ -271,6 +272,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 
 	connected := false
 	var remainingStmts []string
+	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
@@ -341,6 +343,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				// Use superuser privilege to run privileged statements.
 				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE \"%s\";", stmt, owner)
 				remainingStmts = append(remainingStmts, stmt)
+			} else if isNonTransactionStatement(stmt) {
+				nonTransactionStmts = append(nonTransactionStmts, stmt)
 			} else if !isIgnoredStatement(stmt) {
 				remainingStmts = append(remainingStmts, stmt)
 			}
@@ -352,34 +356,39 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return 0, err
 	}
 
-	if len(remainingStmts) == 0 {
-		return 0, nil
+	if len(remainingStmts) != 0 {
+		tx, err := driver.db.BeginTx(ctx, nil)
+		if err != nil {
+			return 0, err
+		}
+		defer tx.Rollback()
+
+		// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE \"%s\"", owner)); err != nil {
+			return 0, err
+		}
+
+		sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
+		if err != nil {
+			return 0, err
+		}
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			log.Debug("rowsAffected returns error", zap.Error(err))
+		} else {
+			totalRowsAffected += rowsAffected
+		}
 	}
 
-	tx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback()
-
-	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE \"%s\"", owner)); err != nil {
-		return 0, err
-	}
-
-	sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
-	if err != nil {
-		return 0, err
-	}
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		log.Debug("rowsAffected returns error", zap.Error(err))
-	} else {
-		totalRowsAffected += rowsAffected
+	// Run non-transaction statements at the end.
+	for _, stmt := range nonTransactionStmts {
+		if _, err := driver.db.Exec(stmt); err != nil {
+			return 0, err
+		}
 	}
 	return totalRowsAffected, nil
 }
@@ -397,6 +406,13 @@ func isIgnoredStatement(stmt string) bool {
 	// We don't have privileges to comment on the extension and have to ignore it.
 	upperCaseStmt := strings.ToUpper(stmt)
 	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
+}
+
+func isNonTransactionStatement(stmt string) bool {
+	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
+	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
+	reg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
+	return len(reg.FindString(stmt)) > 0
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {

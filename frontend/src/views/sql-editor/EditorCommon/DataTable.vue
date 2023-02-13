@@ -25,7 +25,13 @@
                 class="relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
                 v-bind="tableResize.getColumnProps(header.index)"
               >
-                {{ header.column.columnDef.header }}
+                <div class="flex items-center overflow-hidden">
+                  <SensitiveDataIcon
+                    v-if="isSensitiveColumn(header.index)"
+                    class="mr-0.5 shrink-0"
+                  />
+                  <span> {{ header.column.columnDef.header }}</span>
+                </div>
 
                 <!-- The drag-to-resize handler -->
                 <div
@@ -67,6 +73,7 @@
 import { computed, nextTick, PropType, ref, watch } from "vue";
 import { ColumnDef, Table } from "@tanstack/vue-table";
 import useTableColumnWidthLogic from "./useTableResize";
+import { SensitiveDataIcon } from "./DataTable";
 
 export type DataTableColumn = {
   key: string;
@@ -80,6 +87,10 @@ const props = defineProps({
   },
   columns: {
     type: Array as PropType<ColumnDef<string[]>[]>,
+    default: () => [],
+  },
+  sensitive: {
+    type: Array as PropType<boolean[]>,
     default: () => [],
   },
   table: {
@@ -99,6 +110,10 @@ const tableResize = useTableColumnWidthLogic({
 });
 
 const data = computed(() => props.data);
+
+const isSensitiveColumn = (index: number): boolean => {
+  return props.sensitive[index] ?? false;
+};
 
 const scrollTo = (x: number, y: number) => {
   scrollerRef.value?.scroll(x, y);
