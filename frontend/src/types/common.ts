@@ -68,6 +68,7 @@ export type RouterSlug = {
   connectionSlug?: string;
   sheetSlug?: string;
   sqlReviewPolicySlug?: string;
+  ssoName?: string;
 };
 
 // Quick Action Type
