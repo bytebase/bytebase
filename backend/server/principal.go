@@ -71,10 +71,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		if s.MetricReporter != nil {
-			principalType := api.EndUser
-			count, err := s.store.CountUsers(ctx, &store.FindUserMessage{
-				Type: &principalType,
-			})
+			count, err := s.store.CountUsers(ctx, api.EndUser)
 			if err != nil {
 				// it's okay to ignore the error to avoid workflow broken.
 				log.Debug("failed to count end users", zap.Error(err))
