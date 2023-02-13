@@ -945,6 +945,7 @@ Click "Approve" button to apply the schema update.`,
 	sensitiveDataPolicy := api.SensitiveDataPolicy{
 		SensitiveDataList: []api.SensitiveData{
 			{
+				Schema: "public",
 				Table:  "salary",
 				Column: "amount",
 				Type:   api.SensitiveDataMaskTypeDefault,
