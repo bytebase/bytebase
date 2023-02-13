@@ -1865,5 +1865,8 @@
       "title": "Test OAuth2 Connection",
       "start-test": "Click sign in to get start testing"
     }
+  },
+  "sensitive-data": {
+    "self": "Sensitive Data"
   }
 }

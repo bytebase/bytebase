@@ -949,7 +949,7 @@ WHERE table_type = 'BASE TABLE'
         ('pg_catalog', 'information_schema');
 `)
 			a.NoError(err)
-			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]]]`, result)
+			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]],[false]]`, result)
 
 			// Get migration history
 			const initialSchema = `
