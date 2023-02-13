@@ -16,6 +16,8 @@ export type Environment = {
 };
 
 export type EnvironmentCreate = {
+  resourceId: string;
+
   // Domain specific fields
   name: string;
 };
