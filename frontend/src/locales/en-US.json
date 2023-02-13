@@ -304,7 +304,8 @@
       "log": "Log",
       "failed": "Failed",
       "preview-rollback": "Preview rollback",
-      "logging": "Logging"
+      "logging": "Logging",
+      "empty-rollback-statement": "The rollback statement is empty"
     }
   },
   "banner": {
