@@ -694,7 +694,7 @@ type FindBackupSettingMessage struct {
 func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
+		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -725,7 +725,7 @@ func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*Backu
 func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, upsert *BackupSettingMessage) (*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
+		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -773,7 +773,7 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
+		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return &backupSetting, nil
 }
@@ -782,7 +782,7 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 func (s *Store) ListBackupSettingV2(ctx context.Context, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
+		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
