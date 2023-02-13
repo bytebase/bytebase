@@ -126,6 +126,7 @@ export default defineComponent({
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
     const breadcrumbList = computed(() => {
+      const route = currentRoute.value;
       const routeSlug = routerStore.routeSlug(currentRoute.value);
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
@@ -137,6 +138,7 @@ export default defineComponent({
       const migrationHistory = routeSlug.migrationHistorySlug;
       const vcsSlug = routeSlug.vcsSlug;
       const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
+      const ssoName = routeSlug.ssoName;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -193,8 +195,15 @@ export default defineComponent({
           name: t("sql-review.title"),
           path: "/setting/sql-review",
         });
+      } else if (ssoName) {
+        if (route.name !== "setting.workspace.sso.create") {
+          list.push({
+            name: t("settings.sidebar.sso"),
+            path: "/setting/sso",
+          });
+        }
       }
-      const route = currentRoute.value;
+
       const {
         title: routeTitle,
         overrideTitle,

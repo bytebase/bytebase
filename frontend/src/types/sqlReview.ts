@@ -4,6 +4,7 @@ import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { PlanType } from "./plan";
 import sqlReviewSchema from "./sql-review-schema.yaml";
+import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
@@ -221,7 +222,11 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
     },
     new Map<RuleType, RuleTemplate>()
   );
-  const templateList = [sqlReviewProdTemplate, sqlReviewDevTemplate] as {
+  const templateList = [
+    sqlReviewSampleTemplate,
+    sqlReviewDevTemplate,
+    sqlReviewProdTemplate,
+  ] as {
     id: string;
     ruleList: {
       type: RuleType;

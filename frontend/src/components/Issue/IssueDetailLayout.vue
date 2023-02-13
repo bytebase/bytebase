@@ -14,14 +14,6 @@
         </IssueHighlightPanel>
       </div>
 
-      <!-- Remind banner for bb.feature.sql-review -->
-      <FeatureAttention
-        v-if="!hasSQLReviewPolicyFeature"
-        custom-class="m-5 mt-0"
-        feature="bb.feature.sql-review"
-        :description="$t('subscription.features.bb-feature-sql-review.desc')"
-      />
-
       <!-- Stage Flow Bar -->
       <template v-if="showPipelineFlowBar">
         <template v-if="isGhostMode">
@@ -134,12 +126,7 @@ import type {
   MigrationType,
 } from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import {
-  featureToRef,
-  useInstanceStore,
-  useProjectStore,
-  useTaskStore,
-} from "@/store";
+import { useInstanceStore, useProjectStore, useTaskStore } from "@/store";
 import {
   provideIssueLogic,
   TenantModeProvider,
@@ -306,8 +293,6 @@ onMounted(() => {
     document.getElementById("issue-detail-top")!.scrollIntoView();
   }
 });
-
-const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 watch(
   [

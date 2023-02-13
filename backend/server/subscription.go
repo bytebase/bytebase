@@ -36,6 +36,13 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		patch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
+		// clear the trialing setting for dev test
+		if patch.License == "" && s.profile.Mode == common.ReleaseModeDev {
+			if err := s.store.DeleteSettingV2(ctx, api.SettingEnterpriseTrial); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete the trialing license").SetInternal(err)
+			}
+		}
+
 		if err := s.licenseService.StoreLicense(ctx, patch); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)

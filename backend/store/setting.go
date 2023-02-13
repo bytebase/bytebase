@@ -215,6 +215,24 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 	return &setting, true, nil
 }
 
+// DeleteSettingV2 deletes a setting by the name.
+func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM setting WHERE name = $1`, name); err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "failed to commit transaction")
+	}
+	return nil
+}
+
 func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.Name; v != nil {

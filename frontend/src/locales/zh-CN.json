@@ -403,26 +403,29 @@
     "sso": {
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
-      "deletion": "删除这个 SSO",
+      "archive": "归档该 SSO",
+      "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
         "learn-more-with-user-doc": "了解更多如何配置",
         "redirect-url": "回调地址",
-        "redirect-url-description": "将会用于填写到 OAuth 提供商申请表单中的相应字段。",
+        "redirect-url-description": "将会用于填写到身份提供商申请表单中的相应字段。",
         "use-template": "使用模版",
         "select-template": "选择模版",
         "basic-information": "基础信息",
         "name": "名称",
+        "name-description": "显示给登录用户的名称",
         "resource-id": "资源 ID",
         "resource-id-description": "唯一的字符串，有效字符为 /[a-z][0-9]-/",
         "domain": "域名",
         "domain-description": "OAuth 提供商的域名",
         "identity-provider-information": "OAuth 提供商信息",
-        "identity-provider-information-description": "这些信息是由你的 OAuth 提供商提供的。",
+        "identity-provider-information-description": "这些信息是由你的身份提供商提供的。",
+        "identity-provider-needed-information": "用以下信息创建你的 SSO 应用程序。",
         "endpoints": "链接信息",
         "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
         "auth-url-description": "登录页面的链接",
-        "scopes-description": "访问 Auth URL 时携带的范围参数",
+        "scopes-description": "访问 Auth URL 时携带的范围参数，使用空格分隔多个值",
         "token-url-description": "用于获取 accessToken 的 API 地址",
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
@@ -582,7 +585,7 @@
     "stage-select": {
       "active": "{name}（活动中）"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "在多租户模式下无法对单个数据库{operation}",
+    "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
       "title": "变更模式",
       "normal": {
@@ -1319,8 +1322,9 @@
   "archive": {
     "archived": "已归档",
     "project-search-bar-placeholder": "搜索@.lower:{'common.project'}的名称",
-    "instance-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
-    "environment-bar-placeholder": "搜索@.lower:{'common.environment'}的名称"
+    "instance-search-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
+    "environment-search-bar-placeholder": "搜索@.lower:{'common.environment'}的名称",
+    "sso-search-bar-placeholder": "搜索 SSO 的名称"
   },
   "deployment-config": {
     "stage-n": "阶段 {n}",
@@ -1574,6 +1578,12 @@
     "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
+    "trial-start-modal": {
+      "title": "已开启{plan}试用",
+      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
+      "subscription-page": "订阅页面",
+      "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
+    },
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
@@ -1647,8 +1657,8 @@
         "desc": "通过集成 IM 来批准工单。"
       },
       "bb-feature-sql-review": {
-        "title": "Schema 审核策略",
-        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
+        "title": "解锁 100+ SQL 审核策略",
+        "desc": "配置各种 SQL lint 规则，以在研发组织中落地 SQL 最佳实践，保障 Schema 的规范一致性。"
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
@@ -1669,6 +1679,10 @@
       "bb-feature-watermark": {
         "title": "水印设置",
         "desc": "在页面上显示水印，包含用户名和 ID。"
+      },
+      "bb-feature-audit-log": {
+        "title": "审计日志",
+        "desc": "记录和查询工作空间中的用户执行的操作。"
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
@@ -1739,6 +1753,7 @@
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
+    "unlock-full-feature": "解锁 100+ SQL Review 规则",
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {
