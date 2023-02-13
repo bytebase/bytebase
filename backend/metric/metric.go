@@ -34,8 +34,8 @@ const (
 	PrincipalRegistrationMetricName metric.Name = "bb.principal.registration"
 	// IssueCreateMetricName is the metric name for issue creation event.
 	IssueCreateMetricName metric.Name = "bb.issue.create"
-	// IssueUpdateMetricName is the metric name for issue update event.
-	IssueUpdateMetricName metric.Name = "bb.issue.update"
+	// TaskStatusMetricName is the metric name for task status update event.
+	TaskStatusMetricName metric.Name = "bb.task.status"
 	// SQLEditorExecutionMetricName is the metric name for SQL Editor execution event.
 	SQLEditorExecutionMetricName metric.Name = "bb.sql-editor.execute"
 	// PrincipalCreateMetricName is the metric name for principal creation event.

@@ -349,18 +349,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return err
 		}
 
-		if s.MetricReporter != nil {
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.IssueUpdateMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"type":  updatedComposedIssue.Type,
-					"key":   "status",
-					"value": updatedComposedIssue.Status,
-				},
-			})
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedComposedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)

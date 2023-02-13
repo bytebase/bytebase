@@ -22,7 +22,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/apprun"
+	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -56,7 +59,15 @@ var (
 )
 
 // NewScheduler creates a new task scheduler.
-func NewScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) *Scheduler {
+func NewScheduler(
+	store *store.Store,
+	applicationRunner *apprun.Runner,
+	schemaSyncer *schemasync.Syncer,
+	activityManager *activity.Manager,
+	licenseService enterpriseAPI.LicenseService,
+	stateCfg *state.State,
+	profile config.Profile,
+	metricReporter *metricreport.Reporter) *Scheduler {
 	return &Scheduler{
 		store:             store,
 		applicationRunner: applicationRunner,
@@ -66,6 +77,7 @@ func NewScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSy
 		profile:           profile,
 		stateCfg:          stateCfg,
 		executorMap:       make(map[api.TaskType]Executor),
+		metricReporter:    metricReporter,
 	}
 }
 
@@ -79,6 +91,7 @@ type Scheduler struct {
 	stateCfg          *state.State
 	profile           config.Profile
 	executorMap       map[api.TaskType]Executor
+	metricReporter    *metricreport.Reporter
 }
 
 // Register will register a task executor factory.
@@ -328,6 +341,19 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 										}
 									}
 								}
+
+								if s.metricReporter != nil {
+									s.metricReporter.Report(&metric.Metric{
+										Name:  metricAPI.TaskStatusMetricName,
+										Value: 1,
+										Labels: map[string]interface{}{
+											"type":   issue.Type,
+											"status": "status",
+											"value":  taskStatusPatch.Status,
+										},
+									})
+								}
+
 							}
 							return
 						}
