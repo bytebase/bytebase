@@ -510,7 +510,7 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 }
 
 func getDefaultBackupSetting(environmentID, instanceID, databaseName string) *v1pb.BackupSetting {
-	sevenDays, err := convertPeriodTsToDuration(int64(time.Duration(7 * 24 * time.Hour).Seconds()))
+	sevenDays, err := convertPeriodTsToDuration(int(time.Duration(7 * 24 * time.Hour).Seconds()))
 	if err != nil {
 		log.Warn("failed to convert period ts to duration", zap.Error(err))
 	}
@@ -599,15 +599,15 @@ func buildSimpleCron(hourOfDay int, dayOfWeek int) string {
 	return fmt.Sprintf("0 %d * * %d", hourOfDay, dayOfWeek)
 }
 
-func convertDurationToPeriodTs(duration *durationpb.Duration) (int64, error) {
+func convertDurationToPeriodTs(duration *durationpb.Duration) (int, error) {
 	if err := duration.CheckValid(); err != nil {
 		return 0, errors.Wrap(err, "invalid duration")
 	}
 	// Round up to days
-	return int64(duration.AsDuration().Round(time.Hour * 24).Seconds()), nil
+	return int(duration.AsDuration().Round(time.Hour * 24).Seconds()), nil
 }
 
-func convertPeriodTsToDuration(periodTs int64) (*durationpb.Duration, error) {
+func convertPeriodTsToDuration(periodTs int) (*durationpb.Duration, error) {
 	if periodTs < 0 {
 		return nil, errors.New("invalid period")
 	}

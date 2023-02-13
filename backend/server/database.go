@@ -404,19 +404,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
 
-		backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, id)
+		backupSetting, err := s.store.GetBackupSettingV2(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
 		}
-		if backupSetting == nil {
-			// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
-			backupSetting = &api.BackupSetting{
-				ID: api.UnknownID,
-			}
+		// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
+		apiBackupSetting := &api.BackupSetting{
+			ID: api.UnknownID,
+		}
+		if backupSetting != nil {
+			apiBackupSetting = backupSetting.ToAPIBackupSetting()
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, apiBackupSetting); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get backup setting response: %v", id)).SetInternal(err)
 		}
 		return nil
