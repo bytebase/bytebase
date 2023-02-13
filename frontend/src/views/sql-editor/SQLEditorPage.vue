@@ -79,6 +79,7 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
+import { stringify } from "qs";
 
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
@@ -95,7 +96,7 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
-import { isDatabaseAccessible } from "@/utils";
+import { allowUsingSchemaEditor, isDatabaseAccessible } from "@/utils";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 
@@ -146,12 +147,37 @@ const alterSchemaState = reactive<AlterSchemaState>({
   databaseIdList: [],
 });
 
-const handleAlterSchema = async (params: { databaseId: DatabaseId }) => {
-  const { databaseId } = params;
+const handleAlterSchema = async (params: {
+  databaseId: DatabaseId;
+  schema: string;
+  table: string;
+}) => {
+  const { databaseId, schema, table } = params;
   const database = databaseStore.getDatabaseById(databaseId);
-  await useProjectStore().getOrFetchProjectById(database.project.id);
-  alterSchemaState.databaseIdList = [databaseId];
-  alterSchemaState.showModal = true;
+  if (allowUsingSchemaEditor([database])) {
+    await useProjectStore().getOrFetchProjectById(database.project.id);
+    // TODO: support open selected database tab directly in Schema Editor.
+    alterSchemaState.databaseIdList = [databaseId];
+    alterSchemaState.showModal = true;
+  } else {
+    const exampleSQL = ["ALTER SCHEMA"];
+    if (table) {
+      if (schema) {
+        exampleSQL.push(`${schema}.${table}`);
+      } else {
+        exampleSQL.push(table);
+      }
+    }
+    const query = {
+      template: "bb.issue.database.schema.update",
+      name: `[${database.name}] Alter schema`,
+      project: database.project.id,
+      databaseList: databaseId,
+      sql: exampleSQL.join(" "),
+    };
+    const url = `/issue/new?${stringify(query)}`;
+    window.open(url, "_blank");
+  }
 };
 </script>
 
