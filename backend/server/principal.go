@@ -8,10 +8,14 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -64,6 +68,23 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount {
 			principal.ServiceKey = password
+		}
+
+		if s.MetricReporter != nil {
+			count, err := s.store.CountUsers(ctx, api.EndUser)
+			if err != nil {
+				// it's okay to ignore the error to avoid workflow broken.
+				log.Debug("failed to count end users", zap.Error(err))
+			}
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.PrincipalCreateMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"type": principal.Type,
+					"role": principal.Role,
+					"rank": count,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

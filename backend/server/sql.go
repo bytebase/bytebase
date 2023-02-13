@@ -19,11 +19,13 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	"github.com/bytebase/bytebase/backend/store"
@@ -491,6 +493,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.SQLEditorExecutionMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"engine":     instance.Engine,
+					"readonly":   exec.Readonly,
+					"admin_mode": false,
+				},
+			})
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
@@ -592,6 +606,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					zap.String("statement", exec.Statement),
 				)
 			}
+		}
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.SQLEditorExecutionMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"engine":     instance.Engine,
+					"readonly":   exec.Readonly,
+					"admin_mode": true,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
