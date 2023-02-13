@@ -57,10 +57,7 @@
                     :to="`/u/${member.principal.id}`"
                     class="normal-link"
                   >
-                    {{ member.principal.name
-                    }}<span class="text-gray-400">{{
-                      getUserRelatedDomainName(member.principal)
-                    }}</span>
+                    {{ member.principal.name }}
                   </router-link>
                   <span
                     v-if="currentUser.id == member.principal.id"
@@ -188,7 +185,6 @@ import {
   useMemberStore,
   usePrincipalStore,
   pushNotification,
-  useIdentityProviderStore,
 } from "@/store";
 
 const columnList = computed(() => [
@@ -221,7 +217,6 @@ export default defineComponent({
     const { t } = useI18n();
     const currentUser = useCurrentUser();
     const memberStore = useMemberStore();
-    const identityProviderStore = useIdentityProviderStore();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -279,16 +274,6 @@ export default defineComponent({
         currentUser.value.role
       );
     });
-
-    const getUserRelatedDomainName = (principal: Principal) => {
-      const idp = identityProviderStore.getIdentityProviderByName(
-        `idps/${principal.identityProviderName}`
-      );
-      if (!idp) {
-        return "";
-      }
-      return `@${idp.domain}`;
-    };
 
     const allowChangeRole = (member: Member) => {
       if (member.principal.id === SYSTEM_BOT_ID) {
@@ -407,7 +392,6 @@ export default defineComponent({
       hasRBACFeature,
       dataSource,
       allowEdit,
-      getUserRelatedDomainName,
       allowChangeRole,
       changeRoleTooltip,
       allowDeactivateMember,
