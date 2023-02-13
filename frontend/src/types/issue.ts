@@ -53,6 +53,7 @@ export type MigrationDetail = {
   sheetId?: SheetId;
   earliestAllowedTs: number;
   databaseId?: DatabaseId;
+  rollbackEnabled?: boolean;
 };
 
 export type UpdateSchemaGhostDetail = MigrationDetail & {
