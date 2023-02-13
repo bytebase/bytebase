@@ -170,7 +170,7 @@ const errorCodeLink = (
     default: {
       const url = `https://www.bytebase.com/docs/reference/error-code/${
         checkResult.namespace === "bb.advisor" ? "advisor" : "core"
-      }?source=console`;
+      }?source=console#${checkResult.code}`;
       return {
         title: t("common.view-doc"),
         target: "__blank",

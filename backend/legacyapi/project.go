@@ -22,6 +22,8 @@ const (
 	// This can be mutated by the user. But for now this is only used by onboarding flow to create
 	// a prod instance after first signup, so it's safe to refer it.
 	DefaultProdEnvironmentID = "prod"
+	// DefaultProdEnvironmentUID is the initial resource UID for the prod environment.
+	DefaultProdEnvironmentUID = 102
 )
 
 // ProjectWorkflowType is the workflow type for projects.
