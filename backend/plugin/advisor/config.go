@@ -8,6 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+//go:embed config/sql-review.sample.yaml
+var sqlReviewSampleTemplateStr string
+
 //go:embed config/sql-review.dev.yaml
 var sqlReviewDevTemplateStr string
 
@@ -16,13 +19,6 @@ var sqlReviewProdTemplateStr string
 
 // SQLReviewTemplateID is the template id for SQL review rules.
 type SQLReviewTemplateID string
-
-const (
-	// TemplateForMySQLProd is the template id for mysql prod template.
-	TemplateForMySQLProd SQLReviewTemplateID = "bb.sql-review.prod"
-	// TemplateForMySQLDev is the template id for mysql dev template.
-	TemplateForMySQLDev SQLReviewTemplateID = "bb.sql-review.dev"
-)
 
 // SQLReviewTemplateData is the API message for SQL review rule template.
 type SQLReviewTemplateData struct {
@@ -75,9 +71,13 @@ func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, e
 }
 
 func parseSQLReviewTemplateList() ([]*SQLReviewTemplateData, error) {
+	sampleTemplate := &SQLReviewTemplateData{}
 	prodTemplate := &SQLReviewTemplateData{}
 	devTemplate := &SQLReviewTemplateData{}
 
+	if err := yaml.Unmarshal([]byte(sqlReviewSampleTemplateStr), sampleTemplate); err != nil {
+		return nil, err
+	}
 	if err := yaml.Unmarshal([]byte(sqlReviewProdTemplateStr), prodTemplate); err != nil {
 		return nil, err
 	}

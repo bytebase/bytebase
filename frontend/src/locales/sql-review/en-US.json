@@ -19,7 +19,9 @@
     "bb-sql-review-prod": "Advanced Template",
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-dev": "Basic Template",
-    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage."
+    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage.",
+    "bb-sql-review-sample": "Sample Template",
+    "bb-sql-review-sample-desc": "A minimum template with DROP protection and disallow column nullable."
   },
   "rule": {
     "engine-mysql-use-innodb": {
