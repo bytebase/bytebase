@@ -439,7 +439,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, fieldMaskInfo, data}, nil
+	return []interface{}{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
 }
 
 // query will execute a query.
