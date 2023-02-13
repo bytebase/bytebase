@@ -118,9 +118,11 @@ export type TaskDatabaseDataUpdatePayload = {
   statement: string;
   sheetId: SheetId;
   pushEvent?: VCSPushEvent;
-  rollbackStatement: string;
-  rollbackFromIssueId: IssueId;
-  rollbackFromTaskId: TaskId;
+  rollbackEnabled: boolean;
+  rollbackStatement?: string;
+  rollbackError?: string;
+  rollbackFromIssueId?: IssueId;
+  rollbackFromTaskId?: TaskId;
 };
 
 export type TaskDatabaseRestorePayload = {
@@ -201,11 +203,13 @@ export type TaskCreate = {
   collation?: string;
   backupId?: BackupId;
   earliestAllowedTs: number;
+  rollbackEnabled?: boolean;
 };
 
 export type TaskPatch = {
   statement?: string;
   earliestAllowedTs?: number;
+  rollbackEnabled?: boolean;
 
   updatedTs?: number;
 };

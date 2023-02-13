@@ -9,6 +9,18 @@
       >
         <template v-if="language === 'sql'">
           {{ $t("common.sql") }}
+          <button
+            v-if="!hasFeature('bb.feature.sql-review')"
+            type="button"
+            class="ml-1 btn-small py-0.5 inline-flex items-center text-accent"
+            @click.prevent="
+              () => {
+                state.showFeatureModal = true;
+              }
+            "
+          >
+            🎈{{ $t("sql-review.unlock-full-feature") }}
+          </button>
         </template>
         <template v-else>
           {{ $t("common.statement") }}
@@ -112,8 +124,6 @@
           <heroicons-solid:pencil class="h-5 w-5" />
         </button>
       </template>
-
-      <IssueRollbackButton />
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
@@ -167,6 +177,12 @@
       </div>
     </div>
   </BBModal>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.sql-review"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -174,6 +190,7 @@ import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  hasFeature,
   pushNotification,
   useDBSchemaStore,
   useRepositoryStore,
@@ -193,7 +210,6 @@ import type {
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
 import { isTaskTriggeredByVCS, useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
@@ -203,6 +219,7 @@ interface LocalState {
   editStatement: string;
   showVCSGuideModal: boolean;
   isUploadingFile: boolean;
+  showFeatureModal: boolean;
 }
 
 type LocalEditState = Pick<LocalState, "editing" | "editStatement">;
@@ -245,6 +262,7 @@ const state = reactive<LocalState>({
   editStatement: statement.value,
   showVCSGuideModal: false,
   isUploadingFile: false,
+  showFeatureModal: false,
 });
 
 const useTempEditState = (state: LocalState) => {

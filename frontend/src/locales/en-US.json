@@ -219,7 +219,9 @@
     "rollback": "Rollback",
     "total": "Total",
     "discard-changes": "Discard changes",
-    "error-message": "Error message"
+    "error-message": "Error message",
+    "resource-id": "Resource ID",
+    "domain": "Domain"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -296,7 +298,14 @@
     "n-similar-tasks": "({count} similar tasks)",
     "skip": "Skip",
     "skip-modal-title": "Skip task [{name}]?",
-    "task-checks": "Task checks"
+    "task-checks": "Task checks",
+    "rollback": {
+      "sql-rollback": "SQL Rollback",
+      "log": "Log",
+      "failed": "Failed",
+      "preview-rollback": "Preview rollback",
+      "logging": "Logging"
+    }
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
@@ -403,7 +412,8 @@
     "sso": {
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
-      "deletion": "Delete this SSO",
+      "archive": "Archive this SSO",
+      "restore": "Restore this SSO",
       "form": {
         "type": "Type",
         "learn-more-with-user-doc": "Learn more about the configuration",
@@ -420,6 +430,7 @@
         "domain-description": "The identity provider's domain name",
         "identity-provider-information": "Identity provider information",
         "identity-provider-information-description": "The information is provided by your identity provider.",
+        "identity-provider-needed-information": "Create your SSO application with the following information.",
         "endpoints": "Endpoints",
         "endpoints-description": "The related urls provided by your OAuth provider.",
         "auth-url-description": "The link to OAuth login page",
@@ -583,7 +594,7 @@
     "stage-select": {
       "active": "{name} (active)"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "Can't {operation} to single database in tenant mode",
+    "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
       "title": "Migration mode",
       "normal": {
@@ -1319,7 +1330,8 @@
     "archived": "Archived",
     "project-search-bar-placeholder": "Search @.lower:{'common.project'} name",
     "instance-search-bar-placeholder": "Search @.lower:{'common.instance'} name",
-    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name"
+    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name",
+    "sso-search-bar-placeholder": "Search SSO name"
   },
   "deployment-config": {
     "stage-n": "Stage {n}",
@@ -1572,6 +1584,12 @@
     "unknown-event": "Unexpected event type, OAuth failed."
   },
   "subscription": {
+    "trial-start-modal": {
+      "title": "Start your {plan} trial",
+      "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
+      "subscription-page": "subscription page",
+      "subscription": "Go to the {page} to learn these features and our plans."
+    },
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
@@ -1645,8 +1663,8 @@
         "desc": "Approval issue with IM integration."
       },
       "bb-feature-sql-review": {
-        "title": "SQL review policy",
-        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
+        "title": "Unlock 100+ SQL Review checks",
+        "desc": "Specify SQL lint rules to adopt SQL best practice and enforce schema consistency across the engineering organization."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
@@ -1741,6 +1759,7 @@
     "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
     "not-available-for-free": "Rule is not available for {plan}",
+    "unlock-full-feature": "Unlock 100+ SQL lint rules",
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {

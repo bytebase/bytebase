@@ -19,8 +19,8 @@
           :is-edit="!!policyId"
           class="py-5"
           @select-template="tryApplyTemplate"
-          @name-change="(val) => (state.name = val)"
-          @env-change="(env) => onEnvChange(env)"
+          @name-change="(val: string) => (state.name = val)"
+          @env-change="(env: Environment) => onEnvChange(env)"
         />
       </template>
       <template #1>

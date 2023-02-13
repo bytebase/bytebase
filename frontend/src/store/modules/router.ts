@@ -207,6 +207,20 @@ export const useRouterStore = defineStore("router", {
         }
       }
 
+      {
+        // /setting/sso/:ssoName
+        const ssoComponents = currentRoute.path.match("/setting/sso/(.+)") || [
+          "/",
+          undefined,
+        ];
+
+        if (ssoComponents[1]) {
+          return {
+            ssoName: ssoComponents[1],
+          };
+        }
+      }
+
       return {};
     },
   },

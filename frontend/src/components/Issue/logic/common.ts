@@ -204,6 +204,7 @@ export const useCommonLogic = () => {
         statement: maybeFormatStatementOnSave(taskCreate.statement, db),
         sheetId: taskCreate.sheetId,
         earliestAllowedTs: taskCreate.earliestAllowedTs,
+        rollbackEnabled: taskCreate.rollbackEnabled,
       };
       // If task already has sheet id, we do not need to save statement.
       if (!isUndefined(taskCreate.sheetId)) {
