@@ -13,10 +13,10 @@
         @click="state.showBaselineModal = true"
       >
         {{ $t("change-history.establish-baseline") }}
-        <template v-if="isTenantProject" #tooltip>
-          <div class="w-52 whitespace-pre-wrap">
+        <template v-if="database.project.id === DEFAULT_PROJECT_ID" #tooltip>
+          <div class="whitespace-pre-line">
             {{
-              $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+              $t("issue.not-allowed-to-operate-unassigned-database", {
                 operation: $t(
                   "change-history.establish-baseline"
                 ).toLowerCase(),
@@ -78,6 +78,7 @@ import { useI18n } from "vue-i18n";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
   Database,
+  DEFAULT_PROJECT_ID,
   InstanceMigration,
   MigrationHistory,
   MigrationSchemaStatus,
@@ -163,6 +164,10 @@ export default defineComponent({
 
       if (state.migrationSetupStatus !== "OK") return false;
 
+      if (props.database.project.id === DEFAULT_PROJECT_ID) {
+        return false;
+      }
+
       // Migrating single database in tenant mode is not allowed
       // Since this will probably cause different migration version across a group of tenant databases
       return !isTenantProject.value;
@@ -233,6 +238,7 @@ export default defineComponent({
     };
 
     return {
+      DEFAULT_PROJECT_ID,
       state,
       allowConfigInstance,
       isTenantProject,
