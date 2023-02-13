@@ -88,11 +88,12 @@ type FindUserMessage struct {
 
 // UpdateUserMessage is the message to update a user.
 type UpdateUserMessage struct {
-	Email        *string
-	Name         *string
-	PasswordHash *string
-	Role         *api.Role
-	Delete       *bool
+	Email                    *string
+	Name                     *string
+	PasswordHash             *string
+	Role                     *api.Role
+	IdentityProviderUserInfo *storepb.IdentityProviderUserInfo
+	Delete                   *bool
 }
 
 // UserMessage is the message for an user.
@@ -395,6 +396,13 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
+	if v := patch.IdentityProviderUserInfo; v != nil {
+		userInfoBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("idp_user_info = $%d", len(principalArgs)+1)), append(principalArgs, string(userInfoBytes))
+	}
 	principalArgs = append(principalArgs, userID)
 
 	memberSet, memberArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
@@ -417,11 +425,13 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	defer tx.Rollback()
 
 	user := &UserMessage{}
+	var idpID sql.NullInt32
+	var idpUserInfo string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE principal
 			SET `+strings.Join(principalSet, ", ")+`
 			WHERE id = $%d
-			RETURNING id, email, name, type, password_hash
+			RETURNING id, email, name, type, password_hash, idp_id, idp_user_info
 		`, len(principalArgs)),
 		principalArgs...,
 	).Scan(
@@ -430,12 +440,30 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		&user.Name,
 		&user.Type,
 		&user.PasswordHash,
+		&idpID,
+		&idpUserInfo,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, FormatError(err)
 	}
+	if idpID.Valid {
+		value := int(idpID.Int32)
+		idp, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+			UID: &value,
+		})
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		user.IdentityProviderResourceID = &idp.ResourceID
+		var identityProviderUserInfo storepb.IdentityProviderUserInfo
+		if err := json.Unmarshal([]byte(idpUserInfo), &identityProviderUserInfo); err != nil {
+			return nil, err
+		}
+		user.IdentityProviderUserInfo = &identityProviderUserInfo
+	}
+
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE member

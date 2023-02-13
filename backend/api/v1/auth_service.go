@@ -544,7 +544,17 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 		}
 		user = newUser
-	} else if user.MemberDeleted {
+	} else {
+		// Update the latest IdP userinfo synchronously.
+		_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
+			IdentityProviderUserInfo: userInfo,
+		}, api.SystemBotID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update user info, error: %v", err)
+		}
+	}
+
+	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
 	return user, nil
