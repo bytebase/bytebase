@@ -411,7 +411,7 @@ func isIgnoredStatement(stmt string) bool {
 func isNonTransactionStatement(stmt string) bool {
 	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
 	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
-	reg := regexp.MustCompile("(?i)CREATE(\\s+(UNIQUE\\s+)?)INDEX(\\s+)CONCURRENTLY")
+	reg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
 	return len(reg.FindString(stmt)) > 0
 }
 
