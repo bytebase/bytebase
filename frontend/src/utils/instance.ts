@@ -44,3 +44,9 @@ export const useInstanceEditorLanguage = (
     return "sql";
   });
 };
+
+export const isValidSpannerHost = (host: string) => {
+  const RE =
+    /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])+)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])+)$/;
+  return RE.test(host);
+};
