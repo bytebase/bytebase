@@ -126,7 +126,11 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	collection := database.Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{}
 	if v := find.ID; v != nil {
-		filter["id"] = *v
+		longMigrationHistoryID, err := strconv.ParseInt(*v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse inserted ID %s to int64", *v)
+		}
+		filter["id"] = longMigrationHistoryID
 	}
 	if v := find.Database; v != nil {
 		filter["namespace"] = *v
