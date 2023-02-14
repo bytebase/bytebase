@@ -14,9 +14,15 @@
 
     <div
       v-if="!state.value"
-      class="absolute bottom-2 left-[50%] -translate-x-1/2 pointer-events-none flex flex-col items-center justify-center border border-control-border border-dashed text-xs text-control-placeholder p-2 rounded-md"
+      class="absolute bottom-2 left-[50%] -translate-x-1/2 flex flex-col items-center justify-center border border-control-border hover:border-control-hover border-dashed text-xs text-control-placeholder hover:text-control-hover p-2 rounded-md"
     >
       Or drag and drop files here.
+      <input
+        type="file"
+        class="absolute inset-0 opacity-0 cursor-pointer"
+        title=""
+        @change="handleFileChange"
+      />
     </div>
 
     <div
@@ -85,7 +91,7 @@ watch(
   (value) => emit("update:value", value)
 );
 
-const onDrop = (files: File[] | null) => {
+const onDrop = (files: File[] | FileList | null) => {
   // called when files are dropped on zone
   const file = head(files);
   if (file) {
@@ -116,6 +122,11 @@ const onDrop = (files: File[] | null) => {
     state.reading = true;
     fr.readAsText(file);
   }
+};
+
+const handleFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  onDrop(target.files);
 };
 
 const { isOverDropZone } = useDropZone(container, onDrop);
