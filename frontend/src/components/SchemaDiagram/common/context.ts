@@ -16,6 +16,7 @@ export const provideSchemaDiagramContext = (context: SchemaDiagramContext) => {
 
 export const useGeometry = (geometry: MaybeRef<Geometry>) => {
   const context = useSchemaDiagramContext();
+  if (context.dummy.value) return;
   watchEffect((onCleanup) => {
     const g = unref(geometry);
     context.geometries.value.add(g);
