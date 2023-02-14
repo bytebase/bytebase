@@ -38,55 +38,6 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 	}
 }
 
-// GetDeploymentConfigByProjectID gets an instance of DeploymentConfig.
-func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (api.DeploymentConfig, error) {
-	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
-	if err != nil {
-		return api.DeploymentConfig{}, errors.Wrapf(err, "failed to get DeploymentConfig with projectID %d", projectID)
-	}
-	if deploymentConfigRaw == nil {
-		config, err := s.getDefaultDeploymentConfig(ctx, projectID)
-		if err != nil {
-			return api.DeploymentConfig{}, err
-		}
-		deploymentConfigRaw = config
-	}
-	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
-	if err != nil {
-		return api.DeploymentConfig{}, errors.Wrapf(err, "failed to compose DeploymentConfig with deploymentConfigRaw[%+v]", deploymentConfigRaw)
-	}
-	return *deploymentConfig, nil
-}
-
-func (s *Store) getDefaultDeploymentConfig(ctx context.Context, projectID int) (*deploymentConfigRaw, error) {
-	environmentList, err := s.ListEnvironmentV2(ctx, &FindEnvironmentMessage{})
-	if err != nil {
-		return nil, err
-	}
-	scheduleList := api.DeploymentSchedule{}
-	for _, environment := range environmentList {
-		scheduleList.Deployments = append(scheduleList.Deployments, &api.Deployment{
-			Name: fmt.Sprintf("%s Stage", environment.Title),
-			Spec: &api.DeploymentSpec{
-				Selector: &api.LabelSelector{
-					MatchExpressions: []*api.LabelSelectorRequirement{
-						{Key: "bb.environment", Operator: api.InOperatorType, Values: []string{environment.ResourceID}},
-					},
-				},
-			},
-		})
-	}
-	bytes, err := json.Marshal(scheduleList)
-	if err != nil {
-		return nil, err
-	}
-	return &deploymentConfigRaw{
-		ID:        0,
-		ProjectID: projectID,
-		Payload:   string(bytes),
-	}, nil
-}
-
 // UpsertDeploymentConfig upserts an instance of DeploymentConfig.
 func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
@@ -132,67 +83,6 @@ func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.Deplo
 	}
 
 	return cfg, nil
-}
-
-// getDeploymentConfigImpl finds the deployment configuration in a project.
-func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.DeploymentConfigFind) (*deploymentConfigRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			project_id,
-			name,
-			config
-		FROM deployment_config
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into list.
-	var ret []*deploymentConfigRaw
-	for rows.Next() {
-		var cfg deploymentConfigRaw
-		if err := rows.Scan(
-			&cfg.ID,
-			&cfg.ProjectID,
-			&cfg.Name,
-			&cfg.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		ret = append(ret, &cfg)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	switch len(ret) {
-	case 0:
-		return nil, nil
-	case 1:
-		return ret[0], nil
-	default:
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d deployment configurations with filter %+v, expect 1", len(ret), find)}
-	}
 }
 
 func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
@@ -246,11 +136,44 @@ type UpsertDeploymentConfigMessage struct {
 type DeploymentConfigMessage struct {
 	Name     string
 	Schedule *Schedule
+
+	// Output only fields.
+	// ID is the ID of the deployment config.
+	UID int
+}
+
+// ToAPIDeploymentConfig converts the message to a legacy API deployment config.
+func (d *DeploymentConfigMessage) ToAPIDeploymentConfig() (*api.DeploymentConfig, error) {
+	schedule := d.Schedule.toAPIDeploymentSchedule()
+	payload, err := json.Marshal(schedule)
+	if err != nil {
+		return nil, err
+	}
+	return &api.DeploymentConfig{
+		ID:      d.UID,
+		Name:    d.Name,
+		Payload: string(payload),
+	}, nil
 }
 
 // Schedule is the message for deployment schedule.
 type Schedule struct {
 	Deployments []*Deployment `json:"deployments"`
+}
+
+func (s *Schedule) toAPIDeploymentSchedule() *api.DeploymentSchedule {
+	deployments := []*api.Deployment{}
+	for _, d := range s.Deployments {
+		deployments = append(deployments, &api.Deployment{
+			Name: d.Name,
+			Spec: &api.DeploymentSpec{
+				Selector: d.Spec.Selector.toAPILabelSelector(),
+			},
+		})
+	}
+	return &api.DeploymentSchedule{
+		Deployments: deployments,
+	}
 }
 
 // Deployment is the message for deployment.
@@ -268,6 +191,25 @@ type DeploymentSpec struct {
 type LabelSelector struct {
 	// MatchExpressions is a list of label selector requirements. The requirements are ANDed.
 	MatchExpressions []*LabelSelectorRequirement `json:"matchExpressions"`
+}
+
+func (ls *LabelSelector) toAPILabelSelector() *api.LabelSelector {
+	labelSelector := &api.LabelSelector{}
+	for _, r := range ls.MatchExpressions {
+		operatorTp := api.InOperatorType
+		switch r.Operator {
+		case InOperatorType:
+			operatorTp = api.InOperatorType
+		case ExistsOperatorType:
+			operatorTp = api.ExistsOperatorType
+		}
+		labelSelector.MatchExpressions = append(labelSelector.MatchExpressions, &api.LabelSelectorRequirement{
+			Key:      r.Key,
+			Operator: operatorTp,
+			Values:   r.Values,
+		})
+	}
+	return labelSelector
 }
 
 // OperatorType is the type of label selector requirement operator.
@@ -310,14 +252,16 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
+			id,
 			name,
 			config
 		FROM deployment_config
 		WHERE `+strings.Join(where, " AND "),
 		args...,
-	).Scan(&deploymentConfig.Name, &payload); err != nil {
+	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &payload); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			// Return default deployment config.
+			return s.getDefaultDeploymentConfigV2(ctx, projectUID)
 		}
 		return nil, FormatError(err)
 	}
@@ -355,7 +299,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDepl
 			updater_id = excluded.updater_id,
 			name = excluded.name,
 			config = excluded.config
-		RETURNING name, config
+		RETURNING id, name, config
 	`
 	var deploymentConfig DeploymentConfigMessage
 
@@ -371,7 +315,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDepl
 		upsert.ProjectUID,
 		upsert.DeploymentConfig.Name,
 		payload,
-	).Scan(&deploymentConfig.Name, &payload); err != nil {
+	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &payload); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -385,4 +329,28 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDepl
 		return nil, err
 	}
 	return &deploymentConfig, nil
+}
+
+func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context, projectID int) (*DeploymentConfigMessage, error) {
+	environmentList, err := s.ListEnvironmentV2(ctx, &FindEnvironmentMessage{})
+	if err != nil {
+		return nil, err
+	}
+	scheduleList := Schedule{}
+	for _, environment := range environmentList {
+		scheduleList.Deployments = append(scheduleList.Deployments, &Deployment{
+			Name: fmt.Sprintf("%s Stage", environment.Title),
+			Spec: &DeploymentSpec{
+				Selector: &LabelSelector{
+					MatchExpressions: []*LabelSelectorRequirement{
+						{Key: "bb.environment", Operator: InOperatorType, Values: []string{environment.ResourceID}},
+					},
+				},
+			},
+		})
+	}
+	return &DeploymentConfigMessage{
+		UID:      0,
+		Schedule: &scheduleList,
+	}, nil
 }

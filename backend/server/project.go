@@ -679,13 +679,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// DeploymentConfig is never nil.
-		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, projectID)
+		deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", projectID)).SetInternal(err)
 		}
+		apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert deployment config to api deployment config").SetInternal(err)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &deploymentConfig); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, apiDeploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", projectID)).SetInternal(err)
 		}
 		return nil
