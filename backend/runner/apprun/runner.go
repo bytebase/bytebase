@@ -128,7 +128,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 						stages, ok := stagesByPipelineID[issue.PipelineUID]
 						if !ok {
-							log.Error("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
+							log.Debug("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
 							continue
 						}
 						activeStage := utils.GetActiveStage(stages)
