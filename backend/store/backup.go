@@ -690,6 +690,63 @@ type FindBackupSettingMessage struct {
 	InstanceUID *int
 }
 
+// BackupMessage is the message for backup.
+type BackupMessage struct {
+	// Name is the name of the backup.
+	Name string
+	// Status is the status of the backup.
+	Status api.BackupStatus
+	// BackupType is the type of the backup.
+	BackupType api.BackupType
+	// Comment is the comment of the backup.
+	Comment string
+	// Storage Backend is the storage backend of the backup.
+	StorageBackend api.BackupStorageBackend
+	// MigrationHistoryVersion is the migration history version of the database.
+	MigrationHistoryVersion string
+	// Path is the path of the backup file.
+	Path string
+
+	// Output only fields.
+	//
+	// ID is the UID of the backup.
+	UID int
+	// CreatedTs is the timestamp when the backup is created.
+	CreatedTs int64
+	// UpdatedTs is the timestamp when the backup is updated.
+	UpdatedTs int64
+	// RowStatus is the status of the row. ARCHIVED means the backup is deleted.
+	RowStatus api.RowStatus
+	// DatabaseUID is the UID of the database.
+	DatabaseUID int
+}
+
+// ToAPIBackup converts BackupMessage to legacy api Backup.
+func (b *BackupMessage) ToAPIBackup() *api.Backup {
+	return &api.Backup{
+		ID:                      b.UID,
+		RowStatus:               b.RowStatus,
+		CreatedTs:               b.CreatedTs,
+		UpdatedTs:               b.UpdatedTs,
+		Name:                    b.Name,
+		Status:                  b.Status,
+		Type:                    b.BackupType,
+		StorageBackend:          b.StorageBackend,
+		MigrationHistoryVersion: b.MigrationHistoryVersion,
+		Path:                    b.Path,
+		Comment:                 b.Comment,
+		DatabaseID:              b.DatabaseUID,
+	}
+}
+
+// FindBackupMessage is the message for finding backup.
+type FindBackupMessage struct {
+	// DatabaseUID is the UID of the database.
+	DatabaseUID int
+	// Name is the name of the backup.
+	Name *string
+}
+
 // GetBackupSettingV2 retrieves the backup setting for the given database.
 func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -796,6 +853,132 @@ func (s *Store) ListBackupSettingV2(ctx context.Context, find *FindBackupSetting
 	}
 
 	return backupSettings, nil
+}
+
+// CreateBackupV2 creates a backup for the given database.
+func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, databaseUID int, principalUID int) (*BackupMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+	query := `
+		INSERT INTO backup (
+			creator_id,
+			updater_id,
+			database_id,
+			name,
+			status,
+			type,
+			storage_backend,
+			migration_history_version,
+			path,
+			comment
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, row_status, name, storage_backend, migration_history_version, path, created_ts, updated_ts, status, type, comment, database_id
+	`
+	var backup BackupMessage
+	if err := tx.QueryRowContext(ctx, query,
+		principalUID,
+		principalUID,
+		databaseUID,
+		create.Name,
+		create.Status,
+		create.BackupType,
+		create.StorageBackend,
+		create.MigrationHistoryVersion,
+		create.Path,
+		create.Comment,
+	).Scan(
+		&backup.UID,
+		&backup.RowStatus,
+		&backup.Name,
+		&backup.StorageBackend,
+		&backup.MigrationHistoryVersion,
+		&backup.Path,
+		&backup.CreatedTs,
+		&backup.UpdatedTs,
+		&backup.Status,
+		&backup.BackupType,
+		&backup.Comment,
+		&backup.DatabaseUID,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return &backup, nil
+}
+
+// ListBackupV2 lists the backups for the given database.
+func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*BackupMessage, error) {
+	// Build where clause.
+	where, args := []string{"TRUE"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, find.DatabaseUID)
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		SELECT
+			id,
+			row_status,
+			name,
+			storage_backend,
+			migration_history_version,
+			path,
+			created_ts,
+			updated_ts,
+			status,
+			type,
+			comment,
+			database_id
+		FROM backup WHERE %s;`, strings.Join(where, " AND ")), args...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var backupList []*BackupMessage
+	for rows.Next() {
+		var backup BackupMessage
+		if err := rows.Scan(
+			&backup.UID,
+			&backup.RowStatus,
+			&backup.Name,
+			&backup.StorageBackend,
+			&backup.MigrationHistoryVersion,
+			&backup.Path,
+			&backup.CreatedTs,
+			&backup.UpdatedTs,
+			&backup.Status,
+			&backup.BackupType,
+			&backup.Comment,
+			&backup.DatabaseUID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		backupList = append(backupList, &backup)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return backupList, nil
 }
 
 func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
