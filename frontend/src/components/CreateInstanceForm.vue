@@ -353,7 +353,7 @@ import {
   SpannerCredentialInput,
   SslCertificateForm,
 } from "./InstanceForm";
-import { instanceSlug, isDev } from "../utils";
+import { instanceSlug, isDev, isValidSpannerHost } from "../utils";
 import {
   InstanceCreate,
   UNKNOWN_ID,
@@ -436,7 +436,9 @@ const samplePostgresInstance = ref<Partial<InstanceCreate>>();
 const allowCreate = computed(() => {
   if (state.instance.engine === "SPANNER") {
     return (
-      state.instance.name && state.instance.host && state.instance.password
+      state.instance.name &&
+      isValidSpannerHost(state.instance.host) &&
+      state.instance.password
     );
   }
   return state.instance.name && state.instance.host;
