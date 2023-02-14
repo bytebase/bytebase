@@ -110,20 +110,6 @@
           {{ $t("common.cancel") }}
         </button>
       </template>
-
-      <template v-if="shouldShowVirtualStatementEditButtonForVCS">
-        <!--
-          Show a virtual pencil icon in VCS workflow which opens a guide
-          when clicked.
-        -->
-        <button
-          type="button"
-          class="btn-icon"
-          @click.prevent="state.showVCSGuideModal = true"
-        >
-          <heroicons-solid:pencil class="h-5 w-5" />
-        </button>
-      </template>
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
@@ -152,32 +138,6 @@
     />
   </div>
 
-  <BBModal
-    v-if="state.showVCSGuideModal"
-    :title="$t('issue.edit-sql-statement')"
-    @close="state.showVCSGuideModal = false"
-  >
-    <div class="space-y-4 max-w-[32rem] divide-y divide-block-border">
-      <div class="whitespace-pre-wrap">
-        {{ $t("issue.edit-sql-statement-in-vcs") }}
-      </div>
-
-      <div class="flex justify-end pt-4 gap-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="state.showVCSGuideModal = false"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-
-        <button type="button" class="btn-primary" @click.prevent="goToVCS">
-          {{ $t("common.go-now") }}
-        </button>
-      </div>
-    </div>
-  </BBModal>
-
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.sql-review"
@@ -193,31 +153,21 @@ import {
   hasFeature,
   pushNotification,
   useDBSchemaStore,
-  useRepositoryStore,
   useSheetStore,
   useUIStateStore,
 } from "@/store";
 import { useIssueLogic, TaskTypeWithSheetId, sheetIdOfTask } from "./logic";
-import type {
-  Database,
-  Issue,
-  Repository,
-  SQLDialect,
-  Task,
-  TaskCreate,
-  TaskId,
-} from "@/types";
-import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
+import type { Database, SQLDialect, Task, TaskCreate, TaskId } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { isUndefined } from "lodash-es";
-import { isTaskTriggeredByVCS, useInstanceEditorLanguage } from "@/utils";
+import { useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 interface LocalState {
   editing: boolean;
   editStatement: string;
-  showVCSGuideModal: boolean;
   isUploadingFile: boolean;
   showFeatureModal: boolean;
 }
@@ -260,7 +210,6 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const state = reactive<LocalState>({
   editing: false,
   editStatement: statement.value,
-  showVCSGuideModal: false,
   isUploadingFile: false,
   showFeatureModal: false,
 });
@@ -436,30 +385,7 @@ const shouldShowStatementEditButtonForUI = computed(() => {
     return false;
   }
 
-  // If a task is triggered by VCS commit, we are NOT allowed to edit its
-  // SQL statements directly from UI, until we solved the edit and write-back
-  // problems.
-  const task = selectedTask.value as Task;
-  if (isTaskTriggeredByVCS(task)) {
-    return false;
-  }
-
   return true;
-});
-
-const shouldShowVirtualStatementEditButtonForVCS = computed(() => {
-  if (shouldShowStatementEditButtonForUI.value) {
-    // This is mutual exclusive to another button for UI.
-    return false;
-  }
-  if (create.value) {
-    return false;
-  }
-  if (!allowEditStatement.value) {
-    return false;
-  }
-  const task = selectedTask.value as Task;
-  return isTaskTriggeredByVCS(task);
 });
 
 onMounted(() => {
@@ -673,23 +599,6 @@ const handleUploadLocalFileAsSheet = async (event: Event) => {
   } else {
     uploadStatementAsSheet(statement);
   }
-};
-
-const goToVCS = () => {
-  const issueEntity = issue.value as Issue;
-  useRepositoryStore()
-    .fetchRepositoryByProjectId(issueEntity.project.id)
-    .then((repository: Repository) => {
-      window.open(
-        baseDirectoryWebUrl(repository, {
-          DB_NAME: selectedDatabase.value?.name,
-          ENV_NAME: selectedDatabase.value?.instance.environment.name,
-        }),
-        "_blank"
-      );
-
-      state.showVCSGuideModal = false;
-    });
 };
 
 const onStatementChange = (value: string) => {
