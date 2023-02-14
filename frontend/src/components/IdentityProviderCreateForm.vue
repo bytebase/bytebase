@@ -99,7 +99,6 @@
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
           {{ $t("settings.sso.form.domain") }}
-          <span class="text-red-600">*</span>
         </p>
         <input
           v-model="identityProvider.domain"
@@ -351,7 +350,6 @@
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
           {{ $t("settings.sso.form.domain") }}
-          <span class="text-red-600">*</span>
         </p>
         <input
           v-model="identityProvider.domain"
@@ -695,11 +693,7 @@ const originIdentityProvider = computed(() => {
 });
 
 const isFormCompleted = computed(() => {
-  if (
-    !identityProvider.value.name ||
-    !identityProvider.value.title ||
-    !identityProvider.value.domain
-  ) {
+  if (!identityProvider.value.name || !identityProvider.value.title) {
     return false;
   }
 
