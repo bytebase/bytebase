@@ -6,11 +6,14 @@
         <span style="color: red">*</span>
       </label>
       <input
-        v-model="projectId"
+        v-model="state.projectId"
         required
         type="text"
         placeholder="projectId"
         class="textfield mt-1 w-full"
+        :class="[
+          state.dirty && !isValidProjectId && '!border-error !ring-error',
+        ]"
         :disabled="!allowEdit"
       />
     </div>
@@ -20,11 +23,14 @@
         <span style="color: red">*</span>
       </label>
       <input
-        v-model="instanceId"
+        v-model="state.instanceId"
         required
         type="text"
         placeholder="instanceId"
         class="textfield mt-1 w-full"
+        :class="[
+          state.dirty && !isValidInstanceId && '!border-error !ring-error',
+        ]"
         :disabled="!allowEdit"
       />
     </div>
@@ -46,6 +52,12 @@
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
 
+type LocalState = {
+  projectId: string;
+  instanceId: string;
+  dirty: boolean;
+};
+
 const props = defineProps<{
   host: string;
   allowEdit: boolean;
@@ -57,38 +69,54 @@ const emit = defineEmits<{
 
 const RE =
   /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])*)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])*)$/;
+const RE_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
+const RE_INSTANCE_ID = /^(?:[a-z]|[-]|[0-9])+$/;
 
-const state = reactive({
-  host: props.host,
+const state = reactive<LocalState>({
+  projectId: "",
+  instanceId: "",
+  dirty: false,
 });
 
-const update = (projectId: string, instanceId: string) => {
-  const host = `projects/${projectId}/instances/${instanceId}`;
+const isValidProjectId = computed(() => {
+  return RE_PROJECT_ID.test(state.projectId);
+});
+
+const isValidInstanceId = computed(() => {
+  return RE_INSTANCE_ID.test(state.instanceId);
+});
+
+const update = () => {
+  if (!isValidProjectId.value || !isValidInstanceId.value) {
+    emit("update:host", "");
+    return;
+  }
+  const host = `projects/${state.projectId}/instances/${state.instanceId}`;
   emit("update:host", host);
 };
 
-const projectId = computed<string>({
-  get() {
-    const match = state.host.match(RE);
-    return match?.groups?.PROJECT_ID ?? "";
-  },
-  set(value) {
-    update(value, instanceId.value);
-  },
-});
+const parseProjectIdFromHost = (host: string) => {
+  const match = host.match(RE);
+  return match?.groups?.PROJECT_ID ?? "";
+};
 
-const instanceId = computed<string>({
-  get() {
-    const match = state.host.match(RE);
-    return match?.groups?.INSTANCE_ID ?? "";
-  },
-  set(value) {
-    update(projectId.value, value);
-  },
+const parseInstanceIdFromHost = (host: string) => {
+  const match = host.match(RE);
+  return match?.groups?.INSTANCE_ID ?? "";
+};
+
+watch([() => state.projectId, () => state.instanceId], () => {
+  state.dirty = true;
+  update();
 });
 
 watch(
   () => props.host,
-  (host) => (state.host = host)
+  (host) => {
+    if (!host) return;
+    state.projectId = parseProjectIdFromHost(host);
+    state.instanceId = parseInstanceIdFromHost(host);
+  },
+  { immediate: true }
 );
 </script>
