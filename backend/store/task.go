@@ -146,19 +146,20 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 		composedTask.TaskRunList = append(composedTask.TaskRunList, taskRun)
 	}
 	for _, taskCheckRunRaw := range taskCheckRunRawList {
-		taskCheckRun := taskCheckRunRaw.toTaskCheckRun()
-		creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
+		composedTaskCheckRun := taskCheckRunRaw.toTaskCheckRun()
+		creator, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.CreatorID)
 		if err != nil {
 			return nil, err
 		}
-		taskCheckRun.Creator = creator
-
-		updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
+		composedTaskCheckRun.Creator = creator
+		updater, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.UpdaterID)
 		if err != nil {
 			return nil, err
 		}
-		taskCheckRun.Updater = updater
-		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
+		composedTaskCheckRun.Updater = updater
+		composedTaskCheckRun.CreatedTs = taskCheckRunRaw.CreatedTs
+		composedTaskCheckRun.UpdatedTs = taskCheckRunRaw.UpdatedTs
+		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 	}
 
 	instance, err := s.GetInstanceByID(ctx, composedTask.InstanceID)
