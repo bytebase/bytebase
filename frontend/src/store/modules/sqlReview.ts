@@ -11,6 +11,7 @@ import {
   SchemaPolicyRule,
   SQLReviewPolicyPayload,
   SQLReviewPolicy,
+  IdType,
 } from "@/types";
 import { defineStore } from "pinia";
 import { usePolicyStore } from "./policy";
@@ -79,7 +80,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const envMap = environmentList.reduce((map, env) => {
         map.set(env.id, env);
         return map;
-      }, new Map<number, Environment>());
+      }, new Map<IdType, Environment>());
 
       for (const reviewPolicy of this.reviewPolicyList) {
         if (
@@ -101,7 +102,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       ruleList,
     }: {
       name: string;
-      environmentId: number;
+      environmentId: IdType;
       ruleList: SchemaPolicyRule[];
     }) {
       const payload: SQLReviewPolicyPayload = {
