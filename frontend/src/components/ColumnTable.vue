@@ -95,6 +95,10 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Database>,
     },
+    schema: {
+      required: true,
+      type: String,
+    },
     table: {
       required: true,
       type: Object as PropType<TableMetadata>,
@@ -269,6 +273,7 @@ export default defineComponent({
       if (on && index < 0) {
         // Turn on sensitive
         sensitiveDataList.push({
+          schema: props.schema,
           table: props.table.name,
           column: column.name,
           maskType: "DEFAULT",

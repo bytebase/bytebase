@@ -796,6 +796,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 		}
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
+				Schema: data.Schema,
 				Table:  data.Table,
 				Column: data.Column,
 			}] = data.Type
@@ -821,6 +822,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 				}
 				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{
+						Schema: schema.Name,
 						Table:  table.Name,
 						Column: column.Name,
 					}]

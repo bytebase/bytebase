@@ -73,6 +73,7 @@ export type AssigneeGroup = {
 export type SensitiveDataMaskType = "DEFAULT";
 
 export type SensitiveData = {
+  schema: string;
   table: string;
   column: string;
   maskType: SensitiveDataMaskType;
