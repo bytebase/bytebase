@@ -90,7 +90,6 @@ func TestRetentionPolicy(t *testing.T) {
 	a.NoError(err)
 	a.NoError(metaDB.Ping())
 
-	log.Debug("backup", zap.Any("backup", backup))
 	// Check that the backup file exist
 	backupFilePath := filepath.Join(ctl.profile.DataDir, "backup", "db", fmt.Sprintf("%d", database.ID), fmt.Sprintf("%s.sql", backup.Name))
 	_, err = os.Stat(backupFilePath)

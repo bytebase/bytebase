@@ -893,10 +893,10 @@ func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, datab
 	).Scan(
 		&backup.UID,
 		&backup.RowStatus,
+		&backup.Name,
 		&backup.StorageBackend,
 		&backup.MigrationHistoryVersion,
 		&backup.Path,
-		&backup.Name,
 		&backup.CreatedTs,
 		&backup.UpdatedTs,
 		&backup.Status,
