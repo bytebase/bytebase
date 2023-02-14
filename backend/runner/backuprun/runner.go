@@ -398,7 +398,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 }
 
 // ScheduleBackupTask schedules a backup task.
-func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.DatabaseMessage, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
+func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.DatabaseMessage, backupName string, backupType api.BackupType, creatorID int) (*store.BackupMessage, error) {
 	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
@@ -431,17 +431,16 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	if err := createBackupDirectory(r.profile.DataDir, database.UID); err != nil {
 		return nil, errors.Wrap(err, "failed to create backup directory")
 	}
-	backupCreate := &api.BackupCreate{
-		CreatorID:               creatorID,
-		DatabaseID:              database.UID,
-		Name:                    backupName,
-		StorageBackend:          r.profile.BackupStorageBackend,
-		Type:                    backupType,
-		Path:                    path,
-		MigrationHistoryVersion: migrationHistoryVersion,
-	}
 
-	backupNew, err := r.store.CreateBackup(ctx, backupCreate)
+	backupNew, err := r.store.CreateBackupV2(ctx, &store.BackupMessage{
+		Name:                    backupName,
+		Status:                  api.BackupStatusPendingCreate,
+		BackupType:              backupType,
+		Comment:                 "",
+		StorageBackend:          r.profile.BackupStorageBackend,
+		MigrationHistoryVersion: migrationHistoryVersion,
+		Path:                    path,
+	}, database.UID, creatorID)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			log.Error("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.DatabaseName))
@@ -451,7 +450,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
-		BackupID: backupNew.ID,
+		BackupID: backupNew.UID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
