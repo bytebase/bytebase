@@ -32,9 +32,6 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 	return &api.DeploymentConfig{
 		ID: raw.ID,
 
-		// Related fields
-		ProjectID: raw.ProjectID,
-
 		// Domain specific fields
 		Name:    raw.Name,
 		Payload: raw.Payload,
@@ -109,11 +106,6 @@ func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.Deployme
 
 func (s *Store) composeDeploymentConfig(ctx context.Context, raw *deploymentConfigRaw) (*api.DeploymentConfig, error) {
 	deploymentConfig := raw.toDeploymentConfig()
-	project, err := s.GetProjectByID(ctx, deploymentConfig.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	deploymentConfig.Project = project
 	return deploymentConfig, nil
 }
 

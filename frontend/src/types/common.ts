@@ -422,7 +422,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_DEPLOYMENT_CONFIG: DeploymentConfig = {
     id: UNKNOWN_ID,
-    project: UNKNOWN_PROJECT,
     schedule: {
       deployments: [],
     },
@@ -778,7 +777,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_DEPLOYMENT_CONFIG: DeploymentConfig = {
     id: EMPTY_ID,
-    project: EMPTY_PROJECT,
     schedule: {
       deployments: [],
     },
