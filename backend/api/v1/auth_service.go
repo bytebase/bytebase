@@ -517,7 +517,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	if email == "" {
 		// If the email is empty, we should concatenate the identifier and
 		// the IdP's domain as the user's email.
-		email = userInfo.Identifier + identityProvider.Domain
+		email = fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain)
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 		Email:       &email,
@@ -537,9 +537,6 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate password hash")
-		}
-		if email == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "email must be set")
 		}
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:                       userInfo.DisplayName,
