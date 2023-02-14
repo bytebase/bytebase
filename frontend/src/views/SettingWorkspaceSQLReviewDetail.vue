@@ -71,65 +71,14 @@
         :style="`WARN`"
         :title="$t('sql-review.create.basic-info.no-linked-environments')"
       />
-      <div class="space-y-2 my-5">
-        <span class="font-semibold">{{ $t("sql-review.filter") }}</span>
-        <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("common.database") }}:</span>
-          <div
-            v-for="engine in engineList"
-            :key="engine.id"
-            class="flex items-center"
-          >
-            <input
-              :id="engine.id"
-              type="checkbox"
-              :value="engine.id"
-              :checked="state.checkedEngine.has(engine.id)"
-              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-              @input="toggleCheckedEngine(engine.id)"
-            />
-            <label
-              :for="engine.id"
-              class="ml-2 items-center text-sm text-gray-600"
-            >
-              {{ $t(`sql-review.engine.${engine.id.toLowerCase()}`) }}
-              <span
-                class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-              >
-                {{ engine.count }}
-              </span>
-            </label>
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("sql-review.level.name") }}:</span>
-          <div
-            v-for="level in errorLevelList"
-            :key="level.id"
-            class="flex items-center"
-          >
-            <input
-              :id="level.id"
-              type="checkbox"
-              :value="level.id"
-              :checked="state.checkedLevel.has(level.id)"
-              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-              @input="toggleCheckedLevel(level.id)"
-            />
-            <label
-              :for="level.id"
-              class="ml-2 items-center text-sm text-gray-600"
-            >
-              {{ $t(`sql-review.level.${level.id.toLowerCase()}`) }}
-              <span
-                class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-              >
-                {{ level.count }}
-              </span>
-            </label>
-          </div>
-        </div>
-      </div>
+      <SQLReviewCategorySummaryFilter
+        class="space-y-2 my-5"
+        :rule-list="selectedRuleList"
+        :is-checked-engine="(engine) => state.checkedEngine.has(engine)"
+        :is-checked-level="(level) => state.checkedLevel.has(level)"
+        @toggle-checked-engine="(engine) => toggleCheckedEngine(engine)"
+        @toggle-checked-level="(level) => toggleCheckedLevel(level)"
+      />
       <div class="py-2 flex justify-between items-center mt-5">
         <SQLReviewCategoryTabFilter
           :selected="state.selectedCategory"
@@ -196,7 +145,6 @@ import { useRouter } from "vue-router";
 import { idFromSlug, environmentName, hasWorkspacePermission } from "@/utils";
 import {
   unknown,
-  LEVEL_LIST,
   RuleLevel,
   RuleTemplate,
   SQLReviewPolicy,
@@ -212,8 +160,11 @@ import {
   pushNotification,
   useSQLReviewStore,
 } from "@/store";
-import { CategoryFilterItem } from "../components/SQLReview/components/SQLReviewCategoryTabFilter.vue";
-import SQLRuleLevelSummary from "../components/SQLReview/components/SQLRuleLevelSummary.vue";
+import {
+  CategoryFilterItem,
+  SQLRuleLevelSummary,
+  SQLReviewCategorySummaryFilter,
+} from "../components/SQLReview/components";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
@@ -304,32 +255,6 @@ const selectedRuleList = computed((): RuleTemplate[] => {
   }
 
   return ruleTemplateList;
-});
-
-const engineList = computed(
-  (): { id: SchemaRuleEngineType; count: number }[] => {
-    const tmp = selectedRuleList.value.reduce((dict, rule) => {
-      for (const engine of rule.engineList) {
-        if (!dict[engine]) {
-          dict[engine] = {
-            id: engine,
-            count: 0,
-          };
-        }
-        dict[engine].count += 1;
-      }
-      return dict;
-    }, {} as { [id: string]: { id: SchemaRuleEngineType; count: number } });
-
-    return Object.values(tmp);
-  }
-);
-
-const errorLevelList = computed((): { id: RuleLevel; count: number }[] => {
-  return LEVEL_LIST.map((level) => ({
-    id: level,
-    count: selectedRuleList.value.filter((rule) => rule.level === level).length,
-  }));
 });
 
 const toggleCheckedEngine = (engine: SchemaRuleEngineType) => {
