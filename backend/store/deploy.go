@@ -13,125 +13,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// deploymentConfigRaw is the store model for an DeploymentConfig.
-// Fields have exactly the same meanings as DeploymentConfig.
-type deploymentConfigRaw struct {
-	ID int
-
-	// Related fields
-	ProjectID int
-
-	// Domain specific fields
-	Name    string
-	Payload string
-}
-
-// toDeploymentConfig creates an instance of DeploymentConfig based on the deploymentConfigRaw.
-// This is intended to be called when we need to compose an DeploymentConfig relationship.
-func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
-	return &api.DeploymentConfig{
-		ID: raw.ID,
-
-		// Domain specific fields
-		Name:    raw.Name,
-		Payload: raw.Payload,
-	}
-}
-
-// UpsertDeploymentConfig upserts an instance of DeploymentConfig.
-func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
-	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to upsert deployment config with DeploymentConfigUpsert[%+v]", upsert)
-	}
-	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose DeploymentConfig with deploymentConfigRaw[%+v]", deploymentConfigRaw)
-	}
-	return deploymentConfig, nil
-}
-
-//
-// private functions
-//
-
-func (s *Store) composeDeploymentConfig(ctx context.Context, raw *deploymentConfigRaw) (*api.DeploymentConfig, error) {
-	deploymentConfig := raw.toDeploymentConfig()
-	return deploymentConfig, nil
-}
-
-// upsertDeploymentConfigRaw upserts a deployment configuration to a project.
-func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
-	// Validate the deployment configuration.
-	if _, err := api.ValidateAndGetDeploymentSchedule(upsert.Payload); err != nil {
-		return nil, err
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	cfg, err := s.upsertDeploymentConfigImpl(ctx, tx, upsert)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return cfg, nil
-}
-
-func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
-	if upsert.Payload == "" {
-		upsert.Payload = "{}"
-	}
-	query := `
-		INSERT INTO deployment_config (
-			creator_id,
-			updater_id,
-			project_id,
-			name,
-			config
-		)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT(project_id) DO UPDATE SET
-			updater_id = excluded.updater_id,
-			name = excluded.name,
-			config = excluded.config
-		RETURNING id, project_id, name, config
-	`
-	var cfg deploymentConfigRaw
-	if err := tx.QueryRowContext(ctx, query,
-		upsert.UpdaterID,
-		upsert.UpdaterID,
-		upsert.ProjectID,
-		upsert.Name,
-		upsert.Payload,
-	).Scan(
-		&cfg.ID,
-		&cfg.ProjectID,
-		&cfg.Name,
-		&cfg.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, err
-	}
-	return &cfg, nil
-}
-
-// UpsertDeploymentConfigMessage is the message to upsert a deployment config.
-type UpsertDeploymentConfigMessage struct {
-	ProjectUID       int
-	PrincipalUID     int
-	DeploymentConfig *DeploymentConfigMessage
-}
-
 // DeploymentConfigMessage is the message for deployment config.
 type DeploymentConfigMessage struct {
 	Name     string
@@ -261,7 +142,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &payload); err != nil {
 		if err == sql.ErrNoRows {
 			// Return default deployment config.
-			return s.getDefaultDeploymentConfigV2(ctx, projectUID)
+			return s.getDefaultDeploymentConfigV2(ctx)
 		}
 		return nil, FormatError(err)
 	}
@@ -280,8 +161,8 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 }
 
 // UpsertDeploymentConfigV2 upserts the deployment config.
-func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDeploymentConfigMessage) (*DeploymentConfigMessage, error) {
-	payload, err := json.Marshal(upsert.DeploymentConfig.Schedule)
+func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, principalUID int, upsert *DeploymentConfigMessage) (*DeploymentConfigMessage, error) {
+	payload, err := json.Marshal(upsert.Schedule)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal deployment config")
 	}
@@ -310,10 +191,10 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDepl
 	defer tx.Rollback()
 
 	if err := tx.QueryRowContext(ctx, query,
-		upsert.PrincipalUID,
-		upsert.PrincipalUID,
-		upsert.ProjectUID,
-		upsert.DeploymentConfig.Name,
+		principalUID,
+		principalUID,
+		projectUID,
+		upsert.Name,
 		payload,
 	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &payload); err != nil {
 		if err == sql.ErrNoRows {
@@ -331,7 +212,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, upsert *UpsertDepl
 	return &deploymentConfig, nil
 }
 
-func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context, projectID int) (*DeploymentConfigMessage, error) {
+func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentConfigMessage, error) {
 	environmentList, err := s.ListEnvironmentV2(ctx, &FindEnvironmentMessage{})
 	if err != nil {
 		return nil, err

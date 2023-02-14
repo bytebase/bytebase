@@ -637,7 +637,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, deploymentConfigUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set deployment configuration request").SetInternal(err)
 		}
-		deploymentConfigUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
@@ -646,15 +645,55 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
-		deploymentConfigUpsert.ProjectID = projectID
 
-		deploymentConfig, err := s.store.UpsertDeploymentConfig(ctx, deploymentConfigUpsert)
+		apiDeploymentConfig, err := api.ValidateAndGetDeploymentSchedule(deploymentConfigUpsert.Payload)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to validate deployment configuration: %v", err))
+		}
+
+		// Remove this when we migrate to V1 API.
+		//
+		// Convert to store message.
+		var schedule store.Schedule
+		for _, d := range apiDeploymentConfig.Deployments {
+			var labelSelector store.LabelSelector
+			for _, spec := range d.Spec.Selector.MatchExpressions {
+				operatorTp := store.InOperatorType
+				switch spec.Operator {
+				case api.InOperatorType:
+					operatorTp = store.InOperatorType
+				case api.ExistsOperatorType:
+					operatorTp = store.ExistsOperatorType
+				}
+				labelSelector.MatchExpressions = append(labelSelector.MatchExpressions, &store.LabelSelectorRequirement{
+					Key:      spec.Key,
+					Operator: operatorTp,
+					Values:   spec.Values,
+				})
+			}
+			schedule.Deployments = append(schedule.Deployments, &store.Deployment{
+				Name: d.Name,
+				Spec: &store.DeploymentSpec{
+					Selector: &labelSelector,
+				},
+			})
+		}
+		storeDeploymentConfig := &store.DeploymentConfigMessage{
+			Name:     deploymentConfigUpsert.Name,
+			Schedule: &schedule,
+		}
+
+		newStoreDeploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), storeDeploymentConfig)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set deployment configuration").SetInternal(err)
 		}
+		newAPIDeploymentConfig, err := newStoreDeploymentConfig.ToAPIDeploymentConfig()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert deployment configuration").SetInternal(err)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, deploymentConfig); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, newAPIDeploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal set deployment configuration response").SetInternal(err)
 		}
 		return nil
