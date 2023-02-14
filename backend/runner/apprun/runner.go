@@ -121,7 +121,9 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 						issue, ok := issueByID[externalApproval.IssueID]
 						if !ok {
-							log.Error("expect to have found issue in application runner", zap.Int("issue_id", externalApproval.IssueID))
+							// issueByID is fetched before externalApprovalList and is not fresh,
+							// so it's ok not to find the correspoding issue of an externalApproval as
+							// it will be handled next round anyway.
 							continue
 						}
 						stages, ok := stagesByPipelineID[issue.PipelineUID]
