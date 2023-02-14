@@ -535,6 +535,7 @@ func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_Sensitive
 			maskType = v1pb.SensitiveDataMaskType_DEFAULT
 		}
 		sensitiveDataList = append(sensitiveDataList, &v1pb.SensitiveData{
+			Schema:   data.Schema,
 			Table:    data.Table,
 			Column:   data.Column,
 			MaskType: maskType,
@@ -555,6 +556,7 @@ func convertToSensitiveDataPolicyPayload(policy *v1pb.SensitiveDataPolicy) (*api
 			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskType)
 		}
 		sensitiveDataList = append(sensitiveDataList, api.SensitiveData{
+			Schema: data.Schema,
 			Table:  data.Table,
 			Column: data.Column,
 			Type:   api.SensitiveDataMaskTypeDefault,

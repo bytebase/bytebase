@@ -22,7 +22,7 @@
           {{ item.column }}
         </div>
         <div class="bb-grid-cell">
-          {{ item.table }}
+          {{ item.schema ? `${item.schema}.${item.table}` : item.table }}
         </div>
         <div class="bb-grid-cell">
           {{ item.database.name }}
@@ -100,6 +100,7 @@ import { BBGrid } from "@/bbkit";
 type SensitiveColumn = {
   database: Database;
   policy: Policy;
+  schema: string;
   table: string;
   column: string;
 };
@@ -153,8 +154,8 @@ const updateList = async () => {
     const database = await databaseStore.getOrFetchDatabaseById(databaseId);
 
     for (let j = 0; j < payload.sensitiveDataList.length; j++) {
-      const { table, column } = payload.sensitiveDataList[j];
-      sensitiveColumnList.push({ database, policy, table, column });
+      const { schema, table, column } = payload.sensitiveDataList[j];
+      sensitiveColumnList.push({ database, policy, schema, table, column });
     }
   }
   state.sensitiveColumnList = sensitiveColumnList;
@@ -234,7 +235,10 @@ const clickRow = (
   row: number,
   e: MouseEvent
 ) => {
-  const url = `/db/${databaseSlug(item.database)}/table/${item.table}`;
+  let url = `/db/${databaseSlug(item.database)}/table/${item.table}`;
+  if (item.schema != "") {
+    url += `?schema=${item.schema}`;
+  }
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {
