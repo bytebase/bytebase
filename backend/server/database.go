@@ -312,7 +312,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backup.ToAPIBackup()); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create backup response").SetInternal(err)
 		}
 		return nil

@@ -700,9 +700,6 @@ type BackupMessage struct {
 	BackupType api.BackupType
 	// Comment is the comment of the backup.
 	Comment string
-
-	// Input only fields.
-	//
 	// Storage Backend is the storage backend of the backup.
 	StorageBackend api.BackupStorageBackend
 	// MigrationHistoryVersion is the migration history version of the database.
@@ -718,6 +715,28 @@ type BackupMessage struct {
 	CreatedTs int64
 	// UpdatedTs is the timestamp when the backup is updated.
 	UpdatedTs int64
+	// RowStatus is the status of the row. ARCHIVED means the backup is deleted.
+	RowStatus api.RowStatus
+	// DatabaseUID is the UID of the database.
+	DatabaseUID int
+}
+
+// ToAPIBackup converts BackupMessage to legacy api Backup.
+func (b *BackupMessage) ToAPIBackup() *api.Backup {
+	return &api.Backup{
+		ID:                      b.UID,
+		RowStatus:               b.RowStatus,
+		CreatedTs:               b.CreatedTs,
+		UpdatedTs:               b.UpdatedTs,
+		Name:                    b.Name,
+		Status:                  b.Status,
+		Type:                    b.BackupType,
+		StorageBackend:          b.StorageBackend,
+		MigrationHistoryVersion: b.MigrationHistoryVersion,
+		Path:                    b.Path,
+		Comment:                 b.Comment,
+		DatabaseID:              b.DatabaseUID,
+	}
 }
 
 // FindBackupMessage is the message for finding backup.
@@ -857,7 +876,7 @@ func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, datab
 			comment
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, name, created_ts, updated_ts, status, type, comment
+		RETURNING id, row_status, name, storage_backend, migration_history_version, path, created_ts, updated_ts, status, type, comment, database_id
 	`
 	var backup BackupMessage
 	if err := tx.QueryRowContext(ctx, query,
@@ -873,12 +892,17 @@ func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, datab
 		create.Comment,
 	).Scan(
 		&backup.UID,
+		&backup.RowStatus,
+		&backup.StorageBackend,
+		&backup.MigrationHistoryVersion,
+		&backup.Path,
 		&backup.Name,
 		&backup.CreatedTs,
 		&backup.UpdatedTs,
 		&backup.Status,
 		&backup.BackupType,
 		&backup.Comment,
+		&backup.DatabaseUID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -909,12 +933,17 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id,
+			row_status,
 			name,
+			storage_backend,
+			migration_history_version,
+			path,
 			created_ts,
 			updated_ts,
 			status,
 			type,
-			comment
+			comment,
+			database_id
 		FROM backup WHERE %s;`, strings.Join(where, " AND ")), args...)
 	if err != nil {
 		return nil, FormatError(err)
@@ -926,12 +955,17 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 		var backup BackupMessage
 		if err := rows.Scan(
 			&backup.UID,
+			&backup.RowStatus,
 			&backup.Name,
+			&backup.StorageBackend,
+			&backup.MigrationHistoryVersion,
+			&backup.Path,
 			&backup.CreatedTs,
 			&backup.UpdatedTs,
 			&backup.Status,
 			&backup.BackupType,
 			&backup.Comment,
+			&backup.DatabaseUID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
