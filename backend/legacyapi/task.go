@@ -319,7 +319,7 @@ type TaskFind struct {
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
 	Payload               string
 	FilterOutBlockedStage bool
-	FilterOutRollbackTask bool
+	NonRollbackTask       bool
 }
 
 func (find *TaskFind) String() string {

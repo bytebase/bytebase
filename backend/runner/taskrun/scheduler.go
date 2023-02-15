@@ -802,7 +802,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
 		StatusList:            &taskStatusList,
 		FilterOutBlockedStage: true,
-		FilterOutRollbackTask: true,
+		NonRollbackTask:       true,
 	})
 	if err != nil {
 		return err
