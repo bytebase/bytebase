@@ -26,8 +26,6 @@ var (
 	reDatabaseTable = regexp.MustCompile("(?s)`(.+)`\\.`(.+)`")
 )
 
-const binlogSizeLimit = 8 * 1024 * 1024
-
 // GetRollbackSQL generates the rollback SQL for the list of binlog events in the reversed order.
 func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string, error) {
 	if len(txn) == 0 {
