@@ -655,6 +655,16 @@ const identityProviderTypeList = computed(() => {
 });
 
 const redirectUrl = computed(() => {
+  if (state.type === IdentityProviderType.OAUTH2) {
+    return `${
+      useActuatorStore().serverInfo?.externalUrl || window.origin
+    }/oauth/callback`;
+  } else if (state.type === IdentityProviderType.OIDC) {
+    return `${
+      useActuatorStore().serverInfo?.externalUrl || window.origin
+    }/oidc/callback`;
+  }
+
   return `${
     useActuatorStore().serverInfo?.externalUrl || window.origin
   }/oauth/callback`;
