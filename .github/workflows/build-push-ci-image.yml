@@ -32,4 +32,4 @@ jobs:
             VERSION_SUFFIX=-release-ci
             GIT_COMMIT=${{ env.GITHUB_SHA }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:release-ci" " ${{ steps.docker_build.outputs.digest }}
+        run: echo "Successfully pushed bytebase/bytebase:release-ci " ${{ steps.docker_build.outputs.digest }}
