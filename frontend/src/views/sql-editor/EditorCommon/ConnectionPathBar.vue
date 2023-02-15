@@ -1,9 +1,9 @@
 <template>
   <div
     v-if="!tabStore.isDisconnected"
-    class="w-full flex justify-between items-start"
+    class="w-full flex justify-between items-start bg-white"
   >
-    <div class="flex justify-start items-center h-8 px-4 rounded-br bg-white">
+    <div class="flex justify-start items-center h-8 px-4">
       <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
         <template #trigger>
           <heroicons-outline:exclamation
