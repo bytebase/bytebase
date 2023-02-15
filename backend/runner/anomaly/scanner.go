@@ -461,11 +461,11 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 			// Ignore if backup setting has been changed after the max age.
 			if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
 				status := api.BackupStatusDone
-				backupFind := &api.BackupFind{
-					DatabaseID: &database.UID,
-					Status:     &status,
+				backupFind := &store.FindBackupMessage{
+					DatabaseUID: &database.UID,
+					Status:      &status,
 				}
-				backupList, err := s.store.FindBackup(ctx, backupFind)
+				backupList, err := s.store.ListBackupV2(ctx, backupFind)
 				if err != nil {
 					log.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.ResourceID),

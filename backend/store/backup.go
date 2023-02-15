@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -39,32 +40,6 @@ type backupRaw struct {
 	// Payload contains data such as PITR info, which will not be created at first.
 	// When backup runner executes the real backup job, it will fill this field.
 	Payload api.BackupPayload
-}
-
-// toBackup creates an instance of Backup based on the backupRaw.
-// This is intended to be called when we need to compose an Backup relationship.
-func (raw *backupRaw) toBackup() *api.Backup {
-	return &api.Backup{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatedTs: raw.CreatedTs,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:                    raw.Name,
-		Status:                  raw.Status,
-		Type:                    raw.Type,
-		StorageBackend:          raw.StorageBackend,
-		MigrationHistoryVersion: raw.MigrationHistoryVersion,
-		Path:                    raw.Path,
-		Comment:                 raw.Comment,
-		Payload:                 raw.Payload,
-	}
 }
 
 // backupSettingRaw is the store model for an BackupSetting.
@@ -105,19 +80,6 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 		HookURL: raw.HookURL,
 	}
-}
-
-// FindBackup finds a list of Backup instances.
-func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
-	backupRawList, err := s.findBackupRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Backup list with BackupFind[%+v]", find)
-	}
-	var backupList []*api.Backup
-	for _, raw := range backupRawList {
-		backupList = append(backupList, composeBackup(raw))
-	}
-	return backupList, nil
 }
 
 // PatchBackup patches an instance of Backup.
@@ -197,31 +159,6 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 	return backupSettingList, nil
 }
 
-//
-// private functions
-//
-
-// composeBackup composes an instance of Backup by backupRaw.
-func composeBackup(raw *backupRaw) *api.Backup {
-	return raw.toBackup()
-}
-
-// findBackupRaw retrieves a list of backups based on find.
-func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	backupRawList, err := s.findBackupImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return backupRawList, nil
-}
-
 // patchBackupRaw updates an existing backup by ID.
 // Returns ENOTFOUND if backup does not exist.
 func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*backupRaw, error) {
@@ -289,84 +226,6 @@ func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.Bac
 		}
 	}
 	return nil
-}
-
-func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) ([]*backupRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.RowStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.DatabaseID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Name; v != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Status; v != nil {
-		where, args = append(where, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			row_status,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			database_id,
-			name,
-			status,
-			type,
-			storage_backend,
-			migration_history_version,
-			path,
-			comment,
-			payload
-		FROM backup
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into backupRawList.
-	var backupRawList []*backupRaw
-	for rows.Next() {
-		var backupRaw backupRaw
-		var payload []byte
-		if err := rows.Scan(
-			&backupRaw.ID,
-			&backupRaw.RowStatus,
-			&backupRaw.CreatorID,
-			&backupRaw.CreatedTs,
-			&backupRaw.UpdaterID,
-			&backupRaw.UpdatedTs,
-			&backupRaw.DatabaseID,
-			&backupRaw.Name,
-			&backupRaw.Status,
-			&backupRaw.Type,
-			&backupRaw.StorageBackend,
-			&backupRaw.MigrationHistoryVersion,
-			&backupRaw.Path,
-			&backupRaw.Comment,
-			&payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
-			return nil, err
-		}
-		backupRawList = append(backupRawList, &backupRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return backupRawList, nil
 }
 
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
@@ -617,6 +476,21 @@ type BackupMessage struct {
 	Payload api.BackupPayload
 }
 
+// ZapBackupArray is a helper to format zap.Array.
+type ZapBackupArray []*BackupMessage
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
+func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for _, backup := range backups {
+		payload, err := json.Marshal(backup.Payload)
+		if err != nil {
+			return err
+		}
+		arr.AppendString(fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.UID, payload))
+	}
+	return nil
+}
+
 // ToAPIBackup converts BackupMessage to legacy api Backup.
 func (b *BackupMessage) ToAPIBackup() *api.Backup {
 	return &api.Backup{
@@ -641,6 +515,10 @@ type FindBackupMessage struct {
 	DatabaseUID *int
 	// Name is the name of the backup.
 	Name *string
+	// RowStatus is the status of the row.
+	RowStatus *api.RowStatus
+	// Status is the status of the backup.
+	Status *api.BackupStatus
 	// backupUID is the UID of the backup.
 	backupUID *int
 }
@@ -872,6 +750,12 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 	if v := find.backupUID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Status; v != nil {
+		where, args = append(where, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
@@ -941,7 +825,7 @@ func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBac
 			retention_period_ts,
 			hook_url
 		FROM backup_setting
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
 		args...,
 	)
 	if err != nil {

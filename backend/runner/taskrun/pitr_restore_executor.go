@@ -215,11 +215,11 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 	}
 
 	backupStatus := api.BackupStatusDone
-	backupList, err := exec.store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
+	backupList, err := exec.store.ListBackupV2(ctx, &store.FindBackupMessage{DatabaseUID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
+	log.Debug("Found backup list", zap.Array("backups", store.ZapBackupArray(backupList)))
 
 	mysqlSourceDriver, sourceOk := sourceDriver.(*mysql.Driver)
 	mysqlTargetDriver, targetOk := targetDriver.(*mysql.Driver)
@@ -248,7 +248,7 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 	binlogDir := common.GetBinlogAbsDir(profile.DataDir, instance.UID)
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 
-	backupAbsPathLocal := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
+	backupAbsPathLocal := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseUID, backup.Name)
 	if backup.StorageBackend == api.BackupStorageBackendS3 {
 		if err := downloadBackupFileFromCloud(ctx, s3Client, backup.Path, backupAbsPathLocal); err != nil {
 			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)

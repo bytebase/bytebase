@@ -2,9 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-
-	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -96,21 +93,6 @@ type Backup struct {
 	// Payload contains data such as binlog position info which will not be created at first.
 	// It is filled when the backup task executor takes database backups.
 	Payload BackupPayload `jsonapi:"attr,payload"`
-}
-
-// ZapBackupArray is a helper to format zap.Array.
-type ZapBackupArray []*Backup
-
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
-func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for _, backup := range backups {
-		payload, err := json.Marshal(backup.Payload)
-		if err != nil {
-			return err
-		}
-		arr.AppendString(fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.ID, payload))
-	}
-	return nil
 }
 
 // BackupCreate is the API message for creating a backup.

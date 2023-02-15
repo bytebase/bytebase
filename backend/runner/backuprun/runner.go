@@ -100,9 +100,9 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 			continue // next database
 		}
 		statusNormal := api.Normal
-		backupList, err := r.store.FindBackup(ctx, &api.BackupFind{
-			DatabaseID: &bs.DatabaseUID,
-			RowStatus:  &statusNormal,
+		backupList, err := r.store.ListBackupV2(ctx, &store.FindBackupMessage{
+			DatabaseUID: &bs.DatabaseUID,
+			RowStatus:   &statusNormal,
 		})
 		if err != nil {
 			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseUID))
@@ -112,7 +112,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs) * time.Second)
 			if time.Now().After(expireTime) {
-				log.Debug("Purging expired backup", zap.Int("databaseID", backup.DatabaseID), zap.String("backup", backup.Name), zap.String("storageBackend", string(backup.StorageBackend)))
+				log.Debug("Purging expired backup", zap.Int("databaseID", backup.DatabaseUID), zap.String("backup", backup.Name), zap.String("storageBackend", string(backup.StorageBackend)))
 				if err := r.purgeBackup(ctx, backup); err != nil {
 					log.Error("Failed to purge backup", zap.String("backup", backup.Name), zap.Error(err))
 				}
@@ -222,27 +222,27 @@ func (*Runner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) er
 	return nil
 }
 
-func (r *Runner) purgeBackup(ctx context.Context, backup *api.Backup) error {
+func (r *Runner) purgeBackup(ctx context.Context, backup *store.BackupMessage) error {
 	archive := api.Archived
 	backupPatch := api.BackupPatch{
-		ID:        backup.ID,
+		ID:        backup.UID,
 		UpdaterID: api.SystemBotID,
 		RowStatus: &archive,
 	}
 	if _, err := r.store.PatchBackup(ctx, &backupPatch); err != nil {
-		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseID)
+		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseUID)
 	}
-	log.Debug("Archived expired backup record", zap.String("name", backup.Name), zap.Int("id", backup.ID))
+	log.Debug("Archived expired backup record", zap.String("name", backup.Name), zap.Int("id", backup.UID))
 
 	switch backup.StorageBackend {
 	case api.BackupStorageBackendLocal:
-		backupFilePath := GetBackupAbsFilePath(r.profile.DataDir, backup.DatabaseID, backup.Name)
+		backupFilePath := GetBackupAbsFilePath(r.profile.DataDir, backup.DatabaseUID, backup.Name)
 		if err := os.Remove(backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete an expired backup file %q", backupFilePath)
 		}
 		log.Debug(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
 	case api.BackupStorageBackendS3:
-		backupFilePath := getBackupRelativeFilePath(backup.DatabaseID, backup.Name)
+		backupFilePath := getBackupRelativeFilePath(backup.DatabaseUID, backup.Name)
 		if _, err := r.s3Client.DeleteObjects(ctx, backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete backup file %s in the cloud storage", backupFilePath)
 		}
@@ -354,9 +354,9 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			continue
 		}
 		backupName := fmt.Sprintf("%s-%s-%s-autobackup", slug.Make(project.Title), slug.Make(environment.Title), t.Format("20060102T030405"))
-		backupList, err := r.store.FindBackup(ctx, &api.BackupFind{
-			DatabaseID: &database.UID,
-			Name:       &backupName,
+		backupList, err := r.store.ListBackupV2(ctx, &store.FindBackupMessage{
+			DatabaseUID: &database.UID,
+			Name:        &backupName,
 		})
 		if err != nil {
 			log.Error("Failed to find backup", zap.Error(err))
