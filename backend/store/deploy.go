@@ -43,7 +43,7 @@ type Schedule struct {
 }
 
 func (s *Schedule) toAPIDeploymentSchedule() *api.DeploymentSchedule {
-	deployments := []*api.Deployment{}
+	var deployments []*api.Deployment
 	for _, d := range s.Deployments {
 		deployments = append(deployments, &api.Deployment{
 			Name: d.Name,
@@ -119,6 +119,9 @@ type LabelSelectorRequirement struct {
 
 // GetDeploymentConfigV2 returns the deployment config.
 func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*DeploymentConfigMessage, error) {
+	if deploymentConfig, ok := s.projectIDDeploymentConfigCache.Load(projectUID); ok {
+		return deploymentConfig.(*DeploymentConfigMessage), nil
+	}
 	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
 
@@ -157,6 +160,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 	}
 	deploymentConfig.Schedule = &schedule
 
+	s.projectIDDeploymentConfigCache.Store(projectUID, &deploymentConfig)
 	return &deploymentConfig, nil
 }
 
@@ -209,6 +213,8 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 	if err := json.Unmarshal([]byte(payload), &deploymentConfig.Schedule); err != nil {
 		return nil, err
 	}
+
+	s.projectIDDeploymentConfigCache.Store(projectUID, &deploymentConfig)
 	return &deploymentConfig, nil
 }
 
@@ -217,7 +223,7 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 	if err != nil {
 		return nil, err
 	}
-	scheduleList := Schedule{}
+	scheduleList := &Schedule{}
 	for _, environment := range environmentList {
 		scheduleList.Deployments = append(scheduleList.Deployments, &Deployment{
 			Name: fmt.Sprintf("%s Stage", environment.Title),
@@ -232,6 +238,6 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 	}
 	return &DeploymentConfigMessage{
 		UID:      0,
-		Schedule: &scheduleList,
+		Schedule: scheduleList,
 	}, nil
 }
