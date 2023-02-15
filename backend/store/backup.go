@@ -107,15 +107,6 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 	}
 }
 
-// CreateBackup creates an instance of Backup.
-func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.Backup, error) {
-	backupRaw, err := s.createBackupRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Backup with BackupCreate[%+v]", create)
-	}
-	return composeBackup(backupRaw), nil
-}
-
 // GetBackupByID gets an instance of Backup by ID.
 func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) {
 	backupRaw, err := s.getBackupRawByID(ctx, id)
@@ -211,26 +202,6 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 // composeBackup composes an instance of Backup by backupRaw.
 func composeBackup(raw *backupRaw) *api.Backup {
 	return raw.toBackup()
-}
-
-// createBackupRaw creates a new backup.
-func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	backupRaw, err := s.createBackupImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return backupRaw, nil
 }
 
 // getBackupRawByID retrieves a single backup based on find.
@@ -339,59 +310,6 @@ func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.Bac
 		}
 	}
 	return nil
-}
-
-// createBackupImpl creates a new backup.
-func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCreate) (*backupRaw, error) {
-	// Insert row into backup.
-	query := `
-		INSERT INTO backup (
-			creator_id,
-			updater_id,
-			database_id,
-			name,
-			status,
-			type,
-			storage_backend,
-			migration_history_version,
-			path
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
-	`
-	var backupRaw backupRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.DatabaseID,
-		create.Name,
-		api.BackupStatusPendingCreate,
-		create.Type,
-		create.StorageBackend,
-		create.MigrationHistoryVersion,
-		create.Path,
-	).Scan(
-		&backupRaw.ID,
-		&backupRaw.RowStatus,
-		&backupRaw.CreatorID,
-		&backupRaw.CreatedTs,
-		&backupRaw.UpdaterID,
-		&backupRaw.UpdatedTs,
-		&backupRaw.DatabaseID,
-		&backupRaw.Name,
-		&backupRaw.Status,
-		&backupRaw.Type,
-		&backupRaw.StorageBackend,
-		&backupRaw.MigrationHistoryVersion,
-		&backupRaw.Path,
-		&backupRaw.Comment,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &backupRaw, nil
 }
 
 func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) ([]*backupRaw, error) {
