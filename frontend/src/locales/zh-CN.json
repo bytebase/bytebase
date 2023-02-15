@@ -443,7 +443,7 @@
         "display-name": "Bytebase 用户的昵称",
         "email": "Bytebase 用户的 Email"
       },
-      "copy-redirect-url": "Redirect URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。"
+      "copy-redirect-url": "Redirect URL 已复制到剪切板。"
     },
     "general": {
       "workspace": {
