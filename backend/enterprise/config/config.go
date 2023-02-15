@@ -24,6 +24,8 @@ type Config struct {
 	Issuer string
 	// Audience is the license audience, it should always be "bb.license".
 	Audience string
+	// HubAPIURL is the API URL for Bytebase hub.
+	HubAPIURL string
 }
 
 const (
@@ -39,8 +41,8 @@ const (
 	MaximumInstanceForFreePlan = 10
 )
 
-// NewConfig will create a new enterprise config instance.
-func NewConfig(mode common.ReleaseMode) (*Config, error) {
+// getConfig will create a new enterprise config instance.
+func getConfig(mode common.ReleaseMode) (*Config, error) {
 	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
 	if err != nil {
 		return nil, errors.Errorf("cannot read license public key for env %s", mode)

@@ -22,6 +22,8 @@ const (
 	SettingAppIM SettingName = "bb.app.im"
 	// SettingWatermark is the setting name for watermark displaying.
 	SettingWatermark SettingName = "bb.workspace.watermark"
+	// SettingHubToken is the setting name for the token to call the Hub API.
+	SettingHubToken SettingName = "bb.hub.token"
 )
 
 // IMType is the type of IM.
