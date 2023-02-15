@@ -323,11 +323,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	deploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, &store.UpsertDeploymentConfigMessage{
-		ProjectUID:       project.UID,
-		PrincipalUID:     ctx.Value(common.PrincipalIDContextKey).(int),
-		DeploymentConfig: storeDeploymentConfig,
-	})
+	deploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, project.UID, ctx.Value(common.PrincipalIDContextKey).(int), storeDeploymentConfig)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

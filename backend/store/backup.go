@@ -759,24 +759,31 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 }
 
 func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
-	// Build WHERE clause.
+	// Build WHERE and JOIN clause.
 	where, args := []string{"TRUE"}, []interface{}{}
+	var join []string
 	if v := find.DatabaseUID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("backup_setting.database_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.InstanceUID; v != nil {
+		// Relation backup_setting doesn't have instance_id column, so we need to join the db table to get the instance_id.
+		join = append(join, "JOIN db ON db.id = backup_setting.database_id")
+		where, args = append(where, fmt.Sprintf("db.instance_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
-			updated_ts,
-			database_id,
-			enabled,
-			hour,
-			day_of_week,
-			retention_period_ts,
-			hook_url
-		FROM backup_setting
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
+			backup_setting.id,
+			backup_setting.updated_ts,
+			backup_setting.database_id,
+			backup_setting.enabled,
+			backup_setting.hour,
+			backup_setting.day_of_week,
+			backup_setting.retention_period_ts,
+			backup_setting.hook_url
+		FROM backup_setting `+
+		strings.Join(join, " ")+
+		` WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {
