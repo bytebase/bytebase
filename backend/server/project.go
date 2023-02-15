@@ -283,10 +283,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(repositoryCreate.BranchFilter, "*") {
-			if notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); notFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
-			} else if err != nil {
+			notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", repositoryCreate.BranchFilter)).SetInternal(err)
+			}
+			if notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name))
 			}
 		}
 
@@ -504,10 +506,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(newBranchFilter, "*") {
-			if notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter); notFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
-			} else if err != nil {
+			notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", newBranchFilter)).SetInternal(err)
+			}
+			if notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name))
 			}
 		}
 
