@@ -305,7 +305,8 @@
       "failed": "Failed",
       "preview-rollback": "Preview rollback",
       "logging": "Logging",
-      "empty-rollback-statement": "The rollback statement is empty"
+      "empty-rollback-statement": "The rollback statement is empty",
+      "cancel-logging": "Cancel logging the SQL rollback"
     }
   },
   "banner": {

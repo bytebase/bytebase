@@ -302,7 +302,8 @@
       "log": "记录",
       "failed": "失败",
       "logging": "记录中",
-      "empty-rollback-statement": "回滚语句为空"
+      "empty-rollback-statement": "回滚语句为空",
+      "cancel-logging": "取消记录回滚语句"
     }
   },
   "banner": {

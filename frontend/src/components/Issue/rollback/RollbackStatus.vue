@@ -1,13 +1,7 @@
 <template>
   <div class="text-sm font-medium">
     <template v-if="!payload?.rollbackEnabled">
-      <button
-        :disabled="!allowRollback"
-        class="btn-normal !px-3 !py-1"
-        @click="toggleRollback(true)"
-      >
-        {{ $t("task.rollback.log") }}
-      </button>
+      <LogButton />
     </template>
     <template v-else>
       <template v-if="payload?.rollbackSqlStatus === 'FAILED'">
@@ -39,21 +33,7 @@
         </BBTooltipButton>
       </template>
       <template v-else>
-        <div
-          class="select-none inline-flex items-center border border-control-border rounded-md text-control bg-white text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-          :class="[
-            !allowRollback && 'cursor-not-allowed bg-control-bg opacity-50 ',
-          ]"
-        >
-          <span class="pl-3 pr-0.5">{{ $t("task.rollback.logging") }}</span>
-          <span
-            class="h-[28px] px-1.5 flex items-center rounded-r-md hover:bg-control-bg-hover cursor-pointer"
-            :class="[!allowRollback && 'pointer-events-none']"
-            @click="toggleRollback(false)"
-          >
-            <heroicons-outline:x-mark class="w-3 h-3" />
-          </span>
-        </div>
+        <LoggingButton />
       </template>
     </template>
   </div>
@@ -76,6 +56,8 @@ import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
 import { useActivityStore, useIssueStore } from "@/store";
 import { useRollbackLogic } from "./common";
+import LogButton from "./LogButton.vue";
+import LoggingButton from "./LoggingButton.vue";
 
 type LocalState = {
   loading: boolean;
@@ -86,7 +68,7 @@ const router = useRouter();
 const issueStore = useIssueStore();
 
 const context = useIssueLogic();
-const { allowRollback, toggleRollback } = useRollbackLogic();
+const { allowRollback } = useRollbackLogic();
 
 const issue = context.issue as Ref<Issue>;
 const task = context.selectedTask as Ref<Task>;
