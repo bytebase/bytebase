@@ -663,11 +663,9 @@ const redirectUrl = computed(() => {
     return `${
       useActuatorStore().serverInfo?.externalUrl || window.origin
     }/oidc/callback`;
+  } else {
+    throw new Error(`identity provider type ${state.type} is invalid`);
   }
-
-  return `${
-    useActuatorStore().serverInfo?.externalUrl || window.origin
-  }/oauth/callback`;
 });
 
 const isCreating = computed(() => {
