@@ -44,7 +44,7 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 			var indexList []*ast.CreateIndexStmt
 			for _, constraint := range newStmt.Constraints {
 				switch constraint.Tp {
-				case ast.ConstraintUniq:
+				case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 					// This becomes the unique index.
 					indexOption := constraint.Option
 					if indexOption == nil {
@@ -74,7 +74,7 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 						IndexOption:             indexOption,
 						KeyType:                 ast.IndexKeyTypeNone,
 					})
-				case ast.ConstraintPrimaryKey, ast.ConstraintKey, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintForeignKey, ast.ConstraintFulltext:
+				case ast.ConstraintPrimaryKey, ast.ConstraintKey, ast.ConstraintForeignKey, ast.ConstraintFulltext, ast.ConstraintCheck:
 					constraintList = append(constraintList, constraint)
 				}
 			}

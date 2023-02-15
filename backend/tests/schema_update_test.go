@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -870,7 +871,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
-			const schemaFile = "bbtest/Prod/.testVCSSchemaUpdate##LATEST.sql"
+			schemaFile := fmt.Sprintf("bbtest/Prod/.%s##LATEST.sql", databaseName)
 			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				schemaFile: schemaFileContent,
@@ -2119,4 +2120,340 @@ func TestMarkTaskAsDone(t *testing.T) {
 	result, err := ctl.query(instance, databaseName, bookTableQuery)
 	a.NoError(err)
 	a.NotEqual(bookSchemaSQLResult, result)
+}
+
+func TestVCS_SDL_MySQL(t *testing.T) {
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp:    "2021-01-13T13:14:00Z",
+							AddedList:    added,
+							ModifiedList: modified,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+				return github.WebhookPushEvent{
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added:    added,
+							Modified: modified,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServerWithExternalPg(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			// Create a MySQL instance.
+			mysqlPort := getTestPort()
+			stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
+			defer stopInstance()
+
+			mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))
+			a.NoError(err)
+			defer mysqlDB.Close()
+
+			const databaseName = "testVCSSchemaUpdateMySQL"
+			_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+
+			_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
+			a.NoError(err)
+			_, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'")
+			a.NoError(err)
+
+			_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
+			a.NoError(err)
+
+			// Create a table in the database
+			schemaFileContent := `CREATE TABLE projects (id int, PRIMARY KEY (id));`
+			_, err = mysqlDB.Exec(schemaFileContent)
+			a.NoError(err)
+
+			// Create a VCS
+			apiVCS, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name:             "Test VCS Project",
+					Key:              "TestVCSSchemaUpdate",
+					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository
+			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              apiVCS.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			prodEnvironment, err := findEnvironment(environments, "Prod")
+			a.NoError(err)
+
+			// Add an instance
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				EnvironmentID: prodEnvironment.ID,
+				Name:          "mysqlInstance",
+				Engine:        db.MySQL,
+				Host:          "127.0.0.1",
+				Port:          strconv.Itoa(mysqlPort),
+				Username:      "bytebase",
+				Password:      "bytebase",
+			})
+			a.NoError(err)
+
+			// Create an issue that creates a database
+			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			// Simulate Git commits for schema update to create a new table "users".
+			schemaFile := fmt.Sprintf("bbtest/Prod/.%s##LATEST.sql", databaseName)
+			schemaFileContent += "\nCREATE TABLE users (id int, PRIMARY KEY (id));"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				schemaFile: schemaFileContent,
+			})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: schemaFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}, "1", "2"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issue
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue := issues[0]
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("Apply schema diff by file Prod/.%s##LATEST.sql", databaseName), issue.Description)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Simulate Git commits for data update to the table "users".
+			dataFile := fmt.Sprintf("bbtest/Prod/%s##ver2##data##insert_data.sql", databaseName)
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				dataFile: `INSERT INTO users (id) VALUES (1);`,
+			})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: dataFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */, "2", "3"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get data update issue
+			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue = issues[0]
+			status, err = ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal(fmt.Sprintf("[%s] Change data", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("By VCS files:\n\nProd/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Query list of tables
+			result, err := ctl.query(instance, databaseName, fmt.Sprintf(`
+SELECT table_name 
+    FROM information_schema.tables 
+WHERE table_schema = '%s'; 
+`, databaseName))
+			a.NoError(err)
+			a.Equal(`[["TABLE_NAME"],["VARCHAR"],[["projects"],["users"]],[false]]`, result)
+
+			// Get migration history
+			const initialSchema = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
+
+			const updatedSchema = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"--\n" +
+				"-- Table structure for `projects`\n" +
+				"--\n" +
+				"CREATE TABLE `projects` (\n" +
+				"  `id` int NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"--\n" +
+				"-- Table structure for `users`\n" +
+				"--\n" +
+				"CREATE TABLE `users` (\n" +
+				"  `id` int NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
+
+			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
+			a.NoError(err)
+			wantHistories := []api.MigrationHistory{
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Data,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: updatedSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.MigrateSDL,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: initialSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.UI,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     initialSchema,
+					SchemaPrev: "",
+				},
+			}
+			a.Equal(len(wantHistories), len(histories))
+
+			for i, history := range histories {
+				got := api.MigrationHistory{
+					Database:   history.Database,
+					Source:     history.Source,
+					Type:       history.Type,
+					Status:     history.Status,
+					Schema:     history.Schema,
+					SchemaPrev: history.SchemaPrev,
+				}
+				a.Equal(wantHistories[i], got, i)
+				a.NotEmpty(history.Version)
+			}
+		})
+	}
 }
