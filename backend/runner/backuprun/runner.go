@@ -224,12 +224,12 @@ func (*Runner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) er
 
 func (r *Runner) purgeBackup(ctx context.Context, backup *store.BackupMessage) error {
 	archive := api.Archived
-	backupPatch := api.BackupPatch{
-		ID:        backup.UID,
+	backupPatch := &store.UpdateBackupMessage{
+		UID:       backup.UID,
 		UpdaterID: api.SystemBotID,
 		RowStatus: &archive,
 	}
-	if _, err := r.store.PatchBackup(ctx, &backupPatch); err != nil {
+	if _, err := r.store.UpdateBackupV2(ctx, backupPatch); err != nil {
 		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseUID)
 	}
 	log.Debug("Archived expired backup record", zap.String("name", backup.Name), zap.Int("id", backup.UID))

@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 const (
 	// BackupRetentionPeriodUnset is the unset value of a backup retention period.
 	BackupRetentionPeriodUnset = 0
@@ -110,41 +106,6 @@ type BackupCreate struct {
 	StorageBackend          BackupStorageBackend
 	MigrationHistoryVersion string
 	Path                    string
-}
-
-// BackupFind is the API message for finding backups.
-type BackupFind struct {
-	RowStatus *RowStatus
-
-	// Related fields
-	DatabaseID *int
-
-	// Domain specific fields
-	Name   *string
-	Status *BackupStatus
-}
-
-func (find *BackupFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
-// BackupPatch is the API message for patching a backup.
-type BackupPatch struct {
-	ID int
-
-	// Standard fields
-	RowStatus *RowStatus
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Status  *string
-	Comment *string
-	Payload *string
 }
 
 // BackupSetting is the backup setting for a database.

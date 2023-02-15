@@ -88,15 +88,15 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 			log.Warn(err.Error())
 		}
 	}
-	backupPatch := api.BackupPatch{
-		ID:        backup.UID,
+	backupPatch := store.UpdateBackupMessage{
+		UID:       backup.UID,
 		Status:    &backupStatus,
 		UpdaterID: api.SystemBotID,
 		Comment:   &comment,
 		Payload:   &backupPayload,
 	}
 
-	if _, err := exec.store.PatchBackup(ctx, &backupPatch); err != nil {
+	if _, err := exec.store.UpdateBackupV2(ctx, &backupPatch); err != nil {
 		return true, nil, errors.Wrap(err, "failed to patch backup")
 	}
 

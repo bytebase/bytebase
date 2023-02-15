@@ -14,34 +14,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// backupRaw is the store model for an Backup.
-// Fields have exactly the same meanings as Backup.
-type backupRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus api.RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	DatabaseID int
-
-	// Domain specific fields
-	Name                    string
-	Status                  api.BackupStatus
-	Type                    api.BackupType
-	StorageBackend          api.BackupStorageBackend
-	MigrationHistoryVersion string
-	Path                    string
-	Comment                 string
-	// Payload contains data such as PITR info, which will not be created at first.
-	// When backup runner executes the real backup job, it will fill this field.
-	Payload api.BackupPayload
-}
-
 // backupSettingRaw is the store model for an BackupSetting.
 // Fields have exactly the same meanings as BackupSetting.
 type backupSettingRaw struct {
@@ -80,29 +52,6 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 		HookURL: raw.HookURL,
 	}
-}
-
-// PatchBackup patches an instance of Backup.
-func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*BackupMessage, error) {
-	backupRaw, err := s.patchBackupRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Backup with BackupPatch[%+v]", patch)
-	}
-	return &BackupMessage{
-		Name:                    backupRaw.Name,
-		Status:                  backupRaw.Status,
-		BackupType:              backupRaw.Type,
-		Comment:                 backupRaw.Comment,
-		StorageBackend:          backupRaw.StorageBackend,
-		MigrationHistoryVersion: backupRaw.MigrationHistoryVersion,
-		Path:                    backupRaw.Path,
-		UID:                     backupRaw.ID,
-		CreatedTs:               backupRaw.CreatedTs,
-		UpdatedTs:               backupRaw.UpdatedTs,
-		RowStatus:               backupRaw.RowStatus,
-		DatabaseUID:             backupRaw.DatabaseID,
-		Payload:                 backupRaw.Payload,
-	}, nil
 }
 
 // UpsertBackupSetting upserts an instance of backup setting.
@@ -159,27 +108,6 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 	return backupSettingList, nil
 }
 
-// patchBackupRaw updates an existing backup by ID.
-// Returns ENOTFOUND if backup does not exist.
-func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	backupRaw, err := s.patchBackupImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return backupRaw, nil
-}
-
 // upsertBackupSettingRaw sets the backup settings for a database.
 func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
 	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
@@ -226,66 +154,6 @@ func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.Bac
 		}
 	}
 	return nil
-}
-
-// patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
-func (*Store) patchBackupImpl(ctx context.Context, tx *Tx, patch *api.BackupPatch) (*backupRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Status; v != nil {
-		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Payload; v != nil {
-		if *v == "" {
-			*v = "{}"
-		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	var backupRaw backupRaw
-	var payload []byte
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			UPDATE backup
-			SET `+strings.Join(set, ", ")+`
-			WHERE id = $%d
-			RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
-		`, len(args)),
-		args...,
-	).Scan(
-		&backupRaw.ID,
-		&backupRaw.RowStatus,
-		&backupRaw.CreatorID,
-		&backupRaw.CreatedTs,
-		&backupRaw.UpdaterID,
-		&backupRaw.UpdatedTs,
-		&backupRaw.DatabaseID,
-		&backupRaw.Name,
-		&backupRaw.Status,
-		&backupRaw.Type,
-		&backupRaw.StorageBackend,
-		&backupRaw.MigrationHistoryVersion,
-		&backupRaw.Path,
-		&backupRaw.Comment,
-		&payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("backup ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
-		return nil, err
-	}
-	return &backupRaw, nil
 }
 
 // upsertBackupSettingImpl updates an existing backup setting.
@@ -523,6 +391,22 @@ type FindBackupMessage struct {
 	backupUID *int
 }
 
+// UpdateBackupMessage is the message for updating backup.
+type UpdateBackupMessage struct {
+	// UID is the UID of the backup.
+	UID int
+
+	// Standard fields
+	RowStatus *api.RowStatus
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterID int
+
+	// Domain specific fields
+	Status  *string
+	Comment *string
+	Payload *string
+}
+
 // GetBackupSettingV2 retrieves the backup setting for the given database.
 func (s *Store) GetBackupSettingV2(ctx context.Context, databaseUID int) (*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -736,6 +620,73 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return backupList, nil
+}
+
+// UpdateBackupV2 patches an instance of Backup.
+func (s *Store) UpdateBackupV2(ctx context.Context, patch *UpdateBackupMessage) (*BackupMessage, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Status; v != nil {
+		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Comment; v != nil {
+		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		if *v == "" {
+			*v = "{}"
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, patch.UID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+
+	var backup BackupMessage
+	var payload []byte
+	// Execute update query with RETURNING.
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE backup
+			SET `+strings.Join(set, ", ")+`
+			WHERE id = $%d
+			RETURNING id, row_status, created_ts, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
+		`, len(args)),
+		args...,
+	).Scan(
+		&backup.UID,
+		&backup.RowStatus,
+		&backup.CreatedTs,
+		&backup.UpdatedTs,
+		&backup.DatabaseUID,
+		&backup.Name,
+		&backup.Status,
+		&backup.BackupType,
+		&backup.StorageBackend,
+		&backup.MigrationHistoryVersion,
+		&backup.Path,
+		&backup.Comment,
+		&payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("backup ID not found: %d", patch.UID)}
+		}
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	if err := json.Unmarshal(payload, &backup.Payload); err != nil {
+		return nil, err
+	}
+	return &backup, nil
 }
 
 func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMessage) ([]*BackupMessage, error) {
