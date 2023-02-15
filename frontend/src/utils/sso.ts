@@ -6,7 +6,7 @@ import {
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
 
-// DefaultScopes is a list of scopes that are part of OIDC standard claims. Same as backend.
+// defaultOIDCScopes is a list of scopes that are part of OIDC standard claims. Same as backend.
 const defaultOIDCScopes = ["openid", "profile", "email"];
 
 export async function openWindowForSSO(
