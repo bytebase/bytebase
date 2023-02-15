@@ -800,9 +800,9 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) 
 func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
 	taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
-		StatusList:            &taskStatusList,
-		FilterOutBlockedStage: true,
-		NonRollbackTask:       true,
+		StatusList:      &taskStatusList,
+		NoBlockingStage: true,
+		NonRollbackTask: true,
 	})
 	if err != nil {
 		return err

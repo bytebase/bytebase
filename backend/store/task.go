@@ -333,7 +333,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
-	if find.FilterOutBlockedStage {
+	if find.NoBlockingStage {
 		where = append(where, "(SELECT NOT EXISTS (SELECT 1 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE'))")
 	}
 	if find.NonRollbackTask {

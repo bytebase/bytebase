@@ -317,9 +317,9 @@ type TaskFind struct {
 	TypeList   *[]TaskType
 	// Payload contains JSONB expressions
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
-	Payload               string
-	FilterOutBlockedStage bool
-	NonRollbackTask       bool
+	Payload         string
+	NoBlockingStage bool
+	NonRollbackTask bool
 }
 
 func (find *TaskFind) String() string {
