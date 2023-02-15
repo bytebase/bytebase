@@ -4,7 +4,7 @@
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}
         <a
-          href="https://bytebase.com/docs/administration/sso?source=console"
+          href="https://bytebase.com/docs/administration/sso/overview?source=console"
           class="normal-link inline-flex flex-row items-center"
           target="_blank"
         >
