@@ -132,7 +132,6 @@ type BackupCreate struct {
 
 // BackupFind is the API message for finding backups.
 type BackupFind struct {
-	ID        *int
 	RowStatus *RowStatus
 
 	// Related fields

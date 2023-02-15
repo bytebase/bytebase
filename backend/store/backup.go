@@ -107,18 +107,6 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 	}
 }
 
-// GetBackupByID gets an instance of Backup by ID.
-func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) {
-	backupRaw, err := s.getBackupRawByID(ctx, id)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get backup setting by ID %d", id)
-	}
-	if backupRaw == nil {
-		return nil, nil
-	}
-	return composeBackup(backupRaw), nil
-}
-
 // FindBackup finds a list of Backup instances.
 func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
 	backupRawList, err := s.findBackupRaw(ctx, find)
@@ -133,12 +121,26 @@ func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Ba
 }
 
 // PatchBackup patches an instance of Backup.
-func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.Backup, error) {
+func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*BackupMessage, error) {
 	backupRaw, err := s.patchBackupRaw(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Backup with BackupPatch[%+v]", patch)
 	}
-	return composeBackup(backupRaw), nil
+	return &BackupMessage{
+		Name:                    backupRaw.Name,
+		Status:                  backupRaw.Status,
+		BackupType:              backupRaw.Type,
+		Comment:                 backupRaw.Comment,
+		StorageBackend:          backupRaw.StorageBackend,
+		MigrationHistoryVersion: backupRaw.MigrationHistoryVersion,
+		Path:                    backupRaw.Path,
+		UID:                     backupRaw.ID,
+		CreatedTs:               backupRaw.CreatedTs,
+		UpdatedTs:               backupRaw.UpdatedTs,
+		RowStatus:               backupRaw.RowStatus,
+		DatabaseUID:             backupRaw.DatabaseID,
+		Payload:                 backupRaw.Payload,
+	}, nil
 }
 
 // UpsertBackupSetting upserts an instance of backup setting.
@@ -202,29 +204,6 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 // composeBackup composes an instance of Backup by backupRaw.
 func composeBackup(raw *backupRaw) *api.Backup {
 	return raw.toBackup()
-}
-
-// getBackupRawByID retrieves a single backup based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error) {
-	find := &api.BackupFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	backupRawList, err := s.findBackupImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(backupRawList) == 0 {
-		return nil, nil
-	} else if len(backupRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d backups with filter %+v, expect 1. ", len(backupRawList), find)}
-	}
-	return backupRawList[0], nil
 }
 
 // findBackupRaw retrieves a list of backups based on find.
@@ -315,9 +294,6 @@ func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.Bac
 func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
@@ -637,6 +613,8 @@ type BackupMessage struct {
 	RowStatus api.RowStatus
 	// DatabaseUID is the UID of the database.
 	DatabaseUID int
+	// Payload is the payload of the backup.
+	Payload api.BackupPayload
 }
 
 // ToAPIBackup converts BackupMessage to legacy api Backup.
@@ -660,9 +638,11 @@ func (b *BackupMessage) ToAPIBackup() *api.Backup {
 // FindBackupMessage is the message for finding backup.
 type FindBackupMessage struct {
 	// DatabaseUID is the UID of the database.
-	DatabaseUID int
+	DatabaseUID *int
 	// Name is the name of the backup.
 	Name *string
+	// backupUID is the UID of the backup.
+	backupUID *int
 }
 
 // GetBackupSettingV2 retrieves the backup setting for the given database.
@@ -833,20 +813,65 @@ func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, datab
 	return &backup, nil
 }
 
-// ListBackupV2 lists the backups for the given database.
-func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*BackupMessage, error) {
-	// Build where clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, find.DatabaseUID)
-	if v := find.Name; v != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-
+// GetBackupV2 gets the backup for the given database.
+func (s *Store) GetBackupV2(ctx context.Context, backupUID int) (*BackupMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
+
+	find := &FindBackupMessage{backupUID: &backupUID}
+	backupList, err := s.listBackupImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find backup with %+v", find)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	if len(backupList) == 0 {
+		return nil, nil
+	}
+	if len(backupList) > 1 {
+		return nil, errors.Errorf("found %d backup with backup uid %d", len(backupList), backupUID)
+	}
+
+	return backupList[0], nil
+}
+
+// ListBackupV2 lists the backups for the given database.
+func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*BackupMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	backupList, err := s.listBackupImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find backup with %+v", find)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return backupList, nil
+}
+
+func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMessage) ([]*BackupMessage, error) {
+	// Build where clause.
+	where, args := []string{"TRUE"}, []interface{}{}
+	if v := find.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.backupUID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
@@ -861,7 +886,8 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 			status,
 			type,
 			comment,
-			database_id
+			database_id,
+			payload
 		FROM backup WHERE %s;`, strings.Join(where, " AND ")), args...)
 	if err != nil {
 		return nil, FormatError(err)
@@ -884,6 +910,7 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 			&backup.BackupType,
 			&backup.Comment,
 			&backup.DatabaseUID,
+			&backup.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -893,9 +920,6 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
 	return backupList, nil
 }
 
