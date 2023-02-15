@@ -1,10 +1,13 @@
+import axios from "axios";
+import { trimEnd, uniq } from "lodash-es";
 import { OAuthStateSessionKey } from "@/types";
 import {
   IdentityProvider,
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
-import axios from "axios";
-import { trimEnd } from "lodash-es";
+
+// DefaultScopes is a list of scopes that are part of OIDC standard claims. Same as backend.
+const defaultOIDCScopes = ["openid", "profile", "email"];
 
 export async function openWindowForSSO(
   identityProvider: IdentityProvider
@@ -48,6 +51,7 @@ export async function openWindowForSSO(
     if (openidConfig.scopes_supported.includes("username")) {
       oidcConfig.scopes.push("username");
     }
+    oidcConfig.scopes = uniq([...oidcConfig.scopes, ...defaultOIDCScopes]);
 
     const redirectUrl = encodeURIComponent(
       `${window.location.origin}/oidc/callback`

@@ -221,6 +221,47 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if userInfo == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
 		}
+	} else if identityProvider.Type == v1pb.IdentityProviderType_OIDC {
+		// Find client secret for those existed identity providers.
+		if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
+			}
+			if storedIdentityProvider != nil {
+				request.IdentityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
+			}
+		}
+		oauth2Context := request.GetOauth2Context()
+		if oauth2Context == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
+		}
+		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
+		oidcIdentityProvider, err := oidc.NewIdentityProvider(ctx, oidc.IdentityProviderConfig{
+			Issuer:       identityProviderConfig.GetOidcConfig().Issuer,
+			ClientID:     identityProviderConfig.GetOidcConfig().ClientId,
+			ClientSecret: identityProviderConfig.GetOidcConfig().ClientSecret,
+			FieldMapping: identityProviderConfig.GetOidcConfig().FieldMapping,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
+		}
+
+		redirectURL := fmt.Sprintf("%s/oidc/callback", s.profile.ExternalURL)
+		token, err := oidcIdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
+		}
+		if token == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing access token")
+		}
+		userInfo, err := oidcIdentityProvider.UserInfo(ctx, token, "")
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
+		}
+		if userInfo == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
+		}
 	}
 	return &v1pb.TestIdentityProviderResponse{}, nil
 }
