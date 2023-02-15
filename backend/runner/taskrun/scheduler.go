@@ -718,8 +718,8 @@ func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
 		}
 		statusFailed := string(api.BackupStatusFailed)
-		backup, err := s.store.PatchBackup(ctx, &api.BackupPatch{
-			ID:        payload.BackupID,
+		backup, err := s.store.UpdateBackupV2(ctx, &store.UpdateBackupMessage{
+			UID:       payload.BackupID,
 			UpdaterID: api.SystemBotID,
 			Status:    &statusFailed,
 		})

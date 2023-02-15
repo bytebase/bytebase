@@ -59,7 +59,7 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err != nil {
 		return true, nil, err
 	}
-	backup, err := exec.store.GetBackupByID(ctx, payload.BackupID)
+	backup, err := exec.store.GetBackupV2(ctx, payload.BackupID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
 	}
@@ -88,15 +88,15 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 			log.Warn(err.Error())
 		}
 	}
-	backupPatch := api.BackupPatch{
-		ID:        backup.ID,
+	backupPatch := store.UpdateBackupMessage{
+		UID:       backup.UID,
 		Status:    &backupStatus,
 		UpdaterID: api.SystemBotID,
 		Comment:   &comment,
 		Payload:   &backupPayload,
 	}
 
-	if _, err := exec.store.PatchBackup(ctx, &backupPatch); err != nil {
+	if _, err := exec.store.UpdateBackupV2(ctx, &backupPatch); err != nil {
 		return true, nil, errors.Wrap(err, "failed to patch backup")
 	}
 
@@ -109,11 +109,11 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}, nil
 }
 
-func removeLocalBackupFile(dataDir string, backup *api.Backup) error {
+func removeLocalBackupFile(dataDir string, backup *store.BackupMessage) error {
 	if backup.StorageBackend != api.BackupStorageBackendLocal {
 		return nil
 	}
-	backupFilePath := backuprun.GetBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
+	backupFilePath := backuprun.GetBackupAbsFilePath(dataDir, backup.DatabaseUID, backup.Name)
 	if err := os.Remove(backupFilePath); err != nil {
 		return errors.Wrapf(err, "failed to delete the local backup file %s", backupFilePath)
 	}
@@ -149,7 +149,7 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *api.Backup) (string, error) {
+func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *store.BackupMessage) (string, error) {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
