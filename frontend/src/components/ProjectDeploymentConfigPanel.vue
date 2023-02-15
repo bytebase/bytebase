@@ -237,7 +237,7 @@ export default defineComponent({
         values: [],
       };
       if (environmentList.value.length > 0) {
-        rule.values.push(environmentList.value[0].name);
+        rule.values.push(environmentList.value[0].resourceId);
       }
 
       state.deployment.schedule.deployments.push({
