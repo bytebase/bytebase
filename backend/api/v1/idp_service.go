@@ -192,9 +192,10 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
 			}
-			if storedIdentityProvider != nil {
-				request.IdentityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
+			if storedIdentityProvider == nil {
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
 			}
+			request.IdentityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
 		}
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
@@ -221,9 +222,10 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
 			}
-			if storedIdentityProvider != nil {
-				request.IdentityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
+			if storedIdentityProvider == nil {
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
 			}
+			request.IdentityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
 		}
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
