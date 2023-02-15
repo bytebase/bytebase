@@ -250,11 +250,16 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
 	}
 
-	deployConfig, err := stores.GetDeploymentConfigByProjectID(ctx, project.UID)
+	deploymentConfig, err := stores.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+	if err != nil {
+		return "", "", errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
+	}
+
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
 	if err != nil {
 		return "", "", errors.Errorf("Failed to get deployment schedule")
 	}

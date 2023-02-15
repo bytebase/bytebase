@@ -10,10 +10,6 @@ import (
 type DeploymentConfig struct {
 	ID int `jsonapi:"primary,deploymentConfig"`
 
-	// Related fields
-	ProjectID int
-	Project   *Project `jsonapi:"relation,project"`
-
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
 	// Payload encapsulates DeploymentSchedule in json string format. We use json instead jsonapi because this configuration isn't queryable as HTTP format.
