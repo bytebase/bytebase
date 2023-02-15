@@ -121,12 +121,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	// Try to find out if the email is used by Bytebase user.
-	emptyIdentityProviderResourceID := ""
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:                      &request.User.Email,
-		ShowDeleted:                true,
-		IdentityProviderResourceID: &emptyIdentityProviderResourceID,
+		Email:       &request.User.Email,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
@@ -424,11 +421,9 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 
 func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:       &request.Email,
-		ShowDeleted: true,
-		// Disallow user from identity provider login without SSO.
-		// TODO(steven): remove this after vcs->idp backfill done.
-		// IdentityProviderResourceID: &emptyIdentityProvider,
+		Email:                      &request.Email,
+		ShowDeleted:                true,
+		IdentityProviderResourceID: &emptyIdentityProvider,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
@@ -514,74 +509,51 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	} else {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
-
 	if userInfo == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
-	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		IdentityProviderResourceID:     &identityProvider.ResourceID,
-		IdentityProviderUserIdentifier: userInfo.Identifier,
-		ShowDeleted:                    true,
+
+	email := userInfo.Email
+	if email == "" {
+		// If the email is empty, we should concatenate the identifier and
+		// the IdP's domain as the user's email.
+		email = fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain)
+	}
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+		Email:       &email,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get principal")
 	}
-	if user == nil {
-		// Find the existing user who has the same email, and update her
-		// with identity provider id and userinfo.
-		// TODO(steven): remove this after vcs->idp backfill done.
-		existBytebaseUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-			Email:                      &userInfo.Email,
-			IdentityProviderResourceID: &emptyIdentityProvider,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list users")
-		}
 
-		if len(existBytebaseUsers) == 1 {
-			existBytebaseUser := existBytebaseUsers[0]
-			user, err = s.store.UpdateUser(ctx, existBytebaseUser.ID, &store.UpdateUserMessage{
-				IdentityProviderID:       &identityProvider.UID,
-				IdentityProviderUserInfo: userInfo,
-			}, api.SystemBotID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to update user info, error: %v", err)
-			}
-		} else {
-			// Generate random password for new users from identity provider.
-			password, err := common.RandomString(20)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate random password")
-			}
-			passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate password hash")
-			}
-			newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-				Name:                       userInfo.DisplayName,
-				Email:                      userInfo.Email,
-				Type:                       api.EndUser,
-				PasswordHash:               string(passwordHash),
-				IdentityProviderResourceID: &identityProvider.ResourceID,
-				IdentityProviderUserInfo:   userInfo,
-			}, api.SystemBotID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
-			}
-			user = newUser
+	var user *store.UserMessage
+	if len(users) == 0 {
+		// Create new user from identity provider.
+		password, err := common.RandomString(20)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate random password")
 		}
-	} else {
-		// Update the latest IdP userinfo synchronously.
-		_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
-			IdentityProviderUserInfo: userInfo,
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate password hash")
+		}
+		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
+			Name:         userInfo.DisplayName,
+			Email:        email,
+			Type:         api.EndUser,
+			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update user info, error: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 		}
+		user = newUser
+	} else {
+		user = users[0]
 	}
-
 	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
+
 	return user, nil
 }

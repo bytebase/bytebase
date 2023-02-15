@@ -305,7 +305,8 @@
       "failed": "Failed",
       "preview-rollback": "Preview rollback",
       "logging": "Logging",
-      "empty-rollback-statement": "The rollback statement is empty"
+      "empty-rollback-statement": "The rollback statement is empty",
+      "cancel-logging": "Cancel logging the SQL rollback"
     }
   },
   "banner": {
@@ -419,7 +420,7 @@
       "form": {
         "type": "Type",
         "learn-more-with-user-doc": "Learn more about the configuration",
-        "redirect-url": "Authorization redirect url",
+        "redirect-url": "Authorization redirect URL",
         "redirect-url-description": "It will be used to fill in the appropriate field in the identity provider application form.",
         "use-template": "Use template",
         "select-template": "Select template",
@@ -445,7 +446,7 @@
         "display-name": "Bytebase user display name",
         "email": "Bytebase user email"
       },
-      "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
+      "copy-redirect-url": "Redirect URL copied to clipboard."
     },
     "general": {
       "workspace": {

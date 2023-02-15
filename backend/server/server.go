@@ -474,7 +474,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
-	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
+	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
@@ -672,10 +672,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		if s.profile.Mode == common.ReleaseModeDev {
-			s.runnerWG.Add(1)
-			go s.RollbackRunner.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
@@ -870,7 +868,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to find onboarding instance")
 	}
 
-	// Need to sync database schema so we can create the schema update issue later.
+	// Need to sync database schema so we can configure sensitive data policy and create the schema
+	// update issue later.
 	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync sample database schema")
 	}
@@ -937,6 +936,36 @@ Click "Approve" button to apply the schema update.`,
 		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
 	}); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
+	}
+
+	// Add a sensitive data policy to pair it with the sample query below. So that user can
+	// experience the sensitive data masking feature from SQL Editor.
+	sensitiveDataPolicy := api.SensitiveDataPolicy{
+		SensitiveDataList: []api.SensitiveData{
+			{
+				Schema: "public",
+				Table:  "salary",
+				Column: "amount",
+				Type:   api.SensitiveDataMaskTypeDefault,
+			},
+		},
+	}
+	policyPayload, err = json.Marshal(sensitiveDataPolicy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
+	}
+
+	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       database.UID,
+		ResourceType:      api.PolicyResourceTypeDatabase,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeSensitiveData,
+		InheritFromParent: true,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding sensitive data policy")
 	}
 
 	// Create a SQL sheet with sample queries.

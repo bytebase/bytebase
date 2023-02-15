@@ -223,6 +223,7 @@ type SensitiveDataPolicy struct {
 
 // SensitiveData is the value for sensitive data.
 type SensitiveData struct {
+	Schema string                `json:"schema"`
 	Table  string                `json:"table"`
 	Column string                `json:"column"`
 	Type   SensitiveDataMaskType `json:"maskType"`

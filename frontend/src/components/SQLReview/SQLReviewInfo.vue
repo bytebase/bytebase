@@ -109,6 +109,8 @@ import { PropType, reactive, computed } from "vue";
 import { useEnvironmentList } from "@/store";
 import { Environment, SQLReviewPolicyTemplate } from "@/types";
 import { environmentName } from "@/utils";
+import { BBTextField } from "@/bbkit";
+import { SQLReviewTemplates } from "./components";
 
 interface LocalEnvironment extends Environment {
   disabled: boolean;

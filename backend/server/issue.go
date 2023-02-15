@@ -700,7 +700,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	if c.BackupID != 0 {
-		backup, err := s.store.GetBackupByID(ctx, c.BackupID)
+		backup, err := s.store.GetBackupV2(ctx, c.BackupID)
 		if err != nil {
 			return nil, errors.Errorf("failed to find backup %v", c.BackupID)
 		}
@@ -834,11 +834,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
-	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.UID)
+	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.UID)).SetInternal(err)
 	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
+	}
+
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}

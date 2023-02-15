@@ -167,6 +167,7 @@
         </div>
         <ColumnTable
           :database="database"
+          :schema="schemaName"
           :table="table"
           :column-list="table.columns"
           :sensitive-data-list="sensitiveDataList"
@@ -306,6 +307,7 @@ export default defineComponent({
     });
 
     return {
+      schemaName,
       table,
       database,
       allowQuery,

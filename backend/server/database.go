@@ -292,9 +292,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Backup is not supported for MongoDB")
 		}
 
-		storeBackupList, err := s.store.FindBackup(ctx, &api.BackupFind{
-			DatabaseID: &id,
-			Name:       &backupCreate.Name,
+		storeBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
+			DatabaseUID: &id,
+			Name:        &backupCreate.Name,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch backup with name %q", backupCreate.Name)).SetInternal(err)
@@ -312,7 +312,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backup.ToAPIBackup()); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create backup response").SetInternal(err)
 		}
 		return nil
@@ -333,16 +333,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
 
-		backupFind := &api.BackupFind{
-			DatabaseID: &id,
+		backupFind := &store.FindBackupMessage{
+			DatabaseUID: &id,
 		}
-		backupList, err := s.store.FindBackup(ctx, backupFind)
+		backups, err := s.store.ListBackupV2(ctx, backupFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup list for database id: %d", id)).SetInternal(err)
+		}
+		var apiBackups []*api.Backup
+		for _, backup := range backups {
+			apiBackups = append(apiBackups, backup.ToAPIBackup())
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backupList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, apiBackups); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch backup list response: %v", id)).SetInternal(err)
 		}
 		return nil
