@@ -411,8 +411,15 @@ func isIgnoredStatement(stmt string) bool {
 func isNonTransactionStatement(stmt string) bool {
 	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
 	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
-	reg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
-	return len(reg.FindString(stmt)) > 0
+	createIndexReg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
+	if len(createIndexReg.FindString(stmt)) > 0 {
+		return true
+	}
+
+	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
+	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ]
+	dropIndexReg := regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
+	return len(dropIndexReg.FindString(stmt)) > 0
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
