@@ -413,7 +413,7 @@ func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBack
 	}
 
 	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
-		DatabaseUID: database.UID,
+		DatabaseUID: &database.UID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -466,7 +466,7 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	}
 
 	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
-		DatabaseUID: database.UID,
+		DatabaseUID: &database.UID,
 		Name:        &backupName,
 	})
 	if err != nil {
