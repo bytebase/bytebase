@@ -12,15 +12,6 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - docker-image-tag: "dev-ci"
-            docker-build-args-release: "RELEASE=dev"
-            docker-build-args-version-suffix: "VERSION_SUFFIX=-dev-ci"
-          - docker-image-tag: "release-ci"
-            docker-build-args-release: "RELEASE=release"
-            docker-build-args-version-suffix: "VERSION_SUFFIX=-release-ci"
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -35,10 +26,10 @@ jobs:
         with:
           file: scripts/Dockerfile
           push: true
-          tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
+          tags: bytebase/bytebase:release-ci"
           build-args: |
-            ${{ matrix.docker-build-args-release }}
-            ${{ matrix.docker-build-args-version-suffix }}
+            RELEASE=release
+            VERSION_SUFFIX=-release-ci
             GIT_COMMIT=${{ env.GITHUB_SHA }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}
+        run: echo "Successfully pushed bytebase/bytebase:release-ci" " ${{ steps.docker_build.outputs.digest }}
