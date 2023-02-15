@@ -655,9 +655,17 @@ const identityProviderTypeList = computed(() => {
 });
 
 const redirectUrl = computed(() => {
-  return `${
-    useActuatorStore().serverInfo?.externalUrl || window.origin
-  }/oauth/callback`;
+  if (state.type === IdentityProviderType.OAUTH2) {
+    return `${
+      useActuatorStore().serverInfo?.externalUrl || window.origin
+    }/oauth/callback`;
+  } else if (state.type === IdentityProviderType.OIDC) {
+    return `${
+      useActuatorStore().serverInfo?.externalUrl || window.origin
+    }/oidc/callback`;
+  } else {
+    throw new Error(`identity provider type ${state.type} is invalid`);
+  }
 });
 
 const isCreating = computed(() => {
