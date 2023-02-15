@@ -1,9 +1,12 @@
+import { flattenTaskList } from "@/components/Issue/logic";
 import { TemplateType } from "@/plugins";
+import { useEnvironmentStore } from "@/store";
 import {
   IssueCreate,
   IssueType,
   MigrationType,
   MigrationContext,
+  TaskCreate,
 } from "@/types";
 import {
   findProject,
@@ -85,5 +88,33 @@ const buildNewTenantSchemaUpdateIssue = async (
     detail.statement = "";
   }
 
-  return helper.generate();
+  const issueCreate = await helper.generate();
+
+  // Setup rollbackEnabled if needed
+  if (templateType === "bb.issue.database.data.update") {
+    const environmentStore = useEnvironmentStore();
+    const hasProductionEnvironment = issueCreate.pipeline?.stageList.some(
+      (stage) => {
+        return (
+          environmentStore.getEnvironmentById(stage.environmentId).tier ===
+          "PROTECTED"
+        );
+      }
+    );
+    // Due to the limitation of issueCreate.createContext, all tasks in an issue
+    // using tenant mode will share ONE rollbackEnabled value in the creating
+    // phase.
+    // Once the issue is successfully created, the rollbackEnabled field goes
+    // to task.payload. Then they can be turned on/off separately.
+    if (hasProductionEnvironment) {
+      const context = issueCreate.createContext as MigrationContext;
+      context.detailList.forEach((detail) => {
+        detail.rollbackEnabled = true;
+      });
+      flattenTaskList<TaskCreate>(issueCreate).forEach((task) => {
+        task.rollbackEnabled = true;
+      });
+    }
+  }
+  return issueCreate;
 };

@@ -1,4 +1,5 @@
 import { TemplateType } from "@/plugins";
+import { useEnvironmentStore } from "@/store";
 import { IssueCreate, IssueCreateContext, MigrationType } from "@/types";
 import {
   findDatabaseListByQuery,
@@ -45,5 +46,19 @@ export const buildNewStandardIssue = async (
   // clean up createContext for standard issues
   helper.issueCreate!.createContext = {};
 
-  return helper.generate();
+  const issueCreate = await helper.generate();
+
+  // Setup rollbackEnabled if needed
+  if (issueCreate.type === "bb.issue.database.data.update") {
+    issueCreate.pipeline?.stageList.forEach((stage) => {
+      const env = useEnvironmentStore().getEnvironmentById(stage.environmentId);
+      if (env.tier === "PROTECTED") {
+        stage.taskList.forEach((task) => {
+          task.rollbackEnabled = true;
+        });
+      }
+    });
+  }
+
+  return issueCreate;
 };
