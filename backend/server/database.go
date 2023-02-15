@@ -338,7 +338,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backups, err := s.store.ListBackupV2(ctx, backupFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup list for database id: %d", id)).SetInternal(err)
 		}
 		var apiBackups []*api.Backup
 		for _, backup := range backups {

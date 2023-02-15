@@ -732,6 +732,7 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 	var backupList []*BackupMessage
 	for rows.Next() {
 		var backup BackupMessage
+		var payload string
 		if err := rows.Scan(
 			&backup.UID,
 			&backup.RowStatus,
@@ -745,9 +746,12 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 			&backup.BackupType,
 			&backup.Comment,
 			&backup.DatabaseUID,
-			&backup.Payload,
+			&payload,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if err := json.Unmarshal([]byte(payload), &backup.Payload); err != nil {
+			return nil, err
 		}
 		backupList = append(backupList, &backup)
 	}
