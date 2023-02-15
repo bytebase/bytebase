@@ -26,7 +26,7 @@ jobs:
         with:
           file: scripts/Dockerfile
           push: true
-          tags: bytebase/bytebase:release-ci"
+          tags: bytebase/bytebase:release-ci
           build-args: |
             RELEASE=release
             VERSION_SUFFIX=-release-ci
