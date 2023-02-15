@@ -146,10 +146,9 @@ export const useRollbackLogic = () => {
         // In tenant mode, all tasks share a common MigrationDetail
         const issueCreate = issue.value as IssueCreate;
         const createContext = issueCreate.createContext as MigrationContext;
-        const migrationDetail = head(createContext.detailList);
-        if (migrationDetail) {
-          migrationDetail.rollbackEnabled = on;
-        }
+        createContext.detailList.forEach((detail) => {
+          detail.rollbackEnabled = on;
+        });
       } else {
         // In standard mode, every task has a independent TaskCreate with its
         // own rollbackEnabled field.
