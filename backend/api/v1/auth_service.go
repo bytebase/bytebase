@@ -539,12 +539,10 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			return nil, status.Errorf(codes.Internal, "failed to generate password hash")
 		}
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-			Name:                       userInfo.DisplayName,
-			Email:                      email,
-			Type:                       api.EndUser,
-			PasswordHash:               string(passwordHash),
-			IdentityProviderResourceID: &identityProvider.ResourceID,
-			IdentityProviderUserInfo:   userInfo,
+			Name:         userInfo.DisplayName,
+			Email:        email,
+			Type:         api.EndUser,
+			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
@@ -555,16 +553,6 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	}
 	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
-	}
-
-	// Update the latest IdP userinfo synchronously.
-	if user.IdentityProviderResourceID != nil {
-		user, err = s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
-			IdentityProviderUserInfo: userInfo,
-		}, api.SystemBotID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update user info, error: %v", err)
-		}
 	}
 
 	return user, nil
