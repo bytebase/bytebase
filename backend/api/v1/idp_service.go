@@ -211,15 +211,8 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
 		}
-		if token == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing access token")
-		}
-		userInfo, err := oauth2IdentityProvider.UserInfo(token)
-		if err != nil {
+		if _, err := oauth2IdentityProvider.UserInfo(token); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
-		}
-		if userInfo == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
 		}
 	} else if identityProvider.Type == v1pb.IdentityProviderType_OIDC {
 		// Find client secret for those existed identity providers.
@@ -252,16 +245,11 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
 		}
-		if token == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing access token")
-		}
-		userInfo, err := oidcIdentityProvider.UserInfo(ctx, token, "")
-		if err != nil {
+		if _, err := oidcIdentityProvider.UserInfo(ctx, token, ""); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
-		if userInfo == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
-		}
+	} else {
+		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
 	return &v1pb.TestIdentityProviderResponse{}, nil
 }
