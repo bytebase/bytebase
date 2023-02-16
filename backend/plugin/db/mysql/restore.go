@@ -54,6 +54,8 @@ const (
 	binlogMetaSuffix = ".meta"
 )
 
+var ErrParseBinlogName = errors.New("failed to parse binlog name")
+
 // BinlogFile is the metadata of the MySQL binlog file.
 type BinlogFile struct {
 	Name string
@@ -1041,11 +1043,11 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 func ParseBinlogName(name string) (string, int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return "", 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
+		return "", 0, errors.Wrapf(ErrParseBinlogName, "failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
 	}
 	seq, err := strconv.ParseInt(s[1], 10, 0)
 	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s", s[1])
+		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s, %w", s[1], ErrParseBinlogName)
 	}
 	return s[0], seq, nil
 }

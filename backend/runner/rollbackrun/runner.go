@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -109,7 +108,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
 		if errors.Is(err, mysql.ErrSizeLimitExceeded) {
 			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. The size of the generated statements must be less that %vKB.", binlogSizeLimit/1024)
-		} else if strings.Contains(err.Error(), "failed to parse binlog extension") {
+		} else if errors.Is(err, mysql.ErrParseBinlogName) {
 			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
 		} else {
 			rollbackError = err.Error()
