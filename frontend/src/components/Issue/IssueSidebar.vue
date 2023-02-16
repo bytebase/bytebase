@@ -101,7 +101,7 @@
         </div>
       </template>
 
-      <TaskRollbackView />
+      <TaskRollbackView v-if="isDev" />
 
       <template v-if="!isTenantMode">
         <!--
