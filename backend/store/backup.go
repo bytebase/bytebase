@@ -619,6 +619,7 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
+
 	return backupList, nil
 }
 
@@ -686,6 +687,7 @@ func (s *Store) UpdateBackupV2(ctx context.Context, patch *UpdateBackupMessage) 
 	if err := json.Unmarshal(payload, &backup.Payload); err != nil {
 		return nil, err
 	}
+
 	return &backup, nil
 }
 
