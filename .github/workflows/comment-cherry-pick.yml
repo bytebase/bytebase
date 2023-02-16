@@ -32,6 +32,7 @@ jobs:
         uses: korthout/backport-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          pull_title: "cherrypick: [${target_branch}] ${pull_title}"
           # Optional
           # Token to authenticate requests to GitHub
           # github_token: ${{ secrets.GITHUB_TOKEN }}
