@@ -847,7 +847,7 @@
       "title": "Sign in to your account",
       "forget-password": "Forgot your password?",
       "new-user": "New to Bytebase?",
-      "demo-note": "Please use demo account to sign in",
+      "demo-note": "Email:{username} Password:{password}",
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login",
