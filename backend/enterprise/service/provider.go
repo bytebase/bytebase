@@ -63,7 +63,7 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	settingName := api.SettingHubToken
+	settingName := api.SettingHubInternalToken
 	setting, err := p.store.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
