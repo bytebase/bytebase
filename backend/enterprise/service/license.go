@@ -180,7 +180,7 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 	if license == nil {
 		license, err = s.fetchLicense(ctx)
 		if err != nil {
-			log.Error("failed to fetch license", zap.Error(err))
+			log.Debug("failed to fetch license", zap.Error(err))
 		}
 	}
 

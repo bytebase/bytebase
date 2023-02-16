@@ -29,7 +29,7 @@ type getLicenseResponse struct {
 // internalTokenClaims is the token claims for internal API call.
 type internalTokenClaims struct {
 	PrincipalID int64  `json:"principalId"`
-	OrgID       string `json:"orgID"`
+	OrgID       string `json:"orgId"`
 	WorkspaceID string `json:"workspaceId"`
 	jwt.RegisteredClaims
 }
@@ -76,13 +76,13 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		return "", errors.Wrapf(err, "invalid internal token")
 	}
 
-	url := fmt.Sprintf("%s/v1/orgs/%s/workspaces/%s/license", claims.OrgID, claims.WorkspaceID, p.config.HubAPIURL)
+	url := fmt.Sprintf("%s/v1/orgs/%s/workspaces/%s/license", p.config.HubAPIURL, claims.OrgID, claims.WorkspaceID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "construct GET %s", url)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer: %s", setting.Value))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", setting.Value))
 	resp, err := p.client.Do(req)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
@@ -108,10 +108,10 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 }
 
 func (p *LicenseProvider) parseJWTToken(tokenStr string) (*internalTokenClaims, error) {
-	claims := internalTokenClaims{}
+	claims := &internalTokenClaims{}
 	if err := parseJWTToken(tokenStr, p.config.Version, p.config.PublicKey, claims); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
 	}
 
-	return &claims, nil
+	return claims, nil
 }
