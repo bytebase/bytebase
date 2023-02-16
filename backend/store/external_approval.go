@@ -127,7 +127,7 @@ func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int)
 		return nil, nil
 	}
 	if len(externalApprovals) > 1 {
-		return nil, fmt.Errorf("find %d external approvals for issue %d", len(externalApprovals), issueID)
+		return nil, errors.Errorf("find %d external approvals for issue %d", len(externalApprovals), issueID)
 	}
 	return externalApprovals[0], nil
 }
@@ -168,7 +168,7 @@ func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExte
 	return &externalApproval, nil
 }
 
-func (s *Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *listExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
+func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *listExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	if v := find.issueUID; v != nil {
