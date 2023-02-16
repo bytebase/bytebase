@@ -4,7 +4,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -54,7 +53,6 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.SubscriptionPatch) error {
-	fmt.Printf("store license: %s\n", patch.License)
 	if patch.License != "" {
 		if _, err := s.parseLicense(patch.License); err != nil {
 			return err
