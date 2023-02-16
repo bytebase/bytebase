@@ -672,8 +672,10 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.runnerWG.Add(1)
+			go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		}
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
