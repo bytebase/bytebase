@@ -32,6 +32,7 @@ func embedFrontend(e *echo.Echo) {
 	// Use echo static middleware to serve the built dist folder
 	// refer: https://github.com/labstack/echo/blob/master/middleware/static.go
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Skipper:    DefaultAPIRequestSkipper,
 		HTML5:      true,
 		Filesystem: getFileSystem("dist"),
 	}))
@@ -44,6 +45,7 @@ func embedFrontend(e *echo.Echo) {
 		}
 	})
 	g.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Skipper:    DefaultAPIRequestSkipper,
 		HTML5:      true,
 		Filesystem: getFileSystem("dist/assets"),
 	}))
