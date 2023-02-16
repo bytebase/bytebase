@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -53,6 +54,7 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.SubscriptionPatch) error {
+	fmt.Printf("store license: %s\n", patch.License)
 	if patch.License != "" {
 		if _, err := s.parseLicense(patch.License); err != nil {
 			return err
@@ -162,8 +164,13 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 // loadLicense will load license and validate it.
 func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
 	license, err := s.findEnterpriseLicense(ctx)
+
 	if err != nil {
+		log.Debug("failed to load enterprise license", zap.Error(err))
 		license, err = s.findTrialingLicense(ctx)
+		if err != nil {
+			log.Debug("failed to load trialing license", zap.Error(err))
+		}
 	}
 
 	if err != nil {
@@ -182,29 +189,8 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 
 func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(license, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
-		}
-
-		kid, ok := token.Header["kid"].(string)
-		if !ok || kid != s.config.Version {
-			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version)
-		}
-
-		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.config.PublicKey))
-		if err != nil {
-			return nil, common.Wrap(err, common.Invalid)
-		}
-
-		return key, nil
-	})
-	if err != nil {
+	if err := parseJWTToken(license, s.config.Version, s.config.PublicKey, claims); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
-	}
-
-	if !token.Valid {
-		return nil, common.Errorf(common.Invalid, "invalid token")
 	}
 
 	return s.parseClaims(claims)
@@ -219,23 +205,20 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
 	}
-	if setting != nil {
-		tokenString := setting.Value
-		if tokenString != "" {
-			license, err := s.parseLicense(tokenString)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse enterprise license")
-			}
-			if license != nil {
-				log.Debug(
-					"Load valid license",
-					zap.String("plan", license.Plan.String()),
-					zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-					zap.Int("instanceCount", license.InstanceCount),
-					zap.Int("seat", license.Seat),
-				)
-				return license, nil
-			}
+	if setting != nil && setting.Value != "" {
+		license, err := s.parseLicense(setting.Value)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse enterprise license")
+		}
+		if license != nil {
+			log.Debug(
+				"Load valid license",
+				zap.String("plan", license.Plan.String()),
+				zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+				zap.Int("instanceCount", license.InstanceCount),
+				zap.Int("seat", license.Seat),
+			)
+			return license, nil
 		}
 	}
 
@@ -250,7 +233,7 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load trial license from settings")
 	}
-	if setting != nil {
+	if setting != nil && setting.Value != "" {
 		var data enterpriseAPI.License
 		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse trial license")
@@ -263,11 +246,6 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 
 // parseClaims will valid and parse JWT claims to license instance.
 func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, error) {
-	err := claims.Valid()
-	if err != nil {
-		return nil, common.Wrap(err, common.Invalid)
-	}
-
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
 	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", s.config.Issuer, claims.Issuer)

@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -22,6 +24,14 @@ const (
 // getLicenseResponse is the API message for getting license response from the hub.
 type getLicenseResponse struct {
 	License string `json:"license"`
+}
+
+// internalTokenClaims is the token claims for internal API call.
+type internalTokenClaims struct {
+	PrincipalID int64  `json:"principalId"`
+	OrgID       string `json:"orgID"`
+	WorkspaceID string `json:"workspaceId"`
+	jwt.RegisteredClaims
 }
 
 // LicenseProvider is the service to fetch license from the hub.
@@ -58,8 +68,15 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find the hub token from settings")
 	}
+	if setting == nil || setting.Value == "" {
+		return "", errors.Wrapf(err, "hub token not found")
+	}
+	claims, err := p.parseJWTToken(setting.Value)
+	if err != nil {
+		return "", errors.Wrapf(err, "invalid internal token")
+	}
 
-	url := fmt.Sprintf("%s/api/v1/license", p.config.HubAPIURL)
+	url := fmt.Sprintf("%s/v1/orgs/%s/workspaces/%s/license", claims.OrgID, claims.WorkspaceID, p.config.HubAPIURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "construct GET %s", url)
@@ -88,4 +105,13 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 
 	p.lastFetchTime = time.Now().Unix()
 	return response.License, nil
+}
+
+func (p *LicenseProvider) parseJWTToken(tokenStr string) (*internalTokenClaims, error) {
+	claims := internalTokenClaims{}
+	if err := parseJWTToken(tokenStr, p.config.Version, p.config.PublicKey, claims); err != nil {
+		return nil, common.Wrap(err, common.Invalid)
+	}
+
+	return &claims, nil
 }
