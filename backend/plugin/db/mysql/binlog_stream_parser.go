@@ -11,11 +11,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ErrSizeLimitExceeded is returned if we read more
+// ErrExceedSizeLimit is returned if we read more bytes than the limit when reading the output of mysqlbinlog.
 type ErrExceedSizeLimit struct {
 	err error
 }
 
+// IsErrExceedSizeLimit checks if the underlying error is ErrExceedSizeLimit.
 func IsErrExceedSizeLimit(err error) bool {
 	_, ok := errors.Cause(err).(ErrExceedSizeLimit)
 	return ok

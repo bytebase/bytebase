@@ -59,6 +59,7 @@ type ErrParseBinlogName struct {
 	err error
 }
 
+// IsErrParseBinlogName checks if the underlying error is ErrParseBinlogName.
 func IsErrParseBinlogName(err error) bool {
 	_, ok := errors.Cause(err).(ErrParseBinlogName)
 	return ok
@@ -1059,7 +1060,7 @@ func ParseBinlogName(name string) (string, int64, error) {
 	}
 	seq, err := strconv.ParseInt(s[1], 10, 0)
 	if err != nil {
-		return "", 0, ErrParseBinlogName{err: errors.Wrapf(err, "failed to parse the sequence number %s, err: %v", s[1])}
+		return "", 0, ErrParseBinlogName{err: errors.Wrapf(err, "failed to parse the sequence number %s", s[1])}
 	}
 	return s[0], seq, nil
 }
