@@ -16,6 +16,7 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pingcap/tidb/types"
 	"github.com/pkg/errors"
 
@@ -763,8 +764,15 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 func normalizeColumnOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
 	var retOptions []*ast.ColumnOption
 	for _, option := range options {
-		if option.Tp == ast.ColumnOptionNull || option.Tp == ast.ColumnOptionNoOption {
+		switch option.Tp {
+		case ast.ColumnOptionNull:
 			continue
+		case ast.ColumnOptionNoOption:
+			continue
+		case ast.ColumnOptionDefaultValue:
+			if option.Expr.GetType().GetType() == mysql.TypeNull {
+				continue
+			}
 		}
 		retOptions = append(retOptions, option)
 	}
@@ -936,6 +944,14 @@ func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
 	return true
 }
 
+// trimParentheses trims outer parentheses.
+func trimParentheses(expr ast.ExprNode) ast.ExprNode {
+	if node, yes := expr.(*ast.ParenthesesExpr); yes {
+		return trimParentheses(node.Expr)
+	}
+	return expr
+}
+
 // isCheckConstraintEqual returns true if two check constraints are the same.
 func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 	// check_constraint_definition:
@@ -944,17 +960,21 @@ func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 		return false
 	}
 
-	oldStr, err := toString(old)
-	if err != nil {
-		log.Error("failed to convert old check constraint to string", zap.Error(err))
+	if old.Enforced != new.Enforced {
 		return false
 	}
-	newStr, err := toString(new)
+
+	oldExpr, err := toString(trimParentheses(old.Expr))
 	if err != nil {
-		log.Error("failed to convert new check constraint to string", zap.Error(err))
+		log.Error("failed to convert old check constraint expression to string", zap.Error(err))
 		return false
 	}
-	return oldStr == newStr
+	newExpr, err := toString(trimParentheses(new.Expr))
+	if err != nil {
+		log.Error("failed to convert new check constraint expression to string", zap.Error(err))
+		return false
+	}
+	return oldExpr == newExpr
 }
 
 // diffTableOptions returns the diff of two table options, returns nil if they are the same.
@@ -1053,15 +1073,23 @@ func dropTableOption(option *ast.TableOption) *ast.TableOption {
 		}
 	case ast.TableOptionCharset:
 		// TODO(zp): we use utf8mb4 as the default charset, but it's not always true. We should consider the database default charset.
+		defaultCharset := "utf8mb4"
+		if option.StrValue == defaultCharset {
+			return nil
+		}
 		return &ast.TableOption{
 			Tp:       ast.TableOptionCharset,
-			StrValue: "utf8mb4",
+			StrValue: defaultCharset,
 		}
 	case ast.TableOptionCollate:
 		// TODO(zp): default collate is related with the charset.
+		defaultCollate := "utf8mb4_general_ci"
+		if option.StrValue == defaultCollate {
+			return nil
+		}
 		return &ast.TableOption{
 			Tp:       ast.TableOptionCollate,
-			StrValue: "utf8mb4_general_ci",
+			StrValue: defaultCollate,
 		}
 	case ast.TableOptionCheckSum:
 		return &ast.TableOption{
