@@ -1,19 +1,61 @@
-name: Cherry Pick On Comment
+name: Backport merged pull request
 on:
+  pull_request:
+    types: [closed]
   issue_comment:
     types: [created]
+permissions:
+  contents: write # so it can comment
+  pull-requests: write # so it can create pull requests
 jobs:
-  cherry-pick:
-    name: Cherry Pick
-    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/cherry-pick')
+  backport:
+    name: Backport pull request
     runs-on: ubuntu-latest
+
+    # Only run when pull request is merged
+    # or when a comment containing `/backport` is created by someone other than the
+    # https://github.com/backport-action bot user (user id: 97796249). Note that if you use your
+    # own PAT as `github_token`, that you should replace this id with yours.
+    if: >
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.merged
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        github.event.comment.user.id != 97796249 &&
+        contains(github.event.comment.body, '/backport')
+      )
     steps:
-      - name: Checkout the latest code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Create backport pull requests
+        uses: korthout/backport-action@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0 # otherwise, you will fail to push refs to dest repo
-      - name: Automatic Cherry Pick
-        uses: vendoo/gha-cherry-pick@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional
+          # Token to authenticate requests to GitHub
+          # github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Optional
+          # Working directory for the backport action
+          # github_workspace: ${{ github.workspace }}
+
+          # Optional
+          # Regex pattern to match github labels
+          # Must contain a capture group for the target branch
+          # label_pattern: ^backport ([^ ]+)$
+
+          # Optional
+          # Template used as description in the pull requests created by this action.
+          # Placeholders can be used to define variable values.
+          # These are indicated by a dollar sign and curly braces (`${placeholder}`).
+          # Please refer to this action's README for all available placeholders.
+          # pull_description: |-
+          #   # Description
+          #   Backport of #${pull_number} to `${target_branch}`.
+
+          # Optional
+          # Template used as the title in the pull requests created by this action.
+          # Placeholders can be used to define variable values.
+          # These are indicated by a dollar sign and curly braces (`${placeholder}`).
+          # Please refer to this action's README for all available placeholders.
+          # pull_title: "[Backport ${target_branch}] ${pull_title}"
