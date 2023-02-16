@@ -72,6 +72,7 @@ func TestRollback(t *testing.T) {
 	// Check for rollback state.
 	rows, err := db.QueryContext(ctx, "SELECT * FROM user;")
 	a.NoError(err)
+	defer rows.Close()
 	type record struct {
 		id      int
 		name    string
