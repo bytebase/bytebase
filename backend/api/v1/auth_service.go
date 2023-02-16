@@ -223,6 +223,16 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if _, err := mail.ParseAddress(request.User.Email); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
 			}
+			users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+				Email:       &request.User.Email,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find user list, error: %v", err)
+			}
+			if len(users) != 0 {
+				return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
+			}
 			patch.Email = &request.User.Email
 		case "user.title":
 			patch.Name = &request.User.Title
