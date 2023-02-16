@@ -99,7 +99,8 @@ type UpdateUserMessage struct {
 
 // UserMessage is the message for an user.
 type UserMessage struct {
-	ID                         int
+	ID int
+	// Email must be lower case.
 	Email                      string
 	Name                       string
 	Type                       api.PrincipalType
@@ -197,7 +198,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
@@ -392,7 +393,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, strings.ToLower(*v))
 	}
 	if v := patch.Name; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("name = $%d", len(principalArgs)+1)), append(principalArgs, *v)
