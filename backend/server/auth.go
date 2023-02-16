@@ -201,6 +201,16 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+		Email:       &signUp.Email,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
+	}
+	if len(users) != 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Email %s is already existed", signUp.Email)
+	}
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        signUp.Email,
 		Name:         signUp.Name,
