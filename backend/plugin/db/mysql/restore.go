@@ -54,6 +54,7 @@ const (
 	binlogMetaSuffix = ".meta"
 )
 
+// ErrParseBinlogName is returned if we failed to parse binlog name.
 var ErrParseBinlogName = errors.New("failed to parse binlog name")
 
 // BinlogFile is the metadata of the MySQL binlog file.
@@ -1047,7 +1048,7 @@ func ParseBinlogName(name string) (string, int64, error) {
 	}
 	seq, err := strconv.ParseInt(s[1], 10, 0)
 	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s, %w", s[1], ErrParseBinlogName)
+		return "", 0, errors.Wrapf(ErrParseBinlogName, "failed to parse the sequence number %s, err: %v", s[1], err)
 	}
 	return s[0], seq, nil
 }

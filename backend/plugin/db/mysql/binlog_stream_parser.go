@@ -10,7 +10,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrSizeLimitExceeded = errors.New("binlog_stream_parser: size limit exceeded")
+// ErrSizeLimitExceeded is returned if we read more
+type ErrExceedSizeLimit struct {
+	err error
+}
+
+func IsErrExceedSizeLimit(err error) bool {
+	_, ok := errors.Cause(err).(ErrExceedSizeLimit)
+	return ok
+}
+
+func (err ErrExceedSizeLimit) Error() string {
+	return err.err.Error()
+}
 
 // BinlogEventType is the enumeration of binlog event types.
 type BinlogEventType int
@@ -89,7 +101,7 @@ func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string, t
 			n, _ := bodyBuf.WriteString(line)
 			totalBodySize += n
 			if totalBodySize >= totalBodySizeLimit {
-				return nil, errors.Wrapf(ErrSizeLimitExceeded, "total body size exceeds limit %vB", totalBodySizeLimit)
+				return nil, ErrExceedSizeLimit{err: errors.Errorf("total body size exceeds limit %vB", totalBodySizeLimit)}
 			}
 			continue
 		}
