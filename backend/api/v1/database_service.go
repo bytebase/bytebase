@@ -412,8 +412,10 @@ func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBack
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
+	rowStatus := api.Normal
 	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
 		DatabaseUID: &database.UID,
+		RowStatus:   &rowStatus,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
