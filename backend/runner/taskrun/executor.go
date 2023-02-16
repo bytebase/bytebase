@@ -126,8 +126,8 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	mi.Namespace = database.DatabaseName
 
 	statement = strings.TrimSpace(statement)
-	// Only baseline can have empty sql statement, which indicates empty database.
-	if mi.Type != db.Baseline && statement == "" {
+	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.
+	if mi.Type != db.Baseline && mi.Type != db.MigrateSDL && statement == "" {
 		return nil, errors.Errorf("empty statement")
 	}
 	// We will force migration for baseline, migrate and data type of migrations.
