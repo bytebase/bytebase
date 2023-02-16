@@ -31,6 +31,7 @@ type Store struct {
 	settingCache                   sync.Map // map[string]*SettingMessage
 	idpCache                       sync.Map // map[string]*IdentityProvider
 	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
+	backupIDCache                  sync.Map // map[int]*BackupMessage
 }
 
 // New creates a new instance of Store.
