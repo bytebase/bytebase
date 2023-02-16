@@ -600,7 +600,6 @@ func (s *Store) GetBackupV2(ctx context.Context, backupUID int) (*BackupMessage,
 		return nil, errors.Errorf("found %d backup with backup uid %d", len(backupList), backupUID)
 	}
 
-	s.backupIDCache.Store(backupUID, backupList[0])
 	return backupList[0], nil
 }
 
@@ -621,9 +620,6 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	for _, backup := range backupList {
-		s.backupIDCache.Store(backup.UID, backup)
-	}
 	return backupList, nil
 }
 
@@ -691,7 +687,7 @@ func (s *Store) UpdateBackupV2(ctx context.Context, patch *UpdateBackupMessage) 
 	if err := json.Unmarshal(payload, &backup.Payload); err != nil {
 		return nil, err
 	}
-	s.backupIDCache.Store(backup.UID, &backup)
+
 	return &backup, nil
 }
 
