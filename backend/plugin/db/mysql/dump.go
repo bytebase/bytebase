@@ -365,6 +365,7 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 	if err != nil {
 		return api.BinlogInfo{}, errors.Wrapf(err, "cannot execute %q query", query)
 	}
+	defer rows.Close()
 	columns, err := rows.Columns()
 	if err != nil {
 		return api.BinlogInfo{}, errors.Wrapf(err, "cannot get columns from %q query", query)
