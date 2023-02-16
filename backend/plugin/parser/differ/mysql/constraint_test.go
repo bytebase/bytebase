@@ -472,6 +472,11 @@ func TestForeignKeyDefination(t *testing.T) {
 func TestCheckConstraint(t *testing.T) {
 	tests := []testCase{
 		{
+			old:  `CREATE TABLE book(a INT, CONSTRAINT t1_chk_1 CHECK (a>0))`,
+			new:  `CREATE TABLE book(a INT, CONSTRAINT t1_chk_1 CHECK ((a > 0)))`,
+			want: "",
+		},
+		{
 			old: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0));",
 			new: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 1));",
 			want: "ALTER TABLE `book` DROP CHECK `check_price`;\n\n" +
