@@ -53,7 +53,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			ShowDeleted: true,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create principal").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
 		}
 		if len(users) != 0 {
 			return echo.NewHTTPError(http.StatusBadRequest, "Email %s already been occupied", principalCreate.Email)
