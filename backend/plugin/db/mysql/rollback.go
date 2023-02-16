@@ -26,8 +26,6 @@ var (
 	reDatabaseTable = regexp.MustCompile("(?s)`(.+)`\\.`(.+)`")
 )
 
-const binlogSizeLimit = 8 * 1024 * 1024
-
 // GetRollbackSQL generates the rollback SQL for the list of binlog events in the reversed order.
 func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string, error) {
 	if len(txn) == 0 {
@@ -58,7 +56,7 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 // The binlog file names and positions are used to specify the binlog events range for rollback SQL generation.
 // tableCatalog is a map from table names to column names. It is used to map positional placeholders in the binlog events to the actual columns to generate valid SQL statements.
 // TODO(dragonly): parse/filter/generate rollback SQL in stream. Limit the generated SQL size to 8MB for now.
-func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit int, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
