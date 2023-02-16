@@ -64,7 +64,8 @@ func TestRollback(t *testing.T) {
 	}
 	threadID, err := mysqlDriver.GetMigrationConnID(ctx)
 	a.NoError(err)
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)
+	const binlogSizeLimit = 8 * 1024 * 1024
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)
 	a.NoError(err)
 	_, err = db.ExecContext(ctx, rollbackSQL)
 	a.NoError(err)
