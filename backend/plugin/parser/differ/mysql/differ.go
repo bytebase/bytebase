@@ -946,10 +946,15 @@ func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
 
 // trimParentheses trims outer parentheses.
 func trimParentheses(expr ast.ExprNode) ast.ExprNode {
-	if node, yes := expr.(*ast.ParenthesesExpr); yes {
-		return trimParentheses(node.Expr)
+	result := expr
+	for {
+		if node, yes := result.(*ast.ParenthesesExpr); yes {
+			result = node.Expr
+		} else {
+			break
+		}
 	}
-	return expr
+	return result
 }
 
 // isCheckConstraintEqual returns true if two check constraints are the same.
