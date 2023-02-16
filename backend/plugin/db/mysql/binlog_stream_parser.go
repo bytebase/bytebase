@@ -23,7 +23,7 @@ func IsErrExceedSizeLimit(err error) bool {
 }
 
 func (err ErrExceedSizeLimit) Error() string {
-	return fmt.Sprintf("size limit exceedes, %v", err.err.Error())
+	return fmt.Sprintf("size limit exceeds: %v", err.err.Error())
 }
 
 // BinlogEventType is the enumeration of binlog event types.

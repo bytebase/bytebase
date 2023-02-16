@@ -67,7 +67,7 @@ func IsErrParseBinlogName(err error) bool {
 }
 
 func (err ErrParseBinlogName) Error() string {
-	return fmt.Sprintf("failed to parse binlog file name, %v", err.err)
+	return fmt.Sprintf("failed to parse binlog file name: %v", err.err)
 }
 
 // BinlogFile is the metadata of the MySQL binlog file.
