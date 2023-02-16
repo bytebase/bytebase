@@ -208,8 +208,6 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
-
-	var userMessages []*UserMessage
 	if find.IdentityProviderResourceID != nil {
 		if *find.IdentityProviderResourceID == "" {
 			where = append(where, "principal.idp_id IS NULL")
@@ -225,6 +223,8 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 		}
 	}
+
+	var userMessages []*UserMessage
 	rows, err := tx.QueryContext(ctx, `
 			SELECT
 				principal.id AS user_id,
