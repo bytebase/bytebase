@@ -48,6 +48,16 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 		}
 
+		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+			Email:       &principalCreate.Email,
+			ShowDeleted: true,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
+		}
+		if len(users) != 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Email %s already been occupied", principalCreate.Email)
+		}
 		user, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Email:        principalCreate.Email,
 			Name:         principalCreate.Name,
