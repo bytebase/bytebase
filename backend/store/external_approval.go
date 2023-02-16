@@ -45,8 +45,8 @@ type UpdateExternalApprovalMessage struct {
 
 // listExternalApprovalMessage is the message for listing external approvals.
 type listExternalApprovalMessage struct {
-	// IssueUID is the unique identifier of the issue.
-	IssueUID *int
+	// issueUID is the unique identifier of the issue.
+	issueUID *int
 }
 
 // CreateExternalApprovalV2 creates an ExternalApproval.
@@ -115,7 +115,7 @@ func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int)
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &listExternalApprovalMessage{IssueUID: &issueID})
+	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &listExternalApprovalMessage{issueUID: &issueID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find external approval")
 	}
@@ -171,7 +171,7 @@ func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExte
 func (s *Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *listExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
-	if v := find.IssueUID; v != nil {
+	if v := find.issueUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
 	}
 
