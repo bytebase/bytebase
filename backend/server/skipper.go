@@ -6,7 +6,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 )
 
-func defaultAPIRequestSkipper(c echo.Context) bool {
+// DefaultAPIRequestSkipper is echo skipper for api requests.
+func DefaultAPIRequestSkipper(c echo.Context) bool {
 	path := c.Path()
 	return common.HasPrefixes(path, "/api", "/v1")
 }
