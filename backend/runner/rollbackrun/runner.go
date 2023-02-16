@@ -102,15 +102,15 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
-	binlogSizeLimit := 8 * 1024 * 1024
+	const binlogSizeLimit = 8 * 1024 * 1024
 	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload, binlogSizeLimit)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
-		if strings.Contains(err.Error(), "failed to parse binlog extension") {
-			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
-		} else if strings.Contains(err.Error(), "total body size exceeds limit") {
+		if errors.Is(err, mysql.ErrSizeLimitExceeded) {
 			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. The size of the generated statements must be less that %vKB.", binlogSizeLimit/1024)
+		} else if strings.Contains(err.Error(), "failed to parse binlog extension") {
+			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
 		} else {
 			rollbackError = err.Error()
 		}
