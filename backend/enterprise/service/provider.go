@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -58,6 +59,7 @@ func NewLicenseProvider(config *config.Config, store *store.Store) *LicenseProvi
 func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	nextFetchTime := p.lastFetchTime + int64(fetchLicenseInterval.Seconds())
 	if time.Now().Unix() < nextFetchTime {
+		log.Debug(fmt.Sprintf("skip fetching license until %d", nextFetchTime))
 		return "", nil
 	}
 
@@ -76,13 +78,21 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		return "", errors.Wrapf(err, "invalid internal token")
 	}
 
+	defer func() {
+		p.lastFetchTime = time.Now().Unix()
+	}()
+
+	return p.requestLicense(ctx, setting.Value, claims)
+}
+
+func (p *LicenseProvider) requestLicense(ctx context.Context, token string, claims *internalTokenClaims) (string, error) {
 	url := fmt.Sprintf("%s/v1/orgs/%s/workspaces/%s/license", p.config.HubAPIURL, claims.OrgID, claims.WorkspaceID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "construct GET %s", url)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", setting.Value))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	resp, err := p.client.Do(req)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
@@ -103,7 +113,6 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		return "", errors.Wrapf(err, "unmarshal body from GET %s", url)
 	}
 
-	p.lastFetchTime = time.Now().Unix()
 	return response.License, nil
 }
 

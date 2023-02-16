@@ -143,6 +143,9 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 	if err != nil {
 		return nil, err
 	}
+	if license == "" {
+		return nil, errors.Errorf("cannot fetch the license")
+	}
 	result, err := s.parseLicense(license)
 	if err != nil {
 		return nil, err
@@ -174,7 +177,7 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 	}
 
 	if err != nil {
-		log.Error("failed to load license", zap.Error(err))
+		log.Debug("failed to load license", zap.Error(err))
 	}
 
 	if license == nil {
