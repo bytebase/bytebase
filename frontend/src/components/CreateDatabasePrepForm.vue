@@ -632,8 +632,8 @@ export default defineComponent({
       const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
         const env = useEnvironmentStore().getEnvironmentById(envId);
-        if (index >= 0) labelList[index].value = env.name;
-        else labelList.unshift({ key, value: env.name });
+        if (index >= 0) labelList[index].value = env.resourceId;
+        else labelList.unshift({ key, value: env.resourceId });
       } else {
         if (index >= 0) labelList.splice(index, 1);
       }
