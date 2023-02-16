@@ -133,7 +133,6 @@ import {
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
   ISSUE_STATUS_TRANSITION_LIST,
-  SYSTEM_BOT_ID,
 } from "@/types";
 import { allTaskList, hasWorkspacePermission } from "@/utils";
 import {
@@ -190,22 +189,22 @@ const getApplicableIssueStatusTransitionList = (
 ): IssueStatusTransition[] => {
   const actionList: IssueStatusTransitionType[] = [];
 
+  const isHighPrivilegedUser = hasWorkspacePermission(
+    "bb.permission.workspace.manage-issue",
+    currentUser.value.role
+  );
   // The current user is the assignee of the issue
   // or the assignee is SYSTEM_BOT and the current user can manage issue.
   // Users with manage issue permission can change the assignee. If they do
   // want to change the issue status, we require them to first change the assignee
   // and then change the issue status to avoid accidental click.
   const isAssignee =
-    currentUser.value.id === issue.assignee?.id ||
-    (issue.assignee?.id == SYSTEM_BOT_ID &&
-      hasWorkspacePermission(
-        "bb.permission.workspace.manage-issue",
-        currentUser.value.role
-      ));
-  const isCreator = currentUser.value.id === issue.creator.id;
+    issue.assignee?.id === currentUser.value.id || isHighPrivilegedUser;
   if (isAssignee) {
     actionList.push(...ASSIGNEE_APPLICABLE_ACTION_LIST.get(issue.status)!);
   }
+  const isCreator =
+    issue.creator?.id === currentUser.value.id || isHighPrivilegedUser;
   if (isCreator) {
     CREATOR_APPLICABLE_ACTION_LIST.get(issue.status)!.forEach((item) => {
       if (actionList.indexOf(item) === -1) {
