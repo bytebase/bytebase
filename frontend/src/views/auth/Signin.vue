@@ -89,7 +89,10 @@
       <div class="relative flex justify-center text-sm">
         <template v-if="isDemo">
           <span class="pl-2 bg-white text-accent">{{
-            $t("auth.sign-in.demo-note")
+            $t("auth.sign-in.demo-note", {
+              username: "demo@example.com",
+              password: "1024",
+            })
           }}</span>
         </template>
         <template v-else-if="!disallowSignup">

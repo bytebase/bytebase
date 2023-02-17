@@ -34,6 +34,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
+	"github.com/bytebase/bytebase/backend/store"
 
 	"github.com/blang/semver/v4"
 )
@@ -53,6 +54,21 @@ const (
 	// binlog metadata file suffix.
 	binlogMetaSuffix = ".meta"
 )
+
+// ErrParseBinlogName is returned if we failed to parse binlog name.
+type ErrParseBinlogName struct {
+	err error
+}
+
+// IsErrParseBinlogName checks if the underlying error is ErrParseBinlogName.
+func IsErrParseBinlogName(err error) bool {
+	_, ok := errors.Cause(err).(ErrParseBinlogName)
+	return ok
+}
+
+func (err ErrParseBinlogName) Error() string {
+	return fmt.Sprintf("failed to parse binlog file name: %v", err.err)
+}
 
 // BinlogFile is the metadata of the MySQL binlog file.
 type BinlogFile struct {
@@ -335,7 +351,7 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, client *bbs3.Client) (*api.Backup, *api.BinlogInfo, error) {
+func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*store.BackupMessage, targetTs int64, client *bbs3.Client) (*store.BackupMessage, *api.BinlogInfo, error) {
 	if len(backupList) == 0 {
 		return nil, nil, errors.Errorf("no valid backup")
 	}
@@ -347,10 +363,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 	}
 	log.Debug("Got binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Any("binlogCoordinate", *targetBinlogCoordinate))
 
-	var validBackupList []*api.Backup
+	var validBackupList []*store.BackupMessage
 	for _, b := range backupList {
 		if b.Payload.BinlogInfo.IsEmpty() {
-			log.Debug("Skip parsing binlog event timestamp of the backup where BinlogInfo is empty", zap.Int("backupId", b.ID), zap.String("backupName", b.Name))
+			log.Debug("Skip parsing binlog event timestamp of the backup where BinlogInfo is empty", zap.Int("backupId", b.UID), zap.String("backupName", b.Name))
 			continue
 		}
 		validBackupList = append(validBackupList, b)
@@ -368,10 +384,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 	return backup, targetBinlogInfo, nil
 }
 
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
+func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*store.BackupMessage, targetBinlogCoordinate binlogCoordinate) (*store.BackupMessage, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate
-		backup *api.Backup
+		backup *store.BackupMessage
 	}
 	var backupCoordinateListSorted []backupBinlogCoordinate
 	for _, b := range backupList {
@@ -388,17 +404,17 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 			(backupCoordinateListSorted[i].Seq == backupCoordinateListSorted[j].Seq && backupCoordinateListSorted[i].Pos > backupCoordinateListSorted[j].Pos)
 	})
 
-	var backup *api.Backup
+	var backup *store.BackupMessage
 	for _, bc := range backupCoordinateListSorted {
 		if bc.Seq < targetBinlogCoordinate.Seq || (bc.Seq == targetBinlogCoordinate.Seq && bc.Pos <= targetBinlogCoordinate.Pos) {
 			if bc.backup.Status == api.BackupStatusDone {
 				backup = bc.backup
 				break
 			}
-			if bc.backup.Status == api.BackupStatusFailed && bc.backup.Type == api.BackupTypePITR {
+			if bc.backup.Status == api.BackupStatusFailed && bc.backup.BackupType == api.BackupTypePITR {
 				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
 			}
-			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.Type == api.BackupTypePITR {
+			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.BackupType == api.BackupTypePITR {
 				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
 			}
 		}
@@ -1041,11 +1057,11 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 func ParseBinlogName(name string) (string, int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return "", 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
+		return "", 0, ErrParseBinlogName{err: errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))}
 	}
 	seq, err := strconv.ParseInt(s[1], 10, 0)
 	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s", s[1])
+		return "", 0, ErrParseBinlogName{err: errors.Wrapf(err, "failed to parse the sequence number %s", s[1])}
 	}
 	return s[0], seq, nil
 }

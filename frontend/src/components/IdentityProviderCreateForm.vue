@@ -99,7 +99,6 @@
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
           {{ $t("settings.sso.form.domain") }}
-          <span class="text-red-600">*</span>
         </p>
         <input
           v-model="identityProvider.domain"
@@ -351,7 +350,6 @@
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
           {{ $t("settings.sso.form.domain") }}
-          <span class="text-red-600">*</span>
         </p>
         <input
           v-model="identityProvider.domain"
@@ -657,9 +655,17 @@ const identityProviderTypeList = computed(() => {
 });
 
 const redirectUrl = computed(() => {
-  return `${
-    useActuatorStore().serverInfo?.externalUrl || window.origin
-  }/oauth/callback`;
+  if (state.type === IdentityProviderType.OAUTH2) {
+    return `${
+      useActuatorStore().serverInfo?.externalUrl || window.origin
+    }/oauth/callback`;
+  } else if (state.type === IdentityProviderType.OIDC) {
+    return `${
+      useActuatorStore().serverInfo?.externalUrl || window.origin
+    }/oidc/callback`;
+  } else {
+    throw new Error(`identity provider type ${state.type} is invalid`);
+  }
 });
 
 const isCreating = computed(() => {
@@ -695,11 +701,7 @@ const originIdentityProvider = computed(() => {
 });
 
 const isFormCompleted = computed(() => {
-  if (
-    !identityProvider.value.name ||
-    !identityProvider.value.title ||
-    !identityProvider.value.domain
-  ) {
+  if (!identityProvider.value.name || !identityProvider.value.title) {
     return false;
   }
 

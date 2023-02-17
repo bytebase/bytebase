@@ -23,6 +23,7 @@ const (
 	userNamePrefix             = "users/"
 	identityProviderNamePrefix = "idps/"
 	settingNamePrefix          = "settings/"
+	backupPrefix               = "backups/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -93,6 +94,14 @@ func getEnvironmentInstanceDatabaseID(name string) (string, string, string, erro
 		return "", "", "", err
 	}
 	return tokens[0], tokens[1], tokens[2], nil
+}
+
+func getEnvironmentIDInstanceDatabaseIDBackupName(name string) (string, string, string, string, error) {
+	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix, backupPrefix)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], tokens[3], nil
 }
 
 func getUserID(name string) (int, error) {

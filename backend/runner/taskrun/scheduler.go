@@ -718,8 +718,8 @@ func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
 		}
 		statusFailed := string(api.BackupStatusFailed)
-		backup, err := s.store.PatchBackup(ctx, &api.BackupPatch{
-			ID:        payload.BackupID,
+		backup, err := s.store.UpdateBackupV2(ctx, &store.UpdateBackupMessage{
+			UID:       payload.BackupID,
 			UpdaterID: api.SystemBotID,
 			Status:    &statusFailed,
 		})
@@ -799,10 +799,10 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *store.TaskMessage) 
 // scheduleAutoApprovedTasks schedules tasks that are approved automatically.
 func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
-	blocked := false
 	taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
-		StatusList:   &taskStatusList,
-		StageBlocked: &blocked,
+		StatusList:      &taskStatusList,
+		NoBlockingStage: true,
+		NonRollbackTask: true,
 	})
 	if err != nil {
 		return err

@@ -6,7 +6,7 @@
       <!-- <heroicons-outline:question-mark-circle class="h-4 w-4" /> -->
     </h2>
 
-    <div class="col-span-2">
+    <div class="col-span-2 flex items-center">
       <RollbackSwitch v-if="rollbackUIType === 'SWITCH'" />
       <RollbackStatus v-if="rollbackUIType === 'FULL'" />
     </div>

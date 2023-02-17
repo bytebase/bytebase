@@ -93,14 +93,14 @@ type UpdateUserMessage struct {
 	Name                     *string
 	PasswordHash             *string
 	Role                     *api.Role
-	IdentityProviderID       *int
 	IdentityProviderUserInfo *storepb.IdentityProviderUserInfo
 	Delete                   *bool
 }
 
 // UserMessage is the message for an user.
 type UserMessage struct {
-	ID                         int
+	ID int
+	// Email must be lower case.
 	Email                      string
 	Name                       string
 	Type                       api.PrincipalType
@@ -198,7 +198,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
@@ -209,8 +209,6 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
-
-	var userMessages []*UserMessage
 	if find.IdentityProviderResourceID != nil {
 		if *find.IdentityProviderResourceID == "" {
 			where = append(where, "principal.idp_id IS NULL")
@@ -226,6 +224,8 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
 		}
 	}
+
+	var userMessages []*UserMessage
 	rows, err := tx.QueryContext(ctx, `
 			SELECT
 				principal.id AS user_id,
@@ -393,16 +393,13 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, strings.ToLower(*v))
 	}
 	if v := patch.Name; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("name = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
-	}
-	if v := patch.IdentityProviderID; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("idp_id = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
 	if v := patch.IdentityProviderUserInfo; v != nil {
 		userInfoBytes, err := protojson.Marshal(v)

@@ -135,9 +135,9 @@ const handleConfirmButtonClick = async () => {
     );
     column.name = "id";
     if (instanceEngine === "POSTGRES") {
-      column.type = "integer";
+      column.type = "INTEGER";
     } else {
-      column.type = "int";
+      column.type = "INT";
     }
     column.comment = "ID";
     column.status = "created";

@@ -446,9 +446,9 @@
           <button
             v-if="allowEdit"
             type="button"
-            :disabled="!valueChanged || state.isUpdating"
+            :disabled="!allowUpdate || state.isUpdating"
             :class="
-              !valueChanged || state.isUpdating ? 'btn-normal' : 'btn-primary'
+              !allowUpdate || state.isUpdating ? 'btn-normal' : 'btn-primary'
             "
             @click.prevent="doUpdate"
           >
@@ -476,7 +476,11 @@ import {
   SpannerCredentialInput,
   SslCertificateForm,
 } from "./InstanceForm";
-import { clearObject, hasWorkspacePermission } from "../utils";
+import {
+  clearObject,
+  hasWorkspacePermission,
+  isValidSpannerHost,
+} from "../utils";
 import {
   InstancePatch,
   DataSourceType,
@@ -662,6 +666,18 @@ const showSSL = computed((): boolean => {
 
 const showAuthenticationDatabase = computed((): boolean => {
   return state.instance.engine === "MONGODB";
+});
+
+const allowUpdate = computed((): boolean => {
+  if (!valueChanged.value) {
+    return false;
+  }
+  if (state.instance.engine === "SPANNER") {
+    if (state.dataSourceList.some((ds) => !isValidSpannerHost(ds.host))) {
+      return false;
+    }
+  }
+  return true;
 });
 
 const handleInstanceNameInput = (event: Event) => {

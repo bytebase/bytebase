@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -27,13 +28,15 @@ import (
 // DatabaseService implements the database service.
 type DatabaseService struct {
 	v1pb.UnimplementedDatabaseServiceServer
-	store *store.Store
+	store        *store.Store
+	BackupRunner *backuprun.Runner
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner) *DatabaseService {
 	return &DatabaseService{
-		store: store,
+		store:        store,
+		BackupRunner: br,
 	}
 }
 
@@ -372,6 +375,148 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
 }
 
+// ListBackup lists the backups of a database.
+func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBackupRequest) (*v1pb.ListBackupResponse, error) {
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	rowStatus := api.Normal
+	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
+		DatabaseUID: &database.UID,
+		RowStatus:   &rowStatus,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	var backupList []*v1pb.Backup
+	for _, existedBackup := range existedBackupList {
+		backupList = append(backupList, convertToBackup(existedBackup, environment.ResourceID, instance.ResourceID, database.DatabaseName))
+	}
+	return &v1pb.ListBackupResponse{
+		Backups: backupList,
+	}, nil
+}
+
+// CreateBackup creates a backup of a database.
+func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.CreateBackupRequest) (*v1pb.Backup, error) {
+	environmentID, instanceID, databaseName, backupName, err := getEnvironmentIDInstanceDatabaseIDBackupName(request.Backup.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
+		DatabaseUID: &database.UID,
+		Name:        &backupName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if len(existedBackupList) > 0 {
+		return nil, status.Errorf(codes.AlreadyExists, "backup %q in database %q already exists", backupName, databaseName)
+	}
+
+	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	backup, err := s.BackupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeManual, creatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToBackup(backup, environmentID, instanceID, databaseName), nil
+}
+
+func convertToBackup(backup *store.BackupMessage, enviromentID string, instanceID string, databaseName string) *v1pb.Backup {
+	createTime := timestamppb.New(time.Unix(backup.CreatedTs, 0))
+	updateTime := timestamppb.New(time.Unix(backup.UpdatedTs, 0))
+	backupState := v1pb.Backup_BACKUP_STATE_UNSPECIFIED
+	switch backup.Status {
+	case api.BackupStatusPendingCreate:
+		backupState = v1pb.Backup_PENDING_CREATE
+	case api.BackupStatusDone:
+		backupState = v1pb.Backup_DONE
+	case api.BackupStatusFailed:
+		backupState = v1pb.Backup_FAILED
+	}
+	backupType := v1pb.Backup_BACKUP_TYPE_UNSPECIFIED
+	switch backup.BackupType {
+	case api.BackupTypeManual:
+		backupType = v1pb.Backup_MANUAL
+	case api.BackupTypeAutomatic:
+		backupType = v1pb.Backup_AUTOMATIC
+	case api.BackupTypePITR:
+		backupType = v1pb.Backup_PITR
+	}
+	return &v1pb.Backup{
+		Name:       fmt.Sprintf("%s%s/%s%s/%s%s/%s", environmentNamePrefix, enviromentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backup.Name),
+		CreateTime: createTime,
+		UpdateTime: updateTime,
+		State:      backupState,
+		BackupType: backupType,
+		Comment:    backup.Comment,
+	}
+}
+
 func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	syncState := v1pb.State_STATE_UNSPECIFIED
 	switch database.SyncState {
@@ -515,7 +660,7 @@ func getDefaultBackupSetting(environmentID, instanceID, databaseName string) *v1
 		log.Warn("failed to convert period ts to duration", zap.Error(err))
 	}
 	return &v1pb.BackupSetting{
-		Name:                 fmt.Sprintf("%s%s%s%s%s%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		Name:                 fmt.Sprintf("%s%s/%s%s/%s%s/%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
 		BackupRetainDuration: sevenDays,
 		CronSchedule:         "", /* Disable automatic backup */
 		HookUrl:              "",

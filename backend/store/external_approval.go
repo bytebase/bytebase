@@ -8,183 +8,49 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-type externalApprovalRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus api.RowStatus
-	CreatedTs int64
-	UpdatedTs int64
-
-	// Related fields
-	IssueID     int
-	RequesterID int
-	ApproverID  int
-
-	// Domain specific fields
-	Type    api.ExternalApprovalType
+// ExternalApprovalMessage is the message for creating an external approval.
+type ExternalApprovalMessage struct {
+	// IssueUID is the unique identifier of the issue.
+	IssueUID int
+	// ApproverUID is the unique identifier of the approver.
+	ApproverUID int
+	// Type is the external approval type.
+	Type api.ExternalApprovalType
+	// Payload is the external approval payload.
 	Payload string
+
+	// Input Only fields.
+	//
+	// RequesterUID is the unique identifier of the requester.
+	RequesterUID int
+
+	// Output only fields.
+	//
+	// ID is the unique identifier of the external approval.
+	ID int
 }
 
-func (raw *externalApprovalRaw) toExternalApproval() *api.ExternalApproval {
-	return &api.ExternalApproval{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatedTs: raw.CreatedTs,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		IssueID:     raw.IssueID,
-		RequesterID: raw.RequesterID,
-		ApproverID:  raw.ApproverID,
-		Type:        raw.Type,
-		Payload:     raw.Payload,
-	}
+// UpdateExternalApprovalMessage is the message for updating an external approval.
+type UpdateExternalApprovalMessage struct {
+	// ID is the unique identifier of the external approval.
+	ID int
+	// RowStatus is the row status of the external approval.
+	RowStatus api.RowStatus
+	// Payload is the external approval payload.
+	Payload *string
 }
 
-// CreateExternalApproval creates an ExternalApproval.
-func (s *Store) CreateExternalApproval(ctx context.Context, create *api.ExternalApprovalCreate) (*api.ExternalApproval, error) {
-	externalApprovalRaw, err := s.createExternalApprovalRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ExternalApproval with ExternalApprovalCreate[%+v]", create)
-	}
-	externalApproval, err := s.composeExternalApproval(ctx, externalApprovalRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ExternalApproval with externalApprovalRaw[%+v]", externalApprovalRaw)
-	}
-	return externalApproval, nil
+// listExternalApprovalMessage is the message for listing external approvals.
+type listExternalApprovalMessage struct {
+	// issueUID is the unique identifier of the issue.
+	issueUID *int
 }
 
-// FindExternalApproval finds a list of ExternalApproval by find and whose RowStatus == NORMAL.
-func (s *Store) FindExternalApproval(ctx context.Context, find *api.ExternalApprovalFind) ([]*api.ExternalApproval, error) {
-	rawList, err := s.findExternalApprovalRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find ExternalApproval with ExternalApprovalFind[%+v]", find)
-	}
-	var externalApprovalList []*api.ExternalApproval
-	for _, raw := range rawList {
-		externalApproval, err := s.composeExternalApproval(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose ExternalApproval with externalApprovalRaw[%+v]", raw)
-		}
-		externalApprovalList = append(externalApprovalList, externalApproval)
-	}
-	return externalApprovalList, nil
-}
-
-// GetExternalApprovalByIssueID gets an ExternalApproval by IssueID.
-func (s *Store) GetExternalApprovalByIssueID(ctx context.Context, issueID int) (*api.ExternalApproval, error) {
-	rawList, err := s.findExternalApprovalRaw(ctx, &api.ExternalApprovalFind{IssueID: &issueID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get ApprovalInstance by issueID %v", issueID)
-	}
-	if len(rawList) == 0 {
-		return nil, nil
-	} else if len(rawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d externalApprovals with issueID %d, expect 1", len(rawList), issueID)}
-	}
-	externalApprovalRaw := rawList[0]
-	externalApproval, err := s.composeExternalApproval(ctx, externalApprovalRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ExternalApproval with externalApprovalRaw[%+v]", externalApprovalRaw)
-	}
-	return externalApproval, nil
-}
-
-// PatchExternalApproval patches an ExternalApproval.
-func (s *Store) PatchExternalApproval(ctx context.Context, patch *api.ExternalApprovalPatch) (*api.ExternalApproval, error) {
-	externalApprovalRaw, err := s.patchExternalApprovalRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch ExternalApproval with ExternalApprovalPatch[%+v]", patch)
-	}
-	externalApproval, err := s.composeExternalApproval(ctx, externalApprovalRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ExternalApproval with externalApprovalRaw[%+v]", externalApprovalRaw)
-	}
-	return externalApproval, nil
-}
-
-//
-// private functions
-//
-
-func (s *Store) composeExternalApproval(ctx context.Context, raw *externalApprovalRaw) (*api.ExternalApproval, error) {
-	externalApproval := raw.toExternalApproval()
-
-	requester, err := s.GetPrincipalByID(ctx, externalApproval.RequesterID)
-	if err != nil {
-		return nil, err
-	}
-	externalApproval.Requester = requester
-
-	approver, err := s.GetPrincipalByID(ctx, externalApproval.ApproverID)
-	if err != nil {
-		return nil, err
-	}
-	externalApproval.Approver = approver
-
-	return externalApproval, nil
-}
-
-func (s *Store) createExternalApprovalRaw(ctx context.Context, create *api.ExternalApprovalCreate) (*externalApprovalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	externalApprovalRaw, err := s.createExternalApprovalImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return externalApprovalRaw, nil
-}
-
-func (s *Store) findExternalApprovalRaw(ctx context.Context, find *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rawList, err := s.findExternalApprovalImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return rawList, nil
-}
-
-func (s *Store) patchExternalApprovalRaw(ctx context.Context, patch *api.ExternalApprovalPatch) (*externalApprovalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-	raw, err := s.patchExternalApprovalImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return raw, nil
-}
-
-func (*Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *api.ExternalApprovalCreate) (*externalApprovalRaw, error) {
+// CreateExternalApprovalV2 creates an ExternalApproval.
+func (s *Store) CreateExternalApprovalV2(ctx context.Context, create *ExternalApprovalMessage) (*ExternalApprovalMessage, error) {
 	query := `
     INSERT INTO external_approval (
       issue_id,
@@ -194,107 +60,154 @@ func (*Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *ap
       payload
     )
     VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, row_status, created_ts, updated_ts, issue_id, requester_id, approver_id, type, payload
+    RETURNING id, issue_id, approver_id, type, payload
   `
-	var externalApprovalRaw externalApprovalRaw
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	var externalApproval ExternalApprovalMessage
 	if err := tx.QueryRowContext(ctx, query,
-		create.IssueID,
-		create.RequesterID,
-		create.ApproverID,
+		create.IssueUID,
+		create.RequesterUID,
+		create.ApproverUID,
 		create.Type,
 		create.Payload,
 	).Scan(
-		&externalApprovalRaw.ID,
-		&externalApprovalRaw.RowStatus,
-		&externalApprovalRaw.CreatedTs,
-		&externalApprovalRaw.UpdatedTs,
-		&externalApprovalRaw.IssueID,
-		&externalApprovalRaw.RequesterID,
-		&externalApprovalRaw.ApproverID,
-		&externalApprovalRaw.Type,
-		&externalApprovalRaw.Payload,
+		&externalApproval.ID,
+		&externalApproval.IssueUID,
+		&externalApproval.ApproverUID,
+		&externalApproval.Type,
+		&externalApproval.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
-	return &externalApprovalRaw, nil
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return &externalApproval, nil
 }
 
-func (*Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, find *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
+// FindExternalApprovalV2 finds a list of ExternalApproval by find and whose RowStatus == NORMAL.
+func (s *Store) FindExternalApprovalV2(ctx context.Context) ([]*ExternalApprovalMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+
+	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &listExternalApprovalMessage{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find external approval")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	return externalApprovals, nil
+}
+
+// GetExternalApprovalByIssueIDV2 gets an ExternalApproval by IssueID.
+func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int) (*ExternalApprovalMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+
+	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &listExternalApprovalMessage{issueUID: &issueID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find external approval")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	if len(externalApprovals) == 0 {
+		return nil, nil
+	}
+	if len(externalApprovals) > 1 {
+		return nil, errors.Errorf("find %d external approvals for issue %d", len(externalApprovals), issueID)
+	}
+	return externalApprovals[0], nil
+}
+
+// UpdateExternalApprovalV2 updates an ExternalApproval.
+func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExternalApprovalMessage) (*ExternalApprovalMessage, error) {
+	set, args := []string{"row_status = $1"}, []interface{}{update.RowStatus}
+	if v := update.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, update.ID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+
+	var externalApproval ExternalApprovalMessage
+	query := fmt.Sprintf(`
+    UPDATE external_approval
+    SET `+strings.Join(set, ", ")+` 
+    WHERE id = $%d
+    RETURNING id, issue_id, approver_id, type, payload
+  `, len(args))
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&externalApproval.ID,
+		&externalApproval.IssueUID,
+		&externalApproval.ApproverUID,
+		&externalApproval.Type,
+		&externalApproval.Payload,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return &externalApproval, nil
+}
+
+func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *listExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
-	if v := find.IssueID; v != nil {
+	if v := find.issueUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
 	}
+
 	rows, err := tx.QueryContext(ctx, `
-    SELECT
-      id,
-      row_status,
-      created_ts,
-      updated_ts,
-      issue_id,
-      requester_id,
-      approver_id,
-      type,
-      payload
-    FROM external_approval
-    WHERE `+strings.Join(where, " AND "),
+		SELECT
+		  id,
+		  issue_id,
+		  approver_id,
+		  type,
+		  payload
+		FROM external_approval
+		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var rawList []*externalApprovalRaw
+
+	var externalApprovals []*ExternalApprovalMessage
 	for rows.Next() {
-		var raw externalApprovalRaw
+		var externalApproval ExternalApprovalMessage
 		if err := rows.Scan(
-			&raw.ID,
-			&raw.RowStatus,
-			&raw.CreatedTs,
-			&raw.UpdatedTs,
-			&raw.IssueID,
-			&raw.RequesterID,
-			&raw.ApproverID,
-			&raw.Type,
-			&raw.Payload,
+			&externalApproval.ID,
+			&externalApproval.IssueUID,
+			&externalApproval.ApproverUID,
+			&externalApproval.Type,
+			&externalApproval.Payload,
 		); err != nil {
 			return nil, err
 		}
-		rawList = append(rawList, &raw)
+		externalApprovals = append(externalApprovals, &externalApproval)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return rawList, nil
-}
-
-func (*Store) patchExternalApprovalImpl(ctx context.Context, tx *Tx, patch *api.ExternalApprovalPatch) (*externalApprovalRaw, error) {
-	var raw externalApprovalRaw
-	set, args := []string{"row_status = $1"}, []interface{}{patch.RowStatus}
-	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-	args = append(args, patch.ID)
-
-	query := fmt.Sprintf(`
-    UPDATE external_approval
-    SET `+strings.Join(set, ", ")+` 
-    WHERE id = $%d
-    RETURNING id, row_status, created_ts, updated_ts, issue_id, requester_id, approver_id, type, payload
-  `, len(args))
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&raw.ID,
-		&raw.RowStatus,
-		&raw.CreatedTs,
-		&raw.UpdatedTs,
-		&raw.IssueID,
-		&raw.RequesterID,
-		&raw.ApproverID,
-		&raw.Type,
-		&raw.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-	return &raw, nil
+	return externalApprovals, nil
 }

@@ -101,11 +101,18 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
-	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
+	const binlogSizeLimit = 8 * 1024 * 1024
+	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload, binlogSizeLimit)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
-		rollbackError = err.Error()
+		if mysql.IsErrExceedSizeLimit(err) {
+			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. The size of the generated statements must be less that %vKB.", binlogSizeLimit/1024)
+		} else if mysql.IsErrParseBinlogName(err) {
+			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
+		} else {
+			rollbackError = err.Error()
+		}
 	} else {
 		rollbackSQLStatus = api.RollbackSQLStatusDone
 		rollbackStatement = rollbackSQL
@@ -125,7 +132,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
-func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, binlogSizeLimit int) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
@@ -167,12 +174,17 @@ func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMe
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to parse the schema")
 	}
-
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		return "", errors.Errorf("failed to cast driver to mysql.Driver")
 	}
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
+	if err := mysqlDriver.CheckBinlogEnabled(ctx); err != nil {
+		return "", err
+	}
+	if err := mysqlDriver.CheckBinlogRowFormat(ctx); err != nil {
+		return "", err
+	}
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to generate rollback SQL statement")
 	}

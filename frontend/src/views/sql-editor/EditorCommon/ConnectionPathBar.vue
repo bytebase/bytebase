@@ -1,9 +1,11 @@
 <template>
   <div
     v-if="!tabStore.isDisconnected"
-    class="w-full flex justify-between items-start"
+    class="w-full block lg:flex justify-between items-start bg-white"
   >
-    <div class="flex justify-start items-center h-8 px-4 rounded-br bg-white">
+    <div
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
+    >
       <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
         <template #trigger>
           <heroicons-outline:exclamation
@@ -65,7 +67,7 @@
 
     <div
       v-if="isProductionEnvironment"
-      class="flex justify-start items-center h-8 px-4 rounded-bl text-white bg-error"
+      class="flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 sm:rounded-bl text-white bg-error"
     >
       {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>

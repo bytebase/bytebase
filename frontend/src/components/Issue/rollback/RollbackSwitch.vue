@@ -1,14 +1,12 @@
 <template>
-  <BBCheckbox
-    :disabled="!allowRollback"
-    :value="rollbackEnabled"
-    @toggle="toggleRollback"
-  />
+  <LogButton v-if="!rollbackEnabled" />
+  <LoggingButton v-else />
 </template>
 
 <script lang="ts" setup>
-import { BBCheckbox } from "@/bbkit";
 import { useRollbackLogic } from "./common";
+import LogButton from "./LogButton.vue";
+import LoggingButton from "./LoggingButton.vue";
 
-const { allowRollback, rollbackEnabled, toggleRollback } = useRollbackLogic();
+const { rollbackEnabled } = useRollbackLogic();
 </script>

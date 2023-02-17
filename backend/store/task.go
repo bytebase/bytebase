@@ -146,19 +146,20 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 		composedTask.TaskRunList = append(composedTask.TaskRunList, taskRun)
 	}
 	for _, taskCheckRunRaw := range taskCheckRunRawList {
-		taskCheckRun := taskCheckRunRaw.toTaskCheckRun()
-		creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
+		composedTaskCheckRun := taskCheckRunRaw.toTaskCheckRun()
+		creator, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.CreatorID)
 		if err != nil {
 			return nil, err
 		}
-		taskCheckRun.Creator = creator
-
-		updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
+		composedTaskCheckRun.Creator = creator
+		updater, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.UpdaterID)
 		if err != nil {
 			return nil, err
 		}
-		taskCheckRun.Updater = updater
-		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
+		composedTaskCheckRun.Updater = updater
+		composedTaskCheckRun.CreatedTs = taskCheckRunRaw.CreatedTs
+		composedTaskCheckRun.UpdatedTs = taskCheckRunRaw.UpdatedTs
+		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 	}
 
 	instance, err := s.GetInstanceByID(ctx, composedTask.InstanceID)
@@ -332,8 +333,11 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
-	if v := find.StageBlocked; v != nil {
-		where = append(where, "(SELECT COUNT(1) > 0 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') = FALSE")
+	if find.NoBlockingStage {
+		where = append(where, "(SELECT NOT EXISTS (SELECT 1 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE'))")
+	}
+	if find.NonRollbackTask {
+		where = append(where, "(NOT (task.type='bb.task.database.data.update' AND task.payload->>'rollbackFromTaskId' IS NOT NULL))")
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
