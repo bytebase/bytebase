@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -203,9 +204,8 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
-	signUp.Email = strings.ToLower(signUp.Email)
-	if _, err := mail.ParseAddress(signUp.Email); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q address", signUp.Email))
+	if err := validateEmail(signUp.Email); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", signUp.Email, err))
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 		Email:       &signUp.Email,
@@ -251,4 +251,15 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 	}
 
 	return user, nil
+}
+
+func validateEmail(email string) error {
+	formatedEmail := strings.ToLower(email)
+	if email != formatedEmail {
+		return errors.New("email should be lowercase")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
+	return nil
 }

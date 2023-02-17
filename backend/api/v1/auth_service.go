@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/mail"
 	"strings"
@@ -93,9 +94,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "email must be set")
 	}
-	if _, err := mail.ParseAddress(request.User.Email); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q address", request.User.Email)
-	}
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
 	}
@@ -122,9 +120,8 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	formatedEmail := strings.ToLower(request.User.Email)
-	if _, err := mail.ParseAddress(formatedEmail); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q address", request.User.Email)
+	if err := validateEmail(request.User.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 	}
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		Email:       &request.User.Email,
@@ -222,12 +219,11 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
-			formatedEmail := strings.ToLower(request.User.Email)
-			if _, err := mail.ParseAddress(formatedEmail); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
+			if err := validateEmail(request.User.Email); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 			}
 			users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-				Email:       &formatedEmail,
+				Email:       &request.User.Email,
 				ShowDeleted: true,
 			})
 			if err != nil {
@@ -236,7 +232,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if len(users) != 0 {
 				return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
 			}
-			patch.Email = &formatedEmail
+			patch.Email = &request.User.Email
 		case "user.title":
 			patch.Name = &request.User.Title
 		case "user.password":
@@ -569,4 +565,15 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	}
 
 	return user, nil
+}
+
+func validateEmail(email string) error {
+	formatedEmail := strings.ToLower(email)
+	if email != formatedEmail {
+		return errors.New("email should be lowercase")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
+	return nil
 }

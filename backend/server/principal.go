@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/mail"
 	"strconv"
-	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -35,16 +33,11 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
 		}
+		if err := validateEmail(principalCreate.Email); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", principalCreate.Email, err))
+		}
+
 		creatorID := c.Get(getPrincipalIDContextKey()).(int)
-
-		principalCreate.Email = strings.ToLower(principalCreate.Email)
-		if principalCreate.Email == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "email must be set")
-		}
-		if _, err := mail.ParseAddress(principalCreate.Email); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q address", principalCreate.Email))
-		}
-
 		password := principalCreate.Password
 		if principalCreate.Type == api.ServiceAccount {
 			pwd, err := common.RandomString(20)
@@ -163,27 +156,24 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		if principalPatch.Email != nil {
-			formatedEmail := strings.ToLower(*principalPatch.Email)
-			if _, err := mail.ParseAddress(formatedEmail); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q address", formatedEmail))
+			if err := validateEmail(*principalPatch.Email); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", *principalPatch.Email, err))
 			}
-
 			currentUser, err := s.store.GetUserByID(ctx, id)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get user by id %d", id)).SetInternal(err)
 			}
-			if currentUser.Email != formatedEmail {
+			if currentUser.Email != *principalPatch.Email {
 				users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-					Email:       &formatedEmail,
+					Email:       principalPatch.Email,
 					ShowDeleted: true,
 				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get principal list").SetInternal(err)
 				}
 				if len(users) != 0 {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", formatedEmail))
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
 				}
-				principalPatch.Email = &formatedEmail
 			} else {
 				principalPatch.Email = nil
 			}
