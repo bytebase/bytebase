@@ -1,36 +1,51 @@
 <template>
-  <div class="w-full flex justify-between items-center p-4 border-b bg-white">
-    <div class="action-left space-x-2 flex items-center">
+  <div
+    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-4 border-b bg-white"
+  >
+    <div
+      class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
+    >
       <NButton
         type="primary"
         :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleRunQuery"
       >
-        <mdi:play class="h-5 w-5" />
-        {{ showRunSelected ? $t("sql-editor.run-selected") : $t("common.run") }}
-        (⌘+⏎)
+        <mdi:play class="h-5 w-5 -ml-1.5" />
+        <span>
+          {{
+            showRunSelected ? $t("sql-editor.run-selected") : $t("common.run")
+          }}
+        </span>
+
+        <span class="hidden sm:inline">(⌘+⏎)</span>
       </NButton>
       <NButton
         :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleExplainQuery"
       >
-        <mdi:play class="h-5 w-5" /> Explain (⌘+E)
+        <mdi:play class="h-5 w-5 -ml-1.5" />
+        <span>Explain</span>
+        <span class="hidden sm:inline">(⌘+E)</span>
       </NButton>
       <NButton
         :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleFormatSQL"
       >
-        {{ $t("sql-editor.format") }} (⇧+⌥+F)
+        <span>{{ $t("sql-editor.format") }}</span>
+        <span class="hidden sm:inline">(⇧+⌥+F)</span>
       </NButton>
       <NButton
         v-if="showClearScreen"
         :disabled="queryList.length <= 1 || isExecutingSQL"
         @click="handleClearScreen"
       >
-        {{ $t("sql-editor.clear-screen") }} (⇧+⌥+C)
+        <span>{{ $t("sql-editor.clear-screen") }}</span>
+        <span class="hidden sm:inline">(⇧+⌥+C)</span>
       </NButton>
     </div>
-    <div class="action-right space-x-2 flex justify-end items-center">
+    <div
+      class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
+    >
       <AdminModeButton />
 
       <template v-if="showSheetsFeature">
@@ -41,7 +56,9 @@
           :disabled="!allowSave"
           @click="() => emit('save-sheet')"
         >
-          <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
+          <carbon:save class="h-5 w-5 -ml-1" />
+          <span class="ml-1">{{ $t("common.save") }}</span>
+          <span class="hidden sm:inline ml-1">(⌘+S)</span>
         </NButton>
         <NPopover trigger="click" placement="bottom-end" :show-arrow="false">
           <template #trigger>

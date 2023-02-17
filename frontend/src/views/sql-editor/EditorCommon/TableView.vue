@@ -6,13 +6,13 @@
   >
     <div
       v-show="queryResult !== null"
-      class="w-full flex flex-row justify-between items-center mb-2"
+      class="w-full flex flex-row justify-between items-center mb-2 overflow-x-auto"
     >
-      <div class="flex flex-row justify-start items-center mr-2">
+      <div class="flex flex-row justify-start items-center mr-2 shrink-0">
         <NInput
           v-if="showSearchFeature"
           v-model:value="state.search"
-          class="max-w-xs"
+          class="!max-w-[8rem] sm:!max-w-xs"
           type="text"
           :placeholder="t('sql-editor.search-results')"
         >
