@@ -26,6 +26,8 @@ type Config struct {
 	Audience string
 	// HubAPIURL is the API URL for Bytebase hub.
 	HubAPIURL string
+	// Mode can be "prod" or "dev"
+	Mode common.ReleaseMode
 }
 
 const (
@@ -53,5 +55,6 @@ func getConfig(mode common.ReleaseMode) (*Config, error) {
 		Version:   keyID,
 		Issuer:    issuer,
 		Audience:  audience,
+		Mode:      mode,
 	}, nil
 }

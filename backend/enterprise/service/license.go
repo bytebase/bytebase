@@ -178,7 +178,7 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 		log.Debug("failed to load license", zap.Error(err))
 	}
 
-	if license == nil {
+	if license == nil && s.config.Mode == common.ReleaseModeDev {
 		license, err = s.fetchLicense(ctx)
 		if err != nil {
 			log.Debug("failed to fetch license", zap.Error(err))
