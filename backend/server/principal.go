@@ -33,8 +33,11 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
 		}
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
+		if err := validateEmail(principalCreate.Email); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", principalCreate.Email, err))
+		}
 
+		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		password := principalCreate.Password
 		if principalCreate.Type == api.ServiceAccount {
 			pwd, err := common.RandomString(20)
@@ -153,6 +156,9 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		if principalPatch.Email != nil {
+			if err := validateEmail(*principalPatch.Email); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", *principalPatch.Email, err))
+			}
 			currentUser, err := s.store.GetUserByID(ctx, id)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get user by id %d", id)).SetInternal(err)
@@ -168,6 +174,8 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 				if len(users) != 0 {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
 				}
+			} else {
+				principalPatch.Email = nil
 			}
 		}
 

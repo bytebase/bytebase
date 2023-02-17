@@ -3,8 +3,10 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/mail"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -92,9 +94,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "email must be set")
 	}
-	if _, err := mail.ParseAddress(request.User.Email); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q address", request.User.Email)
-	}
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
 	}
@@ -121,6 +120,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
+	if err := validateEmail(request.User.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
+	}
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		Email:       &request.User.Email,
 		ShowDeleted: true,
@@ -217,8 +219,8 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
-			if _, err := mail.ParseAddress(request.User.Email); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
+			if err := validateEmail(request.User.Email); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 			}
 			users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 				Email:       &request.User.Email,
@@ -520,18 +522,19 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
 
-	email := userInfo.Email
-	if email == "" {
+	// The userinfo's email comes from identity provider, we cannot ensure it's lowercase.
+	formatedEmail := strings.ToLower(userInfo.Email)
+	if formatedEmail == "" {
 		// If the email is empty, we should concatenate the identifier and
 		// the IdP's domain as the user's email.
-		email = fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain)
+		formatedEmail = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain))
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-		Email:       &email,
+		Email:       &formatedEmail,
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
+		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", formatedEmail, err)
 	}
 
 	var user *store.UserMessage
@@ -547,7 +550,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		}
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:         userInfo.DisplayName,
-			Email:        email,
+			Email:        formatedEmail,
 			Type:         api.EndUser,
 			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
@@ -563,4 +566,15 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 	}
 
 	return user, nil
+}
+
+func validateEmail(email string) error {
+	formatedEmail := strings.ToLower(email)
+	if email != formatedEmail {
+		return errors.New("email should be lowercase")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
+	return nil
 }

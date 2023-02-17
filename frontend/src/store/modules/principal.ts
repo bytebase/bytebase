@@ -113,7 +113,7 @@ export const usePrincipalStore = defineStore("principal", {
               type: "PrincipalCreate",
               attributes: {
                 name: newPrincipal.name,
-                email: newPrincipal.email,
+                email: newPrincipal.email.toLowerCase(),
                 password: randomString(),
                 type: newPrincipal.type,
               },
