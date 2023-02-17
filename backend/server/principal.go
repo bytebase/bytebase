@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -34,6 +36,14 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
 		}
 		creatorID := c.Get(getPrincipalIDContextKey()).(int)
+
+		principalCreate.Email = strings.ToLower(principalCreate.Email)
+		if principalCreate.Email == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "email must be set")
+		}
+		if _, err := mail.ParseAddress(principalCreate.Email); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q address", principalCreate.Email))
+		}
 
 		password := principalCreate.Password
 		if principalCreate.Type == api.ServiceAccount {
@@ -153,21 +163,29 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		if principalPatch.Email != nil {
+			formatedEmail := strings.ToLower(*principalPatch.Email)
+			if _, err := mail.ParseAddress(formatedEmail); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q address", formatedEmail))
+			}
+
 			currentUser, err := s.store.GetUserByID(ctx, id)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get user by id %d", id)).SetInternal(err)
 			}
-			if currentUser.Email != *principalPatch.Email {
+			if currentUser.Email != formatedEmail {
 				users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-					Email:       principalPatch.Email,
+					Email:       &formatedEmail,
 					ShowDeleted: true,
 				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get principal list").SetInternal(err)
 				}
 				if len(users) != 0 {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", formatedEmail))
 				}
+				principalPatch.Email = &formatedEmail
+			} else {
+				principalPatch.Email = nil
 			}
 		}
 

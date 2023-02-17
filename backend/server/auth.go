@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -201,6 +203,10 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
+	signUp.Email = strings.ToLower(signUp.Email)
+	if _, err := mail.ParseAddress(signUp.Email); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q address", signUp.Email))
+	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 		Email:       &signUp.Email,
 		ShowDeleted: true,

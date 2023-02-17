@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/mail"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -121,6 +122,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
+	formatedEmail := strings.ToLower(request.User.Email)
+	if _, err := mail.ParseAddress(formatedEmail); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q address", request.User.Email)
+	}
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		Email:       &request.User.Email,
 		ShowDeleted: true,
@@ -217,11 +222,12 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
-			if _, err := mail.ParseAddress(request.User.Email); err != nil {
+			formatedEmail := strings.ToLower(request.User.Email)
+			if _, err := mail.ParseAddress(formatedEmail); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
 			}
 			users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-				Email:       &request.User.Email,
+				Email:       &formatedEmail,
 				ShowDeleted: true,
 			})
 			if err != nil {
@@ -230,7 +236,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if len(users) != 0 {
 				return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
 			}
-			patch.Email = &request.User.Email
+			patch.Email = &formatedEmail
 		case "user.title":
 			patch.Name = &request.User.Title
 		case "user.password":
@@ -520,18 +526,18 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
 
-	email := userInfo.Email
-	if email == "" {
+	formatedEmail := strings.ToLower(userInfo.Email)
+	if formatedEmail == "" {
 		// If the email is empty, we should concatenate the identifier and
 		// the IdP's domain as the user's email.
-		email = fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain)
+		formatedEmail = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain))
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-		Email:       &email,
+		Email:       &formatedEmail,
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
+		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", formatedEmail, err)
 	}
 
 	var user *store.UserMessage
@@ -547,7 +553,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		}
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:         userInfo.DisplayName,
-			Email:        email,
+			Email:        formatedEmail,
 			Type:         api.EndUser,
 			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
