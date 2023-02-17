@@ -5,7 +5,7 @@
     :disabled="tabStore.isDisconnected"
     @click="enterAdminMode"
   >
-    <heroicons-outline:wrench />
+    <heroicons-outline:wrench class="-ml-1" />
     <span class="ml-1"> {{ $t("sql-editor.admin-mode.self") }} </span>
   </NButton>
 </template>
