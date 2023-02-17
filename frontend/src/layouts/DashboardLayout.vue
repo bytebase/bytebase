@@ -5,7 +5,7 @@
       class="bg-white border-b border-block-border"
       data-label="bb-dashboard-header"
     >
-      <div class="max-w-full mx-auto px-4">
+      <div class="max-w-full mx-auto">
         <DashboardHeader />
       </div>
     </nav>
