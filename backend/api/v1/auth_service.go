@@ -522,6 +522,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
 
+	// The userinfo's email comes from identity provider, we cannot ensure it's lowercase.
 	formatedEmail := strings.ToLower(userInfo.Email)
 	if formatedEmail == "" {
 		// If the email is empty, we should concatenate the identifier and
