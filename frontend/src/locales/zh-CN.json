@@ -219,7 +219,8 @@
     "rollback": "回滚",
     "total": "共计",
     "discard-changes": "取消修改",
-    "error-message": "错误信息"
+    "error-message": "错误信息",
+    "demo-mode": "演示模式"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -307,13 +308,12 @@
     }
   },
   "banner": {
-    "demo-intro": "这是 Bytebase 的演示版本。",
-    "demo-intro-readonly": "这是 Bytebase 的只读演示版本",
     "update-license": "更新证书",
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
-    "action": "5 秒部署您自己的服务",
+    "deploy": "5 秒部署到本地",
+    "request-demo": "和我们的产品专家预约 30 分钟产品演示",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",

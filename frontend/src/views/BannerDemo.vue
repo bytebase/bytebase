@@ -4,9 +4,14 @@
       <div class="flex items-center justify-between flex-wrap">
         <div class="w-0 flex-1 flex items-center">
           <p class="ml-3 font-medium text-white truncate">
-            <span>
-              {{ $t(`banner.demo-intro${isReadonly ? "-readonly" : ""}`) }}
-            </span>
+            <a
+              href="https://cal.com/adela-bytebase/30min"
+              target="_blank"
+              class="flex underline"
+            >
+              <heroicons-outline:calendar class="mr-1 w-6 h-6" />
+              {{ $t("banner.request-demo") }}
+            </a>
           </p>
         </div>
         <div
@@ -17,7 +22,7 @@
             target="_blank"
             class="flex items-center justify-center pl-4 pr-2 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
-            {{ $t("banner.action") }}
+            {{ $t("banner.deploy") }}
             <heroicons-outline:lightning-bolt class="ml-1 w-6 h-6" />
           </a>
         </div>
