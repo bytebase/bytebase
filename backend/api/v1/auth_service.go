@@ -217,9 +217,6 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
-			if user.IdentityProviderResourceID != nil {
-				return nil, status.Errorf(codes.PermissionDenied, "SSO user cannot modify email address")
-			}
 			if _, err := mail.ParseAddress(request.User.Email); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
 			}
@@ -436,7 +433,7 @@ func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, req
 		IdentityProviderResourceID: &emptyIdentityProvider,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
+		return nil, status.Errorf(codes.Internal, "failed to get user by email %q: %v", request.Email, err)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
@@ -455,7 +452,7 @@ func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, req
 func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	identityProviderID, err := getIdentityProviderID(request.IdpName)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "get identity provider ID: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get identity provider ID: %v", err)
 	}
 
 	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
@@ -534,7 +531,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get principal")
+		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
 	}
 
 	var user *store.UserMessage
