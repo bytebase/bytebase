@@ -3,12 +3,28 @@ package mysql
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 )
+
+// ErrExceedSizeLimit is returned if we read more bytes than the limit when reading the output of mysqlbinlog.
+type ErrExceedSizeLimit struct {
+	err error
+}
+
+// IsErrExceedSizeLimit checks if the underlying error is ErrExceedSizeLimit.
+func IsErrExceedSizeLimit(err error) bool {
+	_, ok := errors.Cause(err).(ErrExceedSizeLimit)
+	return ok
+}
+
+func (err ErrExceedSizeLimit) Error() string {
+	return fmt.Sprintf("size limit exceeds: %v", err.err.Error())
+}
 
 // BinlogEventType is the enumeration of binlog event types.
 type BinlogEventType int
@@ -87,7 +103,7 @@ func ParseBinlogStream(ctx context.Context, stream io.Reader, threadID string, t
 			n, _ := bodyBuf.WriteString(line)
 			totalBodySize += n
 			if totalBodySize >= totalBodySizeLimit {
-				return nil, errors.Errorf("total body size exceeds limit %vB", totalBodySizeLimit)
+				return nil, ErrExceedSizeLimit{err: errors.Errorf("total body size exceeds limit %vB", totalBodySizeLimit)}
 			}
 			continue
 		}

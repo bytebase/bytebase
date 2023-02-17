@@ -159,6 +159,8 @@ const errorCodeLink = (
   checkResult: TaskCheckResult
 ): ErrorCodeLink | undefined => {
   switch (checkResult.code) {
+    case undefined:
+      return;
     case GeneralErrorCode.OK:
       return;
     case SQLReviewPolicyErrorCode.EMPTY_POLICY:

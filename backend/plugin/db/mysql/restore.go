@@ -55,6 +55,21 @@ const (
 	binlogMetaSuffix = ".meta"
 )
 
+// ErrParseBinlogName is returned if we failed to parse binlog name.
+type ErrParseBinlogName struct {
+	err error
+}
+
+// IsErrParseBinlogName checks if the underlying error is ErrParseBinlogName.
+func IsErrParseBinlogName(err error) bool {
+	_, ok := errors.Cause(err).(ErrParseBinlogName)
+	return ok
+}
+
+func (err ErrParseBinlogName) Error() string {
+	return fmt.Sprintf("failed to parse binlog file name: %v", err.err)
+}
+
 // BinlogFile is the metadata of the MySQL binlog file.
 type BinlogFile struct {
 	Name string
@@ -1042,11 +1057,11 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 func ParseBinlogName(name string) (string, int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return "", 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
+		return "", 0, ErrParseBinlogName{err: errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))}
 	}
 	seq, err := strconv.ParseInt(s[1], 10, 0)
 	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s", s[1])
+		return "", 0, ErrParseBinlogName{err: errors.Wrapf(err, "failed to parse the sequence number %s", s[1])}
 	}
 	return s[0], seq, nil
 }
