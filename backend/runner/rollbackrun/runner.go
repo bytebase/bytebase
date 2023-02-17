@@ -174,10 +174,15 @@ func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMe
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to parse the schema")
 	}
-
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		return "", errors.Errorf("failed to cast driver to mysql.Driver")
+	}
+	if err := mysqlDriver.CheckBinlogEnabled(ctx); err != nil {
+		return "", err
+	}
+	if err := mysqlDriver.CheckBinlogRowFormat(ctx); err != nil {
+		return "", err
 	}
 	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
 	if err != nil {
