@@ -1,14 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
     <BannersWrapper />
-    <nav
-      class="bg-white border-b border-block-border"
-      data-label="bb-dashboard-header"
-    >
-      <div class="max-w-full mx-auto">
-        <DashboardHeader />
-      </div>
-    </nav>
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
@@ -35,14 +27,12 @@
 import { defineComponent } from "vue";
 import { ServerInfo } from "@/types";
 import { pushNotification, useActuatorStore } from "@/store";
-import DashboardHeader from "@/views/DashboardHeader.vue";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 
 export default defineComponent({
   name: "DashboardLayout",
   components: {
-    DashboardHeader,
     ProvideDashboardContext,
     BannersWrapper,
   },

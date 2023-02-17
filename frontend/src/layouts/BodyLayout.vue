@@ -139,6 +139,15 @@
       class="flex flex-col min-w-0 flex-1 border-l border-r border-block-border"
       data-label="bb-main-body-wrapper"
     >
+      <nav
+        class="bg-white border-b border-block-border"
+        data-label="bb-dashboard-header"
+      >
+        <div class="max-w-full mx-auto">
+          <DashboardHeader />
+        </div>
+      </nav>
+
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">
         <div
@@ -160,6 +169,7 @@
           </div>
         </div>
       </aside>
+
       <div class="w-full mx-auto md:flex">
         <div class="md:min-w-0 md:flex-1">
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
@@ -211,6 +221,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import DashboardHeader from "@/views/DashboardHeader.vue";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
@@ -233,6 +244,7 @@ interface LocalState {
 export default defineComponent({
   name: "BodyLayout",
   components: {
+    DashboardHeader,
     Breadcrumb,
     Quickstart,
     QuickActionPanel,
