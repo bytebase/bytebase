@@ -84,8 +84,11 @@ func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statem
 
 	switch node.Stmt.Node.(type) {
 	case *pgquery.Node_SelectStmt:
+	case *pgquery.Node_ExplainStmt:
+		// Skip the EXPLAIN statement.
+		return nil, nil
 	default:
-		return nil, errors.Errorf("expect a query statement but found %T", node)
+		return nil, errors.Errorf("expect a query statement but found %T", node.Stmt.Node)
 	}
 
 	fieldList, err := extractor.pgExtractNode(node.Stmt)
@@ -922,6 +925,9 @@ func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement s
 	switch node.(type) {
 	case *tidbast.SelectStmt:
 	case *tidbast.SetOprStmt:
+	case *tidbast.ExplainStmt:
+		// Skip the EXPLAIN statement.
+		return nil, nil
 	default:
 		return nil, errors.Errorf("expect a query statement but found %T", node)
 	}
