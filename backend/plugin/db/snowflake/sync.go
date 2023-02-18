@@ -134,7 +134,7 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 	for k := range systemSchemas {
 		excludedSchemaList = append(excludedSchemaList, fmt.Sprintf("'%s'", k))
 	}
-	excludeWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
+	excludeWhere := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
 
 	query := fmt.Sprintf(`
 		SELECT
