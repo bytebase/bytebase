@@ -221,7 +221,8 @@
     "discard-changes": "Discard changes",
     "error-message": "Error message",
     "resource-id": "Resource ID",
-    "domain": "Domain"
+    "domain": "Domain",
+    "demo-mode": "Demo"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -310,13 +311,12 @@
     }
   },
   "banner": {
-    "demo-intro": "This is a demo version of Bytebase.",
-    "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
-    "action": "Deploy yours in 5 seconds",
+    "deploy": "Deploy yours in 5 seconds",
+    "request-demo": "Book a 30 min product walkthrough with our product expert",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
