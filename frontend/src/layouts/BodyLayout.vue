@@ -35,8 +35,15 @@
           <div
             class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
           >
+            <div
+              v-if="isDemo"
+              class="text-sm flex whitespace-nowrap text-accent"
+            >
+              <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
+              {{ $t("common.demo-mode") }}
+            </div>
             <router-link
-              v-if="!isFreePlan"
+              v-else-if="!isFreePlan"
               to="/setting/subscription"
               exact-active-class=""
               class="text-sm flex"
@@ -98,8 +105,12 @@
           <Quickstart />
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
+          <div v-if="isDemo" class="text-sm flex whitespace-nowrap text-accent">
+            <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
+            {{ $t("common.demo-mode") }}
+          </div>
           <router-link
-            v-if="!isFreePlan"
+            v-else-if="!isFreePlan"
             to="/setting/subscription"
             exact-active-class=""
             class="text-sm flex whitespace-nowrap mr-1"
@@ -221,6 +232,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
@@ -261,6 +273,8 @@ export default defineComponent({
       showTrialModal: false,
       showReleaseModal: false,
     });
+
+    const { isDemo } = storeToRefs(actuatorStore);
 
     actuatorStore.tryToRemindRelease().then((openRemindModal) => {
       state.showReleaseModal = openRemindModal;
@@ -322,9 +336,7 @@ export default defineComponent({
 
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
-      return (
-        !actuatorStore.isDemo && !uiStateStore.getIntroStateByKey("hidden")
-      );
+      return !isDemo.value && !uiStateStore.getIntroStateByKey("hidden");
     });
 
     const version = computed(() => {
@@ -367,6 +379,7 @@ export default defineComponent({
       currentPlan,
       isFreePlan,
       canUpgrade,
+      isDemo,
     };
   },
 });
