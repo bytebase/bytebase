@@ -166,7 +166,8 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewList []*ast.CreateViewStmt) {
 	var tempViewList []ast.Node
 	var viewList []ast.Node
-	for viewName, view := range newViewMap {
+	for _, view := range newViewList {
+		viewName := view.ViewName.Name.O
 		if newNode, ok := newViewMap[viewName]; ok {
 			if !isViewEqual(view, newNode) {
 				// Skip predefined view such as the temporary view from mysqldump.
@@ -393,7 +394,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 	modifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 	dropColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 
-	oldColumnMap := buildColumnMap(oldTable.createTable.Cols, oldTable.createTable.Table.Name)
+	oldColumnMap := buildColumnMap(oldTable.createTable.Cols)
 	oldColumnPositionMap := buildColumnPositionMap(oldTable.createTable)
 	for idx, columnDef := range newTable.createTable.Cols {
 		newColumnName := columnDef.Name.Name.O
@@ -587,33 +588,6 @@ func classifyStatement(statement string) ([]string, string, error) {
 	return afterFilter, supported, nil
 }
 
-func writeStringStatement(w io.Writer, s string) error {
-	if _, err := w.Write([]byte(s)); err != nil {
-		return err
-	}
-	if _, err := w.Write([]byte("\n\n")); err != nil {
-		return err
-	}
-	return nil
-}
-
-func writeStringStatementList(w io.Writer, ss []string, reverse bool) error {
-	if reverse {
-		for i := len(ss) - 1; i >= 0; i-- {
-			if err := writeStringStatement(w, ss[i]); err != nil {
-				return err
-			}
-		}
-	} else {
-		for _, s := range ss {
-			if err := writeStringStatement(w, s); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func writeNodeStatement(w io.Writer, n ast.Node, flags format.RestoreFlags) error {
 	restoreCtx := format.NewRestoreCtx(flags, w)
 	if err := n.Restore(restoreCtx); err != nil {
@@ -776,18 +750,6 @@ func buildSchemaInfo(nodes []ast.StmtNode) (*schemaInfo, error) {
 	return result, nil
 }
 
-// buildViewMap returns a map of view name to create view statements.
-func buildViewMap(nodes []ast.StmtNode) map[string]*ast.CreateViewStmt {
-	viewMap := make(map[string]*ast.CreateViewStmt)
-	for _, node := range nodes {
-		if stmt, ok := node.(*ast.CreateViewStmt); ok {
-			viewName := stmt.ViewName.Name.O
-			viewMap[viewName] = stmt
-		}
-	}
-	return viewMap
-}
-
 // buildUnsupportObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
 func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, error) {
 	m := make(map[objectType]map[string]string)
@@ -865,7 +827,7 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.
-func buildColumnMap(columnList []*ast.ColumnDef, tableName model.CIStr) map[string]*ast.ColumnDef {
+func buildColumnMap(columnList []*ast.ColumnDef) map[string]*ast.ColumnDef {
 	oldColumnMap := make(map[string]*ast.ColumnDef)
 	for _, columnDef := range columnList {
 		oldColumnMap[columnDef.Name.Name.O] = columnDef
@@ -880,24 +842,6 @@ func buildColumnPositionMap(stmt *ast.CreateTableStmt) map[string]int {
 		m[col.Name.Name.O] = i
 	}
 	return m
-}
-
-// buildIndexMap build a map of index name to constraint on given table name.
-func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
-	indexMap := make(constraintMap)
-	for _, constraint := range stmt.Constraints {
-		switch constraint.Tp {
-		case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-			indexMap[constraint.Name] = constraint
-		case ast.ConstraintPrimaryKey:
-			// A table can have only one PRIMARY KEY.
-			// The name of a PRIMARY KEY is always PRIMARY, which thus cannot be used as the name for any other kind of index.
-			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
-			// https://dev.mysql.com/doc/refman/5.7/en/create-table.html
-			indexMap["PRIMARY"] = constraint
-		}
-	}
-	return indexMap
 }
 
 func buildConstraintMap(stmt *ast.CreateTableStmt) (*ast.Constraint, constraintMap) {
