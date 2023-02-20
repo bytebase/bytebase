@@ -17,15 +17,15 @@
           </NTooltip>
         </div>
       </template>
-      <template v-else-if="payload?.rollbackSqlStatus === 'DONE'">
+      <template v-else-if="false && payload?.rollbackSqlStatus === 'DONE'">
         <BBTooltipButton
           :disabled="!allowPreviewRollback"
           tooltip-mode="DISABLED-ONLY"
           class="btn-normal !px-3 !py-1"
           @click="tryRollbackTask"
         >
-          {{ $t("task.rollback.preview-rollback") }}
-          <template v-if="!payload.rollbackStatement" #tooltip>
+          {{ $t("task.rollback.preview-rollback-issue") }}
+          <template v-if="!payload?.rollbackStatement" #tooltip>
             <div class="whitespace-pre-line">
               {{ $t("task.rollback.empty-rollback-statement") }}
             </div>

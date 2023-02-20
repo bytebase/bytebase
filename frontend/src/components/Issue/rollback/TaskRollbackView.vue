@@ -2,8 +2,14 @@
   <div v-if="rollbackUIType !== 'NONE'" class="contents">
     <h2 class="textlabel flex items-center">
       <span class="mr-1">{{ $t("task.rollback.sql-rollback") }}</span>
-      <!-- TODO(Jim): bring this icon back when user doc is ready -->
-      <!-- <heroicons-outline:question-mark-circle class="h-4 w-4" /> -->
+      <NTooltip>
+        <template #trigger>
+          <heroicons-outline:question-mark-circle class="h-4 w-4" />
+        </template>
+        <div class="whitespace-pre-line">
+          {{ $t("task.rollback.sql-rollback-tips") }}
+        </div>
+      </NTooltip>
     </h2>
 
     <div class="col-span-2 flex items-center">
@@ -14,6 +20,8 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
+
 import RollbackSwitch from "./RollbackSwitch.vue";
 import RollbackStatus from "./RollbackStatus.vue";
 import { useRollbackLogic } from "./common";
