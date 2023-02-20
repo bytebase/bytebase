@@ -113,6 +113,12 @@
         {{ $t("common.save") }}
       </button>
     </div>
+
+    <FeatureModal
+      v-if="state.requiredFeature"
+      :feature="state.requiredFeature"
+      @cancel="state.requiredFeature = undefined"
+    />
   </form>
 </template>
 
@@ -126,18 +132,24 @@ import {
   ProjectPatch,
   ProjectTenantMode,
   SchemaChangeType,
+  FeatureType,
 } from "../types";
-import { pushNotification, useProjectStore } from "@/store";
+import FeatureModal from "@/components/FeatureModal.vue";
+import { hasFeature, pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
   key: string;
   schemaChangeType: SchemaChangeType;
   tenantMode: ProjectTenantMode;
+  requiredFeature: FeatureType | undefined;
 }
 
 export default defineComponent({
   name: "ProjectGeneralSettingPanel",
+  components: {
+    FeatureModal,
+  },
   props: {
     project: {
       required: true,
@@ -157,6 +169,7 @@ export default defineComponent({
       key: props.project.key,
       schemaChangeType: props.project.schemaChangeType,
       tenantMode: props.project.tenantMode,
+      requiredFeature: undefined,
     });
 
     const allowSave = computed((): boolean => {
@@ -183,6 +196,13 @@ export default defineComponent({
         projectPatch.schemaChangeType = state.schemaChangeType;
       }
       if (state.tenantMode !== props.project.tenantMode) {
+        if (state.tenantMode === "TENANT") {
+          if (!hasFeature("bb.feature.multi-tenancy")) {
+            state.tenantMode = "DISABLED";
+            state.requiredFeature = "bb.feature.multi-tenancy";
+            return;
+          }
+        }
         projectPatch.tenantMode = state.tenantMode;
       }
 
