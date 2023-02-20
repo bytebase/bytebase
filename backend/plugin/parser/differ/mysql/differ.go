@@ -621,7 +621,7 @@ func getID(node ast.Node) string {
 			case ast.AlterTableDropForeignKey:
 				return fmt.Sprintf("%s.%s", in.Table.Name.String(), spec.Name)
 			case ast.AlterTableDropPrimaryKey:
-				return fmt.Sprintf("%s", in.Table.Name.String())
+				return in.Table.Name.String()
 			case ast.AlterTableDropCheck:
 				return fmt.Sprintf("%s.%s", in.Table.Name.String(), spec.Constraint.Name)
 			}
