@@ -33,6 +33,19 @@
         src="../../../assets/logo-full.svg"
         alt="Bytebase"
       />
+
+      <div
+        class="absolute z-50 opacity-50 origin-bottom-right"
+        :style="{
+          lineHeight: '1em',
+          fontSize: `${logoWidth / 6}px`,
+          right: `${LOGO_PADDING * resizeParams.zoom}px`,
+          bottom: `${LOGO_PADDING * resizeParams.zoom}px`,
+          transform: `scale(${resizeParams.zoom})`,
+        }"
+      >
+        {{ now }}
+      </div>
     </div>
   </teleport>
 </template>
@@ -40,6 +53,7 @@
 <script lang="ts" setup>
 import { pushNotification } from "@/store";
 import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
+import dayjs from "dayjs";
 
 import { minmax } from "@/utils";
 import {
@@ -103,6 +117,10 @@ const resizeParams = computed(() => {
     },
     [0, 1]
   );
+});
+
+const now = computed((): string => {
+  return dayjs().format("YYYY-MM-DD HH:mm");
 });
 
 const DesktopRenderer = defineComponent({
