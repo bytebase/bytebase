@@ -25,8 +25,8 @@ message ListAnomaliesRequest {
   // filter is the filter to apply on the list anomaly request,
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
-  // List the instance anomalies of a specific instance: 'anomaly.principal="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true '
-  // List the specified database anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
+  // List the instance anomalies of a specific instance: 'anomaly.principal="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true'
+  // List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
   string filter = 1;
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
