@@ -168,11 +168,15 @@
             }
           "
         >
-          {{ databaseName }}
-          <br />
-          <span class="text-control-light">{{
-            showDatabaseCreationLabel
-          }}</span>
+          <div class="flex items-center">
+            <span>{{ databaseName }}</span>
+            <SQLEditorButton
+              v-if="databaseEntity"
+              class="ml-1"
+              :database="databaseEntity"
+            />
+          </div>
+          <div class="text-control-light">{{ showDatabaseCreationLabel }}</div>
         </div>
       </template>
 
@@ -275,7 +279,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
+import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
 import { isEqual } from "lodash-es";
 import { NDatePicker } from "naive-ui";
 import { useRouter } from "vue-router";
@@ -292,7 +296,7 @@ import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import FeatureModal from "../FeatureModal.vue";
 import { InputField } from "@/plugins";
-import type {
+import {
   Database,
   Environment,
   Project,
@@ -305,6 +309,7 @@ import type {
   Instance,
   DatabaseLabel,
   Principal,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   allTaskList,
@@ -329,6 +334,7 @@ import {
   useAllowProjectOwnerToApprove,
 } from "./logic";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
 
 dayjs.extend(isSameOrAfter);
 
@@ -421,6 +427,8 @@ const project = computed((): Project => {
   }
   return (issue.value as Issue).project;
 });
+
+const databaseEntity = ref<Database>();
 
 const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties
@@ -551,6 +559,30 @@ const clickDatabase = () => {
       });
   }
 };
+
+watchEffect(() => {
+  if (props.database) {
+    databaseEntity.value = props.database;
+  } else {
+    const name = databaseName.value;
+    if (name) {
+      useDatabaseStore()
+        .fetchDatabaseByInstanceIdAndName({
+          instanceId: props.instance.id,
+          name,
+        })
+        .then((db) => {
+          if (db && db.id !== UNKNOWN_ID) {
+            databaseEntity.value = db;
+          } else {
+            databaseEntity.value = undefined;
+          }
+        });
+    } else {
+      databaseEntity.value = undefined;
+    }
+  }
+});
 
 const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
