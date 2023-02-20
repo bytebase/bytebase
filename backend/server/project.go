@@ -180,7 +180,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 		if v := projectPatch.TenantMode; v != nil {
-			if *v == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
+			if api.ProjectTenantMode(*v) == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
 		}
