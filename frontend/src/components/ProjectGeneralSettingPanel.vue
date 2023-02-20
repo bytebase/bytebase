@@ -39,6 +39,41 @@
       </dl>
     </div>
 
+    <div class="flex flex-col">
+      <div for="name" class="text-base leading-6 font-medium text-control">
+        {{ $t("common.mode") }}
+        <span class="text-red-600">*</span>
+      </div>
+      <div class="mt-2 textlabel">
+        <div class="radio-set-row">
+          <label class="radio">
+            <input
+              v-model="state.tenantMode"
+              tabindex="-1"
+              type="radio"
+              class="btn"
+              value="DISABLED"
+            />
+            <span class="label">{{ $t("project.mode.standard") }}</span>
+          </label>
+          <label class="radio">
+            <input
+              v-model="state.tenantMode"
+              tabindex="-1"
+              type="radio"
+              class="btn"
+              value="TENANT"
+            />
+            <span class="label">{{ $t("project.mode.tenant") }}</span>
+            <FeatureBadge
+              feature="bb.feature.multi-tenancy"
+              class="text-accent"
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div v-if="isDev">
       <dl class="">
         <div class="textlabel">
@@ -89,6 +124,7 @@ import {
   DEFAULT_PROJECT_ID,
   Project,
   ProjectPatch,
+  ProjectTenantMode,
   SchemaChangeType,
 } from "../types";
 import { pushNotification, useProjectStore } from "@/store";
@@ -97,6 +133,7 @@ interface LocalState {
   name: string;
   key: string;
   schemaChangeType: SchemaChangeType;
+  tenantMode: ProjectTenantMode;
 }
 
 export default defineComponent({
@@ -119,6 +156,7 @@ export default defineComponent({
       name: props.project.name,
       key: props.project.key,
       schemaChangeType: props.project.schemaChangeType,
+      tenantMode: props.project.tenantMode,
     });
 
     const allowSave = computed((): boolean => {
@@ -127,7 +165,8 @@ export default defineComponent({
         !isEmpty(state.name) &&
         (state.name !== props.project.name ||
           state.key !== props.project.key ||
-          state.schemaChangeType != props.project.schemaChangeType)
+          state.schemaChangeType !== props.project.schemaChangeType ||
+          state.tenantMode !== props.project.tenantMode)
       );
     });
 
@@ -142,6 +181,9 @@ export default defineComponent({
       }
       if (state.schemaChangeType !== props.project.schemaChangeType) {
         projectPatch.schemaChangeType = state.schemaChangeType;
+      }
+      if (state.tenantMode !== props.project.tenantMode) {
+        projectPatch.tenantMode = state.tenantMode;
       }
 
       projectStore
@@ -158,6 +200,7 @@ export default defineComponent({
           state.name = updatedProject.name;
           state.key = updatedProject.key;
           state.schemaChangeType = updatedProject.schemaChangeType;
+          state.tenantMode = updatedProject.tenantMode;
         });
     };
 
