@@ -405,12 +405,6 @@
                 :value="currentDataSource"
                 @change="handleCurrentDataSourceSslChange"
               />
-              <button
-                class="btn-normal mt-2"
-                @click.prevent="handleEditSsl(false)"
-              >
-                {{ $t("common.revert") }}
-              </button>
             </template>
             <template v-else>
               <button
