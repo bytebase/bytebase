@@ -60,10 +60,14 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 		ResourceID:       project.ResourceID,
 		Title:            patch.Name,
 		Key:              patch.Key,
-		TenantMode:       patch.TenantMode,
 		DBNameTemplate:   patch.DBNameTemplate,
 		LGTMCheckSetting: patch.LGTMCheckSetting,
 	}
+	if patch.TenantMode != nil {
+		m := api.ProjectTenantMode(*patch.TenantMode)
+		v2Update.TenantMode = &m
+	}
+
 	if patch.WorkflowType != nil {
 		v := api.ProjectWorkflowType(*patch.WorkflowType)
 		v2Update.Workflow = &v
