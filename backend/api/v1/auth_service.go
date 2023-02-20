@@ -29,10 +29,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var (
-	emptyIdentityProvider = ""
-)
-
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
@@ -236,9 +232,6 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "user.title":
 			patch.Name = &request.User.Title
 		case "user.password":
-			if user.IdentityProviderResourceID != nil {
-				return nil, status.Errorf(codes.PermissionDenied, "SSO user cannot modify password")
-			}
 			passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
@@ -351,9 +344,6 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
-	if user.IdentityProviderResourceID != nil {
-		convertedUser.IdentityProvider = fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID)
-	}
 	return convertedUser
 }
 
@@ -430,9 +420,8 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 
 func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:                      &request.Email,
-		ShowDeleted:                true,
-		IdentityProviderResourceID: &emptyIdentityProvider,
+		Email:       &request.Email,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user by email %q: %v", request.Email, err)
