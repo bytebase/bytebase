@@ -364,9 +364,9 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	var loginUser *store.UserMessage
 	var err error
 	if request.IdpName == "" {
-		loginUser, err = s.getUserWithLoginRequestOfBytebase(ctx, request)
+		loginUser, err = s.getAndVerifyUser(ctx, request)
 	} else {
-		loginUser, err = s.getUserWithLoginRequestOfIdentityProvider(ctx, request)
+		loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
 	}
 	if err != nil {
 		return nil, err
@@ -418,7 +418,7 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 	return &emptypb.Empty{}, nil
 }
 
-func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		Email:       &request.Email,
 		ShowDeleted: true,
@@ -435,34 +435,33 @@ func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, req
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
-		return nil, status.Errorf(codes.InvalidArgument, "incorrect password")
+		return nil, status.Errorf(codes.Unauthenticated, "incorrect password")
 	}
 	return user, nil
 }
 
-func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	identityProviderID, err := getIdentityProviderID(request.IdpName)
+func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	idpID, err := getIdentityProviderID(request.IdpName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get identity provider ID: %v", err)
 	}
-
-	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		ResourceID: &identityProviderID,
+	idp, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+		ResourceID: &idpID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get identity provider: %v", err)
 	}
-	if identityProvider == nil {
+	if idp == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
-	if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
+	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProvider.Config.GetOauth2Config())
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(idp.Config.GetOauth2Config())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
@@ -475,7 +474,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-	} else if identityProvider.Type == storepb.IdentityProviderType_OIDC {
+	} else if idp.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
@@ -484,10 +483,10 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		idp, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
-				Issuer:       identityProvider.Config.GetOidcConfig().Issuer,
-				ClientID:     identityProvider.Config.GetOidcConfig().ClientId,
-				ClientSecret: identityProvider.Config.GetOidcConfig().ClientSecret,
-				FieldMapping: identityProvider.Config.GetOidcConfig().FieldMapping,
+				Issuer:       idp.Config.GetOidcConfig().Issuer,
+				ClientID:     idp.Config.GetOidcConfig().ClientId,
+				ClientSecret: idp.Config.GetOidcConfig().ClientSecret,
+				FieldMapping: idp.Config.GetOidcConfig().FieldMapping,
 			},
 		)
 		if err != nil {
@@ -505,25 +504,26 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
 	} else {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
+		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
 	if userInfo == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
 
-	// The userinfo's email comes from identity provider, we cannot ensure it's lowercase.
-	formatedEmail := strings.ToLower(userInfo.Email)
-	if formatedEmail == "" {
+	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
+	// TODO(boojack): instead of deciding the email magically, let's have the users to configure it in IDP config since emails may not be the primary.
+	email := strings.ToLower(userInfo.Email)
+	if email == "" {
 		// If the email is empty, we should concatenate the identifier and
 		// the IdP's domain as the user's email.
-		formatedEmail = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, identityProvider.Domain))
+		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, idp.Domain))
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-		Email:       &formatedEmail,
+		Email:       &email,
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", formatedEmail, err)
+		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
 	}
 
 	var user *store.UserMessage
@@ -539,7 +539,7 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		}
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:         userInfo.DisplayName,
-			Email:        formatedEmail,
+			Email:        email,
 			Type:         api.EndUser,
 			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
