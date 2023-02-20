@@ -132,13 +132,13 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name             *string            `jsonapi:"attr,name"`
-	Key              *string            `jsonapi:"attr,key"`
-	TenantMode       *ProjectTenantMode `jsonapi:"attr,tenantMode"`
-	DBNameTemplate   *string            `jsonapi:"attr,dbNameTemplate"`
-	WorkflowType     *string            `jsonapi:"attr,workflowType"`     // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
-	SchemaChangeType *string            `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
-	LGTMCheckSetting *LGTMCheckSetting  `jsonapi:"attr,lgtmCheckSetting"`
+	Name             *string           `jsonapi:"attr,name"`
+	Key              *string           `jsonapi:"attr,key"`
+	TenantMode       *string           `jsonapi:"attr,tenantMode"`
+	DBNameTemplate   *string           `jsonapi:"attr,dbNameTemplate"`
+	WorkflowType     *string           `jsonapi:"attr,workflowType"`     // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
+	SchemaChangeType *string           `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
+	LGTMCheckSetting *LGTMCheckSetting `jsonapi:"attr,lgtmCheckSetting"`
 }
 
 var (
