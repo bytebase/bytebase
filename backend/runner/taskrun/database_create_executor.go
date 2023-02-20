@@ -233,6 +233,10 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 		return fmt.Sprintf("USE DATABASE %s;\n", databaseName), nil
 	case db.SQLite:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
+	case db.MongoDB:
+		// We embed mongosh to execute the mongodb statement, and `use` statement is not effective in mongosh.
+		// We will connect to the specified database by specifying the database name in the connection string.
+		return "", nil
 	}
 
 	return "", errors.Errorf("unsupported database type %s", dbType)
