@@ -185,12 +185,10 @@ message User {
 
   string password = 5 [(google.api.field_behavior) = INPUT_ONLY];
 
-  string identity_provider = 6 [(google.api.field_behavior) = OUTPUT_ONLY];;
-
-  UserType user_type = 7;
+  UserType user_type = 6;
 
   // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
-  UserRole user_role = 8;
+  UserRole user_role = 7;
 }
 
 enum UserType {
