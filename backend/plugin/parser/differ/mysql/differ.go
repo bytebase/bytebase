@@ -1382,8 +1382,6 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 	case ast.TableOptionAvgRowLength:
 		return old.UintValue == new.UintValue
 	case ast.TableOptionCharset:
-		fmt.Println("[old] charset\n", old.Default, old.StrValue)
-		fmt.Println("[new] charset\n", new.Default, new.StrValue)
 		if old.Default != new.Default {
 			return false
 		}
@@ -1392,8 +1390,6 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 		}
 		return old.StrValue == new.StrValue
 	case ast.TableOptionCollate:
-		fmt.Println("[old] charset\n", old.Default, old.StrValue)
-		fmt.Println("[new] charset\n", new.Default, new.StrValue)
 		return old.StrValue == new.StrValue
 	case ast.TableOptionCheckSum:
 		return old.UintValue == new.UintValue
