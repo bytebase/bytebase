@@ -222,7 +222,8 @@
     "error-message": "Error message",
     "resource-id": "Resource ID",
     "domain": "Domain",
-    "demo-mode": "Demo"
+    "demo-mode": "Demo",
+    "operations": "Operations"
   },
   "error-page": {
     "go-back-home": "Go back home"

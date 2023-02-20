@@ -4,6 +4,7 @@
       <input
         type="checkbox"
         class="h-4 w-4 text-accent rounded cursor-pointer disabled:cursor-not-allowed border-control-border focus:ring-accent"
+        :class="[disabled && !value && 'bg-control-bg']"
         :disabled="disabled"
         :checked="value"
         @input="

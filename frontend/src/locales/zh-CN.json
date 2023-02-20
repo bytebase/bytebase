@@ -220,7 +220,8 @@
     "total": "共计",
     "discard-changes": "取消修改",
     "error-message": "错误信息",
-    "demo-mode": "演示模式"
+    "demo-mode": "演示模式",
+    "operations": "操作"
   },
   "error-page": {
     "go-back-home": "回到主页"
