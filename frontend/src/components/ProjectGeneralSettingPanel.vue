@@ -40,7 +40,7 @@
     </div>
 
     <div class="flex flex-col">
-      <div for="name" class="text-base leading-6 font-medium text-control">
+      <div for="name" class="text-sm font-medium text-control-light">
         {{ $t("common.mode") }}
         <span class="text-red-600">*</span>
       </div>
