@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -67,6 +68,9 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if !isValidResourceID(request.IdentityProviderId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid identity provider ID %v", request.IdentityProviderId)
 	}
+	if strings.ToLower(request.IdentityProvider.Domain) != request.IdentityProvider.Domain {
+		return nil, status.Errorf(codes.InvalidArgument, "domain name must use lower-case")
+	}
 	if err := validIdentityProviderConfig(request.IdentityProvider.Type, request.IdentityProvider.Config); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -109,6 +113,9 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		case "identity_provider.title":
 			patch.Title = &request.IdentityProvider.Title
 		case "identity_provider.domain":
+			if strings.ToLower(request.IdentityProvider.Domain) != request.IdentityProvider.Domain {
+				return nil, status.Errorf(codes.InvalidArgument, "domain name must use lower-case")
+			}
 			patch.Domain = &request.IdentityProvider.Domain
 		case "identity_provider.config":
 			patch.Config = convertIdentityProviderConfigToStore(request.IdentityProvider.Config)
