@@ -442,7 +442,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		}
 	}
 	// When we update the project ID of the database, we should update the project ID of the related sheets in the same transaction.
-	if v := patch.ProjectID; v != nil {
+	if patch.ProjectID != nil {
 		sheetList, err := s.FindSheet(ctx, &api.SheetFind{DatabaseID: &databaseUID}, updaterID)
 		if err != nil {
 			return nil, err
