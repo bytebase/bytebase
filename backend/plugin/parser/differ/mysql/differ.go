@@ -471,6 +471,9 @@ func (diff *diffNode) deparse() (string, error) {
 		if _, err := buf.WriteString(statement); err != nil {
 			return "", err
 		}
+		if _, err := buf.WriteString("\n\n"); err != nil {
+			return "", err
+		}
 	}
 	if err := sortAndWriteNodeList(&buf, diff.dropForeignKeyList, flag); err != nil {
 		return "", err
@@ -523,6 +526,9 @@ func (diff *diffNode) deparse() (string, error) {
 		if _, err := buf.WriteString(statement); err != nil {
 			return "", err
 		}
+		if _, err := buf.WriteString("\n\n"); err != nil {
+			return "", err
+		}
 	}
 
 	sort.Strings(diff.inPlaceDropUnsupportedStatement)
@@ -530,11 +536,17 @@ func (diff *diffNode) deparse() (string, error) {
 		if _, err := buf.WriteString(statement); err != nil {
 			return "", err
 		}
+		if _, err := buf.WriteString("\n\n"); err != nil {
+			return "", err
+		}
 	}
 
 	sort.Strings(diff.inPlaceAddUnsupportedStatement)
 	for _, statement := range diff.inPlaceAddUnsupportedStatement {
 		if _, err := buf.WriteString(statement); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n\n"); err != nil {
 			return "", err
 		}
 	}
