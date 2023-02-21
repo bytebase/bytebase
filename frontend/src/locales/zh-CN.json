@@ -221,7 +221,9 @@
     "discard-changes": "取消修改",
     "error-message": "错误信息",
     "demo-mode": "演示模式",
-    "operations": "操作"
+    "operations": "操作",
+    "on": "开启",
+    "off": "关闭"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -301,11 +303,12 @@
     "task-checks": "任务检查项",
     "rollback": {
       "sql-rollback": "SQL 回滚",
-      "log": "记录",
       "failed": "失败",
-      "logging": "记录中",
+      "preview-rollback-issue": "预览回滚工单",
+      "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
-      "cancel-logging": "取消记录回滚语句"
+      "cancel-generating": "取消生成回滚语句",
+      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。"
     }
   },
   "banner": {
@@ -1878,5 +1881,15 @@
   },
   "sensitive-data": {
     "self": "敏感数据"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
+    "cannot-be-changed-later": "创建之后无法修改。",
+    "validation": {
+      "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
+      "minlength": "{resource} ID 至少包含 1 个字符。",
+      "overflow": "{resource} ID 应该少于 64 个字符。"
+    }
   }
 }

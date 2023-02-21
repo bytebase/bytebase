@@ -1,4 +1,6 @@
 {{- $external_url := index .Values.bytebase.option "external-url" -}}
+{{- $existingPgURLSecret := .Values.bytebase.option.existingPgURLSecret -}}
+{{- $existingPgURLSecretKey := .Values.bytebase.option.existingPgURLSecretKey -}}
 {{- $port := .Values.bytebase.option.port -}}
 {{- $pg := .Values.bytebase.option.pg -}}
 {{- $data := .Values.bytebase.option.data -}}
@@ -25,6 +27,17 @@ spec:
       containers:
         - name: bytebase
           image: "bytebase/bytebase:{{ $version }}"
+          env:
+          - name: PG_URL
+            {{ if $existingPgURLSecret }}
+            # If user specifies an existing secret, we should read the external pg connection string in that secret.
+            valueFrom:
+              secretKeyRef:
+                name: {{ $existingPgURLSecret }}
+                key: {{ $existingPgURLSecretKey }}
+            {{ else }}
+            value: {{ $pg }}
+            {{ end }}
           imagePullPolicy: Always
           args:
             [
@@ -35,8 +48,6 @@ spec:
               "--external-url",
               # helm parser cannot handle the dash in the value, so we need to quote it, so we use $external_url instead of $external-url.
               {{ $external_url | quote }},
-              "--pg",
-              {{ $pg | quote}},
             ]
           ports:
             - containerPort: {{ $port }}

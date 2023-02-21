@@ -1,12 +1,17 @@
 <template>
-  <LogButton v-if="!rollbackEnabled" />
-  <LoggingButton v-else />
+  <div class="flex items-center h-[30px]">
+    <BBSwitch
+      :disabled="!allowRollback"
+      :value="rollbackEnabled"
+      :text="true"
+      @toggle="toggleRollback"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { useRollbackLogic } from "./common";
-import LogButton from "./LogButton.vue";
-import LoggingButton from "./LoggingButton.vue";
+import { BBSwitch } from "@/bbkit";
 
-const { rollbackEnabled } = useRollbackLogic();
+const { allowRollback, rollbackEnabled, toggleRollback } = useRollbackLogic();
 </script>

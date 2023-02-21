@@ -29,6 +29,18 @@
           state.dirtyOn ? `translate-x-${sizes.base}` : 'translate-x-0',
         ]"
       ></span>
+      <span
+        v-if="text"
+        aria-hidden="true"
+        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center text-[9px] h-5 w-5 transition ease-in-out duration-200"
+        :class="
+          state.dirtyOn
+            ? '-translate-x-5 text-white'
+            : 'translate-x-0 text-control'
+        "
+      >
+        {{ state.dirtyOn ? $t("common.on") : $t("common.off") }}
+      </span>
     </button>
     <span
       v-if="label"
@@ -48,12 +60,14 @@ export type BBSwitchSize = "small" | "normal";
 const props = withDefaults(
   defineProps<{
     size?: BBSwitchSize;
+    text?: boolean;
     label?: string;
     value?: boolean;
     disabled?: boolean;
   }>(),
   {
     size: "normal",
+    text: false,
     label: "",
     value: true,
     disabled: false,
