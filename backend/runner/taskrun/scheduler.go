@@ -1195,7 +1195,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		IssueName: updatedIssue.Title,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Title)
+		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
 	}
 
 	activityCreate := &api.ActivityCreate{
@@ -1208,9 +1208,9 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	}
 
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: issue,
+		Issue: updatedIssue,
 	}); err != nil {
-		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Title)
+		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
 	}
 
 	return nil
