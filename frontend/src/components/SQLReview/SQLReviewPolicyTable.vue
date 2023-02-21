@@ -28,15 +28,15 @@
           @toggle="toggleReviewEnabled(review!, $event)"
         />
       </div>
-      <div class="bb-grid-cell gap-x-2">
+      <div class="bb-grid-cell gap-x-[14px] !pr-[3rem]">
         <template v-if="!review">
           <button
             type="button"
-            class="btn-normal flex justify-center !py-1 !px-3"
+            class="btn-normal flex justify-center !py-1 !px-3 w-full"
             :disabled="!hasPermission"
             @click.prevent="handleClickCreate(environment)"
           >
-            {{ $t("sql-review.create-policy") }}
+            {{ $t("sql-review.configure-policy") }}
           </button>
         </template>
         <template v-else>
@@ -110,12 +110,12 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("common.enabled"),
-      width: "auto",
+      width: "10rem",
       class: "capitalize justify-center",
     },
     {
       title: t("common.operations"),
-      width: "minmax(auto, 12rem)",
+      width: "auto",
       class: "capitalize",
     },
   ];
