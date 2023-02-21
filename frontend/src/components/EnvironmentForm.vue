@@ -208,6 +208,7 @@
         <div class="mt-3">
           <div v-if="sqlReviewPolicy" class="inline-flex items-center">
             <BBSwitch
+              v-if="allowEditSQLReviewPolicy"
               class="mr-2"
               size="small"
               :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
@@ -503,6 +504,13 @@ const allowEdit = computed(() => {
 
 const allowCreate = computed(() => {
   return !isEmpty(state.environment?.name);
+});
+
+const allowEditSQLReviewPolicy = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-sql-review-policy",
+    currentUser.value.role
+  );
 });
 
 const valueChanged = (
