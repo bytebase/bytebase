@@ -4,7 +4,7 @@
   >
     <BBSpin class="w-4 h-4" />
     <span class="text-sm leading-5 font-medium">{{
-      $t("task.rollback.logging")
+      $t("task.rollback.generating")
     }}</span>
     <NTooltip v-if="!disabled" :animated="false" :delay="150">
       <template #trigger>
@@ -12,12 +12,11 @@
           class="ml-1 py-0.5 px-1.5 text-xs flex items-center rounded border border-control-border hover:bg-control-bg-hover cursor-pointer"
           @click="toggleRollback(false)"
         >
-          <!-- <heroicons-outline:x-mark class="w-3 h-3" /> -->
           {{ $t("common.cancel") }}
         </span>
       </template>
 
-      <span>{{ $t("task.rollback.cancel-logging") }}</span>
+      <span>{{ $t("task.rollback.cancel-generating") }}</span>
     </NTooltip>
   </div>
 </template>
