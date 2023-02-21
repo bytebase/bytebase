@@ -25,12 +25,12 @@
       </template>
       <template #1>
         <SQLReviewConfig
-          class="py-5"
           :selected-rule-list="state.selectedRuleList"
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
-          @change="onRuleChange"
           @apply-template="tryApplyTemplate"
+          @level-change="onLevelChange"
+          @payload-change="onPayloadChange"
         />
       </template>
       <template #2>
@@ -77,7 +77,9 @@ import {
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
   ruleIsAvailableInSubscription,
+  RuleConfigComponent,
 } from "@/types";
+import SQLReviewConfig from "./SQLReviewConfig.vue";
 import {
   useCurrentUser,
   pushNotification,
@@ -283,7 +285,7 @@ const tryApplyTemplate = (index: number) => {
   onTemplateApply(index);
 };
 
-const onRuleChange = (rule: RuleTemplate) => {
+const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
   if (
     !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
   ) {
@@ -291,11 +293,25 @@ const onRuleChange = (rule: RuleTemplate) => {
   }
 
   const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
-  state.selectedRuleList = [
-    ...state.selectedRuleList.slice(0, index),
-    rule,
-    ...state.selectedRuleList.slice(index + 1),
-  ];
+  if (index < 0) {
+    return;
+  }
+  const newRule = {
+    ...state.selectedRuleList[index],
+    ...overrides,
+  };
+  state.selectedRuleList[index] = newRule;
   state.ruleUpdated = true;
+};
+
+const onPayloadChange = (
+  rule: RuleTemplate,
+  componentList: RuleConfigComponent[]
+) => {
+  change(rule, { componentList });
+};
+
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+  change(rule, { level });
 };
 </script>

@@ -2,10 +2,12 @@
   <div class="flex items-center">
     <button
       type="button"
-      class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
-      :class="
-        state.dirtyOn ? 'bg-accent disabled:bg-accent-disabled' : 'bg-gray-200'
-      "
+      class="relative inline-flex flex-shrink-0 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
+      :class="[
+        `h-${sizes.container}`,
+        `w-${sizes.container * 2 - 1}`,
+        state.dirtyOn ? 'bg-accent disabled:bg-accent-disabled' : 'bg-gray-200',
+      ]"
       :disabled="disabled"
       aria-pressed="false"
       @click.prevent="
@@ -18,11 +20,14 @@
       "
     >
       <span class="sr-only">{{ label }}</span>
-      <!-- Enabled: "translate-x-5", Not Enabled: "translate-x-0" -->
       <span
         aria-hidden="true"
-        class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
-        :class="state.dirtyOn ? 'translate-x-5' : 'translate-x-0'"
+        class="pointer-events-none inline-block rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
+        :class="[
+          `w-${sizes.base}`,
+          `h-${sizes.base}`,
+          state.dirtyOn ? `translate-x-${sizes.base}` : 'translate-x-0',
+        ]"
       ></span>
     </button>
     <span
@@ -36,15 +41,19 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, withDefaults, reactive } from "vue";
+import { watch, withDefaults, reactive, computed } from "vue";
+
+export type BBSwitchSize = "small" | "normal";
 
 const props = withDefaults(
   defineProps<{
+    size?: BBSwitchSize;
     label?: string;
     value?: boolean;
     disabled?: boolean;
   }>(),
   {
+    size: "normal",
     label: "",
     value: true,
     disabled: false,
@@ -57,6 +66,18 @@ defineEmits<{
 
 const state = reactive({
   dirtyOn: props.value,
+});
+
+const sizes = computed(() => {
+  const baseSizeMap: Record<BBSwitchSize, number> = {
+    normal: 5,
+    small: 4,
+  };
+  const base = baseSizeMap[props.size] ?? baseSizeMap["normal"];
+  return {
+    base,
+    container: base + 1,
+  };
 });
 
 watch(

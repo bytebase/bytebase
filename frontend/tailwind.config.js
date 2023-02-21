@@ -15,6 +15,7 @@ module.exports = {
     // "hover:bg-xxx" is used by TaskCheckBadgeBar BBBadge
     // "grid-cols-xxx" is used by AnomalyCenterDashboard
     { pattern: /^w-/ },
+    { pattern: /^translate-x-/ },
     { pattern: /^pl-/ },
     { pattern: /^bg-gray-/, variants: ["hover"] },
     { pattern: /^bg-blue-/, variants: ["hover"] },

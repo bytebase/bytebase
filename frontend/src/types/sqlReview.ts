@@ -38,7 +38,7 @@ export const LEVEL_LIST = [
 
 // NumberPayload is the number type payload configuration options and default value.
 // Used by the frontend.
-interface NumberPayload {
+export interface NumberPayload {
   type: "NUMBER";
   default: number;
   value?: number;
@@ -46,7 +46,7 @@ interface NumberPayload {
 
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
-interface StringPayload {
+export interface StringPayload {
   type: "STRING";
   default: string;
   value?: string;
@@ -54,7 +54,7 @@ interface StringPayload {
 
 // BooleanPayload is the boolean type payload configuration options and default value.
 // Used by the frontend.
-interface BooleanPayload {
+export interface BooleanPayload {
   type: "BOOLEAN";
   default: boolean;
   value?: boolean;
@@ -62,7 +62,7 @@ interface BooleanPayload {
 
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
-interface StringArrayPayload {
+export interface StringArrayPayload {
   type: "STRING_ARRAY";
   default: string[];
   value?: string[];
@@ -70,7 +70,7 @@ interface StringArrayPayload {
 
 // TemplatePayload is the string template type payload configuration options and default value.
 // Used by the frontend.
-interface TemplatePayload {
+export interface TemplatePayload {
   type: "TEMPLATE";
   default: string;
   templateList: string[];

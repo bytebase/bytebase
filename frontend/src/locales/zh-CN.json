@@ -1789,6 +1789,12 @@
       "preview": {
         "name": "预览"
       }
+    },
+    "edit-rule": {
+      "self": "编辑 SQL 审核规则"
+    },
+    "rule": {
+      "active": "开启"
     }
   },
   "debug-log": {
