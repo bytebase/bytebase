@@ -204,6 +204,7 @@
               v-if="allowEditSQLReviewPolicy"
               class="mr-2"
               size="small"
+              :text="true"
               :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
               @toggle="toggleSQLReviewPolicy"
             />
@@ -213,9 +214,6 @@
               @click.prevent="onSQLReviewPolicyClick"
             >
               {{ sqlReviewPolicy.name }}
-              <span v-if="sqlReviewPolicy.rowStatus === 'ARCHIVED'">
-                ({{ $t("sql-review.disabled") }})
-              </span>
             </button>
           </div>
           <button

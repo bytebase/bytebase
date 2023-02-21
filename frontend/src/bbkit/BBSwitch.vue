@@ -4,8 +4,8 @@
       type="button"
       class="relative inline-flex flex-shrink-0 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
       :class="[
-        `h-${sizes.container}`,
-        `w-${sizes.container * 2 - 1}`,
+        `w-${sizes.cw}`,
+        `h-${sizes.ch}`,
         state.dirtyOn ? 'bg-accent disabled:bg-accent-disabled' : 'bg-gray-200',
       ]"
       :disabled="disabled"
@@ -23,21 +23,26 @@
       <span
         aria-hidden="true"
         class="pointer-events-none inline-block rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
-        :class="[
-          `w-${sizes.base}`,
-          `h-${sizes.base}`,
-          state.dirtyOn ? `translate-x-${sizes.base}` : 'translate-x-0',
-        ]"
+        :class="[`w-${sizes.base}`, `h-${sizes.base}`]"
+        :style="{
+          transform: state.dirtyOn ? `translateX(${sizes.base * 0.25}rem)` : '',
+        }"
       ></span>
       <span
         v-if="text"
         aria-hidden="true"
-        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center text-[9px] h-5 w-5 transition ease-in-out duration-200"
-        :class="
-          state.dirtyOn
-            ? '-translate-x-5 text-white'
-            : 'translate-x-0 text-control'
-        "
+        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center transition ease-in-out duration-200"
+        :class="[
+          `w-${sizes.base}`,
+          `h-${sizes.base}`,
+          state.dirtyOn ? `text-white` : 'text-control',
+        ]"
+        :style="{
+          fontSize: `${sizes.text}px`,
+          transform: state.dirtyOn
+            ? `translateX(-${sizes.base * 0.25}rem)`
+            : '',
+        }"
       >
         {{ state.dirtyOn ? $t("common.on") : $t("common.off") }}
       </span>
@@ -83,15 +88,17 @@ const state = reactive({
 });
 
 const sizes = computed(() => {
-  const baseSizeMap: Record<BBSwitchSize, number> = {
-    normal: 5,
-    small: 4,
+  type Sizes = {
+    base: number;
+    cw: number; // container width
+    ch: number; // container height
+    text: number; // unit px
   };
-  const base = baseSizeMap[props.size] ?? baseSizeMap["normal"];
-  return {
-    base,
-    container: base + 1,
+  const sizeMap: Record<BBSwitchSize, Sizes> = {
+    normal: { base: 5, cw: 11, ch: 6, text: 9 },
+    small: { base: 4, cw: 9, ch: 5, text: 7.5 },
   };
+  return sizeMap[props.size] ?? sizeMap["normal"];
 });
 
 watch(
