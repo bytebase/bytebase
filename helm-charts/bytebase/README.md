@@ -71,16 +71,19 @@ upgrade bytebase-release bytebase-repo/bytebase
 ```
 
 ## Parameters
-| Parameter | Description | Default Value |
-| :-------: | :---------: | :-----------: |
-| bytebase.option.port | Port where Bytebase server runs. | 8080 |
-| bytebase.option.external-url | The external URL where user visits Bytebase, must start with http:// or https://. | "https://www.bytebase.com/docs/get-started/install/external-url"
-| bytebase.option.pg | External PostgreSQL instance connection url(must provide dbname). | "postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" |
-| bytebase.version | The Bytebase version. | "1.12.0" |
-| bytebase.persistence.enabled | Persist bytebase data switch. | false |
-| bytebase.persistence.storageClass | The storage class used by Bytebase PVC. | "" |
-| bytebase.persistence.storage | The storage size of Bytebase PVC used. | "2Gi" |
-| bytebase.persistence.existingClaim | The existing PVC that bytebase need to use.  | "" |
+
+|               Parameter                |                                                                Description                                                                |                                      Default Value                                      |
+| :------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: |
+|          bytebase.option.port          |                                                     Port where Bytebase server runs.                                                      |                                          8080                                           |
+|      bytebase.option.external-url      |                             The external URL where user visits Bytebase, must start with http:// or https://.                             |            "https://www.bytebase.com/docs/get-started/install/external-url"             |
+|           bytebase.option.pg           | External PostgreSQL instance connection url(must provide dbname).It will be ignored if you specify `bytebase.option.existingPgURLSecret`. | "postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" |
+|  bytebase.option.existingPgURLSecret   |                                        Existing secret with external PostgreSQL connection string.                                        |                                           ""                                            |
+| bytebase.option.existingPgURLSecretKey |    Existing secret key with external PostgreSQL connection(must specfied if you specify `bytebase.option.existingPgURLSecret`) string.    |                                           ""                                            |
+|            bytebase.version            |                                                           The Bytebase version.                                                           |                                        "1.12.0"                                         |
+|      bytebase.persistence.enabled      |                                                       Persist bytebase data switch.                                                       |                                          false                                          |
+|   bytebase.persistence.storageClass    |                                                  The storage class used by Bytebase PVC.                                                  |                                           ""                                            |
+|      bytebase.persistence.storage      |                                                  The storage size of Bytebase PVC used.                                                   |                                          "2Gi"                                          |
+|   bytebase.persistence.existingClaim   |                                                The existing PVC that bytebase need to use.                                                |                                           ""                                            |
 
 **If you enable bytebase persistence, you should provide storageClass and storage to bytebase to request a PVC, or provide the already existed PVC by existingClaim.**
 
