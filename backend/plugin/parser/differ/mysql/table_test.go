@@ -14,14 +14,14 @@ func TestTable(t *testing.T) {
 			CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id));
 			`,
 			want: "" +
-				"CREATE TABLE IF NOT EXISTS `book` (\n" +
-				"  `id` INT,\n" +
-				"  `price` INT,\n" +
-				"  PRIMARY KEY (`id`)\n" +
-				");\n\n" +
 				"CREATE TABLE IF NOT EXISTS `author` (\n" +
 				"  `id` INT,\n" +
 				"  `name` VARCHAR(255),\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				");\n\n" +
+				"CREATE TABLE IF NOT EXISTS `book` (\n" +
+				"  `id` INT,\n" +
+				"  `price` INT,\n" +
 				"  PRIMARY KEY (`id`)\n" +
 				");\n\n",
 		},
@@ -50,9 +50,9 @@ func TestTable(t *testing.T) {
 			old: `CREATE TABLE book(id INT, price_id INT, PRIMARY KEY(id), CONSTRAINT fk_price_id FOREIGN KEY (price_id) REFERENCES price(id));
 			CREATE TABLE price(id INT, PRIMARY KEY(id));`,
 			new: `CREATE TABLE book(id INT, PRIMARY KEY(id));`,
-			want: "DROP TABLE `price`;\n\n" +
-				"ALTER TABLE `book` DROP FOREIGN KEY `fk_price_id`;\n\n" +
-				"ALTER TABLE `book` DROP COLUMN `price_id`;\n\n",
+			want: "ALTER TABLE `book` DROP FOREIGN KEY `fk_price_id`;\n\n" +
+				"ALTER TABLE `book` DROP COLUMN `price_id`;\n\n" +
+				"DROP TABLE IF EXISTS `price`;\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)

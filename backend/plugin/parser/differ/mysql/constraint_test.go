@@ -238,8 +238,8 @@ func TestIndexType(t *testing.T) {
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE(name));`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING HASH(name));`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` (`name`) USING HASH;\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` (`name`) USING HASH;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE(name));`,
@@ -262,8 +262,8 @@ func TestIndexOption(t *testing.T) {
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=30);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=50);`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=50;\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` (`name`) KEY_BLOCK_SIZE=50;\n\n",
 		},
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=30);`,
@@ -275,8 +275,8 @@ func TestIndexOption(t *testing.T) {
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_a);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_b);`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD FULLTEXT `book_idx` (`name`) WITH PARSER `parser_b`;\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE FULLTEXT INDEX `book_idx` ON `book` (`name`) WITH PARSER `parser_b`;\n\n",
 		},
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_a);`,
@@ -288,8 +288,8 @@ func TestIndexOption(t *testing.T) {
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_b');`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` (`name`) COMMENT 'comment_b';\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` (`name`) COMMENT 'comment_b';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_a');`,
@@ -302,8 +302,8 @@ func TestIndexOption(t *testing.T) {
 
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) VISIBLE);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) INVISIBLE);`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` (`name`) INVISIBLE;\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` (`name`) INVISIBLE;\n\n",
 		},
 		{
 
@@ -332,8 +332,8 @@ func TestKeyPart(t *testing.T) {
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id) COMMENT 'comment_a');`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` (`id`) USING BTREE COMMENT 'comment_a';\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` (`id`) USING BTREE COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, name) COMMENT 'comment_a');`,
@@ -344,8 +344,8 @@ func TestKeyPart(t *testing.T) {
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` ((`id`+1)) USING BTREE COMMENT 'comment_a';\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` ((`id`+1)) USING BTREE COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
@@ -356,8 +356,8 @@ func TestKeyPart(t *testing.T) {
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 2)) COMMENT 'comment_a');`,
-			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `book_idx` ((`id`+2)) USING BTREE COMMENT 'comment_a';\n\n",
+			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+				"CREATE INDEX `book_idx` ON `book` ((`id`+2)) USING BTREE COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
@@ -397,7 +397,7 @@ func TestForeignKeyDefination(t *testing.T) {
 			CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY employee_ibfk_1(department_id) REFERENCES department(id));`,
 			new: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
 			CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY fk_2(department_id) REFERENCES department(id));`,
-			want: "ALTER TABLE `employee` ADD CONSTRAINT `fk_2` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n\nALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n",
+			want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n\nALTER TABLE `employee` ADD CONSTRAINT `fk_2` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n\n",
 		},
 		{
 			old: "CREATE TABLE `department` (" +
@@ -434,12 +434,12 @@ func TestForeignKeyDefination(t *testing.T) {
 				"	CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`)" +
 				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;",
 
-			want: "ALTER TABLE `department` ADD INDEX `id_idx` (`id`);\n\n" +
-				"ALTER TABLE `employee` ADD INDEX `department_id_idx` (`department_id`);\n\n" +
-				"ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n" +
-				"ALTER TABLE `employee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n\n" +
-				"ALTER TABLE `employee` DROP INDEX `department_id_name_idx`;\n\n" +
-				"ALTER TABLE `department` DROP INDEX `id_name_idx`;\n\n",
+			want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n" +
+				"DROP INDEX `id_name_idx` ON `department`;\n\n" +
+				"DROP INDEX `department_id_name_idx` ON `employee`;\n\n" +
+				"CREATE INDEX `id_idx` ON `department` (`id`);\n\n" +
+				"CREATE INDEX `department_id_idx` ON `employee` (`department_id`);\n\n" +
+				"ALTER TABLE `employee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n\n",
 		},
 		// Reference itself.
 		{
@@ -460,8 +460,8 @@ func TestForeignKeyDefination(t *testing.T) {
 				"	CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager_id`) REFERENCES `employeee` (`id`)" +
 				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;",
 
-			want: "ALTER TABLE `employeee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;\n\n" +
-				"ALTER TABLE `employeee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n" +
+			want: "ALTER TABLE `employeee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n" +
+				"ALTER TABLE `employeee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;\n\n" +
 				"ALTER TABLE `employeee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager_id`) REFERENCES `employeee` (`id`);\n\n",
 		},
 	}
@@ -492,8 +492,8 @@ func TestCheckConstraint(t *testing.T) {
 			old: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0), CONSTRAINT `check_price2` CHECK(price > 1));",
 			new: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0) NOT ENFORCED);",
 			want: "ALTER TABLE `book` DROP CHECK `check_price`;\n\n" +
-				"ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK(`price`>0) NOT ENFORCED;\n\n" +
-				"ALTER TABLE `book` DROP CHECK `check_price2`;\n\n",
+				"ALTER TABLE `book` DROP CHECK `check_price2`;\n\n" +
+				"ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK(`price`>0) NOT ENFORCED;\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
@@ -505,25 +505,25 @@ func TestConstraint(t *testing.T) {
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), CONSTRAINT PRIMARY KEY(id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, address));`,
-			want: "ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
-				"ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
+				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
 				"ALTER TABLE `book` ADD PRIMARY KEY (`id`, `address`);\n\n",
 		},
 		// ADD COLUMN -> ADD INDEX WITH ANOTHER NAME-> DROP INDEX
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX id_name_idx (id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX id_address_idx (id, address));`,
-			want: "ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `id_address_idx` (`id`, `address`);\n\n" +
-				"ALTER TABLE `book` DROP INDEX `id_name_idx`;\n\n",
+			want: "DROP INDEX `id_name_idx` ON `book`;\n\n" +
+				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
+				"CREATE INDEX `id_address_idx` ON `book` (`id`, `address`);\n\n",
 		},
 		// ADD COLUMN -> ADD INDEX WITH SAME NAME -> DROP INDEX
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX idx (id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX idx (id, address));`,
-			want: "ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
-				"ALTER TABLE `book` DROP INDEX `idx`;\n\n" +
-				"ALTER TABLE `book` ADD INDEX `idx` (`id`, `address`);\n\n",
+			want: "DROP INDEX `idx` ON `book`;\n\n" +
+				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
+				"CREATE INDEX `idx` ON `book` (`id`, `address`);\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
