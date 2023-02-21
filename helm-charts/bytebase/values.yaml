@@ -7,6 +7,8 @@ bytebase:
     port: 8080
     # You should set this to the URL where users visits Bytebase.
     external-url: https://www.bytebase.com/docs/get-started/install/external-url
+    existingPgURLSecret: ""
+    existingPgURLSecretKey: ""
     pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
   version: 1.7.0
