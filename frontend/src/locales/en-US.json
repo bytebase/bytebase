@@ -1880,7 +1880,7 @@
     "validation": {
       "pattern": "The {resource} ID can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
       "minlength": "The {resource} ID is too short. It should have at least 1 character.",
-      "overflow": "The {resource} ID is too long. It should be less than 64 characters."
+      "overflow": "The {resource} ID is too long. It should have less than 64 characters."
     }
   }
 }
