@@ -1,6 +1,9 @@
 <template>
-  <div class="px-4 py-2 space-y-6 divide-y divide-block-border">
-    <div class="grid grid-cols-1 gap-y-6 gap-x-4">
+  <div
+    class="px-4 py-2 divide-y divide-block-border"
+    :class="create ? 'w-160' : 'w-full'"
+  >
+    <div class="grid grid-cols-1 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
           {{ $t("common.environment-name") }}
@@ -15,24 +18,15 @@
         />
       </div>
 
-      <div class="col-span-1">
-        <label for="name" class="textlabel">
-          {{ $t("environment.id") }}
-          <span class="text-red-600">*</span>
-        </label>
-        <div class="mt-1 textinfolabel">
-          {{ $t("environment.id-description") }}
-        </div>
-        <BBTextField
-          class="mt-2 w-full"
-          :disabled="!create"
-          :required="true"
-          :value="state.environment.resourceId"
-          @input="handleEnvironmentResourceIdChange"
-        />
-      </div>
+      <ResourceIdField
+        ref="resourceIdField"
+        resource="environment"
+        :readonly="!create"
+        :default-value="state.environment.resourceId"
+        :resource-title="state.environment.name"
+      />
 
-      <div class="col-span-1">
+      <div class="col-span-1 mt-6">
         <label class="textlabel flex items-center">
           {{ $t("policy.environment-tier.name") }}
           <FeatureBadge
@@ -69,8 +63,7 @@
           </div>
         </div>
       </div>
-
-      <div class="col-span-1">
+      <div class="col-span-1 mt-6">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
           $t("policy.approval.tip")
@@ -131,7 +124,7 @@
           </div>
         </div>
       </div>
-      <div class="col-span-1">
+      <div class="col-span-1 mt-6">
         <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
         <span v-show="valueChanged('backupPolicy')" class="textlabeltip">{{
           $t("policy.backup.tip")
@@ -201,7 +194,7 @@
           </div>
         </div>
       </div>
-      <div v-if="!create" class="col-span-1">
+      <div v-if="!create" class="col-span-1 mt-6">
         <label class="textlabel">
           {{ $t("sql-review.title") }}
         </label>
@@ -231,8 +224,9 @@
         </div>
       </div>
     </div>
+
     <!-- Create button group -->
-    <div v-if="create" class="flex justify-end pt-5">
+    <div v-if="create" class="mt-6 flex justify-end pt-5">
       <button
         type="button"
         class="btn-normal py-2 px-4"
@@ -250,7 +244,7 @@
       </button>
     </div>
     <!-- Update button group -->
-    <div v-else class="flex justify-between items-center pt-5">
+    <div v-else class="mt-6 flex justify-between items-center pt-5">
       <template
         v-if="(state.environment as Environment).rowStatus === 'NORMAL'"
       >
@@ -307,7 +301,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, watch, watchEffect } from "vue";
+import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { useRouter } from "vue-router";
 import type {
@@ -319,15 +313,14 @@ import type {
   PipelineApprovalPolicyPayload,
   Policy,
   SQLReviewPolicy,
-} from "../types";
-import { hasWorkspacePermission, sqlReviewPolicySlug } from "../utils";
+} from "@/types";
+import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
-import { convertToResourceId } from "@/utils";
+import ResourceIdField from "./ResourceIdField.vue";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
-  isResourceIdChanged: boolean;
   approvalPolicy: Policy;
   backupPolicy: Policy;
   environmentTierPolicy: Policy;
@@ -368,7 +361,6 @@ const emit = defineEmits([
 ]);
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
-  isResourceIdChanged: false,
   approvalPolicy: cloneDeep(props.approvalPolicy),
   backupPolicy: cloneDeep(props.backupPolicy),
   environmentTierPolicy: cloneDeep(props.environmentTierPolicy),
@@ -376,6 +368,7 @@ const state = reactive<LocalState>({
 
 const router = useRouter();
 const sqlReviewStore = useSQLReviewStore();
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const environmentId = computed(() => {
   if (props.create) {
@@ -401,14 +394,6 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
 
 const handleEnvironmentNameChange = (event: InputEvent) => {
   state.environment.name = (event.target as HTMLInputElement).value;
-  if (!state.isResourceIdChanged) {
-    state.environment.resourceId = convertToResourceId(state.environment.name);
-  }
-};
-
-const handleEnvironmentResourceIdChange = (event: InputEvent) => {
-  state.environment.resourceId = (event.target as HTMLInputElement).value;
-  state.isResourceIdChanged = true;
 };
 
 const onSQLReviewPolicyClick = () => {
@@ -525,7 +510,10 @@ const revertEnvironment = () => {
 const createEnvironment = () => {
   emit(
     "create",
-    state.environment,
+    {
+      ...state.environment,
+      resourceId: resourceIdField.value?.resourceId,
+    },
     state.approvalPolicy,
     state.backupPolicy,
     state.environmentTierPolicy
