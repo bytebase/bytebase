@@ -1872,5 +1872,15 @@
   },
   "sensitive-data": {
     "self": "Sensitive Data"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "The {resource} ID is a unique identifier. You cannot change it after created.",
+    "cannot-be-changed-later": "It cannot be changed later.",
+    "validation": {
+      "pattern": "The {resource} ID can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
+      "minlength": "The {resource} ID is too short. It should be at least 1 characters.",
+      "overflow": "The {resource} ID is too long. It should be less than 64 characters."
+    }
   }
 }

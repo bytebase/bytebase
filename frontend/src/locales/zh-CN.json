@@ -1870,5 +1870,15 @@
   },
   "sensitive-data": {
     "self": "敏感数据"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
+    "cannot-be-changed-later": "创建之后无法修改。",
+    "validation": {
+      "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
+      "minlength": "{resource} ID 至少包含 1 个字符。",
+      "overflow": "{resource} ID 应该少于 64 个字符。"
+    }
   }
 }
