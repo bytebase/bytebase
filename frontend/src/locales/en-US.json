@@ -1797,7 +1797,8 @@
     },
     "rule": {
       "active": "Active"
-    }
+    },
+    "enabled-rules": "Enabled rules"
   },
   "debug-log": {
     "title": "Debug Log",

@@ -1,7 +1,8 @@
 <template>
   <div>
     <BBStepTab
-      class="my-4"
+      class=""
+      :sticky="true"
       :step-item-list="STEP_LIST"
       :allow-next="allowNext"
       :finish-title="$t(`common.confirm-and-${policyId ? 'update' : 'add'}`)"
@@ -14,8 +15,7 @@
           :name="state.name"
           :selected-environment="state.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
-          :template-list="TEMPLATE_LIST"
-          :selected-template-index="state.templateIndex"
+          :selected-template="state.selectedTemplate"
           :is-edit="!!policyId"
           class="py-5"
           @select-template="tryApplyTemplate"
@@ -26,20 +26,8 @@
       <template #1>
         <SQLReviewConfig
           :selected-rule-list="state.selectedRuleList"
-          :template-list="TEMPLATE_LIST"
-          :selected-template-index="state.templateIndex"
-          @apply-template="tryApplyTemplate"
           @level-change="onLevelChange"
           @payload-change="onPayloadChange"
-        />
-      </template>
-      <template #2>
-        <SQLReviewPreview
-          :name="state.name"
-          :is-preview-step="true"
-          :selected-rule-list="state.selectedRuleList"
-          :selected-environment="state.selectedEnvironment"
-          class="py-5"
         />
       </template>
     </BBStepTab>
@@ -55,7 +43,7 @@
         () => {
           state.showAlertModal = false;
           state.ruleUpdated = false;
-          onTemplateApply(state.pendingApplyTemplateIndex);
+          onTemplateApply(state.pendingApplyTemplate);
         }
       "
       @cancel="state.showAlertModal = false"
@@ -73,12 +61,14 @@ import {
   RuleLevel,
   Environment,
   RuleTemplate,
-  TEMPLATE_LIST,
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
   ruleIsAvailableInSubscription,
   RuleConfigComponent,
+  SQLReviewPolicyTemplate,
 } from "@/types";
+import { BBStepTab } from "@/bbkit";
+import SQLReviewInfo from "./SQLReviewInfo.vue";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import {
   useCurrentUser,
@@ -94,10 +84,10 @@ interface LocalState {
   name: string;
   selectedEnvironment: Environment;
   selectedRuleList: RuleTemplate[];
+  selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
   showAlertModal: boolean;
-  templateIndex: number;
-  pendingApplyTemplateIndex: number;
+  pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
 }
 
 const props = withDefaults(
@@ -127,12 +117,10 @@ const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
 const ROUTE_NAME = "setting.workspace.sql-review";
-const DEFAULT_TEMPLATE_INDEX = 0;
 
 const STEP_LIST: BBStepTabItem[] = [
   { title: t("sql-review.create.basic-info.name") },
   { title: t("sql-review.create.configure-rule.name") },
-  { title: t("sql-review.create.preview.name") },
 ];
 
 const state = reactive<LocalState>({
@@ -140,39 +128,38 @@ const state = reactive<LocalState>({
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   selectedEnvironment: props.selectedEnvironment,
   selectedRuleList: [...props.selectedRuleList],
+  selectedTemplate: undefined,
   ruleUpdated: false,
   showAlertModal: false,
-  templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
-  pendingApplyTemplateIndex: -1,
+  pendingApplyTemplate: undefined,
 });
 
-const onTemplateApply = (index: number) => {
-  if (index < 0 || index >= TEMPLATE_LIST.length) {
+const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
+  if (!template) {
     return;
   }
-  state.templateIndex = index;
-  state.pendingApplyTemplateIndex = -1;
+  state.selectedTemplate = template;
+  state.pendingApplyTemplate = undefined;
 
-  const categoryList = convertToCategoryList(TEMPLATE_LIST[index].ruleList);
-  state.selectedRuleList = categoryList.reduce((res, category) => {
-    res.push(
-      ...category.ruleList.map((rule) => ({
-        ...rule,
-        level: ruleIsAvailableInSubscription(
-          rule.type,
-          subscriptionStore.currentPlan
-        )
-          ? rule.level
-          : RuleLevel.DISABLED,
-      }))
-    );
-    return res;
-  }, [] as RuleTemplate[]);
+  const categoryList = convertToCategoryList(template.ruleList);
+  state.selectedRuleList = categoryList.reduce<RuleTemplate[]>(
+    (res, category) => {
+      res.push(
+        ...category.ruleList.map((rule) => ({
+          ...rule,
+          level: ruleIsAvailableInSubscription(
+            rule.type,
+            subscriptionStore.currentPlan
+          )
+            ? rule.level
+            : RuleLevel.DISABLED,
+        }))
+      );
+      return res;
+    },
+    []
+  );
 };
-
-if (state.selectedRuleList.length === 0) {
-  onTemplateApply(DEFAULT_TEMPLATE_INDEX);
-}
 
 const availableEnvironmentList = computed((): Environment[] => {
   const environmentList = useEnvironmentList(["NORMAL"]);
@@ -276,13 +263,13 @@ const onEnvChange = (env: Environment) => {
   state.selectedEnvironment = env;
 };
 
-const tryApplyTemplate = (index: number) => {
+const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
   if (state.ruleUpdated || props.policyId) {
     state.showAlertModal = true;
-    state.pendingApplyTemplateIndex = index;
+    state.pendingApplyTemplate = template;
     return;
   }
-  onTemplateApply(index);
+  onTemplateApply(template);
 };
 
 const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {

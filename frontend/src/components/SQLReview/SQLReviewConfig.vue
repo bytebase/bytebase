@@ -21,22 +21,18 @@ import {
   RuleLevel,
   RuleTemplate,
   RuleConfigComponent,
-  SQLReviewPolicyTemplate,
 } from "@/types/sqlReview";
-import { SQLRuleTable, SQLRuleFilter, useSQLRuleFilter } from "./components/";
+import {
+  SQLRuleTable,
+  SQLRuleFilter,
+  useSQLRuleFilter,
+  payloadValueListToComponentList,
+} from "./components/";
 
 const props = defineProps({
   selectedRuleList: {
     required: true,
     type: Object as PropType<RuleTemplate[]>,
-  },
-  templateList: {
-    required: true,
-    type: Object as PropType<SQLReviewPolicyTemplate[]>,
-  },
-  selectedTemplateIndex: {
-    required: true,
-    type: Number,
   },
 });
 
@@ -63,52 +59,7 @@ const onPayloadChange = (
   if (!rule.componentList) {
     return;
   }
-
-  const componentList = rule.componentList.reduce<RuleConfigComponent[]>(
-    (list, component, index) => {
-      switch (component.payload.type) {
-        case "STRING_ARRAY":
-          list.push({
-            ...component,
-            payload: {
-              ...component.payload,
-              value: data[index] as string[],
-            },
-          });
-          break;
-        case "NUMBER":
-          list.push({
-            ...component,
-            payload: {
-              ...component.payload,
-              value: data[index] as number,
-            },
-          });
-          break;
-        case "BOOLEAN":
-          list.push({
-            ...component,
-            payload: {
-              ...component.payload,
-              value: data[index] as boolean,
-            },
-          });
-          break;
-        default:
-          list.push({
-            ...component,
-            payload: {
-              ...component.payload,
-              value: data[index] as string,
-            },
-          });
-          break;
-      }
-      return list;
-    },
-    []
-  );
-
+  const componentList = payloadValueListToComponentList(rule, data);
   emit("payload-change", rule, componentList);
 };
 

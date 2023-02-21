@@ -64,9 +64,9 @@
           </div>
           <div class="bb-grid-cell">
             <RuleLevelSwitch
-              :class="[!editable && 'pointer-events-none']"
               :level="rule.level"
               :disabled="!isRuleAvailable(rule)"
+              :editable="editable"
               @level-change="$emit('level-change', rule, $event)"
             />
           </div>

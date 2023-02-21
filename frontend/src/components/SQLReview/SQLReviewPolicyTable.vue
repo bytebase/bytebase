@@ -43,10 +43,9 @@
           <button
             type="button"
             class="btn-normal flex justify-center !py-1 !px-3"
-            :disabled="!hasPermission"
             @click.prevent="handleClickEdit(review)"
           >
-            {{ $t("common.edit") }}
+            {{ hasPermission ? $t("common.edit") : $t("common.view") }}
           </button>
 
           <BBButtonConfirm

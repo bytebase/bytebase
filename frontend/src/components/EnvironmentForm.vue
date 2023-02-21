@@ -206,17 +206,24 @@
           {{ $t("sql-review.title") }}
         </label>
         <div class="mt-3">
-          <button
-            v-if="sqlReviewPolicy"
-            type="button"
-            class="text-sm font-medium text-accent hover:underline"
-            @click.prevent="onSQLReviewPolicyClick"
-          >
-            {{ sqlReviewPolicy.name }}
-            <span v-if="sqlReviewPolicy.rowStatus === 'ARCHIVED'">
-              ({{ $t("sql-review.disabled") }})
-            </span>
-          </button>
+          <div v-if="sqlReviewPolicy" class="inline-flex items-center">
+            <BBSwitch
+              class="mr-2"
+              size="small"
+              :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
+              @toggle="toggleSQLReviewPolicy"
+            />
+            <button
+              type="button"
+              class="text-sm font-medium text-accent hover:underline-2"
+              @click.prevent="onSQLReviewPolicyClick"
+            >
+              {{ sqlReviewPolicy.name }}
+              <span v-if="sqlReviewPolicy.rowStatus === 'ARCHIVED'">
+                ({{ $t("sql-review.disabled") }})
+              </span>
+            </button>
+          </div>
           <button
             v-else-if="hasPermission"
             type="button"
@@ -310,6 +317,8 @@
 import { computed, reactive, PropType, watch, watchEffect } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+
 import type {
   BackupPlanPolicyPayload,
   Environment,
@@ -320,8 +329,14 @@ import type {
   Policy,
   SQLReviewPolicy,
 } from "../types";
+import { BBSwitch } from "@/bbkit";
 import { hasWorkspacePermission, sqlReviewPolicySlug } from "../utils";
-import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useEnvironmentList,
+  useSQLReviewStore,
+} from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 import { convertToResourceId } from "@/utils";
 
@@ -366,6 +381,8 @@ const emit = defineEmits([
   "restore",
   "update-policy",
 ]);
+
+const { t } = useI18n();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   isResourceIdChanged: false,
@@ -576,5 +593,21 @@ const archiveEnvironment = () => {
 
 const restoreEnvironment = () => {
   emit("restore", state.environment);
+};
+
+const toggleSQLReviewPolicy = async (on: boolean) => {
+  const policy = sqlReviewPolicy.value;
+  if (!policy) return;
+  const originalOn = policy.rowStatus === "NORMAL";
+  if (on === originalOn) return;
+  await useSQLReviewStore().updateReviewPolicy({
+    id: policy.id,
+    rowStatus: on ? "NORMAL" : "ARCHIVED",
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("sql-review.policy-updated"),
+  });
 };
 </script>

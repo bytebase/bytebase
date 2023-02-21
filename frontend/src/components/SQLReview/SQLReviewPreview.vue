@@ -1,30 +1,120 @@
 <template>
-  <div class="flex gap-x-20">
-    <SQLRuleTable
-      key="sql-review-preview-rule-table"
-      class="w-full"
-      :editable="false"
-      :rule-list="selectedRuleList"
-    />
-  </div>
+  <SQLRuleTable
+    key="sql-review-preview-rule-table"
+    :class="[state.updating && 'pointer-events-none']"
+    :rule-list="state.selectedRuleList"
+    :editable="editable"
+    @level-change="onLevelChange"
+    @payload-change="onPayloadChange"
+  />
 </template>
 
 <script lang="ts" setup>
-import { RuleTemplate, Environment } from "@/types";
-import { SQLRuleTable } from "./components";
+import {
+  pushNotification,
+  useSQLReviewStore,
+  useSubscriptionStore,
+} from "@/store";
+import {
+  convertRuleTemplateToPolicyRule,
+  ruleIsAvailableInSubscription,
+  RuleLevel,
+  RuleTemplate,
+  SQLReviewPolicy,
+} from "@/types";
+import { cloneDeep } from "lodash-es";
+import { reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { payloadValueListToComponentList, SQLRuleTable } from "./components";
+import { PayloadValueType } from "./components/RuleConfigComponents";
 
-withDefaults(
+interface LocalState {
+  selectedRuleList: RuleTemplate[];
+  rulesUpdated: boolean;
+  updating: boolean;
+}
+
+const props = withDefaults(
   defineProps<{
-    name?: string;
-    isPreviewStep?: boolean;
-    selectedEnvironment?: Environment;
+    policy: SQLReviewPolicy;
     selectedRuleList?: RuleTemplate[];
+    editable?: boolean;
   }>(),
   {
-    name: "",
-    isPreviewStep: false,
-    selectedEnvironment: undefined,
     selectedRuleList: () => [],
+    editable: true,
+  }
+);
+
+const { t } = useI18n();
+const state = reactive<LocalState>({
+  selectedRuleList: cloneDeep(props.selectedRuleList),
+  rulesUpdated: false,
+  updating: false,
+});
+const subscriptionStore = useSubscriptionStore();
+
+const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
+  if (
+    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
+  ) {
+    return;
+  }
+
+  const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
+  if (index < 0) {
+    return;
+  }
+  const newRule = {
+    ...state.selectedRuleList[index],
+    ...overrides,
+  };
+  state.selectedRuleList[index] = newRule;
+  state.rulesUpdated = true;
+};
+
+const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
+  const componentList = payloadValueListToComponentList(rule, data);
+  change(rule, { componentList });
+};
+
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+  change(rule, { level });
+};
+
+watch(
+  () => state.rulesUpdated,
+  async (updated) => {
+    if (!updated) return;
+
+    const upsert = {
+      name: props.policy.name,
+      ruleList: state.selectedRuleList.map((rule) =>
+        convertRuleTemplateToPolicyRule(rule)
+      ),
+    };
+
+    state.updating = true;
+    await useSQLReviewStore().updateReviewPolicy({
+      id: props.policy.id,
+      ...upsert,
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-review.policy-updated"),
+    });
+
+    state.updating = false;
+    state.rulesUpdated = false;
+  }
+);
+
+watch(
+  () => props.selectedRuleList,
+  (ruleList) => {
+    state.selectedRuleList = cloneDeep(ruleList);
+    state.rulesUpdated = false;
   }
 );
 </script>

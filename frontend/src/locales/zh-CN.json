@@ -1795,7 +1795,8 @@
     },
     "rule": {
       "active": "开启"
-    }
+    },
+    "enabled-rules": "开启的规则"
   },
   "debug-log": {
     "title": "Debug 日志",

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center">
+  <div class="flex items-center" :class="[!editable && 'pointer-events-none']">
     <button
       class="button error"
       :class="[level === RuleLevel.ERROR && 'active']"
@@ -26,9 +26,11 @@ withDefaults(
   defineProps<{
     level: RuleLevel;
     disabled?: boolean;
+    editable?: boolean;
   }>(),
   {
     disabled: false,
+    editable: true,
   }
 );
 
@@ -39,7 +41,7 @@ defineEmits<{
 
 <style lang="postcss" scoped>
 .button {
-  @apply relative py-1 w-[4rem] whitespace-nowrap border border-control-border text-control font-medium hover:z-20;
+  @apply relative py-1 w-[4rem] whitespace-nowrap border border-control-border text-control font-medium hover:z-[2];
   @apply disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50;
 }
 .button:not(:first-child) {
@@ -52,7 +54,7 @@ defineEmits<{
   @apply rounded-r;
 }
 .button.active {
-  @apply z-10;
+  @apply z-[1];
 }
 .button.error.active {
   @apply bg-red-100 text-red-800 border-red-800;

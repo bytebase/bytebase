@@ -29,10 +29,11 @@
         <h3 class="text-lg text-control font-medium">
           {{ $t("sql-review.level.name") }}
         </h3>
-        <div class="flex items-center gap-x-2">
+        <div class="flex items-center gap-x-2 text-sm">
           <RuleLevelSwitch
             :level="state.level"
             :disabled="disabled"
+            :editable="editable"
             @level-change="state.level = $event"
           />
         </div>

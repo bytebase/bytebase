@@ -26,16 +26,26 @@
             class="!text-current ml-1"
           />
         </BBBadge>
-        <h1 class="text-xl md:text-3xl font-semibold">
-          {{ reviewPolicy.name }}
-        </h1>
-        <div v-if="reviewPolicy.rowStatus == 'ARCHIVED'">
+        <div
+          v-if="reviewPolicy.rowStatus == 'ARCHIVED'"
+          class="whitespace-nowrap"
+        >
           <BBBadge
             :text="$t('sql-review.disabled')"
             :can-remove="false"
             :style="'DISABLED'"
           />
         </div>
+        <BBTextField
+          class="flex-1 text-3xl py-0.5 font-bold truncate"
+          :disabled="!hasPermission"
+          :required="true"
+          :focus-on-mount="false"
+          :ends-on-enter="true"
+          :bordered="false"
+          :value="reviewPolicy.name"
+          @end-editing="changeName"
+        />
       </div>
       <div v-if="hasPermission" class="flex space-x-2">
         <button
@@ -55,7 +65,7 @@
           {{ $t("common.enable") }}
         </button>
         <button type="button" class="btn-primary" @click="onEdit">
-          {{ $t("common.edit") }}
+          {{ $t("sql-review.create.configure-rule.change-template") }}
         </button>
       </div>
     </div>
@@ -74,7 +84,9 @@
     />
     <SQLReviewPreview
       key="sql-review-preview"
+      :policy="reviewPolicy"
       :selected-rule-list="filteredRuleList"
+      :editable="hasPermission"
       class="py-5"
     />
     <BBButtonConfirm
@@ -135,6 +147,7 @@ import {
   convertPolicyRuleToRuleTemplate,
   UNKNOWN_ID,
 } from "@/types";
+import { BBTextField } from "@/bbkit";
 import {
   featureToRef,
   useCurrentUser,
@@ -244,6 +257,27 @@ const {
   filteredRuleList,
 } = useSQLRuleFilter(selectedRuleList);
 
+const changeName = async (name: string) => {
+  const policy = reviewPolicy.value;
+  if (name === policy.name) {
+    return;
+  }
+  const upsert = {
+    name,
+    ruleList: policy.ruleList,
+  };
+
+  await useSQLReviewStore().updateReviewPolicy({
+    id: policy.id,
+    ...upsert,
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("sql-review.policy-updated"),
+  });
+};
+
 const onEdit = () => {
   state.editMode = true;
   state.searchText = "";
@@ -277,19 +311,3 @@ const onRemove = () => {
   });
 };
 </script>
-
-<style scoped>
-.slide-from-bottom-enter-active {
-  transition: all 0.2s ease-in-out;
-}
-
-.slide-from-bottom-leave-active {
-  transition: all 0.2s ease-in-out;
-}
-
-.slide-from-bottom-enter-from,
-.slide-from-bottom-leave-to {
-  transform: translateY(20px);
-  opacity: 0;
-}
-</style>
