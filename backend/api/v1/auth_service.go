@@ -456,6 +456,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
+	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
@@ -474,13 +475,14 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
+		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
 	} else if idp.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 
-		idp, err := oidc.NewIdentityProvider(
+		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
 				Issuer:       idp.Config.GetOidcConfig().Issuer,
@@ -494,15 +496,16 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 
 		redirectURL := fmt.Sprintf("%s/oidc/callback", s.profile.ExternalURL)
-		token, err := idp.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
 		}
 
-		userInfo, err = idp.UserInfo(ctx, token, "")
+		userInfo, err = oidcIDP.UserInfo(ctx, token, "")
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
+		fieldMapping = idp.Config.GetOidcConfig().FieldMapping
 	} else {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
@@ -511,12 +514,14 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
-	// TODO(boojack): instead of deciding the email magically, let's have the users to configure it in IDP config since emails may not be the primary.
-	email := strings.ToLower(userInfo.Email)
-	if email == "" {
-		// If the email is empty, we should concatenate the identifier and
-		// the IdP's domain as the user's email.
+	var email string
+	if fieldMapping.Identifier == fieldMapping.Email {
+		email = strings.ToLower(userInfo.Email)
+	} else {
 		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, idp.Domain))
+	}
+	if email == "" {
+		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
 		Email:       &email,
