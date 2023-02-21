@@ -222,7 +222,9 @@
     "error-message": "Error message",
     "resource-id": "Resource ID",
     "domain": "Domain",
-    "demo-mode": "Demo"
+    "demo-mode": "Demo",
+    "on": "On",
+    "off": "Off"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -302,12 +304,12 @@
     "task-checks": "Task checks",
     "rollback": {
       "sql-rollback": "SQL Rollback",
-      "log": "Log",
       "failed": "Failed",
-      "preview-rollback": "Preview rollback",
-      "logging": "Logging",
+      "preview-rollback-issue": "Preview rollback issue",
+      "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
-      "cancel-logging": "Cancel logging the SQL rollback"
+      "cancel-generating": "Cancel generating the SQL rollback",
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change."
     }
   },
   "banner": {
