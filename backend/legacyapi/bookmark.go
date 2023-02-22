@@ -5,8 +5,7 @@ type Bookmark struct {
 	ID int `jsonapi:"primary,bookmark"`
 
 	// Standard fields
-	CreatorID int        `jsonapi:"attr,creatorID"`
-	Creator   *Principal `jsonapi:"relation,creator"`
+	CreatorID int `jsonapi:"attr,creatorID"`
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
