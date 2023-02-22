@@ -135,5 +135,4 @@ const enabledRuleCount = (template: SQLReviewPolicyTemplate) => {
 const getTemplateImage = (id: string) => {
   return new URL(`../../../assets/${id}.webp`, import.meta.url).href;
 };
-
 </script>
