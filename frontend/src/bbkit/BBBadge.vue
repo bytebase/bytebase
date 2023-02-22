@@ -8,7 +8,10 @@
       size === 'small' && 'px-[6px] py-[2px] text-xs font-normal',
     ]"
   >
-    {{ text }}
+    <slot name="default">
+      {{ text }}
+    </slot>
+
     <button
       v-if="canRemove"
       type="button"
@@ -32,7 +35,7 @@ export type BBBadgeSize = "normal" | "small";
 
 const props = withDefaults(
   defineProps<{
-    text: string;
+    text?: string;
     canRemove?: boolean;
     style?: BBBadgeStyle;
     size?: BBBadgeSize;

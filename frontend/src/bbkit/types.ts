@@ -9,6 +9,7 @@ export type BBButtonType =
   | "SUCCESS";
 
 export type BBButtonConfirmStyle =
+  | "NORMAL"
   | "DELETE"
   | "ARCHIVE"
   | "RESTORE"
