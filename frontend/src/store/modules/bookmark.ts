@@ -8,19 +8,11 @@ import {
   ResourceObject,
   unknown,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 
-function convert(
-  bookmark: ResourceObject,
-  includedList: ResourceObject[]
-): Bookmark {
+function convert(bookmark: ResourceObject): Bookmark {
   return {
-    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator">),
+    ...(bookmark.attributes as Omit<Bookmark, "id">),
     id: parseInt(bookmark.id),
-    creator: getPrincipalFromIncludedList(
-      bookmark.relationships!.creator.data,
-      includedList
-    ),
   };
 }
 
@@ -35,7 +27,7 @@ export const useBookmarkStore = defineStore("bookmark", {
       // User info is retrieved from the context.
       const data = (await axios.get(`/api/bookmark/user/${userId}`)).data;
       const bookmarkList = data.data.map((bookmark: ResourceObject) => {
-        return convert(bookmark, data.included);
+        return convert(bookmark);
       });
       this.setBookmarkListByPrincipalId({ userId, bookmarkList });
       return bookmarkList;
@@ -50,8 +42,7 @@ export const useBookmarkStore = defineStore("bookmark", {
           },
         })
       ).data;
-      const createdBookmark = convert(data.data, data.included);
-
+      const createdBookmark = convert(data.data);
       this.appendBookmark(createdBookmark);
 
       return createdBookmark;
@@ -68,18 +59,18 @@ export const useBookmarkStore = defineStore("bookmark", {
     },
 
     appendBookmark(bookmark: Bookmark) {
-      const list = this.bookmarkList.get(bookmark.creator.id);
+      const list = this.bookmarkList.get(bookmark.creatorID);
       if (list) {
         list.push(bookmark);
       } else {
-        this.bookmarkList.set(bookmark.creator.id, [bookmark]);
+        this.bookmarkList.set(bookmark.creatorID, [bookmark]);
       }
     },
 
     async deleteBookmark(bookmark: Bookmark) {
       await axios.delete(`/api/bookmark/${bookmark.id}`);
 
-      const list = this.bookmarkList.get(bookmark.creator.id);
+      const list = this.bookmarkList.get(bookmark.creatorID);
       if (list) {
         const i = list.findIndex((item: Bookmark) => item.id == bookmark.id);
         if (i != -1) {
