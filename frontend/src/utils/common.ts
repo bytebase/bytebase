@@ -1,4 +1,3 @@
-import { UNKNOWN_NAME, UNKNOWN_UID } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { Environment } from "@/types/proto/v1/environment_service";
 
@@ -11,13 +10,10 @@ interface ResourceMaker {
 
 const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_USER: User = User.fromPartial({
-    name: UNKNOWN_NAME,
     title: "<<Unknown user>>",
   });
 
   const UNKNOWN_ENVIRONMENT: Environment = Environment.fromPartial({
-    name: UNKNOWN_NAME,
-    uid: UNKNOWN_UID,
     title: "<<Unknown environment>>",
   });
 
