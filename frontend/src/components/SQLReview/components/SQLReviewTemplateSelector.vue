@@ -136,26 +136,4 @@ const getTemplateImage = (id: string) => {
   return new URL(`../../../assets/${id}.webp`, import.meta.url).href;
 };
 
-// watchEffect(() => {
-//   reviewPolicyTemplateList.value.forEach((template) => {
-//     const rule = template.ruleList.find(
-//       (rule) => rule.type === "system.charset.allowlist"
-//     );
-//     if (rule) {
-//       console.log(template.id, rule);
-//     }
-//   });
-// });
-
-// watchEffect(() => {
-//   if (!props.selectedTemplate) {
-//     if (reviewPolicyTemplateList.value.length > 0) {
-//       emit("select-template", reviewPolicyTemplateList.value[0]);
-//       return;
-//     }
-//     if (builtInTemplateList.length > 0) {
-//       emit("select-template", builtInTemplateList[0]);
-//     }
-//   }
-// });
 </script>
