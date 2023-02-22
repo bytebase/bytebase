@@ -23,12 +23,14 @@
           <BBBadge
             v-if="data.type == 'template'"
             :text="data.value"
+            :can-remove="!disabled"
             @remove="() => onTemplateRemove(i)"
           />
           <AutoWidthInput
             v-else
             :value="data.value"
             :max-width="state.inputMaxWidth"
+            :disabled="disabled"
             @keyup="(e) => onKeyup(i, e)"
             @keydown="onKeydown(i, itemRefs[i].querySelector('input'))"
             @mouseup="onKeydown(i, itemRefs[i].querySelector('input'))"
@@ -40,6 +42,7 @@
           v-model="state.inputData"
           class="flex-1 px-0 m-0 py-1 cleared-input outline-none"
           type="text"
+          :disabled="disabled"
           @keydown.delete="onInputDataDeleteEnter"
           @keyup.delete="onInputDataDeleteLeave"
           @keydown="onKeydown(state.templateInputs.length, inputRef)"
@@ -62,6 +65,7 @@ import {
   onMounted,
 } from "vue";
 import { Template, TemplateInput, InputType } from "./types";
+import AutoWidthInput from "./AutoWidthInput.vue";
 import { getTemplateInputs, templateInputsToString, KEY_EVENT } from "./utils";
 
 interface LocalState {
@@ -80,6 +84,10 @@ const props = defineProps({
     require: true,
     default: () => [],
     type: Array as PropType<Template[]>,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
   },
 });
 

@@ -17,7 +17,7 @@
           </NTooltip>
         </div>
       </template>
-      <template v-else-if="false && payload?.rollbackSqlStatus === 'DONE'">
+      <template v-else-if="payload?.rollbackSqlStatus === 'DONE'">
         <BBTooltipButton
           :disabled="!allowPreviewRollback"
           tooltip-mode="DISABLED-ONLY"

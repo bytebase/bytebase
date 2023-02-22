@@ -17,6 +17,7 @@
     @focus="onFocus"
     @blur="onBlur"
     @input="onInput($event)"
+    @keypress.enter="onPressEnter"
   />
 </template>
 
@@ -38,6 +39,7 @@ const props = withDefaults(
     disabled?: boolean;
     bordered?: boolean;
     focusOnMount?: boolean;
+    endsOnEnter?: boolean;
   }>(),
   {
     required: false,
@@ -46,6 +48,7 @@ const props = withDefaults(
     disabled: false,
     bordered: true,
     focusOnMount: false,
+    endsOnEnter: false,
   }
 );
 
@@ -102,5 +105,12 @@ const onBlur = () => {
 const onInput = (e: Event) => {
   state.hasError = false;
   emit("input", e);
+};
+
+const onPressEnter = (e: Event) => {
+  if (props.endsOnEnter) {
+    const input = e.target as HTMLInputElement;
+    input?.blur();
+  }
 };
 </script>

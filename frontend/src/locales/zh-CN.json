@@ -221,6 +221,7 @@
     "discard-changes": "取消修改",
     "error-message": "错误信息",
     "demo-mode": "演示模式",
+    "operations": "操作",
     "on": "开启",
     "off": "关闭"
   },
@@ -1791,7 +1792,14 @@
       "preview": {
         "name": "预览"
       }
-    }
+    },
+    "edit-rule": {
+      "self": "编辑 SQL 审核规则"
+    },
+    "rule": {
+      "active": "开启"
+    },
+    "enabled-rules": "开启的规则"
   },
   "debug-log": {
     "title": "Debug 日志",

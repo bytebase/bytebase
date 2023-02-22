@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-9">
+  <div class="space-y-6">
     <div>
       <label class="textlabel">
         {{ $t("sql-review.create.basic-info.display-name") }}
@@ -83,23 +83,23 @@
             {{ $t("sql-review.create.configure-rule.change-template") }}
           </span>
         </div>
-        <SQLReviewTemplates
-          v-if="state.openTemplate"
-          :required="false"
-          :template-list="templateList"
-          :selected-template-index="selectedTemplateIndex"
-          class="mx-5 mt-5"
-          @select="(index) => $emit('select-template', index)"
-        />
+
+        <template v-if="state.openTemplate">
+          <SQLReviewTemplateSelector
+            :required="false"
+            :selected-template="selectedTemplate"
+            @select-template="$emit('select-template', $event)"
+          />
+        </template>
       </div>
-      <SQLReviewTemplates
-        v-else
-        :required="true"
-        :template-list="templateList"
-        :selected-template-index="selectedTemplateIndex"
-        :title="$t('sql-review.create.basic-info.choose-template')"
-        @select="(index) => $emit('select-template', index)"
-      />
+      <template v-else>
+        <SQLReviewTemplateSelector
+          :required="true"
+          :title="$t('sql-review.create.basic-info.choose-template')"
+          :selected-template="selectedTemplate"
+          @select-template="$emit('select-template', $event)"
+        />
+      </template>
     </div>
   </div>
 </template>
@@ -110,7 +110,7 @@ import { useEnvironmentList } from "@/store";
 import { Environment, SQLReviewPolicyTemplate } from "@/types";
 import { environmentName } from "@/utils";
 import { BBTextField } from "@/bbkit";
-import { SQLReviewTemplates } from "./components";
+import { SQLReviewTemplateSelector } from "./components";
 
 interface LocalEnvironment extends Environment {
   disabled: boolean;
@@ -135,13 +135,9 @@ const props = defineProps({
     required: true,
     type: Array as PropType<Environment[]>,
   },
-  templateList: {
-    required: true,
-    type: Object as PropType<SQLReviewPolicyTemplate[]>,
-  },
-  selectedTemplateIndex: {
-    required: true,
-    type: Number,
+  selectedTemplate: {
+    type: Object as PropType<SQLReviewPolicyTemplate>,
+    default: undefined,
   },
   isEdit: {
     required: true,
@@ -149,7 +145,11 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["name-change", "env-change", "select-template"]);
+const emit = defineEmits<{
+  (event: "name-change", name: string): void;
+  (event: "env-change", env: Environment): void;
+  (event: "select-template", template: SQLReviewPolicyTemplate): void;
+}>();
 
 const state = reactive<LocalState>({
   openTemplate: false,
