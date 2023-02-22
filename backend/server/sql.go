@@ -311,6 +311,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
 			}
+			dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return err
+			}
+			// The schema isn't loaded yet, let's load it on-demand.
+			if dbSchema == nil {
+				if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+					return err
+				}
+			}
+			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return err
+			}
+			if dbSchema == nil {
+				return errors.Errorf("database schema %v not found", database.UID)
+			}
 
 			catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine)
 			if err != nil {
@@ -325,13 +342,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			connection, err := driver.GetDBConnection(ctx, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
-			}
-			dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-			if err != nil {
-				return err
-			}
-			if dbSchema == nil {
-				return errors.Errorf("database schema %v not found", database.UID)
 			}
 
 			adviceLevel, adviceList, err = s.sqlCheck(
