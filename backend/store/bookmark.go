@@ -36,6 +36,7 @@ type listBookmarkMessage struct {
 	creatorUID *int
 }
 
+// ToAPIBookmark converts a BookmarkMessage to an API Bookmark.
 func (b *BookmarkMessage) ToAPIBookmark() *api.Bookmark {
 	return &api.Bookmark{
 		ID:        b.ID,
