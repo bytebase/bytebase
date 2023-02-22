@@ -637,5 +637,5 @@ func TestRollbackCanceled(t *testing.T) {
 	var payload api.TaskDatabaseDataUpdatePayload
 	err = json.Unmarshal([]byte(task.Payload), &payload)
 	a.NoError(err)
-	a.Equal(api.RollbackSQLStatusFailed, payload.RollbackSQLStatus)
+	a.Equal(false, payload.RollbackEnabled)
 }
