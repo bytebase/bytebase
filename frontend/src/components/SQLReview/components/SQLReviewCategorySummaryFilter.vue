@@ -34,12 +34,6 @@
         class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
         @input="e =>$emit('toggle-checked-level', stats.level, (e.target as HTMLInputElement).checked)"
       />
-      <!-- {{ $t(`sql-review.level.${stats.level.toLowerCase()}`) }}
-        <span
-          class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-        >
-          {{ stats.count }}
-        </span> -->
       <SQLRuleLevelBadge :level="stats.level" :suffix="`(${stats.count})`" />
     </label>
   </div>
