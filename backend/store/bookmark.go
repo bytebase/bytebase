@@ -150,7 +150,7 @@ func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
 	}
 	defer tx.Rollback()
 
-	result, err := tx.ExecContext(ctx, query, bookmarkUID)
+	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete bookmark of principal id %d", bookmarkUID)
 	}
@@ -166,7 +166,7 @@ func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
 	return nil
 }
 
-func (s *Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmarkMessage) ([]*BookmarkMessage, error) {
+func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmarkMessage) ([]*BookmarkMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := list.creatorUID; v != nil {
 		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
