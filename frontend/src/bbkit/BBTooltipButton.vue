@@ -33,7 +33,7 @@
 
 <script lang="ts">
 export default {
-  name: "BBButton",
+  name: "BBTooltipButton",
   inheritAttrs: false,
 };
 </script>
@@ -53,7 +53,7 @@ export type TooltipMode = "ALWAYS" | "DISABLED-ONLY";
 
 const props = withDefaults(
   defineProps<{
-    type: ButtonType;
+    type?: ButtonType;
     disabled: boolean;
     tooltipMode: TooltipMode;
   }>(),
