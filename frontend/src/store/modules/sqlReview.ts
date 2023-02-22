@@ -15,6 +15,7 @@ import {
 } from "@/types";
 import { defineStore } from "pinia";
 import { usePolicyStore } from "./policy";
+import { computed, watchEffect } from "vue";
 
 const convertToSQLReviewPolicy = (
   policy: Policy
@@ -240,3 +241,13 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     },
   },
 });
+
+export const useSQLReviewPolicyList = () => {
+  const store = useSQLReviewStore();
+
+  watchEffect(() => {
+    store.fetchReviewPolicyList();
+  });
+
+  return computed(() => store.reviewPolicyList);
+};

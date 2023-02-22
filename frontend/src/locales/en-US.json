@@ -223,6 +223,7 @@
     "resource-id": "Resource ID",
     "domain": "Domain",
     "demo-mode": "Demo",
+    "operations": "Operations",
     "on": "On",
     "off": "Off"
   },
@@ -1792,7 +1793,14 @@
       "preview": {
         "name": "Preview"
       }
-    }
+    },
+    "edit-rule": {
+      "self": "Edit SQL Review Rule"
+    },
+    "rule": {
+      "active": "Active"
+    },
+    "enabled-rules": "Enabled rules"
   },
   "debug-log": {
     "title": "Debug Log",

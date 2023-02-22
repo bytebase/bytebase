@@ -192,3 +192,8 @@ export const featureToRef = (type: FeatureType): Ref<boolean> => {
   const store = useSubscriptionStore();
   return computed(() => store.hasFeature(type));
 };
+
+export const useCurrentPlan = () => {
+  const store = useSubscriptionStore();
+  return computed(() => store.currentPlan);
+};
