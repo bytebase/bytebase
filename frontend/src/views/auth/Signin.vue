@@ -248,8 +248,6 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
           code,
         },
       },
-      email: "",
-      password: "",
       web: true,
     });
     router.push("/");
@@ -264,6 +262,7 @@ const trySignin = async () => {
   await authStore.login({
     email: state.email,
     password: state.password,
+    web: true,
   });
   router.push("/");
 };
