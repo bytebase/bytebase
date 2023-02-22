@@ -17,17 +17,15 @@ type BookmarkMessage struct {
 	// Link is the link of the bookmark.
 	Link string
 
+	// Name is the name of the bookmark.
+	Name string
+
 	// Output only fields.
 	//
 	// ID is the unique ID of the bookmark.
 	ID int
 	// CreatorUID is the unique ID of the creator.
 	CreatorUID int
-
-	// Input only fields.
-	//
-	// Name is the name of the bookmark.
-	Name string
 }
 
 // listBookmarkMessage is the message for listing bookmarks.
@@ -57,7 +55,7 @@ func (s *Store) CreateBookmarkV2(ctx context.Context, create *BookmarkMessage, p
 			link
 		)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, creator_id, link
+		RETURNING id, name, creator_id, link
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -74,6 +72,7 @@ func (s *Store) CreateBookmarkV2(ctx context.Context, create *BookmarkMessage, p
 		create.Link,
 	).Scan(
 		&bookmark.ID,
+		&bookmark.Name,
 		&bookmark.CreatorUID,
 		&bookmark.Link,
 	); err != nil {
@@ -179,6 +178,7 @@ func (s *Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookma
 		SELECT
 			id,
 			creator_id,
+			name,
 			link
 		FROM bookmark WHERE %s
 	`, strings.Join(where, " AND "))
@@ -196,6 +196,7 @@ func (s *Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookma
 		if err := rows.Scan(
 			&bookmark.ID,
 			&bookmark.CreatorUID,
+			&bookmark.Name,
 			&bookmark.Link,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan bookmark of %v", list)
