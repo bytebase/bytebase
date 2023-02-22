@@ -1,146 +1,120 @@
 <template>
-  <div class="flex gap-x-20">
-    <SQLReviewSidebar :selected-rule-list="selectedRuleList" />
-    <div class="flex-1">
-      <div v-if="name" class="mb-5">
-        <h1 class="text-left text-3xl font-bold mb-2">
-          {{ name }}
-        </h1>
-      </div>
-      <div v-if="selectedEnvironment" class="flex flex-wrap gap-x-3 mb-9">
-        <span class="font-semibold">{{ $t("common.environment") }}</span>
-        <BBBadge
-          :text="environmentName(selectedEnvironment)"
-          :can-remove="false"
-        />
-        <SQLRuleLevelSummary :rule-list="selectedRuleList" />
-      </div>
-      <BBAttention
-        v-else-if="isPreviewStep"
-        class="my-5"
-        :style="`WARN`"
-        :title="$t('sql-review.create.basic-info.no-linked-environments')"
-      />
-      <div v-for="category in categoryList" :key="category.id" class="pb-4">
-        <a
-          :id="category.id.replace(/\./g, '-')"
-          :href="`#${category.id.replace(/\./g, '-')}`"
-          class="text-left text-2xl text-indigo-600 font-semibold hover:underline"
-        >
-          {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
-        </a>
-        <div v-for="rule in category.ruleList" :key="rule.type" class="py-4">
-          <div class="sm:flex sm:items-center sm:space-x-4">
-            <a
-              :id="rule.type.replace(/\./g, '-')"
-              :href="`#${rule.type.replace(/\./g, '-')}`"
-              class="text-left text-xl hover:underline whitespace-nowrap"
-            >
-              {{ getRuleLocalization(rule.type).title }}
-            </a>
-            <div class="mt-3 flex items-center space-x-2 sm:mt-0">
-              <SQLRuleLevelBadge :level="rule.level" />
-              <img
-                v-for="engine in rule.engineList"
-                :key="engine"
-                class="h-4 w-auto"
-                :src="getEngineIcon(engine)"
-              />
-              <a
-                :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
-                target="__blank"
-                class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
-              >
-                <heroicons-outline:external-link class="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-          <p class="py-2 text-gray-400">
-            {{ getRuleLocalization(rule.type).description }}
-          </p>
-          <ul
-            role="list"
-            :class="[
-              'space-y-2 list-disc list-inside',
-              rule.componentList.length > 0 ? 'mt-3' : '',
-            ]"
-          >
-            <li
-              v-for="(component, i) in rule.componentList"
-              :key="i"
-              class="leading-8"
-            >
-              {{
-                $t(
-                  `sql-review.rule.${getRuleLocalizationKey(
-                    rule.type
-                  )}.component.${component.key}.title`
-                )
-              }}:
-              <span
-                v-if="
-                  component.payload.type === 'STRING' ||
-                  component.payload.type === 'NUMBER' ||
-                  component.payload.type === 'BOOLEAN' ||
-                  component.payload.type === 'TEMPLATE'
-                "
-                class="bg-gray-100 rounded text-sm font-semibold p-2"
-              >
-                {{ component.payload.value ?? component.payload.default }}
-              </span>
-              <div
-                v-else-if="component.payload.type === 'STRING_ARRAY'"
-                class="flex flex-wrap gap-3 ml-5 mt-3"
-              >
-                <span
-                  v-for="(val, j) in component.payload.value ??
-                  component.payload.default"
-                  :key="`${i}-${j}`"
-                  class="bg-gray-100 rounded text-sm font-semibold p-2"
-                >
-                  {{ val }}
-                </span>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
+  <SQLRuleTable
+    key="sql-review-preview-rule-table"
+    :class="[state.updating && 'pointer-events-none']"
+    :rule-list="state.selectedRuleList"
+    :editable="editable"
+    @level-change="onLevelChange"
+    @payload-change="onPayloadChange"
+  />
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import {
+  pushNotification,
+  useSQLReviewStore,
+  useSubscriptionStore,
+} from "@/store";
+import {
+  convertRuleTemplateToPolicyRule,
+  ruleIsAvailableInSubscription,
+  RuleLevel,
   RuleTemplate,
-  getRuleLocalization,
-  getRuleLocalizationKey,
-  convertToCategoryList,
-  Environment,
-  SchemaRuleEngineType,
+  SQLReviewPolicy,
 } from "@/types";
-import { environmentName } from "@/utils";
-import SQLRuleLevelSummary from "./components/SQLRuleLevelSummary.vue";
+import { cloneDeep } from "lodash-es";
+import { reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { payloadValueListToComponentList, SQLRuleTable } from "./components";
+import { PayloadValueType } from "./components/RuleConfigComponents";
+
+interface LocalState {
+  selectedRuleList: RuleTemplate[];
+  rulesUpdated: boolean;
+  updating: boolean;
+}
 
 const props = withDefaults(
   defineProps<{
-    name?: string;
-    isPreviewStep?: boolean;
-    selectedEnvironment?: Environment;
+    policy: SQLReviewPolicy;
     selectedRuleList?: RuleTemplate[];
+    editable?: boolean;
   }>(),
   {
-    name: "",
-    isPreviewStep: false,
-    selectedEnvironment: undefined,
     selectedRuleList: () => [],
+    editable: true,
   }
 );
 
-const categoryList = computed(() => {
-  return convertToCategoryList(props.selectedRuleList);
+const { t } = useI18n();
+const state = reactive<LocalState>({
+  selectedRuleList: cloneDeep(props.selectedRuleList),
+  rulesUpdated: false,
+  updating: false,
 });
+const subscriptionStore = useSubscriptionStore();
 
-const getEngineIcon = (engine: SchemaRuleEngineType) =>
-  new URL(`../../assets/db-${engine.toLowerCase()}.png`, import.meta.url).href;
+const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
+  if (
+    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
+  ) {
+    return;
+  }
+
+  const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
+  if (index < 0) {
+    return;
+  }
+  const newRule = {
+    ...state.selectedRuleList[index],
+    ...overrides,
+  };
+  state.selectedRuleList[index] = newRule;
+  state.rulesUpdated = true;
+};
+
+const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
+  const componentList = payloadValueListToComponentList(rule, data);
+  change(rule, { componentList });
+};
+
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+  change(rule, { level });
+};
+
+watch(
+  () => state.rulesUpdated,
+  async (updated) => {
+    if (!updated) return;
+
+    const upsert = {
+      name: props.policy.name,
+      ruleList: state.selectedRuleList.map((rule) =>
+        convertRuleTemplateToPolicyRule(rule)
+      ),
+    };
+
+    state.updating = true;
+    await useSQLReviewStore().updateReviewPolicy({
+      id: props.policy.id,
+      ...upsert,
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-review.policy-updated"),
+    });
+
+    state.updating = false;
+    state.rulesUpdated = false;
+  }
+);
+
+watch(
+  () => props.selectedRuleList,
+  (ruleList) => {
+    state.selectedRuleList = cloneDeep(ruleList);
+    state.rulesUpdated = false;
+  }
+);
 </script>
