@@ -97,3 +97,8 @@ export const useCurrentUser = () => {
     };
   });
 };
+
+export const useIsLoggedIn = () => {
+  const store = useAuthV1Store();
+  return computed(() => store.isLoggedIn() && store.currentUser.name !== "");
+};
