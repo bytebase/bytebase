@@ -112,9 +112,8 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						},
 						Indexes: []*storepb.IndexMetadata{
 							{
-								Name: "trd_A_B_c_key",
-								// TODO(rebelice): the expressions should not double double quotes.
-								Expressions: []string{`"A"`, `"B"`, "c"},
+								Name:        "trd_A_B_c_key",
+								Expressions: []string{`A`, `B`, "c"},
 								Type:        "btree",
 								Unique:      true,
 							},
