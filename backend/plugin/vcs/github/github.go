@@ -449,7 +449,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 		}
 		allRepos = append(allRepos,
 			&vcs.Repository{
-				ID:       r.ID,
+				ID:       strconv.FormatInt(r.ID, 10),
 				Name:     r.Name,
 				FullPath: r.FullName,
 				WebURL:   r.HTMLURL,
