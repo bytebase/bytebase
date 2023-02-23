@@ -12,6 +12,12 @@ export type Advice = {
   line: number;
 };
 
+export type TempSQLResultSet = {
+  data: [string[], string[], any[][], boolean[]][];
+  error: string;
+  adviceList: Advice[];
+};
+
 export type SQLResultSet = {
   // [columnNames: string[], types: string[], data: any[][], sensitive?: boolean[]]
   data: [string[], string[], any[][], boolean[]];

@@ -550,17 +550,38 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
-				Limit:               exec.Limit,
-				ReadOnly:            false,
-				CurrentDatabase:     exec.DatabaseName,
-				SensitiveSchemaInfo: nil,
-			})
-			if err != nil {
-				return nil, err
+			var rowSets [][]interface{}
+			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
+			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB {
+				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to split statements")
+				}
+				for _, singleSQL := range singleSQLs {
+					rowSet, err := driver.Query(ctx, singleSQL.Text, &db.QueryContext{
+						Limit:               exec.Limit,
+						ReadOnly:            false,
+						CurrentDatabase:     exec.DatabaseName,
+						SensitiveSchemaInfo: nil,
+					})
+					if err != nil {
+						return nil, err
+					}
+					rowSets = append(rowSets, rowSet)
+				}
+			} else {
+				rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+					Limit:               exec.Limit,
+					ReadOnly:            false,
+					CurrentDatabase:     exec.DatabaseName,
+					SensitiveSchemaInfo: nil,
+				})
+				if err != nil {
+					return nil, err
+				}
+				rowSets = append(rowSets, rowSet)
 			}
-
-			return json.Marshal(rowSet)
+			return json.Marshal(rowSets)
 		}()
 
 		level := api.ActivityInfo
