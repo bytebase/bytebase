@@ -45,7 +45,7 @@ function convert(
 
   return {
     ...(repository.attributes as Omit<Repository, "id" | "vcs" | "project">),
-    id: parseInt(repository.id),
+    id: repository.id,
     vcs,
     project,
   };
