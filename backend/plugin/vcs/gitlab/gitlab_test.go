@@ -156,7 +156,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 
 	want := []*vcs.Repository{
 		{
-			ID:       4,
+			ID:       "4",
 			Name:     "Diaspora Client",
 			FullPath: "diaspora/diaspora-client",
 			WebURL:   "http://example.com/diaspora/diaspora-client",

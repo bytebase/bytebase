@@ -148,7 +148,7 @@ type UserInfo struct {
 
 // Repository is the API message for repository info.
 type Repository struct {
-	ID       int64  `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	FullPath string `json:"fullPath"`
 	WebURL   string `json:"webUrl"`
