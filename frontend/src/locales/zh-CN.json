@@ -644,6 +644,11 @@
       "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
       "needs-attention": "需要关注",
       "click-to-mark": "点击以请求审核人关注"
+    },
+    "sdl": {
+      "schema-change": "Schema 变化",
+      "generated-ddl-statements": "生成的 DDL 语句",
+      "full-schema": "完整 schema"
     }
   },
   "alter-schema": {
