@@ -33,8 +33,6 @@ const (
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
 	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
-	// IssueDatabaseRollback is the issue type for a generated rollback issue.
-	IssueDatabaseRollback IssueType = "bb.issue.database.rollback"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -136,6 +134,14 @@ type CreateDatabaseContext struct {
 	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
+// RollbackDetail is the detail for rolling back a task.
+type RollbackDetail struct {
+	// IssueID is the id of the issue to rollback.
+	IssueID int `json:"issueId"`
+	// TaskID is the task id to rollback.
+	TaskID int `json:"taskId"`
+}
+
 // MigrationDetail is the detail for database migration such as Migrate, Data.
 type MigrationDetail struct {
 	// MigrationType is the type of a migration.
@@ -155,6 +161,8 @@ type MigrationDetail struct {
 	SchemaVersion string `json:"schemaVersion"`
 	// If RollbackEnabled, build the rollbackStatement of the task.
 	RollbackEnabled bool `json:"rollbackEnabled"`
+	// if RollbackDetail is not nil, then this task is for rolling back another task.
+	RollbackDetail *RollbackDetail `json:"rollbackDetail"`
 }
 
 // MigrationContext is the issue create context for database migration such as Migrate, Data.
@@ -194,14 +202,6 @@ type PITRContext struct {
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
 	PointInTimeTs *int64 `json:"pointInTimeTs"`
-}
-
-// RollbackContext is the issue create context for rollback a issue.
-type RollbackContext struct {
-	// IssueID is the id of the issue to rollback.
-	IssueID int `json:"issueId"`
-	// TaskIDList is the list of task ids to rollback.
-	TaskIDList []int `json:"taskIdList"`
 }
 
 // IssuePatch is the API message for patching an issue.

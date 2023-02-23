@@ -1,6 +1,9 @@
 <template>
   <div>
-    <ol class="flex space-y-0 space-x-8">
+    <ol
+      class="flex space-y-0 space-x-8"
+      :class="[sticky && 'sticky top-0 bg-white z-10']"
+    >
       <li v-for="(step, index) in stepItemList" :key="index" class="flex-1">
         <div
           class="group flex flex-col pt-4 border-t-4"
@@ -53,7 +56,10 @@
         />
       </template>
     </div>
-    <div class="pt-4 border-t border-block-border flex justify-between">
+    <div
+      class="pt-4 border-t border-block-border flex justify-between"
+      :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10']"
+    >
       <button type="button" class="btn-normal" @click.prevent="cancel">
         {{ $t("bbkit.common.cancel") }}
       </button>
@@ -106,10 +112,12 @@ withDefaults(
     stepItemList: BBStepTabItem[];
     allowNext?: boolean;
     finishTitle?: string;
+    sticky?: boolean;
   }>(),
   {
     allowNext: true,
     finishTitle: "bbkit.common.finish",
+    sticky: false,
   }
 );
 

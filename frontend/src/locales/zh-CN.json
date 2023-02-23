@@ -219,7 +219,11 @@
     "rollback": "回滚",
     "total": "共计",
     "discard-changes": "取消修改",
-    "error-message": "错误信息"
+    "error-message": "错误信息",
+    "demo-mode": "演示模式",
+    "operations": "操作",
+    "on": "开启",
+    "off": "关闭"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -299,21 +303,21 @@
     "task-checks": "任务检查项",
     "rollback": {
       "sql-rollback": "SQL 回滚",
-      "log": "记录",
       "failed": "失败",
-      "logging": "记录中",
+      "preview-rollback-issue": "预览回滚工单",
+      "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
-      "cancel-logging": "取消记录回滚语句"
+      "cancel-generating": "取消生成回滚语句",
+      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。"
     }
   },
   "banner": {
-    "demo-intro": "这是 Bytebase 的演示版本。",
-    "demo-intro-readonly": "这是 Bytebase 的只读演示版本",
     "update-license": "更新证书",
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
-    "action": "5 秒部署您自己的服务",
+    "deploy": "5 秒部署到本地",
+    "request-demo": "和我们的产品专家预约 30 分钟产品演示",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",
@@ -844,7 +848,7 @@
       "title": "登录您的账号",
       "forget-password": "忘记密码?",
       "new-user": "第一次使用 Bytebase?",
-      "demo-note": "请使用 demo 账号登录",
+      "demo-note": "邮箱:{username} 密码:{password}",
       "gitlab": "通过 GitLab 登录",
       "github": "通过 GitHub 登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录",
@@ -1788,7 +1792,14 @@
       "preview": {
         "name": "预览"
       }
-    }
+    },
+    "edit-rule": {
+      "self": "编辑 SQL 审核规则"
+    },
+    "rule": {
+      "active": "开启"
+    },
+    "enabled-rules": "开启的规则"
   },
   "debug-log": {
     "title": "Debug 日志",
@@ -1870,5 +1881,15 @@
   },
   "sensitive-data": {
     "self": "敏感数据"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
+    "cannot-be-changed-later": "创建之后无法修改。",
+    "validation": {
+      "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
+      "minlength": "{resource} ID 至少包含 1 个字符。",
+      "overflow": "{resource} ID 应该少于 64 个字符。"
+    }
   }
 }

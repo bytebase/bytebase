@@ -386,6 +386,9 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
 	}
+	if v := patch.ProjectID; v != nil {
+		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.DatabaseID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}

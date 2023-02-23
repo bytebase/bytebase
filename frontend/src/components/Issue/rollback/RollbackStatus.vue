@@ -24,8 +24,8 @@
           class="btn-normal !px-3 !py-1"
           @click="tryRollbackTask"
         >
-          {{ $t("task.rollback.preview-rollback") }}
-          <template v-if="!payload.rollbackStatement" #tooltip>
+          {{ $t("task.rollback.preview-rollback-issue") }}
+          <template v-if="!payload?.rollbackStatement" #tooltip>
             <div class="whitespace-pre-line">
               {{ $t("task.rollback.empty-rollback-statement") }}
             </div>
@@ -48,7 +48,7 @@ import type {
   ActivityCreate,
   Issue,
   IssueCreate,
-  RollbackContext,
+  MigrationContext,
   Task,
   TaskDatabaseDataUpdatePayload,
 } from "@/types";
@@ -104,9 +104,19 @@ const tryRollbackTask = async () => {
   try {
     state.loading = true;
 
-    const rollbackContext: RollbackContext = {
-      issueId: issue.value.id,
-      taskIdList: [task.value.id],
+    const rollbackContext: MigrationContext = {
+      detailList: [
+        {
+          migrationType: "DATA",
+          databaseId: task.value.database!.id,
+          statement: payload.value!.rollbackStatement!,
+          earliestAllowedTs: 0,
+          rollbackDetail: {
+            issueId: issue.value.id,
+            taskId: task.value.id,
+          },
+        },
+      ],
     };
 
     const datetime = `${dayjs(issue.value.createdTs * 1000).format(
@@ -122,10 +132,10 @@ const tryRollbackTask = async () => {
     ].join(" ");
 
     const description = `The original SQL statement:
-${payload.value!.statement}`;
+    ${payload.value!.statement}`;
 
     const issueCreate: IssueCreate = {
-      type: "bb.issue.database.rollback",
+      type: "bb.issue.database.data.update",
       projectId: issue.value.project.id,
       name: issueName,
       description,

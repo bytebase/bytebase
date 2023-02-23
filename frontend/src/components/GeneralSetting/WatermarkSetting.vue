@@ -1,14 +1,21 @@
 <template>
-  <div class="px-4 py-6">
-    <div>
+  <div class="px-4 py-6 lg:flex">
+    <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
         {{ $t("settings.general.workspace.watermark.self") }}
       </h1>
+
+      <span
+        v-if="!allowEdit"
+        class="text-sm text-gray-400 -translate-y-2 tooltip"
+      >
+        {{ $t("settings.general.workspace.watermark.only-owner-can-edit") }}
+      </span>
     </div>
-    <div class="mt-4 space-y-2">
-      <div>
+    <div class="flex-1 lg:px-5 space-y-1">
+      <div class="mt-5 lg:mt-1">
         <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
+          class="flex items-center gap-x-4 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <BBCheckbox
@@ -16,20 +23,14 @@
             :value="enabled"
             @toggle="handleToggle"
           />
-          <span class="font-medium">{{
-            $t("settings.general.workspace.enable-watermark")
-          }}</span>
 
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
-            {{ $t("settings.general.workspace.watermark.only-owner-can-edit") }}
-          </span>
+          <div class="text-sm">
+            {{ $t("settings.general.workspace.enable-watermark") }}
+          </div>
         </label>
       </div>
 
-      <div class="mb-3 text-sm text-gray-400">
+      <div class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.watermark.description") }}
       </div>
     </div>

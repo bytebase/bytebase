@@ -14,6 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser"
+	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -507,9 +509,22 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &primary, &comment); err != nil {
 			return nil, err
 		}
+
+		nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+		if err != nil {
+			return nil, err
+		}
+		if len(nodes) != 1 {
+			return nil, errors.Errorf("invalid number of statements %v, expecting one", len(nodes))
+		}
+		node, ok := nodes[0].(*ast.CreateIndexStmt)
+		if !ok {
+			return nil, errors.Errorf("statement %q is not index statement", statement)
+		}
+
 		index.Type = getIndexMethodType(statement)
-		index.Unique = strings.Contains(statement, " UNIQUE INDEX ")
-		index.Expressions, err = getIndexColumnExpressions(statement)
+		index.Unique = node.Index.Unique
+		index.Expressions = node.Index.GetKeyNameList()
 		if err != nil {
 			return nil, err
 		}
@@ -537,49 +552,4 @@ func getIndexMethodType(stmt string) string {
 		return ""
 	}
 	return matches[1]
-}
-
-func getIndexColumnExpressions(stmt string) ([]string, error) {
-	rc := regexp.MustCompile(`\((.*)\)`)
-	rm := rc.FindStringSubmatch(stmt)
-	if len(rm) == 0 {
-		return nil, errors.Errorf("invalid index statement: %q", stmt)
-	}
-	columnStmt := rm[1]
-
-	var cols []string
-	re := regexp.MustCompile(`\(\(.*\)\)`)
-	for {
-		if len(columnStmt) == 0 {
-			break
-		}
-		// Get a token
-		token := ""
-		// Expression has format of "((exp))".
-		if strings.HasPrefix(columnStmt, "((") {
-			token = re.FindString(columnStmt)
-		} else {
-			i := strings.Index(columnStmt, ",")
-			if i < 0 {
-				token = columnStmt
-			} else {
-				token = columnStmt[:i]
-			}
-		}
-		// Strip token
-		if len(token) == 0 {
-			return nil, errors.Errorf("invalid index statement: %q", stmt)
-		}
-		columnStmt = columnStmt[len(token):]
-		cols = append(cols, strings.TrimSpace(token))
-
-		// Trim space and remove a comma to prepare for the next tokenization.
-		columnStmt = strings.TrimSpace(columnStmt)
-		if len(columnStmt) > 0 && columnStmt[0] == ',' {
-			columnStmt = columnStmt[1:]
-		}
-		columnStmt = strings.TrimSpace(columnStmt)
-	}
-
-	return cols, nil
 }

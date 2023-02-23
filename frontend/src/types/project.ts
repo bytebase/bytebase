@@ -67,6 +67,7 @@ export type ProjectPatch = {
   lgtmCheckSetting?: LGTMCheckSetting;
   workflowType?: ProjectWorkflowType;
   dbNameTemplate?: string;
+  tenantMode?: ProjectTenantMode;
 };
 
 // Project Member

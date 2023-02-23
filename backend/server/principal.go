@@ -33,8 +33,11 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
 		}
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
+		if err := validateEmail(principalCreate.Email); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", principalCreate.Email, err))
+		}
 
+		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		password := principalCreate.Password
 		if principalCreate.Type == api.ServiceAccount {
 			pwd, err := common.RandomString(20)
@@ -48,6 +51,16 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 		}
 
+		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+			Email:       &principalCreate.Email,
+			ShowDeleted: true,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
+		}
+		if len(users) != 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Email %s already been occupied", principalCreate.Email)
+		}
 		user, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Email:        principalCreate.Email,
 			Name:         principalCreate.Name,
@@ -141,7 +154,30 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
-		updaterID := c.Get(getPrincipalIDContextKey()).(int)
+
+		if principalPatch.Email != nil {
+			if err := validateEmail(*principalPatch.Email); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", *principalPatch.Email, err))
+			}
+			currentUser, err := s.store.GetUserByID(ctx, id)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get user by id %d", id)).SetInternal(err)
+			}
+			if currentUser.Email != *principalPatch.Email {
+				users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+					Email:       principalPatch.Email,
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get principal list").SetInternal(err)
+				}
+				if len(users) != 0 {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
+				}
+			} else {
+				principalPatch.Email = nil
+			}
+		}
 
 		update := &store.UpdateUserMessage{
 			Name:  principalPatch.Name,
@@ -165,6 +201,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			update.PasswordHash = &passwordHashStr
 		}
 
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 		user, err := s.store.UpdateUser(ctx, id, update, updaterID)
 		if err != nil {
 			return err

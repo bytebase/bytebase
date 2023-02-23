@@ -705,6 +705,12 @@ func TestExtractSensitiveField(t *testing.T) {
 			schemaInfo: &db.SensitiveSchemaInfo{},
 			fieldList:  []db.SensitiveField{{Name: "1", Sensitive: false}},
 		},
+		{
+			// Test for EXPLAIN statements.
+			statement:  "explain select 1;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  nil,
+		},
 	}
 
 	for _, test := range tests {
@@ -1256,6 +1262,12 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 			statement:  "select 1;",
 			schemaInfo: &db.SensitiveSchemaInfo{},
 			fieldList:  []db.SensitiveField{{Name: "?column?", Sensitive: false}},
+		},
+		{
+			// Test for EXPLAIN statements.
+			statement:  "explain select 1;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  nil,
 		},
 	}
 

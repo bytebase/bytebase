@@ -221,7 +221,11 @@
     "discard-changes": "Discard changes",
     "error-message": "Error message",
     "resource-id": "Resource ID",
-    "domain": "Domain"
+    "domain": "Domain",
+    "demo-mode": "Demo",
+    "operations": "Operations",
+    "on": "On",
+    "off": "Off"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -301,22 +305,21 @@
     "task-checks": "Task checks",
     "rollback": {
       "sql-rollback": "SQL Rollback",
-      "log": "Log",
       "failed": "Failed",
-      "preview-rollback": "Preview rollback",
-      "logging": "Logging",
+      "preview-rollback-issue": "Preview rollback issue",
+      "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
-      "cancel-logging": "Cancel logging the SQL rollback"
+      "cancel-generating": "Cancel generating the SQL rollback",
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change."
     }
   },
   "banner": {
-    "demo-intro": "This is a demo version of Bytebase.",
-    "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
-    "action": "Deploy yours in 5 seconds",
+    "deploy": "Deploy yours in 5 seconds",
+    "request-demo": "Book a 30 min product walkthrough with our product expert",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
@@ -847,7 +850,7 @@
       "title": "Sign in to your account",
       "forget-password": "Forgot your password?",
       "new-user": "New to Bytebase?",
-      "demo-note": "Please use demo account to sign in",
+      "demo-note": "Email:{username} Password:{password}",
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login",
@@ -1790,7 +1793,14 @@
       "preview": {
         "name": "Preview"
       }
-    }
+    },
+    "edit-rule": {
+      "self": "Edit SQL Review Rule"
+    },
+    "rule": {
+      "active": "Active"
+    },
+    "enabled-rules": "Enabled rules"
   },
   "debug-log": {
     "title": "Debug Log",
@@ -1872,5 +1882,15 @@
   },
   "sensitive-data": {
     "self": "Sensitive Data"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "The {resource} ID is a unique identifier. You cannot change it after created.",
+    "cannot-be-changed-later": "It cannot be changed later.",
+    "validation": {
+      "pattern": "The {resource} ID can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
+      "minlength": "The {resource} ID is too short. It should have at least 1 character.",
+      "overflow": "The {resource} ID is too long. It should have less than 64 characters."
+    }
   }
 }
