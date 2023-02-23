@@ -38,7 +38,7 @@
       />
       <ul class="w-full my-2 space-y-2 list-disc list-outside pl-4">
         <li
-          v-for="validateMessage in state.validateMessages"
+          v-for="validateMessage in state.validatedMessages"
           :key="validateMessage.message"
           class="break-words w-full text-xs"
           :class="[
@@ -56,7 +56,9 @@
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useDebounceFn } from "@vueuse/core";
 import { randomString } from "@/utils";
+import { ResourceId } from "@/types";
 
 const characters = "abcdefghijklmnopqrstuvwxyz1234567890";
 
@@ -70,15 +72,18 @@ interface ValidateMessage {
 interface LocalState {
   resourceId: string;
   isResourceIdChanged: boolean;
-  validateMessages: ValidateMessage[];
+  validatedMessages: ValidateMessage[];
 }
+
+type ResourceType = "environment";
 
 const props = withDefaults(
   defineProps<{
-    resource: "environment";
+    resource: ResourceType;
     defaultValue: string;
     resourceTitle: string;
     readonly: boolean;
+    validator: (resourceId: ResourceId) => Promise<string | undefined>;
   }>(),
   {
     defaultValue: "",
@@ -91,7 +96,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   resourceId: props.defaultValue,
   isResourceIdChanged: false,
-  validateMessages: [],
+  validatedMessages: [],
 });
 
 const getPrefix = (resource: string) => {
@@ -147,35 +152,57 @@ const handleResourceIdInput = (newValue: string) => {
     return;
   }
 
-  state.resourceId = newValue;
-  state.validateMessages = [];
-  if (state.resourceId.length < 1) {
-    state.validateMessages.push({
-      type: "error",
-      message: t("resource-id.validation.minlength", {
-        resource: resourceName.value,
-      }),
-    });
-  }
-  if (state.resourceId.length > 64) {
-    state.validateMessages.push({
-      type: "error",
-      message: t("resource-id.validation.overflow", {
-        resource: resourceName.value,
-      }),
-    });
-  }
-  if (!resourceIdPattern.test(state.resourceId)) {
-    state.validateMessages.push({
-      type: "error",
-      message: t("resource-id.validation.pattern", {
-        resource: resourceName.value,
-      }),
-    });
-  }
+  state.validatedMessages = [];
+  debounceHandleResourceIdChange(newValue);
 };
+
+const debounceHandleResourceIdChange = useDebounceFn(
+  async (newValue: string) => {
+    state.resourceId = newValue;
+    state.validatedMessages = [];
+
+    // common validation for resource id (min length, max length, pattern).
+    if (state.resourceId.length < 1) {
+      state.validatedMessages.push({
+        type: "error",
+        message: t("resource-id.validation.minlength", {
+          resource: resourceName.value,
+        }),
+      });
+    } else if (state.resourceId.length > 64) {
+      state.validatedMessages.push({
+        type: "error",
+        message: t("resource-id.validation.overflow", {
+          resource: resourceName.value,
+        }),
+      });
+    } else if (!resourceIdPattern.test(state.resourceId)) {
+      state.validatedMessages.push({
+        type: "error",
+        message: t("resource-id.validation.pattern", {
+          resource: resourceName.value,
+        }),
+      });
+    }
+
+    // custom validation for resource id. (e.g. check if the resource id is already used)
+    if (props.validator) {
+      const message = await props.validator(state.resourceId);
+      if (message) {
+        state.validatedMessages.push({
+          type: "error",
+          message,
+        });
+      }
+    }
+  },
+  300
+);
 
 defineExpose({
   resourceId: computed(() => state.resourceId),
+  isValidated: computed(() => {
+    return state.validatedMessages.length === 0;
+  }),
 });
 </script>
