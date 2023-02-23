@@ -30,28 +30,28 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1);",
-			affectedRows:      `[["Affected Rows"],["INT"],[[1]]]`,
+			affectedRows:      `[[["Affected Rows"],["INT"],[[1]]]]`,
 		},
 		{
 			databaseName:      "Test2",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
-			affectedRows:      `[[],null,[],[]]`,
+			affectedRows:      `[[[],null,[],[]]]`,
 		},
 		{
 			databaseName:      "Test3",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1),(2);",
-			affectedRows:      `[["Affected Rows"],["INT"],[[2]]]`,
+			affectedRows:      `[[["Affected Rows"],["INT"],[[2]]]]`,
 		},
 		{
 			databaseName:      "Test4",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
-			affectedRows:      `[[],null,[],[]]`,
+			affectedRows:      `[[[],null,[],[]]]`,
 		},
 	}
 
