@@ -6,19 +6,19 @@ export const getNameParentTokens = (
   tokenPrefixes: string[]
 ): string[] => {
   const parts = name.split("/");
-  if (parts.length !== 2 * tokenPrefixes.length) {
+  if (parts.length !== tokenPrefixes.length * 2) {
     return [];
   }
 
   const tokens: string[] = [];
   for (let i = 0; i < tokenPrefixes.length; i++) {
-    if (parts[2 * i] !== tokenPrefixes[i]) {
+    if (parts[i * 2] + "/" !== tokenPrefixes[i]) {
       return [];
     }
-    if (parts[2 * i + 1] === "") {
+    if (parts[i * 2 + 1] === "") {
       return [];
     }
-    tokens.push(parts[2 * i + 1]);
+    tokens.push(parts[i * 2 + 1]);
   }
   return tokens;
 };
