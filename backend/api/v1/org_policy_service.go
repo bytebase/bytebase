@@ -685,8 +685,6 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 			issueType = api.IssueDatabaseDataUpdate
 		case v1pb.DeploymentType_DATABASE_RESTORE_PITR:
 			issueType = api.IssueDatabaseRestorePITR
-		case v1pb.DeploymentType_DATABASE_DML_ROLLBACK:
-			issueType = api.IssueDatabaseRollback
 		default:
 			return nil, errors.Errorf("invalid deployment type %v", group.DeploymentType)
 		}
@@ -716,8 +714,6 @@ func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentTyp
 		res = v1pb.DeploymentType_DATABASE_DML
 	case api.IssueDatabaseRestorePITR:
 		res = v1pb.DeploymentType_DATABASE_RESTORE_PITR
-	case api.IssueDatabaseRollback:
-		res = v1pb.DeploymentType_DATABASE_DML_ROLLBACK
 	}
 
 	return res

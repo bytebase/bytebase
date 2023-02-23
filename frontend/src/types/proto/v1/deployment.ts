@@ -9,7 +9,6 @@ export enum DeploymentType {
   DATABASE_DDL_GHOST = 3,
   DATABASE_DML = 4,
   DATABASE_RESTORE_PITR = 5,
-  DATABASE_DML_ROLLBACK = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -33,9 +32,6 @@ export function deploymentTypeFromJSON(object: any): DeploymentType {
     case 5:
     case "DATABASE_RESTORE_PITR":
       return DeploymentType.DATABASE_RESTORE_PITR;
-    case 6:
-    case "DATABASE_DML_ROLLBACK":
-      return DeploymentType.DATABASE_DML_ROLLBACK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -57,8 +53,6 @@ export function deploymentTypeToJSON(object: DeploymentType): string {
       return "DATABASE_DML";
     case DeploymentType.DATABASE_RESTORE_PITR:
       return "DATABASE_RESTORE_PITR";
-    case DeploymentType.DATABASE_DML_ROLLBACK:
-      return "DATABASE_DML_ROLLBACK";
     case DeploymentType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
