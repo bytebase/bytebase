@@ -267,7 +267,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	// Repositories without admin permissions should be excluded
 	want := []*vcs.Repository{
 		{
-			ID:       1296269,
+			ID:       "1296269",
 			Name:     "Hello-World",
 			FullPath: "octocat/Hello-World",
 			WebURL:   "https://github.com/octocat/Hello-World",
