@@ -622,7 +622,7 @@ func (ctl *controller) Signup() error {
 	resp, err := ctl.client.Post(
 		fmt.Sprintf("%s/users", ctl.v1APIURL),
 		"",
-		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo"}`),
+		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo","user_type":"USER"}`),
 	)
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
