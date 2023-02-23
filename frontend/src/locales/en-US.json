@@ -639,7 +639,7 @@
       "dont-apply-to-database-in-baseline-migration": "Baselining only records the current schema in the change history and won't apply the SQL to the database",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
-    "rollback-from": "This task rollbacks from {link}.",
+    "will-rollback": "This task will rollback {link}.",
     "issue-link-with-task": "Issue {issue} - task {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "Send a {im} approval request successfully",
