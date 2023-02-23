@@ -238,6 +238,56 @@ func TestProvider_GetDiffFileList(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_FetchAllRepositoryList(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/user/permissions/repositories", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-user-permissions-repositories-get
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "pagelen": 10,
+  "values": [
+    {
+      "type": "repository_permission",
+      "user": {
+        "type": "user",
+        "nickname": "evzijst",
+        "display_name": "Erik van Zijst",
+        "uuid": "{d301aafa-d676-4ee0-88be-962be7417567}"
+      },
+      "repository": {
+        "type": "repository",
+        "name": "geordi",
+        "full_name": "bitbucket/geordi",
+        "uuid": "{85d08b4e-571d-44e9-a507-fa476535aa98}"
+      },
+      "permission": "admin"
+    }
+  ],
+  "page": 1,
+  "size": 1
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, bitbucketCloudURL)
+	require.NoError(t, err)
+
+	want := []*vcs.Repository{
+		{
+			ID:       "{85d08b4e-571d-44e9-a507-fa476535aa98}",
+			Name:     "geordi",
+			FullPath: "bitbucket/geordi",
+			WebURL:   "https://bitbucket.org/bitbucket/geordi",
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
 func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {
 	return newProvider(
 		vcs.ProviderConfig{

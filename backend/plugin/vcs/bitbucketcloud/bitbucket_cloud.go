@@ -21,6 +21,9 @@ import (
 const (
 	// bitbucketCloudURL is URL for the Bitbucket Cloud.
 	bitbucketCloudURL = "https://bitbucket.org"
+
+	// apiPageSize is the default page size when making API requests.
+	apiPageSize = 100
 )
 
 func init() {
@@ -135,7 +138,7 @@ type Commit struct {
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-commit-commit-get
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
-	url := fmt.Sprintf("%s/repositories/%s/commit/%s", p.APIURL(instanceURL), repositoryID, commitID)
+	url := fmt.Sprintf("%s/repositories/%s/commit/%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), commitID)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -196,7 +199,7 @@ type CommitsDiff struct {
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-diffstat-spec-get
 func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
-	url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s", p.APIURL(instanceURL), repositoryID, afterCommit, beforeCommit)
+	url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), afterCommit, beforeCommit)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -270,14 +273,14 @@ type RepositoryPermission struct {
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-user-permissions-repositories-get
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
-	var bbcRepoPerms []*RepositoryPermission
+	var bbcRepos []*Repository
 	page := 1
 	for {
-		repoPerms, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, page)
+		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, page)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
-		repoPerms = append(repoPerms, repoPerms...)
+		bbcRepos = append(bbcRepos, repos...)
 
 		if !hasNextPage {
 			break
@@ -286,13 +289,13 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	}
 
 	var repos []*vcs.Repository
-	for _, r := range bbcRepoPerms {
+	for _, r := range bbcRepos {
 		repos = append(repos,
 			&vcs.Repository{
-				ID:       r.ID,
+				ID:       r.UUID,
 				Name:     r.Name,
 				FullPath: r.FullName,
-				WebURL:   r.HTMLURL,
+				WebURL:   fmt.Sprintf("%s/%s", instanceURL, r.FullName),
 			},
 		)
 	}
@@ -302,8 +305,8 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
 // user has admin access to in given page. It returns the paginated results
 // along with a boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
-	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []*Repository, hasNextPage bool, err error) {
+	url := fmt.Sprintf(`%s/user/permissions/repositories?q=%s&page=%d&pagelen=%d`, p.APIURL(instanceURL), url.PathEscape(`permission="admin"`), page, apiPageSize)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -334,15 +337,24 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 			)
 	}
 
-	if err := json.Unmarshal([]byte(body), &repos); err != nil {
+	var resp struct {
+		Values []*RepositoryPermission `json:"values"`
+		Next   bool                    `json:"next"`
+	}
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil, false, errors.Wrap(err, "unmarshal")
 	}
 
-	// NOTE: We deliberately choose to not use the Link header for checking the next
-	// page to avoid introducing a new dependency, see
-	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
-	// discussion.
-	return repos, len(repos) >= apiPageSize, nil
+	for _, v := range resp.Values {
+		repos = append(repos,
+			&Repository{
+				UUID:     v.Repository.UUID,
+				Name:     v.Repository.Name,
+				FullName: v.Repository.FullName,
+			},
+		)
+	}
+	return repos, resp.Next, nil
 }
 
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
