@@ -369,7 +369,7 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_BOOKMARK: Bookmark = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
+    creatorID: UNKNOWN_ID,
     name: "",
     link: "",
   };
@@ -724,7 +724,7 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_BOOKMARK: Bookmark = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
+    creatorID: EMPTY_ID,
     name: "",
     link: "",
   };

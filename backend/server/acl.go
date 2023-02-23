@@ -347,7 +347,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s"+bookmarkIDStr)).SetInternal(err)
 			}
 
-			bookmark, err := s.store.GetBookmarkByID(ctx, bookmarkID)
+			bookmark, err := s.store.GetBookmarkV2(ctx, bookmarkID)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
@@ -355,7 +355,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID)).SetInternal(err)
 			}
 
-			return bookmark.CreatorID == curPrincipalID, nil
+			return bookmark.CreatorUID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(path, "/inbox") {
 		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
