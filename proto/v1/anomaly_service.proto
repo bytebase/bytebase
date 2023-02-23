@@ -14,28 +14,25 @@ import "v1/common.proto";
 option go_package = "generated-go/v1";
 
 service AnomalyService {
-  rpc ListAnomalies(ListAnomaliesRequest) returns (ListAnomaliesResponse) {
+  rpc SearchAnomalies(SearchAnomaliesRequest) returns (SearchAnomaliesResponse) {
     option (google.api.http) = {
-      get: "/v1/{parent=environments/*/instance/*}/anomalies"
-      additional_bindings: {
-        get: "/v1/{parent=environments/*/instance/*/database/*}/anomalies"
-      }
+      post: "/v1/anomalies/search"
+      body: "*"
     };
-    option (google.api.method_signature) = "parent";
   }
 }
 
-message ListAnomaliesRequest {
-  // parent is the parent resource name of the anomaly.
+message SearchAnomaliesRequest {
+  // The resource that is the target of the operation.
   // Format:
   // - Instance: environments/{environment}/instnaces/{instance}
   // - Database: environments/{environment}/instnaces/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string resource_name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // filter is the filter to apply on the list anomaly request,
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
-  // List the instance anomalies of a specific instance: 'anomaly.parent="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true'
+  // List the instance anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true'
   // List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
   string filter = 2;
 
@@ -53,7 +50,7 @@ message ListAnomaliesRequest {
   string page_token = 4;
 }
 
-message ListAnomaliesResponse {
+message SearchAnomaliesResponse {
   // anomalies is the list of anomalies.
   repeated Anomaly anomalies = 1;
 
@@ -100,11 +97,11 @@ message Anomaly {
     CRITICAL = 3;
   }
 
-  // parent is the parent of the anomaly, it could be the instance or database.
+  // The resource that is the target of the operation.
   // Format:
   // - Instance: environments/{environment}/instnaces/{instance}
   // - Database: environments/{environment}/instnaces/{instance}/databases/{database}
-  string parent = 1;
+  string resource_name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // type is the type of the anomaly.
   AnomalyType type = 2;
