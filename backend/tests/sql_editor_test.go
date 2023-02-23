@@ -37,7 +37,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
-			affectedRows:      `[[[],null,[],[]]]`,
+			affectedRows:      `[[["Affected Rows"],["INT"],[[1]]],[["Affected Rows"],["INT"],[[1]]]]`,
 		},
 		{
 			databaseName:      "Test3",
