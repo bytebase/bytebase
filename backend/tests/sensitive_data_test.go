@@ -35,7 +35,7 @@ func TestSensitiveData(t *testing.T) {
 		`
 		queryTable = `SELECT * FROM tech_book`
 		maskedData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[\"******\",\"bytebase\",\"******\"],[\"******\",\"PostgreSQL 14 Internals\",\"******\"],[\"******\",\"Designing Data-Intensive Applications\",\"******\"]],[true,false,true]]"
-		originData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[1,\"bytebase\",\"bber\"],[2,\"PostgreSQL 14 Internals\",\"Egor Rogov\"],[3,\"Designing Data-Intensive Applications\",\"Martin Kleppmann\"]],[false,false,false]]"
+		originData = "[[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[1,\"bytebase\",\"bber\"],[2,\"PostgreSQL 14 Internals\",\"Egor Rogov\"],[3,\"Designing Data-Intensive Applications\",\"Martin Kleppmann\"]],[false,false,false]]]"
 	)
 	t.Parallel()
 	a := require.New(t)
