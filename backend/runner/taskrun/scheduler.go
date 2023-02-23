@@ -526,7 +526,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   taskPatched.CreatorID,
+			CreatorID:   taskPatch.UpdaterID,
 			ContainerID: taskPatched.PipelineID,
 			Type:        api.ActivityPipelineTaskStatementUpdate,
 			Payload:     string(payload),
@@ -551,7 +551,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
 		}
 		activityCreate := &api.ActivityCreate{
-			CreatorID:   taskPatched.CreatorID,
+			CreatorID:   taskPatch.UpdaterID,
 			ContainerID: taskPatched.PipelineID,
 			Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 			Payload:     string(payload),
