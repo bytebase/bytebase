@@ -60,7 +60,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	}
 
 	if err := api.IsValidEnvironmentName(request.Environment.Title); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid environment title, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid environment title, error %v", err.Error())
 	}
 	if !isValidResourceID(request.EnvironmentId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID %v", request.EnvironmentId)
