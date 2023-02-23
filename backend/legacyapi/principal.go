@@ -23,6 +23,9 @@ const (
 
 	// PrincipalIDForFirstUser is the principal id for the first user in workspace.
 	PrincipalIDForFirstUser = 101
+
+	// ServiceAccountAccessKeyPrefix is the prefix for service account access key.
+	ServiceAccountAccessKeyPrefix = "bbs_"
 )
 
 // PrincipalAuthProvider is the type of an authentication provider.
