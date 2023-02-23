@@ -24,6 +24,7 @@
         :readonly="!create"
         :default-value="state.environment.resourceId"
         :resource-title="state.environment.name"
+        :validator="validateResourceId"
       />
 
       <div class="col-span-1 mt-6">
@@ -309,6 +310,7 @@
 <script lang="ts" setup>
 import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
+import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
@@ -320,8 +322,12 @@ import type {
   EnvironmentTierPolicyPayload,
   PipelineApprovalPolicyPayload,
   Policy,
+  ResourceId,
   SQLReviewPolicy,
 } from "../types";
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { getErrorCode } from "@/utils/grpcweb";
 import { BBSwitch } from "@/bbkit";
 import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 import {
@@ -383,6 +389,7 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
+const environmentV1Store = useEnvironmentV1Store();
 const sqlReviewStore = useSQLReviewStore();
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
@@ -469,6 +476,27 @@ const hasPermission = computed(() => {
   );
 });
 
+const validateResourceId = async (resourceId: ResourceId) => {
+  if (!resourceId) {
+    return;
+  }
+
+  try {
+    const env = await environmentV1Store.getOrFetchEnvironmentByName(
+      environmentNamePrefix + resourceId
+    );
+    if (env) {
+      return t("resource-id.validation.duplicated", {
+        resource: t(`common.environment`),
+      });
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+};
+
 const allowArchive = computed(() => {
   return allowEdit.value && environmentList.value.length > 1;
 });
@@ -486,7 +514,11 @@ const allowEdit = computed(() => {
 });
 
 const allowCreate = computed(() => {
-  return !isEmpty(state.environment?.name);
+  return (
+    !isEmpty(state.environment?.name) &&
+    resourceIdField.value?.resourceId &&
+    resourceIdField.value?.isValidated
+  );
 });
 
 const allowEditSQLReviewPolicy = computed(() => {
