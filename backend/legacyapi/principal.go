@@ -52,8 +52,7 @@ type Principal struct {
 	Role Role `jsonapi:"attr,role"`
 	// The ServiceKey is the password, only used for SERVICE_ACCOUNT.
 	// We only return the service key for the first time after the creation for SERVICE_ACCOUNT.
-	ServiceKey           string `jsonapi:"attr,serviceKey"`
-	IdentityProviderName string `jsonapi:"attr,identityProviderName"`
+	ServiceKey string `jsonapi:"attr,serviceKey"`
 }
 
 // MarshalJSON customizes the Principal Marshal method so the returned object
