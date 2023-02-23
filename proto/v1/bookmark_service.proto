@@ -87,9 +87,13 @@ message Bookmark {
   // The name of the bookmark.
   // Format: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The title of the bookmark.
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
+  
   // The resource link of the bookmark. Only support issue link for now.
   // Format:
   // Issue: /issue/slug(issue_name)-{issue_uid}
   // Example: /issue/start-here-add-email-column-to-employee-table-101
-  string link = 2 [(google.api.field_behavior) = REQUIRED];
+  string link = 3 [(google.api.field_behavior) = REQUIRED];
 }

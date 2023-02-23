@@ -62,6 +62,8 @@ export interface Bookmark {
    * Format: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.
    */
   name: string;
+  /** The title of the bookmark. */
+  title: string;
   /**
    * The resource link of the bookmark. Only support issue link for now.
    * Format:
@@ -308,7 +310,7 @@ export const ListBookmarksResponse = {
 };
 
 function createBaseBookmark(): Bookmark {
-  return { name: "", link: "" };
+  return { name: "", title: "", link: "" };
 }
 
 export const Bookmark = {
@@ -316,8 +318,11 @@ export const Bookmark = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
     if (message.link !== "") {
-      writer.uint32(18).string(message.link);
+      writer.uint32(26).string(message.link);
     }
     return writer;
   },
@@ -333,6 +338,9 @@ export const Bookmark = {
           message.name = reader.string();
           break;
         case 2:
+          message.title = reader.string();
+          break;
+        case 3:
           message.link = reader.string();
           break;
         default:
@@ -344,12 +352,17 @@ export const Bookmark = {
   },
 
   fromJSON(object: any): Bookmark {
-    return { name: isSet(object.name) ? String(object.name) : "", link: isSet(object.link) ? String(object.link) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      link: isSet(object.link) ? String(object.link) : "",
+    };
   },
 
   toJSON(message: Bookmark): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.title !== undefined && (obj.title = message.title);
     message.link !== undefined && (obj.link = message.link);
     return obj;
   },
@@ -357,6 +370,7 @@ export const Bookmark = {
   fromPartial(object: DeepPartial<Bookmark>): Bookmark {
     const message = createBaseBookmark();
     message.name = object.name ?? "";
+    message.title = object.title ?? "";
     message.link = object.link ?? "";
     return message;
   },
