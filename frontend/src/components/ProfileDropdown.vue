@@ -119,6 +119,7 @@ import {
   pushNotification,
   useActuatorStore,
   useAuthStore,
+  useCurrentUser,
   useDebugStore,
   useUIStateStore,
 } from "@/store";
@@ -135,8 +136,7 @@ export default defineComponent({
     const router = useRouter();
     const { setLocale, locale } = useLanguage();
     const languageMenu = ref();
-
-    const { currentUser } = storeToRefs(authStore);
+    const currentUser = useCurrentUser();
 
     // For now, debug mode is a global setting and will affect all users.
     // So we only allow DBA and Owner to toggle it.

@@ -1,8 +1,13 @@
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
-import { User } from "@/types/proto/v1/auth_service";
+import {
+  User,
+  userRoleToJSON,
+  userTypeToJSON,
+} from "@/types/proto/v1/auth_service";
 import { isEqual, isUndefined } from "lodash-es";
-import { userNamePrefix } from "./v1/common";
+import { getUserId, userNamePrefix } from "./v1/common";
+import { Principal, PrincipalType, RoleType } from "@/types";
 
 interface UserState {
   userMapByName: Map<string, User>;
@@ -98,4 +103,18 @@ const getUpdateMaskFromUsers = (
     updateMask.push("user.role");
   }
   return updateMask;
+};
+
+export const convertUserToPrincipal = (user: User): Principal => {
+  const userRole = userRoleToJSON(user.userRole) as RoleType;
+  const userType = userTypeToJSON(user.userType) as PrincipalType;
+
+  return {
+    id: getUserId(user.name),
+    name: user.title,
+    email: user.email,
+    role: userRole,
+    type: userType,
+    serviceKey: user.password,
+  };
 };

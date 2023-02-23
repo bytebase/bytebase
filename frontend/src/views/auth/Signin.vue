@@ -147,7 +147,7 @@
 import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { AuthProvider, OAuthWindowEventPayload } from "@/types";
+import { OAuthWindowEventPayload } from "@/types";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
   featureToRef,
@@ -165,7 +165,6 @@ interface LocalState {
   email: string;
   password: string;
   showPassword: boolean;
-  activeAuthProvider?: AuthProvider;
   activeIdentityProvider?: IdentityProvider;
 }
 
@@ -199,7 +198,6 @@ onMounted(async () => {
     state.showPassword = true;
   }
 
-  await authStore.fetchProviderList();
   await identityProviderStore.fetchIdentityProviderList();
 });
 
@@ -243,15 +241,13 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       return;
     }
     const code = payload.code;
-    await authStore.loginWithIdentityProvider({
+    await authStore.login({
       idpName: state.activeIdentityProvider.name,
       context: {
         oauth2Context: {
           code,
         },
       },
-      email: "",
-      password: "",
       web: true,
     });
     router.push("/");
@@ -266,6 +262,7 @@ const trySignin = async () => {
   await authStore.login({
     email: state.email,
     password: state.password,
+    web: true,
   });
   router.push("/");
 };

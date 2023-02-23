@@ -120,7 +120,7 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <input
-                v-if="state.editing && !isSSOUser"
+                v-if="state.editing"
                 id="email"
                 required
                 autocomplete="off"
@@ -136,7 +136,7 @@
             </dd>
           </div>
 
-          <template v-if="state.editing && !isSSOUser">
+          <template v-if="state.editing">
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">
                 {{ $t("settings.profile.password") }}
@@ -258,11 +258,6 @@ const passwordMismatch = computed(() => {
     !isEmpty(state.editingPrincipal?.password) &&
     state.editingPrincipal?.password != state.passwordConfirm
   );
-});
-
-const isSSOUser = computed(() => {
-  const name = `users/${principal.value.id}`;
-  return userStore.userMapByName.get(name)?.identityProvider !== "";
 });
 
 // User can change her own info.
