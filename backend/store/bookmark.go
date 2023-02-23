@@ -12,181 +12,42 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// bookmarkRaw is the store model for an Bookmark.
-// Fields have exactly the same meanings as Bookmark.
-type bookmarkRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Name string
+// BookmarkMessage is the message for bookmark.
+type BookmarkMessage struct {
+	// Link is the link of the bookmark.
 	Link string
+
+	// Name is the name of the bookmark.
+	Name string
+
+	// Output only fields.
+	//
+	// ID is the unique ID of the bookmark.
+	ID int
+	// CreatorUID is the unique ID of the creator.
+	CreatorUID int
 }
 
-// toBookmark creates an instance of Bookmark based on the bookmarkRaw.
-// This is intended to be called when we need to compose an Bookmark relationship.
-func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
+// listBookmarkMessage is the message for listing bookmarks.
+type listBookmarkMessage struct {
+	// id is the unique ID of the bookmark.
+	id *int
+	// creatorUID is the unique ID of the creator.
+	creatorUID *int
+}
+
+// ToAPIBookmark converts a BookmarkMessage to an API Bookmark.
+func (b *BookmarkMessage) ToAPIBookmark() *api.Bookmark {
 	return &api.Bookmark{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-
-		// Domain specific fields
-		Name: raw.Name,
-		Link: raw.Link,
+		ID:        b.ID,
+		CreatorID: b.CreatorUID,
+		Name:      b.Name,
+		Link:      b.Link,
 	}
 }
 
-// CreateBookmark creates an instance of Bookmark.
-func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
-	bookmarkRaw, err := s.createBookmarkRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Bookmark with BookmarkCreate[%+v]", create)
-	}
-	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Bookmark with bookmarkRaw[%+v]", bookmarkRaw)
-	}
-	return bookmark, nil
-}
-
-// GetBookmarkByID gets an instance of Bookmark.
-func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, error) {
-	find := &api.BookmarkFind{ID: &id}
-	bookmarkRaw, err := s.getBookmarkRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Bookmark with ID %d", id)
-	}
-	if bookmarkRaw == nil {
-		return nil, nil
-	}
-	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Bookmark with bookmarkRaw[%+v]", bookmarkRaw)
-	}
-	return bookmark, nil
-}
-
-// FindBookmark finds a list of Bookmark instances.
-func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
-	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Bookmark list with BookmarkFind[%+v]", find)
-	}
-	var bookmarkList []*api.Bookmark
-	for _, raw := range bookmarkRawList {
-		bookmark, err := s.composeBookmark(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Bookmark with bookmarkRaw[%+v]", raw)
-		}
-		bookmarkList = append(bookmarkList, bookmark)
-	}
-	return bookmarkList, nil
-}
-
-//
-// private function
-//
-
-func (s *Store) composeBookmark(ctx context.Context, raw *bookmarkRaw) (*api.Bookmark, error) {
-	bookmark := raw.toBookmark()
-
-	creator, err := s.GetPrincipalByID(ctx, bookmark.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	bookmark.Creator = creator
-
-	return bookmark, nil
-}
-
-// createBookmarkRaw creates a new bookmark.
-func (s *Store) createBookmarkRaw(ctx context.Context, create *api.BookmarkCreate) (*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	bookmark, err := createBookmarkImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return bookmark, nil
-}
-
-// findBookmarkRaw retrieves a list of bookmarks based on find.
-func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findBookmarkImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// getBookmarkRaw retrieves a single bookmark based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	bookmarkRawList, err := findBookmarkImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(bookmarkRawList) == 0 {
-		return nil, nil
-	} else if len(bookmarkRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities with filter %+v, expect 1. ", len(bookmarkRawList), find)}
-	}
-	return bookmarkRawList[0], nil
-}
-
-// DeleteBookmark deletes an existing bookmark by ID.
-// Returns ENOTFOUND if bookmark does not exist.
-func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	if err := s.deleteBookmarkImpl(ctx, tx, delete); err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
-}
-
-// createBookmarkImpl creates a new bookmark.
-func createBookmarkImpl(ctx context.Context, tx *Tx, create *api.BookmarkCreate) (*bookmarkRaw, error) {
-	// Insert row into database.
+// CreateBookmarkV2 creates a new bookmark.
+func (s *Store) CreateBookmarkV2(ctx context.Context, create *BookmarkMessage, principleUID int) (*BookmarkMessage, error) {
 	query := `
 		INSERT INTO bookmark (
 			creator_id,
@@ -195,96 +56,158 @@ func createBookmarkImpl(ctx context.Context, tx *Tx, create *api.BookmarkCreate)
 			link
 		)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
+		RETURNING id, name, creator_id, link
 	`
-	var bookmarkRaw bookmarkRaw
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var bookmark BookmarkMessage
 	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
+		principleUID,
+		principleUID,
 		create.Name,
 		create.Link,
 	).Scan(
-		&bookmarkRaw.ID,
-		&bookmarkRaw.CreatorID,
-		&bookmarkRaw.CreatedTs,
-		&bookmarkRaw.UpdaterID,
-		&bookmarkRaw.UpdatedTs,
-		&bookmarkRaw.Name,
-		&bookmarkRaw.Link,
+		&bookmark.ID,
+		&bookmark.Name,
+		&bookmark.CreatorUID,
+		&bookmark.Link,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, errors.Wrapf(err, "failed to query row")
 	}
-	return &bookmarkRaw, nil
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	return &bookmark, nil
 }
 
-func findBookmarkImpl(ctx context.Context, tx *Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			name,
-			link
-		FROM bookmark
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+// ListBookmarkV2 lists all bookmarks.
+func (s *Store) ListBookmarkV2(ctx context.Context, principalUID int) ([]*BookmarkMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into bookmarkRawList.
-	var bookmarkRawList []*bookmarkRaw
-	for rows.Next() {
-		var bookmark bookmarkRaw
-		if err := rows.Scan(
-			&bookmark.ID,
-			&bookmark.CreatorID,
-			&bookmark.CreatedTs,
-			&bookmark.UpdaterID,
-			&bookmark.UpdatedTs,
-			&bookmark.Name,
-			&bookmark.Link,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		bookmarkRawList = append(bookmarkRawList, &bookmark)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	return bookmarkRawList, nil
+	bookmarks, err := s.listBookmarkImplV2(ctx, tx, &listBookmarkMessage{creatorUID: &principalUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list bookmarks")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	return bookmarks, nil
 }
 
-// deleteBookmarkImpl permanently deletes a bookmark by ID.
-func (*Store) deleteBookmarkImpl(ctx context.Context, tx *Tx, delete *api.BookmarkDelete) error {
-	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = $1`, delete.ID)
+// GetBookmarkV2 gets a bookmark by ID.
+func (s *Store) GetBookmarkV2(ctx context.Context, bookmarkUID int) (*BookmarkMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return FormatError(err)
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	bookmarks, err := s.listBookmarkImplV2(ctx, tx, &listBookmarkMessage{id: &bookmarkUID})
+	if err != nil {
+		return nil, err
+	}
+	if len(bookmarks) == 0 {
+		return nil, nil
+	}
+	if len(bookmarks) > 1 {
+		return nil, errors.Errorf("find %d bookmarks for bookmark ID %d", len(bookmarks), bookmarkUID)
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return bookmarks[0], nil
+}
+
+// DeleteBookmarkV2 try to delete a bookmark.
+func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
+	var args []interface{}
+	var where []string
+	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, bookmarkUID)
+
+	query := fmt.Sprintf(`
+		DELETE FROM bookmark WHERE %s
+	`, strings.Join(where, " AND "))
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete bookmark of principal id %d", bookmarkUID)
+	}
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: errors.Errorf("bookmark ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Err: errors.Errorf("bookmark ID not found: %d", bookmarkUID)}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return nil
+}
+
+func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmarkMessage) ([]*BookmarkMessage, error) {
+	where, args := []string{"TRUE"}, []interface{}{}
+	if v := list.creatorUID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := list.id; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			id,
+			creator_id,
+			name,
+			link
+		FROM bookmark WHERE %s
+	`, strings.Join(where, " AND "))
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query bookmark of %v", list)
+	}
+	defer rows.Close()
+
+	var bookmarks []*BookmarkMessage
+
+	for rows.Next() {
+		var bookmark BookmarkMessage
+		if err := rows.Scan(
+			&bookmark.ID,
+			&bookmark.CreatorUID,
+			&bookmark.Name,
+			&bookmark.Link,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan bookmark of %v", list)
+		}
+
+		bookmarks = append(bookmarks, &bookmark)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate bookmark of %v", list)
+	}
+
+	return bookmarks, nil
 }

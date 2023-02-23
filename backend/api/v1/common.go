@@ -24,6 +24,7 @@ const (
 	identityProviderNamePrefix = "idps/"
 	settingNamePrefix          = "settings/"
 	backupPrefix               = "backups/"
+	bookmarkPrefix             = "bookmarks/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -130,6 +131,22 @@ func getIdentityProviderID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
+}
+
+func getUserBookmarkID(name string) (int, int, error) {
+	tokens, err := getNameParentTokens(name, userNamePrefix, bookmarkPrefix)
+	if err != nil {
+		return 0, 0, err
+	}
+	userID, err := strconv.Atoi(tokens[0])
+	if err != nil {
+		return 0, 0, errors.Errorf("invalid user ID %q", tokens[0])
+	}
+	bookmarkID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return 0, 0, errors.Errorf("invalid bookmark ID %q", tokens[1])
+	}
+	return userID, bookmarkID, nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {

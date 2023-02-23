@@ -932,11 +932,10 @@ Click "Approve" button to apply the schema update.`,
 	}
 
 	// Bookmark the issue.
-	if _, err := s.store.CreateBookmark(ctx, &api.BookmarkCreate{
-		CreatorID: userID,
-		Name:      "Sample Issue",
-		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
-	}); err != nil {
+	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
+		Name: "Sample Issue",
+		Link: fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
+	}, userID); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
 	}
 
