@@ -60,7 +60,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	}
 
 	if err := api.IsValidEnvironmentName(request.Environment.Title); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid environment title, error %q", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "invalid environment title, error %w", err.Error())
 	}
 	if !isValidResourceID(request.EnvironmentId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID %v", request.EnvironmentId)
