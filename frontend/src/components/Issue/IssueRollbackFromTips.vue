@@ -4,7 +4,7 @@
     class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
   >
     <heroicons-outline:arrow-uturn-left class="w-4 h-4" />
-    <i18n-t keypath="issue.rollback-from" tag="span">
+    <i18n-t keypath="issue.will-rollback" tag="span">
       <template #link>
         <router-link :to="rollbackIssueLink" class="normal-link">
           <i18n-t keypath="issue.issue-link-with-task">
@@ -19,14 +19,22 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useRoute } from "vue-router";
 
-import type { Task, TaskDatabaseDataUpdatePayload } from "@/types";
+import {
+  RollbackDetail,
+  Task,
+  TaskCreate,
+  TaskDatabaseDataUpdatePayload,
+} from "@/types";
 import { unknown, UNKNOWN_ID } from "@/types";
 import { flattenTaskList, useIssueLogic } from "./logic";
 import { useIssueById } from "@/store";
 import { buildIssueLinkWithTask } from "@/utils";
+import { getRollbackTaskMappingFromQuery } from "@/plugins/issue/logic/initialize/standard";
 
 const { create, selectedTask } = useIssueLogic();
+const route = useRoute();
 
 const payload = computed(() => {
   if (create.value) return undefined;
@@ -38,11 +46,29 @@ const payload = computed(() => {
   return undefined;
 });
 
+const rollbackDetail = computed((): RollbackDetail | undefined => {
+  if (!create.value) return undefined;
+  // Try to find out the relationship between databaseId and rollback issue/task
+  // Id from the URL query.
+  const task = selectedTask.value as TaskCreate;
+  const { databaseId } = task;
+  if (!databaseId || databaseId === UNKNOWN_ID) return undefined;
+
+  const mapping = getRollbackTaskMappingFromQuery(route);
+  return mapping.get(databaseId);
+});
+
 const rollbackFromIssueId = computed(() => {
+  if (create.value) {
+    return rollbackDetail.value?.issueId || UNKNOWN_ID;
+  }
   return payload.value?.rollbackFromIssueId || UNKNOWN_ID;
 });
 
 const rollbackFromTaskId = computed(() => {
+  if (create.value) {
+    return rollbackDetail.value?.taskId || UNKNOWN_ID;
+  }
   return payload.value?.rollbackFromTaskId || UNKNOWN_ID;
 });
 
