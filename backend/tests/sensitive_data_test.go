@@ -201,5 +201,4 @@ func TestSensitiveData(t *testing.T) {
 		a.Equal("", singleSQLResult.Error)
 		a.Equal(originData, singleSQLResult.Data)
 	}
-	a.Equal(originData, result)
 }

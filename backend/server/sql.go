@@ -402,8 +402,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		start := time.Now().UnixNano()
 
-		var singleSQLResults []*api.SingleSQLResult
-		bytes, queryErr := func() ([]byte, error) {
+		singleSQLResults, queryErr := func() ([]*api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -418,6 +417,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return nil, err
 			}
 			defer conn.Close()
+
+			var singleSQLResults []*api.SingleSQLResult
 
 			rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
 				Limit:           exec.Limit,
@@ -436,8 +437,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
 				Data: string(data),
 			})
-
-			return json.Marshal(rowSet)
+			return singleSQLResults, nil
 		}()
 
 		if instance.Engine == db.Postgres {
@@ -448,8 +448,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if len(stmts) != 1 {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one statement, but found %d, statement: %s", len(stmts), exec.Statement))
 			}
+			if len(singleSQLResults) != 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one result, but found %d, statement: %s", len(singleSQLResults), exec.Statement))
+			}
+
 			if _, ok := stmts[0].(*ast.ExplainStmt); ok {
-				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, string(bytes))
+				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, singleSQLResults[0].Data)
 				if len(indexAdvice) > 0 {
 					adviceLevel = advisor.Error
 					adviceList = append(adviceList, indexAdvice...)
