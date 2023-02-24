@@ -428,6 +428,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 				SensitiveSchemaInfo:   sensitiveSchemaInfo,
 			})
+			if err != nil {
+				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+					Error: err.Error(),
+				})
+			}
 			data, err := json.Marshal(rowSet)
 			if err != nil {
 				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
