@@ -492,6 +492,24 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_ReadFileContent(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/atlassian/bbql/src/eefd5ef/tests/__init__.py", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("#!/bin/sh\nhalt")),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", "eefd5ef")
+	require.NoError(t, err)
+
+	want := "#!/bin/sh\nhalt"
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
