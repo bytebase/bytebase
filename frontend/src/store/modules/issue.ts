@@ -196,6 +196,14 @@ export const useIssueStore = defineStore("issue", {
       }
       return issue;
     },
+    async getOrFetchIssueById(issueId: IssueId) {
+      if (issueId === EMPTY_ID) return empty("ISSUE");
+      if (issueId === UNKNOWN_ID) return unknown("ISSUE");
+      if (!this.issueById.has(issueId)) {
+        await this.fetchIssueById(issueId);
+      }
+      return this.getIssueById(issueId);
+    },
     async createIssue(newIssue: IssueCreate) {
       try {
         this.isCreatingIssue = true;
