@@ -2412,6 +2412,16 @@ WHERE table_schema = '%s';
 				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
 				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
 
+			const initialSDL = ""
+			const updatedSDL = "CREATE TABLE `projects` (\n" +
+				"  `id` INT NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n" +
+				"CREATE TABLE `users` (\n" +
+				"  `id` INT NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n"
+
 			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 			a.NoError(err)
 			wantHistories := []api.MigrationHistory{
@@ -2454,6 +2464,12 @@ WHERE table_schema = '%s';
 				a.Equal(wantHistories[i], got, i)
 				a.NotEmpty(history.Version)
 			}
+
+			// Test SDL format.
+			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instance.ID, histories[1].ID, db.MigrationHistoryFind{})
+			a.NoError(err)
+			a.Equal(updatedSDL, sdlHistory.Schema)
+			a.Equal(initialSDL, sdlHistory.SchemaPrev)
 		})
 	}
 }
