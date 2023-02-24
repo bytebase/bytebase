@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
 
 func TestProvider_ExchangeOAuthToken(t *testing.T) {
@@ -286,6 +287,141 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 		},
 	}
 	assert.Equal(t, want, got)
+}
+
+func TestProvider_FetchRepositoryFileList(t *testing.T) {
+	// Example response derived from https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#directory-listings
+	const response = `
+{
+  "pagelen": 10,
+  "values": [
+    {
+      "links": {
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/atlassian/bbql/src/eefd5ef5d3df01aed629f650959d6706d54cd335/tests/__init__.py"
+        },
+        "meta": {
+          "href": "https://api.bitbucket.org/2.0/repositories/atlassian/bbql/src/eefd5ef5d3df01aed629f650959d6706d54cd335/tests/__init__.py?format=meta"
+        }
+      },
+      "path": "tests/__init__.py",
+      "commit": {
+        "type": "commit",
+        "hash": "eefd5ef5d3df01aed629f650959d6706d54cd335",
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/bbql/commit/eefd5ef5d3df01aed629f650959d6706d54cd335"
+          },
+          "html": {
+            "href": "https://bitbucket.org/atlassian/bbql/commits/eefd5ef5d3df01aed629f650959d6706d54cd335"
+          }
+        }
+      },
+      "attributes": [],
+      "type": "commit_file",
+      "size": 0
+    }
+  ],
+  "page": 1,
+  "size": 1
+}
+`
+	t.Run("no path prefix", func(t *testing.T) {
+		ctx := context.Background()
+		p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+			assert.Equal(t, "/2.0/repositories/atlassian/bbql/src/eefd5ef/", r.URL.Path)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(response)),
+			}, nil
+		})
+
+		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "eefd5ef", "")
+		require.NoError(t, err)
+
+		want := []*vcs.RepositoryTreeNode{
+			{
+				Path: "tests/__init__.py",
+				Type: "commit_file",
+			},
+		}
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("has path prefix", func(t *testing.T) {
+		ctx := context.Background()
+		p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+			assert.Equal(t, "/2.0/repositories/atlassian/bbql/src/eefd5ef/tests", r.URL.Path)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(response)),
+			}, nil
+		})
+
+		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "eefd5ef", "tests")
+		require.NoError(t, err)
+
+		// Non-blob type should be excluded
+		want := []*vcs.RepositoryTreeNode{
+			{
+				Path: "tests/__init__.py",
+				Type: "commit_file",
+			},
+		}
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestOAuth_RefreshToken(t *testing.T) {
+	ctx := context.Background()
+	client := &http.Client{
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+				token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+				if token == "expired" {
+					return &http.Response{
+						StatusCode: http.StatusUnauthorized,
+						Body: io.NopCloser(strings.NewReader(`
+					{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
+					`)),
+					}, nil
+				}
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body: io.NopCloser(strings.NewReader(`
+{
+  "access_token": "ghu_16C7e42F292c6912E7710c838347Ae178B4a",
+  "expires_in": 3600,
+  "refresh_token": "ghr_1B4a2e77838347a7E420ce178F2E7c6912E169246c34E1ccbF66C46812d16D5B1A9Dc86A1498"
+}
+`)),
+				}, nil
+			},
+		},
+	}
+	token := "expired"
+
+	calledRefresher := false
+	refresher := func(_, _ string, _ int64) error {
+		calledRefresher = true
+		return nil
+	}
+
+	_, _, _, err := oauth.Get(
+		ctx,
+		client,
+		"https://https://api.bitbucket.org/2.0/user",
+		&token,
+		tokenRefresher(
+			bitbucketCloudURL,
+			oauthContext{},
+			refresher,
+		),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "ghu_16C7e42F292c6912E7710c838347Ae178B4a", token)
+	assert.True(t, calledRefresher)
 }
 
 func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {

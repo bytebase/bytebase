@@ -72,6 +72,7 @@ func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
 	return oauthToken
 }
 
+// ExchangeOAuthToken exchanges OAuth content with the provided authorization code.
 func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
 	form := &url.Values{}
 	form.Set("grant_type", "authorization_code")
@@ -357,9 +358,90 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, resp.Next, nil
 }
 
+// RepositoryTreeEntry represents a Bitbucket Cloud API response for a
+// repository tree entry.
+type RepositoryTreeEntry struct {
+	Type string `json:"type"`
+	Path string `json:"path"`
+}
+
+// FetchRepositoryFileList fetches the all files from the given repository tree
+// recursively.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#directory-listings
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	// TODO implement me
-	panic("implement me")
+	var bbcTreeEntries []*RepositoryTreeEntry
+	page := 1
+	for {
+		treeEntries, hasNextPage, err := p.fetchPaginatedRepositoryFileList(ctx, oauthCtx, instanceURL, repositoryID, ref, filePath, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch paginated list")
+		}
+		bbcTreeEntries = append(bbcTreeEntries, treeEntries...)
+
+		if !hasNextPage {
+			break
+		}
+		page++
+	}
+
+	var treeNodes []*vcs.RepositoryTreeNode
+	for _, n := range bbcTreeEntries {
+		treeNodes = append(treeNodes,
+			&vcs.RepositoryTreeNode{
+				Path: n.Path,
+				Type: n.Type,
+			},
+		)
+	}
+	return treeNodes, nil
+}
+
+// fetchPaginatedRepositoryFileList fetches files under a repository tree
+// recursively in given page. It returns the paginated results along with a
+// boolean indicating whether the next page exists.
+func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (_ []*RepositoryTreeEntry, hasNextPage bool, err error) {
+	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
+	// subdirectories recursively, 10 levels down is just a good guess.
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?max_depth=10&q=%s&page=%d&pagelen=%d", p.APIURL(instanceURL), repositoryID, ref, filePath, url.QueryEscape(`type="commit_file"`), page, apiPageSize)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
+	} else if code >= 300 {
+		return nil, false,
+			errors.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var resp struct {
+		Values []*RepositoryTreeEntry `json:"values"`
+		Next   bool                   `json:"next"`
+	}
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		return nil, false, errors.Wrap(err, "unmarshal body")
+	}
+	return resp.Values, resp.Next, nil
 }
 
 func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
