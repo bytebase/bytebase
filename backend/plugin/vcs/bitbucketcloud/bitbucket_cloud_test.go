@@ -510,6 +510,132 @@ func TestProvider_ReadFileContent(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_GetBranch(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/atlassian/aui/refs/branches/master", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-name-get
+			Body: io.NopCloser(strings.NewReader(`
+{
+      "name": "master",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/commits/master"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/refs/branches/master"
+        },
+        "html": {
+          "href": "https://bitbucket.org/atlassian/aui/branch/master"
+        }
+      },
+      "default_merge_strategy": "squash",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "e7d158ff7ed5538c28f94cd97a9ad569680fc94e",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui"
+            },
+            "html": {
+              "href": "https://bitbucket.org/atlassian/aui"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7B585074de-7b60-4fd1-81ed-e0bc7fafbda5%7D?ts=86317"
+            }
+          },
+          "type": "repository",
+          "name": "aui",
+          "full_name": "atlassian/aui",
+          "uuid": "{585074de-7b60-4fd1-81ed-e0bc7fafbda5}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/commit/e7d158ff7ed5538c28f94cd97a9ad569680fc94e"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/commit/e7d158ff7ed5538c28f94cd97a9ad569680fc94e/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/patch/e7d158ff7ed5538c28f94cd97a9ad569680fc94e"
+          },
+          "html": {
+            "href": "https://bitbucket.org/atlassian/aui/commits/e7d158ff7ed5538c28f94cd97a9ad569680fc94e"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/diff/e7d158ff7ed5538c28f94cd97a9ad569680fc94e"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/commit/e7d158ff7ed5538c28f94cd97a9ad569680fc94e/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/commit/e7d158ff7ed5538c28f94cd97a9ad569680fc94e/statuses"
+          }
+        },
+        "author": {
+          "raw": "psre-renovate-bot <psre-renovate-bot@atlassian.com>",
+          "type": "author",
+          "user": {
+            "display_name": "psre-renovate-bot",
+            "uuid": "{250a442a-3ab3-4fcb-87c3-3c8f3df65ec7}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B250a442a-3ab3-4fcb-87c3-3c8f3df65ec7%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B250a442a-3ab3-4fcb-87c3-3c8f3df65ec7%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/6972ee037c9f36360170a86f544071a2?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FP-3.png"
+              }
+            },
+            "nickname": "Renovate Bot",
+            "type": "user",
+            "account_id": "5d5355e8c6b9320d9ea5b28d"
+          }
+        },
+        "parents": [
+          {
+            "hash": "eab868a309e75733de80969a7bed1ec6d4651e06",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/atlassian/aui/commit/eab868a309e75733de80969a7bed1ec6d4651e06"
+              },
+              "html": {
+                "href": "https://bitbucket.org/atlassian/aui/commits/eab868a309e75733de80969a7bed1ec6d4651e06"
+              }
+            }
+          }
+        ],
+        "date": "2021-04-12T06:44:38+00:00",
+        "message": "Merged in issue/NONE-renovate-master-babel-monorepo (pull request #2883)", 
+        "type": "commit"
+      }
+} 
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.GetBranch(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/aui", "master")
+	require.NoError(t, err)
+
+	want := &vcs.BranchInfo{
+		Name:         "master",
+		LastCommitID: "e7d158ff7ed5538c28f94cd97a9ad569680fc94e",
+	}
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

@@ -599,9 +599,57 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return body, nil
 }
 
+// Branch is the API message for Bitbucket Cloud branch.
+type Branch struct {
+	Name   string `json:"name"`
+	Target struct {
+		Hash string `json:"hash"`
+	} `json:"target"`
+}
+
+// GetBranch gets the given branch in the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-name-get
 func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
-	// TODO implement me
-	panic("implement me")
+	url := fmt.Sprintf("%s/repositories/%s/refs/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get branch from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	var branch Branch
+	if err := json.Unmarshal([]byte(body), &branch); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
+	}
+
+	return &vcs.BranchInfo{
+		Name:         branch.Name,
+		LastCommitID: branch.Target.Hash,
+	}, nil
 }
 
 func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
@@ -620,8 +668,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 }
 
 func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error {
-	// TODO implement me
-	panic("implement me")
+	return errors.New("not supported")
 }
 
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
