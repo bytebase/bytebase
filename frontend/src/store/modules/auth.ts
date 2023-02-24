@@ -32,7 +32,7 @@ export const useAuthStore = defineStore("auth_v1", {
       return unknown("USER");
     },
     async signup(signupInfo: SignupInfo) {
-      await authServiceClient().createUser({
+      await authServiceClient.createUser({
         user: {
           email: signupInfo.email,
           title: signupInfo.name,
