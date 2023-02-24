@@ -89,9 +89,20 @@ type ActivityIssueCreatePayload struct {
 	IssueName string `json:"issueName"`
 }
 
+// TaskRollbackBy records an issue rollback activity.
+// The taskIDs in IssueID are rollbacked by the RollbackByTaskIDs in RollbackByIssueID.
+type TaskRollbackBy struct {
+	IssueID           int   `json:"issueId"`
+	TaskID            []int `json:"taskId"`
+	RollbackByIssueID int   `json:"rollbackByIssueId"`
+	RollbackByTaskID  []int `json:"rollbackByTaskId"`
+}
+
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
 type ActivityIssueCommentCreatePayload struct {
 	ExternalApprovalEvent *ExternalApprovalEvent `json:"externalApprovalEvent,omitempty"`
+
+	TaskRollbackBy *TaskRollbackBy `json:"taskRollbackBy,omitempty"`
 
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
