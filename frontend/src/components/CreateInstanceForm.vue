@@ -26,6 +26,7 @@
           </div>
         </template>
       </div>
+
       <!-- Instance Name -->
       <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 pt-4 sm:grid-cols-4">
         <div class="sm:col-span-2 sm:col-start-1">
