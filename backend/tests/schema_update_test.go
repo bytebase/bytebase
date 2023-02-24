@@ -1858,8 +1858,63 @@ func TestGetLatestSchema(t *testing.T) {
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
+		wantSDL              string
 		wantDatabaseMetadata *storepb.DatabaseMetadata
 	}{
+		{
+			name:         "MySQL",
+			dbType:       db.MySQL,
+			databaseName: "latestSchema",
+			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
+			wantRawSchema: "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"--\n" +
+				"-- Table structure for `book`\n" +
+				"--\n" +
+				"CREATE TABLE `book` (\n" +
+				"  `id` int DEFAULT NULL,\n" +
+				"  `name` text COLLATE utf8mb4_general_ci\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
+			wantSDL: "CREATE TABLE `book` (\n" +
+				"  `id` INT DEFAULT NULL,\n" +
+				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n",
+			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+				Name:         "latestSchema",
+				CharacterSet: "utf8mb4",
+				Collation:    "utf8mb4_general_ci",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Tables: []*storepb.TableMetadata{
+							{
+								Name:      "book",
+								Engine:    "InnoDB",
+								Collation: "utf8mb4_general_ci",
+								DataSize:  16384,
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Position: 1,
+										Nullable: true,
+										Type:     "int",
+									},
+									{
+										Name:         "name",
+										Position:     2,
+										Nullable:     true,
+										Type:         "text",
+										CharacterSet: "utf8mb4",
+										Collation:    "utf8mb4_general_ci",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		{
 			name:         "PostgreSQL",
 			dbType:       db.Postgres,
@@ -1887,6 +1942,7 @@ CREATE TABLE public.book (
 );
 
 `,
+			wantSDL: ``,
 			wantDatabaseMetadata: &storepb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "UTF8",
@@ -1934,6 +1990,9 @@ CREATE TABLE public.book (
 			case db.Postgres:
 				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDir)
 				defer stopInstance()
+			case db.MySQL:
+				stopInstance := mysql.SetupTestInstance(t, dbPort, mysqlBinDir)
+				defer stopInstance()
 			default:
 				a.FailNow("unsupported db type")
 			}
@@ -1945,14 +2004,30 @@ CREATE TABLE public.book (
 			)
 			a.NoError(err)
 			// Add an instance.
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				EnvironmentID: environment.ID,
-				Name:          test.name,
-				Engine:        db.Postgres,
-				Host:          "/tmp",
-				Port:          strconv.Itoa(dbPort),
-				Username:      "root",
-			})
+			var instance *api.Instance
+			switch test.dbType {
+			case db.Postgres:
+				instance, err = ctl.addInstance(api.InstanceCreate{
+					EnvironmentID: environment.ID,
+					Name:          test.name,
+					Engine:        db.Postgres,
+					Host:          "/tmp",
+					Port:          strconv.Itoa(dbPort),
+					Username:      "root",
+				})
+			case db.MySQL:
+				instance, err = ctl.addInstance(api.InstanceCreate{
+					EnvironmentID: environment.ID,
+					Name:          "mysqlInstance",
+					Engine:        db.MySQL,
+					Host:          "127.0.0.1",
+					Port:          strconv.Itoa(dbPort),
+					Username:      "root",
+				})
+			default:
+				a.FailNow("unsupported db type")
+			}
+
 			a.NoError(err)
 			err = ctl.createDatabase(project, instance, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
@@ -1995,6 +2070,11 @@ CREATE TABLE public.book (
 			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchemaDump)
+			if test.dbType == db.MySQL {
+				latestSchemaSDL, err := ctl.getLatestSchemaSDL(database.ID)
+				a.NoError(err)
+				a.Equal(test.wantSDL, latestSchemaSDL)
+			}
 			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(database.ID)
 			a.NoError(err)
 			var latestSchemaMetadata storepb.DatabaseMetadata
