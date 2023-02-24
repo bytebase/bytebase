@@ -125,7 +125,7 @@ func (driver *Driver) Execute(_ context.Context, statement string, _ bool) (int6
 }
 
 // Query queries a statement.
-func (driver *Driver) Query(ctx context.Context, statement string, _ *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.

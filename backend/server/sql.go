@@ -408,8 +408,17 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return nil, err
 			}
 			defer driver.Close(ctx)
+			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
+			if err != nil {
+				return nil, err
+			}
+			conn, err := sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
 
-			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+			rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
 				Limit:           exec.Limit,
 				ReadOnly:        true,
 				CurrentDatabase: exec.DatabaseName,
@@ -559,7 +568,16 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return nil, err
 			}
 			defer driver.Close(ctx)
-
+			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
+			if err != nil {
+				return nil, err
+			}
+			conn, err := sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
+		
 			var rowSets [][]interface{}
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
 			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB {
@@ -568,7 +586,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					return nil, errors.Wrapf(err, "failed to split statements")
 				}
 				for _, singleSQL := range singleSQLs {
-					rowSet, err := driver.Query(ctx, singleSQL.Text, &db.QueryContext{
+					rowSet, err := driver.QueryConn(ctx, conn, singleSQL.Text, &db.QueryContext{
 						Limit:               exec.Limit,
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,
@@ -580,7 +598,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					rowSets = append(rowSets, rowSet)
 				}
 			} else {
-				rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
 					Limit:               exec.Limit,
 					ReadOnly:            false,
 					CurrentDatabase:     exec.DatabaseName,

@@ -215,7 +215,7 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
 	if err != nil {
 		return nil, err
@@ -226,16 +226,21 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
 	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
 	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
-		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
 		if err != nil {
 			return nil, err
 		}
+		affectedRows, err := sqlResult.RowsAffected()
+		if err != nil {
+			log.Info("rowsAffected returns error", zap.Error(err))
+		}
+
 		field := []string{"Affected Rows"}
 		types := []string{"INT"}
 		rows := [][]interface{}{{affectedRows}}
 		return []interface{}{field, types, rows}, nil
 	}
-	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
+	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
 }
 
 const querySize = 2 * 1024 * 1024 // 2M.

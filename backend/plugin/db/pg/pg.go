@@ -468,7 +468,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -489,7 +489,7 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 		rows := [][]interface{}{{affectedRows}}
 		return []interface{}{field, types, rows}, nil
 	}
-	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
+	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
 }
 
 func (driver *Driver) switchDatabase(dbName string) error {

@@ -201,7 +201,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 }
 
 // Query queries a SQL statement.
-func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
 		return nil, err
