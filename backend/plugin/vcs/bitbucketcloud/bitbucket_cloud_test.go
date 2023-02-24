@@ -441,6 +441,57 @@ func TestProvider_OverwriteFile(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestProvider_ReadFileMeta(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/atlassian/bbql/src/eefd5ef/tests/__init__.py", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "links": {
+    "self": {
+      "href": "https://api.bitbucket.org/2.0/repositories/atlassian/bbql/src/eefd5ef5d3df01aed629f650959d6706d54cd335/tests/__init__.py"
+    },
+    "meta": {
+      "href": "https://api.bitbucket.org/2.0/repositories/atlassian/bbql/src/eefd5ef5d3df01aed629f650959d6706d54cd335/tests/__init__.py?format=meta"
+    }
+  },
+  "path": "tests/__init__.py",
+  "commit": {
+    "type": "commit",
+    "hash": "eefd5ef5d3df01aed629f650959d6706d54cd335",
+    "links": {
+      "self": {
+        "href": "https://api.bitbucket.org/2.0/repositories/atlassian/bbql/commit/eefd5ef5d3df01aed629f650959d6706d54cd335"
+      },
+      "html": {
+        "href": "https://bitbucket.org/atlassian/bbql/commits/eefd5ef5d3df01aed629f650959d6706d54cd335"
+      }
+    }
+  },
+  "attributes": [],
+  "type": "commit_file",
+  "size": 100
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", "eefd5ef")
+	require.NoError(t, err)
+
+	want := &vcs.FileMeta{
+		Name:         "__init__.py",
+		Path:         "tests/__init__.py",
+		Size:         100,
+		LastCommitID: "eefd5ef5d3df01aed629f650959d6706d54cd335",
+	}
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

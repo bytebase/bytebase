@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -360,11 +361,13 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, resp.Next, nil
 }
 
-// RepositoryTreeEntry represents a Bitbucket Cloud API response for a
-// repository tree entry.
-type RepositoryTreeEntry struct {
-	Type string `json:"type"`
-	Path string `json:"path"`
+// TreeEntry represents a Bitbucket Cloud API response for a repository tree
+// entry.
+type TreeEntry struct {
+	Type   string `json:"type"`
+	Path   string `json:"path"`
+	Size   int64  `json:"size"`
+	Commit Commit `json:"commit"`
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree
@@ -372,7 +375,7 @@ type RepositoryTreeEntry struct {
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#directory-listings
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	var bbcTreeEntries []*RepositoryTreeEntry
+	var bbcTreeEntries []*TreeEntry
 	page := 1
 	for {
 		treeEntries, hasNextPage, err := p.fetchPaginatedRepositoryFileList(ctx, oauthCtx, instanceURL, repositoryID, ref, filePath, page)
@@ -402,10 +405,10 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 // fetchPaginatedRepositoryFileList fetches files under a repository tree
 // recursively in given page. It returns the paginated results along with a
 // boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (_ []*RepositoryTreeEntry, hasNextPage bool, err error) {
+func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (_ []*TreeEntry, hasNextPage bool, err error) {
 	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
 	// subdirectories recursively, 10 levels down is just a good guess.
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?max_depth=10&q=%s&page=%d&pagelen=%d", p.APIURL(instanceURL), repositoryID, ref, filePath, url.QueryEscape(`type="commit_file"`), page, apiPageSize)
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?max_depth=10&q=%s&page=%d&pagelen=%d", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath), url.QueryEscape(`type="commit_file"`), page, apiPageSize)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -437,8 +440,8 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	}
 
 	var resp struct {
-		Values []*RepositoryTreeEntry `json:"values"`
-		Next   bool                   `json:"next"`
+		Values []*TreeEntry `json:"values"`
+		Next   bool         `json:"next"`
 	}
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil, false, errors.Wrap(err, "unmarshal body")
@@ -507,9 +510,56 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
 }
 
+// ReadFileMeta reads the metadata of the given file in the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
 func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	// TODO implement me
-	panic("implement me")
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath))
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var treeEntry TreeEntry
+	if err = json.Unmarshal([]byte(body), &treeEntry); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
+	}
+
+	if treeEntry.Type != "commit_file" {
+		return nil, errors.Errorf("%q is not a file", filePath)
+	}
+
+	return &vcs.FileMeta{
+		Name:         path.Base(treeEntry.Path),
+		Path:         treeEntry.Path,
+		Size:         treeEntry.Size,
+		LastCommitID: treeEntry.Commit.Hash,
+	}, nil
 }
 
 func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
