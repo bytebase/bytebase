@@ -142,7 +142,7 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 		return nil, err
 	}
 	if license == "" {
-		return nil, errors.Errorf("cannot fetch the license")
+		return nil, nil
 	}
 	result, err := s.parseLicense(license)
 	if err != nil {
@@ -165,17 +165,14 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 // loadLicense will load license and validate it.
 func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
 	license, err := s.findEnterpriseLicense(ctx)
-
 	if err != nil {
 		log.Debug("failed to load enterprise license", zap.Error(err))
+	}
+	if license == nil {
 		license, err = s.findTrialingLicense(ctx)
 		if err != nil {
 			log.Debug("failed to load trialing license", zap.Error(err))
 		}
-	}
-
-	if err != nil {
-		log.Debug("failed to load license", zap.Error(err))
 	}
 
 	if license == nil && s.config.Mode == common.ReleaseModeDev {
@@ -223,7 +220,7 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 		}
 	}
 
-	return nil, errors.Errorf("cannot find the enterprise license")
+	return nil, nil
 }
 
 func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAPI.License, error) {
@@ -242,7 +239,7 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 		return &data, nil
 	}
 
-	return nil, errors.Errorf("cannot find the trialing license")
+	return nil, nil
 }
 
 // parseClaims will valid and parse JWT claims to license instance.

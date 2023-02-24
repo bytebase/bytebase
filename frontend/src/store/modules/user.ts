@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
-import { User } from "@/types/proto/v1/auth_service";
+import { User, userRoleToJSON, UserType } from "@/types/proto/v1/auth_service";
 import { isEqual, isUndefined } from "lodash-es";
-import { userNamePrefix } from "./v1/common";
+import { getUserId, userNamePrefix } from "./v1/common";
+import { Principal, PrincipalType, RoleType } from "@/types";
 
 interface UserState {
   userMapByName: Map<string, User>;
@@ -19,21 +20,21 @@ export const useUserStore = defineStore("user", {
   },
   actions: {
     async fetchUserList() {
-      const { users } = await authServiceClient().listUsers({});
+      const { users } = await authServiceClient.listUsers({});
       for (const user of users) {
         this.userMapByName.set(user.name, user);
       }
       return users;
     },
     async fetchUser(name: string) {
-      const user = await authServiceClient().getUser({
+      const user = await authServiceClient.getUser({
         name,
       });
       this.userMapByName.set(user.name, user);
       return user;
     },
     async createUser(create: User) {
-      const user = await authServiceClient().createUser({
+      const user = await authServiceClient.createUser({
         user: create,
       });
       this.userMapByName.set(user.name, user);
@@ -45,7 +46,7 @@ export const useUserStore = defineStore("user", {
         throw new Error(`user with name ${update.name} not found`);
       }
 
-      const user = await authServiceClient().updateUser({
+      const user = await authServiceClient.updateUser({
         user: update,
         updateMask: getUpdateMaskFromUsers(originData, update),
       });
@@ -57,7 +58,7 @@ export const useUserStore = defineStore("user", {
       if (cachedData) {
         return cachedData;
       }
-      const user = await authServiceClient().getUser({
+      const user = await authServiceClient.getUser({
         name,
       });
       this.userMapByName.set(user.name, user);
@@ -98,4 +99,30 @@ const getUpdateMaskFromUsers = (
     updateMask.push("user.role");
   }
   return updateMask;
+};
+
+export const convertUserTypeToPrincipalType = (
+  userType: UserType
+): PrincipalType => {
+  if (userType === UserType.SYSTEM_BOT) {
+    return "SYSTEM_BOT";
+  } else if (userType === UserType.SERVICE_ACCOUNT) {
+    return "SERVICE_ACCOUNT";
+  } else {
+    return "END_USER";
+  }
+};
+
+export const convertUserToPrincipal = (user: User): Principal => {
+  const userRole = userRoleToJSON(user.userRole) as RoleType;
+  const userType = convertUserTypeToPrincipalType(user.userType);
+
+  return {
+    id: getUserId(user.name),
+    name: user.title,
+    email: user.email,
+    role: userRole,
+    type: userType,
+    serviceKey: user.password,
+  };
 };

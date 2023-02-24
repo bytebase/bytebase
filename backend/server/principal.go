@@ -19,9 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// serviceAccountAccessKeyPrefix is the prefix for service account access key.
-const serviceAccountAccessKeyPrefix = "bbs_"
-
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	g.POST("/principal", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -44,7 +41,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
-			password = fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, pwd)
+			password = fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, pwd)
 		}
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
@@ -189,7 +186,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
-			password := fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, val)
+			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			newPassword = &password
 		}
 		if newPassword != nil && *newPassword != "" {

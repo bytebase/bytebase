@@ -27,7 +27,7 @@ export const useIdentityProviderStore = defineStore("idp", {
   actions: {
     async fetchIdentityProviderList() {
       const { identityProviders } =
-        await identityProviderClient().listIdentityProviders({
+        await identityProviderClient.listIdentityProviders({
           showDeleted: true,
         });
       for (const identityProvider of identityProviders) {
@@ -43,10 +43,11 @@ export const useIdentityProviderStore = defineStore("idp", {
       if (cachedData) {
         return cachedData;
       }
-      const identityProvider =
-        await identityProviderClient().getIdentityProvider({
+      const identityProvider = await identityProviderClient.getIdentityProvider(
+        {
           name,
-        });
+        }
+      );
       this.identityProviderMapByName.set(
         identityProvider.name,
         identityProvider
@@ -59,7 +60,7 @@ export const useIdentityProviderStore = defineStore("idp", {
     },
     async createIdentityProvider(create: IdentityProvider) {
       const identityProvider =
-        await identityProviderClient().createIdentityProvider({
+        await identityProviderClient.createIdentityProvider({
           identityProvider: create,
           identityProviderId: create.name,
         });
@@ -78,7 +79,7 @@ export const useIdentityProviderStore = defineStore("idp", {
       }
 
       const identityProvider =
-        await identityProviderClient().updateIdentityProvider({
+        await identityProviderClient.updateIdentityProvider({
           identityProvider: update,
           updateMask: getUpdateMaskFromIdentityProviders(originData, update),
         });
@@ -89,7 +90,7 @@ export const useIdentityProviderStore = defineStore("idp", {
       return identityProvider;
     },
     async deleteIdentityProvider(name: string) {
-      await identityProviderClient().deleteIdentityProvider({
+      await identityProviderClient.deleteIdentityProvider({
         name,
       });
       const cachedData = this.getIdentityProviderByName(name);
@@ -102,7 +103,7 @@ export const useIdentityProviderStore = defineStore("idp", {
     },
     async undeleteIdentityProvider(name: string) {
       const identityProvider =
-        await identityProviderClient().undeleteIdentityProvider({
+        await identityProviderClient.undeleteIdentityProvider({
           name,
         });
       this.identityProviderMapByName.set(

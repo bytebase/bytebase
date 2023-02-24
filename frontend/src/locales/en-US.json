@@ -646,6 +646,11 @@
       "send-attention-request-successfully": "Request assignee {principal} attention successfully",
       "needs-attention": "Attention needed",
       "click-to-mark": "Click to request assignee attention"
+    },
+    "sdl": {
+      "schema-change": "Schema change",
+      "generated-ddl-statements": "Generated DDL statements",
+      "full-schema": "Full schema"
     }
   },
   "alter-schema": {
@@ -1882,6 +1887,10 @@
   },
   "sensitive-data": {
     "self": "Sensitive Data"
+  },
+  "resource": {
+    "environment": "Environment",
+    "idp": "Identity Provider"
   },
   "resource-id": {
     "self": "{resource} ID",

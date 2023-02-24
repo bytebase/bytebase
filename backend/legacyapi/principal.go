@@ -23,6 +23,9 @@ const (
 
 	// PrincipalIDForFirstUser is the principal id for the first user in workspace.
 	PrincipalIDForFirstUser = 101
+
+	// ServiceAccountAccessKeyPrefix is the prefix for service account access key.
+	ServiceAccountAccessKeyPrefix = "bbs_"
 )
 
 // PrincipalAuthProvider is the type of an authentication provider.
@@ -52,8 +55,7 @@ type Principal struct {
 	Role Role `jsonapi:"attr,role"`
 	// The ServiceKey is the password, only used for SERVICE_ACCOUNT.
 	// We only return the service key for the first time after the creation for SERVICE_ACCOUNT.
-	ServiceKey           string `jsonapi:"attr,serviceKey"`
-	IdentityProviderName string `jsonapi:"attr,identityProviderName"`
+	ServiceKey string `jsonapi:"attr,serviceKey"`
 }
 
 // MarshalJSON customizes the Principal Marshal method so the returned object
