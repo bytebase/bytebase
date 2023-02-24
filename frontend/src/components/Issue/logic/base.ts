@@ -28,6 +28,7 @@ import {
   TaskTypeWithSheetId,
   TaskTypeWithStatement,
 } from "./common";
+import { maybeCreateBackTraceComment } from "../rollback/common";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -49,17 +50,18 @@ export const useBaseIssueLogic = (params: {
     return (issue.value as Issue).project;
   });
 
-  const createIssue = (issue: IssueCreate) => {
+  const createIssue = async (issue: IssueCreate) => {
     // Set issue.pipeline and issue.payload to empty
     // because we are no longer passing parameters via issue.pipeline
     // we are using issue.createContext instead
     delete issue.pipeline;
     issue.payload = {};
 
-    issueStore.createIssue(issue).then((createdIssue) => {
-      // Use replace to omit the new issue url in the navigation history.
-      router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-    });
+    const createdIssue = await issueStore.createIssue(issue);
+    await maybeCreateBackTraceComment(createdIssue);
+
+    // Use replace to omit the new issue url in the navigation history.
+    router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
   };
 
   const selectedStage = computed((): Stage | StageCreate => {
