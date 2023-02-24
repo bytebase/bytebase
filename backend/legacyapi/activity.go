@@ -90,12 +90,12 @@ type ActivityIssueCreatePayload struct {
 }
 
 // TaskRollbackBy records an issue rollback activity.
-// The taskIDs in IssueID are rollbacked by the RollbackByTaskIDs in RollbackByIssueID.
+// The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
 type TaskRollbackBy struct {
-	IssueID           int   `json:"issueId"`
-	TaskID            []int `json:"taskId"`
-	RollbackByIssueID int   `json:"rollbackByIssueId"`
-	RollbackByTaskID  []int `json:"rollbackByTaskId"`
+	IssueID           int `json:"issueId"`
+	TaskID            int `json:"taskId"`
+	RollbackByIssueID int `json:"rollbackByIssueId"`
+	RollbackByTaskID  int `json:"rollbackByTaskId"`
 }
 
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
