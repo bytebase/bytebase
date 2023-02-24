@@ -20,21 +20,21 @@ export const useUserStore = defineStore("user", {
   },
   actions: {
     async fetchUserList() {
-      const { users } = await authServiceClient().listUsers({});
+      const { users } = await authServiceClient.listUsers({});
       for (const user of users) {
         this.userMapByName.set(user.name, user);
       }
       return users;
     },
     async fetchUser(name: string) {
-      const user = await authServiceClient().getUser({
+      const user = await authServiceClient.getUser({
         name,
       });
       this.userMapByName.set(user.name, user);
       return user;
     },
     async createUser(create: User) {
-      const user = await authServiceClient().createUser({
+      const user = await authServiceClient.createUser({
         user: create,
       });
       this.userMapByName.set(user.name, user);
@@ -46,7 +46,7 @@ export const useUserStore = defineStore("user", {
         throw new Error(`user with name ${update.name} not found`);
       }
 
-      const user = await authServiceClient().updateUser({
+      const user = await authServiceClient.updateUser({
         user: update,
         updateMask: getUpdateMaskFromUsers(originData, update),
       });
@@ -58,7 +58,7 @@ export const useUserStore = defineStore("user", {
       if (cachedData) {
         return cachedData;
       }
-      const user = await authServiceClient().getUser({
+      const user = await authServiceClient.getUser({
         name,
       });
       this.userMapByName.set(user.name, user);

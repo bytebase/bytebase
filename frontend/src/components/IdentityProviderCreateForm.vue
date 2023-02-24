@@ -788,7 +788,7 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
 
   const code = payload.code;
   try {
-    await identityProviderClient().testIdentityProvider({
+    await identityProviderClient.testIdentityProvider({
       identityProvider: editedIdentityProvider.value,
       oauth2Context: {
         code: code,

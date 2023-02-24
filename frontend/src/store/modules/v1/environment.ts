@@ -20,10 +20,9 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
   },
   actions: {
     async fetchEnvironments(showDeleted = false) {
-      const { environments } =
-        await environmentServiceClient().listEnvironments({
-          showDeleted,
-        });
+      const { environments } = await environmentServiceClient.listEnvironments({
+        showDeleted,
+      });
       for (const env of environments) {
         this.environmentMapByName.set(env.name, env);
       }
@@ -31,7 +30,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
     },
     async createEnvironment(environment: Partial<Environment>) {
       const createdEnvironment =
-        await environmentServiceClient().createEnvironment({
+        await environmentServiceClient.createEnvironment({
           environment,
           environmentId: environment.name,
         });
@@ -49,7 +48,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         throw new Error(`environment with name ${update.name} not found`);
       }
 
-      const environment = await environmentServiceClient().updateEnvironment({
+      const environment = await environmentServiceClient.updateEnvironment({
         environment: update,
         updateMask: getUpdateMaskFromEnvironments(originData, update),
       });
@@ -57,7 +56,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return environment;
     },
     async deleteEnvironment(name: string) {
-      await environmentServiceClient().deleteEnvironment({
+      await environmentServiceClient.deleteEnvironment({
         name,
       });
       const cachedData = this.getEnvironmentByName(name);
@@ -69,7 +68,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       }
     },
     async undeleteEnvironment(name: string) {
-      const environment = await environmentServiceClient().undeleteEnvironment({
+      const environment = await environmentServiceClient.undeleteEnvironment({
         name,
       });
       this.environmentMapByName.set(environment.name, environment);
@@ -79,7 +78,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       if (cachedData) {
         return cachedData;
       }
-      const environment = await environmentServiceClient().getEnvironment({
+      const environment = await environmentServiceClient.getEnvironment({
         name,
       });
       this.environmentMapByName.set(environment.name, environment);
