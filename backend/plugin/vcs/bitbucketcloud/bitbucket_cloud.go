@@ -1,11 +1,13 @@
 package bitbucketcloud
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
@@ -444,14 +446,65 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	return resp.Values, resp.Next, nil
 }
 
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	// TODO implement me
-	panic("implement me")
+// CreateFile creates a file at given path in the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#api-repositories-workspace-repo-slug-src-post
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	part, err := w.CreateFormFile("filename", filePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to create form file")
+	}
+	_, err = part.Write([]byte(fileCommitCreate.Content))
+	if err != nil {
+		return errors.Wrap(err, "failed to write file to form")
+	}
+	_ = w.Close()
+
+	urlParams := &url.Values{}
+	urlParams.Set("message", url.QueryEscape(fileCommitCreate.CommitMessage))
+	urlParams.Set("parents", fileCommitCreate.LastCommitID)
+	urlParams.Set("branch", fileCommitCreate.Branch)
+
+	url := fmt.Sprintf("%s/repositories/%s/src?%s", p.APIURL(instanceURL), repositoryID, urlParams.Encode())
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		&body,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create/update file through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
 }
 
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	// TODO implement me
-	panic("implement me")
+// OverwriteFile overwrites an existing file at given path in the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#api-repositories-workspace-repo-slug-src-post
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
 }
 
 func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
