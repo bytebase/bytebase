@@ -233,7 +233,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		isMetadata := c.QueryParam("metadata") == "true"
 		isSDL := c.QueryParam("sdl") == "true"
 		if isMetadata && isSDL {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot choose metadata and sdl format together"))
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot choose metadata and sdl format together")
 		}
 		if isMetadata {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
