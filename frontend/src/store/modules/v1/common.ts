@@ -1,7 +1,8 @@
-import { UNKNOWN_ID } from "@/types";
+import { ResourceId, UNKNOWN_ID } from "@/types";
 
 export const userNamePrefix = "users/";
 export const environmentNamePrefix = "environments/";
+export const idpNamePrefix = "idps/";
 
 export const getNameParentTokens = (
   name: string,
@@ -35,4 +36,9 @@ export const getEnvironmentId = (name: string): number => {
   const tokens = getNameParentTokens(name, [environmentNamePrefix]);
   const environmentId = Number(tokens[0] || UNKNOWN_ID);
   return environmentId;
+};
+
+export const getIdentityProviderResourceId = (name: string): ResourceId => {
+  const tokens = getNameParentTokens(name, [idpNamePrefix]);
+  return tokens[0];
 };
