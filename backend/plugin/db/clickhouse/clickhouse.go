@@ -155,7 +155,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	return 0, err
 }
 
-// Query queries a SQL statement.
+// QueryConn querys a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
 }

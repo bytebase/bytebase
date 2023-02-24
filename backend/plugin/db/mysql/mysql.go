@@ -214,7 +214,7 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 	return id, nil
 }
 
-// Query queries a SQL statement.
+// QueryConn querys a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
 	if err != nil {

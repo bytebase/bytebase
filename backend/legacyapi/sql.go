@@ -46,6 +46,7 @@ type SQLExecute struct {
 	Limit int `jsonapi:"attr,limit"`
 }
 
+// SingleSQLResult is the API message for single SQL result.
 type SingleSQLResult struct {
 	// A list of rows marshalled into a JSON.
 	Data string `jsonapi:"attr,data"`

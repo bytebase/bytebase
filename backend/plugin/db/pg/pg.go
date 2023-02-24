@@ -467,8 +467,8 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	return owner, nil
 }
 
-// Query queries a SQL statement.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+// QueryConn querys a SQL statement in a given connection.
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -480,7 +480,11 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
 	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
 	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
-		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
+		if err != nil {
+			return nil, err
+		}
+		affectedRows, err := sqlResult.RowsAffected()
 		if err != nil {
 			return nil, err
 		}

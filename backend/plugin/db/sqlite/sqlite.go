@@ -185,7 +185,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	return rowsAffected, nil
 }
 
-// Query queries a SQL statement.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+// QueryConn querys a SQL statement in a given connection.
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	return util.Query(ctx, db.SQLite, conn, statement, queryContext)
 }
