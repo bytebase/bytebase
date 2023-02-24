@@ -165,9 +165,10 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 // loadLicense will load license and validate it.
 func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
 	license, err := s.findEnterpriseLicense(ctx)
-
 	if err != nil {
 		log.Debug("failed to load enterprise license", zap.Error(err))
+	}
+	if license == nil {
 		license, err = s.findTrialingLicense(ctx)
 		if err != nil {
 			log.Debug("failed to load trialing license", zap.Error(err))
