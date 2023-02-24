@@ -1888,6 +1888,10 @@
   "sensitive-data": {
     "self": "Sensitive Data"
   },
+  "resource": {
+    "environment": "Environment",
+    "idp": "Identity Provider"
+  },
   "resource-id": {
     "self": "{resource} ID",
     "description": "The {resource} ID is a unique identifier. You cannot change it after created.",

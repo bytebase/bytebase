@@ -1887,6 +1887,10 @@
   "sensitive-data": {
     "self": "敏感数据"
   },
+  "resource": {
+    "environment": "环境",
+    "idp": "身份提供商"
+  },
   "resource-id": {
     "self": "{resource} ID",
     "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",

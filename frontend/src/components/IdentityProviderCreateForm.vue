@@ -38,33 +38,34 @@
       </div>
     </div>
 
-    <!-- OAuth2 form group -->
+    <!-- OAuth2 templates group -->
     <div
-      v-if="state.type === IdentityProviderType.OAUTH2"
+      v-if="isCreating && state.type === IdentityProviderType.OAUTH2"
       class="w-full flex flex-col justify-start items-start space-y-3"
     >
-      <template v-if="isCreating">
-        <p class="textlabel mt-4">
-          {{ $t("settings.sso.form.use-template") }}
-        </p>
-        <div class="w-full flex flex-row justify-start items-start space-x-2">
-          <label
-            v-for="template in templateList"
-            :key="template.title"
-            class="w-24 h-24 border rounded-md flex flex-col justify-center items-center cursor-pointer hover:bg-gray-100"
-            :for="`radio-${template.title}`"
-            @click="handleTemplateSelect(template)"
-          >
-            <span>{{ template.title }}</span>
-            <input
-              :id="`radio-${template.title}`"
-              type="radio"
-              class="btn mt-4"
-              :checked="selectedTemplate?.title === template.title"
-            />
-          </label>
-        </div>
-      </template>
+      <p class="textlabel mt-4">
+        {{ $t("settings.sso.form.use-template") }}
+      </p>
+      <div class="w-full flex flex-row justify-start items-start space-x-2">
+        <label
+          v-for="template in templateList"
+          :key="template.title"
+          class="w-24 h-24 border rounded-md flex flex-col justify-center items-center cursor-pointer hover:bg-gray-100"
+          :for="`radio-${template.title}`"
+          @click="handleTemplateSelect(template)"
+        >
+          <span>{{ template.title }}</span>
+          <input
+            :id="`radio-${template.title}`"
+            type="radio"
+            class="btn mt-4"
+            :checked="selectedTemplate?.title === template.title"
+          />
+        </label>
+      </div>
+    </div>
+
+    <div class="w-full flex flex-col justify-start items-start space-y-3">
       <p class="text-lg font-medium !mt-4">
         {{ $t("settings.sso.form.basic-information") }}
       </p>
@@ -80,20 +81,13 @@
           class="textfield mt-1 w-full"
           :placeholder="$t('settings.sso.form.name-description')"
         />
-      </div>
-      <div
-        v-if="isCreating"
-        class="w-full flex flex-col justify-start items-start"
-      >
-        <p class="textlabel">
-          {{ $t("settings.sso.form.resource-id") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <input
-          v-model="identityProvider.name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :placeholder="$t('settings.sso.form.resource-id-description')"
+        <ResourceIdField
+          ref="resourceIdField"
+          resource="idp"
+          :readonly="!isCreating"
+          :value="resourceId"
+          :resource-title="identityProvider.title"
+          :validator="validateResourceId"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -108,7 +102,13 @@
           :placeholder="$t('settings.sso.form.domain-description')"
         />
       </div>
+    </div>
 
+    <!-- OAuth2 form group -->
+    <div
+      v-if="state.type === IdentityProviderType.OAUTH2"
+      class="w-full flex flex-col justify-start items-start space-y-3"
+    >
       <div class="w-full flex flex-col justify-start items-start">
         <p class="text-lg font-medium mt-2">
           {{ $t("settings.sso.form.identity-provider-information") }}
@@ -316,50 +316,6 @@
       v-else-if="state.type === IdentityProviderType.OIDC"
       class="w-full flex flex-col justify-start items-start space-y-3"
     >
-      <p class="text-lg font-medium !mt-4">
-        {{ $t("settings.sso.form.basic-information") }}
-      </p>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.name") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <input
-          v-model="identityProvider.title"
-          :disabled="!allowEdit"
-          type="text"
-          class="textfield mt-1 w-full"
-          :placeholder="$t('settings.sso.form.name-description')"
-        />
-      </div>
-      <div
-        v-if="isCreating"
-        class="w-full flex flex-col justify-start items-start"
-      >
-        <p class="textlabel">
-          {{ $t("settings.sso.form.resource-id") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <input
-          v-model="identityProvider.name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :placeholder="$t('settings.sso.form.resource-id-description')"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.domain") }}
-        </p>
-        <input
-          v-model="identityProvider.domain"
-          :disabled="!allowEdit"
-          type="text"
-          class="textfield mt-1 w-full"
-          :placeholder="$t('settings.sso.form.domain-description')"
-        />
-      </div>
-
       <div class="w-full flex flex-col justify-start items-start">
         <p class="text-lg font-medium mt-2">
           {{ $t("settings.sso.form.identity-provider-information") }}
@@ -589,7 +545,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, head, isEqual } from "lodash-es";
-import { ClientError } from "nice-grpc-common";
+import { ClientError, Status } from "nice-grpc-common";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
 import { computed, reactive, defineProps, ref, onMounted, watch } from "vue";
@@ -609,10 +565,16 @@ import {
   identityProviderTypeToString,
   openWindowForSSO,
 } from "@/utils";
-import { OAuthWindowEventPayload } from "@/types";
+import { OAuthWindowEventPayload, ResourceId } from "@/types";
 import { identityProviderClient } from "@/grpcweb";
 import { State } from "@/types/proto/v1/common";
 import { useRouter } from "vue-router";
+import {
+  getIdentityProviderResourceId,
+  idpNamePrefix,
+} from "@/store/modules/v1/common";
+import ResourceIdField from "./ResourceIdField.vue";
+import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
   type: IdentityProviderType;
@@ -642,6 +604,7 @@ const configForOIDC = ref<OIDCIdentityProviderConfig>(
     fieldMapping: FieldMapping.fromPartial({}),
   })
 );
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const selectedTemplate = ref<IdentityProviderTemplate>();
 
 const currentIdentityProvider = computed(() => {
@@ -676,6 +639,12 @@ const isDeleted = computed(() => {
   return currentIdentityProvider.value?.state === State.DELETED;
 });
 
+const resourceId = computed(() => {
+  return isCreating.value
+    ? ""
+    : getIdentityProviderResourceId(identityProvider.value.name);
+});
+
 const userDocLink = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
     return "https://www.bytebase.com/docs/administration/sso/oauth2?source=console";
@@ -701,7 +670,7 @@ const originIdentityProvider = computed(() => {
 });
 
 const isFormCompleted = computed(() => {
-  if (!identityProvider.value.name || !identityProvider.value.title) {
+  if (!identityProvider.value.title) {
     return false;
   }
 
@@ -738,7 +707,11 @@ const allowEdit = computed(() => {
 });
 
 const allowCreate = computed(() => {
-  if (!isFormCompleted.value) {
+  if (
+    !isFormCompleted.value ||
+    !resourceIdField.value?.resourceId ||
+    !resourceIdField.value?.isValidated
+  ) {
     return false;
   }
   return true;
@@ -847,6 +820,27 @@ const copyRedirectUrl = () => {
   });
 };
 
+const validateResourceId = async (resourceId: ResourceId) => {
+  if (!resourceId) {
+    return;
+  }
+
+  try {
+    const idp = await identityProviderStore.getOrFetchIdentityProviderByName(
+      idpNamePrefix + resourceId
+    );
+    if (idp) {
+      return t("resource-id.validation.duplicated", {
+        resource: t("resource.idp"),
+      });
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+};
+
 const testConnection = () => {
   if (
     state.type === IdentityProviderType.OAUTH2 ||
@@ -863,7 +857,6 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
 
   selectedTemplate.value = template;
   identityProvider.value.title = template.title;
-  identityProvider.value.name = template.name;
   identityProvider.value.domain = template.domain;
   if (template.type === IdentityProviderType.OAUTH2) {
     configForOAuth2.value = {
@@ -938,6 +931,7 @@ const handleDiscardChangesButtonClick = async () => {
 const handleCreateButtonClick = async () => {
   const identityProviderCreate: IdentityProvider = {
     ...identityProvider.value,
+    name: resourceIdField.value?.resourceId as string,
     type: state.type,
     config: {},
   };
