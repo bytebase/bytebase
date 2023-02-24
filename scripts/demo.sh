@@ -35,7 +35,7 @@ seedDemoData() {
 
     bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --demo ${DEMO_NAME} --data /var/opt/bytebase &
 
-    until [ -f /var/opt/bytebase/pgdata/PG_VERSION ]; do
+    until [ -f /var/opt/bytebase/pgdata-demo/default/PG_VERSION ]; do
         echo "waiting..."
         sleep 1
     done
