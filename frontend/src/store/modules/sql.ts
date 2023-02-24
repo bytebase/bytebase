@@ -9,20 +9,9 @@ import {
   ResourceObject,
   SQLResultSet,
   Advice,
-  TempSQLResultSet,
 } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
-
-export function convertTempSQLResultSet(
-  tempSQLResultSet: ResourceObject
-): TempSQLResultSet {
-  return {
-    data: JSON.parse((tempSQLResultSet.attributes.data as string) || "null"),
-    error: tempSQLResultSet.attributes.error as string,
-    adviceList: tempSQLResultSet.attributes.adviceList as Advice[],
-  };
-}
 
 export function convert(resultSet: ResourceObject): SQLResultSet {
   return {
@@ -148,16 +137,12 @@ export const useSQLStore = defineStore("sql", {
         )
       ).data;
 
-      const tempSQLResultSet = convertTempSQLResultSet(res.data);
-      if (tempSQLResultSet.error) {
-        throw new Error(tempSQLResultSet.error);
+      const resultSet = convert(res.data);
+      if (resultSet.error) {
+        throw new Error(resultSet.error);
       }
 
-      return {
-        data: tempSQLResultSet.data[0],
-        error: tempSQLResultSet.error,
-        adviceList: tempSQLResultSet.adviceList,
-      };
+      return resultSet;
     },
   },
 });
