@@ -402,6 +402,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		start := time.Now().UnixNano()
 
+		var singleSQLResults []*api.SingleSQLResult
 		bytes, queryErr := func() ([]byte, error) {
 			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
@@ -426,9 +427,15 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 				SensitiveSchemaInfo:   sensitiveSchemaInfo,
 			})
+			data, err := json.Marshal(rowSet)
 			if err != nil {
-				return nil, err
+				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+					Error: err.Error(),
+				})
 			}
+			singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+				Data: string(data),
+			})
 
 			return json.Marshal(rowSet)
 		}()
@@ -488,14 +495,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return err
 		}
 
-		resultSet := &api.SQLResultSet{AdviceList: adviceList}
-		if queryErr == nil {
-			resultSet.Data = string(bytes)
-			log.Debug("Query result advice",
-				zap.String("statement", exec.Statement),
-				zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
-			)
-		} else {
+		resultSet := &api.SQLResultSet{
+			AdviceList:          adviceList,
+			SingleSQLResultList: singleSQLResults,
+		}
+
+		if queryErr != nil {
 			resultSet.Error = queryErr.Error()
 			if s.profile.Mode == common.ReleaseModeDev {
 				log.Error("Failed to execute query",
@@ -562,7 +567,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		exec.Readonly = true
 		start := time.Now().UnixNano()
 
-		bytes, queryErr := func() ([]byte, error) {
+		singleSQLResults, queryErr := func() ([]*api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -577,8 +582,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return nil, err
 			}
 			defer conn.Close()
-		
-			var rowSets [][]interface{}
+
+			var singleSQLResults []*api.SingleSQLResult
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
 			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB {
 				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
@@ -593,9 +598,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						SensitiveSchemaInfo: nil,
 					})
 					if err != nil {
-						return nil, err
+						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+							Error: err.Error(),
+						})
 					}
-					rowSets = append(rowSets, rowSet)
+					data, err := json.Marshal(rowSet)
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+							Error: err.Error(),
+						})
+					}
+					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						Data: string(data),
+					})
 				}
 			} else {
 				rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
@@ -605,18 +620,34 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					SensitiveSchemaInfo: nil,
 				})
 				if err != nil {
-					return nil, err
+					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						Error: err.Error(),
+					})
 				}
-				rowSets = append(rowSets, rowSet)
+				data, err := json.Marshal(rowSet)
+				if err != nil {
+					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						Error: err.Error(),
+					})
+				}
+				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+					Data: string(data),
+				})
 			}
-			return json.Marshal(rowSets)
+			return singleSQLResults, nil
 		}()
 
 		level := api.ActivityInfo
 		errMessage := ""
-		if queryErr != nil {
+		if err != nil {
 			level = api.ActivityError
-			errMessage = queryErr.Error()
+			errMessage += err.Error()
+		}
+		for idx, singleSQLResult := range singleSQLResults {
+			level = api.ActivityError
+			if singleSQLResult.Error != "" {
+				errMessage += fmt.Sprintf("\nFor query statement #%d: %s", idx+1, singleSQLResult.Error)
+			}
 		}
 		var databaseID int
 		if database != nil {
@@ -635,14 +666,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{
-			AdviceList: []advisor.Advice{},
+			AdviceList:          []advisor.Advice{},
+			SingleSQLResultList: singleSQLResults,
 		}
-		if queryErr == nil {
-			resultSet.Data = string(bytes)
-			log.Debug("Query result advice",
-				zap.String("statement", exec.Statement),
-			)
-		} else {
+
+		if queryErr != nil {
 			resultSet.Error = queryErr.Error()
 			if s.profile.Mode == common.ReleaseModeDev {
 				log.Error("Failed to execute query",

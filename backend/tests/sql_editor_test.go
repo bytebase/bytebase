@@ -23,35 +23,35 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		prepareStatements string
 		query             string
 		want              bool
-		affectedRows      string
+		affectedRows      []string
 	}{
 		{
 			databaseName:      "Test1",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1);",
-			affectedRows:      `[[["Affected Rows"],["INT"],[[1]]]]`,
+			affectedRows:      []string{`[["Affected Rows"],["INT"],[[1]]]`},
 		},
 		{
 			databaseName:      "Test2",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
-			affectedRows:      `[[["Affected Rows"],["INT"],[[1]]],[["Affected Rows"],["INT"],[[1]]]]`,
+			affectedRows:      []string{`[["Affected Rows"],["INT"],[[1]]]`, `[["Affected Rows"],["INT"],[[1]]]`},
 		},
 		{
 			databaseName:      "Test3",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1),(2);",
-			affectedRows:      `[[["Affected Rows"],["INT"],[[2]]]]`,
+			affectedRows:      []string{`[["Affected Rows"],["INT"],[[2]]]`},
 		},
 		{
 			databaseName:      "Test4",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
-			affectedRows:      `[[[],null,[],[]]]`,
+			affectedRows:      []string{`[[],null,[],[]]`},
 		},
 	}
 
@@ -164,8 +164,13 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		affectedRows, err := ctl.adminQuery(instance, tt.databaseName, tt.query)
+		singleSQLResults, err := ctl.adminQuery(instance, tt.databaseName, tt.query)
 		a.NoError(err)
-		a.Equal(tt.affectedRows, affectedRows)
+
+		a.Equal(len(tt.affectedRows), len(singleSQLResults))
+		for idx, singleSQLResult := range singleSQLResults {
+			a.Equal("", singleSQLResult.Error)
+			a.Equal(tt.affectedRows[idx], singleSQLResult.Data)
+		}
 	}
 }
