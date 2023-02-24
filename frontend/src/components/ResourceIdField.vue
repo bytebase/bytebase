@@ -2,7 +2,7 @@
   <div
     v-bind="$attrs"
     class="w-full max-w-full"
-    :class="[shouldShowResourceIdField ? 'mt-6' : '']"
+    :class="[shouldShowResourceIdField ? 'mt-4' : '']"
   >
     <template v-if="!shouldShowResourceIdField">
       <p v-if="state.resourceId" class="w-full text-gray-500 text-sm pt-2">
@@ -64,7 +64,7 @@ const characters = "abcdefghijklmnopqrstuvwxyz1234567890";
 
 const resourceIdPattern = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
-interface ValidateMessage {
+interface ValidatedMessage {
   type: "warning" | "error";
   message: string;
 }
@@ -72,21 +72,21 @@ interface ValidateMessage {
 interface LocalState {
   resourceId: string;
   isResourceIdChanged: boolean;
-  validatedMessages: ValidateMessage[];
+  validatedMessages: ValidatedMessage[];
 }
 
-type ResourceType = "environment";
+type ResourceType = "environment" | "idp";
 
 const props = withDefaults(
   defineProps<{
     resource: ResourceType;
-    defaultValue: string;
+    value: string;
     resourceTitle: string;
     readonly: boolean;
     validator: (resourceId: ResourceId) => Promise<string | undefined>;
   }>(),
   {
-    defaultValue: "",
+    value: "",
     resourceTitle: "",
     readonly: false,
   }
@@ -94,7 +94,7 @@ const props = withDefaults(
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
-  resourceId: props.defaultValue,
+  resourceId: props.value,
   isResourceIdChanged: false,
   validatedMessages: [],
 });
@@ -103,6 +103,8 @@ const getPrefix = (resource: string) => {
   switch (resource) {
     case "environment":
       return "env";
+    case "idp":
+      return "idp";
     default:
       return "";
   }
@@ -110,7 +112,7 @@ const getPrefix = (resource: string) => {
 const randomSuffix = randomString(4).toLowerCase();
 
 const resourceName = computed(() => {
-  return t(`common.${props.resource}`);
+  return t(`resource.${props.resource}`);
 });
 
 const shouldShowResourceIdField = computed(() => {
@@ -118,14 +120,21 @@ const shouldShowResourceIdField = computed(() => {
 });
 
 watch(
-  () => props.resourceTitle,
+  () => props.value,
   (newValue) => {
+    state.resourceId = newValue;
+  }
+);
+
+watch(
+  () => props.resourceTitle,
+  (resourceTitle) => {
     if (props.readonly) {
       return;
     }
 
-    if (!state.isResourceIdChanged) {
-      const formatedTitle = newValue
+    if (!state.isResourceIdChanged && resourceTitle) {
+      const formatedTitle = resourceTitle
         .toLowerCase()
         .split("")
         .map((char) => {
@@ -144,6 +153,9 @@ watch(
         formatedTitle || randomString(4).toLowerCase()
       }-${randomSuffix}`;
     }
+  },
+  {
+    immediate: true,
   }
 );
 
