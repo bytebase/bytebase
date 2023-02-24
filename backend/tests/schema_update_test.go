@@ -2466,7 +2466,7 @@ WHERE table_schema = '%s';
 			}
 
 			// Test SDL format.
-			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instance.ID, histories[1].ID, db.MigrationHistoryFind{})
+			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instance.ID, histories[1].ID)
 			a.NoError(err)
 			a.Equal(updatedSDL, sdlHistory.Schema)
 			a.Equal(initialSDL, sdlHistory.SchemaPrev)

@@ -75,17 +75,8 @@ func (ctl *controller) getInstanceMigrationHistory(instanceID int, find db.Migra
 	return histories, nil
 }
 
-func (ctl *controller) getInstanceSDLMigrationHistory(instanceID int, historyID string, find db.MigrationHistoryFind) (*api.MigrationHistory, error) {
+func (ctl *controller) getInstanceSDLMigrationHistory(instanceID int, historyID string) (*api.MigrationHistory, error) {
 	params := make(map[string]string)
-	if find.Database != nil {
-		params["database"] = *find.Database
-	}
-	if find.Version != nil {
-		params["version"] = *find.Version
-	}
-	if find.Limit != nil {
-		params["limit"] = fmt.Sprintf("%d", *find.Limit)
-	}
 	params["sdl"] = "true"
 	body, err := ctl.get(fmt.Sprintf("/instance/%d/migration/history/%s", instanceID, historyID), params)
 	if err != nil {
