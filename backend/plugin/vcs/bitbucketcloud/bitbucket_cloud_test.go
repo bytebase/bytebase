@@ -636,6 +636,35 @@ func TestProvider_GetBranch(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_CreateBranch(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/seanfarley/hg/refs/branches", r.URL.Path)
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"name":"smf/create-feature","target":{"hash":"aa218f56b14c9653891f9e74264a383fa43fefbd"}}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	err := p.CreateBranch(
+		ctx,
+		common.OauthContext{},
+		bitbucketCloudURL,
+		"seanfarley/hg",
+		&vcs.BranchInfo{
+			Name:         "smf/create-feature",
+			LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+		},
+	)
+	require.NoError(t, err)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

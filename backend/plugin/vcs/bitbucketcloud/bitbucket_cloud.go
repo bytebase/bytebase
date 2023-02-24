@@ -488,7 +488,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		),
 	)
 	if err != nil {
-		return errors.Wrapf(err, "PUT %s", url)
+		return errors.Wrapf(err, "POST %s", url)
 	}
 
 	if code == http.StatusNotFound {
@@ -652,9 +652,60 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	}, nil
 }
 
+type branchCreateTarget struct {
+	Hash string `json:"hash"`
+}
+
+type branchCreate struct {
+	Name   string             `json:"name"`
+	Target branchCreateTarget `json:"target"`
+}
+
+// CreateBranch creates the branch in the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-post
 func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
-	// TODO implement me
-	panic("implement me")
+	body, err := json.Marshal(
+		branchCreate{
+			Name:   branch.Name,
+			Target: branchCreateTarget{Hash: branch.LastCommitID},
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal branch create")
+	}
+
+	url := fmt.Sprintf("%s/repositories/%s/refs/branches", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
 }
 
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
