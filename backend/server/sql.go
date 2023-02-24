@@ -613,26 +613,32 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					})
 				}
 			} else {
-				rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
-					Limit:               exec.Limit,
-					ReadOnly:            false,
-					CurrentDatabase:     exec.DatabaseName,
-					SensitiveSchemaInfo: nil,
-				})
-				if err != nil {
-					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
-						Error: err.Error(),
+				if err := util.ApplyMultiStatements(strings.NewReader(exec.Statement), func(statement string) error {
+					rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
+						Limit:               exec.Limit,
+						ReadOnly:            false,
+						CurrentDatabase:     exec.DatabaseName,
+						SensitiveSchemaInfo: nil,
 					})
-				}
-				data, err := json.Marshal(rowSet)
-				if err != nil {
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+							Error: err.Error(),
+						})
+					}
+					data, err := json.Marshal(rowSet)
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+							Error: err.Error(),
+						})
+					}
 					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
-						Error: err.Error(),
+						Data: string(data),
 					})
+					return nil
+				}); err != nil {
+					// It should never happen.
+					return nil, err
 				}
-				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
-					Data: string(data),
-				})
 			}
 			return singleSQLResults, nil
 		}()
