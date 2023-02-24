@@ -1,10 +1,6 @@
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
-import {
-  User,
-  userRoleToJSON,
-  userTypeToJSON,
-} from "@/types/proto/v1/auth_service";
+import { User, userRoleToJSON, UserType } from "@/types/proto/v1/auth_service";
 import { isEqual, isUndefined } from "lodash-es";
 import { getUserId, userNamePrefix } from "./v1/common";
 import { Principal, PrincipalType, RoleType } from "@/types";
@@ -105,9 +101,21 @@ const getUpdateMaskFromUsers = (
   return updateMask;
 };
 
+export const convertUserTypeToPrincipalType = (
+  userType: UserType
+): PrincipalType => {
+  if (userType === UserType.SYSTEM_BOT) {
+    return "SYSTEM_BOT";
+  } else if (userType === UserType.SERVICE_ACCOUNT) {
+    return "SERVICE_ACCOUNT";
+  } else {
+    return "END_USER";
+  }
+};
+
 export const convertUserToPrincipal = (user: User): Principal => {
   const userRole = userRoleToJSON(user.userRole) as RoleType;
-  const userType = userTypeToJSON(user.userType) as PrincipalType;
+  const userType = convertUserTypeToPrincipalType(user.userType);
 
   return {
     id: getUserId(user.name),
