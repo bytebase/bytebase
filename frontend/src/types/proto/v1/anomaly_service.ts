@@ -280,8 +280,8 @@ export interface Anomaly_DatabaseBackupPolicyViolationDetail {
 export interface Anomaly_DatabaseBackupMissingDetail {
   /** expected_schedule is the expected backup plan schedule in the database. */
   expectedSchedule: Anomaly_BackupPlanSchedule;
-  /** last_backup_time is the last backup time in the database. */
-  lastBackupTime?: Date;
+  /** lastest_backup_time is the last backup time in the database. */
+  lastestBackupTime?: Date;
 }
 
 /** DatabaseSchemaDriftDetail is the detail for database schema drift anomaly. */
@@ -757,7 +757,7 @@ export const Anomaly_DatabaseBackupPolicyViolationDetail = {
 };
 
 function createBaseAnomaly_DatabaseBackupMissingDetail(): Anomaly_DatabaseBackupMissingDetail {
-  return { expectedSchedule: 0, lastBackupTime: undefined };
+  return { expectedSchedule: 0, lastestBackupTime: undefined };
 }
 
 export const Anomaly_DatabaseBackupMissingDetail = {
@@ -765,8 +765,8 @@ export const Anomaly_DatabaseBackupMissingDetail = {
     if (message.expectedSchedule !== 0) {
       writer.uint32(8).int32(message.expectedSchedule);
     }
-    if (message.lastBackupTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastBackupTime), writer.uint32(18).fork()).ldelim();
+    if (message.lastestBackupTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastestBackupTime), writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -782,7 +782,7 @@ export const Anomaly_DatabaseBackupMissingDetail = {
           message.expectedSchedule = reader.int32() as any;
           break;
         case 2:
-          message.lastBackupTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastestBackupTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -797,7 +797,7 @@ export const Anomaly_DatabaseBackupMissingDetail = {
       expectedSchedule: isSet(object.expectedSchedule)
         ? anomaly_BackupPlanScheduleFromJSON(object.expectedSchedule)
         : 0,
-      lastBackupTime: isSet(object.lastBackupTime) ? fromJsonTimestamp(object.lastBackupTime) : undefined,
+      lastestBackupTime: isSet(object.lastestBackupTime) ? fromJsonTimestamp(object.lastestBackupTime) : undefined,
     };
   },
 
@@ -805,14 +805,14 @@ export const Anomaly_DatabaseBackupMissingDetail = {
     const obj: any = {};
     message.expectedSchedule !== undefined &&
       (obj.expectedSchedule = anomaly_BackupPlanScheduleToJSON(message.expectedSchedule));
-    message.lastBackupTime !== undefined && (obj.lastBackupTime = message.lastBackupTime.toISOString());
+    message.lastestBackupTime !== undefined && (obj.lastestBackupTime = message.lastestBackupTime.toISOString());
     return obj;
   },
 
   fromPartial(object: DeepPartial<Anomaly_DatabaseBackupMissingDetail>): Anomaly_DatabaseBackupMissingDetail {
     const message = createBaseAnomaly_DatabaseBackupMissingDetail();
     message.expectedSchedule = object.expectedSchedule ?? 0;
-    message.lastBackupTime = object.lastBackupTime ?? undefined;
+    message.lastestBackupTime = object.lastestBackupTime ?? undefined;
     return message;
   },
 };

@@ -149,8 +149,8 @@ message Anomaly {
     // expected_schedule is the expected backup plan schedule in the database.
     BackupPlanSchedule expected_schedule = 1;
 
-    // last_backup_time is the last backup time in the database.
-    google.protobuf.Timestamp last_backup_time = 2;
+    // lastest_backup_time is the last backup time in the database.
+    google.protobuf.Timestamp lastest_backup_time = 2;
   }
 
   // DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.
