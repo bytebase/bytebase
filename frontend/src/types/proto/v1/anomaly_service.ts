@@ -48,7 +48,7 @@ export interface Anomaly {
    * - Instance: environments/{environment}/instnaces/{instance}
    * - Database: environments/{environment}/instnaces/{instance}/databases/{database}
    */
-  resourceName: string;
+  resource: string;
   /** type is the type of the anomaly. */
   type: Anomaly_AnomalyType;
   /** serverity is the serverity of the anomaly. */
@@ -425,7 +425,7 @@ export const SearchAnomaliesResponse = {
 
 function createBaseAnomaly(): Anomaly {
   return {
-    resourceName: "",
+    resource: "",
     type: 0,
     serverity: 0,
     instanceConnectionDetail: undefined,
@@ -438,8 +438,8 @@ function createBaseAnomaly(): Anomaly {
 
 export const Anomaly = {
   encode(message: Anomaly, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.resourceName !== "") {
-      writer.uint32(10).string(message.resourceName);
+    if (message.resource !== "") {
+      writer.uint32(10).string(message.resource);
     }
     if (message.type !== 0) {
       writer.uint32(16).int32(message.type);
@@ -477,7 +477,7 @@ export const Anomaly = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.resourceName = reader.string();
+          message.resource = reader.string();
           break;
         case 2:
           message.type = reader.int32() as any;
@@ -513,7 +513,7 @@ export const Anomaly = {
 
   fromJSON(object: any): Anomaly {
     return {
-      resourceName: isSet(object.resourceName) ? String(object.resourceName) : "",
+      resource: isSet(object.resource) ? String(object.resource) : "",
       type: isSet(object.type) ? anomaly_AnomalyTypeFromJSON(object.type) : 0,
       serverity: isSet(object.serverity) ? anomaly_AnomalyServerityFromJSON(object.serverity) : 0,
       instanceConnectionDetail: isSet(object.instanceConnectionDetail)
@@ -536,7 +536,7 @@ export const Anomaly = {
 
   toJSON(message: Anomaly): unknown {
     const obj: any = {};
-    message.resourceName !== undefined && (obj.resourceName = message.resourceName);
+    message.resource !== undefined && (obj.resource = message.resource);
     message.type !== undefined && (obj.type = anomaly_AnomalyTypeToJSON(message.type));
     message.serverity !== undefined && (obj.serverity = anomaly_AnomalyServerityToJSON(message.serverity));
     message.instanceConnectionDetail !== undefined && (obj.instanceConnectionDetail = message.instanceConnectionDetail
@@ -562,7 +562,7 @@ export const Anomaly = {
 
   fromPartial(object: DeepPartial<Anomaly>): Anomaly {
     const message = createBaseAnomaly();
-    message.resourceName = object.resourceName ?? "";
+    message.resource = object.resource ?? "";
     message.type = object.type ?? 0;
     message.serverity = object.serverity ?? 0;
     message.instanceConnectionDetail =

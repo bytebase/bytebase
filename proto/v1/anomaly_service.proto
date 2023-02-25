@@ -95,7 +95,7 @@ message Anomaly {
   // Format:
   // - Instance: environments/{environment}/instnaces/{instance}
   // - Database: environments/{environment}/instnaces/{instance}/databases/{database}
-  string resource_name = 1 [(google.api.field_behavior) = REQUIRED];
+  string resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   // type is the type of the anomaly.
   AnomalyType type = 2;
