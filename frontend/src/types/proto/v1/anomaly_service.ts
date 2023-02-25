@@ -7,13 +7,6 @@ export const protobufPackage = "bytebase.v1";
 
 export interface SearchAnomaliesRequest {
   /**
-   * The resource that is the target of the operation.
-   * Format:
-   * - Instance: environments/{environment}/instnaces/{instance}
-   * - Database: environments/{environment}/instnaces/{instance}/databases/{database}
-   */
-  resourceName: string;
-  /**
    * filter is the filter to apply on the list anomaly request,
    * follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
    * For example:
@@ -310,22 +303,19 @@ export interface Anomaly_DatabaseSchemaDriftDetail {
 }
 
 function createBaseSearchAnomaliesRequest(): SearchAnomaliesRequest {
-  return { resourceName: "", filter: "", pageSize: 0, pageToken: "" };
+  return { filter: "", pageSize: 0, pageToken: "" };
 }
 
 export const SearchAnomaliesRequest = {
   encode(message: SearchAnomaliesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.resourceName !== "") {
-      writer.uint32(10).string(message.resourceName);
-    }
     if (message.filter !== "") {
-      writer.uint32(18).string(message.filter);
+      writer.uint32(10).string(message.filter);
     }
     if (message.pageSize !== 0) {
-      writer.uint32(24).int32(message.pageSize);
+      writer.uint32(16).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(34).string(message.pageToken);
+      writer.uint32(26).string(message.pageToken);
     }
     return writer;
   },
@@ -338,15 +328,12 @@ export const SearchAnomaliesRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.resourceName = reader.string();
-          break;
-        case 2:
           message.filter = reader.string();
           break;
-        case 3:
+        case 2:
           message.pageSize = reader.int32();
           break;
-        case 4:
+        case 3:
           message.pageToken = reader.string();
           break;
         default:
@@ -359,7 +346,6 @@ export const SearchAnomaliesRequest = {
 
   fromJSON(object: any): SearchAnomaliesRequest {
     return {
-      resourceName: isSet(object.resourceName) ? String(object.resourceName) : "",
       filter: isSet(object.filter) ? String(object.filter) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
@@ -368,7 +354,6 @@ export const SearchAnomaliesRequest = {
 
   toJSON(message: SearchAnomaliesRequest): unknown {
     const obj: any = {};
-    message.resourceName !== undefined && (obj.resourceName = message.resourceName);
     message.filter !== undefined && (obj.filter = message.filter);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
@@ -377,7 +362,6 @@ export const SearchAnomaliesRequest = {
 
   fromPartial(object: DeepPartial<SearchAnomaliesRequest>): SearchAnomaliesRequest {
     const message = createBaseSearchAnomaliesRequest();
-    message.resourceName = object.resourceName ?? "";
     message.filter = object.filter ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";

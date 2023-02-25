@@ -23,31 +23,25 @@ service AnomalyService {
 }
 
 message SearchAnomaliesRequest {
-  // The resource that is the target of the operation.
-  // Format:
-  // - Instance: environments/{environment}/instnaces/{instance}
-  // - Database: environments/{environment}/instnaces/{instance}/databases/{database}
-  string resource_name = 1 [(google.api.field_behavior) = REQUIRED];
-
   // filter is the filter to apply on the list anomaly request,
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
   // List the instance anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true'
   // List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
-  string filter = 2;
+  string filter = 1;
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 anomalies will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 3;
+  int32 page_size = 2;
 
   // Not used. A page token, received from a previous `ListAnomalies` call.
   // Provide this to retrieve the subsequent page.  
   //
   // When paginating, all other parameters provided to `ListAnomalies` must match
   // the call that provided the page token.
-  string page_token = 4;
+  string page_token = 3;
 }
 
 message SearchAnomaliesResponse {
