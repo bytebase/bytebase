@@ -10,7 +10,7 @@ export interface SearchAnomaliesRequest {
    * filter is the filter to apply on the list anomaly request,
    * follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
    * For example:
-   * List the instance anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true'
+   * List the anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
    * List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
    */
   filter: string;
@@ -57,15 +57,7 @@ export interface Anomaly {
   databaseConnectionDetail?: Anomaly_DatabaseConnectionDetail | undefined;
   databaseBackupPolicyViolationDetail?: Anomaly_DatabaseBackupPolicyViolationDetail | undefined;
   databaseBackupMissingDetail?: Anomaly_DatabaseBackupMissingDetail | undefined;
-  databaseSchemaDriftDetail?:
-    | Anomaly_DatabaseSchemaDriftDetail
-    | undefined;
-  /**
-   * instance_only is the flag to indicate if the anomaly is only for the instance.
-   * If true, the anomaly is only for the instance, and the database is not specified.
-   * If false, the anomaly is for the database.
-   */
-  instanceOnly: boolean;
+  databaseSchemaDriftDetail?: Anomaly_DatabaseSchemaDriftDetail | undefined;
 }
 
 /** AnomalyType is the type of the anomaly. */
@@ -441,7 +433,6 @@ function createBaseAnomaly(): Anomaly {
     databaseBackupPolicyViolationDetail: undefined,
     databaseBackupMissingDetail: undefined,
     databaseSchemaDriftDetail: undefined,
-    instanceOnly: false,
   };
 }
 
@@ -474,9 +465,6 @@ export const Anomaly = {
     }
     if (message.databaseSchemaDriftDetail !== undefined) {
       Anomaly_DatabaseSchemaDriftDetail.encode(message.databaseSchemaDriftDetail, writer.uint32(66).fork()).ldelim();
-    }
-    if (message.instanceOnly === true) {
-      writer.uint32(72).bool(message.instanceOnly);
     }
     return writer;
   },
@@ -515,9 +503,6 @@ export const Anomaly = {
         case 8:
           message.databaseSchemaDriftDetail = Anomaly_DatabaseSchemaDriftDetail.decode(reader, reader.uint32());
           break;
-        case 9:
-          message.instanceOnly = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -546,7 +531,6 @@ export const Anomaly = {
       databaseSchemaDriftDetail: isSet(object.databaseSchemaDriftDetail)
         ? Anomaly_DatabaseSchemaDriftDetail.fromJSON(object.databaseSchemaDriftDetail)
         : undefined,
-      instanceOnly: isSet(object.instanceOnly) ? Boolean(object.instanceOnly) : false,
     };
   },
 
@@ -573,7 +557,6 @@ export const Anomaly = {
       (obj.databaseSchemaDriftDetail = message.databaseSchemaDriftDetail
         ? Anomaly_DatabaseSchemaDriftDetail.toJSON(message.databaseSchemaDriftDetail)
         : undefined);
-    message.instanceOnly !== undefined && (obj.instanceOnly = message.instanceOnly);
     return obj;
   },
 
@@ -602,7 +585,6 @@ export const Anomaly = {
       (object.databaseSchemaDriftDetail !== undefined && object.databaseSchemaDriftDetail !== null)
         ? Anomaly_DatabaseSchemaDriftDetail.fromPartial(object.databaseSchemaDriftDetail)
         : undefined;
-    message.instanceOnly = object.instanceOnly ?? false;
     return message;
   },
 };

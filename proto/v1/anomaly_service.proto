@@ -26,7 +26,7 @@ message SearchAnomaliesRequest {
   // filter is the filter to apply on the list anomaly request,
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
-  // List the instance anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}" && anomaly.instance_only=true'
+  // List the anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
   // List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
   string filter = 1;
 
@@ -173,9 +173,4 @@ message Anomaly {
     DatabaseBackupMissingDetail database_backup_missing_detail = 7;
     DatabaseSchemaDriftDetail database_schema_drift_detail = 8;
   }
-
-  // instance_only is the flag to indicate if the anomaly is only for the instance.
-  // If true, the anomaly is only for the instance, and the database is not specified.
-  // If false, the anomaly is for the database.
-  bool instance_only = 9;
 }
