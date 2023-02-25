@@ -402,7 +402,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		start := time.Now().UnixNano()
 
-		singleSQLResults, queryErr := func() ([]*api.SingleSQLResult, error) {
+		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -418,7 +418,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer conn.Close()
 
-			var singleSQLResults []*api.SingleSQLResult
+			var singleSQLResults []api.SingleSQLResult
 
 			rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
 				Limit:           exec.Limit,
@@ -429,17 +429,17 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				SensitiveSchemaInfo:   sensitiveSchemaInfo,
 			})
 			if err != nil {
-				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 					Error: err.Error(),
 				})
 			}
 			data, err := json.Marshal(rowSet)
 			if err != nil {
-				singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 					Error: err.Error(),
 				})
 			}
-			singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+			singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 				Data: string(data),
 			})
 			return singleSQLResults, nil
@@ -576,7 +576,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		exec.Readonly = true
 		start := time.Now().UnixNano()
 
-		singleSQLResults, queryErr := func() ([]*api.SingleSQLResult, error) {
+		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -592,7 +592,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer conn.Close()
 
-			var singleSQLResults []*api.SingleSQLResult
+			var singleSQLResults []api.SingleSQLResult
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
 			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB {
 				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
@@ -607,17 +607,17 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						SensitiveSchemaInfo: nil,
 					})
 					if err != nil {
-						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
 					}
 					data, err := json.Marshal(rowSet)
 					if err != nil {
-						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
 					}
-					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 						Data: string(data),
 					})
 				}
@@ -630,17 +630,17 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						SensitiveSchemaInfo: nil,
 					})
 					if err != nil {
-						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
 					}
 					data, err := json.Marshal(rowSet)
 					if err != nil {
-						singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
 					}
-					singleSQLResults = append(singleSQLResults, &api.SingleSQLResult{
+					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 						Data: string(data),
 					})
 					return nil

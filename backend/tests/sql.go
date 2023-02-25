@@ -70,7 +70,7 @@ func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResul
 	return sqlResultSet, nil
 }
 
-func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) ([]*api.SingleSQLResult, error) {
+func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) ([]api.SingleSQLResult, error) {
 	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,

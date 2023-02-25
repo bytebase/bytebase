@@ -49,15 +49,15 @@ type SQLExecute struct {
 // SingleSQLResult is the API message for single SQL result.
 type SingleSQLResult struct {
 	// A list of rows marshalled into a JSON.
-	Data string `jsonapi:"attr,data"`
+	Data string `jsonapi:"attr,data" json:"data"`
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.
-	Error string `jsonapi:"attr,error"`
+	Error string `jsonapi:"attr,error" json:"error"`
 }
 
 // SQLResultSet is the API message for SQL results.
 type SQLResultSet struct {
 	// A list of SQL results.
-	SingleSQLResultList []*SingleSQLResult `jsonapi:"relation,singleSQLResultList"`
+	SingleSQLResultList []SingleSQLResult `jsonapi:"attr,singleSQLResultList"`
 	// Error of the whole SQL execution.
 	Error string `jsonapi:"attr,error"`
 	// A list of SQL check advice.
