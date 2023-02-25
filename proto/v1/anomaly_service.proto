@@ -115,8 +115,8 @@ message Anomaly {
   //
   // DatbaaseConnectionDetail is the detail for database connection anomaly.
   message DatabaseConnectionDetail {
-      // detail is the detail of the database connection failure.
-      string detail = 1;
+    // detail is the detail of the database connection failure.
+    string detail = 1;
   }
 
   // BackupPlanSchedule is the backup plan schedule.
