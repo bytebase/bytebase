@@ -18,23 +18,23 @@
   </div>
   <div class="w-full">
     <div
-      v-if="changeHistory.loading"
+      v-if="sdlState.loading"
       class="h-20 flex flex-col items-center justify-center"
     >
       <BBSpin />
     </div>
     <template v-else>
       <NTabs
-        v-if="changeHistory.history"
+        v-if="sdlState.detail"
         v-model:value="state.tab"
         pane-style="padding-top: 0.25rem"
       >
         <NTabPane name="diff" :tab="$t('issue.sdl.schema-change')">
           <CodeDiff
-            :old-string="changeHistory.history.schemaPrev"
-            :new-string="changeHistory.history.schema"
+            :old-string="sdlState.detail.previousSDL"
+            :new-string="sdlState.detail.expectedSDL"
             output-format="side-by-side"
-            data-label="bb-change-history-code-diff-block"
+            data-label="bb-change-detail-code-diff-block"
         /></NTabPane>
         <NTabPane
           name="statement"
@@ -42,13 +42,13 @@
         >
           <HighlightCodeBlock
             class="border px-2 whitespace-pre-wrap"
-            :code="changeHistory.history.statement"
+            :code="sdlState.detail.diffDDL"
           />
         </NTabPane>
         <NTabPane name="schema" :tab="$t('issue.sdl.full-schema')">
           <HighlightCodeBlock
             class="border px-2 whitespace-pre-wrap"
-            :code="changeHistory.history.schema"
+            :code="sdlState.detail.expectedSDL"
           />
         </NTabPane>
       </NTabs>
@@ -66,12 +66,25 @@ import { NTabs, NTabPane } from "naive-ui";
 import { reactive, watch, computed } from "vue";
 import { CodeDiff } from "v-code-diff";
 
-import { hasFeature, useInstanceStore } from "@/store";
+import { hasFeature, useDatabaseStore, useInstanceStore } from "@/store";
 import { useIssueLogic } from "./logic";
-import { MigrationHistory, Task, TaskId } from "@/types";
+import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
 import HighlightCodeBlock from "../HighlightCodeBlock";
+import axios from "axios";
 
 type TabView = "diff" | "statement" | "schema";
+
+type SDLDetail = {
+  previousSDL: string;
+  expectedSDL: string;
+  diffDDL: string;
+};
+
+type SDLState = {
+  task: Task;
+  loading: boolean;
+  detail: SDLDetail | undefined;
+};
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -85,21 +98,16 @@ const state = reactive<LocalState>({
   tab: "diff",
 });
 
-const useChangeHistory = () => {
-  type ChangeHistoryState = {
-    task: Task;
-    loading: boolean;
-    history: MigrationHistory | undefined;
-  };
-  const emptyState = (task: Task): ChangeHistoryState => {
+const useSDLState = () => {
+  const emptyState = (task: Task): SDLState => {
     return {
       task,
       loading: true,
-      history: undefined,
+      detail: undefined,
     };
   };
 
-  const map = reactive(new Map<TaskId, ChangeHistoryState>());
+  const map = reactive(new Map<TaskId, SDLState>());
 
   const findLatestMigrationId = (task: Task) => {
     if (task.status !== "DONE") return undefined;
@@ -118,33 +126,88 @@ const useChangeHistory = () => {
     return findLatestMigrationId(task);
   });
 
+  const fetchOngoingSDLDetail = async (
+    task: Task
+  ): Promise<SDLDetail | undefined> => {
+    const database = task.database;
+    if (!database) return undefined;
+    const previousSDL = await useDatabaseStore().fetchDatabaseSchemaById(
+      task.database!.id,
+      true // fetch SDL format
+    );
+    const payload = task.payload as TaskDatabaseSchemaUpdateSDLPayload;
+    if (!payload) return undefined;
+    const expectedSDL = payload.statement;
+
+    const getSchemaDiff = async () => {
+      const { data } = await axios.post("/v1/sql/schema/diff", {
+        engineType: database.instance.engine,
+        sourceSchema: previousSDL ?? "",
+        targetSchema: expectedSDL ?? "",
+      });
+      return data;
+    };
+    const diffDDL = (await getSchemaDiff()) ?? "";
+
+    if (task.status === "DONE") {
+      throw new Error();
+    }
+
+    return { previousSDL, expectedSDL, diffDDL };
+  };
+
+  const fetchSDLDetailFromMigrationHistory = async (
+    task: Task,
+    migrationId: string | undefined
+  ): Promise<SDLDetail | undefined> => {
+    if (!migrationId) {
+      return undefined;
+    }
+    const history = await useInstanceStore().fetchMigrationHistoryById({
+      instanceId: task.instance.id,
+      migrationHistoryId: migrationId,
+      sdl: true,
+    });
+    // The latestMigrationId might change during fetching the
+    // migrationHistory.
+    // Should give up the result.
+    const latestMigrationId = findLatestMigrationId(task);
+    if (history.id !== latestMigrationId) {
+      throw new Error();
+    }
+    return {
+      previousSDL: history.schemaPrev,
+      expectedSDL: history.schema,
+      diffDDL: history.statement,
+    };
+  };
+
   watch(
-    [() => (selectedTask.value as Task).id, migrationId],
-    ([taskId, migrationId]) => {
+    [
+      () => (selectedTask.value as Task).id,
+      () => (selectedTask.value as Task).status,
+      migrationId,
+    ],
+    ([taskId, taskStatus, migrationId]) => {
       const task = selectedTask.value as Task;
       if (!map.has(taskId)) {
         map.set(taskId, emptyState(task));
       }
-      const finish = (ch?: MigrationHistory) => {
+      const finish = (detail?: SDLState["detail"]) => {
         const state = map.get(taskId)!;
         state.loading = false;
-        state.history = ch;
+        state.detail = detail;
       };
-
-      if (!migrationId) return finish();
-      useInstanceStore()
-        .fetchMigrationHistoryById({
-          instanceId: task.instance.id,
-          migrationHistoryId: migrationId,
-        })
-        .then((history) => {
-          // The latestMigrationId might change during fetching the
-          // migrationHistory.
-          // Should give up the result.
-          const latestMigrationId = findLatestMigrationId(task);
-          if (history.id !== latestMigrationId) return;
-          finish(history);
-        });
+      try {
+        if (taskStatus === "DONE") {
+          fetchSDLDetailFromMigrationHistory(task, migrationId).then(finish);
+        } else {
+          fetchOngoingSDLDetail(task).then(finish);
+        }
+      } catch {
+        // The task has been changed during the fetch
+        // The result is meaningless.
+      }
     },
     { immediate: true }
   );
@@ -155,5 +218,5 @@ const useChangeHistory = () => {
   });
 };
 
-const changeHistory = useChangeHistory();
+const sdlState = useSDLState();
 </script>

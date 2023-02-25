@@ -350,8 +350,14 @@ export const useDatabaseStore = defineStore("database", {
       }
       return this.fetchDatabaseById(databaseId);
     },
-    async fetchDatabaseSchemaById(databaseId: DatabaseId): Promise<string> {
-      const url = `/api/database/${databaseId}/schema`;
+    async fetchDatabaseSchemaById(
+      databaseId: DatabaseId,
+      sdl = false
+    ): Promise<string> {
+      let url = `/api/database/${databaseId}/schema`;
+      if (sdl) {
+        url += "?sdl=true";
+      }
       const schema = (await axios.get(url)).data as string;
       return schema;
     },
