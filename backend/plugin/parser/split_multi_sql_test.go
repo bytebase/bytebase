@@ -21,7 +21,7 @@ type resData struct {
 }
 
 func generateOneMBInsert() string {
-	rand.Seed(time.Now().UnixNano())
+	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	letterList := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]byte, 1024*1024)
 	for i := range b {
