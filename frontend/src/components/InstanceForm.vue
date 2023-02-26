@@ -248,7 +248,7 @@
               v-if="hasReadOnlyDataSource"
               :style="'DELETE'"
               class="absolute left-full ml-1"
-              :require-confirm="currentDataSource.id !== UNKNOWN_ID"
+              :require-confirm="readonlyDataSource?.id !== UNKNOWN_ID"
               :ok-text="$t('common.delete')"
               :confirm-title="
                 $t('data-source.delete-read-only-data-source') + '?'
@@ -270,8 +270,8 @@
               {{ $t("common.username") }}
             </label>
             <!-- For mysql, username can be empty indicating anonymous user.
-          But it's a very bad practice to use anonymous user for admin operation,
-          thus we make it REQUIRED here.-->
+              But it's a very bad practice to use anonymous user for admin operation,
+              thus we make it REQUIRED here.-->
             <input
               id="username"
               name="username"
@@ -447,6 +447,7 @@
             :disabled="!allowCreate || state.isRequesting"
             @click.prevent="testConnection"
           >
+            <BBSpin v-if="state.isTestingConnection" />
             {{ $t("instance.test-connection") }}
           </button>
         </div>
@@ -458,7 +459,7 @@
       <div class="w-full flex justify-between items-center">
         <div class="w-full flex justify-end items-center">
           <div>
-            <BBSpin v-if="state.isRequesting" :title="$t('common.updating')" />
+            <BBSpin v-if="state.isRequesting" />
           </div>
           <div class="ml-2">
             <template v-if="isCreating">
@@ -595,6 +596,7 @@ interface BasicInformation {
 interface LocalState {
   currentDataSourceType: DataSourceType;
   showFeatureModal: boolean;
+  isTestingConnection: boolean;
   isRequesting: boolean;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
@@ -610,6 +612,7 @@ const sqlStore = useSQLStore();
 const state = reactive<LocalState>({
   currentDataSourceType: "ADMIN",
   showFeatureModal: false,
+  isTestingConnection: false,
   isRequesting: false,
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
@@ -742,7 +745,14 @@ const allowUsingEmptyPassword = computed(() => {
 });
 
 const valueChanged = computed(() => {
-  return true;
+  return !isEqual(
+    {
+      basicInformation: basicInformation.value,
+      adminDataSource: adminDataSource.value,
+      readonlyDataSource: readonlyDataSource.value,
+    },
+    getInstanceStateData()
+  );
 });
 
 const connectionInfoChanged = computed(() => {
@@ -750,7 +760,13 @@ const connectionInfoChanged = computed(() => {
     return false;
   }
 
-  return true;
+  return (
+    !isEqual(adminDataSource.value, getInstanceStateData().adminDataSource) ||
+    !isEqual(
+      readonlyDataSource.value,
+      getInstanceStateData().readonlyDataSource
+    )
+  );
 });
 
 const defaultPort = computed(() => {
@@ -787,9 +803,9 @@ const snowflakeExtraLinkPlaceHolder =
 
 const instanceLink = computed(() => {
   if (basicInformation.value.engine == "SNOWFLAKE") {
-    if (currentDataSource.value.host) {
+    if (adminDataSource.value.host) {
       return `https://${
-        currentDataSource.value.host.split("@")[0]
+        adminDataSource.value.host.split("@")[0]
       }.snowflakecomputing.com/console`;
     }
   }
@@ -1029,6 +1045,7 @@ const updateInstanceState = async () => {
   if (!props.instance) {
     return;
   }
+
   const instance = await instanceStore.fetchInstanceById(props.instance.id);
   basicInformation.value = {
     id: instance.id,
@@ -1056,7 +1073,7 @@ const updateInstanceState = async () => {
   instanceStore.fetchInstanceUserListById(instance.id);
 
   const reloadDatabaseAndUser = connectionInfoChanged.value;
-  // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
+  // Backend will sync the schema when connection info changed, so we need to fetch the synced schema here.
   if (reloadDatabaseAndUser) {
     await useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
     await instanceStore.fetchInstanceUserListById(instance.id);
@@ -1344,6 +1361,7 @@ const testConnection = async () => {
     }
   }
 
+  state.isTestingConnection = true;
   const resultSet = await sqlStore.ping(connectionInfo);
   if (isEmpty(resultSet.error)) {
     pushNotification({
@@ -1368,6 +1386,39 @@ const testConnection = async () => {
       manualHide: true,
     });
   }
+  state.isTestingConnection = false;
+};
+
+// getInstanceStateData returns the origin instance data including
+// basic information, admin data source and read-only data source.
+const getInstanceStateData = () => {
+  const instanceData: {
+    basicInformation: BasicInformation;
+    adminDataSource: EditDataSource;
+    readonlyDataSource?: EditDataSource;
+  } = {
+    basicInformation: {
+      id: props.instance?.id || UNKNOWN_ID,
+      resourceId: props.instance?.resourceId || "",
+      rowStatus: props.instance?.rowStatus || "NORMAL",
+      name: props.instance?.name || t("instance.new-instance"),
+      engine: props.instance?.engine || "MYSQL",
+      environmentId: (props.instance?.environment.id || UNKNOWN_ID) as number,
+    },
+    adminDataSource: {
+      ...(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),
+      updatedPassword: "",
+      useEmptyPassword: false,
+    },
+    readonlyDataSource: getDataSourceWithType("RO")
+      ? ({
+          ...getDataSourceWithType("RO"),
+          updatedPassword: "",
+          useEmptyPassword: false,
+        } as EditDataSource)
+      : undefined,
+  };
+  return instanceData;
 };
 
 const convertEditDataSource = (editDataSource: EditDataSource): DataSource => {
