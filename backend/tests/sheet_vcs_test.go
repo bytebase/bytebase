@@ -24,14 +24,14 @@ func TestSheetVCS(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 		},
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 		},

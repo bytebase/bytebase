@@ -12,7 +12,7 @@
         tabindex="-1"
         type="radio"
         class="btn"
-        value="GITLAB_SELF_HOST"
+        value="GITLAB"
         @change="changeType()"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
@@ -27,7 +27,7 @@
         tabindex="-1"
         type="radio"
         class="btn"
-        value="GITHUB_COM"
+        value="GITHUB"
         @change="changeType()"
       />
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
@@ -127,20 +127,20 @@ export default defineComponent({
     });
 
     const namePlaceholder = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t("gitops.setting.add-git-provider.gitlab-self-host");
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return "GitHub.com";
       }
       return "";
     });
 
     const instanceUrlLabel = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t(
           "gitops.setting.add-git-provider.basic-info.gitlab-instance-url"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.basic-info.github-instance-url"
         );
@@ -149,9 +149,9 @@ export default defineComponent({
     });
 
     const instanceUrlPlaceholder = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return "https://gitlab.example.com";
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return "https://github.com";
       }
       return "";
@@ -159,7 +159,7 @@ export default defineComponent({
 
     // github.com instance url is always https://github.com
     const instanceUrlDisabled = computed((): boolean => {
-      return props.config.type == "GITHUB_COM";
+      return props.config.type == "GITHUB";
     });
 
     const changeUrl = (value: string) => {
@@ -190,14 +190,14 @@ export default defineComponent({
 
     // FIXME: Unexpected mutation of "config" prop. Do we care?
     const changeType = () => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = t(
           "gitops.setting.add-git-provider.gitlab-self-host"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://github.com";
         // eslint-disable-next-line vue/no-mutating-props

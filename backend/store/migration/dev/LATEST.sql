@@ -779,7 +779,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST', 'GITHUB_COM')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -992,7 +992,7 @@ CREATE TABLE sheet (
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CHECK (source IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
+    source TEXT NOT NULL CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET')) DEFAULT 'BYTEBASE',
     type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );

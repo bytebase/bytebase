@@ -283,7 +283,7 @@ func TestVCS1(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
@@ -310,7 +310,7 @@ func TestVCS1(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
@@ -694,7 +694,7 @@ func TestVCS_SDL(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -719,7 +719,7 @@ func TestVCS_SDL(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -1106,7 +1106,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "singleAsterisk",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1133,7 +1133,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "doubleAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1166,7 +1166,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "wildcard",
 			baseDirectory:      "",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1194,7 +1194,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "prod1",
 			baseDirectory:      "bbtest",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1222,7 +1222,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "ZO",
 			baseDirectory:      "bbtest",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
@@ -1387,7 +1387,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1423,7 +1423,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1654,7 +1654,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 
 	tests := []vcsTestCase{
 		{
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			vcsProviderCreator: fake.NewGitLab,
 			externalID:         "1234",
 			repoFullPath:       "1234",
@@ -1694,7 +1694,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			},
 		},
 		{
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			vcsProviderCreator: fake.NewGitHub,
 			externalID:         "test/branch",
 			repoFullPath:       "test/branch",
@@ -2214,7 +2214,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -2239,7 +2239,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
