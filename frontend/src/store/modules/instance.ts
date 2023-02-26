@@ -367,17 +367,20 @@ export const useInstanceStore = defineStore("instance", {
     async fetchMigrationHistoryById({
       instanceId,
       migrationHistoryId,
+      sdl,
     }: {
       instanceId: InstanceId;
       migrationHistoryId: MigrationHistoryId;
+      sdl?: boolean;
     }) {
+      let url = `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`;
+      if (sdl) {
+        url += "?sdl=true";
+      }
       const data = (
-        await axios.get(
-          `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`,
-          {
-            timeout: INSTANCE_OPERATION_TIMEOUT,
-          }
-        )
+        await axios.get(url, {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        })
       ).data;
       const migrationHistory = convertMigrationHistory(data.data);
 
