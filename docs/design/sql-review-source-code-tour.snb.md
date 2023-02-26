@@ -78,7 +78,7 @@ The catalog is the schema information for a database. For some rules, we need so
 
 Since all SQL advisors have a nearly identical skeleton, we have implemented a code generator located at `/plugin/advisor/generator`. The generator only supports MySQL dialect for now with PostgreSQL support coming later.
 
-https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/generator/README.md
+https://sourcegraph.com/github.com/bytebase/bytebase@12faead/-/blob/backend/plugin/advisor/generator/README.md
 
 ## Further Readings
 
