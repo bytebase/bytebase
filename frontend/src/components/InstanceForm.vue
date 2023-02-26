@@ -225,7 +225,7 @@
         <button
           type="button"
           class="btn-normal ml-4 text-sm"
-          @click.prevent="handleCreateDataSource('RO')"
+          @click.prevent="handleCreateRODataSource"
         >
           {{ $t("common.create") }}
         </button>
@@ -253,7 +253,7 @@
               :confirm-title="
                 $t('data-source.delete-read-only-data-source') + '?'
               "
-              @confirm="handleDeleteReadOnlyDataSource"
+              @confirm="handleDeleteRODataSource"
             />
           </NTab>
         </NTabs>
@@ -268,7 +268,6 @@
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block">
               {{ $t("common.username") }}
-              <span class="text-red-600">*</span>
             </label>
             <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
@@ -292,10 +291,9 @@
             <div class="flex flex-row items-center space-x-2">
               <label for="password" class="textlabel block">
                 {{ $t("common.password") }}
-                <span class="text-red-600">*</span>
               </label>
               <BBCheckbox
-                v-if="allowUsingEmptyPassword"
+                v-if="!isCreating && allowUsingEmptyPassword"
                 :title="$t('common.empty')"
                 :value="currentDataSource.useEmptyPassword"
                 @toggle="handleToggleUseEmptyPassword"
@@ -433,21 +431,20 @@
               />
             </template>
             <template v-else>
-              <button
-                class="btn-normal mt-2"
-                @click.prevent="handleEditSsl(true)"
-              >
+              <button class="btn-normal mt-2" @click.prevent="handleEditSsl">
                 {{ $t("common.edit") }} - {{ $t("common.write-only") }}
               </button>
             </template>
           </template>
         </div>
       </div>
+
       <div class="mt-6 pt-0 border-none">
         <div class="flex flex-row space-x-2">
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
+            :disabled="!allowCreate || state.isRequesting"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -508,6 +505,17 @@
     feature="bb.feature.read-replica-connection"
     @cancel="state.showFeatureModal = false"
   />
+
+  <BBAlert
+    v-if="state.showCreateInstanceWarningModal"
+    :style="'WARN'"
+    :ok-text="t('instance.ignore-and-create')"
+    :title="$t('instance.connection-info-seems-to-be-incorrect')"
+    :description="state.createInstanceWarning"
+    :progress-text="$t('common.creating')"
+    @ok="handleWarningModalOkClick"
+    @cancel="state.showCreateInstanceWarningModal = false"
+  ></BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -530,7 +538,6 @@ import {
   InstancePatch,
   DataSourceType,
   Instance,
-  SQLResultSet,
   ConnectionInfo,
   DataSource,
   UNKNOWN_ID,
@@ -589,7 +596,6 @@ interface LocalState {
   currentDataSourceType: DataSourceType;
   showFeatureModal: boolean;
   isRequesting: boolean;
-  isPingingInstance: boolean;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
 }
@@ -605,7 +611,6 @@ const state = reactive<LocalState>({
   currentDataSourceType: "ADMIN",
   showFeatureModal: false,
   isRequesting: false,
-  isPingingInstance: false,
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
 });
@@ -959,32 +964,12 @@ const handleCurrentDataSourcePortInput = (event: Event) => {
   currentDataSource.value.port = str;
 };
 
-const handleDeleteReadOnlyDataSource = async () => {
-  if (!readonlyDataSource.value || readonlyDataSource.value.id === UNKNOWN_ID) {
-    return;
-  }
-
-  await dataSourceStore.deleteDataSourceById({
-    databaseId: readonlyDataSource.value.databaseId,
-    dataSourceId: readonlyDataSource.value.id,
-  });
-  state.currentDataSourceType = "ADMIN";
-  await updateInstanceState();
-};
-
-const handleEditSsl = (edit: boolean) => {
+const handleEditSsl = () => {
   const curr = currentDataSource.value;
-  if (!edit) {
-    delete curr.sslCa;
-    delete curr.sslCert;
-    delete curr.sslKey;
-    delete curr.updateSsl;
-  } else {
-    curr.sslCa = "";
-    curr.sslCert = "";
-    curr.sslKey = "";
-    curr.updateSsl = true;
-  }
+  curr.sslCa = "";
+  curr.sslCert = "";
+  curr.sslKey = "";
+  curr.updateSsl = true;
 };
 
 const handleCurrentDataSourceSslChange = (
@@ -994,7 +979,7 @@ const handleCurrentDataSourceSslChange = (
   currentDataSource.value.updateSsl = true;
 };
 
-const handleCreateDataSource = (type: DataSourceType) => {
+const handleCreateRODataSource = () => {
   if (isCreating.value) {
     return;
   }
@@ -1003,8 +988,8 @@ const handleCreateDataSource = (type: DataSourceType) => {
     id: UNKNOWN_ID,
     instanceId: props.instance!.id,
     databaseId: adminDataSource.value.databaseId,
-    name: `${type} data source`,
-    type: type,
+    name: `Read-only data source`,
+    type: "RO",
     username: "",
     password: "",
     options: {
@@ -1015,7 +1000,29 @@ const handleCreateDataSource = (type: DataSourceType) => {
   if (basicInformation.value.engine === "SPANNER") {
     tempDataSource.host = adminDataSource.value.host;
   }
-  state.currentDataSourceType = type;
+  readonlyDataSource.value = {
+    ...tempDataSource,
+    updatedPassword: "",
+    useEmptyPassword: false,
+  };
+  state.currentDataSourceType = "RO";
+};
+
+const handleDeleteRODataSource = async () => {
+  if (!readonlyDataSource.value) {
+    return;
+  }
+
+  if (readonlyDataSource.value.id === UNKNOWN_ID) {
+    readonlyDataSource.value = undefined;
+  } else {
+    await dataSourceStore.deleteDataSourceById({
+      databaseId: readonlyDataSource.value.databaseId,
+      dataSourceId: readonlyDataSource.value.id,
+    });
+    await updateInstanceState();
+  }
+  state.currentDataSourceType = "ADMIN";
 };
 
 const updateInstanceState = async () => {
@@ -1058,7 +1065,12 @@ const updateInstanceState = async () => {
   return instance;
 };
 
-const tryCreate = () => {
+const handleWarningModalOkClick = async () => {
+  state.showCreateInstanceWarningModal = false;
+  doCreate();
+};
+
+const tryCreate = async () => {
   const connectionInfo: ConnectionInfo = {
     engine: basicInformation.value.engine,
     username: adminDataSource.value.username,
@@ -1085,23 +1097,21 @@ const tryCreate = () => {
     connectionInfo.database = adminDataSource.value.database;
   }
 
-  state.isPingingInstance = true;
-  sqlStore
-    .ping(connectionInfo)
-    .then((resultSet: SQLResultSet) => {
-      state.isPingingInstance = false;
-      if (isEmpty(resultSet.error)) {
-        doCreate();
-      } else {
-        state.createInstanceWarning = t("instance.unable-to-connect", [
-          resultSet.error,
-        ]);
-        state.showCreateInstanceWarningModal = true;
-      }
-    })
-    .catch(() => {
-      state.isPingingInstance = false;
-    });
+  state.isRequesting = true;
+  try {
+    const resultSet = await sqlStore.ping(connectionInfo);
+    state.isRequesting = false;
+    if (isEmpty(resultSet.error)) {
+      await doCreate();
+    } else {
+      state.createInstanceWarning = t("instance.unable-to-connect", [
+        resultSet.error,
+      ]);
+      state.showCreateInstanceWarningModal = true;
+    }
+  } catch (error) {
+    state.isRequesting = false;
+  }
 };
 
 // We will also create the database * denoting all databases
@@ -1285,7 +1295,7 @@ const doUpdate = async () => {
   }
 };
 
-const testConnection = () => {
+const testConnection = async () => {
   const dataSource = currentDataSource.value;
   let connectionHost = adminDataSource.value.host;
   let connectionPort = adminDataSource.value.port;
@@ -1309,6 +1319,7 @@ const testConnection = () => {
     srv: false,
     authenticationDatabase: "",
   };
+
   if (!isCreating.value) {
     connectionInfo.password = adminDataSource.value.password;
     connectionInfo.srv = dataSource.options.srv;
@@ -1316,41 +1327,47 @@ const testConnection = () => {
       dataSource.options.authenticationDatabase;
   }
 
-  if (typeof dataSource.sslCa !== "undefined") {
-    connectionInfo.sslCa = dataSource.sslCa;
-  }
-  if (typeof dataSource.sslKey !== "undefined") {
-    connectionInfo.sslKey = dataSource.sslKey;
-  }
-  if (typeof dataSource.sslCert !== "undefined") {
-    connectionInfo.sslCert = dataSource.sslCert;
+  if (showSSL.value) {
+    // Default to "NONE"
+    connectionInfo.sslCa = adminDataSource.value.sslCa ?? "";
+    connectionInfo.sslKey = adminDataSource.value.sslKey ?? "";
+    connectionInfo.sslCert = adminDataSource.value.sslCert ?? "";
+
+    if (typeof dataSource.sslCa !== "undefined") {
+      connectionInfo.sslCa = dataSource.sslCa;
+    }
+    if (typeof dataSource.sslKey !== "undefined") {
+      connectionInfo.sslKey = dataSource.sslKey;
+    }
+    if (typeof dataSource.sslCert !== "undefined") {
+      connectionInfo.sslCert = dataSource.sslCert;
+    }
   }
 
-  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
-    if (isEmpty(resultSet.error)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("instance.successfully-connected-instance"),
-      });
-    } else {
-      let title = t("instance.failed-to-connect-instance");
-      if (
-        connectionInfo.host == "localhost" ||
-        connectionInfo.host == "127.0.0.1"
-      ) {
-        title = t("instance.failed-to-connect-instance-localhost");
-      }
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: title,
-        description: resultSet.error,
-        // Manual hide, because user may need time to inspect the error
-        manualHide: true,
-      });
+  const resultSet = await sqlStore.ping(connectionInfo);
+  if (isEmpty(resultSet.error)) {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-connected-instance"),
+    });
+  } else {
+    let title = t("instance.failed-to-connect-instance");
+    if (
+      connectionInfo.host == "localhost" ||
+      connectionInfo.host == "127.0.0.1"
+    ) {
+      title = t("instance.failed-to-connect-instance-localhost");
     }
-  });
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: title,
+      description: resultSet.error,
+      // Manual hide, because user may need time to inspect the error
+      manualHide: true,
+    });
+  }
 };
 
 const convertEditDataSource = (editDataSource: EditDataSource): DataSource => {
