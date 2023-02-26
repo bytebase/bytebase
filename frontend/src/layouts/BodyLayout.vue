@@ -33,7 +33,7 @@
             {{ $t("common.archive") }}
           </router-link>
           <div
-            class="flex-shrink-0 flex border-t border-control-border px-3 py-2"
+            class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
           >
             <div
               v-if="isDemo"
@@ -104,9 +104,7 @@
         >
           <Quickstart />
         </div>
-        <div
-          class="flex-shrink-0 flex border-t border-control-border px-3 py-2"
-        >
+        <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
           <div v-if="isDemo" class="text-sm flex whitespace-nowrap text-accent">
             <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
             {{ $t("common.demo-mode") }}
