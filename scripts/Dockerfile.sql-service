@@ -5,10 +5,10 @@
 
 # $ docker run --init --rm --name sql-service --publish 8081:8081 bytebase/sql
 
-FROM golang:1.20 as sql
+FROM golang:1.20.1 as sql
 
 ARG VERSION="development"
-ARG GO_VERSION="1.20"
+ARG GO_VERSION="1.20.1"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
