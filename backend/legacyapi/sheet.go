@@ -24,6 +24,8 @@ const (
 	SheetFromBytebase SheetSource = "BYTEBASE"
 	// SheetFromGitLabSelfHost is the sheet synced from self host GitLab.
 	SheetFromGitLabSelfHost SheetSource = "GITLAB_SELF_HOST"
+	// SheetFromGitLabCom is the sheet synced from gitlab.com.
+	SheetFromGitLabCom SheetSource = "GITLAB_COM"
 	// SheetFromGitHubCom is the sheet synced from github.com.
 	SheetFromGitHubCom SheetSource = "GITHUB_COM"
 )

@@ -20,6 +20,8 @@ type Type string
 const (
 	// GitLabSelfHost is the VCS type for GitLab self host.
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
+	// GitLabCom is the VCS type for GitLab.com.
+	GitLabCom Type = "GITLAB_COM"
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
 

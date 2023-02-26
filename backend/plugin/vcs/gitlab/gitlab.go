@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -140,6 +141,7 @@ type gitLabRepository struct {
 
 func init() {
 	vcs.Register(vcs.GitLabSelfHost, newProvider)
+	vcs.Register(vcs.GitLabCom, newProvider)
 }
 
 // Provider is a GitLab self host VCS provider.
@@ -1302,8 +1304,12 @@ func (p WebhookPushEvent) ToVCS() (vcs.PushEvent, error) {
 			ModifiedList: commit.ModifiedList,
 		})
 	}
+	vcsType := vcs.GitLabSelfHost
+	if strings.HasPrefix(p.Project.WebURL, "https://gitlab.com/") {
+		vcsType = vcs.GitLabCom
+	}
 	return vcs.PushEvent{
-		VCSType:            vcs.GitLabSelfHost,
+		VCSType:            vcsType,
 		Ref:                p.Ref,
 		Before:             p.Before,
 		After:              p.After,

@@ -895,6 +895,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case vcsPlugin.GitLabSelfHost:
 				sheetSource = api.SheetFromGitLabSelfHost
+			case vcsPlugin.GitLabCom:
+				sheetSource = api.SheetFromGitLabCom
 			case vcsPlugin.GitHubCom:
 				sheetSource = api.SheetFromGitHubCom
 			}
@@ -981,7 +983,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
-	case vcsPlugin.GitLabSelfHost:
+	case vcsPlugin.GitLabSelfHost, vcsPlugin.GitLabCom:
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
@@ -1237,7 +1239,7 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsType {
-	case vcsPlugin.GitLabSelfHost:
+	case vcsPlugin.GitLabSelfHost, vcsPlugin.GitLabCom:
 		webhookCreate := gitlab.WebhookCreate{
 			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", s.profile.ExternalURL, webhookEndpointID),
 			SecretToken:           secretToken,
