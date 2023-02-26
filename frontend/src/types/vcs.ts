@@ -1,6 +1,6 @@
 import { VCSId } from "./id";
 
-export type VCSType = "GITLAB_SELF_HOST" | "GITHUB_COM";
+export type VCSType = "GITLAB" | "GITHUB";
 
 export interface VCSConfig {
   type: VCSType;
@@ -80,9 +80,9 @@ export function isValidVCSApplicationIdOrSecret(
   vcsType: VCSType,
   str: string
 ): boolean {
-  if (vcsType == "GITLAB_SELF_HOST") {
+  if (vcsType == "GITLAB") {
     return /^[a-zA-Z0-9_]{64}$/.test(str);
-  } else if (vcsType == "GITHUB_COM") {
+  } else if (vcsType == "GITHUB") {
     return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
   }
   return false;

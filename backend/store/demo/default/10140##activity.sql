@@ -1107,7 +1107,7 @@ VALUES
         'bb.project.repository.push',
         'INFO',
         'Created issue "Create product table using multi-stage VCS workflow".',
-        '{"pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"14","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repositoryFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"c80352facbaefcde0c1c82340381be3286e5438d","title":"Create product table","message":"Create product table","createdTs": 1630940811,"url":"https://gitlab.bytebase.com/bytebase-demo/shop/-/commit/c80352facbaefcde0c1c82340381be3286e5438d","authorName":"tianzhou","added":"bytebase/shop##v1##baseline##add_initial_schema.sql"}},"issueId":13002,"issueName":"Create product table using multi-stage VCS workflow"}'
+        '{"pushEvent":{"vcsType":"GITLAB","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"14","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repositoryFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"c80352facbaefcde0c1c82340381be3286e5438d","title":"Create product table","message":"Create product table","createdTs": 1630940811,"url":"https://gitlab.bytebase.com/bytebase-demo/shop/-/commit/c80352facbaefcde0c1c82340381be3286e5438d","authorName":"tianzhou","added":"bytebase/shop##v1##baseline##add_initial_schema.sql"}},"issueId":13002,"issueName":"Create product table using multi-stage VCS workflow"}'
     );
 
 -- Project activity for 3003
@@ -1162,7 +1162,7 @@ VALUES
         'bb.project.repository.push',
         'INFO',
         'Created issue "Add created_at column to user,post,comment table for dev environment".',
-        '{"pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8ff6482998059a861e1faa14658c65244577b54e","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1630943211,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8ff6482998059a861e1faa14658c65244577b54e","authorName":"tianzhou","added":"bytebase/dev/blog##202106280100##migrate##add_created_at_column.sql"}},"issueId":13008,"issueName":"Add created_at column to user,post,comment table for dev environment"}'
+        '{"pushEvent":{"vcsType":"GITLAB","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8ff6482998059a861e1faa14658c65244577b54e","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1630943211,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8ff6482998059a861e1faa14658c65244577b54e","authorName":"tianzhou","added":"bytebase/dev/blog##202106280100##migrate##add_created_at_column.sql"}},"issueId":13008,"issueName":"Add created_at column to user,post,comment table for dev environment"}'
     );
 
 INSERT INTO
@@ -1189,7 +1189,7 @@ VALUES
         'bb.project.repository.push',
         'INFO',
         'Created issue "Create user, post, comment table for dev environment".',
-        '{"pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8f578d53e821c46421d69fd0aabd29921190a6c0","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8f578d53e821c46421d69fd0aabd29921190a6c0","authorName":"tianzhou","added":"bytebase/dev/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13004,"issueName":"Create user, post, comment table for dev environment"}'
+        '{"pushEvent":{"vcsType":"GITLAB","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8f578d53e821c46421d69fd0aabd29921190a6c0","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8f578d53e821c46421d69fd0aabd29921190a6c0","authorName":"tianzhou","added":"bytebase/dev/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13004,"issueName":"Create user, post, comment table for dev environment"}'
     );
 
 INSERT INTO
@@ -1216,7 +1216,7 @@ VALUES
         'bb.project.repository.push',
         'INFO',
         'Created issue "Create user, post, comment table for integration environment".',
-        '{"pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"0765950c28c50dd07217aa0a133e8239e64f0ea1","title":"Create user, post, comment table for integration environment","message":"Create user, post, comment table for integration environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/0765950c28c50dd07217aa0a133e8239e64f0ea1","authorName":"tianzhou","added":"bytebase/integration/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13005,"issueName":"Create user, post, comment table for integration environment"}'
+        '{"pushEvent":{"vcsType":"GITLAB","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"0765950c28c50dd07217aa0a133e8239e64f0ea1","title":"Create user, post, comment table for integration environment","message":"Create user, post, comment table for integration environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/0765950c28c50dd07217aa0a133e8239e64f0ea1","authorName":"tianzhou","added":"bytebase/integration/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13005,"issueName":"Create user, post, comment table for integration environment"}'
     );
 
 INSERT INTO
@@ -1243,7 +1243,7 @@ VALUES
         'bb.project.repository.push',
         'INFO',
         'Created issue "Create user, post, comment table for staging environment".',
-        '{"pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"149f18b8d94805be4b92e256ef1dc9f4a27d5157","title":"Create user, post, comment table for staging environment","message":"Create user, post, comment table for staging environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/149f18b8d94805be4b92e256ef1dc9f4a27d5157","authorName":"tianzhou","added":"bytebase/staging/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13006,"issueName":"Create user, post, comment table for staging environment"}'
+        '{"pushEvent":{"vcsType":"GITLAB","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"149f18b8d94805be4b92e256ef1dc9f4a27d5157","title":"Create user, post, comment table for staging environment","message":"Create user, post, comment table for staging environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/149f18b8d94805be4b92e256ef1dc9f4a27d5157","authorName":"tianzhou","added":"bytebase/staging/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13006,"issueName":"Create user, post, comment table for staging environment"}'
     );
 
 INSERT INTO
@@ -1270,7 +1270,7 @@ VALUES
         'bb.project.repository.push',
         'INFO',
         'Created issue "Create user, post, comment table for prod environment".',
-        '{"pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"ec17d38d6581015feb49b341cc3da56cb0e354fb","title":"Create user, post, comment table for prod environment","message":"Create user, post, comment table for prod environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/ec17d38d6581015feb49b341cc3da56cb0e354fb","authorName":"tianzhou","added":"bytebase/prod/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13006,"issueName":"Create user, post, comment table for prod environment"}'
+        '{"pushEvent":{"vcsType":"GITLAB","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"ec17d38d6581015feb49b341cc3da56cb0e354fb","title":"Create user, post, comment table for prod environment","message":"Create user, post, comment table for prod environment","createdTs": 1630941711,"url":"https://gitlab.bytebase.com/bytebase-demo/blog/-/commit/ec17d38d6581015feb49b341cc3da56cb0e354fb","authorName":"tianzhou","added":"bytebase/prod/blog##202106280000##baseline##add_initial_schema.sql"}},"issueId":13006,"issueName":"Create user, post, comment table for prod environment"}'
     );
 
 ALTER SEQUENCE activity_id_seq RESTART WITH 14049;

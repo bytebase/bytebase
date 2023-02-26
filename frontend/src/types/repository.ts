@@ -96,12 +96,12 @@ export function baseDirectoryWebUrl(
     return repository.webUrl;
   }
   let url = "";
-  if (repository.vcs.type == "GITLAB_SELF_HOST") {
+  if (repository.vcs.type == "GITLAB") {
     url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
     }
-  } else if (repository.vcs.type == "GITHUB_COM") {
+  } else if (repository.vcs.type == "GITHUB") {
     url = `${repository.webUrl}/tree/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
