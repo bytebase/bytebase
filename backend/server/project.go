@@ -308,6 +308,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
 			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
 		} else {
+			// Bytebase needs to create a webbook in the connecting repository pointing back to the
+			// Bytebase address exposed at --external-url.
+			if s.profile.ExternalURL == common.ExternalURLPlaceholder {
+				return echo.NewHTTPError(http.StatusBadRequest, "Bytebase must start with --external-url to configure GitOps workflow")
+			}
+
 			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", s.workspaceID, time.Now().Unix())
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
