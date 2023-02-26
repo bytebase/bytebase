@@ -1,14 +1,14 @@
 <template>
   <div class="space-y-4">
     <div class="textlabel">
-      <template v-if="config.type == 'GITLAB_SELF_HOST'">
+      <template v-if="config.type == 'GITLAB'">
         {{
           $t(
             "gitops.setting.add-git-provider.oauth-info.gitlab-register-oauth-application"
           )
         }}
       </template>
-      <template v-if="config.type == 'GITHUB_COM'">
+      <template v-if="config.type == 'GITHUB'">
         {{
           $t(
             "gitops.setting.add-git-provider.oauth-info.github-register-oauth-application"
@@ -17,7 +17,7 @@
       </template>
     </div>
     <ol class="textinfolabel space-y-2">
-      <template v-if="config.type == 'GITLAB_SELF_HOST'">
+      <template v-if="config.type == 'GITLAB'">
         <li>
           1.
           {{
@@ -103,7 +103,7 @@
           }}
         </li>
       </template>
-      <template v-if="config.type == 'GITHUB_COM'">
+      <template v-if="config.type == 'GITHUB'">
         <li>
           1.
           {{
@@ -269,9 +269,9 @@ export default defineComponent({
     });
 
     const createAdminApplicationUrl = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return `${props.config.instanceUrl}/admin/applications/new`;
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return `https://github.com/settings/applications/new`;
       }
       return "";
@@ -376,11 +376,11 @@ export default defineComponent({
     };
 
     const applicationIdErrorDescription = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
         );
@@ -389,11 +389,11 @@ export default defineComponent({
     });
 
     const secretErrorDescription = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.gitlab-secret-error"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-secret-error"
         );

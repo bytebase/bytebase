@@ -36,7 +36,7 @@ const (
 )
 
 func init() {
-	vcs.Register(vcs.GitHubCom, newProvider)
+	vcs.Register(vcs.GitHub, newProvider)
 }
 
 var _ vcs.Provider = (*Provider)(nil)
@@ -1352,7 +1352,7 @@ func (p WebhookPushEvent) ToVCS() vcs.PushEvent {
 		})
 	}
 	return vcs.PushEvent{
-		VCSType:            vcs.GitHubCom,
+		VCSType:            vcs.GitHub,
 		Ref:                p.Ref,
 		Before:             p.Before,
 		After:              p.After,

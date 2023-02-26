@@ -209,7 +209,7 @@ func TestTenantVCS(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -233,7 +233,7 @@ func TestTenantVCS(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -649,7 +649,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -673,7 +673,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -976,7 +976,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -1000,7 +1000,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -1255,7 +1255,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/dataUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
@@ -1279,7 +1279,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
