@@ -90,7 +90,6 @@
         <input
           id="name"
           v-model="state.cluster"
-          required
           name="cluster"
           type="text"
           class="textfield mt-1 w-full"
