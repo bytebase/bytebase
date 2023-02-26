@@ -83,6 +83,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       config: {
         type: "GITLAB",
+        uiType: "GITLAB_SELF_HOST",
         name: t("gitops.setting.add-git-provider.gitlab-self-host"),
         instanceUrl: "",
         applicationId: "",
@@ -143,8 +144,13 @@ export default defineComponent({
 
     const attentionText = computed((): string => {
       if (state.config.type == "GITLAB") {
+        if (state.config.uiType == "GITLAB_SELF_HOST") {
+          return t(
+            "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
+          );
+        }
         return t(
-          "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
+          "gitops.setting.add-git-provider.gitlab-com-admin-requirement"
         );
       } else if (state.config.type == "GITHUB") {
         return t(
