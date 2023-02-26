@@ -85,7 +85,6 @@
       <div v-if="selectedInstance.engine == 'CLICKHOUSE'" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.cluster") }}
-          <span class="text-red-600">*</span>
         </label>
         <input
           id="name"
