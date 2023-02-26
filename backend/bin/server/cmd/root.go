@@ -118,7 +118,7 @@ func init() {
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", common.ExternalURLDocsLink, "the external URL where user visits Bytebase, must start with http:// or https://")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", common.ExternalURLPlaceholder, "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	// Must be one of the subpath name in the ./store/demo/ directory
@@ -284,8 +284,8 @@ func start() {
 	}
 
 	externalAddr := profile.ExternalURL
-	if profile.ExternalURL == common.ExternalURLDocsLink {
-		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLDocsLink)
+	if profile.ExternalURL == common.ExternalURLPlaceholder {
+		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLPlaceholder)
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s (schema version %v) has started on port %d", profile.Version, s.SchemaVersion, flags.port), externalAddr)
 

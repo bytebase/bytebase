@@ -14,8 +14,12 @@ import (
 	"time"
 )
 
-// MaxSheetSize is the maximum size of a sheet for displaying.
-const MaxSheetSize = 10240
+const (
+	// MaxSheetSize is the maximum size of a sheet for displaying.
+	MaxSheetSize = 10240
+	// ExternalURLPlaceholder is the docs link to configure --external-url.
+	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
+)
 
 // FindString returns the search index of sorted strings.
 func FindString(stringList []string, search string) int {
