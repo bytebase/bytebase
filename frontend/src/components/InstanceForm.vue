@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
-    <div class="divide-y divide-block-border px-1">
+    <div class="divide-y divide-block-border">
       <div
         v-if="isCreating"
         class="w-full mt-4 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-7"
@@ -130,6 +130,35 @@
             />
           </div>
         </template>
+
+        <div
+          v-if="basicInformation.engine === 'MONGODB'"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-string-schema") }}
+          </label>
+          <label
+            v-for="type in mongodbConnectionStringSchemaList"
+            :key="type"
+            class="radio h-7"
+          >
+            <input
+              type="radio"
+              class="btn"
+              name="connectionStringSchema"
+              :value="type"
+              :checked="type === currentMongoDBConnectionSchema"
+              @change="handleMongodbConnectionStringSchemaChange"
+            />
+            <span class="label">
+              {{ type }}
+            </span>
+          </label>
+        </div>
 
         <!--Do not show external link on create to reduce cognitive load-->
         <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
@@ -297,7 +326,7 @@
         <SpannerCredentialInput
           v-else
           :value="currentDataSource.updatedPassword"
-          :write-only="true"
+          :write-only="!isCreating"
           class="mt-2 sm:col-span-3 sm:col-start-1"
           @update:value="handleUpdateSpannerCredential"
         />
@@ -321,35 +350,6 @@
             />
           </div>
         </template>
-
-        <div
-          v-if="basicInformation.engine === 'MONGODB'"
-          class="sm:col-span-4 sm:col-start-1"
-        >
-          <label
-            for="connectionStringSchema"
-            class="textlabel flex flex-row items-center"
-          >
-            {{ $t("data-source.connection-string-schema") }}
-          </label>
-          <label
-            v-for="type in mongodbConnectionStringSchemaList"
-            :key="type"
-            class="radio h-7"
-          >
-            <input
-              type="radio"
-              class="btn"
-              name="connectionStringSchema"
-              :value="type"
-              :checked="type === currentMongoDBConnectionSchema"
-              @change="handleMongodbConnectionStringSchemaChange"
-            />
-            <span class="label">
-              {{ type }}
-            </span>
-          </label>
-        </div>
 
         <template
           v-if="
@@ -457,7 +457,7 @@
     </div>
 
     <!-- Action Button Group -->
-    <div class="pt-4 px-2">
+    <div class="pt-4">
       <div class="w-full flex justify-between items-center">
         <div class="w-full flex justify-end items-center">
           <div>
@@ -538,7 +538,6 @@ import {
   DataSourcePatch,
   EngineType,
   engineName,
-  empty,
   InstanceId,
   ResourceId,
   RowStatus,
