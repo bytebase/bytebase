@@ -19,7 +19,7 @@ COPY ./backend/plugin/advisor/config/ ./src/types
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.19 as backend
+FROM golang:1.20 as backend
 
 ARG GO_VERSION="unknown"
 # RENDER_GIT_COMMIT is a render.com provided env var during build.
