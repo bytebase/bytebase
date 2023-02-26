@@ -255,9 +255,7 @@ const showIssueOutputPanel = computed(() => {
 const showIssueTaskSDLPanel = computed(() => {
   if (create.value) return false;
   const task = selectedTask.value as Task;
-  return (
-    task.type === "bb.task.database.schema.update-sdl" && task.status === "DONE"
-  );
+  return task.type === "bb.task.database.schema.update-sdl";
 });
 
 const showIssueTaskStatementPanel = computed(() => {
