@@ -96,7 +96,7 @@ var (
 
 			// generator code
 			templateFile := mysqlTemplate
-			dir := mysqlTemplate
+			dir := "mysql"
 			if engineType == lowerPostgreSQL {
 				templateFile = postgresqlTemplate
 				dir = "pg"
