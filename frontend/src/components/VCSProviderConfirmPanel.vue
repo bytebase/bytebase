@@ -19,7 +19,7 @@
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           <div
-            v-if="config.type == 'GITLAB_SELF_HOST'"
+            v-if="config.type == 'GITLAB'"
             class="flex flex-row items-center space-x-2"
           >
             <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
@@ -28,7 +28,7 @@
             </div>
           </div>
           <div
-            v-if="config.type == 'GITHUB_COM'"
+            v-if="config.type == 'GITHUB'"
             class="flex flex-row items-center space-x-2"
           >
             <img class="h-6 w-auto" src="../assets/github-logo.svg" />

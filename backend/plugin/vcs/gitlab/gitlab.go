@@ -139,7 +139,7 @@ type gitLabRepository struct {
 }
 
 func init() {
-	vcs.Register(vcs.GitLabSelfHost, newProvider)
+	vcs.Register(vcs.GitLab, newProvider)
 }
 
 // Provider is a GitLab self host VCS provider.
@@ -1303,7 +1303,7 @@ func (p WebhookPushEvent) ToVCS() (vcs.PushEvent, error) {
 		})
 	}
 	return vcs.PushEvent{
-		VCSType:            vcs.GitLabSelfHost,
+		VCSType:            vcs.GitLab,
 		Ref:                p.Ref,
 		Before:             p.Before,
 		After:              p.After,

@@ -366,10 +366,10 @@ export default defineComponent({
 
     const vcsBranch = computed((): string => {
       if (pushEvent.value) {
-        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+        if (pushEvent.value.vcsType == "GITLAB") {
           const parts = pushEvent.value.ref.split("/");
           return parts[parts.length - 1];
-        } else if (pushEvent.value.vcsType == "GITHUB_COM") {
+        } else if (pushEvent.value.vcsType == "GITHUB") {
           const parts = pushEvent.value.ref.split("/");
           return parts[parts.length - 1];
         }
@@ -379,9 +379,9 @@ export default defineComponent({
 
     const vcsBranchUrl = computed((): string => {
       if (pushEvent.value) {
-        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+        if (pushEvent.value.vcsType == "GITLAB") {
           return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
-        } else if (pushEvent.value.vcsType == "GITHUB_COM") {
+        } else if (pushEvent.value.vcsType == "GITHUB") {
           return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
         }
       }

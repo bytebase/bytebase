@@ -34,10 +34,10 @@ type PrincipalAuthProvider string
 const (
 	// PrincipalAuthProviderBytebase is the Bytebase's own authentication provider.
 	PrincipalAuthProviderBytebase PrincipalAuthProvider = "BYTEBASE"
-	// PrincipalAuthProviderGitlabSelfHost is the self-hosted GitLab authentication provider.
-	PrincipalAuthProviderGitlabSelfHost PrincipalAuthProvider = "GITLAB_SELF_HOST"
-	// PrincipalAuthProviderGitHubCom is the GitHub.com authentication provider.
-	PrincipalAuthProviderGitHubCom PrincipalAuthProvider = "GITHUB_COM"
+	// PrincipalAuthProviderGitlab is the GitLab (for both GitLab.com and self-hosted GitLab) authentication provider.
+	PrincipalAuthProviderGitlab PrincipalAuthProvider = "GITLAB"
+	// PrincipalAuthProviderGitHub is the GitHub (for both GitHub.com and GitHub Enterprise) authentication provider.
+	PrincipalAuthProviderGitHub PrincipalAuthProvider = "GITHUB"
 )
 
 // Principal is the API message for principals.

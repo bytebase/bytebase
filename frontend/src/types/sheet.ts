@@ -11,7 +11,7 @@ import {
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
 
-export type SheetSource = "BYTEBASE" | "GITLAB_SELF_HOST" | "GITHUB_COM";
+export type SheetSource = "BYTEBASE" | "GITLAB" | "GITHUB";
 
 export type SheetType = "SQL";
 

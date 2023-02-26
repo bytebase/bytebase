@@ -80,7 +80,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Incorrect password").SetInternal(err)
 				}
 			}
-		case api.PrincipalAuthProviderGitlabSelfHost, api.PrincipalAuthProviderGitHubCom:
+		case api.PrincipalAuthProviderGitlab, api.PrincipalAuthProviderGitHub:
 			{
 				login := &api.VCSLogin{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
@@ -140,7 +140,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if user == nil {
 					if userInfo.PublicEmail == "" {
 						profileLink := "https://docs.github.com/en/account-and-profile"
-						if authProvider == api.PrincipalAuthProviderGitlabSelfHost {
+						if authProvider == api.PrincipalAuthProviderGitlab {
 							profileLink = "https://docs.gitlab.com/ee/user/profile/#set-your-public-email"
 						}
 						return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Please configure your public email first, %s.", profileLink))

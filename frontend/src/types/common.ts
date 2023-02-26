@@ -377,7 +377,7 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_VCS: VCS = {
     id: UNKNOWN_ID,
     name: "",
-    type: "GITLAB_SELF_HOST",
+    type: "GITLAB",
     instanceUrl: "",
     apiUrl: "",
     applicationId: "",
@@ -732,7 +732,7 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_VCS: VCS = {
     id: EMPTY_ID,
     name: "",
-    type: "GITLAB_SELF_HOST",
+    type: "GITLAB",
     instanceUrl: "",
     apiUrl: "",
     applicationId: "",

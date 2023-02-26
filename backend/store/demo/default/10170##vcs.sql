@@ -17,7 +17,7 @@ VALUES
         101,
         101,
         'bytebase.gitlab.com',
-        'GITLAB_SELF_HOST',
+        'GITLAB',
         'https://gitlab.bytebase.com',
         'https://gitlab.bytebase.com/api/v4',
         'fda62e44b5388b1ca6e72d5a7028a3c2c47157fc13fd98328e2bd446fae98fd8',
