@@ -7,13 +7,13 @@
   <div class="pt-4 radio-set-row">
     <div class="radio space-x-2">
       <input
-        v-model="config.type"
+        v-model="config.uiType"
         name="Self-host GitLab"
         tabindex="-1"
         type="radio"
         class="btn"
-        value="GITLAB"
-        @change="changeType()"
+        value="GITLAB_SELF_HOST"
+        @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
@@ -22,13 +22,26 @@
     </div>
     <div class="radio space-x-2">
       <input
-        v-model="config.type"
+        v-model="config.uiType"
+        name="GitLab.com"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="GITLAB_COM"
+        @change="changeUIType()"
+      />
+      <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
+      <label class="whitespace-nowrap">GitLab.com </label>
+    </div>
+    <div class="radio space-x-2">
+      <input
+        v-model="config.uiType"
         name="GitHub.com"
         tabindex="-1"
         type="radio"
         class="btn"
-        value="GITHUB"
-        @change="changeType()"
+        value="GITHUB_COM"
+        @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
       <label class="whitespace-nowrap">GitHub.com</label>
@@ -42,12 +55,6 @@
     </div>
   </div>
   <div class="mt-2 flex flex-row itmes-center space-x-4 text-xs">
-    <div class="flex flex-row space-x-2 items-center text-control">
-      <div class="h-5 w-5">
-        <img src="../assets/gitlab-logo.svg" />
-      </div>
-      <label class="whitespace-nowrap">GitLab.com </label>
-    </div>
     <div class="flex flex-row space-x-2 items-center text-control">
       <div class="h-5 w-5">
         <img src="../assets/github-logo.svg" />
@@ -128,7 +135,11 @@ export default defineComponent({
 
     const namePlaceholder = computed((): string => {
       if (props.config.type == "GITLAB") {
-        return t("gitops.setting.add-git-provider.gitlab-self-host");
+        if (props.config.uiType == "GITLAB_SELF_HOST") {
+          return t("gitops.setting.add-git-provider.gitlab-self-host");
+        } else if (props.config.uiType == "GITLAB_COM") {
+          return "GitLab.com";
+        }
       } else if (props.config.type == "GITHUB") {
         return "GitHub.com";
       }
@@ -150,7 +161,11 @@ export default defineComponent({
 
     const instanceUrlPlaceholder = computed((): string => {
       if (props.config.type == "GITLAB") {
-        return "https://gitlab.example.com";
+        if (props.config.uiType == "GITLAB_SELF_HOST") {
+          return "https://gitlab.example.com";
+        } else if (props.config.uiType == "GITLAB_COM") {
+          return "https://gitlab.com";
+        }
       } else if (props.config.type == "GITHUB") {
         return "https://github.com";
       }
@@ -159,7 +174,10 @@ export default defineComponent({
 
     // github.com instance url is always https://github.com
     const instanceUrlDisabled = computed((): boolean => {
-      return props.config.type == "GITHUB";
+      return (
+        props.config.type == "GITHUB" ||
+        (props.config.type == "GITLAB" && props.config.uiType == "GITLAB_COM")
+      );
     });
 
     const changeUrl = (value: string) => {
@@ -189,15 +207,26 @@ export default defineComponent({
     };
 
     // FIXME: Unexpected mutation of "config" prop. Do we care?
-    const changeType = () => {
-      if (props.config.type == "GITLAB") {
+    const changeUIType = () => {
+      if (props.config.uiType == "GITLAB_SELF_HOST") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "GITLAB";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = t(
           "gitops.setting.add-git-provider.gitlab-self-host"
         );
-      } else if (props.config.type == "GITHUB") {
+      } else if (props.config.uiType == "GITLAB_COM") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "GITLAB";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.instanceUrl = "https://gitlab.com";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.name = "GitLab.com";
+      } else if (props.config.uiType == "GITHUB_COM") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "GITHUB";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://github.com";
         // eslint-disable-next-line vue/no-mutating-props
@@ -212,7 +241,7 @@ export default defineComponent({
       instanceUrlPlaceholder,
       instanceUrlDisabled,
       changeUrl,
-      changeType,
+      changeUIType,
     };
   },
 });

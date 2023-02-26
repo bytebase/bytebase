@@ -10,12 +10,22 @@ import {
   VCSPatch,
   empty,
   EMPTY_ID,
+  VCSUIType,
 } from "@/types";
 
 function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
+  let uiType: VCSUIType = "GITLAB_SELF_HOST";
+  if (vcs.attributes.type == "GITLAB") {
+    if (vcs.attributes.instanceUrl == "https://gitlab.com") {
+      uiType = "GITLAB_COM";
+    }
+  } else if (vcs.attributes.type == "GITHUB") {
+    uiType = "GITHUB_COM";
+  }
   return {
     ...(vcs.attributes as Omit<VCS, "id">),
     id: parseInt(vcs.id),
+    uiType,
   };
 }
 
