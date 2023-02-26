@@ -1,5 +1,6 @@
-import { EngineType } from ".";
+import { EngineType } from "./instance";
 import { InstanceId } from "./id";
+import { Advice } from "./sqlAdvice";
 
 export type ConnectionInfo = {
   engine: EngineType;
@@ -27,4 +28,18 @@ export type QueryInfo = {
   databaseName?: string;
   statement: string;
   limit?: number;
+};
+
+// TODO(Jim): not used yet
+export type SingleSQLResult = {
+  // [columnNames: string[], types: string[], data: any[][], sensitive?: boolean[]]
+  data: [string[], string[], any[][], boolean[]];
+  error: string;
+};
+
+export type SQLResultSet = {
+  error: string;
+  // resultList: SingleSQLResult[];
+  data: SingleSQLResult["data"];
+  adviceList: Advice[];
 };
