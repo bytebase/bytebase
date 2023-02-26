@@ -33,7 +33,7 @@
             {{ $t("common.archive") }}
           </router-link>
           <div
-            class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
+            class="flex-shrink-0 flex border-t border-control-border px-3 py-2"
           >
             <div
               v-if="isDemo"
@@ -86,7 +86,7 @@
       class="hidden md:flex md:flex-shrink-0"
       data-label="bb-dashboard-static-sidebar"
     >
-      <div class="flex flex-col w-52">
+      <div class="flex flex-col w-52 bg-control-bg">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
         <div class="flex-1 flex flex-col py-2 overflow-y-auto">
           <router-view name="leftSidebar" />
@@ -104,7 +104,9 @@
         >
           <Quickstart />
         </div>
-        <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
+        <div
+          class="flex-shrink-0 flex border-t border-control-border px-3 py-2"
+        >
           <div v-if="isDemo" class="text-sm flex whitespace-nowrap text-accent">
             <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
             {{ $t("common.demo-mode") }}
