@@ -432,12 +432,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 					Error: err.Error(),
 				})
+				return singleSQLResults, nil
 			}
 			data, err := json.Marshal(rowSet)
 			if err != nil {
 				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 					Error: err.Error(),
 				})
+				return singleSQLResults, nil
 			}
 			singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 				Data: string(data),
@@ -453,11 +455,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if len(stmts) != 1 {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one statement, but found %d, statement: %s", len(stmts), exec.Statement))
 			}
-			if len(singleSQLResults) != 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one result, but found %d, statement: %s", len(singleSQLResults), exec.Statement))
-			}
 
 			if _, ok := stmts[0].(*ast.ExplainStmt); ok {
+				if len(singleSQLResults) != 1 {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one result, but found %d, statement: %s, consider syntax error", len(singleSQLResults), exec.Statement))
+				}
 				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, singleSQLResults[0].Data)
 				if len(indexAdvice) > 0 {
 					adviceLevel = advisor.Error
@@ -610,12 +612,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
+						continue
 					}
 					data, err := json.Marshal(rowSet)
 					if err != nil {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
+						continue
 					}
 					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 						Data: string(data),
@@ -633,12 +637,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
+						return nil
 					}
 					data, err := json.Marshal(rowSet)
 					if err != nil {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
+						return nil
 					}
 					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 						Data: string(data),
