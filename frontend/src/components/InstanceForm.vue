@@ -751,9 +751,10 @@ const allowCreate = computed(() => {
     return (
       basicInformation.value.name &&
       isValidSpannerHost(adminDataSource.value.host) &&
-      adminDataSource.value.password
+      adminDataSource.value.updatedPassword
     );
   }
+
   return (
     basicInformation.value.name &&
     resourceIdField.value?.resourceId &&
@@ -1185,7 +1186,7 @@ const doCreate = async () => {
     port: adminDataSource.value.port,
     database: adminDataSource.value.database,
     username: adminDataSource.value.username,
-    password: adminDataSource.value.password,
+    password: adminDataSource.value.updatedPassword,
     sslCa: adminDataSource.value.sslCa,
     sslCert: adminDataSource.value.sslCert,
     sslKey: adminDataSource.value.sslKey,
@@ -1377,13 +1378,6 @@ const getTestConnectionContext = () => {
     srv: false,
     authenticationDatabase: "",
   };
-
-  if (!isCreating.value) {
-    connectionInfo.password = adminDataSource.value.password;
-    connectionInfo.srv = dataSource.options.srv;
-    connectionInfo.authenticationDatabase =
-      dataSource.options.authenticationDatabase;
-  }
 
   if (showSSL.value) {
     // Default to "NONE"
