@@ -432,6 +432,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 					Error: err.Error(),
 				})
+				//nolint
 				return singleSQLResults, nil
 			}
 			data, err := json.Marshal(rowSet)
@@ -439,6 +440,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 					Error: err.Error(),
 				})
+				//nolint
 				return singleSQLResults, nil
 			}
 			singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
@@ -637,6 +639,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
+						//nolint
 						return nil
 					}
 					data, err := json.Marshal(rowSet)
@@ -644,6 +647,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
+						//nolint
 						return nil
 					}
 					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
