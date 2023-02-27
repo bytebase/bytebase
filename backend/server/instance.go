@@ -46,6 +46,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
+		if !isValidResourceID(instanceCreate.ResourceID) {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid instance id %s", instanceCreate.ResourceID))
+		}
 		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Database != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 		}
