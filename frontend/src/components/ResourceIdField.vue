@@ -86,11 +86,13 @@ const props = withDefaults(
     value: string;
     resourceTitle: string;
     readonly: boolean;
+    randomString: boolean;
     validator: (resourceId: ResourceId) => Promise<string | undefined>;
   }>(),
   {
     value: "",
     resourceTitle: "",
+    randomString: false,
     readonly: false,
   }
 );
@@ -105,6 +107,20 @@ const state = reactive<LocalState>({
 const resourceName = computed(() => {
   return t(`resource.${props.resource}`);
 });
+
+const getPrefix = (resource: string) => {
+  switch (resource) {
+    case "environment":
+      return "env";
+    case "instance":
+      return "ins";
+    case "idp":
+      return "idp";
+    default:
+      return "";
+  }
+};
+const randomSuffix = randomString(4).toLowerCase();
 
 const shouldShowResourceIdField = computed(() => {
   return !props.readonly && state.isResourceIdChanged;
@@ -176,28 +192,36 @@ watch(
       return;
     }
 
-    if (!state.isResourceIdChanged && resourceTitle) {
-      const formatedTitle = resourceTitle
-        .toLowerCase()
-        .split("")
-        .map((char) => {
-          if (char === " ") {
-            return "-";
-          }
-          if (characters.includes(char)) {
-            return char;
-          }
-          return randomString(1);
-        })
-        .join("")
-        .toLowerCase();
+    if (!state.isResourceIdChanged) {
+      if (resourceTitle) {
+        const formatedTitle = resourceTitle
+          .toLowerCase()
+          .split("")
+          .map((char) => {
+            if (char === " ") {
+              return "";
+            }
+            if (characters.includes(char)) {
+              return char;
+            }
+            return randomString(1);
+          })
+          .join("")
+          .toLowerCase();
 
-      debounceHandleResourceIdChange(
-        `${formatedTitle || randomString(4).toLowerCase()}`
-      );
-    } else {
-      state.resourceId = "";
-      state.validatedMessages = [];
+        let name = "";
+        if (props.randomString) {
+          name = `${getPrefix(
+            props.resource
+          )}-${formatedTitle}-${randomSuffix}`;
+        } else {
+          name = `${formatedTitle || randomString(4).toLowerCase()}`;
+        }
+        debounceHandleResourceIdChange(name);
+      } else {
+        state.resourceId = "";
+        state.validatedMessages = [];
+      }
     }
   },
   {
