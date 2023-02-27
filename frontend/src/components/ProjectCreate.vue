@@ -16,6 +16,16 @@
           "
         />
       </div>
+      <div class="-mt-6">
+        <ResourceIdField
+          ref="resourceIdField"
+          resource="project"
+          :value="state.project.resourceId"
+          :random-string="true"
+          :resource-title="state.project.name"
+          :validator="validateResourceId"
+        />
+      </div>
       <div class="col-span-1">
         <label for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("project.create-modal.key") }}
@@ -100,19 +110,24 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, defineComponent } from "vue";
+import { computed, reactive, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
 import { projectSlug, randomString } from "@/utils";
-import { Project, ProjectCreate } from "@/types";
+import { Project, ProjectCreate, ResourceId } from "@/types";
 import {
   hasFeature,
   pushNotification,
   useUIStateStore,
   useProjectStore,
 } from "@/store";
+import ResourceIdField from "./ResourceIdField.vue";
+import { useProjectV1Store } from "@/store/modules/v1/project";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import { getErrorCode } from "@/utils/grpcweb";
+import { Status } from "nice-grpc-common";
 
 interface LocalState {
   project: ProjectCreate;
@@ -122,14 +137,17 @@ interface LocalState {
 
 export default defineComponent({
   name: "ProjectCreate",
+  components: { ResourceIdField },
   emits: ["dismiss"],
   setup(props, { emit }) {
     const router = useRouter();
     const { t } = useI18n();
     const projectStore = useProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const state = reactive<LocalState>({
       project: {
+        resourceId: "",
         name: "New Project",
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
@@ -138,6 +156,7 @@ export default defineComponent({
       showFeatureModal: false,
       isCreating: false,
     });
+    const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
     useEventListener("keydown", (e) => {
       if (e.code == "Escape") {
@@ -145,9 +164,29 @@ export default defineComponent({
       }
     });
 
+    const validateResourceId = async (resourceId: ResourceId) => {
+      if (!resourceId) {
+        return;
+      }
+
+      try {
+        const project = await projectV1Store.getOrFetchProjectByName(
+          projectNamePrefix + resourceId
+        );
+        if (project) {
+          return t("resource-id.validation.duplicated", {
+            resource: t("resource.project"),
+          });
+        }
+      } catch (error) {
+        if (getErrorCode(error) !== Status.NOT_FOUND) {
+          throw error;
+        }
+      }
+    };
+
     const allowCreate = computed(() => {
       if (isEmpty(state.project.name)) return false;
-
       return true;
     });
 
@@ -159,16 +198,20 @@ export default defineComponent({
         state.showFeatureModal = true;
         return;
       }
+      if (!allowCreate.value) {
+        return;
+      }
 
       try {
         state.isCreating = true;
-
-        const createdProject = await projectStore.createProject(state.project);
+        const createdProject = await projectStore.createProject({
+          ...state.project,
+          resourceId: resourceIdField.value?.resourceId as string,
+        });
         useUIStateStore().saveIntroStateByKey({
           key: "project.visit",
           newState: true,
         });
-
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -176,7 +219,6 @@ export default defineComponent({
             name: createdProject.name,
           }),
         });
-
         const url = {
           path: `/project/${projectSlug(createdProject)}`,
           hash: "",
@@ -195,6 +237,8 @@ export default defineComponent({
     return {
       state,
       allowCreate,
+      resourceIdField,
+      validateResourceId,
       cancel,
       create,
     };
