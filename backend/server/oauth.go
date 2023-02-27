@@ -55,7 +55,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		} else {
 			vcsType = req.Type
-			if vcsType != vcsPlugin.GitLabSelfHost && vcsType != vcsPlugin.GitHubCom {
+			if vcsType != vcsPlugin.GitLab && vcsType != vcsPlugin.GitHub {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unexpected VCS type: %s", vcsType))
 			}
 

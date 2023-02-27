@@ -259,9 +259,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		response := &api.VCSSQLReviewResult{}
 		switch repo.VCS.Type {
-		case vcs.GitHubCom:
+		case vcs.GitHub:
 			response = convertSQLAdviceToGitHubActionResult(sqlCheckAdvice)
-		case vcs.GitLabSelfHost:
+		case vcs.GitLab:
 			response = convertSQLAdviceToGitLabCIResult(sqlCheckAdvice)
 		}
 

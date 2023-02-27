@@ -176,6 +176,18 @@ func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*Databas
 	return databaseEditResult, nil
 }
 
+func (ctl *controller) getLatestSchemaSDL(databaseID int) (string, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), map[string]string{"sdl": "true"})
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
+}
+
 func (ctl *controller) getLatestSchemaDump(databaseID int) (string, error) {
 	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
 	if err != nil {

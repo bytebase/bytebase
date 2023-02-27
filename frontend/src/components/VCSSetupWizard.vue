@@ -82,7 +82,8 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       config: {
-        type: "GITLAB_SELF_HOST",
+        type: "GITLAB",
+        uiType: "GITLAB_SELF_HOST",
         name: t("gitops.setting.add-git-provider.gitlab-self-host"),
         instanceUrl: "",
         applicationId: "",
@@ -102,10 +103,7 @@ export default defineComponent({
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        if (
-          state.config.type == "GITLAB_SELF_HOST" ||
-          state.config.type == "GITHUB_COM"
-        ) {
+        if (state.config.type == "GITLAB" || state.config.type == "GITHUB") {
           useOAuthStore()
             .exchangeVCSToken({
               vcsType: state.config.type,
@@ -145,11 +143,16 @@ export default defineComponent({
     });
 
     const attentionText = computed((): string => {
-      if (state.config.type == "GITLAB_SELF_HOST") {
+      if (state.config.type == "GITLAB") {
+        if (state.config.uiType == "GITLAB_SELF_HOST") {
+          return t(
+            "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
+          );
+        }
         return t(
-          "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
+          "gitops.setting.add-git-provider.gitlab-com-admin-requirement"
         );
-      } else if (state.config.type == "GITHUB_COM") {
+      } else if (state.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.github-com-admin-requirement"
         );
@@ -172,7 +175,7 @@ export default defineComponent({
       // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
         let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
-        if (state.config.type == "GITHUB_COM") {
+        if (state.config.type == "GITHUB") {
           authorizeUrl = `https://github.com/login/oauth/authorize`;
         }
         const newWindow = openWindowForOAuth(
@@ -193,7 +196,7 @@ export default defineComponent({
               });
             } else {
               let description = "";
-              if (state.config.type == "GITLAB_SELF_HOST") {
+              if (state.config.type == "GITLAB") {
                 // If application id mismatches, the OAuth workflow will stop early.
                 // So the only possibility to reach here is we have a matching application id, while
                 // we failed to exchange a token, and it's likely we are requesting with a wrong secret.

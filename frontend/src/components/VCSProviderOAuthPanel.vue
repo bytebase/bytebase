@@ -1,14 +1,21 @@
 <template>
   <div class="space-y-4">
     <div class="textlabel">
-      <template v-if="config.type == 'GITLAB_SELF_HOST'">
+      <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
         {{
           $t(
-            "gitops.setting.add-git-provider.oauth-info.gitlab-register-oauth-application"
+            "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-register-oauth-application"
           )
         }}
       </template>
-      <template v-if="config.type == 'GITHUB_COM'">
+      <template v-else-if="config.uiType == 'GITLAB_COM'">
+        {{
+          $t(
+            "gitops.setting.add-git-provider.oauth-info.gitlab-com-register-oauth-application"
+          )
+        }}
+      </template>
+      <template v-else-if="config.uiType == 'GITHUB_COM'">
         {{
           $t(
             "gitops.setting.add-git-provider.oauth-info.github-register-oauth-application"
@@ -17,12 +24,12 @@
       </template>
     </div>
     <ol class="textinfolabel space-y-2">
-      <template v-if="config.type == 'GITLAB_SELF_HOST'">
+      <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
         <li>
           1.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-login-as-admin"
+              "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-login-as-admin"
             )
           }}
           <img class="w-auto" src="../assets/gitlab_admin_area.png" />
@@ -31,11 +38,11 @@
           2.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-visit-admin-page"
+              "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-visit-admin-page"
             )
           }}
           <a
-            :href="createAdminApplicationUrl"
+            :href="createOAuthApplicationUrl"
             target="_blank"
             class="normal-link"
             >{{
@@ -103,7 +110,84 @@
           }}
         </li>
       </template>
-      <template v-if="config.type == 'GITHUB_COM'">
+      <template v-else-if="config.uiType == 'GITLAB_COM'">
+        <li>
+          1.
+          {{
+            $t("gitops.setting.add-git-provider.oauth-info.gitlab-com-login")
+          }}
+        </li>
+        <li>
+          2.
+          {{
+            $t(
+              "gitops.setting.add-git-provider.oauth-info.gitlab-com-visit-application-page"
+            )
+          }}
+          <a
+            :href="createOAuthApplicationUrl"
+            target="_blank"
+            class="normal-link"
+            >{{
+              $t("gitops.setting.add-git-provider.oauth-info.direct-link")
+            }}</a
+          >
+        </li>
+        <li>
+          3.
+          {{
+            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
+          }}
+          <div class="m-4 flex justify-center">
+            <dl
+              class="divide-y divide-block-border border border-block-border shadow rounded-lg"
+            >
+              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Name
+                </dt>
+                <dd class="text-sm text-main">Bytebase</dd>
+              </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Redirect URI
+                </dt>
+                <dd class="text-sm text-main items-center flex">
+                  {{ redirectUrl() }}
+                  <button
+                    tabindex="-1"
+                    class="ml-1 text-sm font-medium text-control-light hover:bg-gray-100"
+                    @click.prevent="copyRedirectURI"
+                  >
+                    <heroicons-outline:clipboard class="w-6 h-6" />
+                  </button>
+                </dd>
+              </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Confidential
+                </dt>
+                <dd class="text-sm text-main">Yes</dd>
+              </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Scopes
+                </dt>
+                <dd class="text-sm text-main">api</dd>
+              </div>
+            </dl>
+          </div>
+        </li>
+        <li>
+          4.
+          {{
+            $t(
+              "gitops.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
+            )
+          }}
+        </li>
+      </template>
+      <template v-else-if="config.uiType == 'GITHUB_COM'">
         <li>
           1.
           {{
@@ -268,10 +352,12 @@ export default defineComponent({
       }
     });
 
-    const createAdminApplicationUrl = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+    const createOAuthApplicationUrl = computed((): string => {
+      if (props.config.uiType == "GITLAB_SELF_HOST") {
         return `${props.config.instanceUrl}/admin/applications/new`;
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.uiType == "GITLAB_COM") {
+        return `https://gitlab.com/-/profile/applications`;
+      } else if (props.config.uiType == "GITHUB_COM") {
         return `https://github.com/settings/applications/new`;
       }
       return "";
@@ -376,11 +462,11 @@ export default defineComponent({
     };
 
     const applicationIdErrorDescription = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
         );
@@ -389,11 +475,11 @@ export default defineComponent({
     });
 
     const secretErrorDescription = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.gitlab-secret-error"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-secret-error"
         );
@@ -404,7 +490,7 @@ export default defineComponent({
     return {
       redirectUrl,
       state,
-      createAdminApplicationUrl,
+      createOAuthApplicationUrl,
       copyHomepageURL,
       copyRedirectURI,
       changeApplicationId,

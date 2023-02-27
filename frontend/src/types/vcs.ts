@@ -1,9 +1,15 @@
 import { VCSId } from "./id";
 
-export type VCSType = "GITLAB_SELF_HOST" | "GITHUB_COM";
+// Backend uses the same ENUM for GitLab/GitHub SaaS and self-hosted. Because they are based on the
+// same codebase.
+export type VCSType = "GITLAB" | "GITHUB";
+
+// When configuring the VCS, we split the SaaS and self-hosted into two types to present optimal UX.
+export type VCSUIType = "GITLAB_SELF_HOST" | "GITLAB_COM" | "GITHUB_COM";
 
 export interface VCSConfig {
   type: VCSType;
+  uiType: VCSUIType;
   name: string;
   instanceUrl: string;
   applicationId: string;
@@ -16,6 +22,7 @@ export type VCS = {
   // Domain specific fields
   name: string;
   type: VCSType;
+  uiType: VCSUIType;
   instanceUrl: string;
   apiUrl: string;
   applicationId: string;
@@ -80,9 +87,9 @@ export function isValidVCSApplicationIdOrSecret(
   vcsType: VCSType,
   str: string
 ): boolean {
-  if (vcsType == "GITLAB_SELF_HOST") {
+  if (vcsType == "GITLAB") {
     return /^[a-zA-Z0-9_]{64}$/.test(str);
-  } else if (vcsType == "GITHUB_COM") {
+  } else if (vcsType == "GITHUB") {
     return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
   }
   return false;

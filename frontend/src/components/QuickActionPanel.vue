@@ -181,7 +181,7 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
     >
-      <CreateInstanceForm @dismiss="state.showModal = false" />
+      <InstanceForm @dismiss="state.showModal = false" />
     </template>
     <template
       v-else-if="
@@ -258,7 +258,7 @@ import {
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import CreateInstanceForm from "../components/CreateInstanceForm.vue";
+import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";

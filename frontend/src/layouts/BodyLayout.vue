@@ -86,7 +86,7 @@
       class="hidden md:flex md:flex-shrink-0"
       data-label="bb-dashboard-static-sidebar"
     >
-      <div class="flex flex-col w-52">
+      <div class="flex flex-col w-52 bg-control-bg">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
         <div class="flex-1 flex flex-col py-2 overflow-y-auto">
           <router-view name="leftSidebar" />

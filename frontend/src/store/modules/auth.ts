@@ -5,7 +5,7 @@ import { computed } from "vue";
 import { SignupInfo, ActivateInfo } from "@/types";
 import { getIntCookie } from "@/utils";
 import { authServiceClient } from "@/grpcweb";
-import { LoginRequest, User } from "@/types/proto/v1/auth_service";
+import { LoginRequest, User, UserType } from "@/types/proto/v1/auth_service";
 import { convertUserToPrincipal, useUserStore } from ".";
 import { unknown } from "@/utils/common";
 
@@ -37,11 +37,13 @@ export const useAuthStore = defineStore("auth_v1", {
           email: signupInfo.email,
           title: signupInfo.name,
           password: signupInfo.password,
+          userType: UserType.USER,
         },
       });
       const user = await this.login({
         email: signupInfo.email,
         password: signupInfo.password,
+        web: true,
       });
       return user;
     },

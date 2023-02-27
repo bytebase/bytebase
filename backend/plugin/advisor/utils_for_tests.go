@@ -204,7 +204,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 // RandomString returns random string with specific length.
 func RandomString(length int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
-	rand.Seed(time.Now().UnixNano())
+	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	b := make([]rune, length)
 	for i := range b {

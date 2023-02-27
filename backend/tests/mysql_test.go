@@ -194,7 +194,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	}
 
 	t.Log("Delete some downloaded files and re-download")
-	rand.Seed(time.Now().Unix())
+	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
 	binlogFiles, err := os.ReadDir(binlogDir)
 	a.NoError(err)

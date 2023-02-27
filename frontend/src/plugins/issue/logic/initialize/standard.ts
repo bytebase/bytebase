@@ -1,5 +1,13 @@
 import { TemplateType } from "@/plugins";
-import { IssueCreate, IssueCreateContext, MigrationType } from "@/types";
+import {
+  DatabaseId,
+  IssueCreate,
+  MigrationContext,
+  MigrationDetail,
+  MigrationType,
+  RollbackDetail,
+  UNKNOWN_ID,
+} from "@/types";
 import {
   findDatabaseListByQuery,
   BuildNewIssueContext,
@@ -28,16 +36,18 @@ export const buildNewStandardIssue = async (
   }
   const statement =
     migrationType === "BASELINE" ? ESTABLISH_BASELINE_SQL : VALIDATE_ONLY_SQL;
-
-  const createContext: IssueCreateContext = {
-    detailList: databaseList.map((db) => {
-      return {
+  const createContext: MigrationContext = {
+    detailList: databaseList.map((db, index) => {
+      const detail: MigrationDetail = {
         migrationType: migrationType,
         databaseId: db.id,
         statement,
+        earliestAllowedTs: 0,
       };
+      return detail;
     }),
   };
+  maybeApplyRollbackParams(createContext, context.route);
 
   helper.issueCreate!.createContext = createContext;
   await helper.validate();
@@ -46,4 +56,56 @@ export const buildNewStandardIssue = async (
   helper.issueCreate!.createContext = {};
 
   return helper.generate();
+};
+
+// Try to find out the relationship between databaseId and rollback issue/task
+// Id from the URL query.
+export const getRollbackTaskMappingFromQuery = (
+  route: BuildNewIssueContext["route"]
+) => {
+  const mapping = new Map<DatabaseId, RollbackDetail>();
+
+  const { query } = route;
+  const databaseIdListInQuery = (query.databaseList as string) || "";
+  const databaseIdList = databaseIdListInQuery
+    .split(",")
+    .map<DatabaseId>((maybeId) => parseInt(maybeId, 10));
+
+  const rollbackIssueIdInQuery = (query.rollbackIssueId as string) || "";
+  const issueId = parseInt(rollbackIssueIdInQuery, 10) || UNKNOWN_ID;
+  if (issueId === UNKNOWN_ID) {
+    return mapping;
+  }
+
+  const rollbackTaskIdListInQuery = (query.rollbackTaskIdList as string) || "";
+  const taskIdList = rollbackTaskIdListInQuery
+    .split(",")
+    .map((maybeId) => parseInt(maybeId, 10) || UNKNOWN_ID);
+
+  databaseIdList.forEach((databaseId, index) => {
+    const taskId = taskIdList[index] || UNKNOWN_ID;
+    if (taskId !== UNKNOWN_ID) {
+      mapping.set(databaseId, {
+        issueId,
+        taskId,
+      });
+    }
+  });
+  return mapping;
+};
+
+export const maybeApplyRollbackParams = (
+  migrationContext: MigrationContext,
+  route: BuildNewIssueContext["route"]
+) => {
+  const mapping = getRollbackTaskMappingFromQuery(route);
+  migrationContext.detailList.forEach((detail) => {
+    const { databaseId } = detail;
+    if (!databaseId || databaseId === UNKNOWN_ID) return;
+
+    const rollbackDetail = mapping.get(databaseId);
+    if (!rollbackDetail) return;
+
+    detail.rollbackDetail = rollbackDetail;
+  });
 };

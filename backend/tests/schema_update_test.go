@@ -283,7 +283,7 @@ func TestVCS1(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
@@ -310,7 +310,7 @@ func TestVCS1(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
@@ -694,7 +694,7 @@ func TestVCS_SDL(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -719,7 +719,7 @@ func TestVCS_SDL(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -1106,7 +1106,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "singleAsterisk",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1133,7 +1133,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "doubleAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1166,7 +1166,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "wildcard",
 			baseDirectory:      "",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1194,7 +1194,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "prod1",
 			baseDirectory:      "bbtest",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1222,7 +1222,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "ZO",
 			baseDirectory:      "bbtest",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
@@ -1387,7 +1387,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1423,7 +1423,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1654,7 +1654,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 
 	tests := []vcsTestCase{
 		{
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			vcsProviderCreator: fake.NewGitLab,
 			externalID:         "1234",
 			repoFullPath:       "1234",
@@ -1694,7 +1694,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			},
 		},
 		{
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			vcsProviderCreator: fake.NewGitHub,
 			externalID:         "test/branch",
 			repoFullPath:       "test/branch",
@@ -1858,8 +1858,63 @@ func TestGetLatestSchema(t *testing.T) {
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
+		wantSDL              string
 		wantDatabaseMetadata *storepb.DatabaseMetadata
 	}{
+		{
+			name:         "MySQL",
+			dbType:       db.MySQL,
+			databaseName: "latestSchema",
+			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
+			wantRawSchema: "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"--\n" +
+				"-- Table structure for `book`\n" +
+				"--\n" +
+				"CREATE TABLE `book` (\n" +
+				"  `id` int DEFAULT NULL,\n" +
+				"  `name` text COLLATE utf8mb4_general_ci\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
+			wantSDL: "CREATE TABLE `book` (\n" +
+				"  `id` INT DEFAULT NULL,\n" +
+				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n",
+			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+				Name:         "latestSchema",
+				CharacterSet: "utf8mb4",
+				Collation:    "utf8mb4_general_ci",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Tables: []*storepb.TableMetadata{
+							{
+								Name:      "book",
+								Engine:    "InnoDB",
+								Collation: "utf8mb4_general_ci",
+								DataSize:  16384,
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Position: 1,
+										Nullable: true,
+										Type:     "int",
+									},
+									{
+										Name:         "name",
+										Position:     2,
+										Nullable:     true,
+										Type:         "text",
+										CharacterSet: "utf8mb4",
+										Collation:    "utf8mb4_general_ci",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		{
 			name:         "PostgreSQL",
 			dbType:       db.Postgres,
@@ -1887,6 +1942,7 @@ CREATE TABLE public.book (
 );
 
 `,
+			wantSDL: ``,
 			wantDatabaseMetadata: &storepb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "UTF8",
@@ -1934,6 +1990,9 @@ CREATE TABLE public.book (
 			case db.Postgres:
 				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDir)
 				defer stopInstance()
+			case db.MySQL:
+				stopInstance := mysql.SetupTestInstance(t, dbPort, mysqlBinDir)
+				defer stopInstance()
 			default:
 				a.FailNow("unsupported db type")
 			}
@@ -1945,14 +2004,30 @@ CREATE TABLE public.book (
 			)
 			a.NoError(err)
 			// Add an instance.
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				EnvironmentID: environment.ID,
-				Name:          test.name,
-				Engine:        db.Postgres,
-				Host:          "/tmp",
-				Port:          strconv.Itoa(dbPort),
-				Username:      "root",
-			})
+			var instance *api.Instance
+			switch test.dbType {
+			case db.Postgres:
+				instance, err = ctl.addInstance(api.InstanceCreate{
+					EnvironmentID: environment.ID,
+					Name:          test.name,
+					Engine:        db.Postgres,
+					Host:          "/tmp",
+					Port:          strconv.Itoa(dbPort),
+					Username:      "root",
+				})
+			case db.MySQL:
+				instance, err = ctl.addInstance(api.InstanceCreate{
+					EnvironmentID: environment.ID,
+					Name:          "mysqlInstance",
+					Engine:        db.MySQL,
+					Host:          "127.0.0.1",
+					Port:          strconv.Itoa(dbPort),
+					Username:      "root",
+				})
+			default:
+				a.FailNow("unsupported db type")
+			}
+
 			a.NoError(err)
 			err = ctl.createDatabase(project, instance, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
@@ -1995,6 +2070,11 @@ CREATE TABLE public.book (
 			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchemaDump)
+			if test.dbType == db.MySQL {
+				latestSchemaSDL, err := ctl.getLatestSchemaSDL(database.ID)
+				a.NoError(err)
+				a.Equal(test.wantSDL, latestSchemaSDL)
+			}
 			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(database.ID)
 			a.NoError(err)
 			var latestSchemaMetadata storepb.DatabaseMetadata
@@ -2134,7 +2214,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -2159,7 +2239,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -2412,6 +2492,16 @@ WHERE table_schema = '%s';
 				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
 				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
 
+			const initialSDL = ""
+			const updatedSDL = "CREATE TABLE `projects` (\n" +
+				"  `id` INT NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n" +
+				"CREATE TABLE `users` (\n" +
+				"  `id` INT NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n"
+
 			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 			a.NoError(err)
 			wantHistories := []api.MigrationHistory{
@@ -2454,6 +2544,12 @@ WHERE table_schema = '%s';
 				a.Equal(wantHistories[i], got, i)
 				a.NotEmpty(history.Version)
 			}
+
+			// Test SDL format.
+			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instance.ID, histories[1].ID)
+			a.NoError(err)
+			a.Equal(updatedSDL, sdlHistory.Schema)
+			a.Equal(initialSDL, sdlHistory.SchemaPrev)
 		})
 	}
 }
