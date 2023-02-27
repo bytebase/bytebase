@@ -113,13 +113,13 @@ import {
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
-import { SQLResultSet } from "@/types";
+import { SingleSQLResult } from "@/types";
 
 interface State {
   search: string;
 }
 
-type QueryResult = SQLResultSet["data"];
+type QueryResult = SingleSQLResult["data"];
 
 const props = defineProps({
   queryResult: {
