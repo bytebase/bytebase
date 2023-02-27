@@ -108,8 +108,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test SQL Review Project",
-		Key:  "TestSQLReview",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test SQL Review Project",
+		Key:        "TestSQLReview",
 	})
 	a.NoError(err)
 
@@ -286,8 +287,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test SQL Review Project",
-		Key:  "TestSQLReview",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test SQL Review Project",
+		Key:        "TestSQLReview",
 	})
 	a.NoError(err)
 

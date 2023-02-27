@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -58,7 +57,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
-			ResourceID:       fmt.Sprintf("project-%s", uuid.New().String()[:8]),
+			ResourceID:       projectCreate.ResourceID,
 			Title:            projectCreate.Name,
 			Key:              projectCreate.Key,
 			TenantMode:       projectCreate.TenantMode,

@@ -98,6 +98,8 @@ type Project struct {
 
 // ProjectCreate is the API message for creating a project.
 type ProjectCreate struct {
+	ResourceID string `jsonapi:"attr,resourceId"`
+
 	// Domain specific fields
 	Name             string                  `jsonapi:"attr,name"`
 	Key              string                  `jsonapi:"attr,key"`

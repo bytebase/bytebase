@@ -68,8 +68,9 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestExternalApprovalFeishu",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestExternalApprovalFeishu",
 	})
 	a.NoError(err)
 
@@ -223,8 +224,9 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestExternalApprovalFeishu",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestExternalApprovalFeishu",
 	})
 	a.NoError(err)
 

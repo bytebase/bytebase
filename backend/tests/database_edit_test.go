@@ -54,8 +54,9 @@ func TestDatabaseEdit(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Schema Editor Data Project",
-		Key:  "TestSchemaEditor",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Schema Editor Data Project",
+		Key:        "TestSchemaEditor",
 	})
 	a.NoError(err)
 
