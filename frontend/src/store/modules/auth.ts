@@ -43,6 +43,7 @@ export const useAuthStore = defineStore("auth_v1", {
       const user = await this.login({
         email: signupInfo.email,
         password: signupInfo.password,
+        web: true,
       });
       return user;
     },
