@@ -419,6 +419,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	a.NoError(err)
 
 	project, err := ctl.createProject(api.ProjectCreate{
+		ResourceID: generateRandomString("project", 10),
 		Name:       "PITRTest",
 		Key:        "PTT",
 		TenantMode: api.TenantModeDisabled,

@@ -71,8 +71,9 @@ func TestSensitiveData(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Sensitive Data Project",
-		Key:  "TestSensitiveData",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Sensitive Data Project",
+		Key:        "TestSensitiveData",
 	})
 	a.NoError(err)
 

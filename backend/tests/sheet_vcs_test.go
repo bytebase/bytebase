@@ -70,8 +70,9 @@ func TestSheetVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TestVCSSchemaUpdate",
 				},
 			)
 			a.NoError(err)

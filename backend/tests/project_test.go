@@ -49,6 +49,7 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
 		project, err := ctl.createProject(api.ProjectCreate{
+			ResourceID: generateRandomString("project", 10),
 			Name:       "ProjectWithDatabase",
 			Key:        "PWD",
 			TenantMode: api.TenantModeDisabled,
@@ -69,6 +70,7 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
 		project, err := ctl.createProject(api.ProjectCreate{
+			ResourceID: generateRandomString("project", 10),
 			Name:       "ProjectWithOpenIssue",
 			Key:        "PWO",
 			TenantMode: api.TenantModeDisabled,
