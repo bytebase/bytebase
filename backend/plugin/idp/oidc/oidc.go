@@ -92,7 +92,11 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "verify raw ID Token")
 	}
 
-	if idToken.Nonce != nonce {
+	// NOTE: Skip checking nonce if the expected nonce is empty. It is OK because
+	// we've given away the security benefits the nonce brings with an empty nonce,
+	// and some IdP implementations are just behaving strangely that would return a
+	// random nonce when we send an empty nonce to them.
+	if nonce != "" && nonce != idToken.Nonce {
 		return nil, errors.Errorf("mismatched nonce, want %q but got %q", nonce, idToken.Nonce)
 	}
 
