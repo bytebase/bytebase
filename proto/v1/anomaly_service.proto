@@ -27,7 +27,7 @@ message SearchAnomaliesRequest {
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
   // Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
-  // List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
+  // Search the specified type of anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
   string filter = 1;
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
