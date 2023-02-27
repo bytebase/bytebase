@@ -352,10 +352,21 @@ func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	return nil
 }
 
+// SyntaxMode is the type of syntax mode.
+type SyntaxMode int
+
+const (
+	// SyntaxModeNormal is the normal syntax mode.
+	SyntaxModeNormal SyntaxMode = iota
+	// SyntaxModeSDL is the SDL syntax mode.
+	SyntaxModeSDL
+)
+
 // Context is the context for advisor.
 type Context struct {
-	Charset   string
-	Collation string
+	Charset    string
+	Collation  string
+	SyntaxMode SyntaxMode
 
 	// SQL review rule special fields.
 	Rule    *SQLReviewRule

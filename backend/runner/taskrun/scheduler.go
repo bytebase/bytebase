@@ -451,10 +451,11 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 		if api.IsSyntaxCheckSupported(instance.Engine) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-				Statement: *taskPatch.Statement,
-				DbType:    instance.Engine,
-				Charset:   dbSchema.Metadata.CharacterSet,
-				Collation: dbSchema.Metadata.Collation,
+				Statement:  *taskPatch.Statement,
+				DbType:     instance.Engine,
+				Charset:    dbSchema.Metadata.CharacterSet,
+				Collation:  dbSchema.Metadata.Collation,
+				SyntaxMode: task.GetSyntaxMode(),
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
@@ -576,10 +577,11 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 	}
 
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
+		Statement:  statement,
+		DbType:     instance.Engine,
+		Charset:    dbSchema.Metadata.CharacterSet,
+		Collation:  dbSchema.Metadata.Collation,
+		SyntaxMode: task.GetSyntaxMode(),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)

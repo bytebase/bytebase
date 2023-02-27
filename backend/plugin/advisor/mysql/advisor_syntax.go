@@ -4,6 +4,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
+	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
 )
 
 var (
@@ -49,6 +50,21 @@ func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Ad
 				Line:    calculateErrorLine(supportStmt, ctx.Charset, ctx.Collation),
 			},
 		}, nil
+	}
+
+	if ctx.SyntaxMode == advisor.SyntaxModeSDL {
+		if line, err := transform.CheckFormat(parser.MySQL, statement); err != nil {
+			//nolint:nilerr
+			return []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.StatementSyntaxError,
+					Title:   "SDL Syntax error",
+					Content: err.Error(),
+					Line:    line,
+				},
+			}, nil
+		}
 	}
 
 	var adviceList []advisor.Advice

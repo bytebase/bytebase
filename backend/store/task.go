@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 // TaskMessage is the message for tasks.
@@ -70,6 +71,13 @@ func (task *TaskMessage) toTask() *api.Task {
 		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
 	}
 	return composedTask
+}
+
+func (task *TaskMessage) GetSyntaxMode() advisor.SyntaxMode {
+	if task.Type == api.TaskDatabaseSchemaUpdateSDL {
+		return advisor.SyntaxModeSDL
+	}
+	return advisor.SyntaxModeNormal
 }
 
 // GetTaskByID gets a task by ID.

@@ -52,8 +52,9 @@ func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *stor
 		dbType,
 		advisorType,
 		advisor.Context{
-			Charset:   payload.Charset,
-			Collation: payload.Collation,
+			Charset:    payload.Charset,
+			Collation:  payload.Collation,
+			SyntaxMode: payload.SyntaxMode,
 		},
 		payload.Statement,
 	)
