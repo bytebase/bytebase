@@ -49,7 +49,6 @@
           </button>
 
           <BBButtonConfirm
-            v-if="review.rowStatus === 'ARCHIVED'"
             class="btn-normal flex justify-center !py-1 !px-3"
             :disabled="!hasPermission"
             :style="'DELETE'"

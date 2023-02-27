@@ -90,7 +90,7 @@
       class="py-5"
     />
     <BBButtonConfirm
-      v-if="reviewPolicy.rowStatus === 'ARCHIVED' && hasPermission"
+      :disabled="!hasPermission"
       :style="'DELETE'"
       :button-text="$t('sql-review.delete')"
       :ok-text="$t('common.delete')"
