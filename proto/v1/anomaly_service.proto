@@ -26,7 +26,7 @@ message SearchAnomaliesRequest {
   // filter is the filter to apply on the list anomaly request,
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
-  // List the anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
+  // Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
   // List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
   string filter = 1;
 
