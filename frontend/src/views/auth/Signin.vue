@@ -196,6 +196,11 @@ onMounted(async () => {
     state.email = "demo@example.com";
     state.password = "1024";
     state.showPassword = true;
+  } else {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    const email = params.get("email") ?? "";
+    state.email = email;
   }
 
   await identityProviderStore.fetchIdentityProviderList();
