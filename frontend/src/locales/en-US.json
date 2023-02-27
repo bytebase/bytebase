@@ -310,7 +310,7 @@
       "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
       "cancel-generating": "Cancel generating the SQL rollback",
-      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change."
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change. {link}"
     }
   },
   "banner": {
