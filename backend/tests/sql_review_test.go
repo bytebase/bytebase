@@ -133,6 +133,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NotNil(policy.Environment)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgInstance",
 		Engine:        db.Postgres,
@@ -310,6 +311,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NotNil(policy.Environment)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,

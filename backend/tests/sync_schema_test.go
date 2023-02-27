@@ -89,6 +89,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgTestSyncSchema",
 		Engine:        db.Postgres,

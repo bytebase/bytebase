@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -47,6 +46,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
+		if !isValidResourceID(instanceCreate.ResourceID) {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid instance id %s", instanceCreate.ResourceID))
+		}
 		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Database != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 		}
@@ -59,7 +61,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		creator := c.Get(getPrincipalIDContextKey()).(int)
 		instance, err := s.store.CreateInstanceV2(ctx, environment.ResourceID, &store.InstanceMessage{
-			ResourceID:   fmt.Sprintf("instance-%s", uuid.New().String()[:8]),
+			ResourceID:   instanceCreate.ResourceID,
 			Title:        instanceCreate.Name,
 			Engine:       instanceCreate.Engine,
 			ExternalLink: instanceCreate.ExternalLink,

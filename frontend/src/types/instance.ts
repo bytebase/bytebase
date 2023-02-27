@@ -1,7 +1,12 @@
 import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
+import {
+  EnvironmentId,
+  InstanceId,
+  MigrationHistoryId,
+  ResourceId,
+} from "./id";
 import { VCSPushEvent } from "./vcs";
 
 export type EngineType =
@@ -89,6 +94,8 @@ export type Instance = {
 };
 
 export type InstanceCreate = {
+  resourceId: ResourceId;
+
   // Related fields
   environmentId: EnvironmentId;
 

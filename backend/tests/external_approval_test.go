@@ -86,6 +86,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
@@ -240,6 +241,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
