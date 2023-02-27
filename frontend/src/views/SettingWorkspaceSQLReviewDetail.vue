@@ -18,7 +18,7 @@
     <div
       class="flex flex-col items-center space-x-2 justify-center md:flex-row"
     >
-      <div class="flex-1 flex space-x-3 items-center justify-start">
+      <div class="flex-1 flex space-x-2 items-center justify-start">
         <BBBadge v-if="reviewPolicy.environment" :can-remove="false">
           {{ reviewPolicy.environment.name }}
           <ProductionEnvironmentIcon
@@ -37,7 +37,7 @@
           />
         </div>
         <BBTextField
-          class="flex-1 text-3xl py-0.5 font-bold truncate"
+          class="flex-1 text-3xl py-0.5 px-0.5 font-bold truncate"
           :disabled="!hasPermission"
           :required="true"
           :focus-on-mount="false"
