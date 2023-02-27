@@ -36,20 +36,23 @@
           handleResourceIdInput(($event.target as HTMLInputElement).value)
         "
       />
-      <ul class="w-full my-2 space-y-2 list-disc list-outside pl-4">
-        <li
-          v-for="validateMessage in state.validatedMessages"
-          :key="validateMessage.message"
-          class="break-words w-full text-xs"
-          :class="[
-            validateMessage.type === 'warning' && 'text-yellow-600',
-            validateMessage.type === 'error' && 'text-red-600',
-          ]"
-        >
-          {{ validateMessage.message }}
-        </li>
-      </ul>
     </template>
+    <ul
+      v-if="state.validatedMessages.length > 0"
+      class="w-full my-2 space-y-2 list-disc list-outside pl-4"
+    >
+      <li
+        v-for="validateMessage in state.validatedMessages"
+        :key="validateMessage.message"
+        class="break-words w-full text-xs"
+        :class="[
+          validateMessage.type === 'warning' && 'text-yellow-600',
+          validateMessage.type === 'error' && 'text-red-600',
+        ]"
+      >
+        {{ validateMessage.message }}
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -99,18 +102,6 @@ const state = reactive<LocalState>({
   validatedMessages: [],
 });
 
-const getPrefix = (resource: string) => {
-  switch (resource) {
-    case "environment":
-      return "env";
-    case "idp":
-      return "idp";
-    default:
-      return "";
-  }
-};
-const randomSuffix = randomString(4).toLowerCase();
-
 const resourceName = computed(() => {
   return t(`resource.${props.resource}`);
 });
@@ -149,9 +140,9 @@ watch(
         .join("")
         .toLowerCase();
 
-      state.resourceId = `${getPrefix(props.resource)}-${
-        formatedTitle || randomString(4).toLowerCase()
-      }-${randomSuffix}`;
+      debounceHandleResourceIdChange(
+        `${formatedTitle || randomString(4).toLowerCase()}`
+      );
     }
   },
   {
@@ -208,7 +199,7 @@ const debounceHandleResourceIdChange = useDebounceFn(
       }
     }
   },
-  300
+  200
 );
 
 defineExpose({
