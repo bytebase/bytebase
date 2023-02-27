@@ -1375,8 +1375,8 @@ const getTestConnectionContext = () => {
     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
     useEmptyPassword: dataSource.useEmptyPassword,
     database: dataSource.database,
-    srv: false,
-    authenticationDatabase: "",
+    srv: dataSource.options.srv,
+    authenticationDatabase: dataSource.options.authenticationDatabase,
   };
 
   if (showSSL.value) {
