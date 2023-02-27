@@ -1895,6 +1895,7 @@
   },
   "resource": {
     "environment": "环境",
+    "instance": "实例",
     "idp": "身份提供商"
   },
   "resource-id": {
