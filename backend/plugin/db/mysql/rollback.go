@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -116,13 +117,24 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		rollbackSQLList = append(rollbackSQLList, sql)
 	}
 
-	errBytes, err := io.ReadAll(errPipe)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read from stderr")
+	errReader := bufio.NewReader(errPipe)
+	errBuilder := strings.Builder{}
+	for {
+		line, err := errReader.ReadString('\n')
+		if err != io.EOF && err != nil {
+			return "", errors.Wrap(err, "failed to read from stderr")
+		}
+		if strings.HasPrefix(line, "ERROR: ") {
+			_, _ = errBuilder.WriteString(line)
+			_, _ = errBuilder.WriteString("\n")
+		}
+		if err == io.EOF {
+			break
+		}
 	}
 
-	if len(errBytes) > 0 {
-		return "", errors.Errorf("mysqlbinlog error: %s", errBytes)
+	if errBuilder.Len() > 0 {
+		return "", errors.Errorf("mysqlbinlog error: %s", errBuilder.String())
 	}
 
 	if err = cmd.Wait(); err != nil {
