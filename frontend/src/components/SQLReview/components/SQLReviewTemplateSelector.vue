@@ -1,17 +1,17 @@
 <template>
-  <div>
+  <div class="flex flex-col gap-y-4">
     <p v-if="title" class="textlabel">
       {{ title }}
       <span v-if="required" style="color: red">*</span>
     </p>
 
     <div
-      class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
+      class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-4"
     >
       <div
         v-for="template in reviewPolicyTemplateList"
         :key="template.id"
-        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all w-full sm:max-w-xs"
+        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all w-full h-full sm:max-w-xs"
         :class="
           isSelectedTemplate(template)
             ? 'bg-gray-100'
@@ -43,8 +43,10 @@
       </div>
     </div>
 
+    <hr />
+
     <div
-      class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
+      class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-10 gap-y-4"
     >
       <div
         v-for="template in builtInTemplateList"
