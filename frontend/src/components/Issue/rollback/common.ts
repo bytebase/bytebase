@@ -3,6 +3,7 @@ import { head } from "lodash-es";
 
 import {
   ActivityCreate,
+  ActivityIssueCommentCreatePayload,
   Database,
   Issue,
   IssueCreate,
@@ -189,17 +190,18 @@ const databaseOfTask = (task: Task | TaskCreate): Database => {
   return task.database!;
 };
 
-export const maybeCreateBackTraceComment = async (newIssue: Issue) => {
+export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
   if (newIssue.type !== "bb.issue.database.data.update") return;
-  const params = {
-    issueId: UNKNOWN_ID as IssueId,
-    taskIdList: [] as TaskId[],
-  };
+  const rollbackList = [] as Array<{
+    byTask: Task;
+    fromIssueId: IssueId;
+    fromTaskId: TaskId;
+  }>;
   const taskList = flattenTaskList<Task>(newIssue);
   for (let i = 0; i < taskList.length; i++) {
-    const task = taskList[i];
-    if (task.type !== "bb.task.database.data.update") continue;
-    const payload = task.payload as TaskDatabaseDataUpdatePayload;
+    const byTask = taskList[i];
+    if (byTask.type !== "bb.task.database.data.update") continue;
+    const payload = byTask.payload as TaskDatabaseDataUpdatePayload;
     if (!payload) continue;
     if (
       payload.rollbackFromIssueId &&
@@ -207,47 +209,51 @@ export const maybeCreateBackTraceComment = async (newIssue: Issue) => {
       payload.rollbackFromTaskId &&
       payload.rollbackFromTaskId !== UNKNOWN_ID
     ) {
-      if (
-        params.issueId !== UNKNOWN_ID &&
-        payload.rollbackFromIssueId !== params.issueId
-      ) {
-        console.warn(
-          `Different "rollbackFromIssueId" ${params.issueId} and ${payload.rollbackFromIssueId} found.`
-        );
-        return;
-      }
-      params.issueId = payload.rollbackFromIssueId;
-      params.taskIdList.push(payload.rollbackFromTaskId);
+      rollbackList.push({
+        byTask,
+        fromIssueId: payload.rollbackFromIssueId,
+        fromTaskId: payload.rollbackFromTaskId,
+      });
     }
   }
-  if (params.issueId === UNKNOWN_ID || params.taskIdList.length === 0) return;
-  const fromIssue = await useIssueStore().getOrFetchIssueById(params.issueId);
-  const allFromTaskList = flattenTaskList<Task>(fromIssue);
-  const fromTaskMap = new Map(allFromTaskList.map((task) => [task.id, task]));
-  const fromTaskList: Task[] = [];
-  params.taskIdList.forEach((taskId) => {
-    const task = fromTaskMap.get(taskId);
-    if (task && task.id !== UNKNOWN_ID) {
-      fromTaskList.push(task);
+  if (rollbackList.length === 0) return;
+
+  const issueStore = useIssueStore();
+  for (let i = 0; i < rollbackList.length; i++) {
+    const { byTask, fromIssueId, fromTaskId } = rollbackList[i];
+    const fromIssue = await issueStore.getOrFetchIssueById(fromIssueId);
+    if (fromIssue.id === UNKNOWN_ID) continue;
+    const fromTask = flattenTaskList<Task>(fromIssue).find(
+      (task) => task.id === fromTaskId
+    );
+    if (!fromTask || fromTask.id === UNKNOWN_ID) continue;
+
+    const comment = [
+      `Create issue #${newIssue.id}`,
+      "to rollback task",
+      `[${fromTask.name}]`,
+    ].join(" ");
+
+    const payload: ActivityIssueCommentCreatePayload = {
+      issueName: fromIssue.name,
+      taskRollbackBy: {
+        issueId: fromIssue.id,
+        taskId: fromTask.id,
+        rollbackByIssueId: newIssue.id,
+        rollbackByTaskId: byTask.id,
+      },
+    };
+    const createActivity: ActivityCreate = {
+      type: "bb.issue.comment.create",
+      containerId: fromIssue.id,
+      comment,
+      payload,
+    };
+    try {
+      await useActivityStore().createActivity(createActivity);
+    } catch {
+      // do nothing
+      // failing to comment to won't be too bad
     }
-  });
-  if (fromTaskList.length === 0) return;
-
-  const comment = [
-    `Create issue #${newIssue.id}`,
-    "to rollback task",
-    fromTaskList.map((task) => `[${task.name}]`).join(","),
-  ].join(" ");
-
-  const createActivity: ActivityCreate = {
-    type: "bb.issue.comment.create",
-    containerId: fromIssue.id,
-    comment,
-  };
-  try {
-    await useActivityStore().createActivity(createActivity);
-  } catch {
-    // do nothing
-    // failing to comment to won't be too bad
   }
 };

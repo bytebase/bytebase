@@ -18,7 +18,21 @@
         </div>
       </template>
       <template v-else-if="payload?.rollbackSqlStatus === 'DONE'">
+        <template
+          v-if="
+            taskRollbackBy && taskRollbackBy.rollbackByIssueId !== UNKNOWN_ID
+          "
+        >
+          <router-link
+            :to="`/issue/${taskRollbackBy.rollbackByIssueId}`"
+            class="text-accent inline-flex gap-x-1"
+          >
+            <span>{{ $t("common.issue") }}</span>
+            <span>#{{ taskRollbackBy.rollbackByIssueId }}</span>
+          </router-link>
+        </template>
         <BBTooltipButton
+          v-else
           :disabled="!allowPreviewRollback"
           tooltip-mode="DISABLED-ONLY"
           class="btn-normal !px-3 !py-1"
@@ -43,12 +57,20 @@ import { computed, reactive, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
 
-import type { Issue, Task, TaskDatabaseDataUpdatePayload } from "@/types";
+import {
+  ActivityIssueCommentCreatePayload,
+  Issue,
+  Task,
+  TaskDatabaseDataUpdatePayload,
+  TaskRollbackBy,
+  UNKNOWN_ID,
+} from "@/types";
 import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
 import { useRollbackLogic } from "./common";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
+import { useActivityStore } from "@/store";
 
 type LocalState = {
   loading: boolean;
@@ -79,6 +101,25 @@ const allowPreviewRollback = computed(() => {
     return false;
   }
   return true;
+});
+
+const taskRollbackBy = computed((): TaskRollbackBy | undefined => {
+  const activityList = useActivityStore().getActivityListByIssue(
+    issue.value.id
+  );
+  // Find the latest comment activity with TaskRollbackBy struct if possible.
+  for (let i = activityList.length - 1; i >= 0; i--) {
+    const activity = activityList[i];
+    if (activity.type !== "bb.issue.comment.create") continue;
+    const payload = activity.payload as
+      | ActivityIssueCommentCreatePayload
+      | undefined;
+    if (!payload) continue;
+    const taskRollbackBy = payload.taskRollbackBy;
+    if (!taskRollbackBy) continue;
+    return taskRollbackBy;
+  }
+  return undefined;
 });
 
 const tryRollbackTask = async () => {

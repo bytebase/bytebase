@@ -28,7 +28,7 @@ import {
   TaskTypeWithSheetId,
   TaskTypeWithStatement,
 } from "./common";
-import { maybeCreateBackTraceComment } from "../rollback/common";
+import { maybeCreateBackTraceComments } from "../rollback/common";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -58,7 +58,7 @@ export const useBaseIssueLogic = (params: {
     issue.payload = {};
 
     const createdIssue = await issueStore.createIssue(issue);
-    await maybeCreateBackTraceComment(createdIssue);
+    await maybeCreateBackTraceComments(createdIssue);
 
     // Use replace to omit the new issue url in the navigation history.
     router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
