@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -94,7 +95,6 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		return "", errors.Wrap(err, "failed to create stderr pipe")
 	}
 	defer errPipe.Close()
-	errScanner := bufio.NewScanner(errPipe)
 
 	if err := cmd.Start(); err != nil {
 		return "", errors.Wrap(err, "failed to run mysqlbinlog")
@@ -117,26 +117,28 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		rollbackSQLList = append(rollbackSQLList, sql)
 	}
 
-	var errBuilder strings.Builder
-	for errScanner.Scan() {
-		line := errScanner.Text()
-		// Log the error, but return the first 1024 characters in the error to users.
-		log.Warn(line)
-		if errBuilder.Len() < 1024 {
-			if _, err := errBuilder.WriteString(line); err != nil {
-				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
-			}
-			if _, err := errBuilder.WriteString("\n"); err != nil {
-				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
-			}
+	errReader := bufio.NewReader(errPipe)
+	errBuilder := strings.Builder{}
+	for {
+		line, err := errReader.ReadString('\n')
+		if err != io.EOF && err != nil {
+			return "", errors.Wrap(err, "failed to read from stderr")
+		}
+		if strings.HasPrefix(line, "ERROR: ") {
+			_, _ = errBuilder.WriteString(line)
+			_, _ = errBuilder.WriteString("\n")
+		}
+		if err == io.EOF {
+			break
 		}
 	}
-	if errScanner.Err() != nil {
-		return "", errors.Wrap(errScanner.Err(), "error scanner failed")
+
+	if errBuilder.Len() > 0 {
+		return "", errors.Errorf("mysqlbinlog error: %s", errBuilder.String())
 	}
 
 	if err = cmd.Wait(); err != nil {
-		return "", errors.Wrapf(err, "mysqlbinlog error: %s", errBuilder.String())
+		return "", errors.Wrapf(err, "failed to run mysqlbinlog")
 	}
 
 	return strings.Join(rollbackSQLList, "\n\n"), nil
