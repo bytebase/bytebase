@@ -389,7 +389,6 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 	// because we need to maintain a fixed order of these two operations.
 	// This approach ensures that we can manipulate the column position as needed.
 	addAndModifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
-	dropColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 
 	oldColumnMap := buildColumnMap(oldTable.createTable.Cols)
 	oldColumnPositionMap := buildColumnPositionMap(oldTable.createTable)
@@ -433,19 +432,21 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 	}
 	// TODO(zp): add an option to control whether to drop the excess columns.
 	for _, columnDef := range oldColumnMap {
-		dropColumnStatement.Specs = append(dropColumnStatement.Specs, &ast.AlterTableSpec{
-			Tp: ast.AlterTableDropColumn,
-			OldColumnName: &ast.ColumnName{
-				Name: model.NewCIStr(columnDef.Name.Name.O),
+		diff.dropColumnList = append(diff.dropColumnList, &ast.AlterTableStmt{
+			Table: newTable.createTable.Table,
+			Specs: []*ast.AlterTableSpec{
+				{
+					Tp: ast.AlterTableDropColumn,
+					OldColumnName: &ast.ColumnName{
+						Name: model.NewCIStr(columnDef.Name.Name.O),
+					},
+				},
 			},
 		})
 	}
 
 	if len(addAndModifyColumnStatement.Specs) > 0 {
 		diff.addAndModifyColumnList = append(diff.addAndModifyColumnList, addAndModifyColumnStatement)
-	}
-	if len(dropColumnStatement.Specs) > 0 {
-		diff.dropColumnList = append(diff.dropColumnList, dropColumnStatement)
 	}
 }
 

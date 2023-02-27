@@ -270,7 +270,8 @@ func TestColumnOrder(t *testing.T) {
 		{
 			old: `CREATE TABLE book(c1 INT, c2 INT, c3 INT, c4 INT, c8 INT);`,
 			new: `CREATE TABLE book(c9 INT, c8 VARCHAR(10), c4 INT, c2 VARCHAR(10), c9 INT);`,
-			want: "ALTER TABLE `book` DROP COLUMN `c3`, DROP COLUMN `c1`;\n\n" +
+			want: "ALTER TABLE `book` DROP COLUMN `c1`;\n\n" +
+				"ALTER TABLE `book` DROP COLUMN `c3`;\n\n" +
 				"ALTER TABLE `book` ADD COLUMN `c9` INT FIRST, " +
 				"MODIFY COLUMN `c8` VARCHAR(10) AFTER `c9`, " +
 				"MODIFY COLUMN `c4` INT AFTER `c8`, " +
