@@ -23,7 +23,7 @@ service AnomalyService {
 }
 
 message SearchAnomaliesRequest {
-  // filter is the filter to apply on the list anomaly request,
+  // filter is the filter to apply on the search anomaly request,
   // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
   // For example:
   // Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
