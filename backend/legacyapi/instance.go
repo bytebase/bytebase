@@ -33,6 +33,8 @@ type Instance struct {
 
 // InstanceCreate is the API message for creating an instance.
 type InstanceCreate struct {
+	ResourceID string `jsonapi:"attr,resourceId"`
+
 	// Related fields
 	EnvironmentID int `jsonapi:"attr,environmentId"`
 

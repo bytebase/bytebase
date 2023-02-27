@@ -171,6 +171,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgInstance",
 		Engine:        db.Postgres,
@@ -449,6 +450,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,

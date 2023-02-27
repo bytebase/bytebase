@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
-    <div class="divide-y divide-block-border">
+    <div class="divide-y divide-block-border w-[850px]">
       <div
         v-if="isCreating"
         class="w-full mt-4 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-7"
@@ -52,6 +52,20 @@
             @input="handleInstanceNameInput"
           />
         </div>
+
+        <div class="sm:col-span-3 sm:col-start-1 -mt-6">
+          <ResourceIdField
+            ref="resourceIdField"
+            class="max-w-full flex-nowrap"
+            resource="instance"
+            :readonly="!isCreating"
+            :value="basicInformation.resourceId"
+            :resource-title="basicInformation.name"
+            :random-string="true"
+            :validator="validateResourceId"
+          />
+        </div>
+
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="environment" class="textlabel">
             {{ $t("common.environment") }}
@@ -522,13 +536,6 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
-import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import {
-  SpannerHostInput,
-  SpannerCredentialInput,
-  SslCertificateForm,
-} from "./InstanceForm";
 import {
   hasWorkspacePermission,
   instanceSlug,
@@ -560,10 +567,26 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useDataSourceStore,
+  useEnvironmentStore,
   useInstanceStore,
   useSQLStore,
 } from "@/store";
 import { useRouter } from "vue-router";
+import EnvironmentSelect from "../components/EnvironmentSelect.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+import {
+  SpannerHostInput,
+  SpannerCredentialInput,
+  SslCertificateForm,
+} from "./InstanceForm";
+import ResourceIdField from "./ResourceIdField.vue";
+import { useInstanceV1Store } from "@/store/modules/v1/instance";
+import {
+  environmentNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
+import { getErrorCode } from "@/utils/grpcweb";
+import { Status } from "nice-grpc-common";
 
 const props = defineProps({
   instance: {
@@ -605,6 +628,8 @@ interface LocalState {
 const { t } = useI18n();
 const router = useRouter();
 const instanceStore = useInstanceStore();
+const instanceV1Store = useInstanceV1Store();
+const environmentStore = useEnvironmentStore();
 const dataSourceStore = useDataSourceStore();
 const currentUser = useCurrentUser();
 const sqlStore = useSQLStore();
@@ -626,6 +651,8 @@ const basicInformation = ref<BasicInformation>({
   engine: props.instance?.engine || "MYSQL",
   environmentId: (props.instance?.environment.id || UNKNOWN_ID) as number,
 });
+
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const getDataSourceWithType = (type: DataSourceType) =>
   props.instance?.dataSourceList.find((ds) => ds.type === type);
@@ -727,7 +754,12 @@ const allowCreate = computed(() => {
       adminDataSource.value.password
     );
   }
-  return basicInformation.value.name && adminDataSource.value.host;
+  return (
+    basicInformation.value.name &&
+    resourceIdField.value?.resourceId &&
+    resourceIdField.value?.isValidated &&
+    adminDataSource.value.host
+  );
 });
 
 const allowEdit = computed(() => {
@@ -1041,6 +1073,34 @@ const handleDeleteRODataSource = async () => {
   state.currentDataSourceType = "ADMIN";
 };
 
+const validateResourceId = async (resourceId: ResourceId) => {
+  if (!resourceId) {
+    return;
+  }
+
+  const environment = environmentStore.getEnvironmentById(
+    basicInformation.value.environmentId
+  );
+  try {
+    const instance = await instanceV1Store.getOrFetchInstanceByName(
+      environmentNamePrefix +
+        environment.resourceId +
+        "/" +
+        instanceNamePrefix +
+        resourceId
+    );
+    if (instance) {
+      return t("resource-id.validation.duplicated", {
+        resource: t("resource.instance"),
+      });
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+};
+
 const updateInstanceState = async () => {
   if (!props.instance) {
     return;
@@ -1088,36 +1148,11 @@ const handleWarningModalOkClick = async () => {
 };
 
 const tryCreate = async () => {
-  const connectionInfo: ConnectionInfo = {
-    engine: basicInformation.value.engine,
-    username: adminDataSource.value.username,
-    password: adminDataSource.value.password,
-    // When creating instance, the password is always needed.
-    useEmptyPassword: false,
-    host: adminDataSource.value.host,
-    port: adminDataSource.value.port,
-    srv: adminDataSource.value.options.srv,
-    authenticationDatabase:
-      adminDataSource.value.options.authenticationDatabase,
-  };
-
-  if (showSSL.value) {
-    // Default to "NONE"
-    connectionInfo.sslCa = adminDataSource.value.sslCa ?? "";
-    connectionInfo.sslKey = adminDataSource.value.sslKey ?? "";
-    connectionInfo.sslCert = adminDataSource.value.sslCert ?? "";
-  }
-
-  // MongoDB can use auth database.
-  // https://www.mongodb.com/docs/manual/tutorial/authenticate-a-user/#std-label-authentication-auth-as-user
-  if (basicInformation.value.engine === "MONGODB") {
-    connectionInfo.database = adminDataSource.value.database;
-  }
-
-  state.isRequesting = true;
+  const connectionContext = getTestConnectionContext();
+  state.isTestingConnection = true;
   try {
-    const resultSet = await sqlStore.ping(connectionInfo);
-    state.isRequesting = false;
+    const resultSet = await sqlStore.ping(connectionContext);
+    state.isTestingConnection = false;
     if (isEmpty(resultSet.error)) {
       await doCreate();
     } else {
@@ -1127,7 +1162,7 @@ const tryCreate = async () => {
       state.showCreateInstanceWarningModal = true;
     }
   } catch (error) {
-    state.isRequesting = false;
+    state.isTestingConnection = false;
   }
 };
 
@@ -1136,9 +1171,12 @@ const tryCreate = async () => {
 // stored in that data source object instead of in the instance self.
 // Conceptually, data source is the proper place to store connection info (thinking of DSN)
 const doCreate = async () => {
-  state.isRequesting = true;
+  if (!isCreating.value) {
+    return;
+  }
 
   const instanceCreate: InstanceCreate = {
+    resourceId: resourceIdField.value?.resourceId as string,
     name: basicInformation.value.name,
     engine: basicInformation.value.engine,
     externalLink: basicInformation.value.externalLink,
@@ -1163,9 +1201,11 @@ const doCreate = async () => {
     // Clear the `database` field if not needed.
     instanceCreate.database = "";
   }
+
+  state.isRequesting = true;
   const createdInstance = await instanceStore.createInstance(instanceCreate);
   state.isRequesting = false;
-  emit("dismiss");
+
   router.push(`/instance/${instanceSlug(createdInstance)}`);
   pushNotification({
     module: "bytebase",
@@ -1174,6 +1214,7 @@ const doCreate = async () => {
       createdInstance.name,
     ]),
   });
+  emit("dismiss");
 };
 
 const doUpdate = async () => {
@@ -1312,7 +1353,7 @@ const doUpdate = async () => {
   }
 };
 
-const testConnection = async () => {
+const getTestConnectionContext = () => {
   const dataSource = currentDataSource.value;
   let connectionHost = adminDataSource.value.host;
   let connectionPort = adminDataSource.value.port;
@@ -1361,8 +1402,13 @@ const testConnection = async () => {
     }
   }
 
+  return connectionInfo;
+};
+
+const testConnection = async () => {
+  const connectionContext = getTestConnectionContext();
   state.isTestingConnection = true;
-  const resultSet = await sqlStore.ping(connectionInfo);
+  const resultSet = await sqlStore.ping(connectionContext);
   if (isEmpty(resultSet.error)) {
     pushNotification({
       module: "bytebase",
@@ -1372,8 +1418,8 @@ const testConnection = async () => {
   } else {
     let title = t("instance.failed-to-connect-instance");
     if (
-      connectionInfo.host == "localhost" ||
-      connectionInfo.host == "127.0.0.1"
+      connectionContext.host == "localhost" ||
+      connectionContext.host == "127.0.0.1"
     ) {
       title = t("instance.failed-to-connect-instance-localhost");
     }
