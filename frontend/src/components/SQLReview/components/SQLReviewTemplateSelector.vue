@@ -91,7 +91,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import { SQLReviewPolicyTemplate } from "@/types";
 import { TEMPLATE_LIST as builtInTemplateList, RuleLevel } from "@/types";
@@ -113,15 +113,22 @@ const props = withDefaults(
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "select-template", template: SQLReviewPolicyTemplate): void;
+  (
+    event: "templates-change",
+    templateList: {
+      policy: SQLReviewPolicyTemplate[];
+      builtin: SQLReviewPolicyTemplate[];
+    }
+  ): void;
 }>();
 
 const reviewPolicyList = useSQLReviewPolicyList();
 
 const reviewPolicyTemplateList = computed(() => {
-  return reviewPolicyList.value.map((rule) =>
-    rulesToTemplate(rule, false /* withDisabled=false */)
+  return reviewPolicyList.value.map((policy) =>
+    rulesToTemplate(policy, false /* withDisabled=false */)
   );
 });
 
@@ -137,4 +144,15 @@ const enabledRuleCount = (template: SQLReviewPolicyTemplate) => {
 const getTemplateImage = (id: string) => {
   return new URL(`../../../assets/${id}.webp`, import.meta.url).href;
 };
+
+watch(
+  reviewPolicyTemplateList,
+  () => {
+    emit("templates-change", {
+      policy: reviewPolicyTemplateList.value,
+      builtin: builtInTemplateList,
+    });
+  },
+  { immediate: true }
+);
 </script>

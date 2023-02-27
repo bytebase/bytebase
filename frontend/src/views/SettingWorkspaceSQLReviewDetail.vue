@@ -8,7 +8,7 @@
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
-    :policy-id="reviewPolicy.id"
+    :policy="reviewPolicy"
     :name="reviewPolicy.name"
     :selected-environment="reviewPolicy.environment"
     :selected-rule-list="selectedRuleList"

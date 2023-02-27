@@ -41,51 +41,24 @@
       />
     </div>
     <div>
-      <div v-if="isEdit" class="mt-5">
-        <div
-          class="flex cursor-pointer items-center text-indigo-500"
-          @click="state.openTemplate = !state.openTemplate"
-        >
-          <heroicons-solid:chevron-right
-            class="w-5 h-5 transform transition-all"
-            :class="state.openTemplate ? 'rotate-90' : ''"
-          />
-          <span class="ml-l text-sm font-medium">
-            {{ $t("sql-review.create.configure-rule.change-template") }}
-          </span>
-        </div>
-
-        <template v-if="state.openTemplate">
-          <SQLReviewTemplateSelector
-            :required="false"
-            :selected-template="selectedTemplate"
-            @select-template="$emit('select-template', $event)"
-          />
-        </template>
-      </div>
-      <template v-else>
-        <SQLReviewTemplateSelector
-          :required="true"
-          :selected-template="selectedTemplate"
-          @select-template="$emit('select-template', $event)"
-        />
-      </template>
+      <SQLReviewTemplateSelector
+        :required="true"
+        :selected-template="selectedTemplate"
+        @select-template="$emit('select-template', $event)"
+        @templates-change="onTemplatesChange($event)"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive } from "vue";
+import { PropType } from "vue";
 import { Environment, SQLReviewPolicyTemplate } from "@/types";
 import { environmentName } from "@/utils";
 import { BBTextField } from "@/bbkit";
 import { SQLReviewTemplateSelector } from "./components";
 
-interface LocalState {
-  openTemplate: boolean;
-}
-
-defineProps({
+const props = defineProps({
   name: {
     required: true,
     type: String,
@@ -115,11 +88,16 @@ const emit = defineEmits<{
   (event: "select-template", template: SQLReviewPolicyTemplate): void;
 }>();
 
-const state = reactive<LocalState>({
-  openTemplate: false,
-});
-
 const onNameChange = (event: Event) => {
   emit("name-change", (event.target as HTMLInputElement).value);
+};
+
+const onTemplatesChange = (templates: {
+  policy: SQLReviewPolicyTemplate[];
+  builtin: SQLReviewPolicyTemplate[];
+}) => {
+  if (!props.selectedTemplate) {
+    emit("select-template", templates.policy[0] ?? templates.builtin[0]);
+  }
 };
 </script>
