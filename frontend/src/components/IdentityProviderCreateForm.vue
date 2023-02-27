@@ -86,6 +86,7 @@
           resource="idp"
           :readonly="!isCreating"
           :value="resourceId"
+          :random-string="true"
           :resource-title="identityProvider.title"
           :validator="validateResourceId"
         />
