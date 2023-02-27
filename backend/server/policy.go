@@ -451,6 +451,7 @@ func mergeSQLReviewRule(payload string) string {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    rule.Type,
 			Level:   rule.Level,
+			Comment: rule.Comment,
 			Payload: rule.Payload,
 		})
 	}
@@ -482,6 +483,7 @@ func splitSQLReviewRule(payload *string) *string {
 					Type:    rule.Type,
 					Level:   rule.Level,
 					Engine:  db.MySQL,
+					Comment: rule.Comment,
 					Payload: rule.Payload,
 				})
 			}
@@ -490,6 +492,7 @@ func splitSQLReviewRule(payload *string) *string {
 					Type:    rule.Type,
 					Level:   rule.Level,
 					Engine:  db.TiDB,
+					Comment: rule.Comment,
 					Payload: rule.Payload,
 				})
 			}
@@ -498,6 +501,7 @@ func splitSQLReviewRule(payload *string) *string {
 					Type:    rule.Type,
 					Level:   rule.Level,
 					Engine:  db.Postgres,
+					Comment: rule.Comment,
 					Payload: rule.Payload,
 				})
 			}
