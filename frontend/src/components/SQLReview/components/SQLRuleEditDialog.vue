@@ -17,12 +17,18 @@
           </a>
         </div>
       </div>
-      <div v-if="getRuleLocalization(rule.type).description" class="space-y-1">
+      <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
-          {{ $t("common.description") }}
+          {{ $t("sql-review.rule.active") }}
         </h3>
-        <div class="textinfolabel flex items-center gap-x-2">
-          {{ getRuleLocalization(rule.type).description }}
+        <div class="flex items-center gap-x-2 text-sm">
+          <BBSwitch
+            :class="[!editable && 'pointer-events-none']"
+            :disabled="disabled"
+            :value="state.level !== RuleLevel.DISABLED"
+            size="small"
+            @toggle="toggleActivity(rule, $event)"
+          />
         </div>
       </div>
       <div class="space-y-1">
@@ -91,6 +97,14 @@
           :editable="editable"
           @update:value="state.payload[index] = $event"
         />
+      </div>
+      <div v-if="getRuleLocalization(rule.type).description" class="space-y-1">
+        <h3 class="text-lg text-control font-medium">
+          {{ $t("common.description") }}
+        </h3>
+        <div class="textinfolabel flex items-center gap-x-2">
+          {{ getRuleLocalization(rule.type).description }}
+        </div>
       </div>
       <div v-if="editable" class="mt-4 pt-2 border-t flex justify-end">
         <button
@@ -165,6 +179,10 @@ const configTitle = (config: RuleConfigComponent): string => {
     props.rule.type
   )}.component.${config.key}.title`;
   return t(key);
+};
+
+const toggleActivity = (rule: RuleTemplate, on: boolean) => {
+  state.level = on ? RuleLevel.WARNING : RuleLevel.DISABLED;
 };
 
 watch(
