@@ -450,6 +450,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			Level:   level,
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
+			Comment: rule.Comment,
 			Engine:  convertToEngine(db.Type(rule.Engine)),
 		})
 	}
@@ -480,6 +481,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			Level:   level,
 			Payload: rule.Payload,
 			Type:    advisor.SQLReviewRuleType(rule.Type),
+			Comment: rule.Comment,
 			Engine:  advisordb.Type(convertEngine(rule.Engine)),
 		})
 	}
