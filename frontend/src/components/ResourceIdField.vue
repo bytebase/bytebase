@@ -78,7 +78,7 @@ interface LocalState {
   validatedMessages: ValidatedMessage[];
 }
 
-type ResourceType = "environment" | "idp";
+type ResourceType = "environment" | "instance" | "idp";
 
 const props = withDefaults(
   defineProps<{
@@ -109,46 +109,6 @@ const resourceName = computed(() => {
 const shouldShowResourceIdField = computed(() => {
   return !props.readonly && state.isResourceIdChanged;
 });
-
-watch(
-  () => props.value,
-  (newValue) => {
-    state.resourceId = newValue;
-  }
-);
-
-watch(
-  () => props.resourceTitle,
-  (resourceTitle) => {
-    if (props.readonly) {
-      return;
-    }
-
-    if (!state.isResourceIdChanged && resourceTitle) {
-      const formatedTitle = resourceTitle
-        .toLowerCase()
-        .split("")
-        .map((char) => {
-          if (char === " ") {
-            return "-";
-          }
-          if (characters.includes(char)) {
-            return char;
-          }
-          return randomString(1);
-        })
-        .join("")
-        .toLowerCase();
-
-      debounceHandleResourceIdChange(
-        `${formatedTitle || randomString(4).toLowerCase()}`
-      );
-    }
-  },
-  {
-    immediate: true,
-  }
-);
 
 const handleResourceIdInput = (newValue: string) => {
   if (!state.isResourceIdChanged) {
@@ -200,6 +160,49 @@ const debounceHandleResourceIdChange = useDebounceFn(
     }
   },
   200
+);
+
+watch(
+  () => props.value,
+  (newValue) => {
+    state.resourceId = newValue;
+  }
+);
+
+watch(
+  () => props.resourceTitle,
+  (resourceTitle) => {
+    if (props.readonly) {
+      return;
+    }
+
+    if (!state.isResourceIdChanged && resourceTitle) {
+      const formatedTitle = resourceTitle
+        .toLowerCase()
+        .split("")
+        .map((char) => {
+          if (char === " ") {
+            return "-";
+          }
+          if (characters.includes(char)) {
+            return char;
+          }
+          return randomString(1);
+        })
+        .join("")
+        .toLowerCase();
+
+      debounceHandleResourceIdChange(
+        `${formatedTitle || randomString(4).toLowerCase()}`
+      );
+    } else {
+      state.resourceId = "";
+      state.validatedMessages = [];
+    }
+  },
+  {
+    immediate: true,
+  }
 );
 
 defineExpose({
