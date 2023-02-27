@@ -1896,6 +1896,7 @@
   "resource": {
     "environment": "环境",
     "instance": "实例",
+    "project": "项目",
     "idp": "身份提供商"
   },
   "resource-id": {

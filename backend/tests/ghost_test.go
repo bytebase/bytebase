@@ -97,8 +97,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Ghost Project",
-		Key:  "TestGhostSchemaUpdate",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Ghost Project",
+		Key:        "TestGhostSchemaUpdate",
 	})
 	a.NoError(err)
 
@@ -236,6 +237,7 @@ func TestGhostTenant(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
+		ResourceID: generateRandomString("project", 10),
 		Name:       "Test Project",
 		Key:        "TestTenantGhost",
 		TenantMode: api.TenantModeTenant,

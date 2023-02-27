@@ -78,7 +78,7 @@ interface LocalState {
   validatedMessages: ValidatedMessage[];
 }
 
-type ResourceType = "environment" | "instance" | "idp";
+type ResourceType = "environment" | "instance" | "project" | "idp";
 
 const props = withDefaults(
   defineProps<{
@@ -94,6 +94,7 @@ const props = withDefaults(
     resourceTitle: "",
     randomString: false,
     readonly: false,
+    validator: () => Promise.resolve(undefined),
   }
 );
 
@@ -114,6 +115,8 @@ const getPrefix = (resource: string) => {
       return "env";
     case "instance":
       return "ins";
+    case "project":
+      return "proj";
     case "idp":
       return "idp";
     default:
