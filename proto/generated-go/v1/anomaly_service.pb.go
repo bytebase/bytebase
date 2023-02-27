@@ -217,21 +217,21 @@ type SearchAnomaliesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// filter is the filter to apply on the list anomaly request,
+	// filter is the filter to apply on the search anomaly request,
 	// follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
 	// For example:
-	// List the anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
-	// List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
+	// Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
+	// Search the specified type of anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Not used. The maximum number of anomalies to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 50 anomalies will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used. A page token, received from a previous `ListAnomalies` call.
+	// Not used. A page token, received from a previous `SearchAnomalies` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListAnomalies` must match
+	// When paginating, all other parameters provided to `SearchAnomalies` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }

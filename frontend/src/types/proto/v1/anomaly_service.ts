@@ -7,11 +7,11 @@ export const protobufPackage = "bytebase.v1";
 
 export interface SearchAnomaliesRequest {
   /**
-   * filter is the filter to apply on the list anomaly request,
+   * filter is the filter to apply on the search anomaly request,
    * follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
    * For example:
-   * List the anomalies of a specific instance: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
-   * List the specified type anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
+   * Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
+   * Search the specified type of anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
    */
   filter: string;
   /**
@@ -22,10 +22,10 @@ export interface SearchAnomaliesRequest {
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListAnomalies` call.
+   * Not used. A page token, received from a previous `SearchAnomalies` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListAnomalies` must match
+   * When paginating, all other parameters provided to `SearchAnomalies` must match
    * the call that provided the page token.
    */
   pageToken: string;
