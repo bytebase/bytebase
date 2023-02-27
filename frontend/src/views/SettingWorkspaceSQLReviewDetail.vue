@@ -87,7 +87,6 @@
       :policy="reviewPolicy"
       :selected-rule-list="filteredRuleList"
       :editable="hasPermission"
-      class="py-5"
     />
     <BBButtonConfirm
       :disabled="!hasPermission"
