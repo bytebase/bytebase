@@ -1,4 +1,5 @@
 import BBAlert from "./BBAlert.vue";
+import BBAlertDialog from "./BBAlertDialog.vue";
 import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBTooltipButton from "./BBTooltipButton.vue";
@@ -35,6 +36,7 @@ export * from "./types";
 
 export {
   BBAlert,
+  BBAlertDialog,
   BBAttention,
   BBAvatar,
   BBTooltipButton,
