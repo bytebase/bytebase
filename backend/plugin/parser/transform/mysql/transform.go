@@ -75,6 +75,8 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 						ast.ColumnOptionAutoRandom:
 					case ast.ColumnOptionPrimaryKey:
 						return stmt.LastLine, errors.Errorf("The column-level primary key constraint is invalid SDL format. Please use table-level primary key, such as \"CREATE TABLE t(id INT, PRIMARY KEY (id));\"")
+					case ast.ColumnOptionUniqKey:
+						return stmt.LastLine, errors.Errorf("The column-level unique key constraint is invalid SDL format. Please use table-level unique key, such as \"CREATE TABLE t(id INT, UNIQUE KEY uk_t_id (id));\"")
 					case ast.ColumnOptionCheck:
 						return stmt.LastLine, errors.Errorf("The column-level check constraint is invalid SDL format. Please use table-level check constraints, such as \"CREATE TABLE t(id INT, CONSTRAINT ck_t CHECK (id > 0));\"")
 					case ast.ColumnOptionReference:
