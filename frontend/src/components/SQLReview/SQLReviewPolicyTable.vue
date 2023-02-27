@@ -13,8 +13,10 @@
       }"
     >
       <div class="bb-grid-cell">
-        {{ environment.name }}
-        <ProductionEnvironmentIcon :environment="environment" />
+        <router-link :to="`/environment/${environment.id}`">
+          {{ environment.name }}
+          <ProductionEnvironmentIcon :environment="environment" />
+        </router-link>
       </div>
       <div class="bb-grid-cell">
         <template v-if="review">

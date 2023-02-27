@@ -19,7 +19,11 @@
       class="flex flex-col items-center space-x-2 justify-center md:flex-row"
     >
       <div class="flex-1 flex space-x-2 items-center justify-start">
-        <BBBadge v-if="reviewPolicy.environment" :can-remove="false">
+        <BBBadge
+          v-if="reviewPolicy.environment"
+          :can-remove="false"
+          :link="`/environment/${reviewPolicy.environment.id}`"
+        >
           {{ reviewPolicy.environment.name }}
           <ProductionEnvironmentIcon
             :environment="reviewPolicy.environment"
