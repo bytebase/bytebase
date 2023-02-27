@@ -204,7 +204,6 @@
             <BBSwitch
               v-if="allowEditSQLReviewPolicy"
               class="mr-2"
-              size="small"
               :text="true"
               :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
               @toggle="toggleSQLReviewPolicy"

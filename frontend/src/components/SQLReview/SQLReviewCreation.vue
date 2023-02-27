@@ -1,11 +1,10 @@
 <template>
   <div>
     <BBStepTab
-      class=""
       :sticky="true"
       :step-item-list="STEP_LIST"
       :allow-next="allowNext"
-      :finish-title="$t(`common.confirm-and-${policyId ? 'update' : 'add'}`)"
+      :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
       @cancel="onCancel"
@@ -15,9 +14,10 @@
           :name="state.name"
           :selected-environment="state.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
-          :selected-template="state.selectedTemplate"
-          :is-edit="!!policyId"
-          class="py-5"
+          :selected-template="
+            state.pendingApplyTemplate || state.selectedTemplate
+          "
+          :is-edit="!!policy"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
           @env-change="(env: Environment) => onEnvChange(env)"
@@ -31,29 +31,21 @@
         />
       </template>
     </BBStepTab>
-    <BBAlert
-      v-if="state.showAlertModal"
-      style="CRITICAL"
+    <BBAlertDialog
+      ref="alertDialog"
+      :style="'CRITICAL'"
       :ok-text="$t('common.confirm')"
       :title="$t('sql-review.create.configure-rule.confirm-override-title')"
       :description="
         $t('sql-review.create.configure-rule.confirm-override-description')
       "
-      @ok="
-        () => {
-          state.showAlertModal = false;
-          state.ruleUpdated = false;
-          onTemplateApply(state.pendingApplyTemplate);
-        }
-      "
-      @cancel="state.showAlertModal = false"
     >
-    </BBAlert>
+    </BBAlertDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, withDefaults } from "vue";
+import { reactive, computed, withDefaults, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "@/bbkit/types";
@@ -66,8 +58,9 @@ import {
   ruleIsAvailableInSubscription,
   RuleConfigComponent,
   SQLReviewPolicyTemplate,
+  SQLReviewPolicy,
 } from "@/types";
-import { BBStepTab } from "@/bbkit";
+import { BBAlertDialog, BBStepTab } from "@/bbkit";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import {
@@ -78,6 +71,7 @@ import {
   useSubscriptionStore,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
+import { rulesToTemplate } from "./components";
 
 interface LocalState {
   currentStep: number;
@@ -92,13 +86,13 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    policyId?: number;
+    policy?: SQLReviewPolicy;
     name?: string;
     selectedEnvironment?: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
-    policyId: undefined,
+    policy: undefined,
     name: "",
     selectedEnvironment: undefined,
     selectedRuleList: () => [],
@@ -107,6 +101,7 @@ const props = withDefaults(
 
 const emit = defineEmits(["cancel"]);
 
+const alertDialog = ref<InstanceType<typeof BBAlertDialog>>();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
@@ -128,7 +123,9 @@ const state = reactive<LocalState>({
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   selectedEnvironment: props.selectedEnvironment,
   selectedRuleList: [...props.selectedRuleList],
-  selectedTemplate: undefined,
+  selectedTemplate: props.policy
+    ? rulesToTemplate(props.policy, false /* withDisabled=false */)
+    : undefined,
   ruleUpdated: false,
   showAlertModal: false,
   pendingApplyTemplate: undefined,
@@ -166,14 +163,14 @@ const availableEnvironmentList = computed((): Environment[] => {
 
   const filteredList = store.availableEnvironments(
     environmentList.value,
-    props.policyId
+    props.policy?.id
   );
 
   return filteredList;
 });
 
 const onCancel = () => {
-  if (props.policyId) {
+  if (props.policy) {
     emit("cancel");
   } else {
     router.push({
@@ -203,6 +200,17 @@ const tryChangeStep = (
   newStep: number,
   allowChangeCallback: () => void
 ) => {
+  if (oldStep === 0 && newStep === 1) {
+    if (state.pendingApplyTemplate) {
+      alertDialog.value!.open().then((result) => {
+        if (result) {
+          onTemplateApply(state.pendingApplyTemplate);
+          allowChangeCallback();
+        }
+      });
+      return;
+    }
+  }
   state.currentStep = newStep;
   allowChangeCallback();
 };
@@ -227,10 +235,10 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     ),
   };
 
-  if (props.policyId) {
+  if (props.policy) {
     store
       .updateReviewPolicy({
-        id: props.policyId,
+        id: props.policy.id,
         ...upsert,
       })
       .then(() => {
@@ -264,8 +272,11 @@ const onEnvChange = (env: Environment) => {
 };
 
 const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
-  if (state.ruleUpdated || props.policyId) {
-    state.showAlertModal = true;
+  if (state.ruleUpdated || props.policy) {
+    if (template.id === state.selectedTemplate?.id) {
+      state.pendingApplyTemplate = undefined;
+      return;
+    }
     state.pendingApplyTemplate = template;
     return;
   }
