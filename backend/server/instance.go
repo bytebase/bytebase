@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -59,7 +58,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		creator := c.Get(getPrincipalIDContextKey()).(int)
 		instance, err := s.store.CreateInstanceV2(ctx, environment.ResourceID, &store.InstanceMessage{
-			ResourceID:   fmt.Sprintf("instance-%s", uuid.New().String()[:8]),
+			ResourceID:   instanceCreate.ResourceID,
 			Title:        instanceCreate.Name,
 			Engine:       instanceCreate.Engine,
 			ExternalLink: instanceCreate.ExternalLink,
