@@ -2,6 +2,7 @@ import { ResourceId, UNKNOWN_ID } from "@/types";
 
 export const userNamePrefix = "users/";
 export const environmentNamePrefix = "environments/";
+export const instanceNamePrefix = "instances/";
 export const idpNamePrefix = "idps/";
 
 export const getNameParentTokens = (
