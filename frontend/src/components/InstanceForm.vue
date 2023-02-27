@@ -1152,6 +1152,7 @@ const tryCreate = async () => {
   state.isTestingConnection = true;
   try {
     const resultSet = await sqlStore.ping(connectionContext);
+    state.isTestingConnection = false;
     if (isEmpty(resultSet.error)) {
       await doCreate();
     } else {
