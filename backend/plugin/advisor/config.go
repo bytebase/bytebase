@@ -28,9 +28,10 @@ type SQLReviewTemplateData struct {
 
 // SQLReviewRuleData is the API message for SQL review rule update.
 type SQLReviewRuleData struct {
-	Type    SQLReviewRuleType      `yaml:"type"`
-	Level   SQLReviewRuleLevel     `yaml:"level,omitempty"`
-	Payload map[string]interface{} `yaml:"payload"`
+	Type        SQLReviewRuleType      `yaml:"type"`
+	Level       SQLReviewRuleLevel     `yaml:"level,omitempty"`
+	Description string                 `yaml:"description"`
+	Payload     map[string]interface{} `yaml:"payload"`
 }
 
 // SQLReviewConfigOverride is the API message for SQL review configuration override.
@@ -103,6 +104,7 @@ func findTemplate(templateList []*SQLReviewTemplateData, id SQLReviewTemplateID)
 func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLReviewRule, error) {
 	payload := source.Payload
 	level := source.Level
+	description := source.Description
 
 	if override != nil {
 		for key, val := range override.Payload {
@@ -113,6 +115,7 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLRevi
 		if override.Level == "ERROR" || override.Level == "WARNING" || override.Level == "DISABLED" {
 			level = override.Level
 		}
+		description = override.Description
 	}
 
 	str, err := json.Marshal(payload)
@@ -121,8 +124,9 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLRevi
 	}
 
 	return &SQLReviewRule{
-		Type:    source.Type,
-		Level:   level,
-		Payload: string(str),
+		Type:        source.Type,
+		Level:       level,
+		Description: description,
+		Payload:     string(str),
 	}, nil
 }

@@ -449,9 +449,10 @@ func mergeSQLReviewRule(payload string) string {
 		ruleMap[rule.Type] = true
 
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    rule.Type,
-			Level:   rule.Level,
-			Payload: rule.Payload,
+			Type:        rule.Type,
+			Level:       rule.Level,
+			Description: rule.Description,
+			Payload:     rule.Payload,
 		})
 	}
 
@@ -479,26 +480,29 @@ func splitSQLReviewRule(payload *string) *string {
 		} else {
 			if advisor.RuleExists(rule.Type, db.MySQL) {
 				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.MySQL,
-					Payload: rule.Payload,
+					Type:        rule.Type,
+					Level:       rule.Level,
+					Engine:      db.MySQL,
+					Description: rule.Description,
+					Payload:     rule.Payload,
 				})
 			}
 			if advisor.RuleExists(rule.Type, db.TiDB) {
 				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.TiDB,
-					Payload: rule.Payload,
+					Type:        rule.Type,
+					Level:       rule.Level,
+					Engine:      db.TiDB,
+					Description: rule.Description,
+					Payload:     rule.Payload,
 				})
 			}
 			if advisor.RuleExists(rule.Type, db.Postgres) {
 				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.Postgres,
-					Payload: rule.Payload,
+					Type:        rule.Type,
+					Level:       rule.Level,
+					Engine:      db.Postgres,
+					Description: rule.Description,
+					Payload:     rule.Payload,
 				})
 			}
 		}

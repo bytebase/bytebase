@@ -447,10 +447,11 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			level = v1pb.SQLReviewRuleLevel_DISABLED
 		}
 		rules = append(rules, &v1pb.SQLReviewRule{
-			Level:   level,
-			Type:    string(rule.Type),
-			Payload: rule.Payload,
-			Engine:  convertToEngine(db.Type(rule.Engine)),
+			Level:       level,
+			Type:        string(rule.Type),
+			Payload:     rule.Payload,
+			Description: rule.Description,
+			Engine:      convertToEngine(db.Type(rule.Engine)),
 		})
 	}
 
@@ -477,10 +478,11 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			return nil, errors.Errorf("invalid rule level %v", rule.Level)
 		}
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Level:   level,
-			Payload: rule.Payload,
-			Type:    advisor.SQLReviewRuleType(rule.Type),
-			Engine:  advisordb.Type(convertEngine(rule.Engine)),
+			Level:       level,
+			Payload:     rule.Payload,
+			Type:        advisor.SQLReviewRuleType(rule.Type),
+			Description: rule.Description,
+			Engine:      advisordb.Type(convertEngine(rule.Engine)),
 		})
 	}
 

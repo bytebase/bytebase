@@ -308,6 +308,7 @@ message SQLReviewRule {
   SQLReviewRuleLevel level = 2;
   string payload = 3;
   Engine engine = 4;
+  string description = 5;
 }
 
 enum SQLReviewRuleLevel {
