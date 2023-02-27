@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { stringify } from "qs";
+import { cloneDeep } from "lodash-es";
 import {
   Activity,
   ActivityCreate,
@@ -188,14 +189,18 @@ export const useActivityStore = defineStore("activity", {
       return activityList.slice(0, limit);
     },
     async createActivity(newActivity: ActivityCreate) {
-      const data = (
-        await axios.post(`/api/activity`, {
-          data: {
-            type: "activityCreate",
-            attributes: newActivity,
-          },
-        })
-      ).data;
+      const postData = {
+        data: {
+          type: "activityCreate",
+          attributes: cloneDeep(newActivity) as any,
+        },
+      };
+      if (postData.data.attributes.payload) {
+        postData.data.attributes.payload = JSON.stringify(
+          postData.data.attributes.payload
+        );
+      }
+      const data = (await axios.post(`/api/activity`, postData)).data;
       const createdActivity = convert(data.data, data.included);
 
       // There might exist other activities happened since the last fetch, so we do a full refetch.
