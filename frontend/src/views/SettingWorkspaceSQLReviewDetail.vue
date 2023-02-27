@@ -8,7 +8,7 @@
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
-    :policy-id="reviewPolicy.id"
+    :policy="reviewPolicy"
     :name="reviewPolicy.name"
     :selected-environment="reviewPolicy.environment"
     :selected-rule-list="selectedRuleList"
@@ -18,8 +18,12 @@
     <div
       class="flex flex-col items-center space-x-2 justify-center md:flex-row"
     >
-      <div class="flex-1 flex space-x-3 items-center justify-start">
-        <BBBadge v-if="reviewPolicy.environment" :can-remove="false">
+      <div class="flex-1 flex space-x-2 items-center justify-start">
+        <BBBadge
+          v-if="reviewPolicy.environment"
+          :can-remove="false"
+          :link="`/environment/${reviewPolicy.environment.id}`"
+        >
           {{ reviewPolicy.environment.name }}
           <ProductionEnvironmentIcon
             :environment="reviewPolicy.environment"
@@ -37,7 +41,7 @@
           />
         </div>
         <BBTextField
-          class="flex-1 text-3xl py-0.5 font-bold truncate"
+          class="flex-1 text-3xl py-0.5 px-0.5 font-bold truncate"
           :disabled="!hasPermission"
           :required="true"
           :focus-on-mount="false"
@@ -87,10 +91,9 @@
       :policy="reviewPolicy"
       :selected-rule-list="filteredRuleList"
       :editable="hasPermission"
-      class="py-5"
     />
     <BBButtonConfirm
-      v-if="reviewPolicy.rowStatus === 'ARCHIVED' && hasPermission"
+      :disabled="!hasPermission"
       :style="'DELETE'"
       :button-text="$t('sql-review.delete')"
       :ok-text="$t('common.delete')"

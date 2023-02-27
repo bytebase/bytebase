@@ -31,7 +31,7 @@
       <span
         v-if="text"
         aria-hidden="true"
-        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center transition ease-in-out duration-200"
+        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center transition ease-in-out duration-200 overflow-hidden whitespace-nowrap"
         :class="[
           `w-${sizes.base}`,
           `h-${sizes.base}`,
@@ -95,7 +95,7 @@ const sizes = computed(() => {
     text: number; // unit px
   };
   const sizeMap: Record<BBSwitchSize, Sizes> = {
-    normal: { base: 5, cw: 11, ch: 6, text: 9 },
+    normal: { base: 5, cw: 11, ch: 6, text: 10 },
     small: { base: 4, cw: 9, ch: 5, text: 7.5 },
   };
   return sizeMap[props.size] ?? sizeMap["normal"];

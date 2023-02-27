@@ -59,7 +59,7 @@
               <heroicons-outline:external-link class="w-4 h-4" />
             </a>
           </div>
-          <div class="bb-grid-cell gap-x-1">
+          <div class="bb-grid-cell gap-x-2">
             <RuleEngineIcons :rule="rule" />
           </div>
           <div class="bb-grid-cell">
