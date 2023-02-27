@@ -6,7 +6,7 @@
     </p>
 
     <div
-      class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-4"
+      class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-10 gap-y-4"
     >
       <div
         v-for="template in reviewPolicyTemplateList"
