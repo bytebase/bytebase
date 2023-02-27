@@ -160,8 +160,9 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Syncer For PostgreSQL",
-		Key:  "TestSyncerForPostgreSQL",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Syncer For PostgreSQL",
+		Key:        "TestSyncerForPostgreSQL",
 	})
 	a.NoError(err)
 
@@ -439,8 +440,9 @@ func TestSyncerForMySQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Sync MySQL Schema",
-		Key:  "TestSyncMySQLSchema",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Sync MySQL Schema",
+		Key:        "TestSyncMySQLSchema",
 	})
 	a.NoError(err)
 

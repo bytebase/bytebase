@@ -48,8 +48,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestSchemaUpdate",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestSchemaUpdate",
 	})
 	a.NoError(err)
 
@@ -384,8 +385,9 @@ func TestVCS1(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TestVCSSchemaUpdate",
 				},
 			)
 			a.NoError(err)
@@ -817,6 +819,7 @@ func TestVCS_SDL(t *testing.T) {
 			// Create a project
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID:       generateRandomString("project", 10),
 					Name:             "Test VCS Project",
 					Key:              "TestVCSSchemaUpdate",
 					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
@@ -1282,8 +1285,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TVP",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TVP",
 				},
 			)
 			a.NoError(err)
@@ -1522,8 +1526,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TestVCSSchemaUpdate",
 				},
 			)
 			a.NoError(err)
@@ -1774,8 +1779,9 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VSC Project",
-					Key:  "TVP",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VSC Project",
+					Key:        "TVP",
 				},
 			)
 			a.NoError(err)
@@ -2003,8 +2009,9 @@ CREATE TABLE public.book (
 			}
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: test.name,
-					Key:  test.name,
+					ResourceID: generateRandomString("project", 10),
+					Name:       test.name,
+					Key:        test.name,
 				},
 			)
 			a.NoError(err)
@@ -2108,8 +2115,9 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestSchemaUpdate",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestSchemaUpdate",
 	})
 	a.NoError(err)
 
@@ -2342,6 +2350,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			// Create a project
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID:       generateRandomString("project", 10),
 					Name:             "Test VCS Project",
 					Key:              "TestVCSSchemaUpdate",
 					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
