@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <div v-if="selectedEnvironment">
       <label class="textlabel">
         {{ $t("sql-review.create.basic-info.environments") }}
@@ -66,7 +66,6 @@
       <template v-else>
         <SQLReviewTemplateSelector
           :required="true"
-          :title="$t('sql-review.create.basic-info.choose-template')"
           :selected-template="selectedTemplate"
           @select-template="$emit('select-template', $event)"
         />

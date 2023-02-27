@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <p v-if="title" class="textlabel">
-      {{ title }}
+  <div class="flex flex-col gap-y-2">
+    <p class="textlabel">
+      {{ $t("sql-review.create.basic-info.choose-template") }}
       <span v-if="required" style="color: red">*</span>
     </p>
 
