@@ -665,6 +665,64 @@ func TestProvider_CreateBranch(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestProvider_ListPullRequestFile(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/1/pullrequests/10086/diffstat", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#sample-output
+			Body: io.NopCloser(strings.NewReader(`
+{
+    "pagelen": 500,
+    "values": [
+        {
+            "type": "diffstat",
+            "status": "modified",
+            "lines_removed": 1,
+            "lines_added": 2,
+            "old": {
+                "path": "setup.py",
+                "escaped_path": "setup.py",
+                "type": "commit_file",
+                "links": {
+                    "self": {
+                        "href": "https://api.bitbucket.org/2.0/repositories/bitbucket/geordi/src/e1749643d655d7c7014001a6c0f58abaf42ad850/setup.py"
+                    }
+                }
+            },
+            "new": {
+                "path": "setup.py",
+                "escaped_path": "setup.py",
+                "type": "commit_file",
+                "links": {
+                    "self": {
+                        "href": "https://api.bitbucket.org/2.0/repositories/bitbucket/geordi/src/d222fa235229c55dad20b190b0b571adf737d5a6/setup.py"
+                    }
+                }
+            }
+        }
+    ],
+    "page": 1,
+    "size": 1
+}
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "10086")
+	require.NoError(t, err)
+
+	want := []*vcs.PullRequestFile{
+		{
+			Path:         "setup.py",
+			LastCommitID: "d222fa235229c55dad20b190b0b571adf737d5a6",
+			IsDeleted:    false,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

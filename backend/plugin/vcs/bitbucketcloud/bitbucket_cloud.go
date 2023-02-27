@@ -182,7 +182,12 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 // CommitFile represents a Bitbucket Cloud API response for a file at a commit.
 type CommitFile struct {
-	Path string `json:"path"`
+	Path  string `json:"path"`
+	Links struct {
+		Self struct {
+			Href string `json:"href"`
+		} `json:"self"`
+	} `json:"links"`
 }
 
 // CommitDiffStat represents a Bitbucket Cloud API response for commit diff stat.
@@ -193,17 +198,48 @@ type CommitDiffStat struct {
 	New    CommitFile `json:"new"`
 }
 
-// CommitsDiff represents a Bitbucket Cloud API response for comparing two
-// commits.
-type CommitsDiff struct {
-	Values []CommitDiffStat `json:"values"`
-}
-
 // GetDiffFileList gets the diff files list between two commits.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-diffstat-spec-get
 func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
-	url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), afterCommit, beforeCommit)
+	var bbcDiffs []*CommitDiffStat
+	page := 1
+	for {
+		url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?page=%d&pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), afterCommit, beforeCommit, page, apiPageSize)
+		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch paginated list")
+		}
+		bbcDiffs = append(bbcDiffs, diffs...)
+
+		if !hasNextPage {
+			break
+		}
+		page++
+	}
+
+	var diffs []vcs.FileDiff
+	for _, d := range bbcDiffs {
+		diff := vcs.FileDiff{
+			Path: d.New.Path,
+		}
+		switch d.Status {
+		case "added":
+			diff.Type = vcs.FileDiffTypeAdded
+		case "modified":
+			diff.Type = vcs.FileDiffTypeModified
+		case "removed":
+			diff.Type = vcs.FileDiffTypeRemoved
+		default:
+			// Skip because we don't care about file diff in other status
+			continue
+		}
+		diffs = append(diffs, diff)
+	}
+	return diffs, nil
+}
+
+func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, hasNextPage bool, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -220,43 +256,27 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 		),
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
+		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to get file diff list from URL %s", url)
+		return nil, false, common.Errorf(common.NotFound, "failed to get file diff list from URL %s", url)
 	} else if code >= 300 {
-		return nil, errors.Errorf("failed to get file diff list from URL %s, status code: %d, body: %s",
+		return nil, false, errors.Errorf("failed to get file diff list from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
 		)
 	}
 
-	var commitsDiff CommitsDiff
-	if err := json.Unmarshal([]byte(body), &commitsDiff); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", instanceURL)
+	var resp struct {
+		Values []*CommitDiffStat `json:"values"`
+		Next   bool              `json:"next"`
 	}
-
-	var fileDiffs []vcs.FileDiff
-	for _, v := range commitsDiff.Values {
-		diff := vcs.FileDiff{
-			Path: v.New.Path,
-		}
-		switch v.Status {
-		case "added":
-			diff.Type = vcs.FileDiffTypeAdded
-		case "modified":
-			diff.Type = vcs.FileDiffTypeModified
-		case "removed":
-			diff.Type = vcs.FileDiffTypeRemoved
-		default:
-			// Skip because we don't care about file diff in other status
-			continue
-		}
-		fileDiffs = append(fileDiffs, diff)
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		return nil, false, errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", instanceURL)
 	}
-	return fileDiffs, nil
+	return resp.Values, resp.Next, nil
 }
 
 // Repository represents a Bitbucket Cloud API response for a repository.
@@ -708,9 +728,48 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
+// ListPullRequestFile lists the changed files in the pull request.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-pull-request-id-diffstat-get
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
-	// TODO implement me
-	panic("implement me")
+	var bbcDiffs []*CommitDiffStat
+	page := 1
+	for {
+		url := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?page=%d&pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, page, apiPageSize)
+		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch paginated list")
+		}
+		bbcDiffs = append(bbcDiffs, diffs...)
+
+		if !hasNextPage {
+			break
+		}
+		page++
+	}
+
+	// NOTE: The API response does not guarantee to return the value of the commit
+	// ID, so we need to extract it from the link instead.
+	extractCommitIDFromLinkSelf := func(href string) string {
+		const anchor = "/src/"
+		i := strings.Index(href, anchor)
+		if i < 0 {
+			return "<no commit ID found>"
+		}
+		fields := strings.SplitN(href[i+len(anchor):], "/", 2)
+		return fields[0]
+	}
+
+	var files []*vcs.PullRequestFile
+	for _, d := range bbcDiffs {
+		file := &vcs.PullRequestFile{
+			Path:         d.New.Path,
+			LastCommitID: extractCommitIDFromLinkSelf(d.New.Links.Self.Href),
+			IsDeleted:    d.Status == "removed",
+		}
+		files = append(files, file)
+	}
+	return files, nil
 }
 
 func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
@@ -718,6 +777,9 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 	panic("implement me")
 }
 
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+//
+// WARNING: This is not supported in Bitbucket Cloud.
 func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error {
 	return errors.New("not supported")
 }
