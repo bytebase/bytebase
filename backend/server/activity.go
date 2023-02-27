@@ -37,8 +37,10 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		var payload api.ActivityIssueCommentCreatePayload
-		if err := json.Unmarshal([]byte(activityCreate.Payload), &payload); err != nil {
-			return err
+		if activityCreate.Payload != "" {
+			if err := json.Unmarshal([]byte(activityCreate.Payload), &payload); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to unmarshal payload %v", activityCreate.Payload).SetInternal(err)
+			}
 		}
 		payload.IssueName = issue.Title
 		bytes, err := json.Marshal(payload)
