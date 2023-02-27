@@ -1172,7 +1172,7 @@ const tryCreate = async () => {
 // Conceptually, data source is the proper place to store connection info (thinking of DSN)
 const doCreate = async () => {
   if (!isCreating.value) {
-    return false;
+    return;
   }
 
   const instanceCreate: InstanceCreate = {
