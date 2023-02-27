@@ -6,9 +6,18 @@
         <template #trigger>
           <heroicons-outline:question-mark-circle class="h-4 w-4" />
         </template>
-        <div class="whitespace-pre-line">
-          {{ $t("task.rollback.sql-rollback-tips") }}
-        </div>
+        <i18n-t
+          tag="div"
+          keypath="task.rollback.sql-rollback-tips"
+          class="whitespace-pre-line"
+        >
+          <template #link>
+            <LearnMoreLink
+              url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console"
+              color="light"
+            />
+          </template>
+        </i18n-t>
       </NTooltip>
     </h2>
 
