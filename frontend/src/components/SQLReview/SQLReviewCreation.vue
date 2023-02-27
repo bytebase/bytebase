@@ -1,7 +1,6 @@
 <template>
   <div>
     <BBStepTab
-      class=""
       :sticky="true"
       :step-item-list="STEP_LIST"
       :allow-next="allowNext"
@@ -17,7 +16,6 @@
           :available-environment-list="availableEnvironmentList"
           :selected-template="state.selectedTemplate"
           :is-edit="!!policyId"
-          class="py-5"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
           @env-change="(env: Environment) => onEnvChange(env)"

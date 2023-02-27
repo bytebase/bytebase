@@ -1,5 +1,28 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4">
+    <div v-if="selectedEnvironment">
+      <label class="textlabel">
+        {{ $t("sql-review.create.basic-info.environments") }}
+        <span style="color: red">*</span>
+      </label>
+      <p class="mt-1 textinfolabel">
+        {{ $t("sql-review.create.basic-info.environments-label") }}
+      </p>
+      <BBAttention
+        v-if="availableEnvironmentList.length === 0"
+        class="mt-2"
+        :style="'WARN'"
+        :title="$t('common.environment')"
+        :description="
+          $t('sql-review.create.basic-info.no-available-environment-desc')
+        "
+      />
+      <BBTextField
+        class="mt-2 w-full"
+        :value="environmentName(selectedEnvironment)"
+        :disabled="true"
+      />
+    </div>
     <div>
       <label class="textlabel">
         {{ $t("sql-review.create.basic-info.display-name") }}
@@ -15,58 +38,6 @@
         "
         :value="name"
         @input="(e) => onNameChange(e)"
-      />
-    </div>
-    <div>
-      <label class="textlabel">
-        {{ $t("sql-review.create.basic-info.environments") }}
-        <span style="color: red">*</span>
-      </label>
-      <p class="mt-1 textinfolabel mb-5">
-        {{ $t("sql-review.create.basic-info.environments-label") }}
-      </p>
-      <BBAttention
-        v-if="availableEnvironmentList.length === 0"
-        :style="'WARN'"
-        :title="$t('common.environment')"
-        :description="
-          $t('sql-review.create.basic-info.no-available-environment-desc')
-        "
-        class="mb-5"
-      />
-      <div v-if="!isEdit" class="flex flex-wrap gap-x-3">
-        <div
-          v-for="env in environmentList"
-          :key="env.id"
-          class="flex items-center"
-        >
-          <input
-            :id="`${env.id}`"
-            type="radio"
-            :value="env.id"
-            :disabled="env.disabled"
-            :checked="env.id === selectedEnvironment?.id"
-            class="text-accent disabled:text-accent-disabled focus:ring-accent"
-            :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
-            @change="$emit('env-change', env)"
-          />
-          <label
-            :for="`${env.id}`"
-            class="ml-2 items-center text-sm"
-            :class="
-              env.disabled
-                ? 'cursor-not-allowed text-gray-400'
-                : 'cursor-pointer'
-            "
-          >
-            {{ env.displayName }}
-          </label>
-        </div>
-      </div>
-      <BBBadge
-        v-else-if="isEdit && selectedEnvironment"
-        :text="environmentName(selectedEnvironment)"
-        :can-remove="false"
       />
     </div>
     <div>
@@ -105,23 +76,17 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, computed } from "vue";
-import { useEnvironmentList } from "@/store";
+import { PropType, reactive } from "vue";
 import { Environment, SQLReviewPolicyTemplate } from "@/types";
 import { environmentName } from "@/utils";
 import { BBTextField } from "@/bbkit";
 import { SQLReviewTemplateSelector } from "./components";
 
-interface LocalEnvironment extends Environment {
-  disabled: boolean;
-  displayName: string;
-}
-
 interface LocalState {
   openTemplate: boolean;
 }
 
-const props = defineProps({
+defineProps({
   name: {
     required: true,
     type: String,
@@ -153,19 +118,6 @@ const emit = defineEmits<{
 
 const state = reactive<LocalState>({
   openTemplate: false,
-});
-
-const environmentList = computed((): LocalEnvironment[] => {
-  const environmentList = useEnvironmentList(["NORMAL"]);
-  const availableIdSet = new Set(
-    props.availableEnvironmentList.map((env) => env.id)
-  );
-
-  return environmentList.value.map((env) => ({
-    ...env,
-    disabled: !availableIdSet.has(env.id),
-    displayName: environmentName(env),
-  }));
 });
 
 const onNameChange = (event: Event) => {
