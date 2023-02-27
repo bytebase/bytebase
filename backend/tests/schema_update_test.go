@@ -66,6 +66,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
@@ -426,6 +427,7 @@ func TestVCS1(t *testing.T) {
 
 			// Add an instance.
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: prodEnvironment.ID,
 				Name:          instanceName,
 				Engine:        db.SQLite,
@@ -855,6 +857,7 @@ func TestVCS_SDL(t *testing.T) {
 			// Add an instance
 			instance, err := ctl.addInstance(
 				api.InstanceCreate{
+					ResourceID:    generateRandomString("instance", 10),
 					EnvironmentID: prodEnvironment.ID,
 					Name:          "pgInstance",
 					Engine:        db.Postgres,
@@ -1320,6 +1323,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 			a.NoError(err)
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: environment.ID,
 				Name:          instanceName,
 				Engine:        db.SQLite,
@@ -1531,6 +1535,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Add an instance.
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: prodEnvironment.ID,
 				Name:          "pgInstance",
 				Engine:        db.Postgres,
@@ -2008,6 +2013,7 @@ CREATE TABLE public.book (
 			switch test.dbType {
 			case db.Postgres:
 				instance, err = ctl.addInstance(api.InstanceCreate{
+					ResourceID:    generateRandomString("instance", 10),
 					EnvironmentID: environment.ID,
 					Name:          test.name,
 					Engine:        db.Postgres,
@@ -2017,6 +2023,7 @@ CREATE TABLE public.book (
 				})
 			case db.MySQL:
 				instance, err = ctl.addInstance(api.InstanceCreate{
+					ResourceID:    generateRandomString("instance", 10),
 					EnvironmentID: environment.ID,
 					Name:          "mysqlInstance",
 					Engine:        db.MySQL,
@@ -2119,6 +2126,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
@@ -2373,6 +2381,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 
 			// Add an instance
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: prodEnvironment.ID,
 				Name:          "mysqlInstance",
 				Engine:        db.MySQL,
