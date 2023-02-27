@@ -12,7 +12,7 @@ export const useInstanceV1Store = defineStore("instance_v1", {
     instanceMapByName: new Map(),
   }),
   getters: {
-    environmentList(state) {
+    instanceList(state) {
       return Array.from(state.instanceMapByName.values());
     },
   },
