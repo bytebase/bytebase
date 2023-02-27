@@ -47,7 +47,8 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 	if sqlResultSet.Error != "" {
 		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
 	}
-	return sqlResultSet.Data, nil
+	// TODO(zp): optimize here
+	return sqlResultSet.SingleSQLResultList[0].Data, nil
 }
 
 // adminExecuteSQL executes a SQL query on the database.
@@ -69,19 +70,19 @@ func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResul
 	return sqlResultSet, nil
 }
 
-func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) (string, error) {
+func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) ([]api.SingleSQLResult, error) {
 	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
 		Statement:    query,
 	})
 	if err != nil {
-		return "", errors.Wrap(err, "failed to execute SQL")
+		return nil, errors.Wrap(err, "failed to execute SQL")
 	}
 	if sqlResultSet.Error != "" {
-		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+		return nil, errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
 	}
-	return sqlResultSet.Data, nil
+	return sqlResultSet.SingleSQLResultList, nil
 }
 
 // sqlReviewTaskCheckRunFinished will return SQL review task check result for next task.

@@ -195,7 +195,10 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal(maskedData, result)
 
 	// Query origin data.
-	result, err = ctl.adminQuery(instance, databaseName, queryTable)
+	singleSQLResults, err := ctl.adminQuery(instance, databaseName, queryTable)
 	a.NoError(err)
-	a.Equal(originData, result)
+	for _, singleSQLResult := range singleSQLResults {
+		a.Equal("", singleSQLResult.Error)
+		a.Equal(originData, singleSQLResult.Data)
+	}
 }
