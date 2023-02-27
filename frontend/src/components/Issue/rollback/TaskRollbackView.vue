@@ -2,7 +2,7 @@
   <div v-if="rollbackUIType !== 'NONE'" class="contents">
     <h2 class="textlabel flex items-center">
       <span class="mr-1">{{ $t("task.rollback.sql-rollback") }}</span>
-      <NTooltip show>
+      <NTooltip>
         <template #trigger>
           <heroicons-outline:question-mark-circle class="h-4 w-4" />
         </template>
