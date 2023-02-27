@@ -36,7 +36,7 @@ message SearchAnomaliesRequest {
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used. A page token, received from a previous `ListAnomalies` call.
+  // Not used. A page token, received from a previous `SearchAnomalies` call.
   // Provide this to retrieve the subsequent page.  
   //
   // When paginating, all other parameters provided to `ListAnomalies` must match
