@@ -228,10 +228,10 @@ func (policy *SQLReviewPolicy) String() (string, error) {
 
 // SQLReviewRule is the rule for SQL review policy.
 type SQLReviewRule struct {
-	Type        SQLReviewRuleType  `json:"type"`
-	Level       SQLReviewRuleLevel `json:"level"`
-	Engine      db.Type            `json:"engine"`
-	Description string             `json:"description"`
+	Type    SQLReviewRuleType  `json:"type"`
+	Level   SQLReviewRuleLevel `json:"level"`
+	Engine  db.Type            `json:"engine"`
+	Comment string             `json:"comment"`
 	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`

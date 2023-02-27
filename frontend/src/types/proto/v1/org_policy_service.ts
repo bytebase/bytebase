@@ -422,7 +422,7 @@ export interface SQLReviewRule {
   level: SQLReviewRuleLevel;
   payload: string;
   engine: Engine;
-  description: string;
+  comment: string;
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -1443,7 +1443,7 @@ export const SQLReviewPolicy = {
 };
 
 function createBaseSQLReviewRule(): SQLReviewRule {
-  return { type: "", level: 0, payload: "", engine: 0, description: "" };
+  return { type: "", level: 0, payload: "", engine: 0, comment: "" };
 }
 
 export const SQLReviewRule = {
@@ -1460,8 +1460,8 @@ export const SQLReviewRule = {
     if (message.engine !== 0) {
       writer.uint32(32).int32(message.engine);
     }
-    if (message.description !== "") {
-      writer.uint32(42).string(message.description);
+    if (message.comment !== "") {
+      writer.uint32(42).string(message.comment);
     }
     return writer;
   },
@@ -1486,7 +1486,7 @@ export const SQLReviewRule = {
           message.engine = reader.int32() as any;
           break;
         case 5:
-          message.description = reader.string();
+          message.comment = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -1502,7 +1502,7 @@ export const SQLReviewRule = {
       level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : 0,
       payload: isSet(object.payload) ? String(object.payload) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      description: isSet(object.description) ? String(object.description) : "",
+      comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
@@ -1512,7 +1512,7 @@ export const SQLReviewRule = {
     message.level !== undefined && (obj.level = sQLReviewRuleLevelToJSON(message.level));
     message.payload !== undefined && (obj.payload = message.payload);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.description !== undefined && (obj.description = message.description);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
@@ -1522,7 +1522,7 @@ export const SQLReviewRule = {
     message.level = object.level ?? 0;
     message.payload = object.payload ?? "";
     message.engine = object.engine ?? 0;
-    message.description = object.description ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
