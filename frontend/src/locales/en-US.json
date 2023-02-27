@@ -1896,6 +1896,7 @@
   },
   "resource": {
     "environment": "Environment",
+    "instance": "Instance",
     "idp": "Identity Provider"
   },
   "resource-id": {
