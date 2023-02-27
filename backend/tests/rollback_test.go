@@ -133,6 +133,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          t.Name(),
 		Engine:        db.MySQL,
@@ -334,6 +335,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          t.Name(),
 		Engine:        db.MySQL,
@@ -543,6 +545,7 @@ func TestRollbackCanceled(t *testing.T) {
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          t.Name(),
 		Engine:        db.MySQL,
