@@ -59,8 +59,7 @@ type diffNode struct {
 
 	createTableList                 []ast.Node
 	alterTableOptionList            []ast.Node
-	addColumnList                   []ast.Node
-	modifyColumnList                []ast.Node
+	addAndModifyColumnList          []ast.Node
 	createTempViewList              []ast.Node
 	createIndexList                 []ast.Node
 	addConstraintExceptFkList       []ast.Node
@@ -386,9 +385,10 @@ func (diff *diffNode) diffIndex(oldTable, newTable *tableInfo) {
 }
 
 func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
-	addColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
-	modifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
-	dropColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
+	// We use a single ALTER TABLE statement to add and modify columns,
+	// because we need to maintain a fixed order of these two operations.
+	// This approach ensures that we can manipulate the column position as needed.
+	addAndModifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 
 	oldColumnMap := buildColumnMap(oldTable.createTable.Cols)
 	oldColumnPositionMap := buildColumnPositionMap(oldTable.createTable)
@@ -401,7 +401,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 				columnPosition.Tp = ast.ColumnPositionAfter
 				columnPosition.RelativeColumn = &ast.ColumnName{Name: model.NewCIStr(newTable.createTable.Cols[idx-1].Name.Name.O)}
 			}
-			addColumnStatement.Specs = append(addColumnStatement.Specs, &ast.AlterTableSpec{
+			addAndModifyColumnStatement.Specs = append(addAndModifyColumnStatement.Specs, &ast.AlterTableSpec{
 				Tp:         ast.AlterTableAddColumns,
 				NewColumns: []*ast.ColumnDef{columnDef},
 				Position:   columnPosition,
@@ -410,7 +410,6 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 		}
 
 		// Compare the column positions.
-		// TODO(rebelice): fix the position comparing.
 		columnPosition := &ast.ColumnPosition{Tp: ast.ColumnPositionNone}
 		columnPosInOld := oldColumnPositionMap[newColumnName]
 		if hasColumnsIntersection(oldTable.createTable.Cols[:columnPosInOld], newTable.createTable.Cols[idx+1:]) {
@@ -423,7 +422,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 		}
 		// Compare the column definitions.
 		if !isColumnEqual(oldColumnDef, columnDef) || columnPosition.Tp != ast.ColumnPositionNone {
-			modifyColumnStatement.Specs = append(modifyColumnStatement.Specs, &ast.AlterTableSpec{
+			addAndModifyColumnStatement.Specs = append(addAndModifyColumnStatement.Specs, &ast.AlterTableSpec{
 				Tp:         ast.AlterTableModifyColumn,
 				NewColumns: []*ast.ColumnDef{columnDef},
 				Position:   columnPosition,
@@ -433,22 +432,21 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 	}
 	// TODO(zp): add an option to control whether to drop the excess columns.
 	for _, columnDef := range oldColumnMap {
-		dropColumnStatement.Specs = append(dropColumnStatement.Specs, &ast.AlterTableSpec{
-			Tp: ast.AlterTableDropColumn,
-			OldColumnName: &ast.ColumnName{
-				Name: model.NewCIStr(columnDef.Name.Name.O),
+		diff.dropColumnList = append(diff.dropColumnList, &ast.AlterTableStmt{
+			Table: newTable.createTable.Table,
+			Specs: []*ast.AlterTableSpec{
+				{
+					Tp: ast.AlterTableDropColumn,
+					OldColumnName: &ast.ColumnName{
+						Name: model.NewCIStr(columnDef.Name.Name.O),
+					},
+				},
 			},
 		})
 	}
 
-	if len(addColumnStatement.Specs) > 0 {
-		diff.addColumnList = append(diff.addColumnList, addColumnStatement)
-	}
-	if len(modifyColumnStatement.Specs) > 0 {
-		diff.modifyColumnList = append(diff.modifyColumnList, modifyColumnStatement)
-	}
-	if len(dropColumnStatement.Specs) > 0 {
-		diff.dropColumnList = append(diff.dropColumnList, dropColumnStatement)
+	if len(addAndModifyColumnStatement.Specs) > 0 {
+		diff.addAndModifyColumnList = append(diff.addAndModifyColumnList, addAndModifyColumnStatement)
 	}
 }
 
@@ -495,10 +493,7 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := sortAndWriteNodeList(&buf, diff.alterTableOptionList, flag); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.addColumnList, flag); err != nil {
-		return "", err
-	}
-	if err := sortAndWriteNodeList(&buf, diff.modifyColumnList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.addAndModifyColumnList, flag); err != nil {
 		return "", err
 	}
 	if err := sortAndWriteNodeList(&buf, diff.createTempViewList, flag); err != nil {
