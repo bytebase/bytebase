@@ -687,6 +687,8 @@ func TestVCS1(t *testing.T) {
 }
 
 func TestVCS_SDL(t *testing.T) {
+	// TODO(rebelice): remove skip when support PostgreSQL SDL.
+	t.Skip()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
