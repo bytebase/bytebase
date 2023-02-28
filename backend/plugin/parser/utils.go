@@ -131,7 +131,7 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
-	if isTiDBUnsupportDDLStmt(stmt) {
+	if IsTiDBUnsupportDDLStmt(stmt) {
 		return true
 	}
 	// Match DELIMITER statement
