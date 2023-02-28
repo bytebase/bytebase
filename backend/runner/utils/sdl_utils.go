@@ -1,4 +1,4 @@
-// utils is the package for runner utils.
+// Package utils is the package for runner utils.
 package utils
 
 import (
