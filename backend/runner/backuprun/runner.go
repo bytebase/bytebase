@@ -342,8 +342,8 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if instance.Deleted {
 			continue
 		}
-		// backup for Spanner is not supported.
-		if instance.Engine == db.Spanner {
+		// backup for ClickHouse, Snowflake, MongoDB, Spanner, Redis, Oracle is not supported.
+		if instance.Engine == db.ClickHouse || instance.Engine == db.Snowflake || instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			continue
 		}
 		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})

@@ -380,7 +380,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
 	// Snowflake doesn't support READ ONLY transactions.
 	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
-	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake {
+	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake || dbType == db.Spanner || dbType == db.Redis || dbType == db.Oracle {
 		readOnly = false
 	}
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
