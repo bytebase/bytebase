@@ -673,7 +673,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.RollbackRunner.Run(ctx, &s.runnerWG)		
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
