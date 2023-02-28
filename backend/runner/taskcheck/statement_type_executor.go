@@ -7,30 +7,35 @@ import (
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
+	"github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // NewStatementTypeExecutor creates a task check DML executor.
-func NewStatementTypeExecutor(store *store.Store) Executor {
+func NewStatementTypeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
 	return &StatementTypeExecutor{
-		store: store,
+		store:     store,
+		dbFactory: dbFactory,
 	}
 }
 
 // StatementTypeExecutor is the task check DML executor.
 type StatementTypeExecutor struct {
-	store *store.Store
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check database connector executor once.
-func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
+func (exec *StatementTypeExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementTypePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement type payload")
@@ -47,6 +52,13 @@ func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *store.TaskChe
 		if err != nil {
 			return nil, err
 		}
+		if task.Type == api.TaskDatabaseSchemaUpdateSDL {
+			sdlAdvice, err := exec.mysqlSDLTypeCheck(ctx, payload.Statement, payload.Charset, payload.Collation, task)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, sdlAdvice...)
+		}
 	default:
 		return nil, common.Errorf(common.Invalid, "invalid check statement type database type: %s", payload.DbType)
 	}
@@ -61,6 +73,105 @@ func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *store.TaskChe
 		})
 	}
 
+	return result, nil
+}
+
+func (exec *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, charset string, collation string, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, newSchema)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := parser.SplitMultiSQL(parser.MySQL, ddl)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split SQL")
+	}
+
+	var result []api.TaskCheckResult
+	for _, stmt := range list {
+		if parser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+			continue
+		}
+		nodeList, _, err := tidbparser.New().Parse(stmt.Text, "", "")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt)
+		}
+		if len(nodeList) != 1 {
+			return nil, errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		}
+
+		switch node := nodeList[0].(type) {
+		case *tidbast.DropTableStmt:
+			for _, table := range node.Tables {
+				result = append(result, api.TaskCheckResult{
+					Status:    api.TaskCheckStatusWarn,
+					Namespace: api.BBNamespace,
+					Code:      common.TaskTypeDropTable.Int(),
+					Title:     "Plan to drop table",
+					Content:   fmt.Sprintf("Plan to drop table `%s`", table.Name.O),
+					Line:      stmt.LastLine,
+				})
+			}
+		case *tidbast.DropIndexStmt:
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusWarn,
+				Namespace: api.BBNamespace,
+				Code:      common.TaskTypeDropIndex.Int(),
+				Title:     "Plan to drop index",
+				Content:   fmt.Sprintf("Plan to drop index `%s` on table `%s`", node.IndexName, node.Table.Name.O),
+				Line:      stmt.LastLine,
+			})
+		case *tidbast.AlterTableStmt:
+			for _, spec := range node.Specs {
+				switch spec.Tp {
+				case tidbast.AlterTableDropColumn:
+					result = append(result, api.TaskCheckResult{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.BBNamespace,
+						Code:      common.TaskTypeDropColumn.Int(),
+						Title:     "Plan to drop column",
+						Content:   fmt.Sprintf("Plan to drop column `%s` on table `%s`", spec.OldColumnName.Name.O, node.Table.Name.O),
+						Line:      stmt.LastLine,
+					})
+				case tidbast.AlterTableDropPrimaryKey:
+					result = append(result, api.TaskCheckResult{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.BBNamespace,
+						Code:      common.TaskTypeDropPrimaryKey.Int(),
+						Title:     "Plan to drop primary key",
+						Content:   fmt.Sprintf("Plan to drop primary key on table `%s`", node.Table.Name.O),
+						Line:      stmt.LastLine,
+					})
+				case tidbast.AlterTableDropForeignKey:
+					result = append(result, api.TaskCheckResult{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.BBNamespace,
+						Code:      common.TaskTypeDropPrimaryKey.Int(),
+						Title:     "Plan to drop foreign key",
+						Content:   fmt.Sprintf("Plan to drop foreign key `%s` on table `%s`", spec.Name, node.Table.Name.O),
+						Line:      stmt.LastLine,
+					})
+				case tidbast.AlterTableDropCheck:
+					result = append(result, api.TaskCheckResult{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.BBNamespace,
+						Code:      common.TaskTypeDropPrimaryKey.Int(),
+						Title:     "Plan to drop check constraint",
+						Content:   fmt.Sprintf("Plan to drop check constraint `%s` on table `%s`", spec.Constraint.Name, node.Table.Name.O),
+						Line:      stmt.LastLine,
+					})
+				}
+			}
+		}
+	}
 	return result, nil
 }
 

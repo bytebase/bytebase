@@ -140,12 +140,12 @@ func isTiDBUnsupportStmt(stmt string) bool {
 	return IsDelimiter(stmt)
 }
 
-// isTiDBUnsupportStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:
+// IsTiDBUnsupportDDLStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:
 // 1. `CREATE TRIGGER`
 // 2. `CREATE EVENT`
 // 3. `CREATE FUNCTION`
 // 4. `CREATE PROCEDURE`.
-func isTiDBUnsupportDDLStmt(stmt string) bool {
+func IsTiDBUnsupportDDLStmt(stmt string) bool {
 	objects := []string{
 		"TRIGGER",
 		"EVENT",
