@@ -73,7 +73,7 @@
       />
     </div>
     <!-- Project schemaChangeType selector -->
-    <div v-if="isDev">
+    <div>
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
@@ -164,7 +164,7 @@
         />
       </div>
       <div class="mt-1 textinfolabel">
-        <template v-if="isDev && !isProjectSchemaChangeTypeDDL">
+        <template v-if="!isProjectSchemaChangeTypeDDL">
           {{ $t("project.settings.schema-path-template-sdl-description") }}
         </template>
         <template v-else>
