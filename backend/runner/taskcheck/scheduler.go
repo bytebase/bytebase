@@ -346,11 +346,10 @@ func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store
 		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement:  statement,
-		DbType:     instance.Engine,
-		Charset:    dbSchema.Metadata.CharacterSet,
-		Collation:  dbSchema.Metadata.Collation,
-		SyntaxMode: task.GetSyntaxMode(),
+		Statement: statement,
+		DbType:    instance.Engine,
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
@@ -370,11 +369,10 @@ func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMe
 		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement:  statement,
-		DbType:     instance.Engine,
-		Charset:    dbSchema.Metadata.CharacterSet,
-		Collation:  dbSchema.Metadata.Collation,
-		SyntaxMode: task.GetSyntaxMode(),
+		Statement: statement,
+		DbType:    instance.Engine,
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)

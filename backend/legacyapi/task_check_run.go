@@ -86,11 +86,10 @@ type TaskCheckEarliestAllowedTimePayload struct {
 
 // TaskCheckDatabaseStatementAdvisePayload is the task check payload for database statement advise.
 type TaskCheckDatabaseStatementAdvisePayload struct {
-	Statement  string             `json:"statement,omitempty"`
-	DbType     db.Type            `json:"dbType,omitempty"`
-	Charset    string             `json:"charset,omitempty"`
-	Collation  string             `json:"collation,omitempty"`
-	SyntaxMode advisor.SyntaxMode `json:"syntaxMode,omitempty"`
+	Statement string  `json:"statement,omitempty"`
+	DbType    db.Type `json:"dbType,omitempty"`
+	Charset   string  `json:"charset,omitempty"`
+	Collation string  `json:"collation,omitempty"`
 }
 
 // TaskCheckDatabaseStatementTypePayload is the task check payload for SQL type.
