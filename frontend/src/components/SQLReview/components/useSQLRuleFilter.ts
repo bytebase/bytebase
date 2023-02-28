@@ -1,11 +1,11 @@
 import { computed, reactive, unref } from "vue";
+import { useRoute } from "vue-router";
 import {
   MaybeRef,
   RuleLevel,
   RuleTemplate,
   SchemaRuleEngineType,
 } from "@/types";
-import { useRoute } from "vue-router";
 
 export type SQLRuleFilterParams = {
   checkedEngine: Set<SchemaRuleEngineType>;
