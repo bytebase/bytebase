@@ -80,7 +80,7 @@
       </div>
     </div>
 
-    <div v-if="isDev">
+    <div>
       <dl class="">
         <div class="textlabel">
           {{ $t("project.settings.schema-change-type") }}
