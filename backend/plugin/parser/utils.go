@@ -129,14 +129,6 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 	return unsupportStmts, supportedStmts.String(), nil
 }
 
-// IsTiDBSupported returns true if this statement is supported in TiDB.
-func IsTiDBSupported(stmt string) bool {
-	if IsTiDBUnsupportDDLStmt(stmt) {
-		return false
-	}
-	return !IsDelimiter(stmt)
-}
-
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
 	if IsTiDBUnsupportDDLStmt(stmt) {
@@ -148,7 +140,7 @@ func isTiDBUnsupportStmt(stmt string) bool {
 	return IsDelimiter(stmt)
 }
 
-// IsTiDBUnsupportStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:
+// IsTiDBUnsupportDDLStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:
 // 1. `CREATE TRIGGER`
 // 2. `CREATE EVENT`
 // 3. `CREATE FUNCTION`

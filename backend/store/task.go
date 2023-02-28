@@ -73,6 +73,7 @@ func (task *TaskMessage) toTask() *api.Task {
 	return composedTask
 }
 
+// GetSyntaxMode returns the syntax mode.
 func (task *TaskMessage) GetSyntaxMode() advisor.SyntaxMode {
 	if task.Type == api.TaskDatabaseSchemaUpdateSDL {
 		return advisor.SyntaxModeSDL
