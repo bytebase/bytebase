@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
+	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -41,7 +42,11 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 		return "", errors.Errorf("unsupported database engine %q", instance.Engine)
 	}
 
-	diff, err := differ.SchemaDiff(engine, schema.String(), newSchema)
+	sdlFormat, err := transform.SchemaTransform(engine, schema.String())
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to transform SDL format")
+	}
+	diff, err := differ.SchemaDiff(engine, sdlFormat, newSchema)
 	if err != nil {
 		return "", errors.Wrapf(err, "compute schema diff")
 	}
