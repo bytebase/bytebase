@@ -53,7 +53,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, taskCheckRun *store.
 			return nil, err
 		}
 		if task.Type == api.TaskDatabaseSchemaUpdateSDL {
-			sdlAdvice, err := exec.mysqlSDLTypeCheck(ctx, payload.Statement, payload.Charset, payload.Collation, task)
+			sdlAdvice, err := exec.mysqlSDLTypeCheck(ctx, payload.Statement, task)
 			if err != nil {
 				return nil, err
 			}
@@ -76,7 +76,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, taskCheckRun *store.
 	return result, nil
 }
 
-func (exec *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, charset string, collation string, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
+func (exec *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (exec *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSch
 		}
 		nodeList, _, err := tidbparser.New().Parse(stmt.Text, "", "")
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt)
+			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt.Text)
 		}
 		if len(nodeList) != 1 {
 			return nil, errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
