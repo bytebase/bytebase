@@ -247,7 +247,6 @@ import {
   useProjectStore,
   useRepositoryStore,
 } from "@/store";
-import { isDev } from "@/utils";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -457,10 +456,7 @@ export default defineComponent({
       }
 
       // Update project schemaChangeType field firstly.
-      if (
-        isDev() &&
-        state.schemaChangeType !== props.project.schemaChangeType
-      ) {
+      if (state.schemaChangeType !== props.project.schemaChangeType) {
         const projectPatch: ProjectPatch = {
           schemaChangeType: state.schemaChangeType,
         };
