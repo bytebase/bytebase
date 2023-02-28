@@ -5,6 +5,7 @@ import {
   RuleTemplate,
   SchemaRuleEngineType,
 } from "@/types";
+import { useRoute } from "vue-router";
 
 export type SQLRuleFilterParams = {
   checkedEngine: Set<SchemaRuleEngineType>;
@@ -14,10 +15,13 @@ export type SQLRuleFilterParams = {
 };
 
 export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
+  const route = useRoute();
   const params = reactive<SQLRuleFilterParams>({
     checkedEngine: new Set(),
     checkedLevel: new Set(),
-    selectedCategory: undefined,
+    selectedCategory: route.query.category
+      ? (route.query.category as string)
+      : undefined,
     searchText: "",
   });
   const events = {
