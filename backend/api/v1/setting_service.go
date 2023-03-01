@@ -20,7 +20,9 @@ type SettingService struct {
 
 // NewSettingService creates a new setting service.
 func NewSettingService(store *store.Store) *SettingService {
-	return &SettingService{store: store}
+	return &SettingService{
+		store: store,
+	}
 }
 
 // Some settings contain secret info so we only return settings that are needed by the client.
@@ -68,13 +70,15 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if settingName == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
 	}
+	apiSettingName := api.SettingName(settingName)
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  api.SettingName(settingName),
+		Name:  apiSettingName,
 		Value: request.Setting.Value.GetStringValue(),
 	}, ctx.Value(common.PrincipalIDContextKey).(int))
 	if err != nil {
 		return nil, err
 	}
+
 	return convertToSettingMessage(setting), nil
 }
 

@@ -14,6 +14,8 @@ const (
 	SettingBrandingLogo SettingName = "bb.branding.logo"
 	// SettingWorkspaceID is the setting name for workspace identifier.
 	SettingWorkspaceID SettingName = "bb.workspace.id"
+	// SettingWorkspaceGeneral is the setting name for workspace general settings.
+	SettingWorkspaceGeneral SettingName = "bb.workspace.general"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.

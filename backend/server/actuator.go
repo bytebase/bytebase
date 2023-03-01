@@ -13,13 +13,18 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+		}
+
 		serverInfo := api.ServerInfo{
 			Version:        s.profile.Version,
 			GitCommit:      s.profile.GitCommit,
 			Readonly:       s.profile.Readonly,
 			DemoName:       s.profile.DemoName,
-			ExternalURL:    s.profile.ExternalURL,
-			DisallowSignup: s.profile.DisallowSignup,
+			ExternalURL:    setting.ExternalUrl,
+			DisallowSignup: setting.DisallowSignup,
 		}
 
 		findRole := api.Owner

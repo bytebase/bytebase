@@ -13,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
@@ -25,8 +24,7 @@ import (
 
 // Manager is the activity manager.
 type Manager struct {
-	store   *store.Store
-	profile config.Profile
+	store *store.Store
 }
 
 // Metadata is the activity metadata.
@@ -35,10 +33,9 @@ type Metadata struct {
 }
 
 // NewManager creates an activity manager.
-func NewManager(store *store.Store, profile config.Profile) *Manager {
+func NewManager(store *store.Store) *Manager {
 	return &Manager{
-		store:   store,
-		profile: profile,
+		store: store,
 	}
 }
 
@@ -87,6 +84,12 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 	if len(webhookList) == 0 {
 		return nil
 	}
+
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get workspace setting")
+	}
+
 	// Send one webhook post for all activities.
 	webhookCtx := webhook.Context{
 		Level:        webhook.WebhookInfo,
@@ -104,7 +107,7 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s-%d", m.profile.ExternalURL, slug.Make(issue.Title), issue.UID),
+		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorID,
 		CreatorName:  anyActivity.Creator.Name,
 		CreatorEmail: anyActivity.Creator.Email,
@@ -190,9 +193,15 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *Metadata, updater *store.UserMessage) (webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
+
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return webhookCtx, errors.Wrapf(err, "failed to get workspace setting")
+	}
+
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s/issue/%s-%d", m.profile.ExternalURL, slug.Make(meta.Issue.Title), meta.Issue.UID)
+	link := fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(meta.Issue.Title), meta.Issue.UID)
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)

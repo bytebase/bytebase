@@ -23,7 +23,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		ResourceDir:          common.GetResourceDir(dataDir),
 		Debug:                flags.debug,
 		DemoName:             flags.demoName,
-		DisallowSignup:       flags.disallowSignup,
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
