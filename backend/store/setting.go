@@ -57,7 +57,7 @@ func (s *Store) GetExternalURL(ctx context.Context) (string, error) {
 
 // GetDisallowSignup gets the disallow signup from setting.
 func (s *Store) GetDisallowSignup(ctx context.Context) (bool, error) {
-	settingName := api.SettingWorkspaceExternalURL
+	settingName := api.SettingWorkspaceDisallowSignup
 	setting, err := s.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
