@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/server"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.
@@ -137,32 +137,6 @@ func init() {
 
 // -----------------------------------Command Line Config END--------------------------------------
 
-func normalizeExternalURL(url string) (string, error) {
-	r := strings.TrimSpace(url)
-	r = strings.TrimSuffix(r, "/")
-	if !common.HasPrefixes(r, "http://", "https://") {
-		return "", errors.Errorf("%s must start with http:// or https://", url)
-	}
-	parts := strings.Split(r, ":")
-	if len(parts) > 3 {
-		return "", errors.Errorf("%s malformed", url)
-	}
-	if len(parts) == 3 {
-		port, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return "", errors.Errorf("%s has non integer port", url)
-		}
-		// The external URL is used as the redirectURL in the get token process of OAuth, and the
-		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend gets it through window.location.origin in the get code
-		// process, so port 80/443 need to be cropped.
-		if port == 80 || port == 443 {
-			r = strings.Join(parts[0:2], ":")
-		}
-	}
-	return r, nil
-}
-
 func checkDataDir() error {
 	// Clean data directory path.
 	flags.dataDir = filepath.Clean(flags.dataDir)
@@ -216,7 +190,7 @@ func start() {
 	defer log.Sync()
 
 	var err error
-	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
+	flags.externalURL, err = utils.NormalizeExternalURL(flags.externalURL)
 	if err != nil {
 		log.Error("invalid --external-url", zap.Error(err))
 		return
