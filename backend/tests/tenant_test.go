@@ -43,6 +43,7 @@ func TestTenant(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
+		ResourceID: generateRandomString("project", 10),
 		Name:       "Test Project",
 		Key:        "TestSchemaUpdate",
 		TenantMode: api.TenantModeTenant,
@@ -76,6 +77,7 @@ func TestTenant(t *testing.T) {
 	var prodInstances []*api.Instance
 	for i, testInstanceDir := range testInstanceDirs {
 		instance, err := ctl.addInstance(api.InstanceCreate{
+			ResourceID:    generateRandomString("instance", 10),
 			EnvironmentID: testEnvironment.ID,
 			Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 			Engine:        db.SQLite,
@@ -86,6 +88,7 @@ func TestTenant(t *testing.T) {
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
 		instance, err := ctl.addInstance(api.InstanceCreate{
+			ResourceID:    generateRandomString("instance", 10),
 			EnvironmentID: prodEnvironment.ID,
 			Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 			Engine:        db.SQLite,
@@ -304,6 +307,7 @@ func TestTenantVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID: generateRandomString("project", 10),
 					Name:       "Test VCS Project",
 					Key:        "TestVCSSchemaUpdate",
 					TenantMode: api.TenantModeTenant,
@@ -364,6 +368,7 @@ func TestTenantVCS(t *testing.T) {
 			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
+						ResourceID:    generateRandomString("instance", 10),
 						EnvironmentID: testEnvironment.ID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
@@ -376,6 +381,7 @@ func TestTenantVCS(t *testing.T) {
 			for i, prodInstanceDir := range prodInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
+						ResourceID:    generateRandomString("instance", 10),
 						EnvironmentID: prodEnvironment.ID,
 						Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:        db.SQLite,
@@ -511,6 +517,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
+		ResourceID:     generateRandomString("project", 10),
 		Name:           "Test Project",
 		Key:            "TestSchemaUpdate",
 		TenantMode:     api.TenantModeTenant,
@@ -534,6 +541,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Add the provisioned instances.
 	testInstance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: testEnvironment.ID,
 		Name:          testInstanceName,
 		Engine:        db.SQLite,
@@ -541,6 +549,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	})
 	a.NoError(err)
 	prodInstance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          prodInstanceName,
 		Engine:        db.SQLite,
@@ -744,6 +753,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID:     generateRandomString("project", 10),
 					Name:           "Test VCS Project",
 					Key:            "TestVCSSchemaUpdate",
 					TenantMode:     api.TenantModeTenant,
@@ -805,6 +815,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
+						ResourceID:    generateRandomString("instance", 10),
 						EnvironmentID: testEnvironment.ID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
@@ -817,6 +828,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			for i, prodInstanceDir := range prodInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
+						ResourceID:    generateRandomString("instance", 10),
 						EnvironmentID: prodEnvironment.ID,
 						Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:        db.SQLite,
@@ -1071,6 +1083,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			// Create a tenant project with empty database name template.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID: generateRandomString("project", 10),
 					Name:       "Test VCS Project",
 					Key:        "TestTenantVCSDatabaseNameTemplate_Empty",
 					TenantMode: api.TenantModeTenant,
@@ -1123,6 +1136,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
+						ResourceID:    generateRandomString("instance", 10),
 						EnvironmentID: testEnvironment.ID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
@@ -1349,6 +1363,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			// Create a tenant project with empty database name template.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID: generateRandomString("project", 10),
 					Name:       "Test VCS Project",
 					Key:        "TestTenantVCS_YAML",
 					TenantMode: api.TenantModeTenant,
@@ -1401,6 +1416,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
+						ResourceID:    generateRandomString("instance", 10),
 						EnvironmentID: testEnvironment.ID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,

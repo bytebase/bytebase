@@ -1243,6 +1243,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	case db.Spanner:
 		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
+	case db.Oracle:
+		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }

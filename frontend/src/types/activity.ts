@@ -5,6 +5,7 @@ import {
   ContainerId,
   DatabaseId,
   InstanceId,
+  IssueId,
   PrincipalId,
   StageId,
   TaskId,
@@ -14,7 +15,7 @@ import { MemberStatus, RoleType } from "./member";
 import { StageStatusUpdateType, TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
-import { Advice } from "./sql";
+import { Advice } from "./sqlAdvice";
 import { t } from "../plugins/i18n";
 
 export type IssueActivityType =
@@ -103,9 +104,19 @@ export type ActivityIssueCreatePayload = {
   issueName: string;
 };
 
+// TaskRollbackBy records an issue rollback activity.
+// The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
+export type TaskRollbackBy = {
+  issueId: IssueId;
+  taskId: TaskId;
+  rollbackByIssueId: IssueId;
+  rollbackByTaskId: TaskId;
+};
+
 export type ActivityIssueCommentCreatePayload = {
-  externalApprovalEvent: ExternalApprovalEvent;
+  externalApprovalEvent?: ExternalApprovalEvent;
   issueName: string;
+  taskRollbackBy?: TaskRollbackBy;
 };
 
 export type ActivityIssueFieldUpdatePayload = {

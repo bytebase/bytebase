@@ -13,8 +13,10 @@
       }"
     >
       <div class="bb-grid-cell">
-        {{ environment.name }}
-        <ProductionEnvironmentIcon :environment="environment" />
+        <router-link :to="`/environment/${environment.id}`">
+          {{ environment.name }}
+          <ProductionEnvironmentIcon :environment="environment" />
+        </router-link>
       </div>
       <div class="bb-grid-cell">
         <template v-if="review">
@@ -49,7 +51,6 @@
           </button>
 
           <BBButtonConfirm
-            v-if="review.rowStatus === 'ARCHIVED'"
             class="btn-normal flex justify-center !py-1 !px-3"
             :disabled="!hasPermission"
             :style="'DELETE'"

@@ -78,8 +78,9 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  t.Name(),
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        t.Name(),
 	})
 	a.NoError(err)
 	environments, err := ctl.getEnvironments()
@@ -88,6 +89,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	a.NoError(err)
 
 	mysqlInstance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
@@ -99,6 +101,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	a.NoError(err)
 
 	pgInstance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgInstance",
 		Engine:        db.Postgres,

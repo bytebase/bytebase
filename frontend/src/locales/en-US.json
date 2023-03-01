@@ -310,7 +310,7 @@
       "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
       "cancel-generating": "Cancel generating the SQL rollback",
-      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change."
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change. {link}"
     }
   },
   "banner": {
@@ -1811,7 +1811,8 @@
     "rule": {
       "active": "Active"
     },
-    "enabled-rules": "Enabled rules"
+    "enabled-rules": "Enabled rules",
+    "rule-detail": "Rule detail"
   },
   "debug-log": {
     "title": "Debug Log",
@@ -1896,6 +1897,8 @@
   },
   "resource": {
     "environment": "Environment",
+    "instance": "Instance",
+    "project": "Project",
     "idp": "Identity Provider"
   },
   "resource-id": {

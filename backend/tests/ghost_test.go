@@ -97,8 +97,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Ghost Project",
-		Key:  "TestGhostSchemaUpdate",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Ghost Project",
+		Key:        "TestGhostSchemaUpdate",
 	})
 	a.NoError(err)
 
@@ -108,6 +109,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
@@ -235,6 +237,7 @@ func TestGhostTenant(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
+		ResourceID: generateRandomString("project", 10),
 		Name:       "Test Project",
 		Key:        "TestTenantGhost",
 		TenantMode: api.TenantModeTenant,
@@ -256,6 +259,7 @@ func TestGhostTenant(t *testing.T) {
 		a.NoError(err)
 		// Add the provisioned instances.
 		instance, err := ctl.addInstance((api.InstanceCreate{
+			ResourceID:    generateRandomString("instance", 10),
 			EnvironmentID: testEnvironment.ID,
 			Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 			Engine:        db.MySQL,
@@ -272,6 +276,7 @@ func TestGhostTenant(t *testing.T) {
 		a.NoError(err)
 		// Add the provisioned instances.
 		instance, err := ctl.addInstance((api.InstanceCreate{
+			ResourceID:    generateRandomString("instance", 10),
 			EnvironmentID: prodEnvironment.ID,
 			Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 			Engine:        db.MySQL,

@@ -17,12 +17,18 @@
           </a>
         </div>
       </div>
-      <div v-if="getRuleLocalization(rule.type).description" class="space-y-1">
+      <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
-          {{ $t("common.description") }}
+          {{ $t("sql-review.rule.active") }}
         </h3>
-        <div class="textinfolabel flex items-center gap-x-2">
-          {{ getRuleLocalization(rule.type).description }}
+        <div class="flex items-center gap-x-2 text-sm">
+          <BBSwitch
+            :class="[!editable && 'pointer-events-none']"
+            :disabled="disabled"
+            :value="state.level !== RuleLevel.DISABLED"
+            size="small"
+            @toggle="toggleActivity(rule, $event)"
+          />
         </div>
       </div>
       <div class="space-y-1">
@@ -92,6 +98,34 @@
           @update:value="state.payload[index] = $event"
         />
       </div>
+      <div v-if="editable" class="space-y-1">
+        <h3 class="text-lg text-control font-medium">
+          {{ $t("common.description") }}
+        </h3>
+        <div class="flex flex-col gap-x-2">
+          <input
+            v-model="state.comment"
+            type="text"
+            :disabled="disabled"
+            :class="[
+              'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
+              disabled && 'cursor-not-allowed',
+            ]"
+            :placeholder="
+              getRuleLocalization(rule.type).description ||
+              $t('common.description')
+            "
+          />
+        </div>
+      </div>
+      <div v-else-if="displayDescription" class="space-y-1">
+        <h3 class="text-lg text-control font-medium">
+          {{ $t("common.description") }}
+        </h3>
+        <div class="flex flex-col gap-x-2">
+          {{ displayDescription }}
+        </div>
+      </div>
       <div v-if="editable" class="mt-4 pt-2 border-t flex justify-end">
         <button
           type="button"
@@ -114,7 +148,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { nextTick, reactive, watch } from "vue";
+import { computed, nextTick, reactive, watch } from "vue";
 
 import {
   getRuleLocalization,
@@ -138,6 +172,7 @@ import { useI18n } from "vue-i18n";
 type LocalState = {
   payload: PayloadValueType[];
   level: RuleLevel;
+  comment: string;
 };
 
 const props = defineProps<{
@@ -150,6 +185,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "update:payload", payload: PayloadValueType[]): void;
   (event: "update:level", level: RuleLevel): void;
+  (event: "update:comment", comment: string): void;
   (event: "cancel"): void;
 }>();
 
@@ -158,6 +194,11 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   payload: cloneDeep(props.payload),
   level: props.rule.level,
+  comment: props.rule.comment ?? "",
+});
+
+const displayDescription = computed(() => {
+  return state.comment || getRuleLocalization(props.rule.type).description;
 });
 
 const configTitle = (config: RuleConfigComponent): string => {
@@ -165,6 +206,10 @@ const configTitle = (config: RuleConfigComponent): string => {
     props.rule.type
   )}.component.${config.key}.title`;
   return t(key);
+};
+
+const toggleActivity = (rule: RuleTemplate, on: boolean) => {
+  state.level = on ? RuleLevel.WARNING : RuleLevel.DISABLED;
 };
 
 watch(
@@ -183,6 +228,7 @@ watch(
 const confirm = () => {
   emit("update:level", state.level);
   emit("update:payload", state.payload);
+  emit("update:comment", state.comment);
   nextTick(() => {
     emit("cancel");
   });

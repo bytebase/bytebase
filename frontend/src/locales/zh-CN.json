@@ -222,8 +222,8 @@
     "error-message": "错误信息",
     "demo-mode": "演示模式",
     "operations": "操作",
-    "on": "开启",
-    "off": "关闭"
+    "on": "开",
+    "off": "关"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -258,7 +258,7 @@
       "compatibility": "兼容性",
       "connection": "连接",
       "migration-schema": "变更 schema",
-      "sql-review": "SQL 审查",
+      "sql-review": "SQL 审核",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
       "statement-type": "语句类型",
@@ -308,7 +308,7 @@
       "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。"
+      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。{link}"
     }
   },
   "banner": {
@@ -1772,8 +1772,8 @@
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
-    "disable": "停用审查策略",
-    "enable": "开启审查策略",
+    "disable": "停用审核策略",
+    "enable": "开启审核策略",
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
@@ -1810,7 +1810,8 @@
     "rule": {
       "active": "开启"
     },
-    "enabled-rules": "开启的规则"
+    "enabled-rules": "开启的规则数",
+    "rule-detail": "规则详情"
   },
   "debug-log": {
     "title": "Debug 日志",
@@ -1895,6 +1896,8 @@
   },
   "resource": {
     "environment": "环境",
+    "instance": "实例",
+    "project": "项目",
     "idp": "身份提供商"
   },
   "resource-id": {

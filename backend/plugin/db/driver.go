@@ -38,6 +38,10 @@ const (
 	MongoDB Type = "MONGODB"
 	// Spanner is the database type for Spanner.
 	Spanner Type = "SPANNER"
+	// Redis is the database type for Redis.
+	Redis Type = "REDIS"
+	// Oracle is the database type for Oracle.
+	Oracle Type = "ORACLE"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 

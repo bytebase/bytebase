@@ -12,6 +12,7 @@ import (
 // SchemaTransformer is the interface for schema transformer.
 type SchemaTransformer interface {
 	Transform(schema string) (string, error)
+	Check(schema string) (int, error)
 }
 
 var (
@@ -43,4 +44,15 @@ func SchemaTransform(engineType parser.EngineType, schema string) (string, error
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
 	return p.Transform(schema)
+}
+
+// CheckFormat checks the schema format.
+func CheckFormat(engineType parser.EngineType, schema string) (int, error) {
+	transformMu.RLock()
+	p, ok := transformers[engineType]
+	transformMu.RUnlock()
+	if !ok {
+		return 0, errors.Errorf("engine: unknown engine type %v", engineType)
+	}
+	return p.Check(schema)
 }

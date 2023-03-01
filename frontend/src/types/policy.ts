@@ -52,6 +52,7 @@ export type SQLReviewPolicyPayload = {
     type: RuleType;
     level: RuleLevel;
     payload: string;
+    comment: string;
   }[];
 };
 

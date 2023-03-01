@@ -19,6 +19,12 @@
             class="textfield"
           />
         </dd>
+        <ResourceIdField
+          ref="resourceIdField"
+          resource="project"
+          :readonly="true"
+          :value="project.resourceId"
+        />
       </dl>
 
       <dl class="">
@@ -74,7 +80,7 @@
       </div>
     </div>
 
-    <div v-if="isDev">
+    <div>
       <dl class="">
         <div class="textlabel">
           {{ $t("project.settings.schema-change-type") }}
@@ -136,6 +142,7 @@ import {
 } from "../types";
 import FeatureModal from "@/components/FeatureModal.vue";
 import { hasFeature, pushNotification, useProjectStore } from "@/store";
+import ResourceIdField from "./ResourceIdField.vue";
 
 interface LocalState {
   name: string;
@@ -149,6 +156,7 @@ export default defineComponent({
   name: "ProjectGeneralSettingPanel",
   components: {
     FeatureModal,
+    ResourceIdField,
   },
   props: {
     project: {

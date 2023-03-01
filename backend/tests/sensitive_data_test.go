@@ -71,8 +71,9 @@ func TestSensitiveData(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Sensitive Data Project",
-		Key:  "TestSensitiveData",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Sensitive Data Project",
+		Key:        "TestSensitiveData",
 	})
 	a.NoError(err)
 
@@ -85,6 +86,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlSensitiveDataInstance",
 		Engine:        db.MySQL,

@@ -120,8 +120,9 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	// Create a project.
 	project, err := ctl.createProject(
 		api.ProjectCreate{
-			Name: fmt.Sprintf("Project %s", t.Name()),
-			Key:  "ROLLBACK",
+			ResourceID: generateRandomString("project", 10),
+			Name:       fmt.Sprintf("Project %s", t.Name()),
+			Key:        "ROLLBACK",
 		},
 	)
 	a.NoError(err)
@@ -133,6 +134,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          t.Name(),
 		Engine:        db.MySQL,
@@ -321,8 +323,9 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	// Create a project.
 	project, err := ctl.createProject(
 		api.ProjectCreate{
-			Name: fmt.Sprintf("Project %s", t.Name()),
-			Key:  "ROLLBACK",
+			ResourceID: generateRandomString("project", 10),
+			Name:       fmt.Sprintf("Project %s", t.Name()),
+			Key:        "ROLLBACK",
 		},
 	)
 	a.NoError(err)
@@ -334,6 +337,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          t.Name(),
 		Engine:        db.MySQL,
@@ -530,8 +534,9 @@ func TestRollbackCanceled(t *testing.T) {
 	// Create a project.
 	project, err := ctl.createProject(
 		api.ProjectCreate{
-			Name: fmt.Sprintf("Project %s", t.Name()),
-			Key:  "ROLLBACK",
+			ResourceID: generateRandomString("project", 10),
+			Name:       fmt.Sprintf("Project %s", t.Name()),
+			Key:        "ROLLBACK",
 		},
 	)
 	a.NoError(err)
@@ -543,6 +548,7 @@ func TestRollbackCanceled(t *testing.T) {
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          t.Name(),
 		Engine:        db.MySQL,

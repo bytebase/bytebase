@@ -78,7 +78,7 @@ interface LocalState {
   validatedMessages: ValidatedMessage[];
 }
 
-type ResourceType = "environment" | "idp";
+type ResourceType = "environment" | "instance" | "project" | "idp";
 
 const props = withDefaults(
   defineProps<{
@@ -86,12 +86,15 @@ const props = withDefaults(
     value: string;
     resourceTitle: string;
     readonly: boolean;
+    randomString: boolean;
     validator: (resourceId: ResourceId) => Promise<string | undefined>;
   }>(),
   {
     value: "",
     resourceTitle: "",
+    randomString: false,
     readonly: false,
+    validator: () => Promise.resolve(undefined),
   }
 );
 
@@ -106,49 +109,25 @@ const resourceName = computed(() => {
   return t(`resource.${props.resource}`);
 });
 
+const getPrefix = (resource: string) => {
+  switch (resource) {
+    case "environment":
+      return "env";
+    case "instance":
+      return "ins";
+    case "project":
+      return "proj";
+    case "idp":
+      return "idp";
+    default:
+      return "";
+  }
+};
+const randomSuffix = randomString(4).toLowerCase();
+
 const shouldShowResourceIdField = computed(() => {
   return !props.readonly && state.isResourceIdChanged;
 });
-
-watch(
-  () => props.value,
-  (newValue) => {
-    state.resourceId = newValue;
-  }
-);
-
-watch(
-  () => props.resourceTitle,
-  (resourceTitle) => {
-    if (props.readonly) {
-      return;
-    }
-
-    if (!state.isResourceIdChanged && resourceTitle) {
-      const formatedTitle = resourceTitle
-        .toLowerCase()
-        .split("")
-        .map((char) => {
-          if (char === " ") {
-            return "-";
-          }
-          if (characters.includes(char)) {
-            return char;
-          }
-          return randomString(1);
-        })
-        .join("")
-        .toLowerCase();
-
-      debounceHandleResourceIdChange(
-        `${formatedTitle || randomString(4).toLowerCase()}`
-      );
-    }
-  },
-  {
-    immediate: true,
-  }
-);
 
 const handleResourceIdInput = (newValue: string) => {
   if (!state.isResourceIdChanged) {
@@ -200,6 +179,57 @@ const debounceHandleResourceIdChange = useDebounceFn(
     }
   },
   200
+);
+
+watch(
+  () => props.value,
+  (newValue) => {
+    state.resourceId = newValue;
+  }
+);
+
+watch(
+  () => props.resourceTitle,
+  (resourceTitle) => {
+    if (props.readonly) {
+      return;
+    }
+
+    if (!state.isResourceIdChanged) {
+      if (resourceTitle) {
+        const formatedTitle = resourceTitle
+          .toLowerCase()
+          .split("")
+          .map((char) => {
+            if (char === " ") {
+              return "";
+            }
+            if (characters.includes(char)) {
+              return char;
+            }
+            return randomString(1);
+          })
+          .join("")
+          .toLowerCase();
+
+        let name = "";
+        if (props.randomString) {
+          name = `${getPrefix(
+            props.resource
+          )}-${formatedTitle}-${randomSuffix}`;
+        } else {
+          name = `${formatedTitle || randomString(4).toLowerCase()}`;
+        }
+        debounceHandleResourceIdChange(name);
+      } else {
+        state.resourceId = "";
+        state.validatedMessages = [];
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
 );
 
 defineExpose({
