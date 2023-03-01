@@ -220,7 +220,6 @@ func (d *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSc
 	if version, err := d.findLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
 		return "", err
 	} else if version != nil && len(*version) > 0 && *version >= m.Version {
-		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
 		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
 	}
 
