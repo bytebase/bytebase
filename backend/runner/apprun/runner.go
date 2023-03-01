@@ -499,6 +499,11 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 		taskList[i].Statement = statement
 	}
 
+	externalURL, err := r.store.GetExternalURL(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get external url")
+	}
+
 	instanceCode, err := r.p.CreateExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -507,7 +512,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 		feishu.Content{
 			Issue:    fmt.Sprintf("#%d %s", issue.UID, issue.Title),
 			Stage:    stage.Name,
-			Link:     fmt.Sprintf("%s/issue/%s-%d", r.profile.ExternalURL, slug.Make(issue.Title), issue.UID),
+			Link:     fmt.Sprintf("%s/issue/%s-%d", externalURL, slug.Make(issue.Title), issue.UID),
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalDefinitionID,

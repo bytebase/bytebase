@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
-	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -82,14 +81,7 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
-	settingName := api.SettingWorkspaceDisallowSignup
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
-	if err != nil || setting == nil {
-		return nil, status.Errorf(codes.Internal, "failed to find disallow signup setting, error: %v", err)
-	}
-	disallowSignup, err := strconv.ParseBool(setting.Value)
+	disallowSignup, err := s.store.GetDisallowSignup(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert disallow signup setting to bool, error: %v", err)
 	}
@@ -505,6 +497,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
+	externalURL, err := s.store.GetExternalURL(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get external url: %v", err)
+	}
+
 	var userInfo *storepb.IdentityProviderUserInfo
 	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
@@ -516,7 +513,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", externalURL)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
@@ -545,7 +542,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", externalURL)
 		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)

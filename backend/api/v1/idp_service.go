@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -25,15 +24,13 @@ type IdentityProviderService struct {
 	v1pb.UnimplementedIdentityProviderServiceServer
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
-	profile        *config.Profile
 }
 
 // NewIdentityProviderService creates a new IdentityProviderService.
-func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService, profile *config.Profile) *IdentityProviderService {
+func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService) *IdentityProviderService {
 	return &IdentityProviderService{
 		store:          store,
 		licenseService: licenseService,
-		profile:        profile,
 	}
 }
 
@@ -192,6 +189,11 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
+	externalURL, err := s.store.GetExternalURL(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get external url: %v", err)
+	}
+
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
 		// Find client secret for those existed identity providers.
 		if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
@@ -214,7 +216,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.Internal, "failed to new oauth2 identity provider")
 		}
 
-		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", externalURL)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
@@ -249,7 +251,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", externalURL)
 		token, err := oidcIdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())

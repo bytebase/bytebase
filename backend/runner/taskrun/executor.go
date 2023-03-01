@@ -292,7 +292,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -372,7 +372,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", profile.ExternalURL, slug.Make(issue.Title), issue.UID, task.StageID)
+			externalURL, err := stores.GetExternalURL(ctx)
+			if err != nil {
+				return true, nil, errors.Wrapf(err, "failed to get external url")
+			}
+			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", externalURL, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
@@ -509,7 +513,7 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, license, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 // Writes back the latest schema to the repository after migration.

@@ -187,6 +187,11 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 		}
 
+		externalURL, err := s.store.GetExternalURL(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find external url setting").SetInternal(err)
+		}
+
 		result := &api.ProjectWebhookTestResult{}
 		err = webhookPlugin.Post(
 			webhook.Type,
@@ -196,7 +201,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				ActivityType: string(api.ActivityIssueCreate),
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Name),
 				Description:  "This is a test",
-				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", s.profile.ExternalURL, getProjectSlug(project), api.ProjectWebhookSlug(webhook)),
+				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", externalURL, getProjectSlug(project), api.ProjectWebhookSlug(webhook)),
 				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",

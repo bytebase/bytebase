@@ -148,6 +148,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	// id is the webhookEndpointID in repository
 	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
 	g.POST("/sql-review/:id", func(c echo.Context) error {
+		ctx := c.Request().Context()
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
@@ -156,6 +157,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("webhook_endpoint_id", c.Param("id")),
 			zap.String("request", string(body)),
 		)
+
+		externalURL, err := s.store.GetExternalURL(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find external url setting").SetInternal(err)
+		}
 
 		var request api.VCSSQLReviewRequest
 		if err := json.Unmarshal(body, &request); err != nil {
@@ -187,7 +193,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken, nil
 		}
-		ctx := c.Request().Context()
+
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
 		if err != nil {
 			return err
@@ -240,7 +246,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				wg.Add(1)
 				go func(file fileInfo) {
 					defer wg.Done()
-					adviceList, err := s.sqlAdviceForFile(ctx, file)
+					adviceList, err := s.sqlAdviceForFile(ctx, file, externalURL)
 					if err != nil {
 						log.Debug(
 							"Failed to take SQL review for file",
@@ -280,6 +286,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 func (s *Server) sqlAdviceForFile(
 	ctx context.Context,
 	fileInfo fileInfo,
+	externalURL string,
 ) ([]advisor.Advice, error) {
 	log.Debug("Processing file",
 		zap.String("file", fileInfo.item.FileName),
@@ -398,7 +405,7 @@ func (s *Server) sqlAdviceForFile(
 			Status:  advisor.Warn,
 			Code:    advisor.NotFound,
 			Title:   "SQL review policy not found",
-			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", s.profile.ExternalURL),
+			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", externalURL),
 			Line:    1,
 		},
 	}, nil

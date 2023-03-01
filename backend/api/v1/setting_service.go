@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -16,15 +15,13 @@ import (
 // SettingService implements the setting service.
 type SettingService struct {
 	v1pb.UnimplementedSettingServiceServer
-	store   *store.Store
-	profile *config.Profile
+	store *store.Store
 }
 
 // NewSettingService creates a new setting service.
-func NewSettingService(store *store.Store, profile *config.Profile) *SettingService {
+func NewSettingService(store *store.Store) *SettingService {
 	return &SettingService{
-		store:   store,
-		profile: profile,
+		store: store,
 	}
 }
 
@@ -80,10 +77,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	}, ctx.Value(common.PrincipalIDContextKey).(int))
 	if err != nil {
 		return nil, err
-	}
-
-	if apiSettingName == api.SettingWorkspaceExternalURL {
-		s.profile.ExternalURL = setting.Value
 	}
 
 	return convertToSettingMessage(setting), nil

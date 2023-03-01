@@ -209,7 +209,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
@@ -304,7 +303,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = activity.NewManager(storeInstance, profile)
+	s.ActivityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 	e := echo.New()
 	e.Debug = profile.Debug
@@ -476,8 +475,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile))
+	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -647,12 +646,11 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
-	// upsert external url setting
-	externalURLSettingDesc := "Workspace external url"
-	if _, err := datastore.UpsertSettingV2(ctx, &store.SetSettingMessage{
+	// initial external url setting
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceExternalURL,
 		Value:       s.profile.ExternalURL,
-		Description: &externalURLSettingDesc,
+		Description: "Workspace external url",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
