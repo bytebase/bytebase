@@ -180,7 +180,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 		}
 	}
 	if find.UID != nil {
-		if environment, ok := s.environmentCache.Load(*find.UID); ok {
+		if environment, ok := s.environmentIDCache.Load(*find.UID); ok {
 			return environment.(*EnvironmentMessage), nil
 		}
 	}
