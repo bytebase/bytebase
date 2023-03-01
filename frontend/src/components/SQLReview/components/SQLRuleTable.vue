@@ -94,6 +94,7 @@
       @cancel="state.activeRule = undefined"
       @update:payload="updatePayload(state.activeRule!, $event)"
       @update:level="updateLevel(state.activeRule!, $event)"
+      @update:comment="updateComment(state.activeRule!, $event)"
     />
   </div>
 </template>
@@ -139,6 +140,7 @@ const emit = defineEmits<{
     payload: PayloadValueType[]
   ): void;
   (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
+  (event: "comment-change", rule: RuleTemplate, comment: string): void;
 }>();
 
 const { t } = useI18n();
@@ -197,5 +199,8 @@ const updatePayload = (rule: RuleTemplate, payload: PayloadValueType[]) => {
 };
 const updateLevel = (rule: RuleTemplate, level: RuleLevel) => {
   emit("level-change", rule, level);
+};
+const updateComment = (rule: RuleTemplate, comment: string) => {
+  emit("comment-change", rule, comment);
 };
 </script>
