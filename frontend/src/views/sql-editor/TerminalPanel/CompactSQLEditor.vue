@@ -249,7 +249,7 @@ const handleEditorReady = async () => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && endsWithSemicolon && cursorAtLast"
+    "!readonly && endsWithSemicolon && cursorAtLast && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
 
   const cursorAtFirstLine = editor?.createContextKey<boolean>(
@@ -275,7 +275,7 @@ const handleEditorReady = async () => {
   updateCursorPosition();
   editor?.onDidChangeCursorPosition(updateCursorPosition);
   editor?.addCommand(
-    monaco.KeyMod.CtrlCmd | monaco.KeyCode.UpArrow,
+    monaco.KeyCode.UpArrow,
     () => {
       // When
       // - the cursor is at the first line
@@ -285,10 +285,10 @@ const handleEditorReady = async () => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && !suggestWidgetVisible && cursorAtFirstLine"
+    "!readonly && cursorAtFirstLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
   editor?.addCommand(
-    monaco.KeyMod.CtrlCmd | monaco.KeyCode.DownArrow,
+    monaco.KeyCode.DownArrow,
     () => {
       // When
       // - the cursor is at the last line
@@ -298,7 +298,7 @@ const handleEditorReady = async () => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && !suggestWidgetVisible && cursorAtLastLine"
+    "!readonly && cursorAtLastLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
 
   watchEffect(async () => {
