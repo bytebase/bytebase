@@ -198,7 +198,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				}
 				if len(databaseNameList) > 0 {
 					return echo.NewHTTPError(http.StatusBadRequest,
-						fmt.Sprintf("You should transfer these databases to the default project before deleting the instance: %s.", strings.Join(databaseNameList, ", ")))
+						fmt.Sprintf("You should transfer these databases to the unassigned project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
 				}
 				f := true
 				deletes = &f
