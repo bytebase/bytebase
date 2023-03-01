@@ -657,7 +657,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
-	// upsert disallow signup setting
+	// initial disallow signup setting
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceDisallowSignup,
 		Value:       "false",
