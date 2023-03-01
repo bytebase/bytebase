@@ -246,9 +246,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
 		}
 
-		externalURL, err := s.store.GetExternalURL(ctx)
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find external url setting").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
 		repositoryCreate := &api.RepositoryCreate{
@@ -304,7 +304,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository with web url: %s", repositoryCreate.WebURL)).SetInternal(err)
 		}
 
-		repositoryCreate.WebhookURLHost = externalURL
+		repositoryCreate.WebhookURLHost = setting.ExternalURL
 		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
 		if len(repositories) > 0 {
 			repo := repositories[0]
@@ -314,7 +314,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		} else {
 			// Bytebase needs to create a webbook in the connecting repository pointing back to the
 			// Bytebase address exposed at --external-url.
-			if externalURL == common.ExternalURLPlaceholder {
+			if setting.ExternalURL == common.ExternalURLPlaceholder {
 				return echo.NewHTTPError(http.StatusBadRequest, "Bytebase must start with --external-url to configure GitOps workflow")
 			}
 
@@ -325,7 +325,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			repositoryCreate.WebhookSecretToken = secretToken
 
-			webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, externalURL)
+			webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, setting.ExternalURL)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
@@ -962,7 +962,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 }
 
 func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
-	externalURL, err := s.store.GetExternalURL(ctx)
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -989,7 +989,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		return nil, err
 	}
 
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", externalURL, repository.WebhookEndpointID)
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", setting.ExternalURL, repository.WebhookEndpointID)
 
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHub:

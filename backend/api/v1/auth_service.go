@@ -81,12 +81,12 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
-	disallowSignup, err := s.store.GetDisallowSignup(ctx)
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert disallow signup setting to bool, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
 	}
 
-	if disallowSignup {
+	if setting.DisallowSignup {
 		return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
 	}
 	if request.User == nil {
@@ -497,9 +497,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
-	externalURL, err := s.store.GetExternalURL(ctx)
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get external url: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
@@ -513,7 +513,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", externalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalURL)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
@@ -542,7 +542,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", externalURL)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalURL)
 		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)

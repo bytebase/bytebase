@@ -158,9 +158,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("request", string(body)),
 		)
 
-		externalURL, err := s.store.GetExternalURL(ctx)
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find external url setting").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
 		var request api.VCSSQLReviewRequest
@@ -246,7 +246,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				wg.Add(1)
 				go func(file fileInfo) {
 					defer wg.Done()
-					adviceList, err := s.sqlAdviceForFile(ctx, file, externalURL)
+					adviceList, err := s.sqlAdviceForFile(ctx, file, setting.ExternalURL)
 					if err != nil {
 						log.Debug(
 							"Failed to take SQL review for file",

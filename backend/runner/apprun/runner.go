@@ -499,9 +499,9 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 		taskList[i].Statement = statement
 	}
 
-	externalURL, err := r.store.GetExternalURL(ctx)
+	setting, err := r.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get external url")
+		return errors.Wrapf(err, "failed to get workspace setting")
 	}
 
 	instanceCode, err := r.p.CreateExternalApproval(ctx,
@@ -512,7 +512,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 		feishu.Content{
 			Issue:    fmt.Sprintf("#%d %s", issue.UID, issue.Title),
 			Stage:    stage.Name,
-			Link:     fmt.Sprintf("%s/issue/%s-%d", externalURL, slug.Make(issue.Title), issue.UID),
+			Link:     fmt.Sprintf("%s/issue/%s-%d", setting.ExternalURL, slug.Make(issue.Title), issue.UID),
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalDefinitionID,

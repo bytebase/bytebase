@@ -13,14 +13,9 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		disallowSignup, err := s.store.GetDisallowSignup(ctx)
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find disallow signup setting").SetInternal(err)
-		}
-
-		externalURL, err := s.store.GetExternalURL(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find external url setting").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
 		serverInfo := api.ServerInfo{
@@ -28,8 +23,8 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			GitCommit:      s.profile.GitCommit,
 			Readonly:       s.profile.Readonly,
 			DemoName:       s.profile.DemoName,
-			ExternalURL:    externalURL,
-			DisallowSignup: disallowSignup,
+			ExternalURL:    setting.ExternalURL,
+			DisallowSignup: setting.DisallowSignup,
 		}
 
 		findRole := api.Owner

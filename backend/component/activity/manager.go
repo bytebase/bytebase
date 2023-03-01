@@ -85,9 +85,9 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 		return nil
 	}
 
-	externalURL, err := m.store.GetExternalURL(ctx)
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get external url")
+		return errors.Wrapf(err, "failed to get workspace setting")
 	}
 
 	// Send one webhook post for all activities.
@@ -107,7 +107,7 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s-%d", externalURL, slug.Make(issue.Title), issue.UID),
+		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalURL, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorID,
 		CreatorName:  anyActivity.Creator.Name,
 		CreatorEmail: anyActivity.Creator.Email,
@@ -194,14 +194,14 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
 
-	externalURL, err := m.store.GetExternalURL(ctx)
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return webhookCtx, errors.Wrapf(err, "failed to get external url")
+		return webhookCtx, errors.Wrapf(err, "failed to get workspace setting")
 	}
 
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s/issue/%s-%d", externalURL, slug.Make(meta.Issue.Title), meta.Issue.UID)
+	link := fmt.Sprintf("%s/issue/%s-%d", setting.ExternalURL, slug.Make(meta.Issue.Title), meta.Issue.UID)
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)

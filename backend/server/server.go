@@ -646,20 +646,18 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
-	// initial external url setting
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceExternalURL,
-		Value:       s.profile.ExternalURL,
-		Description: "Workspace external url",
-	}, api.SystemBotID); err != nil {
+	// initial workspace general setting
+	bytes, err := json.Marshal(api.WorkspaceGeneralSettingPayload{
+		ExternalURL:    s.profile.ExternalURL,
+		DisallowSignup: false,
+	})
+	if err != nil {
 		return nil, err
 	}
-
-	// initial disallow signup setting
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceDisallowSignup,
-		Value:       "false",
-		Description: "Disallow self-service signup for workspace",
+		Name:        api.SettingWorkspaceGeneral,
+		Value:       string(bytes),
+		Description: "Workspace general settings",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}

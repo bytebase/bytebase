@@ -3,8 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -40,39 +40,24 @@ func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Set
 	return setting.toAPISetting(), nil
 }
 
-// GetExternalURL gets the external url from setting.
-func (s *Store) GetExternalURL(ctx context.Context) (string, error) {
-	settingName := api.SettingWorkspaceExternalURL
+// GetWorkspaceGeneralSetting gets the workspace general setting payload.
+func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*api.WorkspaceGeneralSettingPayload, error) {
+	settingName := api.SettingWorkspaceGeneral
 	setting, err := s.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if setting == nil {
-		return "", errors.Errorf("cannot find setting %v", settingName)
-	}
-	return setting.Value, nil
-}
-
-// GetDisallowSignup gets the disallow signup from setting.
-func (s *Store) GetDisallowSignup(ctx context.Context) (bool, error) {
-	settingName := api.SettingWorkspaceDisallowSignup
-	setting, err := s.GetSetting(ctx, &api.SettingFind{
-		Name: &settingName,
-	})
-	if err != nil {
-		return false, err
-	}
-	if setting == nil {
-		return false, errors.Errorf("cannot find setting %v", settingName)
+		return nil, errors.Errorf("cannot find setting %v", settingName)
 	}
 
-	disallowSignup, err := strconv.ParseBool(setting.Value)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to convert setting %v to bool", settingName)
+	payload := new(api.WorkspaceGeneralSettingPayload)
+	if err := json.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
 	}
-	return disallowSignup, nil
+	return payload, nil
 }
 
 // PatchSetting patches an instance of Setting.

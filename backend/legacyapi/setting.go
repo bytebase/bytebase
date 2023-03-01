@@ -14,10 +14,8 @@ const (
 	SettingBrandingLogo SettingName = "bb.branding.logo"
 	// SettingWorkspaceID is the setting name for workspace identifier.
 	SettingWorkspaceID SettingName = "bb.workspace.id"
-	// SettingWorkspaceExternalURL is the setting name for workspace external URL.
-	SettingWorkspaceExternalURL SettingName = "bb.workspace.external-url"
-	// SettingWorkspaceDisallowSignup is the setting name to disallow self-service signup, users can only be invited by the owner.
-	SettingWorkspaceDisallowSignup SettingName = "bb.workspace.disallow-signup"
+	// SettingWorkspaceGeneral is the setting name for workspace general settings.
+	SettingWorkspaceGeneral SettingName = "bb.workspace.general"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
@@ -36,6 +34,13 @@ type IMType string
 
 // IMTypeFeishu is IM feishu.
 const IMTypeFeishu IMType = "im.feishu"
+
+// WorkspaceGeneralSettingPayload is the payload for SettingWorkspaceGeneral.
+type WorkspaceGeneralSettingPayload struct {
+	ExternalURL string `json:"externalUrl"`
+	// DisallowSignup means disallow self-service signup, users can only be invited by the owner.
+	DisallowSignup bool `json:"disallowSignup"`
+}
 
 // Setting is the API message for a setting.
 type Setting struct {
