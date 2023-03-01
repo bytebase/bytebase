@@ -440,3 +440,98 @@ func archiveAnomalyImpl(ctx context.Context, tx *Tx, archive *api.AnomalyArchive
 
 	return nil
 }
+
+// AnomalyMessage is the message of the anomaly.
+type AnomalyMessage struct {
+	// InstanceUID is the unique identifier of the instance.
+	InstanceUID int
+	// DatabaseUID is the unique identifier of the database, it will be nil if the anomaly is instance level.
+	DatabaseUID *int
+	// Type is the type of the anomaly.
+	Type api.AnomalyType
+	// Payload is the payload of the anomaly.
+	Payload string
+}
+
+// ListAnomalyMessage is the message to list anomalies.
+type ListAnomalyMessage struct {
+	InstanceUID *int
+	DatabaseUID *int
+	Types       []*api.AnomalyType
+}
+
+// ListAnomalyV2 lists anomalies, only return the normal ones.
+func (s *Store) ListAnomalyV2(ctx context.Context, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
+	// Build where clause
+	where, args := []string{"row_status = $1"}, []interface{}{api.Normal}
+	if v := list.InstanceUID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := list.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	} else {
+		where = append(where, "database_id IS NULL")
+	}
+	if len(list.Types) > 0 {
+		var sub []string
+		for _, v := range list.Types {
+			sub, args = append(sub, fmt.Sprintf("$%d", len(args)+1)), append(args, *v)
+		}
+		where = append(where, fmt.Sprintf("type IN (%s)", strings.Join(sub, `,`)))
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			instance_id,
+			database_id,
+			type,
+			payload
+		FROM anomaly WHERE (%s
+		AND EXISTS (
+			SELECT 1
+			FROM instance
+			WHERE instance.id = anomaly.instance_id AND instance.row_status != 'ARCHIVED'
+		))
+	`, strings.Join(where, " AND "))
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var anomalies []*AnomalyMessage
+	for rows.Next() {
+		var anomaly AnomalyMessage
+		// DatabaseID field can be NULL in the PostgreSQL database, so we use sql.NullInt32 to represent it.
+		var databaseID sql.NullInt32
+		if err := rows.Scan(
+			&anomaly.InstanceUID,
+			&databaseID,
+			&anomaly.Type,
+			&anomaly.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if databaseID.Valid {
+			value := int(databaseID.Int32)
+			anomaly.DatabaseUID = &value
+		}
+		anomalies = append(anomalies, &anomaly)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	return anomalies, nil
+}
