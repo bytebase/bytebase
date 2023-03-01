@@ -14,6 +14,10 @@ const (
 	SettingBrandingLogo SettingName = "bb.branding.logo"
 	// SettingWorkspaceID is the setting name for workspace identifier.
 	SettingWorkspaceID SettingName = "bb.workspace.id"
+	// SettingWorkspaceExternalURL is the setting name for workspace external URL.
+	SettingWorkspaceExternalURL SettingName = "bb.workspace.external-url"
+	// SettingWorkspaceDisallowSignup is the setting name to disallow self-service signup, users can only be invited by the owner.
+	SettingWorkspaceDisallowSignup SettingName = "bb.workspace.disallow-signup"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.

@@ -213,7 +213,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	log.Info(fmt.Sprintf("disallowSignup=%t", profile.DisallowSignup))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
@@ -298,7 +297,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := getInitSetting(ctx, storeInstance)
+	config, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
@@ -478,7 +477,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -580,7 +579,7 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
+func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
@@ -644,6 +643,25 @@ func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConf
 		Name:        api.SettingWatermark,
 		Value:       "0",
 		Description: "Display watermark",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
+	// upsert external url setting
+	externalURLSettingDesc := "Workspace external url"
+	if _, err := datastore.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:        api.SettingWorkspaceExternalURL,
+		Value:       s.profile.ExternalURL,
+		Description: &externalURLSettingDesc,
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
+	// upsert disallow signup setting
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingWorkspaceDisallowSignup,
+		Value:       "false",
+		Description: "Disallow self-service signup for workspace",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
