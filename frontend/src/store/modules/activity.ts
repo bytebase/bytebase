@@ -22,6 +22,7 @@ import { convertEntityList } from "./utils";
 import { useAuthStore } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useIssueStore } from "./issue";
+import { convertUserToPrincipal } from "./user";
 
 function convert(
   activity: ResourceObject,
@@ -176,10 +177,10 @@ export const useActivityStore = defineStore("activity", {
       this.fetchActivityListForIssue(issue);
     },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
-      const { currentUser } = useAuthStore();
+      const user = convertUserToPrincipal(useAuthStore().currentUser);
       const activityList = await this.fetchActivityList({
         typePrefix: "bb.sql-editor.query",
-        user: currentUser.id,
+        user: user.id as number,
         order: "DESC",
         limit,
         level: ["INFO", "WARN"],
