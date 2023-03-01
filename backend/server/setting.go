@@ -11,6 +11,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
+	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Some settings contain secret info so we only return settings that are needed by the client.
@@ -18,6 +20,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
 	api.SettingAppIM,
 	api.SettingWatermark,
+	api.SettingWorkspaceGeneral,
 }
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
@@ -59,6 +62,23 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
+		}
+
+		if settingPatch.Name == api.SettingWorkspaceGeneral {
+			payload := new(storepb.WorkspaceGeneralSettingPayload)
+			if err := json.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
+			}
+			externalURL, err := utils.NormalizeExternalURL(payload.ExternalUrl)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid external url").SetInternal(err)
+			}
+			payload.ExternalUrl = externalURL
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting value").SetInternal(err)
+			}
+			settingPatch.Value = string(bytes)
 		}
 
 		if settingPatch.Name == api.SettingAppIM {
