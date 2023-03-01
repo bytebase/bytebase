@@ -1,0 +1,154 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/setting_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "SettingService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/{name}": {
+      "get": {
+        "operationId": "SettingService_GetSetting",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Setting"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The resource name of the setting.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "settings/[^/]+"
+          }
+        ],
+        "tags": [
+          "SettingService"
+        ]
+      }
+    },
+    "/v1/{setting.name}": {
+      "patch": {
+        "operationId": "SettingService_SetSetting",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Setting"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "setting.name",
+            "description": "The resource name of the setting. Must be one of the following forms:\n\n- `setting/{setting_name}`\nFor example, \"settings/bb.branding.logo\"",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "settings/[^/]+"
+          },
+          {
+            "name": "setting",
+            "description": "The setting to update.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "$ref": "#/definitions/v1Value",
+                  "description": "The value of the setting."
+                }
+              },
+              "title": "The setting to update."
+            }
+          }
+        ],
+        "tags": [
+          "SettingService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Setting": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "- `setting/{setting_name}`\nFor example, \"settings/bb.branding.logo\"",
+          "title": "The resource name of the setting. Must be one of the following forms:"
+        },
+        "value": {
+          "$ref": "#/definitions/v1Value",
+          "description": "The value of the setting."
+        }
+      },
+      "description": "The schema of setting."
+    },
+    "v1Value": {
+      "type": "object",
+      "properties": {
+        "stringValue": {
+          "type": "string",
+          "description": "Defines this value as being a string value."
+        }
+      },
+      "description": "The data in setting value."
+    }
+  }
+}

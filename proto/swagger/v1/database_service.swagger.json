@@ -1,0 +1,995 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/database_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "DatabaseService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/{database.name}": {
+      "patch": {
+        "operationId": "DatabaseService_UpdateDatabase",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Database"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database.name",
+            "description": "The name of the database.\nFormat: environments/{environment}/instances/{instance}/databases/{database}\n{database} is the database name in the instance.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+"
+          },
+          {
+            "name": "database",
+            "description": "The database to update.\n\nThe database's `name` field is used to identify the database to update.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "syncState": {
+                  "$ref": "#/definitions/v1State",
+                  "description": "The existence of a database on latest sync.",
+                  "readOnly": true
+                },
+                "successfulSyncTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "The latest synchronization time.",
+                  "readOnly": true
+                },
+                "project": {
+                  "type": "string",
+                  "title": "The project for a database.\nFormat: projects/{project}"
+                },
+                "schemaVersion": {
+                  "type": "string",
+                  "description": "The version of database schema.",
+                  "readOnly": true
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "Labels will be used for deployment and policy control."
+                }
+              },
+              "description": "The database's `name` field is used to identify the database to update.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+              "title": "The database to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{name_1}": {
+      "get": {
+        "operationId": "DatabaseService_GetDatabaseMetadata",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DatabaseMetadata"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_1",
+            "description": "The name of the database to retrieve metadata.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/metadata"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{name_2}": {
+      "get": {
+        "operationId": "DatabaseService_GetDatabaseSchema",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DatabaseSchema"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_2",
+            "description": "The name of the database to retrieve schema.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/schema"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{name_3}": {
+      "get": {
+        "operationId": "DatabaseService_GetBackupSetting",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BackupSetting"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_3",
+            "description": "The name of the database to retrieve backup setting.\nFormat: environments/{environment}/instances/{instance}/databases/{database}/backupSetting",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/backupSetting"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{name}": {
+      "get": {
+        "operationId": "DatabaseService_GetDatabase",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Database"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the database to retrieve.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{parent}/backups": {
+      "get": {
+        "operationId": "DatabaseService_ListBackup",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListBackupResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource where this backup will be created.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "Not used. The maximum number of backups to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 backups will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "Not used. A page token, received from a previous `ListBackup` call.\nProvide this to retrieve the subsequent page.  \n\nWhen paginating, all other parameters provided to `ListBackup` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      },
+      "post": {
+        "operationId": "DatabaseService_CreateBackup",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Backup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource where this backup will be created.\nFormat: environments/{environment}/instances/{instance}/databases/{database}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+"
+          },
+          {
+            "name": "backup",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Backup",
+              "required": [
+                "backup"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{parent}/databases": {
+      "get": {
+        "operationId": "DatabaseService_ListDatabases",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListDatabasesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent, which owns this collection of databases.\nFormat: environments/{environment}/instances/{instance}\nUse \"environments/-/instances/-\" to list all databases from all environments.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of databases to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 databases will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `ListDatabases` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListDatabases` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "filter",
+            "description": "Filter is used to filter databases returned in the list.\nFor example, \"project = projects/{project}\" can be used to list databases in a project.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{parent}/databases:batchUpdate": {
+      "post": {
+        "operationId": "DatabaseService_BatchUpdateDatabases",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchUpdateDatabasesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource shared by all databases being updated.\nFormat: environments/{environment}/instances/{instance}\nIf the operation spans parents, a dash (-) may be accepted as a wildcard.\nWe only support updating the project of databases for now.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "requests": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/v1UpdateDatabaseRequest"
+                  },
+                  "description": "The request message specifying the resources to update.\nA maximum of 1000 databases can be modified in a batch."
+                }
+              },
+              "required": [
+                "requests"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    },
+    "/v1/{setting.name}": {
+      "patch": {
+        "operationId": "DatabaseService_UpdateBackupSetting",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BackupSetting"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "setting.name",
+            "description": "The name of the database backup setting.\nFormat: environments/{environment}/instances/{instance}/databases/{database}/backupSettings",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/backupSetting"
+          },
+          {
+            "name": "setting",
+            "description": "The database backup setting to update.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "backupRetainDuration": {
+                  "type": "string",
+                  "description": "The default maximum age of a Backup created via this BackupPlan.\nIf specified, a Backup will be automatically deleted after its age reaches.\nIf not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.\nIt will be rounded up to the number of days."
+                },
+                "cronSchedule": {
+                  "type": "string",
+                  "description": "Default (empty): Disable automatic backup.",
+                  "title": "Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.\nSupport hour of day, day of week. (UTC time)"
+                },
+                "hookUrl": {
+                  "type": "string",
+                  "description": "hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created."
+                }
+              },
+              "title": "The database backup setting to update."
+            }
+          }
+        ],
+        "tags": [
+          "DatabaseService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "BackupBackupState": {
+      "type": "string",
+      "enum": [
+        "BACKUP_STATE_UNSPECIFIED",
+        "PENDING_CREATE",
+        "DONE",
+        "FAILED"
+      ],
+      "default": "BACKUP_STATE_UNSPECIFIED",
+      "description": "The state of the backup.\n\n - BACKUP_STATE_UNSPECIFIED: The state of the backup is unknown.\n - PENDING_CREATE: The backup is being pending to create.\n - DONE: The backup is ready to use.\n - FAILED: The backup is being deleted."
+    },
+    "BackupBackupType": {
+      "type": "string",
+      "enum": [
+        "BACKUP_TYPE_UNSPECIFIED",
+        "MANUAL",
+        "AUTOMATIC",
+        "PITR"
+      ],
+      "default": "BACKUP_TYPE_UNSPECIFIED",
+      "description": "The type of the backup.\n\n - BACKUP_TYPE_UNSPECIFIED: The type of the backup is unknown.\n - MANUAL: The backup is created by user.\n - AUTOMATIC: The backup is created by automatic backup.\n - PITR: The backup is created automatically after doing PITR."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Backup": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The resource name of the database backup. backup-name is specified by the client.\nFormat: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}"
+        },
+        "createTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the backup resource was created initally.",
+          "readOnly": true
+        },
+        "updateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the backup resource was updated.",
+          "readOnly": true
+        },
+        "state": {
+          "$ref": "#/definitions/BackupBackupState",
+          "description": "The state of the backup.",
+          "readOnly": true
+        },
+        "backupType": {
+          "$ref": "#/definitions/BackupBackupType",
+          "description": "The type of the backup.",
+          "readOnly": true
+        },
+        "comment": {
+          "type": "string",
+          "description": "The comment of the backup."
+        }
+      },
+      "description": "The message of the backup."
+    },
+    "v1BackupSetting": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the database backup setting.\nFormat: environments/{environment}/instances/{instance}/databases/{database}/backupSettings"
+        },
+        "backupRetainDuration": {
+          "type": "string",
+          "description": "The default maximum age of a Backup created via this BackupPlan.\nIf specified, a Backup will be automatically deleted after its age reaches.\nIf not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.\nIt will be rounded up to the number of days."
+        },
+        "cronSchedule": {
+          "type": "string",
+          "description": "Default (empty): Disable automatic backup.",
+          "title": "Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.\nSupport hour of day, day of week. (UTC time)"
+        },
+        "hookUrl": {
+          "type": "string",
+          "description": "hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created."
+        }
+      },
+      "description": "BackupSetting is the setting for database backup."
+    },
+    "v1BatchUpdateDatabasesResponse": {
+      "type": "object",
+      "properties": {
+        "databases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Database"
+          },
+          "description": "Databases updated."
+        }
+      }
+    },
+    "v1ColumnMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the name of a column."
+        },
+        "position": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The position is the position in columns."
+        },
+        "default": {
+          "type": "string",
+          "description": "The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default."
+        },
+        "nullable": {
+          "type": "boolean",
+          "description": "The nullable is the nullable of a column."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type is the type of a column."
+        },
+        "characterSet": {
+          "type": "string",
+          "description": "The character_set is the character_set of a column."
+        },
+        "collation": {
+          "type": "string",
+          "description": "The collation is the collation of a column."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The comment is the comment of a column."
+        }
+      },
+      "description": "ColumnMetadata is the metadata for columns."
+    },
+    "v1Database": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the database.\nFormat: environments/{environment}/instances/{instance}/databases/{database}\n{database} is the database name in the instance."
+        },
+        "uid": {
+          "type": "string",
+          "description": "The system-assigned, unique identifier for a resource.",
+          "readOnly": true
+        },
+        "syncState": {
+          "$ref": "#/definitions/v1State",
+          "description": "The existence of a database on latest sync.",
+          "readOnly": true
+        },
+        "successfulSyncTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The latest synchronization time.",
+          "readOnly": true
+        },
+        "project": {
+          "type": "string",
+          "title": "The project for a database.\nFormat: projects/{project}"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "description": "The version of database schema.",
+          "readOnly": true
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Labels will be used for deployment and policy control."
+        }
+      }
+    },
+    "v1DatabaseMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "schemas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaMetadata"
+          },
+          "description": "The schemas is the list of schemas in a database."
+        },
+        "characterSet": {
+          "type": "string",
+          "description": "The character_set is the character set of a database."
+        },
+        "collation": {
+          "type": "string",
+          "description": "The collation is the collation of a database."
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ExtensionMetadata"
+          },
+          "description": "The extensions is the list of extensions in a database."
+        }
+      },
+      "description": "DatabaseMetadata is the metadata for databases."
+    },
+    "v1DatabaseSchema": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "description": "The schema dump from database."
+        }
+      },
+      "description": "DatabaseMetadata is the metadata for databases."
+    },
+    "v1ExtensionMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the name of an extension."
+        },
+        "schema": {
+          "type": "string",
+          "description": "The schema is the extension that is installed to. But the extension usage is not limited to the schema."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version is the version of an extension."
+        },
+        "description": {
+          "type": "string",
+          "description": "The description is the description of an extension."
+        }
+      },
+      "description": "ExtensionMetadata is the metadata for extensions."
+    },
+    "v1ForeignKeyMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the name of a foreign key."
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The columns are the ordered referencing columns of a foreign key."
+        },
+        "referencedSchema": {
+          "type": "string",
+          "description": "The referenced_schema is the referenced schema name of a foreign key.\nIt is an empty string for databases without such concept such as MySQL."
+        },
+        "referencedTable": {
+          "type": "string",
+          "description": "The referenced_table is the referenced table name of a foreign key."
+        },
+        "referencedColumns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The referenced_columns are the ordered referenced columns of a foreign key."
+        },
+        "onDelete": {
+          "type": "string",
+          "description": "The on_delete is the on delete action of a foreign key."
+        },
+        "onUpdate": {
+          "type": "string",
+          "description": "The on_update is the on update action of a foreign key."
+        },
+        "matchType": {
+          "type": "string",
+          "description": "The match_type is the match type of a foreign key.\nThe match_type is the PostgreSQL specific field.\nIt's empty string for other databases."
+        }
+      },
+      "description": "ForeignKeyMetadata is the metadata for foreign keys."
+    },
+    "v1IndexMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the name of an index."
+        },
+        "expressions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The expressions are the ordered columns or expressions of an index.\nThis could refer to a column or an expression."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type is the type of an index."
+        },
+        "unique": {
+          "type": "boolean",
+          "description": "The unique is whether the index is unique."
+        },
+        "primary": {
+          "type": "boolean",
+          "description": "The primary is whether the index is a primary key index."
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "The visible is whether the index is visible."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The comment is the comment of an index."
+        }
+      },
+      "description": "IndexMetadata is the metadata for indexes."
+    },
+    "v1ListBackupResponse": {
+      "type": "object",
+      "properties": {
+        "backups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Backup"
+          },
+          "description": "The backups from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "Not used. A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1ListDatabasesResponse": {
+      "type": "object",
+      "properties": {
+        "databases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Database"
+          },
+          "description": "The databases from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1SchemaMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the schema name.\nIt is an empty string for databases without such concept such as MySQL."
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TableMetadata"
+          },
+          "description": "The tables is the list of tables in a schema."
+        },
+        "views": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ViewMetadata"
+          },
+          "description": "The views is the list of views in a schema."
+        }
+      },
+      "description": "SchemaMetadata is the metadata for schemas.\nThis is the concept of schema in Postgres, but it's a no-op for MySQL."
+    },
+    "v1State": {
+      "type": "string",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "ACTIVE",
+        "DELETED"
+      ],
+      "default": "STATE_UNSPECIFIED"
+    },
+    "v1TableMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the name of a table."
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ColumnMetadata"
+          },
+          "description": "The columns is the ordered list of columns in a table."
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1IndexMetadata"
+          },
+          "description": "The indexes is the list of indexes in a table."
+        },
+        "engine": {
+          "type": "string",
+          "description": "The engine is the engine of a table."
+        },
+        "collation": {
+          "type": "string",
+          "description": "The collation is the collation of a table."
+        },
+        "rowCount": {
+          "type": "string",
+          "format": "int64",
+          "description": "The row_count is the estimated number of rows of a table."
+        },
+        "dataSize": {
+          "type": "string",
+          "format": "int64",
+          "description": "The data_size is the estimated data size of a table."
+        },
+        "indexSize": {
+          "type": "string",
+          "format": "int64",
+          "description": "The index_size is the estimated index size of a table."
+        },
+        "dataFree": {
+          "type": "string",
+          "format": "int64",
+          "description": "The data_free is the estimated free data size of a table."
+        },
+        "createOptions": {
+          "type": "string",
+          "description": "The create_options is the create option of a table."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The comment is the comment of a table."
+        },
+        "foreignKeys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ForeignKeyMetadata"
+          },
+          "description": "The foreign_keys is the list of foreign keys in a table."
+        }
+      },
+      "description": "TableMetadata is the metadata for tables."
+    },
+    "v1UpdateDatabaseRequest": {
+      "type": "object",
+      "properties": {
+        "database": {
+          "$ref": "#/definitions/v1Database",
+          "description": "The database to update.\n\nThe database's `name` field is used to identify the database to update.\nFormat: environments/{environment}/instances/{instance}/databases/{database}"
+        },
+        "updateMask": {
+          "type": "string",
+          "description": "The list of fields to update."
+        }
+      },
+      "required": [
+        "database"
+      ]
+    },
+    "v1ViewMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name is the name of a view."
+        },
+        "definition": {
+          "type": "string",
+          "description": "The definition is the definition of a view."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The comment is the comment of a view."
+        }
+      },
+      "description": "ViewMetadata is the metadata for views."
+    }
+  }
+}

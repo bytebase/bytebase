@@ -1,0 +1,212 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/bookmark_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "BookmarkService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/{name}": {
+      "delete": {
+        "summary": "DeleteBookmark deletes a bookmark.",
+        "operationId": "BookmarkService_DeleteBookmark",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the bookmark to delete.\nFormat: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "users/[^/]+/bookmarks/[^/]+"
+          }
+        ],
+        "tags": [
+          "BookmarkService"
+        ]
+      }
+    },
+    "/v1/{parent}/bookmarks": {
+      "get": {
+        "summary": "ListBookmark lists bookmarks.",
+        "operationId": "BookmarkService_ListBookmarks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListBookmarksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource of the bookmark.\nFormat: users/{user}, user is a server-generated unique ID.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "users/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "Not used. The maximum number of bookmarks to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 bookmarks will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "Not used. A page token, received from a previous `ListBookmarks` call.\nProvide this to retrieve the subsequent page.  \n\nWhen paginating, all other parameters provided to `ListBookmarks` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "BookmarkService"
+        ]
+      },
+      "post": {
+        "summary": "CreateBookmark creates a new bookmark.",
+        "operationId": "BookmarkService_CreateBookmark",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Bookmark"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource of the bookmark.\nFormat: users/{user}, user is a server-generated unique IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "users/[^/]+"
+          },
+          {
+            "name": "bookmark",
+            "description": "The bookmark to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Bookmark",
+              "required": [
+                "bookmark"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "BookmarkService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Bookmark": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the bookmark.\nFormat: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the bookmark."
+        },
+        "link": {
+          "type": "string",
+          "title": "The resource link of the bookmark. Only support issue link for now.\nFormat:\nIssue: /issue/slug(issue_name)-{issue_uid}\nExample: /issue/start-here-add-email-column-to-employee-table-101"
+        }
+      },
+      "required": [
+        "title",
+        "link"
+      ]
+    },
+    "v1ListBookmarksResponse": {
+      "type": "object",
+      "properties": {
+        "bookmarks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Bookmark"
+          },
+          "description": "The list of bookmarks."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "Not used. A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    }
+  }
+}

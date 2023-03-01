@@ -1,0 +1,361 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/instance_role_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "InstanceRoleService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/{name}": {
+      "get": {
+        "operationId": "InstanceRoleService_GetRole",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1InstanceRole"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the role to retrieve.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}\nThe role name is the unique name for the role.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/roles/[^/]+"
+          }
+        ],
+        "tags": [
+          "InstanceRoleService"
+        ]
+      },
+      "delete": {
+        "operationId": "InstanceRoleService_DeleteRole",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the role to delete.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/roles/[^/]+"
+          }
+        ],
+        "tags": [
+          "InstanceRoleService"
+        ]
+      }
+    },
+    "/v1/{name}:undelete": {
+      "post": {
+        "operationId": "InstanceRoleService_UndeleteRole",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1InstanceRole"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the deleted role.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/roles/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "InstanceRoleService"
+        ]
+      }
+    },
+    "/v1/{parent}/roles": {
+      "get": {
+        "operationId": "InstanceRoleService_ListRoles",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListRolesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent, which owns this collection of roles.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of roles to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 roles will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `ListRoles` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListRoles` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "InstanceRoleService"
+        ]
+      },
+      "post": {
+        "operationId": "InstanceRoleService_CreateRole",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1InstanceRole"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource where this role will be created.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "role",
+            "description": "The role to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1InstanceRole",
+              "required": [
+                "role"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "InstanceRoleService"
+        ]
+      }
+    },
+    "/v1/{role.name}": {
+      "patch": {
+        "operationId": "InstanceRoleService_UpdateRole",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1InstanceRole"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "role.name",
+            "description": "The name of the role.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}\nThe role name is the unique name for the role.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/roles/[^/]+"
+          },
+          {
+            "name": "role",
+            "description": "The role to update.\n\nThe role's `name`, `environment` and `instance` field is used to identify the role to update.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "roleName": {
+                  "type": "string",
+                  "description": "The role name. It's unique within the instance."
+                },
+                "password": {
+                  "type": "string",
+                  "description": "The role password."
+                },
+                "connectionLimit": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The connection count limit for this role."
+                },
+                "validUntil": {
+                  "type": "string",
+                  "description": "The expiration for the role's password."
+                },
+                "attribute": {
+                  "type": "string",
+                  "title": "The role attribute.\nFor PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html\nFor MySQL, it's the global privileges as GRANT statements, which means it only contains \"GRANT ... ON *.* TO ...\". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html"
+                }
+              },
+              "description": "The role's `name`, `environment` and `instance` field is used to identify the role to update.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}",
+              "title": "The role to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "InstanceRoleService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1InstanceRole": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the role.\nFormat: environments/{environment}/instances/{instance}/roles/{role name}\nThe role name is the unique name for the role."
+        },
+        "roleName": {
+          "type": "string",
+          "description": "The role name. It's unique within the instance."
+        },
+        "password": {
+          "type": "string",
+          "description": "The role password."
+        },
+        "connectionLimit": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The connection count limit for this role."
+        },
+        "validUntil": {
+          "type": "string",
+          "description": "The expiration for the role's password."
+        },
+        "attribute": {
+          "type": "string",
+          "title": "The role attribute.\nFor PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html\nFor MySQL, it's the global privileges as GRANT statements, which means it only contains \"GRANT ... ON *.* TO ...\". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html"
+        }
+      },
+      "description": "InstanceRole is the API message for instance role."
+    },
+    "v1ListRolesResponse": {
+      "type": "object",
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1InstanceRole"
+          },
+          "description": "The roles from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    }
+  }
+}

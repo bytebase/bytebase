@@ -1,0 +1,370 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/environment_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "EnvironmentService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/environments": {
+      "get": {
+        "operationId": "EnvironmentService_ListEnvironments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListEnvironmentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "description": "The maximum number of environments to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 environments will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `ListEnvironments` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListEnvironments` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "showDeleted",
+            "description": "Show deleted environments if specified.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "EnvironmentService"
+        ]
+      },
+      "post": {
+        "operationId": "EnvironmentService_CreateEnvironment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Environment"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "environment",
+            "description": "The environment to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Environment",
+              "required": [
+                "environment"
+              ]
+            }
+          },
+          {
+            "name": "environmentId",
+            "description": "The ID to use for the environment, which will become the final component of\nthe environment's resource name.\n\nThis value should be 4-63 characters, and valid characters\nare /[a-z][0-9]-/.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "EnvironmentService"
+        ]
+      }
+    },
+    "/v1/{environment.name}": {
+      "patch": {
+        "operationId": "EnvironmentService_UpdateEnvironment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Environment"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "environment.name",
+            "description": "The name of the environment.\nFormat: environments/{environment}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          },
+          {
+            "name": "environment",
+            "description": "The environment to update.\n\nThe environment's `name` field is used to identify the environment to update.\nFormat: environments/{environment}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "state": {
+                  "$ref": "#/definitions/v1State"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "order": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "tier": {
+                  "$ref": "#/definitions/v1EnvironmentTier"
+                }
+              },
+              "description": "The environment's `name` field is used to identify the environment to update.\nFormat: environments/{environment}",
+              "title": "The environment to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "EnvironmentService"
+        ]
+      }
+    },
+    "/v1/{name}": {
+      "get": {
+        "operationId": "EnvironmentService_GetEnvironment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Environment"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the environment to retrieve.\nFormat: environments/{environment}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          }
+        ],
+        "tags": [
+          "EnvironmentService"
+        ]
+      },
+      "delete": {
+        "operationId": "EnvironmentService_DeleteEnvironment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the environment to delete.\nFormat: environments/{environment}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          }
+        ],
+        "tags": [
+          "EnvironmentService"
+        ]
+      }
+    },
+    "/v1/{name}:undelete": {
+      "post": {
+        "operationId": "EnvironmentService_UndeleteEnvironment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Environment"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the deleted environment.\nFormat: environments/{environment}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "EnvironmentService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Environment": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the environment.\nFormat: environments/{environment}"
+        },
+        "uid": {
+          "type": "string",
+          "description": "The system-assigned, unique identifier for a resource.",
+          "readOnly": true
+        },
+        "state": {
+          "$ref": "#/definitions/v1State"
+        },
+        "title": {
+          "type": "string"
+        },
+        "order": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "tier": {
+          "$ref": "#/definitions/v1EnvironmentTier"
+        }
+      }
+    },
+    "v1EnvironmentTier": {
+      "type": "string",
+      "enum": [
+        "ENVIRONMENT_TIER_UNSPECIFIED",
+        "PROTECTED",
+        "UNPROTECTED"
+      ],
+      "default": "ENVIRONMENT_TIER_UNSPECIFIED"
+    },
+    "v1ListEnvironmentsResponse": {
+      "type": "object",
+      "properties": {
+        "environments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Environment"
+          },
+          "description": "The environments from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1State": {
+      "type": "string",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "ACTIVE",
+        "DELETED"
+      ],
+      "default": "STATE_UNSPECIFIED"
+    }
+  }
+}

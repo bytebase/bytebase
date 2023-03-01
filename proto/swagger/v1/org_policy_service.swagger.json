@@ -1,0 +1,1580 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/org_policy_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "OrgPolicyService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/policies": {
+      "get": {
+        "operationId": "OrgPolicyService_ListPolicies",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent, which owns this collection of policies.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of policies to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `GetPolicies` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `GetPolicies` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "post": {
+        "operationId": "OrgPolicyService_CreatePolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "policy",
+            "description": "The policy to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Policy",
+              "required": [
+                "policy"
+              ]
+            }
+          },
+          {
+            "name": "parent",
+            "description": "The parent resource where this instance will be created.\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "POLICY_TYPE_UNSPECIFIED",
+              "DEPLOYMENT_APPROVAL",
+              "BACKUP_PLAN",
+              "SQL_REVIEW",
+              "SENSITIVE_DATA",
+              "ACCESS_CONTROL"
+            ],
+            "default": "POLICY_TYPE_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{name_1}": {
+      "get": {
+        "operationId": "OrgPolicyService_GetPolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_1",
+            "description": "The name of the policy to retrieve.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgPolicyService_DeletePolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_1",
+            "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{name_2}": {
+      "get": {
+        "operationId": "OrgPolicyService_GetPolicy3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_2",
+            "description": "The name of the policy to retrieve.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgPolicyService_DeletePolicy3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_2",
+            "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{name_3}": {
+      "get": {
+        "operationId": "OrgPolicyService_GetPolicy4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_3",
+            "description": "The name of the policy to retrieve.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgPolicyService_DeletePolicy4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_3",
+            "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{name_4}": {
+      "get": {
+        "operationId": "OrgPolicyService_GetPolicy5",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_4",
+            "description": "The name of the policy to retrieve.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgPolicyService_DeletePolicy5",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_4",
+            "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{name}": {
+      "get": {
+        "operationId": "OrgPolicyService_GetPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the policy to retrieve.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgPolicyService_DeletePolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "policies/[^/]+"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{parent_1}/policies": {
+      "get": {
+        "operationId": "OrgPolicyService_ListPolicies3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent_1",
+            "description": "The parent, which owns this collection of policies.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of policies to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `GetPolicies` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `GetPolicies` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "post": {
+        "operationId": "OrgPolicyService_CreatePolicy3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent_1",
+            "description": "The parent resource where this instance will be created.\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Policy",
+              "required": [
+                "policy"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "POLICY_TYPE_UNSPECIFIED",
+              "DEPLOYMENT_APPROVAL",
+              "BACKUP_PLAN",
+              "SQL_REVIEW",
+              "SENSITIVE_DATA",
+              "ACCESS_CONTROL"
+            ],
+            "default": "POLICY_TYPE_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{parent_2}/policies": {
+      "get": {
+        "operationId": "OrgPolicyService_ListPolicies4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent_2",
+            "description": "The parent, which owns this collection of policies.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of policies to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `GetPolicies` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `GetPolicies` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "post": {
+        "operationId": "OrgPolicyService_CreatePolicy4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent_2",
+            "description": "The parent resource where this instance will be created.\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Policy",
+              "required": [
+                "policy"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "POLICY_TYPE_UNSPECIFIED",
+              "DEPLOYMENT_APPROVAL",
+              "BACKUP_PLAN",
+              "SQL_REVIEW",
+              "SENSITIVE_DATA",
+              "ACCESS_CONTROL"
+            ],
+            "default": "POLICY_TYPE_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{parent_3}/policies": {
+      "get": {
+        "operationId": "OrgPolicyService_ListPolicies5",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent_3",
+            "description": "The parent, which owns this collection of policies.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of policies to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `GetPolicies` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `GetPolicies` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "post": {
+        "operationId": "OrgPolicyService_CreatePolicy5",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent_3",
+            "description": "The parent resource where this instance will be created.\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Policy",
+              "required": [
+                "policy"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "POLICY_TYPE_UNSPECIFIED",
+              "DEPLOYMENT_APPROVAL",
+              "BACKUP_PLAN",
+              "SQL_REVIEW",
+              "SENSITIVE_DATA",
+              "ACCESS_CONTROL"
+            ],
+            "default": "POLICY_TYPE_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{parent}/policies": {
+      "get": {
+        "operationId": "OrgPolicyService_ListPolicies2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent, which owns this collection of policies.\nFormat: {resource type}/{resource id}/policies/{policy type}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of policies to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `GetPolicies` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `GetPolicies` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      },
+      "post": {
+        "operationId": "OrgPolicyService_CreatePolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource where this instance will be created.\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Policy",
+              "required": [
+                "policy"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "POLICY_TYPE_UNSPECIFIED",
+              "DEPLOYMENT_APPROVAL",
+              "BACKUP_PLAN",
+              "SQL_REVIEW",
+              "SENSITIVE_DATA",
+              "ACCESS_CONTROL"
+            ],
+            "default": "POLICY_TYPE_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{policy.name_1}": {
+      "patch": {
+        "operationId": "OrgPolicyService_UpdatePolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "policy.name_1",
+            "description": "The name of the policy.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/policies/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to update.\n\nThe policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "inheritFromParent": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "$ref": "#/definitions/v1PolicyType"
+                },
+                "deploymentApprovalPolicy": {
+                  "$ref": "#/definitions/v1DeploymentApprovalPolicy"
+                },
+                "backupPlanPolicy": {
+                  "$ref": "#/definitions/v1BackupPlanPolicy"
+                },
+                "sensitiveDataPolicy": {
+                  "$ref": "#/definitions/v1SensitiveDataPolicy"
+                },
+                "accessControlPolicy": {
+                  "$ref": "#/definitions/v1AccessControlPolicy"
+                },
+                "sqlReviewPolicy": {
+                  "$ref": "#/definitions/v1SQLReviewPolicy"
+                },
+                "enforce": {
+                  "type": "boolean"
+                }
+              },
+              "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+              "title": "The policy to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "allowMissing",
+            "description": "If set to true, and the policy is not found, a new policy will be created.\nIn this situation, `update_mask` is ignored.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{policy.name_2}": {
+      "patch": {
+        "operationId": "OrgPolicyService_UpdatePolicy3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "policy.name_2",
+            "description": "The name of the policy.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/policies/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to update.\n\nThe policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "inheritFromParent": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "$ref": "#/definitions/v1PolicyType"
+                },
+                "deploymentApprovalPolicy": {
+                  "$ref": "#/definitions/v1DeploymentApprovalPolicy"
+                },
+                "backupPlanPolicy": {
+                  "$ref": "#/definitions/v1BackupPlanPolicy"
+                },
+                "sensitiveDataPolicy": {
+                  "$ref": "#/definitions/v1SensitiveDataPolicy"
+                },
+                "accessControlPolicy": {
+                  "$ref": "#/definitions/v1AccessControlPolicy"
+                },
+                "sqlReviewPolicy": {
+                  "$ref": "#/definitions/v1SQLReviewPolicy"
+                },
+                "enforce": {
+                  "type": "boolean"
+                }
+              },
+              "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+              "title": "The policy to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "allowMissing",
+            "description": "If set to true, and the policy is not found, a new policy will be created.\nIn this situation, `update_mask` is ignored.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{policy.name_3}": {
+      "patch": {
+        "operationId": "OrgPolicyService_UpdatePolicy4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "policy.name_3",
+            "description": "The name of the policy.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/policies/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to update.\n\nThe policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "inheritFromParent": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "$ref": "#/definitions/v1PolicyType"
+                },
+                "deploymentApprovalPolicy": {
+                  "$ref": "#/definitions/v1DeploymentApprovalPolicy"
+                },
+                "backupPlanPolicy": {
+                  "$ref": "#/definitions/v1BackupPlanPolicy"
+                },
+                "sensitiveDataPolicy": {
+                  "$ref": "#/definitions/v1SensitiveDataPolicy"
+                },
+                "accessControlPolicy": {
+                  "$ref": "#/definitions/v1AccessControlPolicy"
+                },
+                "sqlReviewPolicy": {
+                  "$ref": "#/definitions/v1SQLReviewPolicy"
+                },
+                "enforce": {
+                  "type": "boolean"
+                }
+              },
+              "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+              "title": "The policy to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "allowMissing",
+            "description": "If set to true, and the policy is not found, a new policy will be created.\nIn this situation, `update_mask` is ignored.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{policy.name_4}": {
+      "patch": {
+        "operationId": "OrgPolicyService_UpdatePolicy5",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "policy.name_4",
+            "description": "The name of the policy.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+/databases/[^/]+/policies/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to update.\n\nThe policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "inheritFromParent": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "$ref": "#/definitions/v1PolicyType"
+                },
+                "deploymentApprovalPolicy": {
+                  "$ref": "#/definitions/v1DeploymentApprovalPolicy"
+                },
+                "backupPlanPolicy": {
+                  "$ref": "#/definitions/v1BackupPlanPolicy"
+                },
+                "sensitiveDataPolicy": {
+                  "$ref": "#/definitions/v1SensitiveDataPolicy"
+                },
+                "accessControlPolicy": {
+                  "$ref": "#/definitions/v1AccessControlPolicy"
+                },
+                "sqlReviewPolicy": {
+                  "$ref": "#/definitions/v1SQLReviewPolicy"
+                },
+                "enforce": {
+                  "type": "boolean"
+                }
+              },
+              "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+              "title": "The policy to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "allowMissing",
+            "description": "If set to true, and the policy is not found, a new policy will be created.\nIn this situation, `update_mask` is ignored.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    },
+    "/v1/{policy.name}": {
+      "patch": {
+        "operationId": "OrgPolicyService_UpdatePolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Policy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "policy.name",
+            "description": "The name of the policy.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "policies/[^/]+"
+          },
+          {
+            "name": "policy",
+            "description": "The policy to update.\n\nThe policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "inheritFromParent": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "$ref": "#/definitions/v1PolicyType"
+                },
+                "deploymentApprovalPolicy": {
+                  "$ref": "#/definitions/v1DeploymentApprovalPolicy"
+                },
+                "backupPlanPolicy": {
+                  "$ref": "#/definitions/v1BackupPlanPolicy"
+                },
+                "sensitiveDataPolicy": {
+                  "$ref": "#/definitions/v1SensitiveDataPolicy"
+                },
+                "accessControlPolicy": {
+                  "$ref": "#/definitions/v1AccessControlPolicy"
+                },
+                "sqlReviewPolicy": {
+                  "$ref": "#/definitions/v1SQLReviewPolicy"
+                },
+                "enforce": {
+                  "type": "boolean"
+                }
+              },
+              "description": "The policy's `name` field is used to identify the instance to update.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name.",
+              "title": "The policy to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "allowMissing",
+            "description": "If set to true, and the policy is not found, a new policy will be created.\nIn this situation, `update_mask` is ignored.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "OrgPolicyService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "bytebasev1BackupPlanSchedule": {
+      "type": "string",
+      "enum": [
+        "SCHEDULE_UNSPECIFIED",
+        "UNSET",
+        "DAILY",
+        "WEEKLY"
+      ],
+      "default": "SCHEDULE_UNSPECIFIED"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AccessControlPolicy": {
+      "type": "object",
+      "properties": {
+        "disallowRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1AccessControlRule"
+          }
+        }
+      }
+    },
+    "v1AccessControlRule": {
+      "type": "object",
+      "properties": {
+        "fullDatabase": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1ApprovalGroup": {
+      "type": "string",
+      "enum": [
+        "ASSIGNEE_GROUP_UNSPECIFIED",
+        "APPROVAL_GROUP_DBA",
+        "APPROVAL_GROUP_PROJECT_OWNER"
+      ],
+      "default": "ASSIGNEE_GROUP_UNSPECIFIED"
+    },
+    "v1ApprovalStrategy": {
+      "type": "string",
+      "enum": [
+        "APPROVAL_STRATEGY_UNSPECIFIED",
+        "AUTOMATIC",
+        "MANUAL"
+      ],
+      "default": "APPROVAL_STRATEGY_UNSPECIFIED"
+    },
+    "v1BackupPlanPolicy": {
+      "type": "object",
+      "properties": {
+        "schedule": {
+          "$ref": "#/definitions/bytebasev1BackupPlanSchedule"
+        },
+        "retentionDuration": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DeploymentApprovalPolicy": {
+      "type": "object",
+      "properties": {
+        "defaultStrategy": {
+          "$ref": "#/definitions/v1ApprovalStrategy"
+        },
+        "deploymentApprovalStrategies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1DeploymentApprovalStrategy"
+          }
+        }
+      }
+    },
+    "v1DeploymentApprovalStrategy": {
+      "type": "object",
+      "properties": {
+        "deploymentType": {
+          "$ref": "#/definitions/v1DeploymentType"
+        },
+        "approvalGroup": {
+          "$ref": "#/definitions/v1ApprovalGroup"
+        },
+        "approvalStrategy": {
+          "$ref": "#/definitions/v1ApprovalStrategy"
+        }
+      }
+    },
+    "v1DeploymentType": {
+      "type": "string",
+      "enum": [
+        "DEPLOYMENT_TYPE_UNSPECIFIED",
+        "DATABASE_CREATE",
+        "DATABASE_DDL",
+        "DATABASE_DDL_GHOST",
+        "DATABASE_DML",
+        "DATABASE_RESTORE_PITR"
+      ],
+      "default": "DEPLOYMENT_TYPE_UNSPECIFIED"
+    },
+    "v1Engine": {
+      "type": "string",
+      "enum": [
+        "ENGINE_UNSPECIFIED",
+        "CLICKHOUSE",
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "SQLITE",
+        "TIDB",
+        "MONGODB"
+      ],
+      "default": "ENGINE_UNSPECIFIED"
+    },
+    "v1ListPoliciesResponse": {
+      "type": "object",
+      "properties": {
+        "policies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Policy"
+          },
+          "description": "The policies from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1Policy": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the policy.\nFormat: {resource name}/policies/{policy type}\nWorkspace resource name: \"\".\nEnvironment resource name: environments/environment-id.\nInstance resource name: environments/environment-id/instances/instance-id.\nDatabase resource name: environments/environment-id/instances/instance-id/databases/database-name."
+        },
+        "uid": {
+          "type": "string",
+          "description": "The system-assigned, unique identifier for a resource.",
+          "readOnly": true
+        },
+        "inheritFromParent": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/v1PolicyType"
+        },
+        "deploymentApprovalPolicy": {
+          "$ref": "#/definitions/v1DeploymentApprovalPolicy"
+        },
+        "backupPlanPolicy": {
+          "$ref": "#/definitions/v1BackupPlanPolicy"
+        },
+        "sensitiveDataPolicy": {
+          "$ref": "#/definitions/v1SensitiveDataPolicy"
+        },
+        "accessControlPolicy": {
+          "$ref": "#/definitions/v1AccessControlPolicy"
+        },
+        "sqlReviewPolicy": {
+          "$ref": "#/definitions/v1SQLReviewPolicy"
+        },
+        "enforce": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1PolicyType": {
+      "type": "string",
+      "enum": [
+        "POLICY_TYPE_UNSPECIFIED",
+        "DEPLOYMENT_APPROVAL",
+        "BACKUP_PLAN",
+        "SQL_REVIEW",
+        "SENSITIVE_DATA",
+        "ACCESS_CONTROL"
+      ],
+      "default": "POLICY_TYPE_UNSPECIFIED"
+    },
+    "v1SQLReviewPolicy": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SQLReviewRule"
+          }
+        }
+      }
+    },
+    "v1SQLReviewRule": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/v1SQLReviewRuleLevel"
+        },
+        "payload": {
+          "type": "string"
+        },
+        "engine": {
+          "$ref": "#/definitions/v1Engine"
+        },
+        "comment": {
+          "type": "string"
+        }
+      }
+    },
+    "v1SQLReviewRuleLevel": {
+      "type": "string",
+      "enum": [
+        "LEVEL_UNSPECIFIED",
+        "ERROR",
+        "WARNING",
+        "DISABLED"
+      ],
+      "default": "LEVEL_UNSPECIFIED"
+    },
+    "v1SensitiveData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "column": {
+          "type": "string"
+        },
+        "maskType": {
+          "$ref": "#/definitions/v1SensitiveDataMaskType"
+        }
+      }
+    },
+    "v1SensitiveDataMaskType": {
+      "type": "string",
+      "enum": [
+        "MASK_TYPE_UNSPECIFIED",
+        "DEFAULT"
+      ],
+      "default": "MASK_TYPE_UNSPECIFIED"
+    },
+    "v1SensitiveDataPolicy": {
+      "type": "object",
+      "properties": {
+        "sensitiveData": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SensitiveData"
+          }
+        }
+      }
+    }
+  }
+}

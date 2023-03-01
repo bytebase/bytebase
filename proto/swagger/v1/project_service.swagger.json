@@ -1,0 +1,1068 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/project_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "ProjectService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/projects": {
+      "get": {
+        "operationId": "ProjectService_ListProjects",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListProjectsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "description": "The maximum number of projects to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 projects will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `ListProjects` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListProjects` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "showDeleted",
+            "description": "Show deleted projects if specified.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      },
+      "post": {
+        "operationId": "ProjectService_CreateProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Project"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project",
+            "description": "The project to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Project",
+              "required": [
+                "project"
+              ]
+            }
+          },
+          {
+            "name": "projectId",
+            "description": "The ID to use for the project, which will become the final component of\nthe project's resource name.\n\nThis value should be 4-63 characters, and valid characters\nare /[a-z][0-9]-/.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{config.name}": {
+      "patch": {
+        "operationId": "ProjectService_UpdateDeploymentConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeploymentConfig"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "config.name",
+            "description": "The name of the resource.\nFormat: projects/{project}/deploymentConfig",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/deploymentConfig"
+          },
+          {
+            "name": "config",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "The title of the deployment config."
+                },
+                "schedule": {
+                  "$ref": "#/definitions/v1Schedule"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{name_1}": {
+      "get": {
+        "operationId": "ProjectService_GetReview",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Review"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_1",
+            "description": "The name of the review to retrieve.\nFormat: projects/{project}/reviews/{review}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/reviews/[^/]+"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{name_2}": {
+      "get": {
+        "operationId": "ProjectService_GetDeploymentConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeploymentConfig"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name_2",
+            "description": "The name of the resource.\nFormat: projects/{project}/deploymentConfig",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/deploymentConfig"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{name}": {
+      "get": {
+        "operationId": "ProjectService_GetProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Project"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the project to retrieve.\nFormat: projects/{project}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      },
+      "delete": {
+        "operationId": "ProjectService_DeleteProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the project to delete.\nFormat: projects/{project}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{name}:undelete": {
+      "post": {
+        "operationId": "ProjectService_UndeleteProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Project"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the deleted project.\nFormat: projects/{project}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{parent}/reviews": {
+      "get": {
+        "operationId": "ProjectService_ListReviews",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListReviewsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent, which owns this collection of reviews.\nFormat: projects/{project}\nUse \"projects/-\" to list all reviews from all projects.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of reviews to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 reviews will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `ListReviews` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListReviews` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{parent}/reviews:batchUpdate": {
+      "post": {
+        "operationId": "ProjectService_BatchUpdateReviews",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchUpdateReviewsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource shared by all reviews being updated.\nFormat: projects/{project}\nIf the operation spans parents, a dash (-) may be accepted as a wildcard.\nWe only support updating the status of databases for now.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "requests": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/v1UpdateReviewRequest"
+                  },
+                  "description": "The request message specifying the resources to update.\nA maximum of 1000 databases can be modified in a batch."
+                }
+              },
+              "required": [
+                "requests"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{project.name}": {
+      "patch": {
+        "operationId": "ProjectService_UpdateProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Project"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project.name",
+            "description": "The name of the project.\nFormat: projects/{project}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "project",
+            "description": "The project to update.\n\nThe project's `name` field is used to identify the project to update.\nFormat: projects/{project}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "state": {
+                  "$ref": "#/definitions/v1State"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "The title or name of a project. It's not unique within the workspace."
+                },
+                "key": {
+                  "type": "string",
+                  "description": "The key is a short and upper-case identifier for a project. It's unique within the workspace."
+                },
+                "workflow": {
+                  "$ref": "#/definitions/v1Workflow"
+                },
+                "visibility": {
+                  "$ref": "#/definitions/v1Visibility"
+                },
+                "tenantMode": {
+                  "$ref": "#/definitions/v1TenantMode"
+                },
+                "dbNameTemplate": {
+                  "type": "string"
+                },
+                "schemaVersion": {
+                  "$ref": "#/definitions/v1SchemaVersion"
+                },
+                "schemaChange": {
+                  "$ref": "#/definitions/v1SchemaChange"
+                },
+                "lgtmCheck": {
+                  "$ref": "#/definitions/v1LgtmCheck"
+                }
+              },
+              "description": "The project's `name` field is used to identify the project to update.\nFormat: projects/{project}",
+              "title": "The project to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{project}:getIamPolicy": {
+      "get": {
+        "operationId": "ProjectService_GetIamPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1IamPolicy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project",
+            "description": "The name of the project to get the IAM policy.\nFormat: projects/{project}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{project}:setIamPolicy": {
+      "post": {
+        "operationId": "ProjectService_SetIamPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1IamPolicy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project",
+            "description": "The name of the project to set the IAM policy.\nFormat: projects/{project}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "policy": {
+                  "$ref": "#/definitions/v1IamPolicy"
+                }
+              },
+              "required": [
+                "policy"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
+    "/v1/{review.name}": {
+      "patch": {
+        "operationId": "ProjectService_UpdateReview",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Review"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "review.name",
+            "description": "The name of the review.\n`review` is a system generated ID.\nFormat: projects/{project}/reviews/{review}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "projects/[^/]+/reviews/[^/]+"
+          },
+          {
+            "name": "review",
+            "description": "The review to update.\n\nThe review's `name` field is used to identify the review to update.\nFormat: projects/{project}/reviews/{review}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "status": {
+                  "$ref": "#/definitions/v1ReviewStatus"
+                },
+                "assignee": {
+                  "type": "string",
+                  "title": "Format: user:hello@world.com"
+                },
+                "assigneeAttention": {
+                  "type": "boolean"
+                },
+                "subscribers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "The subscribers.\nFormat: user:hello@world.com"
+                },
+                "creator": {
+                  "type": "string",
+                  "title": "Format: user:hello@world.com"
+                },
+                "createTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "readOnly": true
+                },
+                "updateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "readOnly": true
+                }
+              },
+              "description": "The review's `name` field is used to identify the review to update.\nFormat: projects/{project}/reviews/{review}",
+              "title": "The review to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1BatchUpdateReviewsResponse": {
+      "type": "object",
+      "properties": {
+        "reviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Review"
+          },
+          "description": "Reviews updated."
+        }
+      }
+    },
+    "v1Binding": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "$ref": "#/definitions/v1ProjectRole",
+          "description": "The project role that is assigned to the members."
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "* `user:{emailid}`: An email address that represents a specific Bytebase\n   account. For example, `alice@example.com` .",
+          "title": "Specifies the principals requesting access for a Bytebase resource.\n`members` can have the following values:"
+        }
+      }
+    },
+    "v1DeploymentConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the resource.\nFormat: projects/{project}/deploymentConfig"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the deployment config."
+        },
+        "schedule": {
+          "$ref": "#/definitions/v1Schedule"
+        }
+      }
+    },
+    "v1DeploymentSpec": {
+      "type": "object",
+      "properties": {
+        "labelSelector": {
+          "$ref": "#/definitions/v1LabelSelector"
+        }
+      }
+    },
+    "v1IamPolicy": {
+      "type": "object",
+      "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Binding"
+          },
+          "description": "Collection of binding.\nA binding binds one or more project members to a single project role."
+        }
+      }
+    },
+    "v1LabelSelector": {
+      "type": "object",
+      "properties": {
+        "matchExpressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1LabelSelectorRequirement"
+          }
+        }
+      }
+    },
+    "v1LabelSelectorRequirement": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "operator": {
+          "$ref": "#/definitions/v1OperatorType"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1LgtmCheck": {
+      "type": "string",
+      "enum": [
+        "LGTM_CHECK_UNSPECIFIED",
+        "LGTM_CHECK_DISABLED",
+        "LGTM_CHECK_PROJECT_OWNER",
+        "LGTM_CHECK_PROJECT_MEMBER"
+      ],
+      "default": "LGTM_CHECK_UNSPECIFIED"
+    },
+    "v1ListProjectsResponse": {
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Project"
+          },
+          "description": "The projects from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1ListReviewsResponse": {
+      "type": "object",
+      "properties": {
+        "reviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Review"
+          },
+          "description": "The reviews from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1OperatorType": {
+      "type": "string",
+      "enum": [
+        "OPERATOR_TYPE_UNSPECIFIED",
+        "OPERATOR_TYPE_IN",
+        "OPERATOR_TYPE_EXISTS"
+      ],
+      "default": "OPERATOR_TYPE_UNSPECIFIED",
+      "description": " - OPERATOR_TYPE_UNSPECIFIED: The operator is not specified.\n - OPERATOR_TYPE_IN: The operator is \"In\".\n - OPERATOR_TYPE_EXISTS: The operator is \"Exists\"."
+    },
+    "v1Project": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the project.\nFormat: projects/{project}"
+        },
+        "uid": {
+          "type": "string",
+          "description": "The system-assigned, unique identifier for a resource.",
+          "readOnly": true
+        },
+        "state": {
+          "$ref": "#/definitions/v1State"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or name of a project. It's not unique within the workspace."
+        },
+        "key": {
+          "type": "string",
+          "description": "The key is a short and upper-case identifier for a project. It's unique within the workspace."
+        },
+        "workflow": {
+          "$ref": "#/definitions/v1Workflow"
+        },
+        "visibility": {
+          "$ref": "#/definitions/v1Visibility"
+        },
+        "tenantMode": {
+          "$ref": "#/definitions/v1TenantMode"
+        },
+        "dbNameTemplate": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "$ref": "#/definitions/v1SchemaVersion"
+        },
+        "schemaChange": {
+          "$ref": "#/definitions/v1SchemaChange"
+        },
+        "lgtmCheck": {
+          "$ref": "#/definitions/v1LgtmCheck"
+        }
+      }
+    },
+    "v1ProjectRole": {
+      "type": "string",
+      "enum": [
+        "PROJECT_ROLE_UNSPECIFIED",
+        "PROJECT_ROLE_OWNER",
+        "PROJECT_ROLE_DEVELOPER"
+      ],
+      "default": "PROJECT_ROLE_UNSPECIFIED"
+    },
+    "v1Review": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the review.\n`review` is a system generated ID.\nFormat: projects/{project}/reviews/{review}"
+        },
+        "uid": {
+          "type": "string",
+          "description": "The system-assigned, unique identifier for a resource.",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/v1ReviewStatus"
+        },
+        "assignee": {
+          "type": "string",
+          "title": "Format: user:hello@world.com"
+        },
+        "assigneeAttention": {
+          "type": "boolean"
+        },
+        "subscribers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "The subscribers.\nFormat: user:hello@world.com"
+        },
+        "creator": {
+          "type": "string",
+          "title": "Format: user:hello@world.com"
+        },
+        "createTime": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updateTime": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    },
+    "v1ReviewStatus": {
+      "type": "string",
+      "enum": [
+        "REVIEW_STATUS_UNSPECIFIED",
+        "OPEN",
+        "DONE",
+        "CANCELED"
+      ],
+      "default": "REVIEW_STATUS_UNSPECIFIED"
+    },
+    "v1Schedule": {
+      "type": "object",
+      "properties": {
+        "deployments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ScheduleDeployment"
+          }
+        }
+      }
+    },
+    "v1ScheduleDeployment": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the deployment (stage) in a schedule."
+        },
+        "spec": {
+          "$ref": "#/definitions/v1DeploymentSpec"
+        }
+      }
+    },
+    "v1SchemaChange": {
+      "type": "string",
+      "enum": [
+        "SCHEMA_CHANGE_UNSPECIFIED",
+        "DDL",
+        "SDL"
+      ],
+      "default": "SCHEMA_CHANGE_UNSPECIFIED"
+    },
+    "v1SchemaVersion": {
+      "type": "string",
+      "enum": [
+        "SCHEMA_VERSION_UNSPECIFIED",
+        "TIMESTAMP",
+        "SEMANTIC"
+      ],
+      "default": "SCHEMA_VERSION_UNSPECIFIED"
+    },
+    "v1State": {
+      "type": "string",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "ACTIVE",
+        "DELETED"
+      ],
+      "default": "STATE_UNSPECIFIED"
+    },
+    "v1TenantMode": {
+      "type": "string",
+      "enum": [
+        "TENANT_MODE_UNSPECIFIED",
+        "TENANT_MODE_DISABLED",
+        "TENANT_MODE_ENABLED"
+      ],
+      "default": "TENANT_MODE_UNSPECIFIED"
+    },
+    "v1UpdateReviewRequest": {
+      "type": "object",
+      "properties": {
+        "review": {
+          "$ref": "#/definitions/v1Review",
+          "description": "The review to update.\n\nThe review's `name` field is used to identify the review to update.\nFormat: projects/{project}/reviews/{review}"
+        },
+        "updateMask": {
+          "type": "string",
+          "description": "The list of fields to update."
+        }
+      },
+      "required": [
+        "review"
+      ]
+    },
+    "v1Visibility": {
+      "type": "string",
+      "enum": [
+        "VISIBILITY_UNSPECIFIED",
+        "VISIBILITY_PUBLIC",
+        "VISIBILITY_PRIVATE"
+      ],
+      "default": "VISIBILITY_UNSPECIFIED"
+    },
+    "v1Workflow": {
+      "type": "string",
+      "enum": [
+        "WORKFLOW_UNSPECIFIED",
+        "UI",
+        "VCS"
+      ],
+      "default": "WORKFLOW_UNSPECIFIED"
+    }
+  }
+}

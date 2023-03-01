@@ -1,0 +1,602 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/instance_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "InstanceService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/{instance.name}": {
+      "patch": {
+        "operationId": "InstanceService_UpdateInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instance.name",
+            "description": "The name of the instance.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "instance",
+            "description": "The instance to update.\n\nThe instance's `name` field is used to identify the instance to update.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "description": "The system-assigned, unique identifier for a resource.",
+                  "readOnly": true
+                },
+                "state": {
+                  "$ref": "#/definitions/v1State"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "engine": {
+                  "$ref": "#/definitions/v1Engine"
+                },
+                "externalLink": {
+                  "type": "string"
+                },
+                "dataSources": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/v1DataSource"
+                  }
+                }
+              },
+              "description": "The instance's `name` field is used to identify the instance to update.\nFormat: environments/{environment}/instances/{instance}",
+              "title": "The instance to update."
+            }
+          },
+          {
+            "name": "updateMask",
+            "description": "The list of fields to update.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    },
+    "/v1/{instance}:addDataSource": {
+      "post": {
+        "operationId": "InstanceService_AddDataSource",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instance",
+            "description": "The name of the instance to add a data source to.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "dataSources": {
+                  "$ref": "#/definitions/v1DataSource",
+                  "description": "Identified by type.\nOnly READ_ONLY data source can be added."
+                }
+              },
+              "required": [
+                "dataSources"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    },
+    "/v1/{instance}:removeDataSource": {
+      "post": {
+        "operationId": "InstanceService_RemoveDataSource",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instance",
+            "description": "The name of the instance to remove a data source from.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "dataSources": {
+                  "$ref": "#/definitions/v1DataSource",
+                  "description": "Identified by type.\nOnly READ_ONLY data source can be removed."
+                }
+              },
+              "required": [
+                "dataSources"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    },
+    "/v1/{instance}:updateDataSource": {
+      "patch": {
+        "operationId": "InstanceService_UpdateDataSource",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instance",
+            "description": "The name of the instance to update a data source.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "dataSources": {
+                  "$ref": "#/definitions/v1DataSource",
+                  "description": "Identified by type."
+                },
+                "updateMask": {
+                  "type": "string",
+                  "description": "The list of fields to update."
+                }
+              },
+              "required": [
+                "dataSources"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    },
+    "/v1/{name}": {
+      "get": {
+        "operationId": "InstanceService_GetInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the instance to retrieve.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      },
+      "delete": {
+        "operationId": "InstanceService_DeleteInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the instance to delete.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    },
+    "/v1/{name}:undelete": {
+      "post": {
+        "operationId": "InstanceService_UndeleteInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the deleted instance.\nFormat: environments/{environment}/instances/{instance}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+/instances/[^/]+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    },
+    "/v1/{parent}/instances": {
+      "get": {
+        "operationId": "InstanceService_ListInstances",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListInstancesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent, which owns this collection of instances.\nFormat: environments/{environment}\nUse \"environments/-\" to list all instances from all environments.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          },
+          {
+            "name": "pageSize",
+            "description": "The maximum number of instances to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 instances will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "description": "A page token, received from a previous `ListInstances` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListInstances` must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "showDeleted",
+            "description": "Show deleted instances if specified.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      },
+      "post": {
+        "operationId": "InstanceService_CreateInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parent",
+            "description": "The parent resource where this instance will be created.\nFormat: environments/{environment}",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": "environments/[^/]+"
+          },
+          {
+            "name": "instance",
+            "description": "The instance to create.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Instance",
+              "required": [
+                "instance"
+              ]
+            }
+          },
+          {
+            "name": "instanceId",
+            "description": "The ID to use for the instance, which will become the final component of\nthe instance's resource name.\n\nThis value should be 4-63 characters, and valid characters\nare /[a-z][0-9]-/.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "InstanceService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1DataSource": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/v1DataSourceType"
+        },
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "sslCa": {
+          "type": "string"
+        },
+        "sslCert": {
+          "type": "string"
+        },
+        "sslKey": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "srv": {
+          "type": "boolean"
+        },
+        "authenticationDatabase": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DataSourceType": {
+      "type": "string",
+      "enum": [
+        "DATA_SOURCE_UNSPECIFIED",
+        "ADMIN",
+        "READ_ONLY"
+      ],
+      "default": "DATA_SOURCE_UNSPECIFIED"
+    },
+    "v1Engine": {
+      "type": "string",
+      "enum": [
+        "ENGINE_UNSPECIFIED",
+        "CLICKHOUSE",
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "SQLITE",
+        "TIDB",
+        "MONGODB"
+      ],
+      "default": "ENGINE_UNSPECIFIED"
+    },
+    "v1Instance": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the instance.\nFormat: environments/{environment}/instances/{instance}"
+        },
+        "uid": {
+          "type": "string",
+          "description": "The system-assigned, unique identifier for a resource.",
+          "readOnly": true
+        },
+        "state": {
+          "$ref": "#/definitions/v1State"
+        },
+        "title": {
+          "type": "string"
+        },
+        "engine": {
+          "$ref": "#/definitions/v1Engine"
+        },
+        "externalLink": {
+          "type": "string"
+        },
+        "dataSources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1DataSource"
+          }
+        }
+      }
+    },
+    "v1ListInstancesResponse": {
+      "type": "object",
+      "properties": {
+        "instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Instance"
+          },
+          "description": "The instances from the specified request."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "v1State": {
+      "type": "string",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "ACTIVE",
+        "DELETED"
+      ],
+      "default": "STATE_UNSPECIFIED"
+    }
+  }
+}

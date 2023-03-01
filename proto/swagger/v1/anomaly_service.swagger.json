@@ -1,0 +1,257 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/anomaly_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AnomalyService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/anomalies/search": {
+      "post": {
+        "operationId": "AnomalyService_SearchAnomalies",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SearchAnomaliesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SearchAnomaliesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AnomalyService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AnomalyAnomalyServerity": {
+      "type": "string",
+      "enum": [
+        "ANOMALY_SERVERITY_UNSPECIFIED",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ],
+      "default": "ANOMALY_SERVERITY_UNSPECIFIED",
+      "description": "AnomalyServerity is the severity of the anomaly.\n\n - ANOMALY_SERVERITY_UNSPECIFIED: Unspecified anomaly serverity.\n - MEDIUM: MEDIUM is the info level anomaly serverity.\n - HIGH: HIGH is the warning level anomaly serverity.\n - CRITICAL: CRITICAL is the critical level anomaly serverity."
+    },
+    "AnomalyAnomalyType": {
+      "type": "string",
+      "enum": [
+        "ANOMALY_TYPE_UNSPECIFIED",
+        "INSTANCE_CONNECTION",
+        "MIGRATION_SCHEMA",
+        "DATABASE_BACKUP_POLICY_VIOLATION",
+        "DATABASE_BACKUP_MISSING",
+        "DATABASE_CONNECTION",
+        "DATABASE_SCHEMA_DRIFT"
+      ],
+      "default": "ANOMALY_TYPE_UNSPECIFIED",
+      "description": "AnomalyType is the type of the anomaly.\n\n - ANOMALY_TYPE_UNSPECIFIED: Unspecified anomaly type.\n - INSTANCE_CONNECTION: Instance level anomaly.\n\nINSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.\n - MIGRATION_SCHEMA: MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing.\n - DATABASE_BACKUP_POLICY_VIOLATION: Database level anomaly.\n\nDATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy violation,\ne.g. the database backup policy is not meet the environment backup policy.\n - DATABASE_BACKUP_MISSING: DATABASE_BACKUP_MISSING is the anomaly type for the backup missing, e.g. the backup is missing.\n - DATABASE_CONNECTION: DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted.\n - DATABASE_SCHEMA_DRIFT: DATABASE_SCHEMA_DRIFT is the anomaly type for database schema drift,\ne.g. the database schema had been changed without bytebase migration."
+    },
+    "AnomalyDatabaseBackupMissingDetail": {
+      "type": "object",
+      "properties": {
+        "expectedSchedule": {
+          "$ref": "#/definitions/v1AnomalyBackupPlanSchedule",
+          "description": "expected_schedule is the expected backup plan schedule in the database."
+        },
+        "lastestBackupTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "lastest_backup_time is the last backup time in the database."
+        }
+      },
+      "description": "DatabaseBackupMissingDetail is the detail for database backup missing anomaly."
+    },
+    "AnomalyDatabaseBackupPolicyViolationDetail": {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "type": "string",
+          "title": "parent is the parent of the database.\nFormat: environments/{environment}"
+        },
+        "expectedSchedule": {
+          "$ref": "#/definitions/v1AnomalyBackupPlanSchedule",
+          "description": "expected_schedule is the expected backup plan schedule in the parent."
+        },
+        "actualSchedule": {
+          "$ref": "#/definitions/v1AnomalyBackupPlanSchedule",
+          "description": "actual_schedule is the actual backup plan schedule in the database."
+        }
+      },
+      "description": "DatabaseBackupPolicyViolationDetail is the detail for database backup policy violation anomaly."
+    },
+    "AnomalyDatabaseConnectionDetail": {
+      "type": "object",
+      "properties": {
+        "detail": {
+          "type": "string",
+          "description": "detail is the detail of the database connection failure."
+        }
+      },
+      "description": "Database level anomaly detial.\n\nDatbaaseConnectionDetail is the detail for database connection anomaly."
+    },
+    "AnomalyDatabaseSchemaDriftDetail": {
+      "type": "object",
+      "properties": {
+        "recordVersion": {
+          "type": "string",
+          "description": "record_version is the record version of the database schema drift."
+        },
+        "expectedSchema": {
+          "type": "string",
+          "description": "expected_schema is the expected schema in the database."
+        },
+        "actualSchema": {
+          "type": "string",
+          "description": "actual_schema is the actual schema in the database."
+        }
+      },
+      "description": "DatabaseSchemaDriftDetail is the detail for database schema drift anomaly."
+    },
+    "AnomalyInstanceConnectionDetail": {
+      "type": "object",
+      "properties": {
+        "detail": {
+          "type": "string",
+          "description": "detail is the detail of the instance connection failure."
+        }
+      },
+      "description": "Instance level anomaly detail.\n\nInstanceConnectionDetail is the detail for instance connection anomaly."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Anomaly": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string",
+          "title": "The resource that is the target of the operation.\nFormat:\n- Instance: environments/{environment}/instnaces/{instance}\n- Database: environments/{environment}/instnaces/{instance}/databases/{database}"
+        },
+        "type": {
+          "$ref": "#/definitions/AnomalyAnomalyType",
+          "description": "type is the type of the anomaly."
+        },
+        "serverity": {
+          "$ref": "#/definitions/AnomalyAnomalyServerity",
+          "description": "serverity is the serverity of the anomaly."
+        },
+        "instanceConnectionDetail": {
+          "$ref": "#/definitions/AnomalyInstanceConnectionDetail"
+        },
+        "databaseConnectionDetail": {
+          "$ref": "#/definitions/AnomalyDatabaseConnectionDetail"
+        },
+        "databaseBackupPolicyViolationDetail": {
+          "$ref": "#/definitions/AnomalyDatabaseBackupPolicyViolationDetail"
+        },
+        "databaseBackupMissingDetail": {
+          "$ref": "#/definitions/AnomalyDatabaseBackupMissingDetail"
+        },
+        "databaseSchemaDriftDetail": {
+          "$ref": "#/definitions/AnomalyDatabaseSchemaDriftDetail"
+        }
+      },
+      "required": [
+        "resource"
+      ]
+    },
+    "v1AnomalyBackupPlanSchedule": {
+      "type": "string",
+      "enum": [
+        "BACKUP_PLAN_SCHEDULE_UNSPECIFIED",
+        "UNSET",
+        "DAILY",
+        "WEEKLY"
+      ],
+      "default": "BACKUP_PLAN_SCHEDULE_UNSPECIFIED",
+      "description": "BackupPlanSchedule is the backup plan schedule.\n\n - BACKUP_PLAN_SCHEDULE_UNSPECIFIED: Unspecified backup plan schedule.\n - UNSET: UNSET is the unset backup plan schedule.\n - DAILY: DAILY is the daily backup plan schedule.\n - WEEKLY: WEEKLY is the weekly backup plan schedule."
+    },
+    "v1SearchAnomaliesRequest": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "string",
+          "title": "filter is the filter to apply on the search anomaly request,\nfollow the [google cel-spec](https://github.com/google/cel-spec) syntax.\nFor example:\nSearch the anomalies of a specific resource: 'anomaly.resource_name=\"environments/{environemnt}/instances/{instance}\"'\nSearch the specified type of anomalies: 'anomaly.type=\"DATABASE_BACKUP_POLICY_VIOLATION\"'"
+        },
+        "pageSize": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Not used. The maximum number of anomalies to return. The service may return fewer than\nthis value.\nIf unspecified, at most 50 anomalies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000."
+        },
+        "pageToken": {
+          "type": "string",
+          "description": "Not used. A page token, received from a previous `SearchAnomalies` call.\nProvide this to retrieve the subsequent page.  \n\nWhen paginating, all other parameters provided to `SearchAnomalies` must match\nthe call that provided the page token."
+        }
+      }
+    },
+    "v1SearchAnomaliesResponse": {
+      "type": "object",
+      "properties": {
+        "anomalies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Anomaly"
+          },
+          "description": "anomalies is the list of anomalies."
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "Not used. A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    }
+  }
+}
