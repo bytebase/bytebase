@@ -28,7 +28,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
-	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -68,7 +67,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
-	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
@@ -176,25 +174,6 @@ var casbinDBAPolicy string
 
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
-
-// Use following cmd to generate swagger doc
-// swag init -g ./backend/server.go -d ./backend/server --output docs/openapi --parseDependency
-
-// @title Bytebase OpenAPI
-// @version 1.0
-// @description The OpenAPI for bytebase.
-// @termsOfService https://www.bytebase.com/terms
-
-// @contact.name API Support
-// @contact.url https://github.com/bytebase/bytebase/
-// @contact.email support@bytebase.com
-
-// @license.name MIT
-// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
-
-// @host localhost:8080
-// @BasePath /v1/
-// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
@@ -396,7 +375,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
 	e.Use(recoverMiddleware)
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group(webhookAPIPrefix)
 	s.registerWebhookRoutes(webhookGroup)
