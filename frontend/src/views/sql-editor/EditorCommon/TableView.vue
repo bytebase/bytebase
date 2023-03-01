@@ -6,7 +6,7 @@
   >
     <div
       v-show="queryResult !== null"
-      class="w-full flex flex-row justify-between items-center mb-2 overflow-x-auto"
+      class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto"
     >
       <div class="flex flex-row justify-start items-center mr-2 shrink-0">
         <NInput
