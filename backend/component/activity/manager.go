@@ -107,7 +107,7 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalURL, slug.Make(issue.Title), issue.UID),
+		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorID,
 		CreatorName:  anyActivity.Creator.Name,
 		CreatorEmail: anyActivity.Creator.Email,
@@ -201,7 +201,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s/issue/%s-%d", setting.ExternalURL, slug.Make(meta.Issue.Title), meta.Issue.UID)
+	link := fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(meta.Issue.Title), meta.Issue.UID)
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)

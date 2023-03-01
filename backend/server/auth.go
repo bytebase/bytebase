@@ -107,7 +107,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
 						Code:         login.Code,
-						RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalURL),
+						RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 					},
 				)
 				if err != nil {

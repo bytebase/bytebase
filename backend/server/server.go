@@ -69,6 +69,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
@@ -647,8 +648,8 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	// initial workspace general setting
-	bytes, err := json.Marshal(api.WorkspaceGeneralSettingPayload{
-		ExternalURL:    s.profile.ExternalURL,
+	bytes, err := json.Marshal(storepb.WorkspaceGeneralSettingPayload{
+		ExternalUrl:    s.profile.ExternalURL,
 		DisallowSignup: false,
 	})
 	if err != nil {

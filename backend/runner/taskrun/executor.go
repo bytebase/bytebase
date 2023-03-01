@@ -377,7 +377,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 				return true, nil, errors.Wrapf(err, "failed to get workspace setting")
 			}
 
-			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", setting.ExternalURL, slug.Make(issue.Title), issue.UID, task.StageID)
+			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)

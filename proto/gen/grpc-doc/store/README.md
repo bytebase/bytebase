@@ -23,6 +23,9 @@
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
+- [store/setting.proto](#store_setting-proto)
+    - [WorkspaceGeneralSettingPayload](#bytebase-store-WorkspaceGeneralSettingPayload)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -338,6 +341,40 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_setting-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/setting.proto
+
+
+
+<a name="bytebase-store-WorkspaceGeneralSettingPayload"></a>
+
+### WorkspaceGeneralSettingPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_url | [string](#string) |  | The URL user visits Bytebase.
+
+The external URL is used for: 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend. 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend. |
+| disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
+
+
+
+
+
+ 
 
  
 

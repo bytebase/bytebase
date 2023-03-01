@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // FindSetting finds a list of Setting instances.
@@ -41,7 +42,7 @@ func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Set
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
-func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*api.WorkspaceGeneralSettingPayload, error) {
+func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceGeneralSettingPayload, error) {
 	settingName := api.SettingWorkspaceGeneral
 	setting, err := s.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
@@ -53,7 +54,7 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*api.WorkspaceG
 		return nil, errors.Errorf("cannot find setting %v", settingName)
 	}
 
-	payload := new(api.WorkspaceGeneralSettingPayload)
+	payload := new(storepb.WorkspaceGeneralSettingPayload)
 	if err := json.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return nil, err
 	}

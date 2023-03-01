@@ -512,7 +512,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *store.IssueM
 		feishu.Content{
 			Issue:    fmt.Sprintf("#%d %s", issue.UID, issue.Title),
 			Stage:    stage.Name,
-			Link:     fmt.Sprintf("%s/issue/%s-%d", setting.ExternalURL, slug.Make(issue.Title), issue.UID),
+			Link:     fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalDefinitionID,

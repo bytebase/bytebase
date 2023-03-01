@@ -246,7 +246,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				wg.Add(1)
 				go func(file fileInfo) {
 					defer wg.Done()
-					adviceList, err := s.sqlAdviceForFile(ctx, file, setting.ExternalURL)
+					adviceList, err := s.sqlAdviceForFile(ctx, file, setting.ExternalUrl)
 					if err != nil {
 						log.Debug(
 							"Failed to take SQL review for file",

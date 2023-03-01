@@ -513,7 +513,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
@@ -542,7 +542,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
 		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)

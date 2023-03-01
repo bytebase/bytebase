@@ -23,7 +23,7 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			GitCommit:      s.profile.GitCommit,
 			Readonly:       s.profile.Readonly,
 			DemoName:       s.profile.DemoName,
-			ExternalURL:    setting.ExternalURL,
+			ExternalURL:    setting.ExternalUrl,
 			DisallowSignup: setting.DisallowSignup,
 		}
 

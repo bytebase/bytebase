@@ -35,13 +35,6 @@ type IMType string
 // IMTypeFeishu is IM feishu.
 const IMTypeFeishu IMType = "im.feishu"
 
-// WorkspaceGeneralSettingPayload is the payload for SettingWorkspaceGeneral.
-type WorkspaceGeneralSettingPayload struct {
-	ExternalURL string `json:"externalUrl"`
-	// DisallowSignup means disallow self-service signup, users can only be invited by the owner.
-	DisallowSignup bool `json:"disallowSignup"`
-}
-
 // Setting is the API message for a setting.
 type Setting struct {
 	// Domain specific fields

@@ -12,6 +12,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Some settings contain secret info so we only return settings that are needed by the client.
@@ -64,15 +65,15 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		if settingPatch.Name == api.SettingWorkspaceGeneral {
-			payload := new(api.WorkspaceGeneralSettingPayload)
+			payload := new(storepb.WorkspaceGeneralSettingPayload)
 			if err := json.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
 			}
-			externalURL, err := utils.NormalizeExternalURL(payload.ExternalURL)
+			externalURL, err := utils.NormalizeExternalURL(payload.ExternalUrl)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid external url").SetInternal(err)
 			}
-			payload.ExternalURL = externalURL
+			payload.ExternalUrl = externalURL
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting value").SetInternal(err)
