@@ -94,6 +94,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", login.Name, login.Name)).SetInternal(err)
 				}
 
+				setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+				}
+
 				// Exchange OAuth Token
 				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
 					ctx,
@@ -102,7 +107,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
 						Code:         login.Code,
-						RedirectURL:  fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL),
+						RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 					},
 				)
 				if err != nil {

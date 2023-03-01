@@ -69,6 +69,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
@@ -209,11 +210,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	log.Info(fmt.Sprintf("disallowSignup=%t", profile.DisallowSignup))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
@@ -298,14 +297,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := getInitSetting(ctx, storeInstance)
+	config, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = activity.NewManager(storeInstance, profile)
+	s.ActivityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 	e := echo.New()
 	e.Debug = profile.Debug
@@ -477,7 +476,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
+	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
 	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	reflection.Register(s.grpcServer)
@@ -584,7 +583,7 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
+func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
@@ -648,6 +647,22 @@ func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConf
 		Name:        api.SettingWatermark,
 		Value:       "0",
 		Description: "Display watermark",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
+	// initial workspace general setting
+	bytes, err := json.Marshal(storepb.WorkspaceGeneralSettingPayload{
+		ExternalUrl:    s.profile.ExternalURL,
+		DisallowSignup: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingWorkspaceGeneral,
+		Value:       string(bytes),
+		Description: "Workspace general settings",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/server"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.
@@ -76,8 +76,6 @@ var (
 		// empty means no demo.
 		demoName string
 		debug    bool
-		// disallowSignup will disallow the sign up, users can only be invited by the owner.
-		disallowSignup bool
 		// pgURL must follow PostgreSQL connection URIs pattern.
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL string
@@ -124,8 +122,6 @@ func init() {
 	// Must be one of the subpath name in the ./store/demo/ directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	// Disallow signup
-	rootCmd.PersistentFlags().BoolVar(&flags.disallowSignup, "disallow-signup", false, "whether to disallow the sign up")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.
@@ -140,32 +136,6 @@ func init() {
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
-
-func normalizeExternalURL(url string) (string, error) {
-	r := strings.TrimSpace(url)
-	r = strings.TrimSuffix(r, "/")
-	if !common.HasPrefixes(r, "http://", "https://") {
-		return "", errors.Errorf("%s must start with http:// or https://", url)
-	}
-	parts := strings.Split(r, ":")
-	if len(parts) > 3 {
-		return "", errors.Errorf("%s malformed", url)
-	}
-	if len(parts) == 3 {
-		port, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return "", errors.Errorf("%s has non integer port", url)
-		}
-		// The external URL is used as the redirectURL in the get token process of OAuth, and the
-		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend gets it through window.location.origin in the get code
-		// process, so port 80/443 need to be cropped.
-		if port == 80 || port == 443 {
-			r = strings.Join(parts[0:2], ":")
-		}
-	}
-	return r, nil
-}
 
 func checkDataDir() error {
 	// Clean data directory path.
@@ -220,7 +190,7 @@ func start() {
 	defer log.Sync()
 
 	var err error
-	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
+	flags.externalURL, err = utils.NormalizeExternalURL(flags.externalURL)
 	if err != nil {
 		log.Error("invalid --external-url", zap.Error(err))
 		return
