@@ -16,3 +16,7 @@ plugins:
     # reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md#using-ts-proto
     opt: env=browser,useOptionals=messages,outputServices=nice-grpc,outputServices=generic-definitions,useExactTypes=false
     path: ../frontend/node_modules/.bin/protoc-gen-ts_proto
+  - remote: buf.build/sawadashota/plugins/protoc-gen-doc:v1.5.1
+    out: gen/grpc-doc
+    opt:
+      - markdown,README.md,source_relative
