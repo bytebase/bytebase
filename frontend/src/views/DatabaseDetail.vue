@@ -579,7 +579,10 @@ const createMigration = async (
   type AlterMode = "online" | "normal" | false;
   let mode: AlterMode = "normal";
   if (type === "bb.issue.database.schema.update") {
-    if (allowUsingSchemaEditor([database.value])) {
+    if (
+      database.value.syncStatus === "OK" &&
+      allowUsingSchemaEditor([database.value])
+    ) {
       state.showSchemaEditorModal = true;
       return;
     }
