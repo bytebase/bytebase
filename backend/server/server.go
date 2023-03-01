@@ -860,9 +860,11 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	dbName := postgres.SampleDatabase
+	envID := api.DefaultProdEnvironmentID
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &dbName,
+		EnvironmentID: &envID,
+		InstanceID:    &instance.ResourceID,
+		DatabaseName:  &dbName,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance")
