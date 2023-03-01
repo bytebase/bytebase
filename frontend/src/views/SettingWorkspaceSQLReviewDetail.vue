@@ -93,6 +93,7 @@
       :editable="hasPermission"
       @level-change="onLevelChange"
       @payload-change="onPayloadChange"
+      @comment-change="onCommentChange"
     />
     <BBButtonConfirm
       class="mt-2"
@@ -178,6 +179,7 @@ import {
   payloadValueListToComponentList,
   SQLRuleFilter,
   useSQLRuleFilter,
+  SQLRuleTable,
 } from "../components/SQLReview/components";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
@@ -337,6 +339,10 @@ const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
 
 const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
   markChange(rule, { level });
+};
+
+const onCommentChange = (rule: RuleTemplate, comment: string) => {
+  markChange(rule, { comment });
 };
 
 const onCancelChanges = () => {
