@@ -1,7 +1,6 @@
 package taskrun
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 
@@ -16,9 +15,8 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
+	"github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -52,6 +50,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
+
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -60,7 +59,8 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 	if err != nil {
 		return true, nil, err
 	}
-	ddl, err := exec.computeDatabaseSchemaDiff(ctx, exec.dbFactory, instance, database.DatabaseName, payload.Statement)
+
+	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, payload.Statement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
@@ -75,39 +75,4 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 	}
 
 	return terminated, result, err
-}
-
-// computeDatabaseSchemaDiff computes the diff between current database schema
-// and the given schema. It returns an empty string if there is no applicable
-// diff.
-func (*SchemaUpdateSDLExecutor) computeDatabaseSchemaDiff(ctx context.Context, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, databaseName string, newSchemaStr string) (string, error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
-	if err != nil {
-		return "", errors.Wrap(err, "get admin driver")
-	}
-	defer func() {
-		_ = driver.Close(ctx)
-	}()
-
-	var schema bytes.Buffer
-	_, err = driver.Dump(ctx, databaseName, &schema, true /* schemaOnly */)
-	if err != nil {
-		return "", errors.Wrap(err, "dump old schema")
-	}
-
-	var engine parser.EngineType
-	switch instance.Engine {
-	case db.Postgres:
-		engine = parser.Postgres
-	case db.MySQL:
-		engine = parser.MySQL
-	default:
-		return "", errors.Errorf("unsupported database engine %q", instance.Engine)
-	}
-
-	diff, err := differ.SchemaDiff(engine, schema.String(), newSchemaStr)
-	if err != nil {
-		return "", errors.New("compute schema diff")
-	}
-	return diff, nil
 }

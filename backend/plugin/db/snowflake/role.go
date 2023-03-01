@@ -64,10 +64,14 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	}
 
 	// Query user info
+	// The same user could have multiple entires in the usage if it's been deleted and recreated,
+	// so we need to use DELETED_ON IS NULL to retrieve the active user.
 	userQuery := `
 	  SELECT
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
+		WHERE DELETED_ON IS NULL
+		ORDER BY name ASC
 	`
 	var instanceRoles []*storepb.InstanceRoleMetadata
 	rows, err := driver.db.QueryContext(ctx, userQuery)

@@ -359,7 +359,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
 		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance)
+		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
 		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
@@ -672,10 +672,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		if s.profile.Mode == common.ReleaseModeDev {
-			s.runnerWG.Add(1)
-			go s.RollbackRunner.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)

@@ -364,8 +364,8 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 }
 
 func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, policyMap map[int]*api.BackupPlanPolicy) {
-	if instance.Engine == db.MongoDB || instance.Engine == db.Spanner {
-		// skip checking backup anomalies for MongoDB and Spanner because they don't support Backup.
+	if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
+		// skip checking backup anomalies for MongoDB, Spanner, Redis, Oracle because they don't support Backup.
 		return
 	}
 

@@ -227,6 +227,10 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_TIDB
 	case db.MongoDB:
 		return v1pb.Engine_MONGODB
+	case db.Redis:
+		return v1pb.Engine_REDIS
+	case db.Oracle:
+		return v1pb.Engine_ORACLE
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -247,6 +251,10 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.TiDB
 	case v1pb.Engine_MONGODB:
 		return db.MongoDB
+	case v1pb.Engine_REDIS:
+		return db.Redis
+	case v1pb.Engine_ORACLE:
+		return db.Oracle
 	}
 	return db.UnknownType
 }
