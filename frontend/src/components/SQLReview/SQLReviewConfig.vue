@@ -11,6 +11,7 @@
       :editable="true"
       @level-change="onLevelChange"
       @payload-change="onPayloadChange"
+      @comment-change="onCommentChange"
     />
   </div>
 </template>
@@ -44,6 +45,7 @@ const emit = defineEmits<{
     componentList: RuleConfigComponent[]
   ): void;
   (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
+  (event: "comment-change", rule: RuleTemplate, comment: string): void;
 }>();
 
 const {
@@ -65,5 +67,9 @@ const onPayloadChange = (
 
 const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
   emit("level-change", rule, level);
+};
+
+const onCommentChange = (rule: RuleTemplate, comment: string) => {
+  emit("comment-change", rule, comment);
 };
 </script>
