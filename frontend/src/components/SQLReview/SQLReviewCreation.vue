@@ -28,6 +28,7 @@
           :selected-rule-list="state.selectedRuleList"
           @level-change="onLevelChange"
           @payload-change="onPayloadChange"
+          @comment-change="onCommentChange"
         />
       </template>
     </BBStepTab>
@@ -311,5 +312,9 @@ const onPayloadChange = (
 
 const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
   change(rule, { level });
+};
+
+const onCommentChange = (rule: RuleTemplate, comment: string) => {
+  change(rule, { comment });
 };
 </script>

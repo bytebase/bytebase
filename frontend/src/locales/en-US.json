@@ -1811,7 +1811,8 @@
     "rule": {
       "active": "Active"
     },
-    "enabled-rules": "Enabled rules"
+    "enabled-rules": "Enabled rules",
+    "rule-detail": "Rule detail"
   },
   "debug-log": {
     "title": "Debug Log",
