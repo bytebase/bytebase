@@ -469,8 +469,6 @@ func (s *Store) ListAnomalyV2(ctx context.Context, list *ListAnomalyMessage) ([]
 	}
 	if v := list.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
-	} else {
-		where = append(where, "database_id IS NULL")
 	}
 	if len(list.Types) > 0 {
 		var sub []string
