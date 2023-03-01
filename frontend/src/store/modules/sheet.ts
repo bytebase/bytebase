@@ -24,6 +24,7 @@ import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
 import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
+import { convertUserToPrincipal } from "./user";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
@@ -101,12 +102,12 @@ export const useSheetStore = defineStore("sheet", {
       return state.sheetById.get(sheetId) || unknown("SHEET");
     },
     isCreator() {
-      const { currentUser } = useAuthStore();
+      const user = convertUserToPrincipal(useAuthStore().currentUser);
       const currentSheet = this.currentSheet as Sheet;
 
       if (!currentSheet) return false;
 
-      return currentUser.id === currentSheet!.creator.id;
+      return user.id === currentSheet!.creator.id;
     },
     /**
      * Check the sheet whether is read-only.
@@ -117,7 +118,7 @@ export const useSheetStore = defineStore("sheet", {
      *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
      */
     isReadOnly() {
-      const { currentUser } = useAuthStore();
+      const user = convertUserToPrincipal(useAuthStore().currentUser);
       const currentSheet = this.currentSheet as Sheet;
 
       // We don't have a selected sheet, we've got nothing to edit.
@@ -135,7 +136,7 @@ export const useSheetStore = defineStore("sheet", {
         return true;
       }
 
-      return !isSheetWritable(currentSheet, currentUser);
+      return !isSheetWritable(currentSheet, user);
     },
   },
 
