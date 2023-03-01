@@ -417,6 +417,8 @@ export default defineComponent({
     const isDbNameTemplateMode = computed((): boolean => {
       if (project.value.id === UNKNOWN_ID) return false;
 
+      if (project.value.tenantMode !== "TENANT") return false;
+
       // true if dbNameTemplate is not empty
       return !!project.value.dbNameTemplate;
     });
