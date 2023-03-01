@@ -276,6 +276,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
 		DatastorePort:        port + 2,
 		SampleDatabasePort:   port + 3,
@@ -296,6 +297,7 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData bool) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                       testReleaseMode,
+		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:                   port + 1,
 		SampleDatabasePort:         port + 2,
 		PgUser:                     pgUser,
