@@ -493,9 +493,9 @@ const generateTenant = async () => {
       project.id
     );
     if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
-      schemaEditorContext.value.databaseIdList = databaseList.map(
-        (database) => database.id
-      );
+      schemaEditorContext.value.databaseIdList = databaseList
+        .filter((database) => database.syncStatus === "OK")
+        .map((database) => database.id);
       state.showSchemaEditorModal = true;
       return;
     }
@@ -508,7 +508,10 @@ const generateTenant = async () => {
     const databaseList: Database[] = [];
     const databaseStore = useDatabaseStore();
     for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
-      databaseList.push(databaseStore.getDatabaseById(databaseId));
+      const database = databaseStore.getDatabaseById(databaseId);
+      if (database.syncStatus === "OK") {
+        databaseList.push(databaseStore.getDatabaseById(databaseId));
+      }
     }
     if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = Array.from(
@@ -539,7 +542,11 @@ const generateTenant = async () => {
 };
 
 const selectDatabase = async (database: Database) => {
-  if (isAlterSchema.value && allowUsingSchemaEditor([database])) {
+  if (
+    isAlterSchema.value &&
+    database.syncStatus === "OK" &&
+    allowUsingSchemaEditor([database])
+  ) {
     schemaEditorContext.value.databaseIdList = [database.id];
     state.showSchemaEditorModal = true;
     return;
