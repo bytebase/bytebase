@@ -1,4 +1,5 @@
 import { computed, reactive, unref } from "vue";
+import { useRoute } from "vue-router";
 import {
   MaybeRef,
   RuleLevel,
@@ -14,10 +15,13 @@ export type SQLRuleFilterParams = {
 };
 
 export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
+  const route = useRoute();
   const params = reactive<SQLRuleFilterParams>({
     checkedEngine: new Set(),
     checkedLevel: new Set(),
-    selectedCategory: undefined,
+    selectedCategory: route.query.category
+      ? (route.query.category as string)
+      : undefined,
     searchText: "",
   });
   const events = {
