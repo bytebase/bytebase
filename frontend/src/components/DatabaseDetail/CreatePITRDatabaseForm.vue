@@ -235,6 +235,7 @@ const isTenantProject = computed((): boolean => {
 const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
 
 const isDbNameTemplateMode = computed((): boolean => {
+  if (project.value.tenantMode !== "TENANT") return false;
   // true if dbNameTemplate is not empty
   return !!project.value.dbNameTemplate;
 });
