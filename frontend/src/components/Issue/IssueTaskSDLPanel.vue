@@ -40,15 +40,28 @@
           name="statement"
           :tab="$t('issue.sdl.generated-ddl-statements')"
         >
-          <HighlightCodeBlock
-            class="border px-2 whitespace-pre-wrap"
-            :code="sdlState.detail.diffDDL"
+          <MonacoEditor
+            ref="editorRef"
+            class="w-full border h-auto max-h-[360px]"
+            data-label="bb-issue-sql-editor"
+            :value="sdlState.detail.diffDDL"
+            :readonly="true"
+            :auto-focus="false"
+            language="sql"
+            @ready="handleMonacoEditorReady"
           />
         </NTabPane>
         <NTabPane name="schema" :tab="$t('issue.sdl.full-schema')">
-          <HighlightCodeBlock
-            class="border px-2 whitespace-pre-wrap"
-            :code="sdlState.detail.expectedSDL"
+          <MonacoEditor
+            ref="editorRef"
+            class="w-full border h-auto max-h-[360px]"
+            data-label="bb-issue-sql-editor"
+            :value="sdlState.detail.expectedSDL"
+            :readonly="true"
+            :auto-focus="false"
+            :advices="markers"
+            language="sql"
+            @ready="handleMonacoEditorReady"
           />
         </NTabPane>
       </NTabs>
@@ -63,14 +76,15 @@
 
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
-import { reactive, watch, computed } from "vue";
+import { reactive, watch, computed, ref } from "vue";
 import { CodeDiff } from "v-code-diff";
 
 import { hasFeature, useDatabaseStore, useInstanceStore } from "@/store";
 import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
-import HighlightCodeBlock from "../HighlightCodeBlock";
+import MonacoEditor from "../MonacoEditor";
 import axios from "axios";
+import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 type TabView = "diff" | "statement" | "schema";
 
@@ -97,6 +111,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   tab: "diff",
 });
+const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const useSDLState = () => {
   const emptyState = (task: Task): SDLState => {
@@ -219,4 +234,16 @@ const useSDLState = () => {
 };
 
 const sdlState = useSDLState();
+
+const updateEditorHeight = () => {
+  const contentHeight =
+    editorRef.value?.editorInstance?.getContentHeight() as number;
+  editorRef.value?.setEditorContentHeight(contentHeight);
+};
+
+const handleMonacoEditorReady = () => {
+  updateEditorHeight();
+};
+
+const { markers } = useSQLAdviceMarkers();
 </script>
