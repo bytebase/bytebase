@@ -97,7 +97,10 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 
 // private functions.
 func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) (*api.Database, error) {
-	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{
+		EnvironmentID: &database.EnvironmentID,
+		ResourceID:    &database.InstanceID,
+	})
 	if err != nil {
 		return nil, err
 	}
