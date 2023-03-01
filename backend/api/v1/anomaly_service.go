@@ -96,7 +96,8 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 		}
 		if environmentID != "" && instanceID != "" {
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				ResourceID: &instanceID,
+				EnvironmentID: &environmentID,
+				ResourceID:    &instanceID,
 			})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
