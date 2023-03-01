@@ -42,6 +42,12 @@ const (
 	TaskTypeNotDDL         Code = 402
 	TaskTypeDropDatabase   Code = 403
 	TaskTypeCreateDatabase Code = 404
+	TaskTypeDropTable      Code = 405
+	TaskTypeDropIndex      Code = 406
+	TaskTypeDropColumn     Code = 407
+	TaskTypeDropPrimaryKey Code = 408
+	TaskTypeDropForeignKey Code = 409
+	TaskTypeDropCheck      Code = 410
 )
 
 // Int returns the int type of code.
