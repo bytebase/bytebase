@@ -1,7 +1,7 @@
 /* eslint-disable */
-import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -33,8 +33,8 @@ export interface ActuatorInfo {
   needAdminSetup: boolean;
   /** disallow_signup is the flag to disable self-service signup. */
   disallowSignup: boolean;
-  /** last_active_ts is the service last active timestamp, any API calls will refresh this value. */
-  lastActiveTs: number;
+  /** last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. */
+  lastActiveTime?: Date;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -88,7 +88,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     externalUrl: "",
     needAdminSetup: false,
     disallowSignup: false,
-    lastActiveTs: 0,
+    lastActiveTime: undefined,
   };
 }
 
@@ -124,8 +124,8 @@ export const ActuatorInfo = {
     if (message.disallowSignup === true) {
       writer.uint32(80).bool(message.disallowSignup);
     }
-    if (message.lastActiveTs !== 0) {
-      writer.uint32(88).int64(message.lastActiveTs);
+    if (message.lastActiveTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastActiveTime), writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -168,7 +168,7 @@ export const ActuatorInfo = {
           message.disallowSignup = reader.bool();
           break;
         case 11:
-          message.lastActiveTs = longToNumber(reader.int64() as Long);
+          message.lastActiveTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -190,7 +190,7 @@ export const ActuatorInfo = {
       externalUrl: isSet(object.externalUrl) ? String(object.externalUrl) : "",
       needAdminSetup: isSet(object.needAdminSetup) ? Boolean(object.needAdminSetup) : false,
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
-      lastActiveTs: isSet(object.lastActiveTs) ? Number(object.lastActiveTs) : 0,
+      lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
     };
   },
 
@@ -206,7 +206,7 @@ export const ActuatorInfo = {
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.needAdminSetup !== undefined && (obj.needAdminSetup = message.needAdminSetup);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
-    message.lastActiveTs !== undefined && (obj.lastActiveTs = Math.round(message.lastActiveTs));
+    message.lastActiveTime !== undefined && (obj.lastActiveTime = message.lastActiveTime.toISOString());
     return obj;
   },
 
@@ -222,7 +222,7 @@ export const ActuatorInfo = {
     message.externalUrl = object.externalUrl ?? "";
     message.needAdminSetup = object.needAdminSetup ?? false;
     message.disallowSignup = object.disallowSignup ?? false;
-    message.lastActiveTs = object.lastActiveTs ?? 0;
+    message.lastActiveTime = object.lastActiveTime ?? undefined;
     return message;
   },
 };
@@ -257,25 +257,6 @@ export interface ActuatorServiceClient<CallOptionsExt = {}> {
   ): Promise<ActuatorInfo>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var globalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -283,18 +264,26 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
+function fromTimestamp(t: Timestamp): Date {
+  let millis = t.seconds * 1_000;
+  millis += t.nanos / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
 }
 
 function isSet(value: any): boolean {

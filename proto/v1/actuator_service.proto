@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
 
@@ -54,6 +55,6 @@ message ActuatorInfo {
   // disallow_signup is the flag to disable self-service signup.
   bool disallow_signup = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // last_active_ts is the service last active timestamp, any API calls will refresh this value.
-  int64 last_active_ts = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value.
+  google.protobuf.Timestamp last_active_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

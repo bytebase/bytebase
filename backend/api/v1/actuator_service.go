@@ -2,9 +2,11 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -52,7 +54,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		NeedAdminSetup: count == 0,
 		ExternalUrl:    setting.ExternalUrl,
 		DisallowSignup: setting.DisallowSignup,
-		LastActiveTs:   s.profile.LastActiveTs,
+		LastActiveTime: timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
 	}
 
 	return &serverInfo, nil

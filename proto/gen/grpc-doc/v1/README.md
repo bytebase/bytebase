@@ -267,7 +267,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | external_url | [string](#string) |  | external_url is the URL where user or webhook callback visits Bytebase. |
 | need_admin_setup | [bool](#bool) |  | need_admin_setup flag means the Bytebase instance doesn&#39;t have any end users. |
 | disallow_signup | [bool](#bool) |  | disallow_signup is the flag to disable self-service signup. |
-| last_active_ts | [int64](#int64) |  | last_active_ts is the service last active timestamp, any API calls will refresh this value. |
+| last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. |
 
 
 
