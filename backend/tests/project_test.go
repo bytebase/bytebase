@@ -39,6 +39,7 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "test",
 		Engine:        db.SQLite,
@@ -48,6 +49,7 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
 		project, err := ctl.createProject(api.ProjectCreate{
+			ResourceID: generateRandomString("project", 10),
 			Name:       "ProjectWithDatabase",
 			Key:        "PWD",
 			TenantMode: api.TenantModeDisabled,
@@ -68,6 +70,7 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
 		project, err := ctl.createProject(api.ProjectCreate{
+			ResourceID: generateRandomString("project", 10),
 			Name:       "ProjectWithOpenIssue",
 			Key:        "PWO",
 			TenantMode: api.TenantModeDisabled,

@@ -8,6 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+//go:embed config/sql-review.sample.yaml
+var sqlReviewSampleTemplateStr string
+
 //go:embed config/sql-review.dev.yaml
 var sqlReviewDevTemplateStr string
 
@@ -16,13 +19,6 @@ var sqlReviewProdTemplateStr string
 
 // SQLReviewTemplateID is the template id for SQL review rules.
 type SQLReviewTemplateID string
-
-const (
-	// TemplateForMySQLProd is the template id for mysql prod template.
-	TemplateForMySQLProd SQLReviewTemplateID = "bb.sql-review.prod"
-	// TemplateForMySQLDev is the template id for mysql dev template.
-	TemplateForMySQLDev SQLReviewTemplateID = "bb.sql-review.dev"
-)
 
 // SQLReviewTemplateData is the API message for SQL review rule template.
 type SQLReviewTemplateData struct {
@@ -34,6 +30,7 @@ type SQLReviewTemplateData struct {
 type SQLReviewRuleData struct {
 	Type    SQLReviewRuleType      `yaml:"type"`
 	Level   SQLReviewRuleLevel     `yaml:"level,omitempty"`
+	Comment string                 `yaml:"comment"`
 	Payload map[string]interface{} `yaml:"payload"`
 }
 
@@ -75,9 +72,13 @@ func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, e
 }
 
 func parseSQLReviewTemplateList() ([]*SQLReviewTemplateData, error) {
+	sampleTemplate := &SQLReviewTemplateData{}
 	prodTemplate := &SQLReviewTemplateData{}
 	devTemplate := &SQLReviewTemplateData{}
 
+	if err := yaml.Unmarshal([]byte(sqlReviewSampleTemplateStr), sampleTemplate); err != nil {
+		return nil, err
+	}
 	if err := yaml.Unmarshal([]byte(sqlReviewProdTemplateStr), prodTemplate); err != nil {
 		return nil, err
 	}
@@ -103,6 +104,7 @@ func findTemplate(templateList []*SQLReviewTemplateData, id SQLReviewTemplateID)
 func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLReviewRule, error) {
 	payload := source.Payload
 	level := source.Level
+	comment := source.Comment
 
 	if override != nil {
 		for key, val := range override.Payload {
@@ -113,6 +115,7 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLRevi
 		if override.Level == "ERROR" || override.Level == "WARNING" || override.Level == "DISABLED" {
 			level = override.Level
 		}
+		comment = override.Comment
 	}
 
 	str, err := json.Marshal(payload)
@@ -123,6 +126,7 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLRevi
 	return &SQLReviewRule{
 		Type:    source.Type,
 		Level:   level,
+		Comment: comment,
 		Payload: string(str),
 	}, nil
 }

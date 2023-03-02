@@ -37,8 +37,6 @@ type Profile struct {
 	Debug bool
 	// DemoName specifies the demo name. Empty string means no demo.
 	DemoName string
-	// DisallowSignup will disallow the sign up, users can only be invited by the owner.
-	DisallowSignup bool
 	// AppRunnerInterval is the interval for application runner.
 	AppRunnerInterval time.Duration
 	// BackupRunnerInterval is the interval for backup runner.
@@ -65,6 +63,9 @@ type Profile struct {
 	MetricConnectionKey string
 	// DisableMetric will disable the metric collector.
 	DisableMetric bool
+
+	// Test only flag to skip generating onboarding data.
+	TestOnlySkipOnboardingData bool
 }
 
 // UseEmbedDB returns whether to use embedDB.

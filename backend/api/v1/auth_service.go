@@ -3,8 +3,10 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/mail"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -79,7 +81,12 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
-	if s.profile.DisallowSignup {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+	}
+
+	if setting.DisallowSignup {
 		return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
 	}
 	if request.User == nil {
@@ -88,18 +95,14 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "email must be set")
 	}
-	if _, err := mail.ParseAddress(request.User.Email); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q address", request.User.Email)
-	}
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
 	}
-	if request.User.Password == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
+	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.UserType != v1pb.UserType_USER {
+		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.Password == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
 	}
 
 	existingUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
@@ -117,12 +120,12 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	// Try to find out if the email is used by Bytebase user.
-	emptyIdentityProviderResourceID := ""
+	if err := validateEmail(request.User.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
+	}
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:                      &request.User.Email,
-		ShowDeleted:                true,
-		IdentityProviderResourceID: &emptyIdentityProviderResourceID,
+		Email:       &request.User.Email,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
@@ -131,6 +134,18 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
 	}
 
+	password := request.User.Password
+	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
+		pwd, err := common.RandomString(20)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
+		}
+		password = fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, pwd)
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+	}
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
@@ -145,14 +160,17 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, err
 	}
 
-	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {
+	if s.metricReporter != nil {
+		isFirstUser := user.ID == api.PrincipalIDForFirstUser
 		s.metricReporter.Report(&metric.Metric{
-			Name:  metricAPI.FirstPrincipalMetricName,
+			Name:  metricAPI.PrincipalRegistrationMetricName,
 			Value: 1,
 			Labels: map[string]interface{}{
-				"email":         user.Email,
-				"name":          user.Name,
-				"lark_notified": false,
+				"email": user.Email,
+				"name":  user.Name,
+				// We only send lark notification for the first principal registration.
+				// false means do not notify upfront. Later the notification will be triggered by the scheduler.
+				"lark_notified": !isFirstUser,
 			},
 		})
 	}
@@ -176,7 +194,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
-	return convertToUser(user), nil
+	userResponse := convertToUser(user)
+	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
+		userResponse.ServiceKey = password
+	}
+	return userResponse, nil
 }
 
 // UpdateUser updates a user.
@@ -209,29 +231,42 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
 	}
 
+	var passwordPatch *string
 	patch := &store.UpdateUserMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
-			if user.IdentityProviderResourceID != nil {
-				return nil, status.Errorf(codes.PermissionDenied, "SSO user cannot modify email address")
+			if err := validateEmail(request.User.Email); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 			}
-			if _, err := mail.ParseAddress(request.User.Email); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
+			users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+				Email:       &request.User.Email,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find user list, error: %v", err)
+			}
+			if len(users) != 0 {
+				return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
 			}
 			patch.Email = &request.User.Email
 		case "user.title":
 			patch.Name = &request.User.Title
 		case "user.password":
-			if user.IdentityProviderResourceID != nil {
-				return nil, status.Errorf(codes.PermissionDenied, "SSO user cannot modify password")
+			if user.Type != api.EndUser {
+				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
 			}
-			passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+			passwordPatch = &request.User.Password
+		case "user.service_key":
+			if user.Type != api.ServiceAccount {
+				return nil, status.Errorf(codes.InvalidArgument, "service key can be mutated for service accounts only")
+			}
+			val, err := common.RandomString(20)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+				return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
 			}
-			passwordHashStr := string(passwordHash)
-			patch.PasswordHash = &passwordHashStr
+			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
+			passwordPatch = &password
 		case "user.role":
 			if role != api.Owner {
 				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
@@ -243,12 +278,25 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			patch.Role = &userRole
 		}
 	}
+	if passwordPatch != nil {
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+		}
+		passwordHashStr := string(passwordHash)
+		patch.PasswordHash = &passwordHashStr
+	}
 
 	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
-	return convertToUser(user), nil
+
+	userResponse := convertToUser(user)
+	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
+		userResponse.ServiceKey = *passwordPatch
+	}
+	return userResponse, nil
 }
 
 // DeleteUser deletes a user.
@@ -338,9 +386,6 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
-	if user.IdentityProviderResourceID != nil {
-		convertedUser.IdentityProvider = fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID)
-	}
 	return convertedUser
 }
 
@@ -361,9 +406,9 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	var loginUser *store.UserMessage
 	var err error
 	if request.IdpName == "" {
-		loginUser, err = s.getUserWithLoginRequestOfBytebase(ctx, request)
+		loginUser, err = s.getAndVerifyUser(ctx, request)
 	} else {
-		loginUser, err = s.getUserWithLoginRequestOfIdentityProvider(ctx, request)
+		loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
 	}
 	if err != nil {
 		return nil, err
@@ -415,15 +460,13 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 	return &emptypb.Empty{}, nil
 }
 
-func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	emptyIDP := ""
+func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:                      &request.Email,
-		ShowDeleted:                true,
-		IdentityProviderResourceID: &emptyIDP,
+		Email:       &request.Email,
+		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
+		return nil, status.Errorf(codes.Internal, "failed to get user by email %q: %v", request.Email, err)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
@@ -431,45 +474,46 @@ func (s *AuthService) getUserWithLoginRequestOfBytebase(ctx context.Context, req
 	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
 	}
-	// Disallow user from identity provider login without SSO.
-	if user.IdentityProviderResourceID != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "user %q only can login by SSO", request.Email)
-	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
-		return nil, status.Errorf(codes.InvalidArgument, "incorrect password")
+		return nil, status.Errorf(codes.Unauthenticated, "incorrect password")
 	}
 	return user, nil
 }
 
-func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	identityProviderID, err := getIdentityProviderID(request.IdpName)
+func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	idpID, err := getIdentityProviderID(request.IdpName)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "get identity provider ID: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get identity provider ID: %v", err)
 	}
-
-	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		ResourceID: &identityProviderID,
+	idp, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+		ResourceID: &idpID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get identity provider: %v", err)
 	}
-	if identityProvider == nil {
+	if idp == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+
 	var userInfo *storepb.IdentityProviderUserInfo
-	if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
+	var fieldMapping *storepb.FieldMapping
+	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProvider.Config.GetOauth2Config())
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(idp.Config.GetOauth2Config())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
@@ -478,52 +522,65 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-	} else if identityProvider.Type == storepb.IdentityProviderType_OIDC {
+		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
+	} else if idp.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.Context.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 
-		idp, err := oidc.NewIdentityProvider(
+		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
-				Issuer:       identityProvider.Config.GetOidcConfig().Issuer,
-				ClientID:     identityProvider.Config.GetOidcConfig().ClientId,
-				ClientSecret: identityProvider.Config.GetOidcConfig().ClientSecret,
-				FieldMapping: identityProvider.Config.GetOidcConfig().FieldMapping,
+				Issuer:       idp.Config.GetOidcConfig().Issuer,
+				ClientID:     idp.Config.GetOidcConfig().ClientId,
+				ClientSecret: idp.Config.GetOidcConfig().ClientSecret,
+				FieldMapping: idp.Config.GetOidcConfig().FieldMapping,
 			},
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", s.profile.ExternalURL)
-		token, err := idp.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
+		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
 		}
 
-		userInfo, err = idp.UserInfo(ctx, token, "")
+		userInfo, err = oidcIDP.UserInfo(ctx, token, "")
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
+		fieldMapping = idp.Config.GetOidcConfig().FieldMapping
 	} else {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
+		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
-
 	if userInfo == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider user info not found")
 	}
-	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		IdentityProviderResourceID:     &identityProvider.ResourceID,
-		IdentityProviderUserIdentifier: userInfo.Identifier,
-		ShowDeleted:                    true,
+
+	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
+	var email string
+	if fieldMapping.Identifier == fieldMapping.Email {
+		email = strings.ToLower(userInfo.Email)
+	} else {
+		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, idp.Domain))
+	}
+	if email == "" {
+		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
+	}
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+		Email:       &email,
+		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get principal")
+		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
 	}
-	if user == nil {
-		// Generate random password for new users from identity provider.
+
+	var user *store.UserMessage
+	if len(users) == 0 {
+		// Create new user from identity provider.
 		password, err := common.RandomString(20)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate random password")
@@ -533,19 +590,32 @@ func (s *AuthService) getUserWithLoginRequestOfIdentityProvider(ctx context.Cont
 			return nil, status.Errorf(codes.Internal, "failed to generate password hash")
 		}
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-			Name:                       userInfo.DisplayName,
-			Email:                      userInfo.Email,
-			Type:                       api.EndUser,
-			PasswordHash:               string(passwordHash),
-			IdentityProviderResourceID: &identityProvider.ResourceID,
-			IdentityProviderUserInfo:   userInfo,
+			Name:         userInfo.DisplayName,
+			Email:        email,
+			Type:         api.EndUser,
+			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 		}
 		user = newUser
-	} else if user.MemberDeleted {
+	} else {
+		user = users[0]
+	}
+	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
+
 	return user, nil
+}
+
+func validateEmail(email string) error {
+	formatedEmail := strings.ToLower(email)
+	if email != formatedEmail {
+		return errors.New("email should be lowercase")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
+	return nil
 }

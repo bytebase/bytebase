@@ -126,14 +126,14 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	mi.Namespace = database.DatabaseName
 
 	statement = strings.TrimSpace(statement)
-	// Only baseline can have empty sql statement, which indicates empty database.
-	if mi.Type != db.Baseline && statement == "" {
+	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.
+	if mi.Type != db.Baseline && mi.Type != db.MigrateSDL && statement == "" {
 		return nil, errors.Errorf("empty statement")
 	}
 	// We will force migration for baseline, migrate and data type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
 	// We also force migration for VCS migrations, which is usually a modified file to correct a former wrong migration commit.
-	if mi.Type == db.Baseline || mi.Type == db.Migrate || mi.Type == db.Data {
+	if mi.Type == db.Baseline || mi.Type == db.Migrate || mi.Type == db.MigrateSDL || mi.Type == db.Data {
 		mi.Force = true
 	}
 
@@ -292,7 +292,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -372,7 +372,12 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", profile.ExternalURL, slug.Make(issue.Title), issue.UID, task.StageID)
+			setting, err := stores.GetWorkspaceGeneralSetting(ctx)
+			if err != nil {
+				return true, nil, errors.Wrapf(err, "failed to get workspace setting")
+			}
+
+			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
@@ -509,7 +514,7 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, activityManager, license, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, license, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 // Writes back the latest schema to the repository after migration.

@@ -219,7 +219,13 @@
     "rollback": "Rollback",
     "total": "Total",
     "discard-changes": "Discard changes",
-    "error-message": "Error message"
+    "error-message": "Error message",
+    "resource-id": "Resource ID",
+    "domain": "Domain",
+    "demo-mode": "Demo",
+    "operations": "Operations",
+    "on": "On",
+    "off": "Off"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -296,16 +302,24 @@
     "n-similar-tasks": "({count} similar tasks)",
     "skip": "Skip",
     "skip-modal-title": "Skip task [{name}]?",
-    "task-checks": "Task checks"
+    "task-checks": "Task checks",
+    "rollback": {
+      "sql-rollback": "SQL Rollback",
+      "failed": "Failed",
+      "preview-rollback-issue": "Preview rollback issue",
+      "generating": "Generating",
+      "empty-rollback-statement": "The rollback statement is empty",
+      "cancel-generating": "Cancel generating the SQL rollback",
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change. {link}"
+    }
   },
   "banner": {
-    "demo-intro": "This is a demo version of Bytebase.",
-    "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
-    "action": "Deploy yours in 5 seconds",
+    "deploy": "Deploy yours in 5 seconds",
+    "request-demo": "Book a 30 min product walkthrough with our product expert",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
@@ -403,11 +417,13 @@
     "sso": {
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
-      "deletion": "Delete this SSO",
+      "archive": "Archive this SSO",
+      "archive-info": "Archived SSO will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+      "restore": "Restore this SSO",
       "form": {
         "type": "Type",
         "learn-more-with-user-doc": "Learn more about the configuration",
-        "redirect-url": "Authorization redirect url",
+        "redirect-url": "Authorization redirect URL",
         "redirect-url-description": "It will be used to fill in the appropriate field in the identity provider application form.",
         "use-template": "Use template",
         "select-template": "Select template",
@@ -420,6 +436,7 @@
         "domain-description": "The identity provider's domain name",
         "identity-provider-information": "Identity provider information",
         "identity-provider-information-description": "The information is provided by your identity provider.",
+        "identity-provider-needed-information": "Create your SSO application with the following information.",
         "endpoints": "Endpoints",
         "endpoints-description": "The related urls provided by your OAuth provider.",
         "auth-url-description": "The link to OAuth login page",
@@ -432,7 +449,7 @@
         "display-name": "Bytebase user display name",
         "email": "Bytebase user email"
       },
-      "copy-redirect-url": "Redirect URL copied to clipboard. Paste to the corresponding field on the OAuth application form."
+      "copy-redirect-url": "Redirect URL copied to clipboard."
     },
     "general": {
       "workspace": {
@@ -447,7 +464,7 @@
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
-          "description": "Display watermarks on pages, including username and ID.",
+          "description": "Display watermarks on pages, including username, ID and email.",
           "only-owner-can-edit": "Only workspace owner can update watermark setting."
         },
         "enable-watermark": "Enable watermark"
@@ -583,7 +600,7 @@
     "stage-select": {
       "active": "{name} (active)"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "Can't {operation} to single database in tenant mode",
+    "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
       "title": "Migration mode",
       "normal": {
@@ -622,13 +639,18 @@
       "dont-apply-to-database-in-baseline-migration": "Baselining only records the current schema in the change history and won't apply the SQL to the database",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
-    "rollback-from": "This task rollbacks from {link}.",
+    "will-rollback": "This task will rollback {link}.",
     "issue-link-with-task": "Issue {issue} - task {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "Send a {im} approval request successfully",
       "send-attention-request-successfully": "Request assignee {principal} attention successfully",
       "needs-attention": "Attention needed",
       "click-to-mark": "Click to request assignee attention"
+    },
+    "sdl": {
+      "schema-change": "Schema change",
+      "generated-ddl-statements": "Generated DDL statements",
+      "full-schema": "Full schema"
     }
   },
   "alter-schema": {
@@ -708,7 +730,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-this-instance": "Archive this instance",
     "archive-instance-instance-name": "Archive instance '{0}'?",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.",
+    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
     "restore-this-instance": "Restore this instance",
     "restore": "Restore",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
@@ -788,9 +810,11 @@
     "used-for-testing-connection": "Used for testing connections only"
   },
   "environment": {
+    "id": "Environment ID",
+    "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
     "archive": "Archive this environment",
-    "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
+    "archive-info": "Archived environment will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
@@ -831,7 +855,7 @@
       "title": "Sign in to your account",
       "forget-password": "Forgot your password?",
       "new-user": "New to Bytebase?",
-      "demo-note": "Please use demo account to sign in",
+      "demo-note": "Email:{username} Password:{password}",
       "gitlab": "Login with GitLab",
       "github": "Login with GitHub",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login",
@@ -1226,7 +1250,7 @@
       "developer": "@.upper:common.role.developer",
       "archive": {
         "title": "Archive project",
-        "description": "Archived project will not be shown on the normal interface. You can still restore later from the Archive page.",
+        "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
         "btn-text": "Archive this @.lower:{'common.project'}"
       },
       "restore": {
@@ -1265,6 +1289,7 @@
         "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.",
         "gitlab-self-host": "GitLab self-host",
         "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "gitlab-com-admin-requirement": "Your account needs to have Admin access to any of the repositories to be linked. Usually this account corresponds to a dedicated service user instead of a human user.",
         "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "oauth-info-correct": "Verified OAuth info is correct",
         "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
@@ -1282,12 +1307,15 @@
         },
         "oauth-info": {
           "self": "OAuth application info",
-          "gitlab-register-oauth-application": "Register Bytebase as a GitLab instance-wide OAuth application.",
-          "gitlab-login-as-admin": "Login as an Admin user to the GitLab instance. The account must be an Admin of the entire GitLab instance (it has a wrench icon on the top bar).",
-          "gitlab-visit-admin-page": "Go to the Admin page by clicking the wrench icon, then navigate to \"Applications\" section and click \"New application\" button.",
+          "gitlab-self-host-register-oauth-application": "Register Bytebase as a GitLab instance-wide OAuth application.",
+          "gitlab-self-host-login-as-admin": "Log in as an Admin user to the GitLab instance. The account must be an Admin of the entire GitLab instance (it has a wrench icon on the top bar).",
+          "gitlab-self-host-visit-admin-page": "Go to the Admin page by clicking the wrench icon, then navigate to \"Applications\" section and click \"New application\" button.",
+          "gitlab-com-register-oauth-application": "Register Bytebase as a GitLab user OAuth application.",
+          "gitlab-com-login": "Log in as whichever account you want Bytebase to act as. Usually this account corresponds to a dedicated service user instead of a human user.",
+          "gitlab-com-visit-application-page": "Go to Preferences -> Applications page. You can reach it through your profile picture on the top right corner.",
           "gitlab-paste-oauth-info": "Paste the Application ID and Secret from that just created application into fields below.",
           "github-register-oauth-application": "Register Bytebase as a GitHub organization-wide OAuth application.",
-          "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
+          "github-login-as-admin": "Log in as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
           "copy-homepage-url": "Homepage URL copied to clipboard. Paste to the corresponding field on the OAuth application form.",
@@ -1305,9 +1333,11 @@
         }
       },
       "git-provider": {
-        "gitlab-application-id-label": "Application ID for the registered GitLab instance-wide OAuth application.",
+        "gitlab-self-host-application-id-label": "Application ID for the registered GitLab instance-wide OAuth application.",
+        "gitlab-com-application-id-label": "Application ID for the registered GitLab OAuth application.",
         "view-in-gitlab": "View in GitLab",
-        "secret-label-gitlab": "Secret for the registered GitLab instance-wide OAuth application.",
+        "gitlab-self-host-secret-label": "Secret for the registered GitLab instance-wide OAuth application.",
+        "gitlab-com-secret-label": "Secret for the registered GitLab OAuth application.",
         "github-application-id-label": "Client ID for the registered GitHub organization-wide OAuth application.",
         "secret-label-github": "Client secret for the registered GitHub organization-wide OAuth application.",
         "delete-forbidden": "To delete this provider, unlink all repositories first.",
@@ -1320,7 +1350,8 @@
     "archived": "Archived",
     "project-search-bar-placeholder": "Search @.lower:{'common.project'} name",
     "instance-search-bar-placeholder": "Search @.lower:{'common.instance'} name",
-    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name"
+    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name",
+    "sso-search-bar-placeholder": "Search SSO name"
   },
   "deployment-config": {
     "stage-n": "Stage {n}",
@@ -1573,6 +1604,12 @@
     "unknown-event": "Unexpected event type, OAuth failed."
   },
   "subscription": {
+    "trial-start-modal": {
+      "title": "Start your {plan} trial",
+      "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
+      "subscription-page": "subscription page",
+      "subscription": "Go to the {page} to learn these features and our plans."
+    },
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
@@ -1646,8 +1683,8 @@
         "desc": "Approval issue with IM integration."
       },
       "bb-feature-sql-review": {
-        "title": "SQL review policy",
-        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
+        "title": "Unlock 100+ SQL Review checks",
+        "desc": "Specify SQL lint rules to adopt SQL best practice and enforce schema consistency across the engineering organization."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
@@ -1667,7 +1704,7 @@
       },
       "bb-feature-watermark": {
         "title": "Watermark",
-        "desc": "Display visible watermarks on pages, including username and ID."
+        "desc": "Display visible watermarks on pages, including username, ID and email."
       },
       "bb-feature-audit-log": {
         "title": "Audit log",
@@ -1742,6 +1779,7 @@
     "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
     "not-available-for-free": "Rule is not available for {plan}",
+    "unlock-full-feature": "Unlock 100+ SQL lint rules",
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {
@@ -1767,7 +1805,15 @@
       "preview": {
         "name": "Preview"
       }
-    }
+    },
+    "edit-rule": {
+      "self": "Edit SQL Review Rule"
+    },
+    "rule": {
+      "active": "Active"
+    },
+    "enabled-rules": "Enabled rules",
+    "rule-detail": "Rule detail"
   },
   "debug-log": {
     "title": "Debug Log",
@@ -1845,6 +1891,26 @@
     "test-modal": {
       "title": "Test OAuth2 Connection",
       "start-test": "Click sign in to get start testing"
+    }
+  },
+  "sensitive-data": {
+    "self": "Sensitive Data"
+  },
+  "resource": {
+    "environment": "Environment",
+    "instance": "Instance",
+    "project": "Project",
+    "idp": "Identity Provider"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "The {resource} ID is a unique identifier. You cannot change it after created.",
+    "cannot-be-changed-later": "It cannot be changed later.",
+    "validation": {
+      "duplicated": "The {resource} ID already exists. Please choose another one.",
+      "pattern": "The {resource} ID can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
+      "minlength": "The {resource} ID is too short. It should have at least 1 character.",
+      "overflow": "The {resource} ID is too long. It should have less than 64 characters."
     }
   }
 }

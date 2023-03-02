@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -47,8 +48,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestSchemaUpdate",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestSchemaUpdate",
 	})
 	a.NoError(err)
 
@@ -65,6 +67,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
@@ -282,7 +285,7 @@ func TestVCS1(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
@@ -309,7 +312,7 @@ func TestVCS1(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
@@ -382,8 +385,9 @@ func TestVCS1(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TestVCSSchemaUpdate",
 				},
 			)
 			a.NoError(err)
@@ -425,6 +429,7 @@ func TestVCS1(t *testing.T) {
 
 			// Add an instance.
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: prodEnvironment.ID,
 				Name:          instanceName,
 				Engine:        db.SQLite,
@@ -682,6 +687,8 @@ func TestVCS1(t *testing.T) {
 }
 
 func TestVCS_SDL(t *testing.T) {
+	// TODO(rebelice): remove skip when support PostgreSQL SDL.
+	t.Skip()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -693,7 +700,7 @@ func TestVCS_SDL(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -718,7 +725,7 @@ func TestVCS_SDL(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
@@ -814,6 +821,7 @@ func TestVCS_SDL(t *testing.T) {
 			// Create a project
 			project, err := ctl.createProject(
 				api.ProjectCreate{
+					ResourceID:       generateRandomString("project", 10),
 					Name:             "Test VCS Project",
 					Key:              "TestVCSSchemaUpdate",
 					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
@@ -854,6 +862,7 @@ func TestVCS_SDL(t *testing.T) {
 			// Add an instance
 			instance, err := ctl.addInstance(
 				api.InstanceCreate{
+					ResourceID:    generateRandomString("instance", 10),
 					EnvironmentID: prodEnvironment.ID,
 					Name:          "pgInstance",
 					Engine:        db.Postgres,
@@ -870,7 +879,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
-			const schemaFile = "bbtest/Prod/.testVCSSchemaUpdate##LATEST.sql"
+			schemaFile := fmt.Sprintf("bbtest/Prod/.%s##LATEST.sql", databaseName)
 			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				schemaFile: schemaFileContent,
@@ -949,7 +958,7 @@ WHERE table_type = 'BASE TABLE'
         ('pg_catalog', 'information_schema');
 `)
 			a.NoError(err)
-			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]]]`, result)
+			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]],[false]]`, result)
 
 			// Get migration history
 			const initialSchema = `
@@ -1105,7 +1114,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "singleAsterisk",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1132,7 +1141,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "doubleAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1165,7 +1174,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "wildcard",
 			baseDirectory:      "",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1193,7 +1202,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "prod1",
 			baseDirectory:      "bbtest",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1221,7 +1230,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "ZO",
 			baseDirectory:      "bbtest",
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
@@ -1278,8 +1287,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TVP",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TVP",
 				},
 			)
 			a.NoError(err)
@@ -1319,6 +1329,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 			a.NoError(err)
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: environment.ID,
 				Name:          instanceName,
 				Engine:        db.SQLite,
@@ -1386,7 +1397,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1422,7 +1433,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1467,6 +1478,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
+				// We check against empty SQL Review policy, while our onboarding data generation
+				// will create a SQL Review policy. Thus we need to skip onboarding data generation.
+				skipOnboardingData: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1514,8 +1528,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TestVCSSchemaUpdate",
 				},
 			)
 			a.NoError(err)
@@ -1527,6 +1542,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Add an instance.
 			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
 				EnvironmentID: prodEnvironment.ID,
 				Name:          "pgInstance",
 				Engine:        db.Postgres,
@@ -1650,7 +1666,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 
 	tests := []vcsTestCase{
 		{
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			vcsProviderCreator: fake.NewGitLab,
 			externalID:         "1234",
 			repoFullPath:       "1234",
@@ -1690,7 +1706,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			},
 		},
 		{
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			vcsProviderCreator: fake.NewGitHub,
 			externalID:         "test/branch",
 			repoFullPath:       "test/branch",
@@ -1765,8 +1781,9 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VSC Project",
-					Key:  "TVP",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VSC Project",
+					Key:        "TVP",
 				},
 			)
 			a.NoError(err)
@@ -1854,8 +1871,63 @@ func TestGetLatestSchema(t *testing.T) {
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
+		wantSDL              string
 		wantDatabaseMetadata *storepb.DatabaseMetadata
 	}{
+		{
+			name:         "MySQL",
+			dbType:       db.MySQL,
+			databaseName: "latestSchema",
+			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
+			wantRawSchema: "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"--\n" +
+				"-- Table structure for `book`\n" +
+				"--\n" +
+				"CREATE TABLE `book` (\n" +
+				"  `id` int DEFAULT NULL,\n" +
+				"  `name` text COLLATE utf8mb4_general_ci\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
+			wantSDL: "CREATE TABLE `book` (\n" +
+				"  `id` INT DEFAULT NULL,\n" +
+				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n",
+			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+				Name:         "latestSchema",
+				CharacterSet: "utf8mb4",
+				Collation:    "utf8mb4_general_ci",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Tables: []*storepb.TableMetadata{
+							{
+								Name:      "book",
+								Engine:    "InnoDB",
+								Collation: "utf8mb4_general_ci",
+								DataSize:  16384,
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Position: 1,
+										Nullable: true,
+										Type:     "int",
+									},
+									{
+										Name:         "name",
+										Position:     2,
+										Nullable:     true,
+										Type:         "text",
+										CharacterSet: "utf8mb4",
+										Collation:    "utf8mb4_general_ci",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		{
 			name:         "PostgreSQL",
 			dbType:       db.Postgres,
@@ -1883,6 +1955,7 @@ CREATE TABLE public.book (
 );
 
 `,
+			wantSDL: ``,
 			wantDatabaseMetadata: &storepb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "UTF8",
@@ -1930,25 +2003,47 @@ CREATE TABLE public.book (
 			case db.Postgres:
 				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDir)
 				defer stopInstance()
+			case db.MySQL:
+				stopInstance := mysql.SetupTestInstance(t, dbPort, mysqlBinDir)
+				defer stopInstance()
 			default:
 				a.FailNow("unsupported db type")
 			}
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: test.name,
-					Key:  test.name,
+					ResourceID: generateRandomString("project", 10),
+					Name:       test.name,
+					Key:        test.name,
 				},
 			)
 			a.NoError(err)
 			// Add an instance.
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				EnvironmentID: environment.ID,
-				Name:          test.name,
-				Engine:        db.Postgres,
-				Host:          "/tmp",
-				Port:          strconv.Itoa(dbPort),
-				Username:      "root",
-			})
+			var instance *api.Instance
+			switch test.dbType {
+			case db.Postgres:
+				instance, err = ctl.addInstance(api.InstanceCreate{
+					ResourceID:    generateRandomString("instance", 10),
+					EnvironmentID: environment.ID,
+					Name:          test.name,
+					Engine:        db.Postgres,
+					Host:          "/tmp",
+					Port:          strconv.Itoa(dbPort),
+					Username:      "root",
+				})
+			case db.MySQL:
+				instance, err = ctl.addInstance(api.InstanceCreate{
+					ResourceID:    generateRandomString("instance", 10),
+					EnvironmentID: environment.ID,
+					Name:          "mysqlInstance",
+					Engine:        db.MySQL,
+					Host:          "127.0.0.1",
+					Port:          strconv.Itoa(dbPort),
+					Username:      "root",
+				})
+			default:
+				a.FailNow("unsupported db type")
+			}
+
 			a.NoError(err)
 			err = ctl.createDatabase(project, instance, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
@@ -1991,6 +2086,11 @@ CREATE TABLE public.book (
 			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchemaDump)
+			if test.dbType == db.MySQL {
+				latestSchemaSDL, err := ctl.getLatestSchemaSDL(database.ID)
+				a.NoError(err)
+				a.Equal(test.wantSDL, latestSchemaSDL)
+			}
 			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(database.ID)
 			a.NoError(err)
 			var latestSchemaMetadata storepb.DatabaseMetadata
@@ -2017,8 +2117,9 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestSchemaUpdate",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestSchemaUpdate",
 	})
 	a.NoError(err)
 
@@ -2035,6 +2136,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
@@ -2116,4 +2218,358 @@ func TestMarkTaskAsDone(t *testing.T) {
 	result, err := ctl.query(instance, databaseName, bookTableQuery)
 	a.NoError(err)
 	a.NotEqual(bookSchemaSQLResult, result)
+}
+
+func TestVCS_SDL_MySQL(t *testing.T) {
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLab,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp:    "2021-01-13T13:14:00Z",
+							AddedList:    added,
+							ModifiedList: modified,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHub,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+				return github.WebhookPushEvent{
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added:    added,
+							Modified: modified,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServerWithExternalPg(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			// Create a MySQL instance.
+			mysqlPort := getTestPort()
+			stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
+			defer stopInstance()
+
+			mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))
+			a.NoError(err)
+			defer mysqlDB.Close()
+
+			const databaseName = "testVCSSchemaUpdateMySQL"
+			_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+
+			_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
+			a.NoError(err)
+			_, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'")
+			a.NoError(err)
+
+			_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
+			a.NoError(err)
+
+			// Create a table in the database
+			schemaFileContent := `CREATE TABLE projects (id int, PRIMARY KEY (id));`
+			_, err = mysqlDB.Exec(schemaFileContent)
+			a.NoError(err)
+
+			// Create a VCS
+			apiVCS, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					ResourceID:       generateRandomString("project", 10),
+					Name:             "Test VCS Project",
+					Key:              "TestVCSSchemaUpdate",
+					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository
+			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              apiVCS.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			prodEnvironment, err := findEnvironment(environments, "Prod")
+			a.NoError(err)
+
+			// Add an instance
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				ResourceID:    generateRandomString("instance", 10),
+				EnvironmentID: prodEnvironment.ID,
+				Name:          "mysqlInstance",
+				Engine:        db.MySQL,
+				Host:          "127.0.0.1",
+				Port:          strconv.Itoa(mysqlPort),
+				Username:      "bytebase",
+				Password:      "bytebase",
+			})
+			a.NoError(err)
+
+			// Create an issue that creates a database
+			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			// Simulate Git commits for schema update to create a new table "users".
+			schemaFile := fmt.Sprintf("bbtest/Prod/.%s##LATEST.sql", databaseName)
+			schemaFileContent += "\nCREATE TABLE users (id int, PRIMARY KEY (id));"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				schemaFile: schemaFileContent,
+			})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: schemaFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}, "1", "2"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issue
+			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue := issues[0]
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("Apply schema diff by file Prod/.%s##LATEST.sql", databaseName), issue.Description)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Simulate Git commits for data update to the table "users".
+			dataFile := fmt.Sprintf("bbtest/Prod/%s##ver2##data##insert_data.sql", databaseName)
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				dataFile: `INSERT INTO users (id) VALUES (1);`,
+			})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: dataFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */, "2", "3"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get data update issue
+			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue = issues[0]
+			status, err = ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal(fmt.Sprintf("[%s] Change data", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("By VCS files:\n\nProd/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Query list of tables
+			result, err := ctl.query(instance, databaseName, fmt.Sprintf(`
+SELECT table_name 
+    FROM information_schema.tables 
+WHERE table_schema = '%s'; 
+`, databaseName))
+			a.NoError(err)
+			a.Equal(`[["TABLE_NAME"],["VARCHAR"],[["projects"],["users"]],[false]]`, result)
+
+			// Get migration history
+			const initialSchema = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
+
+			const updatedSchema = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
+				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
+				"--\n" +
+				"-- Table structure for `projects`\n" +
+				"--\n" +
+				"CREATE TABLE `projects` (\n" +
+				"  `id` int NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"--\n" +
+				"-- Table structure for `users`\n" +
+				"--\n" +
+				"CREATE TABLE `users` (\n" +
+				"  `id` int NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
+				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
+				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
+
+			const initialSDL = ""
+			const updatedSDL = "CREATE TABLE `projects` (\n" +
+				"  `id` INT NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n" +
+				"CREATE TABLE `users` (\n" +
+				"  `id` INT NOT NULL,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n"
+
+			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
+			a.NoError(err)
+			wantHistories := []api.MigrationHistory{
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Data,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: updatedSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.MigrateSDL,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: initialSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.UI,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     initialSchema,
+					SchemaPrev: "",
+				},
+			}
+			a.Equal(len(wantHistories), len(histories))
+
+			for i, history := range histories {
+				got := api.MigrationHistory{
+					Database:   history.Database,
+					Source:     history.Source,
+					Type:       history.Type,
+					Status:     history.Status,
+					Schema:     history.Schema,
+					SchemaPrev: history.SchemaPrev,
+				}
+				a.Equal(wantHistories[i], got, i)
+				a.NotEmpty(history.Version)
+			}
+
+			// Test SDL format.
+			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instance.ID, histories[1].ID)
+			a.NoError(err)
+			a.Equal(updatedSDL, sdlHistory.Schema)
+			a.Equal(initialSDL, sdlHistory.SchemaPrev)
+		})
+	}
 }

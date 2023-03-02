@@ -52,6 +52,7 @@ export type SQLReviewPolicyPayload = {
     type: RuleType;
     level: RuleLevel;
     payload: string;
+    comment: string;
   }[];
 };
 
@@ -73,6 +74,7 @@ export type AssigneeGroup = {
 export type SensitiveDataMaskType = "DEFAULT";
 
 export type SensitiveData = {
+  schema: string;
   table: string;
   column: string;
   maskType: SensitiveDataMaskType;

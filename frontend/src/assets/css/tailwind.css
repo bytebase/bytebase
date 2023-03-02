@@ -220,6 +220,10 @@
   @apply cursor-pointer text-blue-600 hover:underline hover:text-blue-800 focus:outline-none;
 }
 
+.light-link {
+  @apply cursor-pointer text-blue-400 hover:underline hover:text-blue-200 focus:outline-none;
+}
+
 .icon-link {
   @apply cursor-pointer text-control hover:bg-link-hover focus:outline-none;
 }

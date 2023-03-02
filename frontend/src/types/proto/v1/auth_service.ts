@@ -210,11 +210,11 @@ export interface User {
   state: State;
   email: string;
   title: string;
-  password: string;
-  identityProvider: string;
   userType: UserType;
   /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
   userRole: UserRole;
+  password: string;
+  serviceKey: string;
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -920,7 +920,7 @@ export const LogoutRequest = {
 };
 
 function createBaseUser(): User {
-  return { name: "", state: 0, email: "", title: "", password: "", identityProvider: "", userType: 0, userRole: 0 };
+  return { name: "", state: 0, email: "", title: "", userType: 0, userRole: 0, password: "", serviceKey: "" };
 }
 
 export const User = {
@@ -937,17 +937,17 @@ export const User = {
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
     }
-    if (message.password !== "") {
-      writer.uint32(42).string(message.password);
-    }
-    if (message.identityProvider !== "") {
-      writer.uint32(50).string(message.identityProvider);
-    }
     if (message.userType !== 0) {
-      writer.uint32(56).int32(message.userType);
+      writer.uint32(40).int32(message.userType);
     }
     if (message.userRole !== 0) {
-      writer.uint32(64).int32(message.userRole);
+      writer.uint32(48).int32(message.userRole);
+    }
+    if (message.password !== "") {
+      writer.uint32(58).string(message.password);
+    }
+    if (message.serviceKey !== "") {
+      writer.uint32(66).string(message.serviceKey);
     }
     return writer;
   },
@@ -972,16 +972,16 @@ export const User = {
           message.title = reader.string();
           break;
         case 5:
-          message.password = reader.string();
-          break;
-        case 6:
-          message.identityProvider = reader.string();
-          break;
-        case 7:
           message.userType = reader.int32() as any;
           break;
-        case 8:
+        case 6:
           message.userRole = reader.int32() as any;
+          break;
+        case 7:
+          message.password = reader.string();
+          break;
+        case 8:
+          message.serviceKey = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -997,10 +997,10 @@ export const User = {
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       email: isSet(object.email) ? String(object.email) : "",
       title: isSet(object.title) ? String(object.title) : "",
-      password: isSet(object.password) ? String(object.password) : "",
-      identityProvider: isSet(object.identityProvider) ? String(object.identityProvider) : "",
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
+      password: isSet(object.password) ? String(object.password) : "",
+      serviceKey: isSet(object.serviceKey) ? String(object.serviceKey) : "",
     };
   },
 
@@ -1010,10 +1010,10 @@ export const User = {
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.email !== undefined && (obj.email = message.email);
     message.title !== undefined && (obj.title = message.title);
-    message.password !== undefined && (obj.password = message.password);
-    message.identityProvider !== undefined && (obj.identityProvider = message.identityProvider);
     message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
+    message.password !== undefined && (obj.password = message.password);
+    message.serviceKey !== undefined && (obj.serviceKey = message.serviceKey);
     return obj;
   },
 
@@ -1023,10 +1023,10 @@ export const User = {
     message.state = object.state ?? 0;
     message.email = object.email ?? "";
     message.title = object.title ?? "";
-    message.password = object.password ?? "";
-    message.identityProvider = object.identityProvider ?? "";
     message.userType = object.userType ?? 0;
     message.userRole = object.userRole ?? 0;
+    message.password = object.password ?? "";
+    message.serviceKey = object.serviceKey ?? "";
     return message;
   },
 };

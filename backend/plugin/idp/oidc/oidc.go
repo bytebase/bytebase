@@ -6,8 +6,10 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -90,8 +92,12 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "verify raw ID Token")
 	}
 
-	if idToken.Nonce != nonce {
-		return nil, errors.Errorf("mismatched nonce")
+	// NOTE: Skip checking nonce if the expected nonce is empty. It is OK because
+	// we've given away the security benefits the nonce brings with an empty nonce,
+	// and some IdP implementations are just behaving strangely that would return a
+	// random nonce when we send an empty nonce to them.
+	if nonce != "" && nonce != idToken.Nonce {
+		return nil, errors.Errorf("mismatched nonce, want %q but got %q", nonce, idToken.Nonce)
 	}
 
 	rawUserInfo, err := p.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
@@ -104,6 +110,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
+	log.Debug("User info", zap.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {

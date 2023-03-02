@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -60,11 +63,9 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				var err error
-				emptyIDP := ""
 				user, err = s.store.GetUser(ctx, &store.FindUserMessage{
-					Email:                      &login.Email,
-					ShowDeleted:                true,
-					IdentityProviderResourceID: &emptyIDP,
+					Email:       &login.Email,
+					ShowDeleted: true,
 				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
@@ -79,7 +80,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Incorrect password").SetInternal(err)
 				}
 			}
-		case api.PrincipalAuthProviderGitlabSelfHost, api.PrincipalAuthProviderGitHubCom:
+		case api.PrincipalAuthProviderGitlab, api.PrincipalAuthProviderGitHub:
 			{
 				login := &api.VCSLogin{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
@@ -93,6 +94,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", login.Name, login.Name)).SetInternal(err)
 				}
 
+				setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+				}
+
 				// Exchange OAuth Token
 				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
 					ctx,
@@ -101,7 +107,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
 						Code:         login.Code,
-						RedirectURL:  fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL),
+						RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 					},
 				)
 				if err != nil {
@@ -139,7 +145,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if user == nil {
 					if userInfo.PublicEmail == "" {
 						profileLink := "https://docs.github.com/en/account-and-profile"
-						if authProvider == api.PrincipalAuthProviderGitlabSelfHost {
+						if authProvider == api.PrincipalAuthProviderGitlab {
 							profileLink = "https://docs.gitlab.com/ee/user/profile/#set-your-public-email"
 						}
 						return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Please configure your public email first, %s.", profileLink))
@@ -203,6 +209,19 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
+	if err := validateEmail(signUp.Email); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", signUp.Email, err))
+	}
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+		Email:       &signUp.Email,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
+	}
+	if len(users) != 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Email %s is already existed", signUp.Email)
+	}
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        signUp.Email,
 		Name:         signUp.Name,
@@ -237,4 +256,15 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 	}
 
 	return user, nil
+}
+
+func validateEmail(email string) error {
+	formatedEmail := strings.ToLower(email)
+	if email != formatedEmail {
+		return errors.New("email should be lowercase")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
+	return nil
 }

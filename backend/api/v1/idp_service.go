@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -24,15 +24,13 @@ type IdentityProviderService struct {
 	v1pb.UnimplementedIdentityProviderServiceServer
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
-	profile        *config.Profile
 }
 
 // NewIdentityProviderService creates a new IdentityProviderService.
-func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService, profile *config.Profile) *IdentityProviderService {
+func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService) *IdentityProviderService {
 	return &IdentityProviderService{
 		store:          store,
 		licenseService: licenseService,
-		profile:        profile,
 	}
 }
 
@@ -66,6 +64,9 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 
 	if !isValidResourceID(request.IdentityProviderId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid identity provider ID %v", request.IdentityProviderId)
+	}
+	if strings.ToLower(request.IdentityProvider.Domain) != request.IdentityProvider.Domain {
+		return nil, status.Errorf(codes.InvalidArgument, "domain name must use lower-case")
 	}
 	if err := validIdentityProviderConfig(request.IdentityProvider.Type, request.IdentityProvider.Config); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -109,6 +110,9 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		case "identity_provider.title":
 			patch.Title = &request.IdentityProvider.Title
 		case "identity_provider.domain":
+			if strings.ToLower(request.IdentityProvider.Domain) != request.IdentityProvider.Domain {
+				return nil, status.Errorf(codes.InvalidArgument, "domain name must use lower-case")
+			}
 			patch.Domain = &request.IdentityProvider.Domain
 		case "identity_provider.config":
 			patch.Config = convertIdentityProviderConfigToStore(request.IdentityProvider.Config)
@@ -169,7 +173,7 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 
 	patch := &store.UpdateIdentityProviderMessage{
 		ResourceID: identityProvider.ResourceID,
-		Delete:     &deletePatch,
+		Delete:     &undeletePatch,
 	}
 	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
 	if err != nil {
@@ -185,6 +189,11 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
 		// Find client secret for those existed identity providers.
 		if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
@@ -192,9 +201,10 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
 			}
-			if storedIdentityProvider != nil {
-				request.IdentityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
+			if storedIdentityProvider == nil {
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
 			}
+			request.IdentityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
 		}
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
@@ -206,21 +216,51 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.Internal, "failed to new oauth2 identity provider")
 		}
 
-		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
 		}
-		if token == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing access token")
-		}
-		userInfo, err := oauth2IdentityProvider.UserInfo(token)
-		if err != nil {
+		if _, err := oauth2IdentityProvider.UserInfo(token); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
-		if userInfo == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing user info")
+	} else if identityProvider.Type == v1pb.IdentityProviderType_OIDC {
+		// Find client secret for those existed identity providers.
+		if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
+			}
+			if storedIdentityProvider == nil {
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
+			}
+			request.IdentityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
 		}
+		oauth2Context := request.GetOauth2Context()
+		if oauth2Context == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
+		}
+		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
+		oidcIdentityProvider, err := oidc.NewIdentityProvider(ctx, oidc.IdentityProviderConfig{
+			Issuer:       identityProviderConfig.GetOidcConfig().Issuer,
+			ClientID:     identityProviderConfig.GetOidcConfig().ClientId,
+			ClientSecret: identityProviderConfig.GetOidcConfig().ClientSecret,
+			FieldMapping: identityProviderConfig.GetOidcConfig().FieldMapping,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
+		}
+
+		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
+		token, err := oidcIdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
+		}
+		if _, err := oidcIdentityProvider.UserInfo(ctx, token, ""); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
+		}
+	} else {
+		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
 	return &v1pb.TestIdentityProviderResponse{}, nil
 }

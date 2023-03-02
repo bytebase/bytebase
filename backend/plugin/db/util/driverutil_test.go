@@ -229,7 +229,7 @@ func TestApplyMultiStatements(t *testing.T) {
 }
 
 func generateOneMBInsert() string {
-	rand.Seed(time.Now().UnixNano())
+	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	letterList := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]byte, 1024*1024)
 	for i := range b {
@@ -704,6 +704,12 @@ func TestExtractSensitiveField(t *testing.T) {
 			statement:  "select 1;",
 			schemaInfo: &db.SensitiveSchemaInfo{},
 			fieldList:  []db.SensitiveField{{Name: "1", Sensitive: false}},
+		},
+		{
+			// Test for EXPLAIN statements.
+			statement:  "explain select 1;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  nil,
 		},
 	}
 
@@ -1256,6 +1262,12 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 			statement:  "select 1;",
 			schemaInfo: &db.SensitiveSchemaInfo{},
 			fieldList:  []db.SensitiveField{{Name: "?column?", Sensitive: false}},
+		},
+		{
+			// Test for EXPLAIN statements.
+			statement:  "explain select 1;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  nil,
 		},
 	}
 

@@ -2,10 +2,12 @@
   <div class="flex items-center">
     <button
       type="button"
-      class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
-      :class="
-        state.dirtyOn ? 'bg-accent disabled:bg-accent-disabled' : 'bg-gray-200'
-      "
+      class="relative inline-flex flex-shrink-0 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
+      :class="[
+        `w-${sizes.cw}`,
+        `h-${sizes.ch}`,
+        state.dirtyOn ? 'bg-accent disabled:bg-accent-disabled' : 'bg-gray-200',
+      ]"
       :disabled="disabled"
       aria-pressed="false"
       @click.prevent="
@@ -18,12 +20,32 @@
       "
     >
       <span class="sr-only">{{ label }}</span>
-      <!-- Enabled: "translate-x-5", Not Enabled: "translate-x-0" -->
       <span
         aria-hidden="true"
-        class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
-        :class="state.dirtyOn ? 'translate-x-5' : 'translate-x-0'"
+        class="pointer-events-none inline-block rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
+        :class="[`w-${sizes.base}`, `h-${sizes.base}`]"
+        :style="{
+          transform: state.dirtyOn ? `translateX(${sizes.base * 0.25}rem)` : '',
+        }"
       ></span>
+      <span
+        v-if="text"
+        aria-hidden="true"
+        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center transition ease-in-out duration-200 overflow-hidden whitespace-nowrap"
+        :class="[
+          `w-${sizes.base}`,
+          `h-${sizes.base}`,
+          state.dirtyOn ? `text-white` : 'text-control',
+        ]"
+        :style="{
+          fontSize: `${sizes.text}px`,
+          transform: state.dirtyOn
+            ? `translateX(-${sizes.base * 0.25}rem)`
+            : '',
+        }"
+      >
+        {{ state.dirtyOn ? $t("common.on") : $t("common.off") }}
+      </span>
     </button>
     <span
       v-if="label"
@@ -36,15 +58,21 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, withDefaults, reactive } from "vue";
+import { watch, withDefaults, reactive, computed } from "vue";
+
+export type BBSwitchSize = "small" | "normal";
 
 const props = withDefaults(
   defineProps<{
+    size?: BBSwitchSize;
+    text?: boolean;
     label?: string;
     value?: boolean;
     disabled?: boolean;
   }>(),
   {
+    size: "normal",
+    text: false,
     label: "",
     value: true,
     disabled: false,
@@ -57,6 +85,20 @@ defineEmits<{
 
 const state = reactive({
   dirtyOn: props.value,
+});
+
+const sizes = computed(() => {
+  type Sizes = {
+    base: number;
+    cw: number; // container width
+    ch: number; // container height
+    text: number; // unit px
+  };
+  const sizeMap: Record<BBSwitchSize, Sizes> = {
+    normal: { base: 5, cw: 11, ch: 6, text: 10 },
+    small: { base: 4, cw: 9, ch: 5, text: 7.5 },
+  };
+  return sizeMap[props.size] ?? sizeMap["normal"];
 });
 
 watch(

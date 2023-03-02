@@ -361,11 +361,11 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 
 // Query will execute a readonly / SELECT query.
 // The result is then JSON marshaled and returned to the frontend.
-func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	readOnly := queryContext.ReadOnly
 	limit := queryContext.Limit
 	if !readOnly {
-		return queryAdmin(ctx, dbType, sqldb, statement, limit)
+		return queryAdmin(ctx, dbType, conn, statement, limit)
 	}
 	// Limit SQL query result size.
 	if dbType == db.MySQL {
@@ -380,10 +380,10 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
 	// Snowflake doesn't support READ ONLY transactions.
 	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
-	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake {
+	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake || dbType == db.Spanner || dbType == db.Redis || dbType == db.Oracle {
 		readOnly = false
 	}
-	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
 	if err != nil {
 		return nil, err
 	}
@@ -409,6 +409,15 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
 
+	var fieldMaskInfo []bool
+	for i := range columnNames {
+		if len(fieldList) > 0 && fieldList[i].Sensitive {
+			fieldMaskInfo = append(fieldMaskInfo, true)
+		} else {
+			fieldMaskInfo = append(fieldMaskInfo, false)
+		}
+	}
+
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, FormatError(err)
@@ -430,12 +439,12 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	return []interface{}{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
 }
 
 // query will execute a query.
-func queryAdmin(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
-	rows, err := sqldb.QueryContext(ctx, statement)
+func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]interface{}, error) {
+	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
 	}
@@ -467,7 +476,10 @@ func queryAdmin(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement st
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	// queryAdmin doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	sensitiveInfo := make([]bool, len(columnNames))
+	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
 func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -17,6 +16,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser"
+	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -45,6 +46,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
+		if !isValidResourceID(instanceCreate.ResourceID) {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid instance id %s", instanceCreate.ResourceID))
+		}
 		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Database != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 		}
@@ -57,7 +61,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		creator := c.Get(getPrincipalIDContextKey()).(int)
 		instance, err := s.store.CreateInstanceV2(ctx, environment.ResourceID, &store.InstanceMessage{
-			ResourceID:   fmt.Sprintf("instance-%s", uuid.New().String()[:8]),
+			ResourceID:   instanceCreate.ResourceID,
 			Title:        instanceCreate.Name,
 			Engine:       instanceCreate.Engine,
 			ExternalLink: instanceCreate.ExternalLink,
@@ -362,6 +366,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyID := c.Param("historyID")
+		isSDL := c.QueryParam("sdl") == "true"
 
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &id})
 		if err != nil {
@@ -385,6 +390,24 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
 		}
 		entry := list[0]
+
+		if isSDL {
+			var engineType parser.EngineType
+			switch instance.Engine {
+			case db.MySQL:
+				engineType = parser.MySQL
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not support SDL format for %s instance", instance.Engine))
+			}
+			entry.Schema, err = transform.SchemaTransform(engineType, entry.Schema)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to transform Schema to SDL format for instance %q", instance.Title)).SetInternal(err)
+			}
+			entry.SchemaPrev, err = transform.SchemaTransform(engineType, entry.SchemaPrev)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to transform SchemaPrev to SDL format for instance %q", instance.Title)).SetInternal(err)
+			}
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &api.MigrationHistory{

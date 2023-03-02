@@ -14,6 +14,8 @@ const (
 	SettingBrandingLogo SettingName = "bb.branding.logo"
 	// SettingWorkspaceID is the setting name for workspace identifier.
 	SettingWorkspaceID SettingName = "bb.workspace.id"
+	// SettingWorkspaceGeneral is the setting name for workspace general settings.
+	SettingWorkspaceGeneral SettingName = "bb.workspace.general"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
@@ -22,6 +24,9 @@ const (
 	SettingAppIM SettingName = "bb.app.im"
 	// SettingWatermark is the setting name for watermark displaying.
 	SettingWatermark SettingName = "bb.workspace.watermark"
+	// SettingAgentToken is the setting name for the agent token to call the internal API.
+	// For now we will call the hub to fetch the subscription license.
+	SettingAgentToken SettingName = "bb.agent.token"
 )
 
 // IMType is the type of IM.

@@ -1,17 +1,10 @@
 <template>
-  <div class="flex items-center justify-between h-16">
+  <div class="flex items-center justify-between h-16 pl-2 pr-4">
     <div class="flex items-center">
-      <div class="flex-shrink-0 w-44">
-        <router-link to="/" class="select-none" active-class exact-active-class>
-          <img
-            class="h-12 w-auto"
-            src="../assets/logo-full.svg"
-            alt="Bytebase"
-          />
-        </router-link>
-      </div>
-      <div class="hidden sm:block">
-        <div class="ml-6 flex items-baseline space-x-1 whitespace-nowrap">
+      <BytebaseLogo class="block md:hidden" />
+
+      <div class="hidden md:block">
+        <div class="flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
             v-if="shouldShowIssueEntry"
             to="/issue"
@@ -118,13 +111,13 @@
         </div>
         <div
           v-if="currentPlan === PlanType.FREE"
-          class="flex justify-between items-center min-w-fit px-4 py-2 bg-indigo-600 text-sm font-medium text-white rounded-md cursor-pointer"
+          class="flex justify-between items-center min-w-fit px-4 py-2 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
           @click="handleWantHelp"
         >
           <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
           <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
         </div>
-        <router-link to="/inbox" exact-active-class>
+        <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.hasUnread"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
@@ -144,7 +137,7 @@
             <ProfileDropdown />
           </div>
         </div>
-        <div class="ml-2 -mr-2 flex sm:hidden">
+        <div class="ml-2 -mr-2 flex md:hidden">
           <!-- Mobile menu button -->
           <button
             class="icon-link inline-flex items-center justify-center rounded-md"
@@ -220,6 +213,7 @@ import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
+import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "../types";
 import { hasWorkspacePermission, isDev } from "../utils";
@@ -241,7 +235,10 @@ interface LocalState {
 
 export default defineComponent({
   name: "DashboardHeader",
-  components: { ProfileDropdown },
+  components: {
+    BytebaseLogo,
+    ProfileDropdown,
+  },
   setup() {
     const { t, availableLocales } = useI18n();
     const debugStore = useDebugStore();

@@ -1,6 +1,5 @@
 import { RemovableRef } from "@vueuse/core";
 import {
-  AuthProvider,
   DeploymentConfig,
   EnvironmentId,
   MigrationHistoryId,
@@ -53,11 +52,6 @@ import { DatabaseMetadata } from "./proto/store/database";
 export interface ActuatorState {
   serverInfo?: ServerInfo;
   releaseInfo: RemovableRef<ReleaseInfo>;
-}
-
-export interface AuthState {
-  authProviderList: AuthProvider[];
-  currentUser: Principal;
 }
 
 export interface AuditLogState {

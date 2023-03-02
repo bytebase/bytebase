@@ -11,9 +11,12 @@ import {
   SchemaPolicyRule,
   SQLReviewPolicyPayload,
   SQLReviewPolicy,
+  IdType,
+  MaybeRef,
 } from "@/types";
 import { defineStore } from "pinia";
 import { usePolicyStore } from "./policy";
+import { computed, unref, watchEffect } from "vue";
 
 const convertToSQLReviewPolicy = (
   policy: Policy
@@ -30,6 +33,7 @@ const convertToSQLReviewPolicy = (
     const rule: SchemaPolicyRule = {
       type: r.type,
       level: r.level,
+      comment: r.comment,
     };
     if (r.payload && r.payload !== "{}") {
       rule.payload = JSON.parse(r.payload);
@@ -79,7 +83,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const envMap = environmentList.reduce((map, env) => {
         map.set(env.id, env);
         return map;
-      }, new Map<number, Environment>());
+      }, new Map<IdType, Environment>());
 
       for (const reviewPolicy of this.reviewPolicyList) {
         if (
@@ -101,7 +105,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       ruleList,
     }: {
       name: string;
-      environmentId: number;
+      environmentId: IdType;
       ruleList: SchemaPolicyRule[];
     }) {
       const payload: SQLReviewPolicyPayload = {
@@ -237,5 +241,37 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
       return reviewPolicy;
     },
+    async getOrFetchReviewPolicyByEnvironmentId(
+      environmentId: EnvironmentId
+    ): Promise<SQLReviewPolicy | undefined> {
+      const existed = this.getReviewPolicyByEnvironmentId(environmentId);
+      if (existed) {
+        return existed;
+      }
+      return this.fetchReviewPolicyByEnvironmentId(environmentId);
+    },
   },
 });
+
+export const useSQLReviewPolicyList = () => {
+  const store = useSQLReviewStore();
+
+  watchEffect(() => {
+    store.fetchReviewPolicyList();
+  });
+
+  return computed(() => store.reviewPolicyList);
+};
+
+export const useReviewPolicyByEnvironmentId = (
+  environmentId: MaybeRef<EnvironmentId>
+) => {
+  const store = useSQLReviewStore();
+  watchEffect(() => {
+    store.getOrFetchReviewPolicyByEnvironmentId(unref(environmentId));
+  });
+
+  return computed(() =>
+    store.getReviewPolicyByEnvironmentId(unref(environmentId))
+  );
+};

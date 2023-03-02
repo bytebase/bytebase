@@ -14,14 +14,6 @@
         </IssueHighlightPanel>
       </div>
 
-      <!-- Remind banner for bb.feature.sql-review -->
-      <FeatureAttention
-        v-if="!hasSQLReviewPolicyFeature"
-        custom-class="m-5 mt-0"
-        feature="bb.feature.sql-review"
-        :description="$t('subscription.features.bb-feature-sql-review.desc')"
-      />
-
       <!-- Stage Flow Bar -->
       <template v-if="showPipelineFlowBar">
         <template v-if="isGhostMode">
@@ -79,6 +71,9 @@
                   @run-checks="runTaskChecks"
                 />
               </div>
+              <section v-if="showIssueTaskSDLPanel" class="mb-4">
+                <IssueTaskSDLPanel />
+              </section>
               <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
                 <IssueTaskStatementPanel :sql-hint="sqlHint()" />
               </section>
@@ -117,6 +112,7 @@ import IssueStagePanel from "./IssueStagePanel.vue";
 import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
 import IssueOutputPanel from "./IssueOutputPanel.vue";
 import IssueSidebar from "./IssueSidebar.vue";
+import IssueTaskSDLPanel from "./IssueTaskSDLPanel.vue";
 import IssueTaskStatementPanel from "./IssueTaskStatementPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "./IssueActivityPanel.vue";
@@ -134,12 +130,7 @@ import type {
   MigrationType,
 } from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import {
-  featureToRef,
-  useInstanceStore,
-  useProjectStore,
-  useTaskStore,
-} from "@/store";
+import { useInstanceStore, useProjectStore, useTaskStore } from "@/store";
 import {
   provideIssueLogic,
   TenantModeProvider,
@@ -261,7 +252,15 @@ const showIssueOutputPanel = computed(() => {
   return !props.create && issueTemplate.value.outputFieldList.length > 0;
 });
 
+const showIssueTaskSDLPanel = computed(() => {
+  if (create.value) return false;
+  const task = selectedTask.value as Task;
+  return task.type === "bb.task.database.schema.update-sdl";
+});
+
 const showIssueTaskStatementPanel = computed(() => {
+  if (showIssueTaskSDLPanel.value) return false;
+
   const task = selectedTask.value;
   if (task.type === "bb.task.database.schema.baseline" && !create.value) {
     return false;
@@ -306,8 +305,6 @@ onMounted(() => {
     document.getElementById("issue-detail-top")!.scrollIntoView();
   }
 });
-
-const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 watch(
   [

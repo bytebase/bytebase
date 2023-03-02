@@ -35,10 +35,17 @@
           <div
             class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
           >
+            <div
+              v-if="isDemo"
+              class="text-sm flex whitespace-nowrap text-accent"
+            >
+              <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
+              {{ $t("common.demo-mode") }}
+            </div>
             <router-link
-              v-if="!isFreePlan"
+              v-else-if="!isFreePlan"
               to="/setting/subscription"
-              exact-active-class
+              exact-active-class=""
               class="text-sm flex"
             >
               {{ $t(currentPlan) }}
@@ -79,7 +86,7 @@
       class="hidden md:flex md:flex-shrink-0"
       data-label="bb-dashboard-static-sidebar"
     >
-      <div class="flex flex-col w-52">
+      <div class="flex flex-col w-52 bg-control-bg">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
         <div class="flex-1 flex flex-col py-2 overflow-y-auto">
           <router-view name="leftSidebar" />
@@ -98,10 +105,14 @@
           <Quickstart />
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
+          <div v-if="isDemo" class="text-sm flex whitespace-nowrap text-accent">
+            <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
+            {{ $t("common.demo-mode") }}
+          </div>
           <router-link
-            v-if="!isFreePlan"
+            v-else-if="!isFreePlan"
             to="/setting/subscription"
-            exact-active-class
+            exact-active-class=""
             class="text-sm flex whitespace-nowrap mr-1"
           >
             {{ $t(currentPlan) }}
@@ -139,6 +150,15 @@
       class="flex flex-col min-w-0 flex-1 border-l border-r border-block-border"
       data-label="bb-main-body-wrapper"
     >
+      <nav
+        class="bg-white border-b border-block-border"
+        data-label="bb-dashboard-header"
+      >
+        <div class="max-w-full mx-auto">
+          <DashboardHeader />
+        </div>
+      </nav>
+
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">
         <div
@@ -160,6 +180,7 @@
           </div>
         </div>
       </aside>
+
       <div class="w-full mx-auto md:flex">
         <div class="md:min-w-0 md:flex-1">
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
@@ -171,14 +192,14 @@
             </div>
             <div
               v-if="route.name === 'workspace.home'"
-              class="mt-6 hidden md:flex"
+              class="mt-8 hidden md:flex"
             >
               <a
                 href="/sql-editor"
                 target="_blank"
-                class="btn-primary items-center !px-6 !py-3 !text-xl"
+                class="btn-normal items-center !px-4 !text-base"
               >
-                <heroicons-solid:terminal class="w-6 h-6 mr-2" />
+                <heroicons-solid:terminal class="text-accent w-6 h-6 mr-2" />
                 <span class="whitespace-nowrap">{{
                   $t("sql-editor.self")
                 }}</span>
@@ -211,6 +232,8 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import DashboardHeader from "@/views/DashboardHeader.vue";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
@@ -233,6 +256,7 @@ interface LocalState {
 export default defineComponent({
   name: "BodyLayout",
   components: {
+    DashboardHeader,
     Breadcrumb,
     Quickstart,
     QuickActionPanel,
@@ -249,6 +273,8 @@ export default defineComponent({
       showTrialModal: false,
       showReleaseModal: false,
     });
+
+    const { isDemo } = storeToRefs(actuatorStore);
 
     actuatorStore.tryToRemindRelease().then((openRemindModal) => {
       state.showReleaseModal = openRemindModal;
@@ -310,9 +336,7 @@ export default defineComponent({
 
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
-      return (
-        !actuatorStore.isDemo && !uiStateStore.getIntroStateByKey("hidden")
-      );
+      return !isDemo.value && !uiStateStore.getIntroStateByKey("hidden");
     });
 
     const version = computed(() => {
@@ -355,6 +379,7 @@ export default defineComponent({
       currentPlan,
       isFreePlan,
       canUpgrade,
+      isDemo,
     };
   },
 });

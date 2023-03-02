@@ -112,9 +112,8 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						},
 						Indexes: []*storepb.IndexMetadata{
 							{
-								Name: "trd_A_B_c_key",
-								// TODO(rebelice): the expressions should not double double quotes.
-								Expressions: []string{`"A"`, `"B"`, "c"},
+								Name:        "trd_A_B_c_key",
+								Expressions: []string{`A`, `B`, "c"},
 								Type:        "btree",
 								Unique:      true,
 							},
@@ -161,8 +160,9 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Syncer For PostgreSQL",
-		Key:  "TestSyncerForPostgreSQL",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Syncer For PostgreSQL",
+		Key:        "TestSyncerForPostgreSQL",
 	})
 	a.NoError(err)
 
@@ -172,6 +172,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgInstance",
 		Engine:        db.Postgres,
@@ -439,8 +440,9 @@ func TestSyncerForMySQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Sync MySQL Schema",
-		Key:  "TestSyncMySQLSchema",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Sync MySQL Schema",
+		Key:        "TestSyncMySQLSchema",
 	})
 	a.NoError(err)
 
@@ -450,6 +452,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,

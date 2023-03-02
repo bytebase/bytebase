@@ -20,9 +20,9 @@ import (
 
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
-	config *config.Config
-	store  *store.Store
-
+	config             *config.Config
+	store              *store.Store
+	provider           *LicenseProvider
 	cachedSubscription *enterpriseAPI.Subscription
 }
 
@@ -45,8 +45,9 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 	}
 
 	return &LicenseService{
-		store:  store,
-		config: config,
+		store:    store,
+		config:   config,
+		provider: NewLicenseProvider(config, store),
 	}, nil
 }
 
@@ -75,10 +76,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		return *s.cachedSubscription
 	}
 
-	license, err := s.loadLicense(ctx)
-	if err != nil {
-		log.Error("failed to load license", zap.Error(err))
-	}
+	license := s.loadLicense(ctx)
 	if license == nil {
 		return enterpriseAPI.Subscription{
 			Plan: api.FREE,
@@ -138,22 +136,75 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 	s.LoadSubscription(ctx)
 }
 
+func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+	license, err := s.provider.FetchLicense(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if license == "" {
+		return nil, nil
+	}
+	result, err := s.parseLicense(license)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+		UpdaterID: api.SystemBotID,
+		Name:      api.SettingEnterpriseLicense,
+		Value:     license,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to store the license")
+	}
+
+	s.RefreshCache(ctx)
+
+	return result, nil
+}
+
 // loadLicense will load license and validate it.
-func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
+	license, err := s.findEnterpriseLicense(ctx)
+	if err != nil {
+		log.Debug("failed to load enterprise license", zap.Error(err))
+	}
+	if license == nil {
+		license, err = s.findTrialingLicense(ctx)
+		if err != nil {
+			log.Debug("failed to load trialing license", zap.Error(err))
+		}
+	}
+
+	if license == nil && s.config.Mode == common.ReleaseModeDev {
+		license, err = s.fetchLicense(ctx)
+		if err != nil {
+			log.Debug("failed to fetch license", zap.Error(err))
+		}
+	}
+
+	return license
+}
+
+func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
+	claims := &Claims{}
+	if err := parseJWTToken(license, s.config.Version, s.config.PublicKey, claims); err != nil {
+		return nil, common.Wrap(err, common.Invalid)
+	}
+
+	return s.parseClaims(claims)
+}
+
+func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
-	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
+	setting, err := s.store.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
 	}
-	tokenString := ""
-	if len(settings) > 0 {
-		tokenString = settings[0].Value
-	}
-	if tokenString != "" {
-		license, err := s.parseLicense(tokenString)
+	if setting != nil && setting.Value != "" {
+		license, err := s.parseLicense(setting.Value)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse enterprise license")
 		}
@@ -163,68 +214,36 @@ func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.Licens
 				zap.String("plan", license.Plan.String()),
 				zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
 				zap.Int("instanceCount", license.InstanceCount),
+				zap.Int("seat", license.Seat),
 			)
 			return license, nil
 		}
 	}
 
-	// Find free trial license.
-	settingName = api.SettingEnterpriseTrial
-	settings, err = s.store.FindSetting(ctx, &api.SettingFind{
+	return nil, nil
+}
+
+func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+	settingName := api.SettingEnterpriseTrial
+	setting, err := s.store.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load trial license from settings")
 	}
-	if len(settings) != 0 {
+	if setting != nil && setting.Value != "" {
 		var data enterpriseAPI.License
-		if err := json.Unmarshal([]byte(settings[0].Value), &data); err != nil {
+		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse trial license")
 		}
 		return &data, nil
 	}
 
-	// No license or trial license found.
 	return nil, nil
-}
-
-func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(license, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
-		}
-
-		kid, ok := token.Header["kid"].(string)
-		if !ok || kid != s.config.Version {
-			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version)
-		}
-
-		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.config.PublicKey))
-		if err != nil {
-			return nil, common.Wrap(err, common.Invalid)
-		}
-
-		return key, nil
-	})
-	if err != nil {
-		return nil, common.Wrap(err, common.Invalid)
-	}
-
-	if !token.Valid {
-		return nil, common.Errorf(common.Invalid, "invalid token")
-	}
-
-	return s.parseClaims(claims)
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
 func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, error) {
-	err := claims.Valid()
-	if err != nil {
-		return nil, common.Wrap(err, common.Invalid)
-	}
-
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
 	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", s.config.Issuer, claims.Issuer)

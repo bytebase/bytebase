@@ -68,7 +68,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND COALESCE(task.payload->>'rollbackError', '')='' AND COALESCE(task.payload->>'rollbackStatement', '')=''",
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND task.payload->>'rollbackSqlStatus'='PENDING'",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
@@ -97,26 +97,33 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
-	payload.RollbackStatement = ""
-	payload.RollbackError = ""
 
-	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload)
+	var rollbackSQLStatus api.RollbackSQLStatus
+	var rollbackStatement, rollbackError string
+
+	const binlogSizeLimit = 8 * 1024 * 1024
+	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload, binlogSizeLimit)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		payload.RollbackError = err.Error()
+		rollbackSQLStatus = api.RollbackSQLStatusFailed
+		if mysql.IsErrExceedSizeLimit(err) {
+			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. The size of the generated statements must be less that %vKB.", binlogSizeLimit/1024)
+		} else if mysql.IsErrParseBinlogName(err) {
+			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
+		} else {
+			rollbackError = err.Error()
+		}
+	} else {
+		rollbackSQLStatus = api.RollbackSQLStatusDone
+		rollbackStatement = rollbackSQL
 	}
-	payload.RollbackStatement = rollbackSQL
 
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Error("Failed to marshal task payload", zap.Error(err))
-		return
-	}
-	payloadString := string(payloadBytes)
 	patch := &api.TaskPatch{
-		ID:        task.ID,
-		UpdaterID: api.SystemBotID,
-		Payload:   &payloadString,
+		ID:                task.ID,
+		UpdaterID:         api.SystemBotID,
+		RollbackSQLStatus: &rollbackSQLStatus,
+		RollbackStatement: &rollbackStatement,
+		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
@@ -125,7 +132,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
-func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, binlogSizeLimit int) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
@@ -167,12 +174,17 @@ func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMe
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to parse the schema")
 	}
-
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		return "", errors.Errorf("failed to cast driver to mysql.Driver")
 	}
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
+	if err := mysqlDriver.CheckBinlogEnabled(ctx); err != nil {
+		return "", err
+	}
+	if err := mysqlDriver.CheckBinlogRowFormat(ctx); err != nil {
+		return "", err
+	}
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to generate rollback SQL statement")
 	}

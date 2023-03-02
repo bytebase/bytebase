@@ -49,6 +49,8 @@ import {
   useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
+  useIdentityProviderStore,
+  useCurrentUser,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -347,6 +349,28 @@ const routes: Array<RouteRecordRaw> = [
                 name: "setting.workspace.sso",
                 meta: { title: () => t("settings.sidebar.sso") },
                 component: () => import("../views/SettingWorkspaceSSO.vue"),
+              },
+              {
+                path: "sso/new",
+                name: "setting.workspace.sso.create",
+                meta: { title: () => t("settings.sidebar.sso") },
+                component: () =>
+                  import("../views/SettingWorkspaceSSODetail.vue"),
+              },
+              {
+                path: "sso/:ssoName",
+                name: "setting.workspace.sso.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const name = route.params.ssoName as string;
+                    return (
+                      useIdentityProviderStore().getIdentityProviderByName(name)
+                        ?.title || t("settings.sidebar.sso")
+                    );
+                  },
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSSODetail.vue"),
                 props: true,
               },
               {
@@ -563,14 +587,14 @@ const routes: Array<RouteRecordRaw> = [
                 if (project.rowStatus == "NORMAL") {
                   const actionList: string[] = [];
 
-                  const currentUser = useAuthStore().currentUser;
+                  const currentUser = useCurrentUser();
                   let allowAlterSchemaOrChangeData = false;
                   let allowCreateDB = false;
                   let allowTransferDB = false;
                   if (
                     hasWorkspacePermission(
                       "bb.permission.workspace.manage-instance",
-                      currentUser.role
+                      currentUser.value.role
                     )
                   ) {
                     allowAlterSchemaOrChangeData = true;
@@ -578,7 +602,7 @@ const routes: Array<RouteRecordRaw> = [
                     allowTransferDB = true;
                   } else {
                     const memberOfProject = project.memberList.find(
-                      (m) => m.principal.id === currentUser.id
+                      (m) => m.principal.id === currentUser.value.id
                     );
                     if (memberOfProject) {
                       allowAlterSchemaOrChangeData = hasProjectPermission(
@@ -1044,13 +1068,13 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  const currentUser = authStore.currentUser;
+  const currentUser = useCurrentUser();
 
   if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-im-integration",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1065,7 +1089,7 @@ router.beforeEach((to, from, next) => {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-sso",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1080,7 +1104,7 @@ router.beforeEach((to, from, next) => {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-vcs-provider",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1095,7 +1119,7 @@ router.beforeEach((to, from, next) => {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-project",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1110,7 +1134,7 @@ router.beforeEach((to, from, next) => {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.audit-log",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1125,7 +1149,7 @@ router.beforeEach((to, from, next) => {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.debug-log",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1140,7 +1164,7 @@ router.beforeEach((to, from, next) => {
     if (
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-instance",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({
@@ -1156,7 +1180,7 @@ router.beforeEach((to, from, next) => {
       !hasFeature("bb.feature.data-source") ||
       !hasWorkspacePermission(
         "bb.permission.workspace.manage-instance",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       next({

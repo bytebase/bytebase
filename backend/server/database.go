@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/edit"
+	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -135,15 +136,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		var toProject *store.ProjectMessage
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != oldProject.UID {
-			// Before updating database's projectID, we need to check if there are still bound sheets.
-			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.UID}, updaterID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database %q", database.DatabaseName)).SetInternal(err)
-			}
-			if len(sheetList) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
-			}
-
 			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: dbPatch.ProjectID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", *dbPatch.ProjectID)).SetInternal(err)
@@ -238,19 +230,46 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dbSchema = newDBSchema
 		}
 
-		isQuerySchema := c.QueryParam("metadata") == ""
-		if isQuerySchema {
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
-			}
-		} else {
+		isMetadata := c.QueryParam("metadata") == "true"
+		isSDL := c.QueryParam("sdl") == "true"
+		if isMetadata && isSDL {
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot choose metadata and sdl format together")
+		}
+		if isMetadata {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
 			if err != nil {
 				return err
 			}
 			if _, err := c.Response().Write(metadataBytes); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
+			}
+		} else if isSDL {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+			if err != nil {
+				return err
+			}
+			// We only support MySQL now.
+			var engineType parser.EngineType
+			switch instance.Engine {
+			case db.MySQL:
+				engineType = parser.MySQL
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not support SDL format for %s instance", instance.Engine))
+			}
+
+			sdlSchema, err := transform.SchemaTransform(engineType, string(dbSchema.Schema))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to transform SDL format for database %q", database.DatabaseName)).SetInternal(err)
+			}
+
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+			if _, err := c.Response().Write([]byte(sdlSchema)); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
+			}
+		} else {
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
 			}
 		}
@@ -292,9 +311,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Backup is not supported for MongoDB")
 		}
 
-		storeBackupList, err := s.store.FindBackup(ctx, &api.BackupFind{
-			DatabaseID: &id,
-			Name:       &backupCreate.Name,
+		storeBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
+			DatabaseUID: &id,
+			Name:        &backupCreate.Name,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch backup with name %q", backupCreate.Name)).SetInternal(err)
@@ -312,7 +331,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backup.ToAPIBackup()); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create backup response").SetInternal(err)
 		}
 		return nil
@@ -333,16 +352,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
 
-		backupFind := &api.BackupFind{
-			DatabaseID: &id,
+		backupFind := &store.FindBackupMessage{
+			DatabaseUID: &id,
 		}
-		backupList, err := s.store.FindBackup(ctx, backupFind)
+		backups, err := s.store.ListBackupV2(ctx, backupFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup list for database id: %d", id)).SetInternal(err)
+		}
+		var apiBackups []*api.Backup
+		for _, backup := range backups {
+			apiBackups = append(apiBackups, backup.ToAPIBackup())
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backupList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, apiBackups); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch backup list response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -404,19 +427,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
 
-		backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, id)
+		backupSetting, err := s.store.GetBackupSettingV2(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
 		}
-		if backupSetting == nil {
-			// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
-			backupSetting = &api.BackupSetting{
-				ID: api.UnknownID,
-			}
+		// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
+		apiBackupSetting := &api.BackupSetting{
+			ID: api.UnknownID,
+		}
+		if backupSetting != nil {
+			apiBackupSetting = backupSetting.ToAPIBackupSetting()
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, apiBackupSetting); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get backup setting response: %v", id)).SetInternal(err)
 		}
 		return nil

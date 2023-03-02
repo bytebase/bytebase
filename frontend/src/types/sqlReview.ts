@@ -4,6 +4,7 @@ import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { PlanType } from "./plan";
 import sqlReviewSchema from "./sql-review-schema.yaml";
+import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
@@ -37,7 +38,7 @@ export const LEVEL_LIST = [
 
 // NumberPayload is the number type payload configuration options and default value.
 // Used by the frontend.
-interface NumberPayload {
+export interface NumberPayload {
   type: "NUMBER";
   default: number;
   value?: number;
@@ -45,7 +46,7 @@ interface NumberPayload {
 
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
-interface StringPayload {
+export interface StringPayload {
   type: "STRING";
   default: string;
   value?: string;
@@ -53,7 +54,7 @@ interface StringPayload {
 
 // BooleanPayload is the boolean type payload configuration options and default value.
 // Used by the frontend.
-interface BooleanPayload {
+export interface BooleanPayload {
   type: "BOOLEAN";
   default: boolean;
   value?: boolean;
@@ -61,7 +62,7 @@ interface BooleanPayload {
 
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
-interface StringArrayPayload {
+export interface StringArrayPayload {
   type: "STRING_ARRAY";
   default: string[];
   value?: string[];
@@ -69,7 +70,7 @@ interface StringArrayPayload {
 
 // TemplatePayload is the string template type payload configuration options and default value.
 // Used by the frontend.
-interface TemplatePayload {
+export interface TemplatePayload {
   type: "TEMPLATE";
   default: string;
   templateList: string[];
@@ -182,6 +183,7 @@ export interface SchemaPolicyRule {
     | StringArrayLimitPayload
     | CommentFormatPayload
     | NumberLimitPayload;
+  comment: string;
 }
 
 // The API for SQL review policy in backend.
@@ -204,6 +206,7 @@ export interface RuleTemplate {
   engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
+  comment?: string;
 }
 
 // SQLReviewPolicyTemplate is the rule template set
@@ -221,7 +224,11 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
     },
     new Map<RuleType, RuleTemplate>()
   );
-  const templateList = [sqlReviewProdTemplate, sqlReviewDevTemplate] as {
+  const templateList = [
+    sqlReviewSampleTemplate,
+    sqlReviewDevTemplate,
+    sqlReviewProdTemplate,
+  ] as {
     id: string;
     ruleList: {
       type: RuleType;
@@ -265,6 +272,15 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
     };
   });
 })();
+
+export const findRuleTemplate = (type: RuleType) => {
+  for (let i = 0; i < TEMPLATE_LIST.length; i++) {
+    const template = TEMPLATE_LIST[i];
+    const rule = template.ruleList.find((rule) => rule.type === type);
+    if (rule) return rule;
+  }
+  return undefined;
+};
 
 export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
   TEMPLATE_LIST.reduce((map, template) => {
@@ -319,7 +335,11 @@ export const convertPolicyRuleToRuleTemplate = (
     );
   }
 
-  const res = { ...ruleTemplate, level: policyRule.level };
+  const res = {
+    ...ruleTemplate,
+    level: policyRule.level,
+    comment: policyRule.comment,
+  };
 
   if (ruleTemplate.componentList.length === 0) {
     return res;
@@ -527,6 +547,7 @@ export const convertRuleTemplateToPolicyRule = (
   const base: SchemaPolicyRule = {
     type: rule.type,
     level: rule.level,
+    comment: rule.comment ?? "",
   };
   if (rule.componentList.length === 0) {
     return base;

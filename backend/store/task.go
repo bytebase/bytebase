@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 // TaskMessage is the message for tasks.
@@ -70,6 +71,14 @@ func (task *TaskMessage) toTask() *api.Task {
 		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
 	}
 	return composedTask
+}
+
+// GetSyntaxMode returns the syntax mode.
+func (task *TaskMessage) GetSyntaxMode() advisor.SyntaxMode {
+	if task.Type == api.TaskDatabaseSchemaUpdateSDL {
+		return advisor.SyntaxModeSDL
+	}
+	return advisor.SyntaxModeNormal
 }
 
 // GetTaskByID gets a task by ID.
@@ -146,19 +155,20 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 		composedTask.TaskRunList = append(composedTask.TaskRunList, taskRun)
 	}
 	for _, taskCheckRunRaw := range taskCheckRunRawList {
-		taskCheckRun := taskCheckRunRaw.toTaskCheckRun()
-		creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
+		composedTaskCheckRun := taskCheckRunRaw.toTaskCheckRun()
+		creator, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.CreatorID)
 		if err != nil {
 			return nil, err
 		}
-		taskCheckRun.Creator = creator
-
-		updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
+		composedTaskCheckRun.Creator = creator
+		updater, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.UpdaterID)
 		if err != nil {
 			return nil, err
 		}
-		taskCheckRun.Updater = updater
-		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
+		composedTaskCheckRun.Updater = updater
+		composedTaskCheckRun.CreatedTs = taskCheckRunRaw.CreatedTs
+		composedTaskCheckRun.UpdatedTs = taskCheckRunRaw.UpdatedTs
+		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 	}
 
 	instance, err := s.GetInstanceByID(ctx, composedTask.InstanceID)
@@ -332,8 +342,11 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
-	if v := find.StageBlocked; v != nil {
-		where = append(where, "(SELECT COUNT(1) > 0 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE') = FALSE")
+	if find.NoBlockingStage {
+		where = append(where, "(SELECT NOT EXISTS (SELECT 1 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE'))")
+	}
+	if find.NonRollbackTask {
+		where = append(where, "(NOT (task.type='bb.task.database.data.update' AND task.payload->>'rollbackFromTaskId' IS NOT NULL))")
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -420,8 +433,8 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	if (patch.Statement != nil || patch.SchemaVersion != nil) && patch.Payload != nil {
 		return nil, errors.Errorf("cannot set both statement/schemaVersion and payload for TaskPatch")
 	}
-	if (patch.RollbackEnabled != nil || patch.RollbackStatement != nil || patch.RollbackError != nil) && patch.Payload != nil {
-		return nil, errors.Errorf("cannot set both rollbackEnabled/rollbackStatement/rollbackError payload for TaskPatch")
+	if (patch.RollbackEnabled != nil || patch.RollbackSQLStatus != nil || patch.RollbackStatement != nil || patch.RollbackError != nil) && patch.Payload != nil {
+		return nil, errors.Errorf("cannot set both rollbackEnabled/rollbackSQLStatus/rollbackStatement/rollbackError payload for TaskPatch")
 	}
 	var payloadSet []string
 	if v := patch.Statement; v != nil {
@@ -432,6 +445,9 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	}
 	if v := patch.RollbackEnabled; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackEnabled', to_jsonb($%d::BOOLEAN))`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.RollbackSQLStatus; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackSqlStatus', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.RollbackStatement; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackStatement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -58,7 +57,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
-			ResourceID:       fmt.Sprintf("project-%s", uuid.New().String()[:8]),
+			ResourceID:       projectCreate.ResourceID,
 			Title:            projectCreate.Name,
 			Key:              projectCreate.Key,
 			TenantMode:       projectCreate.TenantMode,
@@ -180,7 +179,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 		if v := projectPatch.TenantMode; v != nil {
-			if *v == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
+			if api.ProjectTenantMode(*v) == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
 		}
@@ -247,6 +246,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
 		}
 
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+		}
+
 		repositoryCreate := &api.RepositoryCreate{
 			ProjectID:         projectID,
 			ProjectResourceID: project.ResourceID,
@@ -283,10 +287,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(repositoryCreate.BranchFilter, "*") {
-			if notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); notFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
-			} else if err != nil {
+			notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", repositoryCreate.BranchFilter)).SetInternal(err)
+			}
+			if notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name))
 			}
 		}
 
@@ -298,7 +304,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository with web url: %s", repositoryCreate.WebURL)).SetInternal(err)
 		}
 
-		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
+		repositoryCreate.WebhookURLHost = setting.ExternalUrl
 		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
 		if len(repositories) > 0 {
 			repo := repositories[0]
@@ -306,6 +312,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
 			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
 		} else {
+			// Bytebase needs to create a webbook in the connecting repository pointing back to the
+			// Bytebase address exposed at --external-url.
+			if setting.ExternalUrl == common.ExternalURLPlaceholder {
+				return echo.NewHTTPError(http.StatusBadRequest, "Bytebase must start with --external-url to configure GitOps workflow")
+			}
+
 			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", s.workspaceID, time.Now().Unix())
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
@@ -313,7 +325,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			repositoryCreate.WebhookSecretToken = secretToken
 
-			webhookID, err := s.createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID)
+			webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, setting.ExternalUrl)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
@@ -504,10 +516,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(newBranchFilter, "*") {
-			if notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter); notFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
-			} else if err != nil {
+			notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", newBranchFilter)).SetInternal(err)
+			}
+			if notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name))
 			}
 		}
 
@@ -637,7 +651,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, deploymentConfigUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set deployment configuration request").SetInternal(err)
 		}
-		deploymentConfigUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
@@ -646,15 +659,55 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
-		deploymentConfigUpsert.ProjectID = projectID
 
-		deploymentConfig, err := s.store.UpsertDeploymentConfig(ctx, deploymentConfigUpsert)
+		apiDeploymentConfig, err := api.ValidateAndGetDeploymentSchedule(deploymentConfigUpsert.Payload)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to validate deployment configuration: %v", err))
+		}
+
+		// Remove this when we migrate to V1 API.
+		//
+		// Convert to store message.
+		var schedule store.Schedule
+		for _, d := range apiDeploymentConfig.Deployments {
+			var labelSelector store.LabelSelector
+			for _, spec := range d.Spec.Selector.MatchExpressions {
+				operatorTp := store.InOperatorType
+				switch spec.Operator {
+				case api.InOperatorType:
+					operatorTp = store.InOperatorType
+				case api.ExistsOperatorType:
+					operatorTp = store.ExistsOperatorType
+				}
+				labelSelector.MatchExpressions = append(labelSelector.MatchExpressions, &store.LabelSelectorRequirement{
+					Key:      spec.Key,
+					Operator: operatorTp,
+					Values:   spec.Values,
+				})
+			}
+			schedule.Deployments = append(schedule.Deployments, &store.Deployment{
+				Name: d.Name,
+				Spec: &store.DeploymentSpec{
+					Selector: &labelSelector,
+				},
+			})
+		}
+		storeDeploymentConfig := &store.DeploymentConfigMessage{
+			Name:     deploymentConfigUpsert.Name,
+			Schedule: &schedule,
+		}
+
+		newStoreDeploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), storeDeploymentConfig)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set deployment configuration").SetInternal(err)
 		}
+		newAPIDeploymentConfig, err := newStoreDeploymentConfig.ToAPIDeploymentConfig()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert deployment configuration").SetInternal(err)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, deploymentConfig); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, newAPIDeploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal set deployment configuration response").SetInternal(err)
 		}
 		return nil
@@ -679,13 +732,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// DeploymentConfig is never nil.
-		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, projectID)
+		deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", projectID)).SetInternal(err)
 		}
+		apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert deployment config to api deployment config").SetInternal(err)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &deploymentConfig); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, apiDeploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", projectID)).SetInternal(err)
 		}
 		return nil
@@ -846,10 +903,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 			var sheetSource api.SheetSource
 			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				sheetSource = api.SheetFromGitLabSelfHost
-			case vcsPlugin.GitHubCom:
-				sheetSource = api.SheetFromGitHubCom
+			case vcsPlugin.GitLab:
+				sheetSource = api.SheetFromGitLab
+			case vcsPlugin.GitHub:
+				sheetSource = api.SheetFromGitHub
 			}
 			vscSheetType := api.SheetForSQL
 			sheetFind := &api.SheetFind{
@@ -905,6 +962,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 }
 
 func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
 		return nil, err
@@ -927,14 +989,14 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		return nil, err
 	}
 
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", s.profile.ExternalURL, repository.WebhookEndpointID)
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", setting.ExternalUrl, repository.WebhookEndpointID)
 
 	switch repository.VCS.Type {
-	case vcsPlugin.GitHubCom:
+	case vcsPlugin.GitHub:
 		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
-	case vcsPlugin.GitLabSelfHost:
+	case vcsPlugin.GitLab:
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
@@ -1185,14 +1247,14 @@ func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 	)
 }
 
-func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID string) (string, error) {
+func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, externalURL string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsType {
-	case vcsPlugin.GitLabSelfHost:
+	case vcsPlugin.GitLab:
 		webhookCreate := gitlab.WebhookCreate{
-			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", s.profile.ExternalURL, webhookEndpointID),
+			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", externalURL, webhookEndpointID),
 			SecretToken:           secretToken,
 			PushEvents:            true,
 			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
@@ -1201,10 +1263,10 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcsPlugin.GitHubCom:
+	case vcsPlugin.GitHub:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
-				URL:         fmt.Sprintf("%s/hook/github/%s", s.profile.ExternalURL, webhookEndpointID),
+				URL:         fmt.Sprintf("%s/hook/github/%s", externalURL, webhookEndpointID),
 				ContentType: "json",
 				Secret:      secretToken,
 				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate

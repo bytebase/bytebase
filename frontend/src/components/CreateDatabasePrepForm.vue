@@ -62,12 +62,10 @@
       <div v-if="selectedInstance.engine == 'CLICKHOUSE'" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.cluster") }}
-          <span class="text-red-600">*</span>
         </label>
         <input
           id="name"
           v-model="state.cluster"
-          required
           name="cluster"
           type="text"
           class="textfield mt-1 w-full"
@@ -394,6 +392,8 @@ export default defineComponent({
     const isDbNameTemplateMode = computed((): boolean => {
       if (project.value.id === UNKNOWN_ID) return false;
 
+      if (project.value.tenantMode !== "TENANT") return false;
+
       // true if dbNameTemplate is not empty
       return !!project.value.dbNameTemplate;
     });
@@ -591,8 +591,8 @@ export default defineComponent({
       const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
         const env = useEnvironmentStore().getEnvironmentById(envId);
-        if (index >= 0) labelList[index].value = env.name;
-        else labelList.unshift({ key, value: env.name });
+        if (index >= 0) labelList[index].value = env.resourceId;
+        else labelList.unshift({ key, value: env.resourceId });
       } else {
         if (index >= 0) labelList.splice(index, 1);
       }

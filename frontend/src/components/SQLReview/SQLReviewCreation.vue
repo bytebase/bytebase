@@ -1,10 +1,10 @@
 <template>
   <div>
     <BBStepTab
-      class="my-4"
+      :sticky="true"
       :step-item-list="STEP_LIST"
       :allow-next="allowNext"
-      :finish-title="$t(`common.confirm-and-${policyId ? 'update' : 'add'}`)"
+      :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
       @cancel="onCancel"
@@ -14,58 +14,39 @@
           :name="state.name"
           :selected-environment="state.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
-          :template-list="TEMPLATE_LIST"
-          :selected-template-index="state.templateIndex"
-          :is-edit="!!policyId"
-          class="py-5"
+          :selected-template="
+            state.pendingApplyTemplate || state.selectedTemplate
+          "
+          :is-edit="!!policy"
           @select-template="tryApplyTemplate"
-          @name-change="(val) => (state.name = val)"
-          @env-change="(env) => onEnvChange(env)"
+          @name-change="(val: string) => (state.name = val)"
+          @env-change="(env: Environment) => onEnvChange(env)"
         />
       </template>
       <template #1>
         <SQLReviewConfig
-          class="py-5"
           :selected-rule-list="state.selectedRuleList"
-          :template-list="TEMPLATE_LIST"
-          :selected-template-index="state.templateIndex"
-          @change="onRuleChange"
-          @apply-template="tryApplyTemplate"
-        />
-      </template>
-      <template #2>
-        <SQLReviewPreview
-          :name="state.name"
-          :is-preview-step="true"
-          :selected-rule-list="state.selectedRuleList"
-          :selected-environment="state.selectedEnvironment"
-          class="py-5"
+          @level-change="onLevelChange"
+          @payload-change="onPayloadChange"
+          @comment-change="onCommentChange"
         />
       </template>
     </BBStepTab>
-    <BBAlert
-      v-if="state.showAlertModal"
-      style="CRITICAL"
+    <BBAlertDialog
+      ref="alertDialog"
+      :style="'CRITICAL'"
       :ok-text="$t('common.confirm')"
       :title="$t('sql-review.create.configure-rule.confirm-override-title')"
       :description="
         $t('sql-review.create.configure-rule.confirm-override-description')
       "
-      @ok="
-        () => {
-          state.showAlertModal = false;
-          state.ruleUpdated = false;
-          onTemplateApply(state.pendingApplyTemplateIndex);
-        }
-      "
-      @cancel="state.showAlertModal = false"
     >
-    </BBAlert>
+    </BBAlertDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, withDefaults } from "vue";
+import { reactive, computed, withDefaults, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "@/bbkit/types";
@@ -73,11 +54,16 @@ import {
   RuleLevel,
   Environment,
   RuleTemplate,
-  TEMPLATE_LIST,
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
   ruleIsAvailableInSubscription,
+  RuleConfigComponent,
+  SQLReviewPolicyTemplate,
+  SQLReviewPolicy,
 } from "@/types";
+import { BBAlertDialog, BBStepTab } from "@/bbkit";
+import SQLReviewInfo from "./SQLReviewInfo.vue";
+import SQLReviewConfig from "./SQLReviewConfig.vue";
 import {
   useCurrentUser,
   pushNotification,
@@ -86,27 +72,28 @@ import {
   useSubscriptionStore,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
+import { rulesToTemplate } from "./components";
 
 interface LocalState {
   currentStep: number;
   name: string;
   selectedEnvironment: Environment;
   selectedRuleList: RuleTemplate[];
+  selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
   showAlertModal: boolean;
-  templateIndex: number;
-  pendingApplyTemplateIndex: number;
+  pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
 }
 
 const props = withDefaults(
   defineProps<{
-    policyId?: number;
+    policy?: SQLReviewPolicy;
     name?: string;
     selectedEnvironment?: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
-    policyId: undefined,
+    policy: undefined,
     name: "",
     selectedEnvironment: undefined,
     selectedRuleList: () => [],
@@ -115,6 +102,7 @@ const props = withDefaults(
 
 const emit = defineEmits(["cancel"]);
 
+const alertDialog = ref<InstanceType<typeof BBAlertDialog>>();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
@@ -125,12 +113,10 @@ const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
 const ROUTE_NAME = "setting.workspace.sql-review";
-const DEFAULT_TEMPLATE_INDEX = 0;
 
 const STEP_LIST: BBStepTabItem[] = [
   { title: t("sql-review.create.basic-info.name") },
   { title: t("sql-review.create.configure-rule.name") },
-  { title: t("sql-review.create.preview.name") },
 ];
 
 const state = reactive<LocalState>({
@@ -138,53 +124,54 @@ const state = reactive<LocalState>({
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   selectedEnvironment: props.selectedEnvironment,
   selectedRuleList: [...props.selectedRuleList],
+  selectedTemplate: props.policy
+    ? rulesToTemplate(props.policy, false /* withDisabled=false */)
+    : undefined,
   ruleUpdated: false,
   showAlertModal: false,
-  templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
-  pendingApplyTemplateIndex: -1,
+  pendingApplyTemplate: undefined,
 });
 
-const onTemplateApply = (index: number) => {
-  if (index < 0 || index >= TEMPLATE_LIST.length) {
+const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
+  if (!template) {
     return;
   }
-  state.templateIndex = index;
-  state.pendingApplyTemplateIndex = -1;
+  state.selectedTemplate = template;
+  state.pendingApplyTemplate = undefined;
 
-  const categoryList = convertToCategoryList(TEMPLATE_LIST[index].ruleList);
-  state.selectedRuleList = categoryList.reduce((res, category) => {
-    res.push(
-      ...category.ruleList.map((rule) => ({
-        ...rule,
-        level: ruleIsAvailableInSubscription(
-          rule.type,
-          subscriptionStore.currentPlan
-        )
-          ? rule.level
-          : RuleLevel.DISABLED,
-      }))
-    );
-    return res;
-  }, [] as RuleTemplate[]);
+  const categoryList = convertToCategoryList(template.ruleList);
+  state.selectedRuleList = categoryList.reduce<RuleTemplate[]>(
+    (res, category) => {
+      res.push(
+        ...category.ruleList.map((rule) => ({
+          ...rule,
+          level: ruleIsAvailableInSubscription(
+            rule.type,
+            subscriptionStore.currentPlan
+          )
+            ? rule.level
+            : RuleLevel.DISABLED,
+        }))
+      );
+      return res;
+    },
+    []
+  );
 };
-
-if (state.selectedRuleList.length === 0) {
-  onTemplateApply(DEFAULT_TEMPLATE_INDEX);
-}
 
 const availableEnvironmentList = computed((): Environment[] => {
   const environmentList = useEnvironmentList(["NORMAL"]);
 
   const filteredList = store.availableEnvironments(
     environmentList.value,
-    props.policyId
+    props.policy?.id
   );
 
   return filteredList;
 });
 
 const onCancel = () => {
-  if (props.policyId) {
+  if (props.policy) {
     emit("cancel");
   } else {
     router.push({
@@ -214,6 +201,17 @@ const tryChangeStep = (
   newStep: number,
   allowChangeCallback: () => void
 ) => {
+  if (oldStep === 0 && newStep === 1) {
+    if (state.pendingApplyTemplate) {
+      alertDialog.value!.open().then((result) => {
+        if (result) {
+          onTemplateApply(state.pendingApplyTemplate);
+          allowChangeCallback();
+        }
+      });
+      return;
+    }
+  }
   state.currentStep = newStep;
   allowChangeCallback();
 };
@@ -238,10 +236,10 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     ),
   };
 
-  if (props.policyId) {
+  if (props.policy) {
     store
       .updateReviewPolicy({
-        id: props.policyId,
+        id: props.policy.id,
         ...upsert,
       })
       .then(() => {
@@ -274,16 +272,19 @@ const onEnvChange = (env: Environment) => {
   state.selectedEnvironment = env;
 };
 
-const tryApplyTemplate = (index: number) => {
-  if (state.ruleUpdated || props.policyId) {
-    state.showAlertModal = true;
-    state.pendingApplyTemplateIndex = index;
+const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
+  if (state.ruleUpdated || props.policy) {
+    if (template.id === state.selectedTemplate?.id) {
+      state.pendingApplyTemplate = undefined;
+      return;
+    }
+    state.pendingApplyTemplate = template;
     return;
   }
-  onTemplateApply(index);
+  onTemplateApply(template);
 };
 
-const onRuleChange = (rule: RuleTemplate) => {
+const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
   if (
     !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
   ) {
@@ -291,11 +292,29 @@ const onRuleChange = (rule: RuleTemplate) => {
   }
 
   const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
-  state.selectedRuleList = [
-    ...state.selectedRuleList.slice(0, index),
-    rule,
-    ...state.selectedRuleList.slice(index + 1),
-  ];
+  if (index < 0) {
+    return;
+  }
+  const newRule = {
+    ...state.selectedRuleList[index],
+    ...overrides,
+  };
+  state.selectedRuleList[index] = newRule;
   state.ruleUpdated = true;
+};
+
+const onPayloadChange = (
+  rule: RuleTemplate,
+  componentList: RuleConfigComponent[]
+) => {
+  change(rule, { componentList });
+};
+
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+  change(rule, { level });
+};
+
+const onCommentChange = (rule: RuleTemplate, comment: string) => {
+  change(rule, { comment });
 };
 </script>

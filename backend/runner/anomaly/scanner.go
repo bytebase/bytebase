@@ -364,8 +364,13 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 }
 
 func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, policyMap map[int]*api.BackupPlanPolicy) {
+	if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
+		// skip checking backup anomalies for MongoDB, Spanner, Redis, Oracle because they don't support Backup.
+		return
+	}
+
 	schedule := api.BackupPlanPolicyScheduleUnset
-	backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, database.UID)
+	backupSetting, err := s.store.GetBackupSettingV2(ctx, database.UID)
 	if err != nil {
 		log.Error("Failed to retrieve backup setting",
 			zap.String("instance", instance.ResourceID),
@@ -374,7 +379,7 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 		return
 	}
 
-	if backupSetting != nil && backupSetting.Enabled && backupSetting.Hour != -1 {
+	if backupSetting != nil && backupSetting.Enabled && backupSetting.HourOfDay != -1 {
 		if backupSetting.DayOfWeek == -1 {
 			schedule = api.BackupPlanPolicyScheduleDaily
 		} else {
@@ -456,11 +461,11 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 			// Ignore if backup setting has been changed after the max age.
 			if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
 				status := api.BackupStatusDone
-				backupFind := &api.BackupFind{
-					DatabaseID: &database.UID,
-					Status:     &status,
+				backupFind := &store.FindBackupMessage{
+					DatabaseUID: &database.UID,
+					Status:      &status,
 				}
-				backupList, err := s.store.FindBackup(ctx, backupFind)
+				backupList, err := s.store.ListBackupV2(ctx, backupFind)
 				if err != nil {
 					log.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.ResourceID),

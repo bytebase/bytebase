@@ -1,5 +1,6 @@
 <template>
-  <span
+  <component
+    :is="link ? 'router-link' : 'span'"
     :class="[
       'inline-flex rounded-full items-center',
       `bg-${color}-100 text-${color}-800`,
@@ -7,8 +8,12 @@
       size === 'normal' && 'py-0.5 px-2.5 text-sm font-medium',
       size === 'small' && 'px-[6px] py-[2px] text-xs font-normal',
     ]"
+    :to="link"
   >
-    {{ text }}
+    <slot name="default">
+      {{ text }}
+    </slot>
+
     <button
       v-if="canRemove"
       type="button"
@@ -20,7 +25,7 @@
     >
       <heroicons-outline:x class="h-3 w-3" />
     </button>
-  </span>
+  </component>
 </template>
 
 <script lang="ts" setup>
@@ -32,16 +37,18 @@ export type BBBadgeSize = "normal" | "small";
 
 const props = withDefaults(
   defineProps<{
-    text: string;
+    text?: string;
     canRemove?: boolean;
     style?: BBBadgeStyle;
     size?: BBBadgeSize;
+    link?: string;
   }>(),
   {
     style: "INFO",
     text: "",
     canRemove: true,
     size: "normal",
+    link: "",
   }
 );
 

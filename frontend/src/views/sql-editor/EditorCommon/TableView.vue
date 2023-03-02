@@ -6,13 +6,13 @@
   >
     <div
       v-show="queryResult !== null"
-      class="w-full flex flex-row justify-between items-center mb-2"
+      class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto"
     >
-      <div class="flex flex-row justify-start items-center mr-2">
+      <div class="flex flex-row justify-start items-center mr-2 shrink-0">
         <NInput
           v-if="showSearchFeature"
           v-model:value="state.search"
-          class="max-w-xs"
+          class="!max-w-[8rem] sm:!max-w-xs"
           type="text"
           :placeholder="t('sql-editor.search-results')"
         >
@@ -73,6 +73,7 @@
         :table="table"
         :columns="columns"
         :data="data"
+        :sensitive="sensitive"
       />
     </div>
 
@@ -112,12 +113,13 @@ import {
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
+import { SingleSQLResult } from "@/types";
 
 interface State {
   search: string;
 }
 
-type QueryResult = [string[], string[], any[][]];
+type QueryResult = SingleSQLResult["data"];
 
 const props = defineProps({
   queryResult: {
@@ -193,6 +195,13 @@ const data = computed(() => {
     });
   }
   return temp;
+});
+
+const sensitive = computed(() => {
+  if (!props.queryResult) {
+    return [];
+  }
+  return props.queryResult[3] ?? [];
 });
 
 const table = useVueTable<string[]>({

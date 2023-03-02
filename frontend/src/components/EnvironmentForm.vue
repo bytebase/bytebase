@@ -1,6 +1,9 @@
 <template>
-  <div class="px-4 py-2 space-y-6 divide-y divide-block-border">
-    <div class="grid grid-cols-1 gap-y-6 gap-x-4">
+  <div
+    class="px-4 py-2 divide-y divide-block-border"
+    :class="create ? 'w-160' : 'w-full'"
+  >
+    <div class="grid grid-cols-1 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
           {{ $t("common.environment-name") }}
@@ -11,13 +14,20 @@
           :disabled="!allowEdit"
           :required="true"
           :value="state.environment.name"
-          @input="
-            state.environment.name = ($event.target as HTMLInputElement).value
-          "
+          @input="handleEnvironmentNameChange"
         />
       </div>
 
-      <div class="col-span-1">
+      <ResourceIdField
+        ref="resourceIdField"
+        resource="environment"
+        :readonly="!create"
+        :value="state.environment.resourceId"
+        :resource-title="state.environment.name"
+        :validator="validateResourceId"
+      />
+
+      <div class="col-span-1 mt-6">
         <label class="textlabel flex items-center">
           {{ $t("policy.environment-tier.name") }}
           <FeatureBadge
@@ -54,8 +64,7 @@
           </div>
         </div>
       </div>
-
-      <div class="col-span-1">
+      <div class="col-span-1 mt-6">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
           $t("policy.approval.tip")
@@ -116,7 +125,7 @@
           </div>
         </div>
       </div>
-      <div class="col-span-1">
+      <div class="col-span-1 mt-6">
         <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
         <span v-show="valueChanged('backupPolicy')" class="textlabeltip">{{
           $t("policy.backup.tip")
@@ -186,22 +195,27 @@
           </div>
         </div>
       </div>
-      <div v-if="!create" class="col-span-1">
+      <div v-if="!create" class="col-span-1 mt-6">
         <label class="textlabel">
           {{ $t("sql-review.title") }}
         </label>
         <div class="mt-3">
-          <button
-            v-if="sqlReviewPolicy"
-            type="button"
-            class="text-sm font-medium text-accent hover:underline"
-            @click.prevent="onSQLReviewPolicyClick"
-          >
-            {{ sqlReviewPolicy.name }}
-            <span v-if="sqlReviewPolicy.rowStatus === 'ARCHIVED'">
-              ({{ $t("sql-review.disabled") }})
-            </span>
-          </button>
+          <div v-if="sqlReviewPolicy" class="inline-flex items-center">
+            <BBSwitch
+              v-if="allowEditSQLReviewPolicy"
+              class="mr-2"
+              :text="true"
+              :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
+              @toggle="toggleSQLReviewPolicy"
+            />
+            <button
+              type="button"
+              class="text-sm font-medium text-accent hover:underline-2"
+              @click.prevent="onSQLReviewPolicyClick"
+            >
+              {{ sqlReviewPolicy.name }}
+            </button>
+          </div>
           <button
             v-else-if="hasPermission"
             type="button"
@@ -216,8 +230,9 @@
         </div>
       </div>
     </div>
+
     <!-- Create button group -->
-    <div v-if="create" class="flex justify-end pt-5">
+    <div v-if="create" class="mt-6 flex justify-end pt-5">
       <button
         type="button"
         class="btn-normal py-2 px-4"
@@ -235,7 +250,7 @@
       </button>
     </div>
     <!-- Update button group -->
-    <div v-else class="flex justify-between items-center pt-5">
+    <div v-else class="mt-6 flex justify-between items-center pt-5">
       <template
         v-if="(state.environment as Environment).rowStatus === 'NORMAL'"
       >
@@ -292,9 +307,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, watch, watchEffect } from "vue";
+import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
+import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+
 import type {
   BackupPlanPolicyPayload,
   Environment,
@@ -303,11 +321,22 @@ import type {
   EnvironmentTierPolicyPayload,
   PipelineApprovalPolicyPayload,
   Policy,
+  ResourceId,
   SQLReviewPolicy,
 } from "../types";
-import { hasWorkspacePermission, sqlReviewPolicySlug } from "../utils";
-import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { getErrorCode } from "@/utils/grpcweb";
+import { BBSwitch } from "@/bbkit";
+import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
+import {
+  pushNotification,
+  useCurrentUser,
+  useEnvironmentList,
+  useSQLReviewStore,
+} from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
+import ResourceIdField from "./ResourceIdField.vue";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -349,6 +378,8 @@ const emit = defineEmits([
   "restore",
   "update-policy",
 ]);
+
+const { t } = useI18n();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   approvalPolicy: cloneDeep(props.approvalPolicy),
@@ -357,7 +388,9 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
+const environmentV1Store = useEnvironmentV1Store();
 const sqlReviewStore = useSQLReviewStore();
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const environmentId = computed(() => {
   if (props.create) {
@@ -380,6 +413,10 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
   }
   return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
 });
+
+const handleEnvironmentNameChange = (event: InputEvent) => {
+  state.environment.name = (event.target as HTMLInputElement).value;
+};
 
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
@@ -438,6 +475,27 @@ const hasPermission = computed(() => {
   );
 });
 
+const validateResourceId = async (resourceId: ResourceId) => {
+  if (!resourceId) {
+    return;
+  }
+
+  try {
+    const env = await environmentV1Store.getOrFetchEnvironmentByName(
+      environmentNamePrefix + resourceId
+    );
+    if (env) {
+      return t("resource-id.validation.duplicated", {
+        resource: t("resource.environment"),
+      });
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+};
+
 const allowArchive = computed(() => {
   return allowEdit.value && environmentList.value.length > 1;
 });
@@ -455,7 +513,18 @@ const allowEdit = computed(() => {
 });
 
 const allowCreate = computed(() => {
-  return !isEmpty(state.environment?.name);
+  return (
+    !isEmpty(state.environment?.name) &&
+    resourceIdField.value?.resourceId &&
+    resourceIdField.value?.isValidated
+  );
+});
+
+const allowEditSQLReviewPolicy = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-sql-review-policy",
+    currentUser.value.role
+  );
 });
 
 const valueChanged = (
@@ -495,7 +564,10 @@ const revertEnvironment = () => {
 const createEnvironment = () => {
   emit(
     "create",
-    state.environment,
+    {
+      ...state.environment,
+      resourceId: resourceIdField.value?.resourceId,
+    },
     state.approvalPolicy,
     state.backupPolicy,
     state.environmentTierPolicy
@@ -546,5 +618,21 @@ const archiveEnvironment = () => {
 
 const restoreEnvironment = () => {
   emit("restore", state.environment);
+};
+
+const toggleSQLReviewPolicy = async (on: boolean) => {
+  const policy = sqlReviewPolicy.value;
+  if (!policy) return;
+  const originalOn = policy.rowStatus === "NORMAL";
+  if (on === originalOn) return;
+  await useSQLReviewStore().updateReviewPolicy({
+    id: policy.id,
+    rowStatus: on ? "NORMAL" : "ARCHIVED",
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("sql-review.policy-updated"),
+  });
 };
 </script>

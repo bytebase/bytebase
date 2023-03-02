@@ -5,158 +5,118 @@
     feature="bb.feature.sql-review"
     :description="$t('subscription.features.bb-feature-sql-review.desc')"
   />
-  <transition appear name="slide-from-bottom" mode="out-in">
-    <SQLReviewCreation
-      v-if="state.editMode"
-      :policy-id="reviewPolicy.id"
-      :name="reviewPolicy.name"
-      :selected-environment="reviewPolicy.environment"
-      :selected-rule-list="selectedRuleList"
-      @cancel="state.editMode = false"
-    />
-    <div v-else class="my-5">
-      <div
-        class="flex flex-col items-center space-x-2 justify-center md:flex-row"
-      >
-        <div class="flex-1 flex space-x-3 items-center justify-start">
-          <h1 class="text-xl md:text-3xl font-semibold">
-            {{ reviewPolicy.name }}
-          </h1>
-          <div v-if="reviewPolicy.rowStatus == 'ARCHIVED'">
-            <BBBadge
-              :text="$t('sql-review.disabled')"
-              :can-remove="false"
-              :style="'DISABLED'"
-            />
-          </div>
-        </div>
-        <div v-if="hasPermission" class="flex space-x-2">
-          <button
-            v-if="reviewPolicy.rowStatus === 'NORMAL'"
-            type="button"
-            class="btn-normal py-2 px-4"
-            @click.prevent="state.showDisableModal = true"
-          >
-            {{ $t("common.disable") }}
-          </button>
-          <button
-            v-else
-            type="button"
-            class="btn-normal py-2 px-4"
-            @click.prevent="state.showEnableModal = true"
-          >
-            {{ $t("common.enable") }}
-          </button>
-          <button type="button" class="btn-primary" @click="onEdit">
-            {{ $t("common.edit") }}
-          </button>
-        </div>
-      </div>
-      <div
-        v-if="reviewPolicy.environment"
-        class="flex items-center flex-wrap gap-x-3 my-5"
-      >
-        <span class="font-semibold">{{ $t("common.environment") }}</span>
-        <router-link
-          :to="`/environment/${environmentSlug(reviewPolicy.environment)}`"
-          class="col-span-2 font-medium text-main underline"
+  <SQLReviewCreation
+    v-if="state.editMode"
+    key="sql-review-creation"
+    :policy="reviewPolicy"
+    :name="reviewPolicy.name"
+    :selected-environment="reviewPolicy.environment"
+    :selected-rule-list="ruleListOfPolicy"
+    @cancel="state.editMode = false"
+  />
+  <div v-else class="mt-5">
+    <div
+      class="flex flex-col items-center space-x-2 justify-center md:flex-row"
+    >
+      <div class="flex-1 flex space-x-2 items-center justify-start">
+        <BBBadge
+          v-if="reviewPolicy.environment"
+          :can-remove="false"
+          :link="`/environment/${reviewPolicy.environment.id}`"
         >
-          {{ environmentName(reviewPolicy.environment) }}
-        </router-link>
-        <SQLRuleLevelSummary :rule-list="filteredSelectedRuleList" />
-      </div>
-      <BBAttention
-        v-else
-        class="my-5"
-        :style="`WARN`"
-        :title="$t('sql-review.create.basic-info.no-linked-environments')"
-      />
-      <div class="space-y-2 my-5">
-        <span class="font-semibold">{{ $t("sql-review.filter") }}</span>
-        <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("common.database") }}:</span>
-          <div
-            v-for="engine in engineList"
-            :key="engine.id"
-            class="flex items-center"
-          >
-            <input
-              :id="engine.id"
-              type="checkbox"
-              :value="engine.id"
-              :checked="state.checkedEngine.has(engine.id)"
-              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-              @input="toggleCheckedEngine(engine.id)"
-            />
-            <label
-              :for="engine.id"
-              class="ml-2 items-center text-sm text-gray-600"
-            >
-              {{ $t(`sql-review.engine.${engine.id.toLowerCase()}`) }}
-              <span
-                class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-              >
-                {{ engine.count }}
-              </span>
-            </label>
-          </div>
+          {{ reviewPolicy.environment.name }}
+          <ProductionEnvironmentIcon
+            :environment="reviewPolicy.environment"
+            class="!text-current ml-1"
+          />
+        </BBBadge>
+        <div
+          v-if="reviewPolicy.rowStatus == 'ARCHIVED'"
+          class="whitespace-nowrap"
+        >
+          <BBBadge
+            :text="$t('sql-review.disabled')"
+            :can-remove="false"
+            :style="'DISABLED'"
+          />
         </div>
-        <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("sql-review.level.name") }}:</span>
-          <div
-            v-for="level in errorLevelList"
-            :key="level.id"
-            class="flex items-center"
-          >
-            <input
-              :id="level.id"
-              type="checkbox"
-              :value="level.id"
-              :checked="state.checkedLevel.has(level.id)"
-              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-              @input="toggleCheckedLevel(level.id)"
-            />
-            <label
-              :for="level.id"
-              class="ml-2 items-center text-sm text-gray-600"
-            >
-              {{ $t(`sql-review.level.${level.id.toLowerCase()}`) }}
-              <span
-                class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-              >
-                {{ level.count }}
-              </span>
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="py-2 flex justify-between items-center mt-5">
-        <SQLReviewCategoryTabFilter
-          :selected="state.selectedCategory"
-          :category-list="categoryFilterList"
-          @select="selectCategory"
-        />
-        <BBTableSearch
-          ref="searchField"
-          :placeholder="$t('sql-review.search-rule-name')"
-          @change-text="(text: string) => (state.searchText = text)"
+        <BBTextField
+          class="flex-1 text-3xl py-0.5 px-0.5 font-bold truncate"
+          :disabled="!hasPermission"
+          :required="true"
+          :focus-on-mount="false"
+          :ends-on-enter="true"
+          :bordered="false"
+          :value="reviewPolicy.name"
+          @end-editing="changeName"
         />
       </div>
-      <SQLReviewPreview
-        :selected-rule-list="filteredSelectedRuleList"
-        class="py-5"
-      />
-      <BBButtonConfirm
-        v-if="reviewPolicy.rowStatus === 'ARCHIVED' && hasPermission"
-        :style="'DELETE'"
-        :button-text="$t('sql-review.delete')"
-        :ok-text="$t('common.delete')"
-        :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
-        :require-confirm="true"
-        @confirm="onRemove"
-      />
+      <div v-if="hasPermission" class="flex space-x-2">
+        <button
+          v-if="reviewPolicy.rowStatus === 'NORMAL'"
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showDisableModal = true"
+        >
+          {{ $t("common.disable") }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showEnableModal = true"
+        >
+          {{ $t("common.enable") }}
+        </button>
+        <button type="button" class="btn-primary" @click="onEdit">
+          {{ $t("sql-review.create.configure-rule.change-template") }}
+        </button>
+      </div>
     </div>
-  </transition>
+    <BBAttention
+      v-if="
+        !reviewPolicy.environment || reviewPolicy.environment.id === UNKNOWN_ID
+      "
+      class="my-5"
+      :style="`WARN`"
+      :title="$t('sql-review.create.basic-info.no-linked-environments')"
+    />
+    <SQLRuleFilter
+      :rule-list="ruleListOfPolicy"
+      :params="filterParams"
+      v-on="filterEvents"
+    />
+
+    <SQLRuleTable
+      :class="[state.updating && 'pointer-events-none']"
+      :rule-list="filteredRuleList"
+      :editable="hasPermission"
+      @level-change="onLevelChange"
+      @payload-change="onPayloadChange"
+      @comment-change="onCommentChange"
+    />
+    <BBButtonConfirm
+      class="mt-2"
+      :disabled="!hasPermission"
+      :style="'DELETE'"
+      :button-text="$t('sql-review.delete')"
+      :ok-text="$t('common.delete')"
+      :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
+      :require-confirm="true"
+      @confirm="onRemove"
+    />
+    <div
+      v-if="state.rulesUpdated"
+      class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky bottom-0 z-10"
+    >
+      <button type="button" class="btn-normal" @click.prevent="onCancelChanges">
+        <span> {{ $t("common.cancel") }}</span>
+      </button>
+      <button type="button" class="btn-primary" @click.prevent="onApplyChanges">
+        {{ $t("common.confirm-and-update") }}
+      </button>
+    </div>
+  </div>
   <BBAlert
     v-if="state.showDisableModal"
     :style="'CRITICAL'"
@@ -190,30 +150,40 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName, hasWorkspacePermission } from "@/utils";
+import { idFromSlug, hasWorkspacePermission } from "@/utils";
 import {
   unknown,
-  LEVEL_LIST,
   RuleLevel,
   RuleTemplate,
   SQLReviewPolicy,
   SchemaRuleEngineType,
-  convertToCategoryList,
   RuleType,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
+  UNKNOWN_ID,
+  ruleIsAvailableInSubscription,
+  convertRuleTemplateToPolicyRule,
 } from "@/types";
+import { BBTextField } from "@/bbkit";
 import {
   featureToRef,
   useCurrentUser,
   pushNotification,
   useSQLReviewStore,
+  useSubscriptionStore,
 } from "@/store";
-import { CategoryFilterItem } from "../components/SQLReview/components/SQLReviewCategoryTabFilter.vue";
-import SQLRuleLevelSummary from "../components/SQLReview/components/SQLRuleLevelSummary.vue";
+import {
+  payloadValueListToComponentList,
+  SQLRuleFilter,
+  useSQLRuleFilter,
+  SQLRuleTable,
+} from "../components/SQLReview/components";
+import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { cloneDeep } from "lodash-es";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
@@ -225,11 +195,13 @@ const props = defineProps({
 interface LocalState {
   showDisableModal: boolean;
   showEnableModal: boolean;
-  searchText: string;
   selectedCategory?: string;
   editMode: boolean;
   checkedEngine: Set<SchemaRuleEngineType>;
   checkedLevel: Set<RuleLevel>;
+  ruleList: RuleTemplate[];
+  rulesUpdated: boolean;
+  updating: boolean;
 }
 
 const { t } = useI18n();
@@ -237,17 +209,17 @@ const store = useSQLReviewStore();
 const router = useRouter();
 const currentUser = useCurrentUser();
 const ROUTE_NAME = "setting.workspace.sql-review";
+const subscriptionStore = useSubscriptionStore();
 
 const state = reactive<LocalState>({
   showDisableModal: false,
   showEnableModal: false,
-  searchText: "",
-  selectedCategory: router.currentRoute.value.query.category
-    ? (router.currentRoute.value.query.category as string)
-    : undefined,
   editMode: false,
   checkedEngine: new Set<SchemaRuleEngineType>(),
   checkedLevel: new Set<RuleLevel>(),
+  ruleList: [],
+  rulesUpdated: false,
+  updating: false,
 });
 
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
@@ -267,7 +239,7 @@ const reviewPolicy = computed((): SQLReviewPolicy => {
   );
 });
 
-const selectedRuleList = computed((): RuleTemplate[] => {
+const ruleListOfPolicy = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
     return [];
   }
@@ -306,104 +278,107 @@ const selectedRuleList = computed((): RuleTemplate[] => {
   return ruleTemplateList;
 });
 
-const engineList = computed(
-  (): { id: SchemaRuleEngineType; count: number }[] => {
-    const tmp = selectedRuleList.value.reduce((dict, rule) => {
-      for (const engine of rule.engineList) {
-        if (!dict[engine]) {
-          dict[engine] = {
-            id: engine,
-            count: 0,
-          };
-        }
-        dict[engine].count += 1;
-      }
-      return dict;
-    }, {} as { [id: string]: { id: SchemaRuleEngineType; count: number } });
-
-    return Object.values(tmp);
-  }
+watch(
+  ruleListOfPolicy,
+  (ruleList) => {
+    state.ruleList = cloneDeep(ruleList);
+  },
+  { immediate: true }
 );
 
-const errorLevelList = computed((): { id: RuleLevel; count: number }[] => {
-  return LEVEL_LIST.map((level) => ({
-    id: level,
-    count: selectedRuleList.value.filter((rule) => rule.level === level).length,
-  }));
-});
+const {
+  params: filterParams,
+  events: filterEvents,
+  filteredRuleList,
+} = useSQLRuleFilter(toRef(state, "ruleList"));
 
-const toggleCheckedEngine = (engine: SchemaRuleEngineType) => {
-  if (state.checkedEngine.has(engine)) {
-    state.checkedEngine.delete(engine);
-  } else {
-    state.checkedEngine.add(engine);
+const changeName = async (name: string) => {
+  const policy = reviewPolicy.value;
+  if (name === policy.name) {
+    return;
   }
-};
+  const upsert = {
+    name,
+    ruleList: policy.ruleList,
+  };
 
-const toggleCheckedLevel = (level: RuleLevel) => {
-  if (state.checkedLevel.has(level)) {
-    state.checkedLevel.delete(level);
-  } else {
-    state.checkedLevel.add(level);
-  }
-};
-
-const categoryFilterList = computed((): CategoryFilterItem[] => {
-  return convertToCategoryList(selectedRuleList.value).map((c) => ({
-    id: c.id,
-    name: t(`sql-review.category.${c.id.toLowerCase()}`),
-  }));
-});
-
-const selectCategory = (category: string) => {
-  state.selectedCategory = category;
-  if (category) {
-    router.replace({
-      name: `${ROUTE_NAME}.detail`,
-      query: {
-        category,
-      },
-    });
-  } else {
-    router.replace({
-      name: `${ROUTE_NAME}.detail`,
-    });
-  }
-};
-
-const filteredSelectedRuleList = computed((): RuleTemplate[] => {
-  return selectedRuleList.value.filter((selectedRule) => {
-    if (
-      !state.selectedCategory &&
-      !state.searchText &&
-      state.checkedEngine.size === 0 &&
-      state.checkedLevel.size === 0
-    ) {
-      // Select "All"
-      return true;
-    }
-
-    return (
-      (!state.selectedCategory ||
-        selectedRule.category === state.selectedCategory) &&
-      (!state.searchText ||
-        selectedRule.type
-          .toLowerCase()
-          .includes(state.searchText.toLowerCase())) &&
-      (state.checkedEngine.size === 0 ||
-        selectedRule.engineList.some((engine) =>
-          state.checkedEngine.has(engine)
-        )) &&
-      (state.checkedLevel.size === 0 ||
-        state.checkedLevel.has(selectedRule.level))
-    );
+  await useSQLReviewStore().updateReviewPolicy({
+    id: policy.id,
+    ...upsert,
   });
-});
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("sql-review.policy-updated"),
+  });
+};
+
+const markChange = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
+  if (
+    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
+  ) {
+    return;
+  }
+
+  const index = state.ruleList.findIndex((r) => r.type === rule.type);
+  if (index < 0) {
+    return;
+  }
+  const newRule = {
+    ...state.ruleList[index],
+    ...overrides,
+  };
+  state.ruleList[index] = newRule;
+  state.rulesUpdated = true;
+};
+
+const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
+  const componentList = payloadValueListToComponentList(rule, data);
+  markChange(rule, { componentList });
+};
+
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+  markChange(rule, { level });
+};
+
+const onCommentChange = (rule: RuleTemplate, comment: string) => {
+  markChange(rule, { comment });
+};
+
+const onCancelChanges = () => {
+  state.ruleList = cloneDeep(ruleListOfPolicy.value);
+};
+
+const onApplyChanges = async () => {
+  const policy = reviewPolicy.value;
+  const upsert = {
+    ruleList: state.ruleList.map((rule) =>
+      convertRuleTemplateToPolicyRule(rule)
+    ),
+  };
+
+  state.updating = true;
+  try {
+    await useSQLReviewStore().updateReviewPolicy({
+      id: policy.id,
+      name: policy.name,
+      ...upsert,
+    });
+    state.rulesUpdated = false;
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-review.policy-updated"),
+    });
+  } finally {
+    state.updating = false;
+  }
+};
 
 const onEdit = () => {
   state.editMode = true;
-  state.searchText = "";
-  state.selectedCategory = undefined;
+  filterParams.searchText = "";
+  filterParams.selectedCategory = undefined;
 };
 
 const onArchive = () => {
@@ -433,19 +408,3 @@ const onRemove = () => {
   });
 };
 </script>
-
-<style scoped>
-.slide-from-bottom-enter-active {
-  transition: all 0.2s ease-in-out;
-}
-
-.slide-from-bottom-leave-active {
-  transition: all 0.2s ease-in-out;
-}
-
-.slide-from-bottom-enter-from,
-.slide-from-bottom-leave-to {
-  transform: translateY(20px);
-  opacity: 0;
-}
-</style>

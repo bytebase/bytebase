@@ -40,10 +40,20 @@
           {{ row.title }}
         </BBTableCell>
         <BBTableCell class="w-auto">
-          {{ row.checkResult.content }}
+          <span>{{ row.checkResult.content }}</span>
+          <template
+            v-if="row.checkResult.namespace === 'bb.advisor' && getActiveRule(row.checkResult.title as RuleType)"
+          >
+            <span
+              class="ml-1 normal-link"
+              @click="setActiveRule(row.checkResult.title as RuleType)"
+              >{{ $t("sql-review.rule-detail") }}</span
+            >
+            <span class="border-r border-control-border ml-1"></span>
+          </template>
           <a
             v-if="row.link"
-            class="normal-link"
+            class="ml-1 normal-link"
             :href="row.link.url"
             :target="row.link.target"
           >
@@ -52,11 +62,20 @@
         </BBTableCell>
       </template>
     </BBTable>
+
+    <SQLRuleEditDialog
+      v-if="state.activeRule"
+      :editable="false"
+      :rule="state.activeRule.rule"
+      :payload="state.activeRule.payload"
+      :disabled="false"
+      @cancel="state.activeRule = undefined"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   TaskCheckStatus,
@@ -67,15 +86,26 @@ import {
   getRuleLocalization,
   SQLReviewPolicyErrorCode,
   RuleType,
+  RuleTemplate,
+  Task,
+  findRuleTemplate,
 } from "@/types";
 import type { BBTableColumn } from "@/bbkit";
 import { LocalizedSQLRuleErrorCodes } from "./const";
+import { SQLRuleEditDialog } from "@/components/SQLReview/components";
+import { PayloadValueType } from "../SQLReview/components/RuleConfigComponents";
+import { useReviewPolicyByEnvironmentId } from "@/store";
 
 interface ErrorCodeLink {
   title: string;
   target: string;
   url: string;
 }
+
+type PreviewSQLReviewRule = {
+  rule: RuleTemplate;
+  payload: PayloadValueType[];
+};
 
 type TableRow = {
   checkResult: TaskCheckResult;
@@ -84,11 +114,23 @@ type TableRow = {
   link: ErrorCodeLink | undefined;
 };
 
+type LocalState = {
+  activeRule: PreviewSQLReviewRule | undefined;
+};
+
 const props = defineProps({
   taskCheckRun: {
     required: true,
     type: Object as PropType<TaskCheckRun>,
   },
+  task: {
+    required: true,
+    type: Object as PropType<Task>,
+  },
+});
+
+const state = reactive<LocalState>({
+  activeRule: undefined,
 });
 
 const { t } = useI18n();
@@ -159,6 +201,8 @@ const errorCodeLink = (
   checkResult: TaskCheckResult
 ): ErrorCodeLink | undefined => {
   switch (checkResult.code) {
+    case undefined:
+      return;
     case GeneralErrorCode.OK:
       return;
     case SQLReviewPolicyErrorCode.EMPTY_POLICY:
@@ -170,7 +214,7 @@ const errorCodeLink = (
     default: {
       const url = `https://www.bytebase.com/docs/reference/error-code/${
         checkResult.namespace === "bb.advisor" ? "advisor" : "core"
-      }?source=console`;
+      }?source=console#${checkResult.code}`;
       return {
         title: t("common.view-doc"),
         target: "__blank",
@@ -215,4 +259,36 @@ const COLUMN_LIST = computed((): BBTableColumn[] => {
   }
   return [STATUS, TITLE, CONTENT];
 });
+
+const reviewPolicy = useReviewPolicyByEnvironmentId(
+  computed(() => props.task.instance.environment.id)
+);
+const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
+  const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
+  if (!rule) {
+    return undefined;
+  }
+
+  const ruleTemplate = findRuleTemplate(type);
+  if (!ruleTemplate) {
+    return undefined;
+  }
+  ruleTemplate.comment = rule.comment;
+  const { componentList } = ruleTemplate;
+  const payload = componentList.reduce<PayloadValueType[]>(
+    (list, component) => {
+      list.push(component.payload.value ?? component.payload.default);
+      return list;
+    },
+    []
+  );
+
+  return {
+    rule: ruleTemplate,
+    payload: payload,
+  };
+};
+const setActiveRule = (type: RuleType) => {
+  state.activeRule = getActiveRule(type);
+};
 </script>

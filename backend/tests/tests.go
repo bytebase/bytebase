@@ -53,9 +53,9 @@ var (
 		name TEXT NULL
 	);`
 	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
-	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]]]`
+	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]],[false,false,false,false,false]]`
 	bookDataQuery       = `SELECT * FROM book;`
-	bookDataSQLResult   = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]]]`
+	bookDataSQLResult   = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]],[false,false]]`
 
 	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
 	dataUpdateStatement      = `
@@ -171,6 +171,7 @@ type config struct {
 	vcsProviderCreator      fake.VCSProviderCreator
 	feishuProverdierCreator fake.FeishuProviderCreator
 	readOnly                bool
+	skipOnboardingData      bool
 }
 
 var (
@@ -235,7 +236,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL), config.skipOnboardingData)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -293,20 +294,21 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData bool) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                 testReleaseMode,
-		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:             port + 1,
-		SampleDatabasePort:   port + 2,
-		PgUser:               pgUser,
-		DataDir:              dataDir,
-		ResourceDir:          resourceDir,
-		AppRunnerInterval:    1 * time.Second,
-		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
-		FeishuAPIURL:         feishuAPIURL,
-		PgURL:                pgURL,
+		Mode:                       testReleaseMode,
+		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:                   port + 1,
+		SampleDatabasePort:         port + 2,
+		PgUser:                     pgUser,
+		DataDir:                    dataDir,
+		ResourceDir:                resourceDir,
+		AppRunnerInterval:          1 * time.Second,
+		BackupRunnerInterval:       10 * time.Second,
+		BackupStorageBackend:       api.BackupStorageBackendLocal,
+		FeishuAPIURL:               feishuAPIURL,
+		PgURL:                      pgURL,
+		TestOnlySkipOnboardingData: skipOnboardingData,
 	}
 }
 
@@ -620,7 +622,7 @@ func (ctl *controller) Signup() error {
 	resp, err := ctl.client.Post(
 		fmt.Sprintf("%s/users", ctl.v1APIURL),
 		"",
-		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo"}`),
+		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo","user_type":"USER"}`),
 	)
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")

@@ -30,8 +30,16 @@ const (
 	SQLAdviseAPIMetricName metric.Name = "bb.api.sql.advise"
 	// SubscriptionTrialMetricName is the metric name for trial.
 	SubscriptionTrialMetricName metric.Name = "bb.subscription.trial"
-	// FirstPrincipalMetricName is the metric name for the first principal.
-	FirstPrincipalMetricName metric.Name = "bb.principal.registration"
+	// PrincipalRegistrationMetricName is the metric name for the principal registration event.
+	PrincipalRegistrationMetricName metric.Name = "bb.principal.registration"
+	// IssueCreateMetricName is the metric name for issue creation event.
+	IssueCreateMetricName metric.Name = "bb.issue.create"
+	// TaskStatusMetricName is the metric name for task status update event.
+	TaskStatusMetricName metric.Name = "bb.task.status"
+	// SQLEditorExecutionMetricName is the metric name for SQL Editor execution event.
+	SQLEditorExecutionMetricName metric.Name = "bb.sql-editor.execute"
+	// PrincipalCreateMetricName is the metric name for principal creation event.
+	PrincipalCreateMetricName metric.Name = "bb.principal.create"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count.

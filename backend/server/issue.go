@@ -20,8 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -38,6 +40,16 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+		}
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.IssueCreateMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"type": issue.Type,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -336,6 +348,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedComposedIssue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
@@ -541,109 +554,9 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate, api.IssueDatabaseSchemaUpdateGhost:
 		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
-	case api.IssueDatabaseRollback:
-		return s.getPipelineCreateForDatabaseRollback(ctx, issueCreate)
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
-}
-
-func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
-	c := api.RollbackContext{}
-	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
-		return nil, err
-	}
-
-	issueID := c.IssueID
-	if len(c.TaskIDList) != 1 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
-	}
-	taskID := c.TaskIDList[0]
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with ID %d", issueID)).SetInternal(err)
-	}
-	if issue == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", issueID))
-	}
-	task, err := s.store.GetTaskV2ByID(ctx, taskID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get task with ID %d", taskID)).SetInternal(err)
-	}
-	if task == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
-	}
-	if task.Type != api.TaskDatabaseDataUpdate {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-	if instance.Engine != db.MySQL {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", instance.Engine))
-	}
-	if task.PipelineID != issue.PipelineUID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.UID))
-	}
-	if task.Status != api.TaskDone && task.Status != api.TaskFailed {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d has status %s, must be %s or %s", taskID, task.Status, api.TaskDone, api.TaskFailed))
-	}
-
-	taskPayload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal the task payload with ID %d", taskID)).SetInternal(err)
-	}
-	switch {
-	case !taskPayload.RollbackEnabled:
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Rollback SQL is not requested to build.")
-	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
-	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, taskPayload.RollbackError))
-	case taskPayload.RollbackStatement != "" && taskPayload.RollbackError != "":
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", taskPayload.RollbackStatement, taskPayload.RollbackError))
-	}
-
-	issueCreateContext := &api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Data,
-				DatabaseID:    *task.DatabaseID,
-				Statement:     taskPayload.RollbackStatement,
-			},
-		},
-	}
-	bytes, err := json.Marshal(issueCreateContext)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue create context for rollback issue")
-	}
-	issueCreate.CreateContext = string(bytes)
-	issueCreate.Type = api.IssueDatabaseDataUpdate
-	pipelineCreate, err := s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(pipelineCreate.StageList) != 1 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Must have one stage for a rollback task")
-	}
-	if len(pipelineCreate.StageList[0].TaskList) != 1 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Must have one task for a rollback task")
-	}
-	rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(pipelineCreate.StageList[0].TaskList[0].Payload), rollbackTaskPayload); err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal the rollback task create payload").SetInternal(err)
-	}
-	rollbackTaskPayload.RollbackFromIssueID = issueID
-	rollbackTaskPayload.RollbackFromTaskID = taskID
-	buf, err := json.Marshal(rollbackTaskPayload)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal rollback task payload").SetInternal(err)
-	}
-	pipelineCreate.StageList[0].TaskList[0].Payload = string(buf)
-
-	return pipelineCreate, nil
 }
 
 func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
@@ -689,7 +602,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	if c.BackupID != 0 {
-		backup, err := s.store.GetBackupByID(ctx, c.BackupID)
+		backup, err := s.store.GetBackupV2(ctx, c.BackupID)
 		if err != nil {
 			return nil, errors.Errorf("failed to find backup %v", c.BackupID)
 		}
@@ -823,11 +736,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
-	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.UID)
+	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.UID)).SetInternal(err)
 	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
+	}
+
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
@@ -960,7 +878,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				schemaVersion := common.DefaultMigrationVersion()
 				migrationDetailList := databaseToMigrationList[database.UID]
 				for _, migrationDetail := range migrationDetailList {
-					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+						EnvironmentID: &database.EnvironmentID,
+						ResourceID:    &database.InstanceID,
+					})
 					if err != nil {
 						return nil, err
 					}
@@ -1100,11 +1021,16 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("DML(data) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
-			Statement:       d.Statement,
-			SheetID:         d.SheetID,
-			SchemaVersion:   schemaVersion,
-			VCSPushEvent:    vcsPushEvent,
-			RollbackEnabled: d.RollbackEnabled,
+			Statement:         d.Statement,
+			SheetID:           d.SheetID,
+			SchemaVersion:     schemaVersion,
+			VCSPushEvent:      vcsPushEvent,
+			RollbackEnabled:   d.RollbackEnabled,
+			RollbackSQLStatus: api.RollbackSQLStatusPending,
+		}
+		if d.RollbackDetail != nil {
+			payload.RollbackFromIssueID = d.RollbackDetail.IssueID
+			payload.RollbackFromTaskID = d.RollbackDetail.TaskID
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1319,6 +1245,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	case db.Spanner:
+		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
+	case db.Oracle:
 		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)

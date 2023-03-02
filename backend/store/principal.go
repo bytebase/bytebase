@@ -3,16 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetPrincipalList gets a list of Principal instances.
@@ -67,9 +64,6 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	}
-	if user.IdentityProviderResourceID != nil {
-		principal.IdentityProviderName = *user.IdentityProviderResourceID
-	}
 	return principal, nil
 }
 
@@ -79,11 +73,7 @@ type FindUserMessage struct {
 	Email       *string
 	Role        *api.Role
 	ShowDeleted bool
-	// IdentityProviderResourceID is the name of the identity provider related with the user.
-	// If set with empty string, then only those users that are not from the idp will be found.
-	IdentityProviderResourceID *string
-	// Available only if the IdentityProviderResourceID is not nil.
-	IdentityProviderUserIdentifier string
+	Type        *api.PrincipalType
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -97,15 +87,14 @@ type UpdateUserMessage struct {
 
 // UserMessage is the message for an user.
 type UserMessage struct {
-	ID                         int
-	Email                      string
-	Name                       string
-	Type                       api.PrincipalType
-	PasswordHash               string
-	IdentityProviderResourceID *string
-	IdentityProviderUserInfo   *storepb.IdentityProviderUserInfo
-	Role                       api.Role
-	MemberDeleted              bool
+	ID int
+	// Email must be lower case.
+	Email         string
+	Name          string
+	Type          api.PrincipalType
+	PasswordHash  string
+	Role          api.Role
+	MemberDeleted bool
 }
 
 // GetUser gets an user.
@@ -187,15 +176,16 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	return user, nil
 }
 
-func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
-	// Do not to select those archived IdP user.
-	where, args = append(where, fmt.Sprintf("(principal.idp_id IS NULL OR idp.row_status = $%d)", len(args)+1)), append(args, api.Normal)
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Role; v != nil {
 		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
@@ -205,21 +195,6 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	}
 
 	var userMessages []*UserMessage
-	if find.IdentityProviderResourceID != nil {
-		if *find.IdentityProviderResourceID == "" {
-			where = append(where, "principal.idp_id IS NULL")
-		} else {
-			// Get identity provider's UID with resource id.
-			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
-				ResourceID: find.IdentityProviderResourceID,
-			})
-			if err != nil {
-				return nil, err
-			}
-			where, args = append(where, fmt.Sprintf("principal.idp_id = $%d", len(args)+1)), append(args, identityProvider.UID)
-			where = append(where, fmt.Sprintf("principal.idp_user_info->>'identifier' = '%s'", find.IdentityProviderUserIdentifier))
-		}
-	}
 	rows, err := tx.QueryContext(ctx, `
 			SELECT
 				principal.id AS user_id,
@@ -227,13 +202,10 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 				principal.name,
 				principal.type,
 				principal.password_hash,
-				principal.idp_user_info,
 				member.role,
-				member.row_status AS row_status,
-				idp.resource_id AS idp_resource_id
+				member.row_status AS row_status
 			FROM principal
 			LEFT JOIN member ON principal.id = member.principal_id
-			LEFT JOIN idp ON principal.idp_id = idp.id
 			WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -243,18 +215,15 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 	defer rows.Close()
 	for rows.Next() {
 		var userMessage UserMessage
-		var role, rowStatus, idpResourceID sql.NullString
-		var idpUserInfo string
+		var role, rowStatus sql.NullString
 		if err := rows.Scan(
 			&userMessage.ID,
 			&userMessage.Email,
 			&userMessage.Name,
 			&userMessage.Type,
 			&userMessage.PasswordHash,
-			&idpUserInfo,
 			&role,
 			&rowStatus,
-			&idpResourceID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -270,14 +239,6 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 		} else if userMessage.ID != api.SystemBotID {
 			userMessage.MemberDeleted = true
 		}
-		if idpResourceID.Valid {
-			userMessage.IdentityProviderResourceID = &idpResourceID.String
-			var identityProviderUserInfo storepb.IdentityProviderUserInfo
-			if err := json.Unmarshal([]byte(idpUserInfo), &identityProviderUserInfo); err != nil {
-				return nil, err
-			}
-			userMessage.IdentityProviderUserInfo = &identityProviderUserInfo
-		}
 		userMessages = append(userMessages, &userMessage)
 	}
 	return userMessages, nil
@@ -285,8 +246,11 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 
 // CreateUser creates an user.
 func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID int) (*UserMessage, error) {
+	// Double check the passing-in emails.
 	// We use lower-case for emails.
-	create.Email = strings.ToLower(create.Email)
+	if create.Email != strings.ToLower(create.Email) {
+		return nil, errors.Errorf("emails must be lower-case when they are passed into store")
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -296,21 +260,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 
 	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
 	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
-	// Set idp fields into principal only when the related id is not null.
-	if create.IdentityProviderResourceID != nil {
-		identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
-			ResourceID: create.IdentityProviderResourceID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", *create.IdentityProviderResourceID)
-		}
-		set, args = append(set, "idp_id"), append(args, identityProvider.UID)
-		userInfoBytes, err := protojson.Marshal(create.IdentityProviderUserInfo)
-		if err != nil {
-			return nil, err
-		}
-		set, args = append(set, "idp_user_info"), append(args, string(userInfoBytes))
-	}
 	placeholder := []string{}
 	for index := range set {
 		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
@@ -366,14 +315,12 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	user := &UserMessage{
-		ID:                         userID,
-		Email:                      create.Email,
-		Name:                       create.Name,
-		Type:                       create.Type,
-		PasswordHash:               create.PasswordHash,
-		Role:                       role,
-		IdentityProviderResourceID: create.IdentityProviderResourceID,
-		IdentityProviderUserInfo:   create.IdentityProviderUserInfo,
+		ID:           userID,
+		Email:        create.Email,
+		Name:         create.Name,
+		Type:         create.Type,
+		PasswordHash: create.PasswordHash,
+		Role:         role,
 	}
 	s.userIDCache.Store(user.ID, user)
 	return user, nil
@@ -387,7 +334,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, strings.ToLower(*v))
 	}
 	if v := patch.Name; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("name = $%d", len(principalArgs)+1)), append(principalArgs, *v)
@@ -436,6 +383,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		}
 		return nil, FormatError(err)
 	}
+
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE member

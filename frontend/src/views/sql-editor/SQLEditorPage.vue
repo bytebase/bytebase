@@ -2,10 +2,40 @@
   <div class="sqleditor--wrapper">
     <TabList />
     <Splitpanes class="default-theme flex flex-col flex-1 overflow-hidden">
-      <Pane size="20">
+      <Pane v-if="windowWidth >= 800" size="20">
         <AsidePanel @alter-schema="handleAlterSchema" />
       </Pane>
-      <Pane size="80" class="relative">
+      <template v-else>
+        <teleport to="body">
+          <div
+            id="fff"
+            class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[99999999] transition-all"
+            :class="[
+              state.sidebarExpanded
+                ? 'left-[80%] -translate-x-5'
+                : 'left-[1rem]',
+            ]"
+            style="
+              transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+              transition-duration: 300ms;
+            "
+            @click="state.sidebarExpanded = !state.sidebarExpanded"
+          >
+            <heroicons-outline:chevron-left
+              class="w-6 h-6 transition-transform"
+              :class="[state.sidebarExpanded ? '' : '-scale-100']"
+            />
+          </div>
+          <NDrawer
+            v-model:show="state.sidebarExpanded"
+            width="80vw"
+            placement="left"
+          >
+            <AsidePanel @alter-schema="handleAlterSchema" />
+          </NDrawer>
+        </teleport>
+      </template>
+      <Pane class="relative">
         <template v-if="allowAccess">
           <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
             <Splitpanes
@@ -79,6 +109,8 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
+import { stringify } from "qs";
+import { NDrawer } from "naive-ui";
 
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
@@ -95,14 +127,23 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
-import { isDatabaseAccessible } from "@/utils";
+import { allowUsingSchemaEditor, isDatabaseAccessible } from "@/utils";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
+import { useWindowSize } from "@vueuse/core";
+
+type LocalState = {
+  sidebarExpanded: boolean;
+};
 
 type AlterSchemaState = {
   showModal: boolean;
   databaseIdList: DatabaseId[];
 };
+
+const state = reactive<LocalState>({
+  sidebarExpanded: false,
+});
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
@@ -112,6 +153,8 @@ const currentUser = useCurrentUser();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
+
+const { width: windowWidth } = useWindowSize();
 
 const allowAccess = computed(() => {
   const { databaseId } = tabStore.currentTab.connection;
@@ -146,12 +189,37 @@ const alterSchemaState = reactive<AlterSchemaState>({
   databaseIdList: [],
 });
 
-const handleAlterSchema = async (params: { databaseId: DatabaseId }) => {
-  const { databaseId } = params;
+const handleAlterSchema = async (params: {
+  databaseId: DatabaseId;
+  schema: string;
+  table: string;
+}) => {
+  const { databaseId, schema, table } = params;
   const database = databaseStore.getDatabaseById(databaseId);
-  await useProjectStore().getOrFetchProjectById(database.project.id);
-  alterSchemaState.databaseIdList = [databaseId];
-  alterSchemaState.showModal = true;
+  if (allowUsingSchemaEditor([database])) {
+    await useProjectStore().getOrFetchProjectById(database.project.id);
+    // TODO: support open selected database tab directly in Schema Editor.
+    alterSchemaState.databaseIdList = [databaseId];
+    alterSchemaState.showModal = true;
+  } else {
+    const exampleSQL = ["ALTER TABLE"];
+    if (table) {
+      if (schema) {
+        exampleSQL.push(`${schema}.${table}`);
+      } else {
+        exampleSQL.push(`${table}`);
+      }
+    }
+    const query = {
+      template: "bb.issue.database.schema.update",
+      name: `[${database.name}] Alter schema`,
+      project: database.project.id,
+      databaseList: databaseId,
+      sql: exampleSQL.join(" "),
+    };
+    const url = `/issue/new?${stringify(query)}`;
+    window.open(url, "_blank");
+  }
 };
 </script>
 

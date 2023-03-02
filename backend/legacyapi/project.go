@@ -22,6 +22,8 @@ const (
 	// This can be mutated by the user. But for now this is only used by onboarding flow to create
 	// a prod instance after first signup, so it's safe to refer it.
 	DefaultProdEnvironmentID = "prod"
+	// DefaultProdEnvironmentUID is the initial resource UID for the prod environment.
+	DefaultProdEnvironmentUID = 102
 )
 
 // ProjectWorkflowType is the workflow type for projects.
@@ -96,6 +98,8 @@ type Project struct {
 
 // ProjectCreate is the API message for creating a project.
 type ProjectCreate struct {
+	ResourceID string `jsonapi:"attr,resourceId"`
+
 	// Domain specific fields
 	Name             string                  `jsonapi:"attr,name"`
 	Key              string                  `jsonapi:"attr,key"`
@@ -130,13 +134,13 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name             *string            `jsonapi:"attr,name"`
-	Key              *string            `jsonapi:"attr,key"`
-	TenantMode       *ProjectTenantMode `jsonapi:"attr,tenantMode"`
-	DBNameTemplate   *string            `jsonapi:"attr,dbNameTemplate"`
-	WorkflowType     *string            `jsonapi:"attr,workflowType"`     // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
-	SchemaChangeType *string            `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
-	LGTMCheckSetting *LGTMCheckSetting  `jsonapi:"attr,lgtmCheckSetting"`
+	Name             *string           `jsonapi:"attr,name"`
+	Key              *string           `jsonapi:"attr,key"`
+	TenantMode       *string           `jsonapi:"attr,tenantMode"`
+	DBNameTemplate   *string           `jsonapi:"attr,dbNameTemplate"`
+	WorkflowType     *string           `jsonapi:"attr,workflowType"`     // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
+	SchemaChangeType *string           `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
+	LGTMCheckSetting *LGTMCheckSetting `jsonapi:"attr,lgtmCheckSetting"`
 }
 
 var (

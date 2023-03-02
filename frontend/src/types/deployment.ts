@@ -1,12 +1,8 @@
-import { Project } from ".";
 import { DeploymentConfigId } from "./id";
 import { LabelKeyType, LabelValueType } from "./label";
 
 export type DeploymentConfig = {
   id: DeploymentConfigId;
-
-  // Related fields
-  project: Project;
 
   // Domain specific fields
   schedule: DeploymentSchedule;

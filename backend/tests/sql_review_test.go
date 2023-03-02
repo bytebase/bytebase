@@ -108,8 +108,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test SQL Review Project",
-		Key:  "TestSQLReview",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test SQL Review Project",
+		Key:        "TestSQLReview",
 	})
 	a.NoError(err)
 
@@ -133,6 +134,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NotNil(policy.Environment)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgInstance",
 		Engine:        db.Postgres,
@@ -285,8 +287,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test SQL Review Project",
-		Key:  "TestSQLReview",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test SQL Review Project",
+		Key:        "TestSQLReview",
 	})
 	a.NoError(err)
 
@@ -310,6 +313,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NotNil(policy.Environment)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
@@ -391,7 +395,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
-	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]]]", origin)
+	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]],[false]]", origin)
 	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)

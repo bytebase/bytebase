@@ -51,6 +51,8 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
@@ -67,6 +69,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
@@ -207,11 +210,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	log.Info(fmt.Sprintf("disallowSignup=%t", profile.DisallowSignup))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
@@ -296,14 +297,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := getInitSetting(ctx, storeInstance)
+	config, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = activity.NewManager(storeInstance, profile)
+	s.ActivityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 	e := echo.New()
 	e.Debug = profile.Debug
@@ -338,7 +339,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
 
-		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile)
+		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
@@ -357,7 +358,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
 		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance)
+		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
 		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
@@ -458,6 +459,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
+			if s.profile.TestOnlySkipOnboardingData {
+				return nil
+			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
 				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
@@ -469,11 +473,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
-	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
+	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
+	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
 	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
+	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -508,6 +513,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -575,7 +583,7 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
+func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
@@ -643,6 +651,22 @@ func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConf
 		return nil, err
 	}
 
+	// initial workspace general setting
+	bytes, err := json.Marshal(storepb.WorkspaceGeneralSettingPayload{
+		ExternalUrl:    s.profile.ExternalURL,
+		DisallowSignup: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingWorkspaceGeneral,
+		Value:       string(bytes),
+		Description: "Workspace general settings",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	return conf, nil
 }
 
@@ -667,10 +691,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		if s.profile.Mode == common.ReleaseModeDev {
-			s.runnerWG.Add(1)
-			go s.RollbackRunner.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
@@ -752,6 +774,48 @@ func (s *Server) GetWorkspaceID() string {
 	return s.workspaceID
 }
 
+// getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
+func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
+	policy := &advisor.SQLReviewPolicy{
+		Name: "SQL Review Sample Policy",
+	}
+
+	ruleList := []*advisor.SQLReviewRule{}
+
+	// Add DropEmptyDatabase rule for MySQL and TiDB.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleDropEmptyDatabase,
+			Level:   advisor.SchemaRuleLevelError,
+			Engine:  e,
+			Payload: "{}",
+		})
+	}
+
+	// Add ColumnNotNull rule for MySQL, TiDB and Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleColumnNotNull,
+			Level:   advisor.SchemaRuleLevelWarning,
+			Engine:  e,
+			Payload: "{}",
+		})
+	}
+
+	// Add TableDropNamingConvention rule for MySQL, TiDB and Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleTableDropNamingConvention,
+			Level:   advisor.SchemaRuleLevelError,
+			Engine:  e,
+			Payload: "{\"format\":\"_del$\"}",
+		})
+	}
+
+	policy.RuleList = ruleList
+	return policy
+}
+
 // generateOnboardingData generates onboarding data after the first signup.
 func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
@@ -815,17 +879,40 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	dbName := postgres.SampleDatabase
+	envID := api.DefaultProdEnvironmentID
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &dbName,
+		EnvironmentID: &envID,
+		InstanceID:    &instance.ResourceID,
+		DatabaseName:  &dbName,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance")
 	}
 
-	// Need to sync database schema so we can create the schema update issue later.
+	// Need to sync database schema so we can configure sensitive data policy and create the schema
+	// update issue later.
 	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync sample database schema")
+	}
+
+	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
+	// change issue to demonstrate the SQL Review feature.
+	policyPayload, err := json.Marshal(*getSampleSQLReviewPolicy())
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal onboarding SQL Review policy")
+	}
+
+	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       api.DefaultProdEnvironmentUID,
+		ResourceType:      api.PolicyResourceTypeEnvironment,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeSQLReview,
+		InheritFromParent: true,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
 	}
 
 	// Create a schema update issue.
@@ -835,7 +922,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 				{
 					MigrationType: db.Migrate,
 					DatabaseID:    database.UID,
-					Statement:     "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT NOT NULL DEFAULT '';",
+					// This will violate the NOT NULL SQL Review policy configured above and emit a
+					// warning. Thus to demonstrate the SQL Review capability.
+					Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 				},
 			},
 		})
@@ -862,12 +951,41 @@ Click "Approve" button to apply the schema update.`,
 	}
 
 	// Bookmark the issue.
-	if _, err := s.store.CreateBookmark(ctx, &api.BookmarkCreate{
-		CreatorID: userID,
-		Name:      "Sample Issue",
-		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
-	}); err != nil {
+	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
+		Name: "Sample Issue",
+		Link: fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
+	}, userID); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
+	}
+
+	// Add a sensitive data policy to pair it with the sample query below. So that user can
+	// experience the sensitive data masking feature from SQL Editor.
+	sensitiveDataPolicy := api.SensitiveDataPolicy{
+		SensitiveDataList: []api.SensitiveData{
+			{
+				Schema: "public",
+				Table:  "salary",
+				Column: "amount",
+				Type:   api.SensitiveDataMaskTypeDefault,
+			},
+		},
+	}
+	policyPayload, err = json.Marshal(sensitiveDataPolicy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
+	}
+
+	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       database.UID,
+		ResourceType:      api.PolicyResourceTypeDatabase,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeSensitiveData,
+		InheritFromParent: true,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, userID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding sensitive data policy")
 	}
 
 	// Create a SQL sheet with sample queries.

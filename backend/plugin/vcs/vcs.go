@@ -18,10 +18,10 @@ import (
 type Type string
 
 const (
-	// GitLabSelfHost is the VCS type for GitLab self host.
-	GitLabSelfHost Type = "GITLAB_SELF_HOST"
-	// GitHubCom is the VCS type for GitHub.com.
-	GitHubCom Type = "GITHUB_COM"
+	// GitLab is the VCS type for GitLab (both GitLab.com and self-hosted).
+	GitLab Type = "GITLAB"
+	// GitHub is the VCS type for GitHub (both GitHub.com and GitHun Enterprise).
+	GitHub Type = "GITHUB"
 
 	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
 	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
@@ -146,7 +146,7 @@ type UserInfo struct {
 
 // Repository is the API message for repository info.
 type Repository struct {
-	ID       int64  `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	FullPath string `json:"fullPath"`
 	WebURL   string `json:"webUrl"`

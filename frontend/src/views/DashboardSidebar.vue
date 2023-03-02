@@ -1,6 +1,8 @@
 <template>
   <!-- Navigation -->
   <nav class="px-2">
+    <BytebaseLogo class="w-full px-1 mb-3" />
+
     <button
       class="mb-2 w-full flex items-center justify-between rounded-md border border-control-border bg-white hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
       @click="onClickSearchButton"
@@ -55,6 +57,7 @@
 
 <script lang="ts" setup>
 import { useKBarHandler } from "@bytebase/vue-kbar";
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
 import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";
 import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";

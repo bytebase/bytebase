@@ -95,6 +95,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		log.Error("Failed to unmarshal response body", zap.String("token", token), zap.String("body", string(body)), zap.Error(err))
 		return nil, errors.Wrap(err, "failed to unmarshal response body")
 	}
+	log.Debug("User info", zap.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {

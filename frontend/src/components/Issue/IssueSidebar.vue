@@ -1,7 +1,7 @@
 <template>
   <aside class="pr-0.5">
     <h2 class="sr-only">Details</h2>
-    <div class="grid gap-y-6 gap-x-6 grid-cols-3">
+    <div class="grid gap-y-6 gap-x-1 grid-cols-3">
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ $t("common.status") }}
@@ -72,7 +72,7 @@
       </template>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-1 grid-cols-3"
     >
       <template v-if="showStageSelect">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -100,6 +100,8 @@
           />
         </div>
       </template>
+
+      <TaskRollbackView />
 
       <template v-if="!isTenantMode">
         <!--
@@ -166,11 +168,15 @@
             }
           "
         >
-          {{ databaseName }}
-          <br />
-          <span class="text-control-light">{{
-            showDatabaseCreationLabel
-          }}</span>
+          <div class="flex items-center">
+            <span>{{ databaseName }}</span>
+            <SQLEditorButton
+              v-if="databaseEntity"
+              class="ml-1"
+              :database="databaseEntity"
+            />
+          </div>
+          <div class="text-control-light">{{ showDatabaseCreationLabel }}</div>
         </div>
       </template>
 
@@ -211,7 +217,7 @@
       </template>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-1 grid-cols-3"
     >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.project") }}
@@ -273,7 +279,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
+import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
 import { isEqual } from "lodash-es";
 import { NDatePicker } from "naive-ui";
 import { useRouter } from "vue-router";
@@ -284,12 +290,13 @@ import StageSelect from "./StageSelect.vue";
 import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import FeatureModal from "../FeatureModal.vue";
 import { InputField } from "@/plugins";
-import type {
+import {
   Database,
   Environment,
   Project,
@@ -302,6 +309,7 @@ import type {
   Instance,
   DatabaseLabel,
   Principal,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   allTaskList,
@@ -326,6 +334,7 @@ import {
   useAllowProjectOwnerToApprove,
 } from "./logic";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
 
 dayjs.extend(isSameOrAfter);
 
@@ -418,6 +427,8 @@ const project = computed((): Project => {
   }
   return (issue.value as Issue).project;
 });
+
+const databaseEntity = ref<Database>();
 
 const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties
@@ -548,6 +559,30 @@ const clickDatabase = () => {
       });
   }
 };
+
+watchEffect(() => {
+  if (props.database) {
+    databaseEntity.value = props.database;
+  } else {
+    const name = databaseName.value;
+    if (name) {
+      useDatabaseStore()
+        .fetchDatabaseByInstanceIdAndName({
+          instanceId: props.instance.id,
+          name,
+        })
+        .then((db) => {
+          if (db && db.id !== UNKNOWN_ID) {
+            databaseEntity.value = db;
+          } else {
+            databaseEntity.value = undefined;
+          }
+        });
+    } else {
+      databaseEntity.value = undefined;
+    }
+  }
+});
 
 const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 

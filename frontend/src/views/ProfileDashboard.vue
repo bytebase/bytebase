@@ -74,10 +74,7 @@
             />
             <!-- pb-1.5 is to avoid flicking when entering/existing the editing state -->
             <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
-              {{ principal.name
-              }}<span class="text-gray-400">{{
-                getUserRelatedDomainName()
-              }}</span>
+              {{ principal.name }}
             </h1>
             <span
               v-if="principal.type === 'SERVICE_ACCOUNT'"
@@ -123,7 +120,7 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <input
-                v-if="state.editing && !isSSOUser"
+                v-if="state.editing"
                 id="email"
                 required
                 autocomplete="off"
@@ -139,7 +136,7 @@
             </dd>
           </div>
 
-          <template v-if="state.editing && !isSSOUser">
+          <template v-if="state.editing">
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">
                 {{ $t("settings.profile.password") }}
@@ -203,7 +200,6 @@ import { hasWorkspacePermission } from "../utils";
 import {
   featureToRef,
   useCurrentUser,
-  useIdentityProviderStore,
   usePrincipalStore,
   useUserStore,
 } from "@/store";
@@ -222,7 +218,6 @@ const props = defineProps<{
 const currentUser = useCurrentUser();
 const principalStore = usePrincipalStore();
 const userStore = useUserStore();
-const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   editing: false,
 });
@@ -264,21 +259,6 @@ const passwordMismatch = computed(() => {
     state.editingPrincipal?.password != state.passwordConfirm
   );
 });
-
-const isSSOUser = computed(() => {
-  const name = `users/${principal.value.id}`;
-  return userStore.userMapByName.get(name)?.identityProvider !== "";
-});
-
-const getUserRelatedDomainName = () => {
-  const idp = identityProviderStore.getIdentityProviderByName(
-    `idps/${principal.value.identityProviderName}`
-  );
-  if (!idp) {
-    return "";
-  }
-  return `@${idp.domain}`;
-};
 
 // User can change her own info.
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.

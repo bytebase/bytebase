@@ -84,9 +84,9 @@ export function isUrl(str: string): boolean {
 }
 
 // Performs inline swap, also handles negative index (counting from the end)
-// array_swap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
-// array_swap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
-export function array_swap(arr: any[], old_index: number, new_index: number) {
+// arraySwap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
+// arraySwap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
+export function arraySwap(arr: any[], old_index: number, new_index: number) {
   while (old_index < 0) {
     old_index += arr.length;
   }
@@ -189,16 +189,21 @@ export function removeElementBySelector(selector: string) {
   document.body.querySelectorAll(selector).forEach((e) => e.remove());
 }
 
+type CompareFunc = "gt" | "lt" | "eq" | "neq" | "gte" | "lte";
 // semverCompare compares version string v1 is greater than v2.
 // It should be used to handle the database pseudo semantic version likes "8.0.29-0ubuntu0.20.04.3".
-export function semverCompare(v1: string, v2: string) {
-  const formatedV1 = semver.coerce(v1);
-  const formatedV2 = semver.coerce(v2);
-  if (!formatedV1 || !formatedV2) {
+export function semverCompare(
+  v1: string,
+  v2: string,
+  method: CompareFunc = "gt"
+) {
+  const formattedV1 = semver.coerce(v1);
+  const formattedV2 = semver.coerce(v2);
+  if (!formattedV1 || !formattedV2) {
     return false;
   }
 
-  return semver.gt(formatedV1, formatedV2);
+  return semver[method](formattedV1, formattedV2);
 }
 
 export function clearObject(obj: any) {

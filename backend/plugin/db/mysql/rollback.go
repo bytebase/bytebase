@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -25,8 +26,6 @@ var (
 	// The (?s) is a modifier that makes "." to match the new line character, which is a valid character in the MySQL database and name.
 	reDatabaseTable = regexp.MustCompile("(?s)`(.+)`\\.`(.+)`")
 )
-
-const binlogSizeLimit = 8 * 1024 * 1024
 
 // GetRollbackSQL generates the rollback SQL for the list of binlog events in the reversed order.
 func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string, error) {
@@ -58,7 +57,7 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 // The binlog file names and positions are used to specify the binlog events range for rollback SQL generation.
 // tableCatalog is a map from table names to column names. It is used to map positional placeholders in the binlog events to the actual columns to generate valid SQL statements.
 // TODO(dragonly): parse/filter/generate rollback SQL in stream. Limit the generated SQL size to 8MB for now.
-func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit int, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
@@ -96,7 +95,6 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 		return "", errors.Wrap(err, "failed to create stderr pipe")
 	}
 	defer errPipe.Close()
-	errScanner := bufio.NewScanner(errPipe)
 
 	if err := cmd.Start(); err != nil {
 		return "", errors.Wrap(err, "failed to run mysqlbinlog")
@@ -119,26 +117,28 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 		rollbackSQLList = append(rollbackSQLList, sql)
 	}
 
-	var errBuilder strings.Builder
-	for errScanner.Scan() {
-		line := errScanner.Text()
-		// Log the error, but return the first 1024 characters in the error to users.
-		log.Warn(line)
-		if errBuilder.Len() < 1024 {
-			if _, err := errBuilder.WriteString(line); err != nil {
-				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
-			}
-			if _, err := errBuilder.WriteString("\n"); err != nil {
-				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
-			}
+	errReader := bufio.NewReader(errPipe)
+	errBuilder := strings.Builder{}
+	for {
+		line, err := errReader.ReadString('\n')
+		if err != io.EOF && err != nil {
+			return "", errors.Wrap(err, "failed to read from stderr")
+		}
+		if strings.HasPrefix(line, "ERROR: ") {
+			_, _ = errBuilder.WriteString(line)
+			_, _ = errBuilder.WriteString("\n")
+		}
+		if err == io.EOF {
+			break
 		}
 	}
-	if errScanner.Err() != nil {
-		return "", errors.Wrap(errScanner.Err(), "error scanner failed")
+
+	if errBuilder.Len() > 0 {
+		return "", errors.Errorf("mysqlbinlog error: %s", errBuilder.String())
 	}
 
 	if err = cmd.Wait(); err != nil {
-		return "", errors.Wrapf(err, "mysqlbinlog error: %s", errBuilder.String())
+		return "", errors.Wrapf(err, "failed to run mysqlbinlog")
 	}
 
 	return strings.Join(rollbackSQLList, "\n\n"), nil

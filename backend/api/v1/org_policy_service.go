@@ -450,6 +450,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			Level:   level,
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
+			Comment: rule.Comment,
 			Engine:  convertToEngine(db.Type(rule.Engine)),
 		})
 	}
@@ -480,6 +481,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			Level:   level,
 			Payload: rule.Payload,
 			Type:    advisor.SQLReviewRuleType(rule.Type),
+			Comment: rule.Comment,
 			Engine:  advisordb.Type(convertEngine(rule.Engine)),
 		})
 	}
@@ -535,6 +537,7 @@ func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_Sensitive
 			maskType = v1pb.SensitiveDataMaskType_DEFAULT
 		}
 		sensitiveDataList = append(sensitiveDataList, &v1pb.SensitiveData{
+			Schema:   data.Schema,
 			Table:    data.Table,
 			Column:   data.Column,
 			MaskType: maskType,
@@ -555,6 +558,7 @@ func convertToSensitiveDataPolicyPayload(policy *v1pb.SensitiveDataPolicy) (*api
 			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskType)
 		}
 		sensitiveDataList = append(sensitiveDataList, api.SensitiveData{
+			Schema: data.Schema,
 			Table:  data.Table,
 			Column: data.Column,
 			Type:   api.SensitiveDataMaskTypeDefault,
@@ -683,8 +687,6 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 			issueType = api.IssueDatabaseDataUpdate
 		case v1pb.DeploymentType_DATABASE_RESTORE_PITR:
 			issueType = api.IssueDatabaseRestorePITR
-		case v1pb.DeploymentType_DATABASE_DML_ROLLBACK:
-			issueType = api.IssueDatabaseRollback
 		default:
 			return nil, errors.Errorf("invalid deployment type %v", group.DeploymentType)
 		}
@@ -714,8 +716,6 @@ func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentTyp
 		res = v1pb.DeploymentType_DATABASE_DML
 	case api.IssueDatabaseRestorePITR:
 		res = v1pb.DeploymentType_DATABASE_RESTORE_PITR
-	case api.IssueDatabaseRollback:
-		res = v1pb.DeploymentType_DATABASE_DML_ROLLBACK
 	}
 
 	return res

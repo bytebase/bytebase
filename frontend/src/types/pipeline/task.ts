@@ -112,15 +112,20 @@ export type TaskDatabasePITRDeletePayload = {
   // more input and output parameters in the future
 };
 
+export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
+
 export type TaskDatabaseDataUpdatePayload = {
   skipped: boolean;
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
   pushEvent?: VCSPushEvent;
-  rollbackStatement: string;
-  rollbackFromIssueId: IssueId;
-  rollbackFromTaskId: TaskId;
+  rollbackEnabled: boolean;
+  rollbackSqlStatus?: RollbackSQLStatus;
+  rollbackStatement?: string;
+  rollbackError?: string;
+  rollbackFromIssueId?: IssueId;
+  rollbackFromTaskId?: TaskId;
 };
 
 export type TaskDatabaseRestorePayload = {
@@ -201,11 +206,13 @@ export type TaskCreate = {
   collation?: string;
   backupId?: BackupId;
   earliestAllowedTs: number;
+  rollbackEnabled?: boolean;
 };
 
 export type TaskPatch = {
   statement?: string;
   earliestAllowedTs?: number;
+  rollbackEnabled?: boolean;
 
   updatedTs?: number;
 };

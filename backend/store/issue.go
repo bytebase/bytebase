@@ -379,18 +379,20 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 		}
 		for _, taskCheckRun := range taskCheckRuns {
 			if taskCheckRun.TaskID == task.ID {
-				taskCheckRun := taskCheckRun.toTaskCheckRun()
+				composedTaskCheckRun := taskCheckRun.toTaskCheckRun()
 				creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
 				if err != nil {
 					return nil, err
 				}
-				taskCheckRun.Creator = creator
+				composedTaskCheckRun.Creator = creator
 				updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
 				if err != nil {
 					return nil, err
 				}
-				taskCheckRun.Updater = updater
-				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, taskCheckRun)
+				composedTaskCheckRun.Updater = updater
+				composedTaskCheckRun.CreatedTs = taskCheckRun.CreatedTs
+				composedTaskCheckRun.UpdatedTs = taskCheckRun.UpdatedTs
+				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 			}
 		}
 

@@ -1,5 +1,5 @@
 import { RowStatus } from "./common";
-import { MemberId, PrincipalId, ProjectId } from "./id";
+import { MemberId, PrincipalId, ProjectId, ResourceId } from "./id";
 import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
@@ -48,6 +48,8 @@ export const getDefaultLGTMCheckSetting = (): LGTMCheckSetting => {
 };
 
 export type ProjectCreate = {
+  resourceId: ResourceId;
+
   // Domain specific fields
   name: string;
   key: string;
@@ -67,6 +69,7 @@ export type ProjectPatch = {
   lgtmCheckSetting?: LGTMCheckSetting;
   workflowType?: ProjectWorkflowType;
   dbNameTemplate?: string;
+  tenantMode?: ProjectTenantMode;
 };
 
 // Project Member

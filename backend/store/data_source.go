@@ -246,7 +246,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		AuthenticationDatabase: dataSource.AuthenticationDatabase,
 	}
 
-	if _, err := tx.QueryContext(ctx, `
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO data_source (
 			creator_id,
 			updater_id,

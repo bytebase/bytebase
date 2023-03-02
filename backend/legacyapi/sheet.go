@@ -22,10 +22,10 @@ type SheetSource string
 const (
 	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
 	SheetFromBytebase SheetSource = "BYTEBASE"
-	// SheetFromGitLabSelfHost is the sheet synced from self host GitLab.
-	SheetFromGitLabSelfHost SheetSource = "GITLAB_SELF_HOST"
-	// SheetFromGitHubCom is the sheet synced from github.com.
-	SheetFromGitHubCom SheetSource = "GITHUB_COM"
+	// SheetFromGitLab is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab).
+	SheetFromGitLab SheetSource = "GITLAB"
+	// SheetFromGitHub is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
+	SheetFromGitHub SheetSource = "GITHUB"
 )
 
 // SheetType is the type of sheet.
@@ -37,7 +37,7 @@ const (
 )
 
 // SheetVCSPayload is the additional data payload of the VCS sheet.
-// The sheet source should be one of SheetFromGitLabSelfHost and SheetFromGitHubCom.
+// The sheet source should be one of SheetFromGitLab and SheetFromGitHub.
 type SheetVCSPayload struct {
 	FileName     string `json:"fileName"`
 	FilePath     string `json:"filePath"`
@@ -110,6 +110,7 @@ type SheetPatch struct {
 	UpdaterID int
 
 	// Related fields
+	ProjectID  *int `jsonapi:"attr,projectId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields

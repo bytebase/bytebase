@@ -200,8 +200,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 	return rowCount, nil
 }
 
-// Query queries a SQL statement.
-func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+// QueryConn querys statements.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
 		return nil, err
@@ -249,7 +249,11 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 			return nil, err
 		}
 	}
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+
+	// spanner doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	sensitiveInfo := make([]bool, len(columnNames))
+	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
 func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{}, error) {

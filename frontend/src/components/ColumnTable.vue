@@ -95,6 +95,10 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Database>,
     },
+    schema: {
+      required: true,
+      type: String,
+    },
     table: {
       required: true,
       type: Object as PropType<TableMetadata>,
@@ -119,7 +123,12 @@ export default defineComponent({
 
     const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
     const showSensitiveColumn = computed(() => {
-      return hasSensitiveDataFeature.value && engine.value === "MYSQL";
+      return (
+        hasSensitiveDataFeature.value &&
+        (engine.value === "MYSQL" ||
+          engine.value === "TIDB" ||
+          engine.value === "POSTGRES")
+      );
     });
 
     const currentUser = useCurrentUser();
@@ -172,26 +181,36 @@ export default defineComponent({
       }
       return columnList;
     });
-    const POSTGRES_COLUMN_LIST = computed((): BBTableColumn[] => [
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("common.type"),
-      },
-      {
-        title: t("common.Default"),
-      },
-      {
-        title: t("database.nullable"),
-      },
-      {
-        title: t("db.collation"),
-      },
-      {
-        title: t("database.comment"),
-      },
-    ]);
+    const POSTGRES_COLUMN_LIST = computed(() => {
+      const columnList: BBTableColumn[] = [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.type"),
+        },
+        {
+          title: t("common.Default"),
+        },
+        {
+          title: t("database.nullable"),
+        },
+        {
+          title: t("db.collation"),
+        },
+        {
+          title: t("database.comment"),
+        },
+      ];
+      if (showSensitiveColumn.value) {
+        columnList.unshift({
+          title: t("database.sensitive"),
+          center: true,
+          nowrap: true,
+        });
+      }
+      return columnList;
+    });
     const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
       {
         title: t("common.name"),
@@ -254,6 +273,7 @@ export default defineComponent({
       if (on && index < 0) {
         // Turn on sensitive
         sensitiveDataList.push({
+          schema: props.schema,
           table: props.table.name,
           column: column.name,
           maskType: "DEFAULT",

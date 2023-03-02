@@ -219,7 +219,11 @@
     "rollback": "回滚",
     "total": "共计",
     "discard-changes": "取消修改",
-    "error-message": "错误信息"
+    "error-message": "错误信息",
+    "demo-mode": "演示模式",
+    "operations": "操作",
+    "on": "开",
+    "off": "关"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -254,7 +258,7 @@
       "compatibility": "兼容性",
       "connection": "连接",
       "migration-schema": "变更 schema",
-      "sql-review": "SQL 审查",
+      "sql-review": "SQL 审核",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
       "statement-type": "语句类型",
@@ -296,16 +300,24 @@
     "n-similar-tasks": "({count} 个相似的任务)",
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
-    "task-checks": "任务检查项"
+    "task-checks": "任务检查项",
+    "rollback": {
+      "sql-rollback": "SQL 回滚",
+      "failed": "失败",
+      "preview-rollback-issue": "预览回滚工单",
+      "generating": "生成中",
+      "empty-rollback-statement": "回滚语句为空",
+      "cancel-generating": "取消生成回滚语句",
+      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。{link}"
+    }
   },
   "banner": {
-    "demo-intro": "这是 Bytebase 的演示版本。",
-    "demo-intro-readonly": "这是 Bytebase 的只读演示版本",
     "update-license": "更新证书",
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
-    "action": "5 秒部署您自己的服务",
+    "deploy": "5 秒部署到本地",
+    "request-demo": "和我们的产品专家预约 30 分钟产品演示",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",
@@ -403,7 +415,9 @@
     "sso": {
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
-      "deletion": "删除这个 SSO",
+      "archive": "归档该 SSO",
+      "archive-info": "已归档 SSO 不会显示，您可以通过点击页面左下方的 \"归档\"来恢复。",
+      "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
         "learn-more-with-user-doc": "了解更多如何配置",
@@ -420,6 +434,7 @@
         "domain-description": "OAuth 提供商的域名",
         "identity-provider-information": "OAuth 提供商信息",
         "identity-provider-information-description": "这些信息是由你的身份提供商提供的。",
+        "identity-provider-needed-information": "用以下信息创建你的 SSO 应用程序。",
         "endpoints": "链接信息",
         "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
         "auth-url-description": "登录页面的链接",
@@ -432,7 +447,7 @@
         "display-name": "Bytebase 用户的昵称",
         "email": "Bytebase 用户的 Email"
       },
-      "copy-redirect-url": "Redirect URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。"
+      "copy-redirect-url": "Redirect URL 已复制到剪切板。"
     },
     "general": {
       "workspace": {
@@ -447,7 +462,7 @@
         "watermark": {
           "self": "水印",
           "update-success": "水印设置已更新",
-          "description": "在页面上显示水印，包含用户名和 ID。",
+          "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "only-owner-can-edit": "仅管理员可以更新水印设置"
         },
         "enable-watermark": "开启水印"
@@ -583,7 +598,7 @@
     "stage-select": {
       "active": "{name}（活动中）"
     },
-    "not-allowed-to-single-database-in-tenant-mode": "在多租户模式下无法对单个数据库{operation}",
+    "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
       "title": "变更模式",
       "normal": {
@@ -622,13 +637,18 @@
       "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
-    "rollback-from": "当前任务回滚自 {link}。",
+    "will-rollback": "当前任务将会回滚 {link}。",
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "{im}审批请求发送成功",
       "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
       "needs-attention": "需要关注",
       "click-to-mark": "点击以请求审核人关注"
+    },
+    "sdl": {
+      "schema-change": "Schema 变化",
+      "generated-ddl-statements": "生成的 DDL 语句",
+      "full-schema": "完整 schema"
     }
   },
   "alter-schema": {
@@ -788,9 +808,11 @@
     "used-for-testing-connection": "仅作测试连接用"
   },
   "environment": {
+    "id": "环境 ID",
+    "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
-    "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
+    "archive-info": "已归档环境不会显示，您可以通过点击页面左下方的 \"归档\"来恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
@@ -831,7 +853,7 @@
       "title": "登录您的账号",
       "forget-password": "忘记密码?",
       "new-user": "第一次使用 Bytebase?",
-      "demo-note": "请使用 demo 账号登录",
+      "demo-note": "邮箱:{username} 密码:{password}",
       "gitlab": "通过 GitLab 登录",
       "github": "通过 GitHub 登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录",
@@ -1226,7 +1248,7 @@
       "developer": "@.upper:common.role.developer",
       "archive": {
         "title": "归档项目",
-        "description": "已归档的项目将不会显示在日常界面，但您仍然可以从归档页面中恢复他。",
+        "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
         "btn-text": "归档这个@:common.project"
       },
       "restore": {
@@ -1265,6 +1287,7 @@
         "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
+        "gitlab-com-admin-requirement": "您的账号必须对您打算关联的代码仓库拥有管理员权限。通常这个账号对应的是一个专门的服务账号而非个人账号。",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "oauth-info-correct": "OAuth 信息验证成功",
         "check-oauth-info-match": "请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。",
@@ -1282,9 +1305,12 @@
         },
         "oauth-info": {
           "self": "OAuth 应用信息",
-          "gitlab-register-oauth-application": "注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。",
-          "gitlab-login-as-admin": "以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。",
-          "gitlab-visit-admin-page": "通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。",
+          "gitlab-self-host-register-oauth-application": "注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。",
+          "gitlab-self-host-login-as-admin": "以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。",
+          "gitlab-self-host-visit-admin-page": "通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。",
+          "gitlab-com-register-oauth-application": "注册 Bytebase 为一个 GitLab 用户的 OAuth 应用。",
+          "gitlab-com-login": "通过账号登陆 GitLab.com。通常这个账号对应的是一个专门的服务账号而非个人账号。",
+          "gitlab-com-visit-application-page": "访问 Preferences -> Applications 页面。您可以通过右上角的头像下拉菜单访问到该页面。",
           "gitlab-paste-oauth-info": "从刚创建好的应用上粘贴它的应用 ID 和 Secret 到下面的字段。",
           "github-register-oauth-application": "注册 Bytebase 为一个 GitHub 组织级别 (organization-wide) 的 OAuth 应用。",
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
@@ -1305,9 +1331,11 @@
         }
       },
       "git-provider": {
-        "gitlab-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",
+        "gitlab-self-host-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",
+        "gitlab-com-application-id-label": "注册为 GitLab OAuth 应用的应用 ID。",
         "view-in-gitlab": "查看 GitLab",
-        "secret-label-gitlab": "注册为 GitLab 实例级 OAuth 应用的 Secret。",
+        "gitlab-self-host-secret-label": "注册为 GitLab 实例级 OAuth 应用的 Secret。",
+        "gitlab-com-secret-label": "注册为 GitLab OAuth 应用的 Secret。",
         "github-application-id-label": "注册为 GitHub 组织级别 OAuth 应用的 Client ID。",
         "secret-label-github": "注册为 GitHub 组织级别 OAuth 应用的 Client secret。",
         "delete-forbidden": "删除这个提供方前，需要先解除所有仓库的关联。",
@@ -1319,8 +1347,9 @@
   "archive": {
     "archived": "已归档",
     "project-search-bar-placeholder": "搜索@.lower:{'common.project'}的名称",
-    "instance-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
-    "environment-bar-placeholder": "搜索@.lower:{'common.environment'}的名称"
+    "instance-search-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
+    "environment-search-bar-placeholder": "搜索@.lower:{'common.environment'}的名称",
+    "sso-search-bar-placeholder": "搜索 SSO 的名称"
   },
   "deployment-config": {
     "stage-n": "阶段 {n}",
@@ -1574,6 +1603,12 @@
     "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
+    "trial-start-modal": {
+      "title": "已开启{plan}试用",
+      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
+      "subscription-page": "订阅页面",
+      "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
+    },
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
@@ -1647,8 +1682,8 @@
         "desc": "通过集成 IM 来批准工单。"
       },
       "bb-feature-sql-review": {
-        "title": "Schema 审核策略",
-        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
+        "title": "解锁 100+ SQL 审核策略",
+        "desc": "配置各种 SQL lint 规则，以在研发组织中落地 SQL 最佳实践，保障 Schema 的规范一致性。"
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
@@ -1668,7 +1703,7 @@
       },
       "bb-feature-watermark": {
         "title": "水印设置",
-        "desc": "在页面上显示水印，包含用户名和 ID。"
+        "desc": "在页面上显示水印，包含用户名、ID 和 Email。"
       },
       "bb-feature-audit-log": {
         "title": "审计日志",
@@ -1738,11 +1773,12 @@
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
-    "disable": "停用审查策略",
-    "enable": "开启审查策略",
+    "disable": "停用审核策略",
+    "enable": "开启审核策略",
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
+    "unlock-full-feature": "解锁 100+ SQL Review 规则",
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {
@@ -1768,7 +1804,15 @@
       "preview": {
         "name": "预览"
       }
-    }
+    },
+    "edit-rule": {
+      "self": "编辑 SQL 审核规则"
+    },
+    "rule": {
+      "active": "开启"
+    },
+    "enabled-rules": "开启的规则数",
+    "rule-detail": "规则详情"
   },
   "debug-log": {
     "title": "Debug 日志",
@@ -1846,6 +1890,26 @@
     "test-modal": {
       "title": "测试 OAuth2 连接性",
       "start-test": "点击登录按钮开始测试"
+    }
+  },
+  "sensitive-data": {
+    "self": "敏感数据"
+  },
+  "resource": {
+    "environment": "环境",
+    "instance": "实例",
+    "project": "项目",
+    "idp": "身份提供商"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
+    "cannot-be-changed-later": "创建之后无法修改。",
+    "validation": {
+      "duplicate": "{resource} ID 已存在。请使用其他 ID。",
+      "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
+      "minlength": "{resource} ID 至少包含 1 个字符。",
+      "overflow": "{resource} ID 应该少于 64 个字符。"
     }
   }
 }

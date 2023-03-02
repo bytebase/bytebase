@@ -59,6 +59,7 @@
         <TaskCheckRunPanel
           v-if="selectedTaskCheckRun"
           :task-check-run="selectedTaskCheckRun"
+          :task="task"
         />
         <div class="pt-4 flex justify-end">
           <button

@@ -55,7 +55,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		} else {
 			vcsType = req.Type
-			if vcsType != vcsPlugin.GitLabSelfHost && vcsType != vcsPlugin.GitHubCom {
+			if vcsType != vcsPlugin.GitLab && vcsType != vcsPlugin.GitHub {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unexpected VCS type: %s", vcsType))
 			}
 
@@ -67,7 +67,13 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		}
 
-		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", oauthRedirectURL(s.profile.ExternalURL))
+		ctx := c.Request().Context()
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+		}
+
+		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", oauthRedirectURL(setting.ExternalUrl))
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).
 			ExchangeOAuthToken(
 				c.Request().Context(),
@@ -75,7 +81,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				oauthExchange,
 			)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, oauthErrorMessage(s.profile.ExternalURL)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, oauthErrorMessage(setting.ExternalUrl)).SetInternal(err)
 		}
 
 		resp := &api.OAuthToken{

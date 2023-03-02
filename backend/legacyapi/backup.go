@@ -1,12 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-	"fmt"
-
-	"go.uber.org/zap/zapcore"
-)
-
 const (
 	// BackupRetentionPeriodUnset is the unset value of a backup retention period.
 	BackupRetentionPeriodUnset = 0
@@ -98,21 +91,6 @@ type Backup struct {
 	Payload BackupPayload `jsonapi:"attr,payload"`
 }
 
-// ZapBackupArray is a helper to format zap.Array.
-type ZapBackupArray []*Backup
-
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
-func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for _, backup := range backups {
-		payload, err := json.Marshal(backup.Payload)
-		if err != nil {
-			return err
-		}
-		arr.AppendString(fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.ID, payload))
-	}
-	return nil
-}
-
 // BackupCreate is the API message for creating a backup.
 type BackupCreate struct {
 	// Standard fields
@@ -128,42 +106,6 @@ type BackupCreate struct {
 	StorageBackend          BackupStorageBackend
 	MigrationHistoryVersion string
 	Path                    string
-}
-
-// BackupFind is the API message for finding backups.
-type BackupFind struct {
-	ID        *int
-	RowStatus *RowStatus
-
-	// Related fields
-	DatabaseID *int
-
-	// Domain specific fields
-	Name   *string
-	Status *BackupStatus
-}
-
-func (find *BackupFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
-// BackupPatch is the API message for patching a backup.
-type BackupPatch struct {
-	ID int
-
-	// Standard fields
-	RowStatus *RowStatus
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Status  *string
-	Comment *string
-	Payload *string
 }
 
 // BackupSetting is the backup setting for a database.
@@ -185,17 +127,6 @@ type BackupSetting struct {
 	RetentionPeriodTs int `jsonapi:"attr,retentionPeriodTs"`
 	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 	HookURL string `jsonapi:"attr,hookUrl"`
-}
-
-// BackupSettingFind is the message to get a backup settings.
-type BackupSettingFind struct {
-	ID *int
-
-	// Related fields
-	DatabaseID *int
-
-	// Domain specific fields
-	InstanceID *int
 }
 
 // BackupSettingUpsert is the message to upsert a backup settings.

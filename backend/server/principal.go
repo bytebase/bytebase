@@ -8,15 +8,16 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-// serviceAccountAccessKeyPrefix is the prefix for service account access key.
-const serviceAccountAccessKeyPrefix = "bbs_"
 
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	g.POST("/principal", func(c echo.Context) error {
@@ -29,21 +30,34 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
 		}
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
+		if err := validateEmail(principalCreate.Email); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", principalCreate.Email, err))
+		}
 
+		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		password := principalCreate.Password
 		if principalCreate.Type == api.ServiceAccount {
 			pwd, err := common.RandomString(20)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
-			password = fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, pwd)
+			password = fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, pwd)
 		}
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 		}
 
+		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+			Email:       &principalCreate.Email,
+			ShowDeleted: true,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
+		}
+		if len(users) != 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Email %s already been occupied", principalCreate.Email)
+		}
 		user, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Email:        principalCreate.Email,
 			Name:         principalCreate.Name,
@@ -64,6 +78,23 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount {
 			principal.ServiceKey = password
+		}
+
+		if s.MetricReporter != nil {
+			count, err := s.store.CountUsers(ctx, api.EndUser)
+			if err != nil {
+				// it's okay to ignore the error to avoid workflow broken.
+				log.Debug("failed to count end users", zap.Error(err))
+			}
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.PrincipalCreateMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"type": principal.Type,
+					"role": principal.Role,
+					"rank": count,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -120,7 +151,30 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
-		updaterID := c.Get(getPrincipalIDContextKey()).(int)
+
+		if principalPatch.Email != nil {
+			if err := validateEmail(*principalPatch.Email); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid email %q format: %v", *principalPatch.Email, err))
+			}
+			currentUser, err := s.store.GetUserByID(ctx, id)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get user by id %d", id)).SetInternal(err)
+			}
+			if currentUser.Email != *principalPatch.Email {
+				users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+					Email:       principalPatch.Email,
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get principal list").SetInternal(err)
+				}
+				if len(users) != 0 {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
+				}
+			} else {
+				principalPatch.Email = nil
+			}
+		}
 
 		update := &store.UpdateUserMessage{
 			Name:  principalPatch.Name,
@@ -132,7 +186,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
-			password := fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, val)
+			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			newPassword = &password
 		}
 		if newPassword != nil && *newPassword != "" {
@@ -144,6 +198,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			update.PasswordHash = &passwordHashStr
 		}
 
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 		user, err := s.store.UpdateUser(ctx, id, update, updaterID)
 		if err != nil {
 			return err

@@ -34,8 +34,8 @@ func TestSensitiveData(t *testing.T) {
 				(3, 'Designing Data-Intensive Applications', 'Martin Kleppmann');
 		`
 		queryTable = `SELECT * FROM tech_book`
-		maskedData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[\"******\",\"bytebase\",\"******\"],[\"******\",\"PostgreSQL 14 Internals\",\"******\"],[\"******\",\"Designing Data-Intensive Applications\",\"******\"]]]"
-		originData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[1,\"bytebase\",\"bber\"],[2,\"PostgreSQL 14 Internals\",\"Egor Rogov\"],[3,\"Designing Data-Intensive Applications\",\"Martin Kleppmann\"]]]"
+		maskedData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[\"******\",\"bytebase\",\"******\"],[\"******\",\"PostgreSQL 14 Internals\",\"******\"],[\"******\",\"Designing Data-Intensive Applications\",\"******\"]],[true,false,true]]"
+		originData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[1,\"bytebase\",\"bber\"],[2,\"PostgreSQL 14 Internals\",\"Egor Rogov\"],[3,\"Designing Data-Intensive Applications\",\"Martin Kleppmann\"]],[false,false,false]]"
 	)
 	t.Parallel()
 	a := require.New(t)
@@ -71,8 +71,9 @@ func TestSensitiveData(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Sensitive Data Project",
-		Key:  "TestSensitiveData",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Sensitive Data Project",
+		Key:        "TestSensitiveData",
 	})
 	a.NoError(err)
 
@@ -85,6 +86,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlSensitiveDataInstance",
 		Engine:        db.MySQL,
@@ -195,7 +197,10 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal(maskedData, result)
 
 	// Query origin data.
-	result, err = ctl.adminQuery(instance, databaseName, queryTable)
+	singleSQLResults, err := ctl.adminQuery(instance, databaseName, queryTable)
 	a.NoError(err)
-	a.Equal(originData, result)
+	for _, singleSQLResult := range singleSQLResults {
+		a.Equal("", singleSQLResult.Error)
+		a.Equal(originData, singleSQLResult.Data)
+	}
 }

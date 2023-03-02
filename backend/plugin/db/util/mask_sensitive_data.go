@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v2"
@@ -47,10 +48,28 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		extractor := &sensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
 		}
-		return extractor.extractPostgreSQLSensitiveField(statement)
+		result, err := extractor.extractPostgreSQLSensitiveField(statement)
+		if err != nil {
+			tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
+			content := tableNotFound.FindStringSubmatch(err.Error())
+			if len(content) == 3 && isPostgreSQLSystemSchema(content[1]) {
+				// skip for system schema
+				return nil, nil
+			}
+			return nil, err
+		}
+		return result, nil
 	default:
 		return nil, nil
 	}
+}
+
+func isPostgreSQLSystemSchema(schema string) bool {
+	switch schema {
+	case "information_schema", "pg_catalog":
+		return true
+	}
+	return false
 }
 
 func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statement string) ([]db.SensitiveField, error) {
@@ -65,8 +84,11 @@ func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statem
 
 	switch node.Stmt.Node.(type) {
 	case *pgquery.Node_SelectStmt:
+	case *pgquery.Node_ExplainStmt:
+		// Skip the EXPLAIN statement.
+		return nil, nil
 	default:
-		return nil, errors.Errorf("expect a query statement but found %T", node)
+		return nil, errors.Errorf("expect a query statement but found %T", node.Stmt.Node)
 	}
 
 	fieldList, err := extractor.pgExtractNode(node.Stmt)
@@ -903,6 +925,9 @@ func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement s
 	switch node.(type) {
 	case *tidbast.SelectStmt:
 	case *tidbast.SetOprStmt:
+	case *tidbast.ExplainStmt:
+		// Skip the EXPLAIN statement.
+		return nil, nil
 	default:
 		return nil, errors.Errorf("expect a query statement but found %T", node)
 	}

@@ -6,51 +6,7 @@
       alt="Bytebase"
     />
 
-    <div class="mt-8 mb-3">
-      <template
-        v-for="authProvider in authProviderList"
-        :key="authProvider.type"
-      >
-        <button
-          type="button"
-          class="btn-normal flex justify-center w-full h-10 mb-2 tooltip-wrapper"
-          :disabled="!hasSSOFeature"
-          @click="trySigninWithOAuth(authProvider)"
-        >
-          <img
-            class="w-5 mr-1"
-            :src="AuthProviderConfig[authProvider.type].iconPath"
-          />
-          <span class="text-center font-semibold align-middle">
-            {{
-              authProviderList.length == 1
-                ? authProvider.type.includes("GITHUB")
-                  ? $t("auth.sign-in.github")
-                  : $t("auth.sign-in.gitlab")
-                : authProvider.name
-            }}
-          </span>
-        </button>
-      </template>
-
-      <template v-if="authProviderList.length == 0">
-        <button
-          disabled
-          type="button"
-          class="btn-normal flex justify-center w-full h-10 mb-2"
-        >
-          <img
-            class="w-5 mr-1"
-            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
-          />
-          <span class="text-center font-semibold align-middle">
-            {{ $t("auth.sign-in.gitlab-oauth") }}
-          </span>
-        </button>
-      </template>
-    </div>
-
-    <div class="mt-4">
+    <div class="mt-8">
       <form class="space-y-6" @submit.prevent="trySignin">
         <div>
           <label
@@ -133,7 +89,10 @@
       <div class="relative flex justify-center text-sm">
         <template v-if="isDemo">
           <span class="pl-2 bg-white text-accent">{{
-            $t("auth.sign-in.demo-note")
+            $t("auth.sign-in.demo-note", {
+              username: "demo@example.com",
+              password: "1024",
+            })
           }}</span>
         </template>
         <template v-else-if="!disallowSignup">
@@ -188,11 +147,7 @@
 import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import {
-  AuthProvider,
-  OAuthWindowEventPayload,
-  openWindowForOAuth,
-} from "@/types";
+import { OAuthWindowEventPayload } from "@/types";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
   featureToRef,
@@ -206,24 +161,10 @@ import {
 } from "@/types/proto/v1/idp_service";
 import AuthFooter from "./AuthFooter.vue";
 
-const AuthProviderConfig = {
-  GITLAB_SELF_HOST: {
-    apiPath: "oauth/authorize",
-    // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
-    iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
-  },
-  GITHUB_COM: {
-    apiPath: "login/oauth/authorize",
-    // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
-    iconPath: new URL("../../assets/github-logo.svg", import.meta.url).href,
-  },
-};
-
 interface LocalState {
   email: string;
   password: string;
   showPassword: boolean;
-  activeAuthProvider?: AuthProvider;
   activeIdentityProvider?: IdentityProvider;
 }
 
@@ -231,8 +172,6 @@ const actuatorStore = useActuatorStore();
 const authStore = useAuthStore();
 const identityProviderStore = useIdentityProviderStore();
 const router = useRouter();
-
-const { authProviderList } = storeToRefs(authStore);
 
 const state = reactive<LocalState>({
   email: "",
@@ -249,7 +188,7 @@ onMounted(async () => {
   // Navigate to signup if needs admin setup.
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
-  if (actuatorStore.needAdminSetup && !disallowSignup) {
+  if (actuatorStore.needAdminSetup && !disallowSignup.value) {
     router.push({ name: "auth.signup", replace: true });
   }
 
@@ -257,20 +196,17 @@ onMounted(async () => {
     state.email = "demo@example.com";
     state.password = "1024";
     state.showPassword = true;
+  } else {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    const email = params.get("email") ?? "";
+    state.email = email;
   }
 
-  await authStore.fetchProviderList();
   await identityProviderStore.fetchIdentityProviderList();
 });
 
 onUnmounted(() => {
-  if (state.activeAuthProvider) {
-    window.removeEventListener(
-      `bb.oauth.signin.${state.activeAuthProvider?.type}-${state.activeAuthProvider?.applicationId}`,
-      loginWithVCSEventListener,
-      false
-    );
-  }
   if (state.activeIdentityProvider) {
     window.removeEventListener(
       `bb.oauth.signin.${state.activeIdentityProvider.name}`,
@@ -296,42 +232,6 @@ watch(
   }
 );
 
-watch(
-  () => state.activeAuthProvider,
-  (newValue, oldValue) => {
-    window.removeEventListener(
-      `bb.oauth.signin.${oldValue?.type}-${oldValue?.applicationId}`,
-      loginWithVCSEventListener,
-      false
-    );
-    window.addEventListener(
-      `bb.oauth.signin.${newValue?.type}-${newValue?.applicationId}`,
-      loginWithVCSEventListener,
-      false
-    );
-  }
-);
-
-const loginWithVCSEventListener = (event: Event) => {
-  if (!state.activeAuthProvider) {
-    return;
-  }
-
-  const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
-  if (payload.error) {
-    return;
-  }
-  authStore
-    .vcsLogin(state.activeAuthProvider.type, {
-      vcsId: state.activeAuthProvider.id,
-      name: state.activeAuthProvider.name,
-      code: payload.code,
-    })
-    .then(() => {
-      router.push("/");
-    });
-};
-
 const loginWithIdentityProviderEventListener = async (event: Event) => {
   if (!state.activeIdentityProvider) {
     return;
@@ -346,15 +246,13 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       return;
     }
     const code = payload.code;
-    await authStore.loginWithIdentityProvider({
+    await authStore.login({
       idpName: state.activeIdentityProvider.name,
       context: {
         oauth2Context: {
           code,
         },
       },
-      email: "",
-      password: "",
       web: true,
     });
     router.push("/");
@@ -369,24 +267,9 @@ const trySignin = async () => {
   await authStore.login({
     email: state.email,
     password: state.password,
+    web: true,
   });
   router.push("/");
-};
-
-const trySigninWithOAuth = (authProvider: AuthProvider) => {
-  if (authProvider.type == "BYTEBASE") {
-    return;
-  }
-
-  state.activeAuthProvider = authProvider;
-  openWindowForOAuth(
-    `${authProvider.instanceUrl}/${
-      AuthProviderConfig[authProvider.type].apiPath
-    }`,
-    authProvider.applicationId,
-    "bb.oauth.signin",
-    authProvider.type
-  );
 };
 
 const trySigninWithIdentityProvider = async (

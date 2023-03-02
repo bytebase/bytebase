@@ -4,7 +4,7 @@
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}
         <a
-          href="https://bytebase.com/docs/administration/sso?source=console"
+          href="https://bytebase.com/docs/administration/sso/overview?source=console"
           class="normal-link inline-flex flex-row items-center"
           target="_blank"
         >
@@ -13,7 +13,11 @@
         </a>
       </div>
       <div>
-        <button class="btn-primary" @click="handleCreateSSO">
+        <button
+          v-if="identityProviderList.length > 0"
+          class="btn-primary"
+          @click="handleCreateSSO"
+        >
           {{ $t("common.create") }}
           <FeatureBadge :feature="'bb.feature.sso'" class="ml-2" />
         </button>
@@ -24,51 +28,61 @@
       v-if="identityProviderList.length === 0"
       class="w-full flex flex-col justify-center items-center"
     >
-      <img src="../assets/illustration/no-data.webp" class="mt-12 w-96" />
+      <div
+        class="w-full border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
+      >
+        <div class="text-center flex flex-col justify-center items-center">
+          <img src="@/assets/illustration/no-data.webp" class="w-52" />
+          <div class="mt-6">
+            <button
+              type="button"
+              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              @click="handleCreateSSO"
+            >
+              {{ $t("settings.sso.create") }}
+              <FeatureBadge :feature="'bb.feature.sso'" class="ml-2" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <template v-else>
-      <div class="w-full flex flex-row justify-start items-start space-x-4">
+      <div class="w-full flex flex-col justify-start items-start space-y-4">
         <div
           v-for="identityProvider in identityProviderList"
           :key="identityProvider.name"
-          class="w-28 h-28 px-2 border rounded-md flex flex-col justify-center items-center cursor-pointer"
+          class="w-full flex flex-col justify-start items-start border p-4"
           @click="state.selectedIdentityProviderName = identityProvider.name"
         >
-          <span class="max-w-full truncate">{{ identityProvider.title }}</span>
-          <span class="text-sm text-gray-400"
-            >({{ identityProviderTypeToString(identityProvider.type) }})</span
+          <div class="w-full flex flex-row justify-between items-center">
+            <span class="truncate">{{ identityProvider.title }}</span>
+            <button class="btn-normal" @click="handleViewSSO(identityProvider)">
+              {{ $t("common.view") }}
+            </button>
+          </div>
+
+          <div
+            class="mt-3 pt-3 border-t w-full flex flex-row justify-start items-center"
           >
-          <input
-            type="radio"
-            class="btn mt-2"
-            :checked="
-              state.selectedIdentityProviderName === identityProvider.name
-            "
-          />
+            <span class="textlabel w-48 opacity-60">{{
+              $t("settings.sso.form.type")
+            }}</span>
+            <span>{{
+              identityProviderTypeToString(identityProvider.type)
+            }}</span>
+          </div>
+          <div
+            class="mt-3 pt-3 border-t w-full flex flex-row justify-start items-center"
+          >
+            <span class="textlabel w-48 opacity-60">{{
+              $t("settings.sso.form.domain")
+            }}</span>
+            <span>{{ identityProvider.domain }}</span>
+          </div>
         </div>
       </div>
     </template>
-
-    <!-- Edit form -->
-    <div v-if="selectedIdentityProvider" class="pb-6">
-      <IdentityProviderCreateForm
-        :key="selectedIdentityProvider.name"
-        :identity-provider-name="selectedIdentityProvider.name"
-        @delete="handleDeleteIdentityProvider"
-      />
-    </div>
   </div>
-
-  <BBModal
-    v-if="state.showCreatingSSOModal"
-    :title="$t('settings.sso.create')"
-    @close="hideCreateSSOModal"
-  >
-    <IdentityProviderCreateForm
-      @cancel="hideCreateSSOModal"
-      @confirm="handleCreateIdentityProvider"
-    />
-  </BBModal>
 
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -78,11 +92,9 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
-import { computed, reactive, watch, watchEffect } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, reactive } from "vue";
+import { useRouter } from "vue-router";
 import { useIdentityProviderStore } from "@/store/modules/idp";
-import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
 import { featureToRef } from "@/store";
@@ -93,7 +105,6 @@ interface LocalState {
   selectedIdentityProviderName: string;
 }
 
-const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -107,62 +118,26 @@ const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
 });
 
-const selectedIdentityProvider = computed(() => {
-  return identityProviderList.value.find(
-    (idp) => idp.name === state.selectedIdentityProviderName
-  );
-});
-
-watchEffect(() => {
-  const hashValue = route.hash.slice(1);
-  const identityProviderNameList = identityProviderList.value.map(
-    (idp) => idp.name
-  );
-  if (identityProviderNameList.includes(hashValue)) {
-    state.selectedIdentityProviderName = hashValue;
-  } else {
-    state.selectedIdentityProviderName = head(identityProviderNameList) || "";
-  }
-});
-
-watch(
-  () => state.selectedIdentityProviderName,
-  () => {
-    const hashValue = `#${state.selectedIdentityProviderName}`;
-    if (route.hash !== hashValue) {
-      router.push({
-        hash: hashValue,
-      });
-    }
-  }
-);
-
 const handleCreateSSO = () => {
   if (!hasSSOFeature.value) {
     state.showFeatureModal = true;
     return;
   }
-  state.showCreatingSSOModal = true;
+  router.push({
+    name: "setting.workspace.sso.create",
+  });
 };
 
-const hideCreateSSOModal = () => {
-  state.showCreatingSSOModal = false;
-};
-
-const handleDeleteIdentityProvider = async (
-  identityProvider: IdentityProvider
-) => {
-  await identityProviderStore.deleteIdentityProvider(identityProvider);
-  if (state.selectedIdentityProviderName === identityProvider.name) {
-    state.selectedIdentityProviderName =
-      head(identityProviderList.value)?.name || "";
+const handleViewSSO = (identityProvider: IdentityProvider) => {
+  if (!hasSSOFeature.value) {
+    state.showFeatureModal = true;
+    return;
   }
-};
-
-const handleCreateIdentityProvider = async (
-  identityProvider: IdentityProvider
-) => {
-  state.selectedIdentityProviderName = identityProvider.name;
-  hideCreateSSOModal();
+  router.push({
+    name: "setting.workspace.sso.detail",
+    params: {
+      ssoName: identityProvider.name,
+    },
+  });
 };
 </script>

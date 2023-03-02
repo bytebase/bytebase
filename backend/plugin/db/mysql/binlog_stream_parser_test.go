@@ -5,8 +5,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
+
+func TestErrExceedSizeLimit(t *testing.T) {
+	a := require.New(t)
+	err := errors.New("err1")
+	a.False(IsErrExceedSizeLimit(err))
+	err = ErrExceedSizeLimit{err: err}
+	a.True(IsErrExceedSizeLimit(err))
+	err = errors.Wrap(err, "err2")
+	a.True(IsErrExceedSizeLimit(err))
+	err = errors.Wrap(err, "err3")
+	a.True(IsErrExceedSizeLimit(err))
+}
 
 func TestParseBinlogStream(t *testing.T) {
 	tests := []struct {

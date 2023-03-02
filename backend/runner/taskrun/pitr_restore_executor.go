@@ -86,7 +86,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
-	backup, err := stores.GetBackupByID(ctx, *payload.BackupID)
+	backup, err := stores.GetBackupV2(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
@@ -95,12 +95,12 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	}
 
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
-	sourceDatabase, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backup.DatabaseID})
+	sourceDatabase, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backup.DatabaseUID})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
 	if sourceDatabase == nil {
-		return nil, errors.Errorf("source database ID not found %v", backup.DatabaseID)
+		return nil, errors.Errorf("source database ID not found %v", backup.DatabaseUID)
 	}
 
 	if payload.TargetInstanceID == nil {
@@ -156,9 +156,9 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 		EnvironmentID:  targetDatabase.EnvironmentID,
 		InstanceID:     targetDatabase.InstanceID,
 		DatabaseName:   targetDatabase.DatabaseName,
-		SourceBackupID: &backup.ID,
+		SourceBackupID: &backup.UID,
 	}, api.SystemBotID); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", targetDatabase.UID, backup.ID)
+		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", targetDatabase.UID, backup.UID)
 	}
 
 	// Sync database schema after restore is completed.
@@ -215,11 +215,11 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 	}
 
 	backupStatus := api.BackupStatusDone
-	backupList, err := exec.store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
+	backupList, err := exec.store.ListBackupV2(ctx, &store.FindBackupMessage{DatabaseUID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
+	log.Debug("Found backup list", zap.Array("backups", store.ZapBackupArray(backupList)))
 
 	mysqlSourceDriver, sourceOk := sourceDriver.(*mysql.Driver)
 	mysqlTargetDriver, targetOk := targetDriver.(*mysql.Driver)
@@ -248,7 +248,7 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 	binlogDir := common.GetBinlogAbsDir(profile.DataDir, instance.UID)
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 
-	backupAbsPathLocal := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
+	backupAbsPathLocal := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseUID, backup.Name)
 	if backup.StorageBackend == api.BackupStorageBackendS3 {
 		if err := downloadBackupFileFromCloud(ctx, s3Client, backup.Path, backupAbsPathLocal); err != nil {
 			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
@@ -347,14 +347,14 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
 
-	backup, err := stores.GetBackupByID(ctx, *payload.BackupID)
+	backup, err := stores.GetBackupV2(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
 	if backup == nil {
 		return nil, errors.Errorf("backup with ID %d not found", *payload.BackupID)
 	}
-	backupFileName := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
+	backupFileName := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseUID, backup.Name)
 	backupFile, err := os.Open(backupFileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)
@@ -456,7 +456,7 @@ func (exec *PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mys
 }
 
 // restoreDatabase will restore the database to the instance from the backup.
-func (*PITRRestoreExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *api.Backup) error {
+func (*PITRRestoreExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *store.BackupMessage) error {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
@@ -503,7 +503,7 @@ func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, bac
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
-func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, targetInstance *store.InstanceMessage, sourceDatabase, targetDatabase *store.DatabaseMessage, backup *api.Backup, task *store.TaskMessage) (string, string, error) {
+func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, targetInstance *store.InstanceMessage, sourceDatabase, targetDatabase *store.DatabaseMessage, backup *store.BackupMessage, task *store.TaskMessage) (string, string, error) {
 	targetInstanceEnvironment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &targetInstance.EnvironmentID})
 	if err != nil {
 		return "", "", err

@@ -32,9 +32,11 @@ import {
   DatabaseId,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   SheetId,
+  MigrationContext,
 } from "@/types";
 import { useIssueLogic } from "./index";
 import { isDev, isTaskTriggeredByVCS, taskCheckRunSummary } from "@/utils";
+import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
 
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged } =
@@ -204,6 +206,7 @@ export const useCommonLogic = () => {
         statement: maybeFormatStatementOnSave(taskCreate.statement, db),
         sheetId: taskCreate.sheetId,
         earliestAllowedTs: taskCreate.earliestAllowedTs,
+        rollbackEnabled: taskCreate.rollbackEnabled,
       };
       // If task already has sheet id, we do not need to save statement.
       if (!isUndefined(taskCreate.sheetId)) {
@@ -212,9 +215,12 @@ export const useCommonLogic = () => {
       return migrationDetail;
     });
 
-    issueCreate.createContext = {
-      detailList: detailList,
+    const createContext: MigrationContext = {
+      detailList,
     };
+    maybeApplyRollbackParams(createContext, route);
+
+    issueCreate.createContext = createContext;
 
     createIssue(issueCreate);
   };
