@@ -470,9 +470,8 @@
           "enable": "Enable watermark"
         },
         "disallow-signup": {
-          "enable": "Disallow self-service signup",
-          "description": "Once disallowed, users cannot self-service signup and can only be invited by the workspace owner.",
-          "only-owner-can-edit": "Only workspace owner can update the self-service signup."
+          "enable": "Disable self-service signup",
+          "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
         },
         "network": "Network",
         "external-url": {

@@ -54,11 +54,7 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{
-              $t(
-                "settings.general.workspace.disallow-signup.only-owner-can-edit"
-              )
-            }}
+            {{ $t("settings.general.workspace.only-owner-can-edit") }}
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
