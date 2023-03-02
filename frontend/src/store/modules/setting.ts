@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { MaybeRef, ResourceObject, SettingState } from "@/types";
 import { Setting, SettingName } from "@/types/setting";
+import { WorkspaceGeneralSettingPayload } from "@/types/proto/store/setting";
 
 function convert(
   setting: ResourceObject,
@@ -18,6 +19,16 @@ export const useSettingStore = defineStore("setting", {
   state: (): SettingState => ({
     settingByName: new Map(),
   }),
+  getters: {
+    workspaceSetting(state): WorkspaceGeneralSettingPayload | undefined {
+      const setting = state.settingByName.get("bb.workspace.general");
+      if (!setting || !setting.value) {
+        return;
+      }
+
+      return WorkspaceGeneralSettingPayload.fromJSON(JSON.parse(setting.value));
+    },
+  },
   actions: {
     getSettingByName(name: SettingName) {
       return this.settingByName.get(name);
