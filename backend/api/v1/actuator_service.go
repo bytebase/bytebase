@@ -52,6 +52,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		NeedAdminSetup: count == 0,
 		ExternalUrl:    setting.ExternalUrl,
 		DisallowSignup: setting.DisallowSignup,
+		LastActiveTs:   s.profile.LastActiveTs,
 	}
 
 	return &serverInfo, nil

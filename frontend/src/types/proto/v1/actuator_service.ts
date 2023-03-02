@@ -1,4 +1,5 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 
@@ -12,16 +13,28 @@ export interface GetActuatorInfoRequest {
  * Actuator concept is similar to the Spring Boot Actuator.
  */
 export interface ActuatorInfo {
+  /** version is the bytebase's server version */
   version: string;
+  /** git_commit is the git commit hash of the build */
   gitCommit: string;
+  /** readonly flag means if the Bytebase is running in readonly mode. */
   readonly: boolean;
+  /** saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users. */
   saas: boolean;
+  /** demo_name specifies the demo name, empty string means no demo. */
   demoName: string;
+  /** host is the Bytebase instance host. */
   host: string;
+  /** port is the Bytebase instance port. */
   port: string;
+  /** external_url is the URL where user or webhook callback visits Bytebase. */
   externalUrl: string;
+  /** need_admin_setup flag means the Bytebase instance doesn't have any end users. */
   needAdminSetup: boolean;
+  /** disallow_signup is the flag to disable self-service signup. */
   disallowSignup: boolean;
+  /** last_active_ts is the service last active timestamp, any API calls will refresh this value. */
+  lastActiveTs: number;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -75,6 +88,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     externalUrl: "",
     needAdminSetup: false,
     disallowSignup: false,
+    lastActiveTs: 0,
   };
 }
 
@@ -109,6 +123,9 @@ export const ActuatorInfo = {
     }
     if (message.disallowSignup === true) {
       writer.uint32(80).bool(message.disallowSignup);
+    }
+    if (message.lastActiveTs !== 0) {
+      writer.uint32(88).int64(message.lastActiveTs);
     }
     return writer;
   },
@@ -150,6 +167,9 @@ export const ActuatorInfo = {
         case 10:
           message.disallowSignup = reader.bool();
           break;
+        case 11:
+          message.lastActiveTs = longToNumber(reader.int64() as Long);
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -170,6 +190,7 @@ export const ActuatorInfo = {
       externalUrl: isSet(object.externalUrl) ? String(object.externalUrl) : "",
       needAdminSetup: isSet(object.needAdminSetup) ? Boolean(object.needAdminSetup) : false,
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
+      lastActiveTs: isSet(object.lastActiveTs) ? Number(object.lastActiveTs) : 0,
     };
   },
 
@@ -185,6 +206,7 @@ export const ActuatorInfo = {
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.needAdminSetup !== undefined && (obj.needAdminSetup = message.needAdminSetup);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
+    message.lastActiveTs !== undefined && (obj.lastActiveTs = Math.round(message.lastActiveTs));
     return obj;
   },
 
@@ -200,6 +222,7 @@ export const ActuatorInfo = {
     message.externalUrl = object.externalUrl ?? "";
     message.needAdminSetup = object.needAdminSetup ?? false;
     message.disallowSignup = object.disallowSignup ?? false;
+    message.lastActiveTs = object.lastActiveTs ?? 0;
     return message;
   },
 };
@@ -234,12 +257,45 @@ export interface ActuatorServiceClient<CallOptionsExt = {}> {
   ): Promise<ActuatorInfo>;
 }
 
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var globalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
