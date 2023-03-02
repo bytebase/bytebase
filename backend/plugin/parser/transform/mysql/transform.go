@@ -3,6 +3,8 @@ package mysql
 
 import (
 	"bytes"
+	"sort"
+	"strings"
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
@@ -35,6 +37,238 @@ type SchemaTransformer struct {
 //    i.  Column define without constraints.
 //    ii. Primary key, check and foreign key constraints define in table-level.
 // 2. CREATE INDEX statements.
+
+type indexInfo struct {
+	originPos   int
+	missing     bool
+	createIndex *ast.CreateIndexStmt
+}
+
+type indexSet map[string]*indexInfo
+
+func newIndexInfo(pos int, createIndex *ast.CreateIndexStmt) *indexInfo {
+	return &indexInfo{
+		originPos:   pos,
+		missing:     true,
+		createIndex: createIndex,
+	}
+}
+
+type tableInfo struct {
+	originPos   int
+	missing     bool
+	createTable *ast.CreateTableStmt
+	indexSet    indexSet
+}
+type tableSet map[string]*tableInfo
+
+func newTableInfo(pos int, createTable *ast.CreateTableStmt) *tableInfo {
+	return &tableInfo{
+		originPos:   pos,
+		missing:     true,
+		createTable: createTable,
+		indexSet:    make(indexSet),
+	}
+}
+
+// Normalize normalizes the schema format. The schema and standard should be SDL format.
+func (t *SchemaTransformer) Normalize(schema string, standard string) (string, error) {
+	var orderedList []ast.Node
+
+	if _, err := t.Check(schema); err != nil {
+		return "", errors.Wrapf(err, "Schema is not the SDL format")
+	}
+	if _, err := t.Check(standard); err != nil {
+		return "", errors.Wrapf(err, "Standard is not the SDL format")
+	}
+	var remainingStatement []string
+
+	// Phase One: build the schema table set.
+	tableSet := make(tableSet)
+	list, err := bbparser.SplitMultiSQL(bbparser.MySQL, schema)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to split SQL")
+	}
+
+	for i, stmt := range list {
+		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+			remainingStatement = append(remainingStatement, stmt.Text)
+			continue
+		}
+		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+		}
+		if len(nodeList) != 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		}
+
+		switch node := nodeList[0].(type) {
+		case *ast.CreateTableStmt:
+			tableSet[node.Table.Name.String()] = newTableInfo(i, node)
+		case *ast.CreateIndexStmt:
+			table, exists := tableSet[node.Table.Name.String()]
+			if !exists {
+				return "", errors.Errorf("Table `%s` not found", node.Table.Name.String())
+			}
+			table.indexSet[node.IndexName] = newIndexInfo(i, node)
+		default:
+			remainingStatement = append(remainingStatement, stmt.Text)
+		}
+	}
+
+	// Phase Two: find the missing table and index for schema and remove the collation and charset if needed.
+	standardList, err := bbparser.SplitMultiSQL(bbparser.MySQL, standard)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to split SQL")
+	}
+
+	for _, stmt := range standardList {
+		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+			// TODO(rebelice): consider the unsupported DDL.
+			continue
+		}
+		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+		}
+		if len(nodeList) != 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		}
+
+		switch node := nodeList[0].(type) {
+		case *ast.CreateTableStmt:
+			if table, exists := tableSet[node.Table.Name.String()]; exists {
+				table.missing = false
+				removeRedundantTableOption(table.createTable, node)
+			}
+		case *ast.CreateIndexStmt:
+			if table, exists := tableSet[node.Table.Name.String()]; exists {
+				if index, exists := table.indexSet[node.IndexName]; exists {
+					index.missing = false
+				}
+			}
+		default:
+			remainingStatement = append(remainingStatement, stmt.Text)
+		}
+	}
+
+	// Phase Three: generate ordered statements.
+	// The order rule is:
+	//   1. existed tables are on top of missing tables.
+	//   2. existed tables and indexes are ordered as the table order in the standard schema.
+	//   3. missing indexes for existed table are below of this table and as the origin order.
+	//   4. missing tables are below of existed tables and as the origin order.
+	for _, stmt := range standardList {
+		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+			// TODO(rebelice): consider the unsupported DDL.
+			continue
+		}
+		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+		}
+		if len(nodeList) != 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		}
+
+		switch node := nodeList[0].(type) {
+		case *ast.CreateTableStmt:
+			if table, exists := tableSet[node.Table.Name.String()]; exists {
+				orderedList = append(orderedList, table.createTable)
+				var missingIndexList []*indexInfo
+				for _, index := range table.indexSet {
+					if index.missing {
+						missingIndexList = append(missingIndexList, index)
+					}
+				}
+				sort.Slice(missingIndexList, func(i, j int) bool {
+					return missingIndexList[i].originPos < missingIndexList[j].originPos
+				})
+				for _, index := range missingIndexList {
+					orderedList = append(orderedList, index.createIndex)
+				}
+			}
+		case *ast.CreateIndexStmt:
+			if table, exists := tableSet[node.Table.Name.String()]; exists {
+				if index, exists := table.indexSet[node.IndexName]; exists {
+					orderedList = append(orderedList, index.createIndex)
+				}
+			}
+		default:
+			remainingStatement = append(remainingStatement, stmt.Text)
+		}
+	}
+
+	var missingTableList []*tableInfo
+	for _, table := range tableSet {
+		if table.missing {
+			missingTableList = append(missingTableList, table)
+		}
+	}
+	sort.Slice(missingTableList, func(i, j int) bool {
+		return missingTableList[i].originPos < missingTableList[j].originPos
+	})
+	for _, table := range missingTableList {
+		orderedList = append(orderedList, table.createTable)
+		var missingIndexList []*indexInfo
+		for _, index := range table.indexSet {
+			if index.missing {
+				missingIndexList = append(missingIndexList, index)
+			}
+		}
+		sort.Slice(missingIndexList, func(i, j int) bool {
+			return missingIndexList[i].originPos < missingIndexList[j].originPos
+		})
+		for _, index := range missingIndexList {
+			orderedList = append(orderedList, index.createIndex)
+		}
+	}
+
+	orderedSDL, err := deparse(orderedList)
+	if err != nil {
+		return "", err
+	}
+	remainingStatement = append([]string{orderedSDL}, remainingStatement...)
+	return strings.Join(remainingStatement, ""), nil
+}
+
+func removeRedundantTableOption(table *ast.CreateTableStmt, standard *ast.CreateTableStmt) {
+	engine, charset, collation := extractEngineCharsetAndCollation(standard)
+	var newOptionList []*ast.TableOption
+	for _, option := range table.Options {
+		switch option.Tp {
+		case ast.TableOptionEngine:
+			if engine == nil {
+				continue
+			}
+		case ast.TableOptionCharset:
+			if charset == nil {
+				continue
+			}
+		case ast.TableOptionCollate:
+			if collation == nil {
+				continue
+			}
+		}
+		newOptionList = append(newOptionList, option)
+	}
+	table.Options = newOptionList
+}
+
+func extractEngineCharsetAndCollation(table *ast.CreateTableStmt) (engine, charset, collation *ast.TableOption) {
+	for _, option := range table.Options {
+		switch option.Tp {
+		case ast.TableOptionEngine:
+			engine = option
+		case ast.TableOptionCharset:
+			charset = option
+		case ast.TableOptionCollate:
+			collation = option
+		}
+	}
+	return engine, charset, collation
+}
 
 // Check checks the schema format.
 func (*SchemaTransformer) Check(schema string) (int, error) {
