@@ -82,7 +82,7 @@
       :title="$t('sql-review.create.basic-info.no-linked-environments')"
     />
     <SQLRuleFilter
-      :rule-list="ruleListOfPolicy"
+      :rule-list="state.ruleList"
       :params="filterParams"
       v-on="filterEvents"
     />
@@ -347,6 +347,7 @@ const onCommentChange = (rule: RuleTemplate, comment: string) => {
 
 const onCancelChanges = () => {
   state.ruleList = cloneDeep(ruleListOfPolicy.value);
+  state.rulesUpdated = false;
 };
 
 const onApplyChanges = async () => {
