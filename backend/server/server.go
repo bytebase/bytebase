@@ -316,6 +316,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		XFrameOptions: "DENY",
 	}))
 
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			defer func() {
+				if !common.HasPrefixes(c.Request().URL.Path, "/healthz", "/v1/actuator") {
+					s.profile.LastActiveTs = time.Now().Unix()
+				}
+			}()
+			return next(c)
+		}
+	})
+
 	embedFrontend(e)
 	s.e = e
 

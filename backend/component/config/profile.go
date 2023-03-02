@@ -29,7 +29,7 @@ type Profile struct {
 	// - Requests other than GET will be rejected
 	// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
 	Readonly bool
-	// When we are running in SaaS mode, some features are only controlled by use.
+	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
@@ -68,6 +68,9 @@ type Profile struct {
 
 	// Test only flag to skip generating onboarding data.
 	TestOnlySkipOnboardingData bool
+
+	// LastActiveTs is the service last active timestamp, any API calls will refresh this value.
+	LastActiveTs int64
 }
 
 // UseEmbedDB returns whether to use embedDB.

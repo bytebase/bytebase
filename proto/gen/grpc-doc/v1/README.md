@@ -257,16 +257,17 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  |  |
-| git_commit | [string](#string) |  |  |
-| readonly | [bool](#bool) |  |  |
-| saas | [bool](#bool) |  |  |
-| demo_name | [string](#string) |  |  |
-| host | [string](#string) |  |  |
-| port | [string](#string) |  |  |
-| external_url | [string](#string) |  |  |
-| need_admin_setup | [bool](#bool) |  |  |
-| disallow_signup | [bool](#bool) |  |  |
+| version | [string](#string) |  | version is the bytebase&#39;s server version |
+| git_commit | [string](#string) |  | git_commit is the git commit hash of the build |
+| readonly | [bool](#bool) |  | readonly flag means if the Bytebase is running in readonly mode. |
+| saas | [bool](#bool) |  | saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users. |
+| demo_name | [string](#string) |  | demo_name specifies the demo name, empty string means no demo. |
+| host | [string](#string) |  | host is the Bytebase instance host. |
+| port | [string](#string) |  | port is the Bytebase instance port. |
+| external_url | [string](#string) |  | external_url is the URL where user or webhook callback visits Bytebase. |
+| need_admin_setup | [bool](#bool) |  | need_admin_setup flag means the Bytebase instance doesn&#39;t have any end users. |
+| disallow_signup | [bool](#bool) |  | disallow_signup is the flag to disable self-service signup. |
+| last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. |
 
 
 
