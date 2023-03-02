@@ -251,7 +251,8 @@
 <a name="bytebase-v1-ActuatorInfo"></a>
 
 ### ActuatorInfo
-
+ServerInfo is the API message for server info.
+Actuator concept is similar to the Spring Boot Actuator.
 
 
 | Field | Type | Label | Description |
