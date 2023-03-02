@@ -104,9 +104,7 @@ const useExecuteSQL = () => {
       }
 
       // use `markRaw` to prevent vue from monitoring the object change deeply
-      const queryResult = sqlResultSet.data
-        ? markRaw(sqlResultSet.data)
-        : undefined;
+      const queryResult = sqlResultSet ? markRaw(sqlResultSet) : undefined;
       Object.assign(tab, {
         queryResult,
         adviceList: sqlResultSet.adviceList,
@@ -155,9 +153,7 @@ const useExecuteSQL = () => {
       });
 
       // use `markRaw` to prevent vue from monitoring the object change deeply
-      const queryResult = sqlResultSet.data
-        ? markRaw(sqlResultSet.data)
-        : undefined;
+      const queryResult = sqlResultSet ? markRaw(sqlResultSet) : undefined;
       Object.assign(tab, {
         queryResult,
         adviceList: sqlResultSet.adviceList,
@@ -184,7 +180,7 @@ const useExecuteSQL = () => {
           option,
         },
       });
-      notify("CRITICAL", error as string);
+      // notify("CRITICAL", error as string);
     }
   };
 

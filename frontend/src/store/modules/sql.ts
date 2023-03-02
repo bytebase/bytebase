@@ -147,9 +147,6 @@ export const useSQLStore = defineStore("sql", {
       ).data;
 
       const resultSet = convert(res.data);
-      if (resultSet.error) {
-        throw new Error(resultSet.error);
-      }
 
       return resultSet;
     },
@@ -173,9 +170,6 @@ export const useSQLStore = defineStore("sql", {
       ).data;
 
       const resultSet = convert(res.data);
-      if (resultSet.error) {
-        throw new Error(resultSet.error);
-      }
 
       return resultSet;
     },
