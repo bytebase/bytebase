@@ -475,7 +475,7 @@
         "network": "网络",
         "external-url": {
           "self": "外部链接",
-          "description": "您部署的 Bytebase 的外网访问 URL，必须以 http:// 或 https:// 开头。{viewDoc}"
+          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。{viewDoc}"
         },
         "config-updated": "配置已更新"
       }
