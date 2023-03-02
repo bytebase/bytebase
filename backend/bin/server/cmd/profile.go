@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -33,5 +35,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		BackupBucket:         flags.backupBucket,
 		BackupCredentialFile: flags.backupCredential,
 		FeishuAPIURL:         feishu.APIPath,
+		LastActiveTs:         time.Now().Unix(),
 	}
 }
