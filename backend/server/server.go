@@ -477,7 +477,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile))
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	reflection.Register(s.grpcServer)
 
@@ -652,7 +652,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	// initial workspace general setting
-	bytes, err := json.Marshal(storepb.WorkspaceGeneralSettingPayload{
+	bytes, err := json.Marshal(storepb.WorkspaceProfileSettingPayload{
 		ExternalUrl:    s.profile.ExternalURL,
 		DisallowSignup: false,
 	})
@@ -660,7 +660,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceGeneral,
+		Name:        api.SettingWorkspaceProfile,
 		Value:       string(bytes),
 		Description: "Workspace general settings",
 	}, api.SystemBotID); err != nil {

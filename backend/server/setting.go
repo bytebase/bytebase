@@ -20,7 +20,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
 	api.SettingAppIM,
 	api.SettingWatermark,
-	api.SettingWorkspaceGeneral,
+	api.SettingWorkspaceProfile,
 }
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
@@ -64,8 +64,8 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
 		}
 
-		if settingPatch.Name == api.SettingWorkspaceGeneral {
-			payload := new(storepb.WorkspaceGeneralSettingPayload)
+		if settingPatch.Name == api.SettingWorkspaceProfile {
+			payload := new(storepb.WorkspaceProfileSettingPayload)
 			if err := json.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
 			}

@@ -42,8 +42,8 @@ func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Set
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
-func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceGeneralSettingPayload, error) {
-	settingName := api.SettingWorkspaceGeneral
+func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSettingPayload, error) {
+	settingName := api.SettingWorkspaceProfile
 	setting, err := s.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
@@ -54,7 +54,7 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 		return nil, errors.Errorf("cannot find setting %v", settingName)
 	}
 
-	payload := new(storepb.WorkspaceGeneralSettingPayload)
+	payload := new(storepb.WorkspaceProfileSettingPayload)
 	if err := json.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return nil, err
 	}

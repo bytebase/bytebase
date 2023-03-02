@@ -4,7 +4,7 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
-message WorkspaceGeneralSettingPayload {
+message WorkspaceProfileSettingPayload {
   // The URL user visits Bytebase.
 	//
 	// The external URL is used for:

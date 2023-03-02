@@ -17,7 +17,7 @@
     - [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest)
     - [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse)
   
-    - [Anomaly.AnomalyServerity](#bytebase-v1-Anomaly-AnomalyServerity)
+    - [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity)
     - [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType)
     - [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule)
   
@@ -301,7 +301,7 @@
 | ----- | ---- | ----- | ----------- |
 | resource | [string](#string) |  | The resource that is the target of the operation. Format: - Instance: environments/{environment}/instnaces/{instance} - Database: environments/{environment}/instnaces/{instance}/databases/{database} |
 | type | [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType) |  | type is the type of the anomaly. |
-| serverity | [Anomaly.AnomalyServerity](#bytebase-v1-Anomaly-AnomalyServerity) |  | serverity is the serverity of the anomaly. |
+| severity | [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity) |  | severity is the severity of the anomaly. |
 | instance_connection_detail | [Anomaly.InstanceConnectionDetail](#bytebase-v1-Anomaly-InstanceConnectionDetail) |  |  |
 | database_connection_detail | [Anomaly.DatabaseConnectionDetail](#bytebase-v1-Anomaly-DatabaseConnectionDetail) |  |  |
 | database_backup_policy_violation_detail | [Anomaly.DatabaseBackupPolicyViolationDetail](#bytebase-v1-Anomaly-DatabaseBackupPolicyViolationDetail) |  |  |
@@ -322,7 +322,7 @@ DatabaseBackupMissingDetail is the detail for database backup missing anomaly.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | expected_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the database. |
-| lastest_backup_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | lastest_backup_time is the last backup time in the database. |
+| latest_backup_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_backup_time is the latest backup time in the database. |
 
 
 
@@ -405,7 +405,7 @@ InstanceConnectionDetail is the detail for instance connection anomaly.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [google cel-spec](https://github.com/google/cel-spec) syntax. For example: Search the anomalies of a specific resource: &#39;anomaly.resource_name=&#34;environments/{environemnt}/instances/{instance}&#34;&#39; Search the specified type of anomalies: &#39;anomaly.type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34;&#39; |
+| filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;environments/{environemnt}/instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34; | &#34;MIGRATION_SCHEMA&#34;.&#39; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page. 
 
@@ -434,17 +434,17 @@ When paginating, all other parameters provided to `SearchAnomalies` must match t
  
 
 
-<a name="bytebase-v1-Anomaly-AnomalyServerity"></a>
+<a name="bytebase-v1-Anomaly-AnomalySeverity"></a>
 
-### Anomaly.AnomalyServerity
-AnomalyServerity is the severity of the anomaly.
+### Anomaly.AnomalySeverity
+AnomalySeverity is the severity of the anomaly.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ANOMALY_SERVERITY_UNSPECIFIED | 0 | Unspecified anomaly serverity. |
-| MEDIUM | 1 | MEDIUM is the info level anomaly serverity. |
-| HIGH | 2 | HIGH is the warning level anomaly serverity. |
-| CRITICAL | 3 | CRITICAL is the critical level anomaly serverity. |
+| ANOMALY_SEVERITY_UNSPECIFIED | 0 | Unspecified anomaly severity. |
+| MEDIUM | 1 | MEDIUM is the info level anomaly severity. |
+| HIGH | 2 | HIGH is the warning level anomaly severity. |
+| CRITICAL | 3 | CRITICAL is the critical level anomaly severity. |
 
 
 

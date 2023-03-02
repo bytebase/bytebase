@@ -87,7 +87,7 @@ import {
 import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
-import { WorkspaceGeneralSettingPayload } from "@/types/proto/store/setting";
+import { WorkspaceProfileSettingPayload } from "@/types/proto/store/setting";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -114,14 +114,14 @@ const disallowSignupEnabled = computed((): boolean => {
   return settingStore.workspaceSetting?.disallowSignup ?? false;
 });
 const handleDisallowSignupToggle = async (on: boolean) => {
-  const payload: WorkspaceGeneralSettingPayload = {
+  const payload: WorkspaceProfileSettingPayload = {
     disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
     externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
   };
   payload.disallowSignup = on;
 
   await settingStore.updateSettingByName({
-    name: "bb.workspace.general",
+    name: "bb.workspace.profile",
     value: JSON.stringify(payload),
   });
   pushNotification({

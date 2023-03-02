@@ -24,7 +24,7 @@
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
 - [store/setting.proto](#store_setting-proto)
-    - [WorkspaceGeneralSettingPayload](#bytebase-store-WorkspaceGeneralSettingPayload)
+    - [WorkspaceProfileSettingPayload](#bytebase-store-WorkspaceProfileSettingPayload)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -357,9 +357,9 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-WorkspaceGeneralSettingPayload"></a>
+<a name="bytebase-store-WorkspaceProfileSettingPayload"></a>
 
-### WorkspaceGeneralSettingPayload
+### WorkspaceProfileSettingPayload
 
 
 
