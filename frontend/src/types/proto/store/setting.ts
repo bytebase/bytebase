@@ -3,7 +3,7 @@ import * as _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
-export interface WorkspaceGeneralSettingPayload {
+export interface WorkspaceProfileSetting {
   /**
    * The URL user visits Bytebase.
    *
@@ -16,12 +16,12 @@ export interface WorkspaceGeneralSettingPayload {
   disallowSignup: boolean;
 }
 
-function createBaseWorkspaceGeneralSettingPayload(): WorkspaceGeneralSettingPayload {
+function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return { externalUrl: "", disallowSignup: false };
 }
 
-export const WorkspaceGeneralSettingPayload = {
-  encode(message: WorkspaceGeneralSettingPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const WorkspaceProfileSetting = {
+  encode(message: WorkspaceProfileSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.externalUrl !== "") {
       writer.uint32(10).string(message.externalUrl);
     }
@@ -31,10 +31,10 @@ export const WorkspaceGeneralSettingPayload = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceGeneralSettingPayload {
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceProfileSetting {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseWorkspaceGeneralSettingPayload();
+    const message = createBaseWorkspaceProfileSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -52,22 +52,22 @@ export const WorkspaceGeneralSettingPayload = {
     return message;
   },
 
-  fromJSON(object: any): WorkspaceGeneralSettingPayload {
+  fromJSON(object: any): WorkspaceProfileSetting {
     return {
       externalUrl: isSet(object.externalUrl) ? String(object.externalUrl) : "",
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
     };
   },
 
-  toJSON(message: WorkspaceGeneralSettingPayload): unknown {
+  toJSON(message: WorkspaceProfileSetting): unknown {
     const obj: any = {};
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
     return obj;
   },
 
-  fromPartial(object: DeepPartial<WorkspaceGeneralSettingPayload>): WorkspaceGeneralSettingPayload {
-    const message = createBaseWorkspaceGeneralSettingPayload();
+  fromPartial(object: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
+    const message = createBaseWorkspaceProfileSetting();
     message.externalUrl = object.externalUrl ?? "";
     message.disallowSignup = object.disallowSignup ?? false;
     return message;

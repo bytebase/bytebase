@@ -81,8 +81,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 
 	apiSettingName := api.SettingName(settingName)
 	settingValue := request.Setting.Value.GetStringValue()
-	if apiSettingName == api.SettingWorkspaceGeneral {
-		payload := new(storepb.WorkspaceGeneralSettingPayload)
+
+	if apiSettingName == api.SettingWorkspaceProfile {
+		payload := new(storepb.WorkspaceProfileSetting)
 		if err := json.Unmarshal([]byte(settingValue), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 		}

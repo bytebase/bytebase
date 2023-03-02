@@ -655,7 +655,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	// initial workspace general setting
-	bytes, err := json.Marshal(storepb.WorkspaceGeneralSettingPayload{
+	bytes, err := json.Marshal(storepb.WorkspaceProfileSetting{
 		ExternalUrl:    s.profile.ExternalURL,
 		DisallowSignup: false,
 	})
@@ -663,7 +663,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceGeneral,
+		Name:        api.SettingWorkspaceProfile,
 		Value:       string(bytes),
 		Description: "Workspace general settings",
 	}, api.SystemBotID); err != nil {

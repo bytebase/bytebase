@@ -4,7 +4,7 @@ export type SettingName =
   | "bb.branding.logo"
   | "bb.app.im"
   | "bb.workspace.watermark"
-  | "bb.workspace.general";
+  | "bb.workspace.profile";
 
 export type Setting = {
   id: SettingId;

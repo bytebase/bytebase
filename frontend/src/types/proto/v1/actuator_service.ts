@@ -7,6 +7,10 @@ export const protobufPackage = "bytebase.v1";
 export interface GetActuatorInfoRequest {
 }
 
+/**
+ * ServerInfo is the API message for server info.
+ * Actuator concept is similar to the Spring Boot Actuator.
+ */
 export interface ActuatorInfo {
   version: string;
   gitCommit: string;
