@@ -314,8 +314,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		} else {
 			// Bytebase needs to create a webbook in the connecting repository pointing back to the
 			// Bytebase address exposed at --external-url.
-			if setting.ExternalUrl == common.ExternalURLPlaceholder {
-				return echo.NewHTTPError(http.StatusBadRequest, "Bytebase must start with --external-url to configure GitOps workflow")
+			if setting.ExternalUrl == "" {
+				return echo.NewHTTPError(http.StatusBadRequest, "Bytebase must start with --external-url to configure GitOps workflow, docs: %s", common.ExternalURLPlaceholder)
 			}
 
 			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", s.workspaceID, time.Now().Unix())
