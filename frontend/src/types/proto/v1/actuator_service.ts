@@ -1,6 +1,7 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -12,16 +13,28 @@ export interface GetActuatorInfoRequest {
  * Actuator concept is similar to the Spring Boot Actuator.
  */
 export interface ActuatorInfo {
+  /** version is the bytebase's server version */
   version: string;
+  /** git_commit is the git commit hash of the build */
   gitCommit: string;
+  /** readonly flag means if the Bytebase is running in readonly mode. */
   readonly: boolean;
+  /** saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users. */
   saas: boolean;
+  /** demo_name specifies the demo name, empty string means no demo. */
   demoName: string;
+  /** host is the Bytebase instance host. */
   host: string;
+  /** port is the Bytebase instance port. */
   port: string;
+  /** external_url is the URL where user or webhook callback visits Bytebase. */
   externalUrl: string;
+  /** need_admin_setup flag means the Bytebase instance doesn't have any end users. */
   needAdminSetup: boolean;
+  /** disallow_signup is the flag to disable self-service signup. */
   disallowSignup: boolean;
+  /** last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. */
+  lastActiveTime?: Date;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -75,6 +88,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     externalUrl: "",
     needAdminSetup: false,
     disallowSignup: false,
+    lastActiveTime: undefined,
   };
 }
 
@@ -109,6 +123,9 @@ export const ActuatorInfo = {
     }
     if (message.disallowSignup === true) {
       writer.uint32(80).bool(message.disallowSignup);
+    }
+    if (message.lastActiveTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastActiveTime), writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -150,6 +167,9 @@ export const ActuatorInfo = {
         case 10:
           message.disallowSignup = reader.bool();
           break;
+        case 11:
+          message.lastActiveTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -170,6 +190,7 @@ export const ActuatorInfo = {
       externalUrl: isSet(object.externalUrl) ? String(object.externalUrl) : "",
       needAdminSetup: isSet(object.needAdminSetup) ? Boolean(object.needAdminSetup) : false,
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
+      lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
     };
   },
 
@@ -185,6 +206,7 @@ export const ActuatorInfo = {
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.needAdminSetup !== undefined && (obj.needAdminSetup = message.needAdminSetup);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
+    message.lastActiveTime !== undefined && (obj.lastActiveTime = message.lastActiveTime.toISOString());
     return obj;
   },
 
@@ -200,6 +222,7 @@ export const ActuatorInfo = {
     message.externalUrl = object.externalUrl ?? "";
     message.needAdminSetup = object.needAdminSetup ?? false;
     message.disallowSignup = object.disallowSignup ?? false;
+    message.lastActiveTime = object.lastActiveTime ?? undefined;
     return message;
   },
 };
@@ -240,6 +263,28 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = t.seconds * 1_000;
+  millis += t.nanos / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
