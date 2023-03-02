@@ -60,6 +60,8 @@ func (*GetActuatorInfoRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{0}
 }
 
+// ServerInfo is the API message for server info.
+// Actuator concept is similar to the Spring Boot Actuator.
 type ActuatorInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
