@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/server"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.
@@ -72,6 +71,8 @@ var (
 		// - Requests other than GET will be rejected
 		// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
 		readonly bool
+		// saas means the Bytebase is running in SaaS mode, several features is only controlled by us instead of users under this mode.
+		saas bool
 		// demoName is the name of the demo and should be one of the subpath name in the ./store/demo/ directory.
 		// empty means no demo.
 		demoName string
@@ -116,9 +117,10 @@ func init() {
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", common.ExternalURLPlaceholder, "the external URL where user visits Bytebase, must start with http:// or https://")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
 	// Must be one of the subpath name in the ./store/demo/ directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
@@ -190,10 +192,13 @@ func start() {
 	defer log.Sync()
 
 	var err error
-	flags.externalURL, err = utils.NormalizeExternalURL(flags.externalURL)
-	if err != nil {
-		log.Error("invalid --external-url", zap.Error(err))
-		return
+
+	if flags.externalURL != "" {
+		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
+		if err != nil {
+			log.Error("invalid --external-url", zap.Error(err))
+			return
+		}
 	}
 	if err := checkDataDir(); err != nil {
 		log.Error(err.Error())
@@ -254,7 +259,7 @@ func start() {
 	}
 
 	externalAddr := profile.ExternalURL
-	if profile.ExternalURL == common.ExternalURLPlaceholder {
+	if profile.ExternalURL == "" {
 		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLPlaceholder)
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s (schema version %v) has started on port %d", profile.Version, s.SchemaVersion, flags.port), externalAddr)

@@ -36,7 +36,7 @@
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
-      <div class="mb-7 mt-5 lg:mt-0">
+      <div v-if="!isSaaSMode" class="mb-7 mt-5 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
@@ -77,12 +77,14 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
+import { storeToRefs } from "pinia";
 import {
   featureToRef,
   pushNotification,
   useCurrentUser,
   useSettingByName,
   useSettingStore,
+  useActuatorStore,
 } from "@/store";
 import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
@@ -98,6 +100,9 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const settingStore = useSettingStore();
 const currentUser = useCurrentUser();
+const actuatorStore = useActuatorStore();
+
+const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const watermarkSetting = useSettingByName("bb.workspace.watermark");
 
@@ -113,6 +118,7 @@ const watermarkEnabled = computed((): boolean => {
 const disallowSignupEnabled = computed((): boolean => {
   return settingStore.workspaceSetting?.disallowSignup ?? false;
 });
+
 const handleDisallowSignupToggle = async (on: boolean) => {
   const payload: WorkspaceProfileSettingPayload = {
     disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,

@@ -31,3 +31,40 @@ func TestCreateTableSeparateIndex(t *testing.T) {
 	a.NoError(err)
 	a.Equal(want, got)
 }
+
+func TestNormalize(t *testing.T) {
+	input := `
+	create table t(a int) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+	create index idx_a on t(a);
+	create unique index uk_t_a on t(a);
+	create index idx_xxx on t(a);
+	create table t2(a int) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+	create table t3(a int);
+	`
+	standard := `
+	create table t4(a int);
+	create table t2(a int) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+	create table t(a int);
+	create unique index uk_t_a on t(a);
+	create index idx_a on t(a);
+	create index idx_yyy on t(a);
+	`
+	want := "" +
+		"CREATE TABLE `t2` (\n" +
+		"  `a` INT\n" +
+		") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n" +
+		"CREATE TABLE `t` (\n" +
+		"  `a` INT\n" +
+		");\n" +
+		"CREATE INDEX `idx_xxx` ON `t` (`a`);\n" +
+		"CREATE UNIQUE INDEX `uk_t_a` ON `t` (`a`);\n" +
+		"CREATE INDEX `idx_a` ON `t` (`a`);\n" +
+		"CREATE TABLE `t3` (\n" +
+		"  `a` INT\n" +
+		");\n"
+	a := require.New(t)
+	mysqlTransformer := &SchemaTransformer{}
+	got, err := mysqlTransformer.Normalize(input, standard)
+	a.NoError(err)
+	a.Equal(want, got)
+}

@@ -3,6 +3,12 @@
 
 ## Table of Contents
 
+- [v1/actuator_service.proto](#v1_actuator_service-proto)
+    - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
+    - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+  
+    - [ActuatorService](#bytebase-v1-ActuatorService)
+  
 - [v1/common.proto](#v1_common-proto)
     - [Engine](#bytebase-v1-Engine)
     - [State](#bytebase-v1-State)
@@ -232,6 +238,66 @@
     - [SettingService](#bytebase-v1-SettingService)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="v1_actuator_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/actuator_service.proto
+
+
+
+<a name="bytebase-v1-ActuatorInfo"></a>
+
+### ActuatorInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  |  |
+| git_commit | [string](#string) |  |  |
+| readonly | [bool](#bool) |  |  |
+| saas | [bool](#bool) |  |  |
+| demo_name | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
+| external_url | [string](#string) |  |  |
+| need_admin_setup | [bool](#bool) |  |  |
+| disallow_signup | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetActuatorInfoRequest"></a>
+
+### GetActuatorInfoRequest
+
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ActuatorService"></a>
+
+### ActuatorService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
+
+ 
 
 
 

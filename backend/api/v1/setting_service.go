@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -82,6 +81,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 
 	apiSettingName := api.SettingName(settingName)
 	settingValue := request.Setting.Value.GetStringValue()
+
 	if apiSettingName == api.SettingWorkspaceProfile {
 		payload := new(storepb.WorkspaceProfileSettingPayload)
 		if err := json.Unmarshal([]byte(settingValue), payload); err != nil {

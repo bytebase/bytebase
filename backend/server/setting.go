@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -60,6 +59,10 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureBranding.AccessErrorMessage())
 		}
 
+		if s.profile.IsFeatureUnavailable(string(settingPatch.Name)) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Feature %v is unavailable in current mode", settingPatch.Name)
+		}
+
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
 		}
@@ -69,7 +72,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if err := json.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
 			}
-			externalURL, err := utils.NormalizeExternalURL(payload.ExternalUrl)
+			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid external url").SetInternal(err)
 			}
