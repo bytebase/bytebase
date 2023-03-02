@@ -278,6 +278,10 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 			if _, ok := idsSeen[database.UID]; ok {
 				continue
 			}
+			// Skip if the database is not found.
+			if database.SyncState == api.NotFound {
+				continue
+			}
 
 			if isMatchExpressions(idToLabels[database.UID], deployment.Spec.Selector.MatchExpressions) {
 				matchedDatabaseList = append(matchedDatabaseList, database.UID)
