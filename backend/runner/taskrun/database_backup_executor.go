@@ -55,7 +55,10 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err != nil {
 		return true, nil, err
 	}
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &database.EnvironmentID,
+		ResourceID:    &database.InstanceID,
+	})
 	if err != nil {
 		return true, nil, err
 	}

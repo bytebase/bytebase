@@ -478,6 +478,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
 	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
+	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -512,6 +513,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -875,9 +879,11 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	dbName := postgres.SampleDatabase
+	envID := api.DefaultProdEnvironmentID
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &dbName,
+		EnvironmentID: &envID,
+		InstanceID:    &instance.ResourceID,
+		DatabaseName:  &dbName,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance")

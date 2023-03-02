@@ -63,7 +63,14 @@ import { useDebounceFn } from "@vueuse/core";
 import { randomString } from "@/utils";
 import { ResourceId } from "@/types";
 
-const characters = "abcdefghijklmnopqrstuvwxyz1234567890";
+// characters is the validated characters for resource id.
+const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";
+
+// randomCharacter returns a random character from the english alphabet.
+const randomCharacter = (): string => {
+  const characters = "abcdefghijklmnopqrstuvwxyz";
+  return characters.charAt(Math.floor(Math.random() * characters.length));
+};
 
 const resourceIdPattern = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
@@ -143,6 +150,11 @@ const debounceHandleResourceIdChange = useDebounceFn(
     state.resourceId = newValue;
     state.validatedMessages = [];
 
+    // if the resource id is empty, do not validate.
+    if (newValue === "" && !state.isResourceIdChanged) {
+      return;
+    }
+
     // common validation for resource id (min length, max length, pattern).
     if (state.resourceId.length < 1) {
       state.validatedMessages.push({
@@ -196,6 +208,7 @@ watch(
     }
 
     if (!state.isResourceIdChanged) {
+      let name = "";
       if (resourceTitle) {
         const formatedTitle = resourceTitle
           .toLowerCase()
@@ -207,12 +220,11 @@ watch(
             if (characters.includes(char)) {
               return char;
             }
-            return randomString(1);
+            return randomCharacter();
           })
           .join("")
           .toLowerCase();
 
-        let name = "";
         if (props.randomString) {
           name = `${getPrefix(
             props.resource
@@ -220,11 +232,8 @@ watch(
         } else {
           name = `${formatedTitle || randomString(4).toLowerCase()}`;
         }
-        debounceHandleResourceIdChange(name);
-      } else {
-        state.resourceId = "";
-        state.validatedMessages = [];
       }
+      debounceHandleResourceIdChange(name);
     }
   },
   {

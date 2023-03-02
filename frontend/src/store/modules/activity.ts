@@ -19,7 +19,7 @@ import {
   ActivityFind,
 } from "@/types";
 import { convertEntityList } from "./utils";
-import { useAuthStore } from "./auth";
+import { useCurrentUser } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useIssueStore } from "./issue";
 
@@ -176,10 +176,10 @@ export const useActivityStore = defineStore("activity", {
       this.fetchActivityListForIssue(issue);
     },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
-      const { currentUser } = useAuthStore();
+      const currentUser = useCurrentUser();
       const activityList = await this.fetchActivityList({
         typePrefix: "bb.sql-editor.query",
-        user: currentUser.id,
+        user: currentUser.value.id as number,
         order: "DESC",
         limit,
         level: ["INFO", "WARN"],
