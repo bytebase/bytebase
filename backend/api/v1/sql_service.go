@@ -11,10 +11,12 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// SQLService is the service for SQL.
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
 }
 
+// NewSQLService creates a SQLService.
 func NewSQLService() *SQLService {
 	return &SQLService{}
 }
