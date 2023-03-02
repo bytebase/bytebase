@@ -468,9 +468,8 @@
           "enable": "开启水印"
         },
         "disallow-signup": {
-          "enable": "禁止自主注册",
-          "description": "禁止之后，新用户将无法自主注册，只能通过管理员邀请来创建账户。",
-          "only-owner-can-edit": "仅管理员可以修改自主注册"
+          "enable": "禁止自助注册",
+          "description": "禁止之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
         },
         "network": "网络",
         "external-url": {
