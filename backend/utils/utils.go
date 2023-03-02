@@ -463,30 +463,3 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 
 	return true, nil
 }
-
-// NormalizeExternalURL will format the external url.
-func NormalizeExternalURL(url string) (string, error) {
-	r := strings.TrimSpace(url)
-	r = strings.TrimSuffix(r, "/")
-	if !common.HasPrefixes(r, "http://", "https://") {
-		return "", errors.Errorf("%s must start with http:// or https://", url)
-	}
-	parts := strings.Split(r, ":")
-	if len(parts) > 3 {
-		return "", errors.Errorf("%s malformed", url)
-	}
-	if len(parts) == 3 {
-		port, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return "", errors.Errorf("%s has non integer port", url)
-		}
-		// The external URL is used as the redirectURL in the get token process of OAuth, and the
-		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend gets it through window.location.origin in the get code
-		// process, so port 80/443 need to be cropped.
-		if port == 80 || port == 443 {
-			r = strings.Join(parts[0:2], ":")
-		}
-	}
-	return r, nil
-}
