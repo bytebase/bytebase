@@ -22,7 +22,7 @@ func NewSQLService() *SQLService {
 }
 
 // Pretty returns pretty format SDL.
-func (s *SQLService) Pretty(ctx context.Context, request *v1pb.PrettyRequest) (*v1pb.PrettyResponse, error) {
+func (s *SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb.PrettyResponse, error) {
 	engine := parser.EngineType(convertEngine(request.Engine))
 	if _, err := transform.CheckFormat(engine, request.UserSDL); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "User SDL is not SDL format: %s", err.Error())
