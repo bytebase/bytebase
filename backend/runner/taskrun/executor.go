@@ -82,7 +82,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		// TODO(d): support semantic versioning.
 		Version:     schemaVersion,
 		Description: task.Name,
-		Environment: environment.Title,
+		Environment: environment.ResourceID,
 	}
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})

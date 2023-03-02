@@ -536,7 +536,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.DatabaseName,
 		Database:       targetDatabase.DatabaseName,
-		Environment:    targetInstanceEnvironment.Title,
+		Environment:    targetInstanceEnvironment.ResourceID,
 		Source:         db.MigrationSource(targetDatabaseProject.Workflow),
 		Type:           db.Branch,
 		Description:    description,
