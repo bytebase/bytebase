@@ -63,7 +63,7 @@ import { computed, reactive, watchEffect } from "vue";
 import { pushNotification, useCurrentUser, useSettingStore } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
-import { WorkspaceProfileSettingPayload } from "@/types/proto/store/setting";
+import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
 
 interface LocalState {
   externalUrl: string;
@@ -105,7 +105,7 @@ const updateExternalUrl = async () => {
     return;
   }
 
-  const payload: WorkspaceProfileSettingPayload = {
+  const payload: WorkspaceProfileSetting = {
     disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
     externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
   };

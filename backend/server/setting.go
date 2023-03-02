@@ -68,7 +68,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		if settingPatch.Name == api.SettingWorkspaceProfile {
-			payload := new(storepb.WorkspaceProfileSettingPayload)
+			payload := new(storepb.WorkspaceProfileSetting)
 			if err := json.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
 			}

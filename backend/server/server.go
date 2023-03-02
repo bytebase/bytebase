@@ -655,7 +655,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	// initial workspace general setting
-	bytes, err := json.Marshal(storepb.WorkspaceProfileSettingPayload{
+	bytes, err := json.Marshal(storepb.WorkspaceProfileSetting{
 		ExternalUrl:    s.profile.ExternalURL,
 		DisallowSignup: false,
 	})
