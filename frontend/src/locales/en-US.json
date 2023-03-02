@@ -454,20 +454,32 @@
     "general": {
       "workspace": {
         "branding": "Branding",
-        "only-owner-can-edit": "Only workspace owner can update the branding.",
+        "only-owner-can-edit": "Only workspace owner can update the settings.",
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).",
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
         "logo-upload-succeed": "Successfully updated the logo",
+        "security": "Security",
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",
           "description": "Display watermarks on pages, including username, ID and email.",
-          "only-owner-can-edit": "Only workspace owner can update watermark setting."
+          "only-owner-can-edit": "Only workspace owner can update watermark setting.",
+          "enable": "Enable watermark"
         },
-        "enable-watermark": "Enable watermark"
+        "disallow-signup": {
+          "enable": "Disallow self-service signup",
+          "description": "Once disallowed, users cannot self-service signup and can only be invited by the workspace owner.",
+          "only-owner-can-edit": "Only workspace owner can update the self-service signup."
+        },
+        "network": "Network",
+        "external-url": {
+          "self": "External URL",
+          "description": "The external URL where user visits Bytebase, must start with http:// or https://. {viewDoc}"
+        },
+        "config-updated": "Configuration is updated"
       }
     },
     "sensitive-data": {
@@ -1811,7 +1823,8 @@
     "rule": {
       "active": "Active"
     },
-    "enabled-rules": "Enabled rules"
+    "enabled-rules": "Enabled rules",
+    "rule-detail": "Rule detail"
   },
   "debug-log": {
     "title": "Debug Log",

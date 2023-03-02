@@ -4,78 +4,116 @@
     class="relative flex flex-col justify-start items-start p-2"
     :class="dark && 'dark bg-dark-bg'"
   >
-    <div
-      v-show="queryResult !== null"
-      class="w-full flex flex-row justify-between items-center mb-2 overflow-x-auto"
-    >
-      <div class="flex flex-row justify-start items-center mr-2 shrink-0">
-        <NInput
-          v-if="showSearchFeature"
-          v-model:value="state.search"
-          class="!max-w-[8rem] sm:!max-w-xs"
-          type="text"
-          :placeholder="t('sql-editor.search-results')"
-        >
-          <template #prefix>
-            <heroicons-outline:search class="h-5 w-5 text-gray-300" />
-          </template>
-        </NInput>
-        <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
-          `${data.length} ${t("sql-editor.rows", data.length)}`
-        }}</span>
-        <span
-          v-if="data.length === RESULT_ROWS_LIMIT"
-          class="ml-2 whitespace-nowrap text-sm text-gray-500"
-        >
-          <span>-</span>
-          <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
-        </span>
-      </div>
-      <div class="flex justify-between items-center gap-x-3">
-        <NPagination
-          v-if="showPagination"
-          :item-count="table.getCoreRowModel().rows.length"
-          :page="table.getState().pagination.pageIndex + 1"
-          :page-size="table.getState().pagination.pageSize"
-          :show-quick-jumper="true"
-          :show-size-picker="true"
-          :page-sizes="[20, 50, 100]"
-          @update-page="handleChangePage"
-          @update-page-size="(ps) => table.setPageSize(ps)"
-        />
-        <NButton
-          v-if="showVisualizeButton"
-          text
-          type="primary"
-          @click="visualizeExplain"
-        >
-          {{ $t("sql-editor.visualize-explain") }}
-        </NButton>
-        <NDropdown
-          trigger="hover"
-          :options="exportDropdownOptions"
-          @select="handleExportBtnClick"
-        >
-          <NButton>
-            <template #icon>
-              <heroicons-outline:download class="h-5 w-5" />
+    <template v-if="viewMode === 'result'">
+      <div
+        class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto"
+      >
+        <div class="flex flex-row justify-start items-center mr-2 shrink-0">
+          <NInput
+            v-if="showSearchFeature"
+            v-model:value="state.search"
+            class="!max-w-[8rem] sm:!max-w-xs"
+            type="text"
+            :placeholder="t('sql-editor.search-results')"
+          >
+            <template #prefix>
+              <heroicons-outline:search class="h-5 w-5 text-gray-300" />
             </template>
-            {{ t("common.export") }}
+          </NInput>
+          <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
+            `${data.length} ${t("sql-editor.rows", data.length)}`
+          }}</span>
+          <span
+            v-if="data.length === RESULT_ROWS_LIMIT"
+            class="ml-2 whitespace-nowrap text-sm text-gray-500"
+          >
+            <span>-</span>
+            <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
+          </span>
+        </div>
+        <div class="flex justify-between items-center gap-x-3">
+          <NPagination
+            v-if="showPagination"
+            :item-count="table.getCoreRowModel().rows.length"
+            :page="table.getState().pagination.pageIndex + 1"
+            :page-size="table.getState().pagination.pageSize"
+            :show-quick-jumper="true"
+            :show-size-picker="true"
+            :page-sizes="[20, 50, 100]"
+            @update-page="handleChangePage"
+            @update-page-size="(ps) => table.setPageSize(ps)"
+          />
+          <NButton
+            v-if="showVisualizeButton"
+            text
+            type="primary"
+            @click="visualizeExplain"
+          >
+            {{ $t("sql-editor.visualize-explain") }}
           </NButton>
-        </NDropdown>
+          <NDropdown
+            trigger="hover"
+            :options="exportDropdownOptions"
+            @select="handleExportBtnClick"
+          >
+            <NButton>
+              <template #icon>
+                <heroicons-outline:download class="h-5 w-5" />
+              </template>
+              {{ t("common.export") }}
+            </NButton>
+          </NDropdown>
+        </div>
       </div>
-    </div>
 
-    <div class="flex-1 w-full flex flex-col overflow-y-auto">
-      <DataTable
-        v-show="!showPlaceholder"
-        ref="dataTable"
-        :table="table"
-        :columns="columns"
-        :data="data"
-        :sensitive="sensitive"
-      />
-    </div>
+      <div class="flex-1 w-full flex flex-col overflow-y-auto">
+        <DataTable
+          v-show="!showPlaceholder"
+          ref="dataTable"
+          :table="table"
+          :columns="columns"
+          :data="data"
+          :sensitive="sensitive"
+        />
+      </div>
+    </template>
+    <template v-else-if="viewMode === 'affected-rows'">
+      <div
+        class="text-md font-normal flex items-center gap-x-1"
+        :class="[
+          dark
+            ? 'text-[var(--color-matrix-green-hover)]'
+            : 'text-control-light',
+        ]"
+      >
+        <span>{{ queryResult?.data[2][0][0] }}</span>
+        <span>rows affected</span>
+      </div>
+    </template>
+    <template v-else-if="viewMode === 'empty'">
+      <div
+        class="text-md font-normal"
+        :class="[
+          dark
+            ? 'text-[var(--color-matrix-green-hover)]'
+            : 'text-control-light',
+        ]"
+      >
+        {{ $t("sql-editor.no-rows-found") }}
+      </div>
+    </template>
+    <template v-else-if="viewMode === 'error'">
+      <div
+        class="text-md font-normal"
+        :class="[
+          dark
+            ? 'text-[var(--color-matrix-green-hover)]'
+            : 'text-control-light',
+        ]"
+      >
+        {{ queryResult?.error }}
+      </div>
+    </template>
 
     <div
       v-if="showPlaceholder"
@@ -115,15 +153,15 @@ import {
 } from "@tanstack/vue-table";
 import { SingleSQLResult } from "@/types";
 
+type ViewMode = "result" | "empty" | "affected-rows" | "error";
+
 interface State {
   search: string;
 }
 
-type QueryResult = SingleSQLResult["data"];
-
 const props = defineProps({
   queryResult: {
-    type: Object as PropType<QueryResult>,
+    type: Object as PropType<SingleSQLResult>,
     default: undefined,
   },
   loading: {
@@ -145,6 +183,23 @@ const instanceStore = useInstanceStore();
 
 const state = reactive<State>({
   search: "",
+});
+
+const viewMode = computed((): ViewMode => {
+  const { queryResult } = props;
+  if (!queryResult) {
+    return "empty";
+  }
+  if (queryResult.error) {
+    return "error";
+  }
+  if (
+    queryResult.data?.[0].length === 1 &&
+    queryResult.data[0][0] === "Affected Rows"
+  ) {
+    return "affected-rows";
+  }
+  return "result";
 });
 
 const dataTable = ref<InstanceType<typeof DataTable>>();
@@ -170,10 +225,10 @@ const keyword = debouncedRef(
 );
 
 const columns = computed(() => {
-  if (!props.queryResult) {
+  if (!props.queryResult?.data) {
     return [];
   }
-  const columns = props.queryResult[0];
+  const columns = props.queryResult.data[0];
   return columns.map<ColumnDef<string[]>>((col, index) => ({
     id: `${col}@${index}`,
     accessorFn: (item) => item[index],
@@ -182,11 +237,11 @@ const columns = computed(() => {
 });
 
 const data = computed(() => {
-  if (!props.queryResult) {
+  if (!props.queryResult?.data) {
     return [];
   }
 
-  const data = props.queryResult[2];
+  const data = props.queryResult.data[2];
   const search = keyword.value;
   let temp = data;
   if (search) {
@@ -198,10 +253,10 @@ const data = computed(() => {
 });
 
 const sensitive = computed(() => {
-  if (!props.queryResult) {
+  if (!props.queryResult?.data) {
     return [];
   }
-  return props.queryResult[3] ?? [];
+  return props.queryResult.data[3] ?? [];
 });
 
 const table = useVueTable<string[]>({
@@ -218,7 +273,7 @@ const table = useVueTable<string[]>({
 table.setPageSize(DEFAULT_PAGE_SIZE);
 
 const showPlaceholder = computed(() => {
-  if (!props.queryResult) return true;
+  if (!props.queryResult?.data) return true;
   if (props.loading) return true;
   return false;
 });
@@ -285,7 +340,7 @@ const visualizeExplain = () => {
     const statement = executeParams.query || "";
     if (!statement) return;
 
-    const lines: string[][] = queryResult[2];
+    const lines: string[][] = queryResult.data[2];
     const explain = lines.map((line) => line[0]).join("\n");
     if (!explain) return;
 

@@ -11,10 +11,10 @@
     :policy="reviewPolicy"
     :name="reviewPolicy.name"
     :selected-environment="reviewPolicy.environment"
-    :selected-rule-list="selectedRuleList"
+    :selected-rule-list="ruleListOfPolicy"
     @cancel="state.editMode = false"
   />
-  <div v-else class="my-5">
+  <div v-else class="mt-5">
     <div
       class="flex flex-col items-center space-x-2 justify-center md:flex-row"
     >
@@ -82,17 +82,21 @@
       :title="$t('sql-review.create.basic-info.no-linked-environments')"
     />
     <SQLRuleFilter
-      :rule-list="selectedRuleList"
+      :rule-list="state.ruleList"
       :params="filterParams"
       v-on="filterEvents"
     />
-    <SQLReviewPreview
-      key="sql-review-preview"
-      :policy="reviewPolicy"
-      :selected-rule-list="filteredRuleList"
+
+    <SQLRuleTable
+      :class="[state.updating && 'pointer-events-none']"
+      :rule-list="filteredRuleList"
       :editable="hasPermission"
+      @level-change="onLevelChange"
+      @payload-change="onPayloadChange"
+      @comment-change="onCommentChange"
     />
     <BBButtonConfirm
+      class="mt-2"
       :disabled="!hasPermission"
       :style="'DELETE'"
       :button-text="$t('sql-review.delete')"
@@ -101,6 +105,17 @@
       :require-confirm="true"
       @confirm="onRemove"
     />
+    <div
+      v-if="state.rulesUpdated"
+      class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky bottom-0 z-10"
+    >
+      <button type="button" class="btn-normal" @click.prevent="onCancelChanges">
+        <span> {{ $t("common.cancel") }}</span>
+      </button>
+      <button type="button" class="btn-primary" @click.prevent="onApplyChanges">
+        {{ $t("common.confirm-and-update") }}
+      </button>
+    </div>
   </div>
   <BBAlert
     v-if="state.showDisableModal"
@@ -135,7 +150,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { idFromSlug, hasWorkspacePermission } from "@/utils";
@@ -149,6 +164,8 @@ import {
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
   UNKNOWN_ID,
+  ruleIsAvailableInSubscription,
+  convertRuleTemplateToPolicyRule,
 } from "@/types";
 import { BBTextField } from "@/bbkit";
 import {
@@ -156,12 +173,17 @@ import {
   useCurrentUser,
   pushNotification,
   useSQLReviewStore,
+  useSubscriptionStore,
 } from "@/store";
 import {
+  payloadValueListToComponentList,
   SQLRuleFilter,
   useSQLRuleFilter,
+  SQLRuleTable,
 } from "../components/SQLReview/components";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { cloneDeep } from "lodash-es";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
@@ -173,11 +195,13 @@ const props = defineProps({
 interface LocalState {
   showDisableModal: boolean;
   showEnableModal: boolean;
-  searchText: string;
   selectedCategory?: string;
   editMode: boolean;
   checkedEngine: Set<SchemaRuleEngineType>;
   checkedLevel: Set<RuleLevel>;
+  ruleList: RuleTemplate[];
+  rulesUpdated: boolean;
+  updating: boolean;
 }
 
 const { t } = useI18n();
@@ -185,17 +209,17 @@ const store = useSQLReviewStore();
 const router = useRouter();
 const currentUser = useCurrentUser();
 const ROUTE_NAME = "setting.workspace.sql-review";
+const subscriptionStore = useSubscriptionStore();
 
 const state = reactive<LocalState>({
   showDisableModal: false,
   showEnableModal: false,
-  searchText: "",
-  selectedCategory: router.currentRoute.value.query.category
-    ? (router.currentRoute.value.query.category as string)
-    : undefined,
   editMode: false,
   checkedEngine: new Set<SchemaRuleEngineType>(),
   checkedLevel: new Set<RuleLevel>(),
+  ruleList: [],
+  rulesUpdated: false,
+  updating: false,
 });
 
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
@@ -215,7 +239,7 @@ const reviewPolicy = computed((): SQLReviewPolicy => {
   );
 });
 
-const selectedRuleList = computed((): RuleTemplate[] => {
+const ruleListOfPolicy = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
     return [];
   }
@@ -254,11 +278,19 @@ const selectedRuleList = computed((): RuleTemplate[] => {
   return ruleTemplateList;
 });
 
+watch(
+  ruleListOfPolicy,
+  (ruleList) => {
+    state.ruleList = cloneDeep(ruleList);
+  },
+  { immediate: true }
+);
+
 const {
   params: filterParams,
   events: filterEvents,
   filteredRuleList,
-} = useSQLRuleFilter(selectedRuleList);
+} = useSQLRuleFilter(toRef(state, "ruleList"));
 
 const changeName = async (name: string) => {
   const policy = reviewPolicy.value;
@@ -281,10 +313,73 @@ const changeName = async (name: string) => {
   });
 };
 
+const markChange = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
+  if (
+    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
+  ) {
+    return;
+  }
+
+  const index = state.ruleList.findIndex((r) => r.type === rule.type);
+  if (index < 0) {
+    return;
+  }
+  const newRule = {
+    ...state.ruleList[index],
+    ...overrides,
+  };
+  state.ruleList[index] = newRule;
+  state.rulesUpdated = true;
+};
+
+const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
+  const componentList = payloadValueListToComponentList(rule, data);
+  markChange(rule, { componentList });
+};
+
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+  markChange(rule, { level });
+};
+
+const onCommentChange = (rule: RuleTemplate, comment: string) => {
+  markChange(rule, { comment });
+};
+
+const onCancelChanges = () => {
+  state.ruleList = cloneDeep(ruleListOfPolicy.value);
+  state.rulesUpdated = false;
+};
+
+const onApplyChanges = async () => {
+  const policy = reviewPolicy.value;
+  const upsert = {
+    ruleList: state.ruleList.map((rule) =>
+      convertRuleTemplateToPolicyRule(rule)
+    ),
+  };
+
+  state.updating = true;
+  try {
+    await useSQLReviewStore().updateReviewPolicy({
+      id: policy.id,
+      name: policy.name,
+      ...upsert,
+    });
+    state.rulesUpdated = false;
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-review.policy-updated"),
+    });
+  } finally {
+    state.updating = false;
+  }
+};
+
 const onEdit = () => {
   state.editMode = true;
-  state.searchText = "";
-  state.selectedCategory = undefined;
+  filterParams.searchText = "";
+  filterParams.selectedCategory = undefined;
 };
 
 const onArchive = () => {

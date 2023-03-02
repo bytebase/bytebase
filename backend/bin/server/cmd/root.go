@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -72,12 +71,12 @@ var (
 		// - Requests other than GET will be rejected
 		// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
 		readonly bool
+		// saas means the Bytebase is running in SaaS mode, several features is only controlled by us instead of users under this mode.
+		saas bool
 		// demoName is the name of the demo and should be one of the subpath name in the ./store/demo/ directory.
 		// empty means no demo.
 		demoName string
 		debug    bool
-		// disallowSignup will disallow the sign up, users can only be invited by the owner.
-		disallowSignup bool
 		// pgURL must follow PostgreSQL connection URIs pattern.
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL string
@@ -118,14 +117,13 @@ func init() {
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", common.ExternalURLPlaceholder, "the external URL where user visits Bytebase, must start with http:// or https://")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
 	// Must be one of the subpath name in the ./store/demo/ directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	// Disallow signup
-	rootCmd.PersistentFlags().BoolVar(&flags.disallowSignup, "disallow-signup", false, "whether to disallow the sign up")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.
@@ -140,32 +138,6 @@ func init() {
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
-
-func normalizeExternalURL(url string) (string, error) {
-	r := strings.TrimSpace(url)
-	r = strings.TrimSuffix(r, "/")
-	if !common.HasPrefixes(r, "http://", "https://") {
-		return "", errors.Errorf("%s must start with http:// or https://", url)
-	}
-	parts := strings.Split(r, ":")
-	if len(parts) > 3 {
-		return "", errors.Errorf("%s malformed", url)
-	}
-	if len(parts) == 3 {
-		port, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return "", errors.Errorf("%s has non integer port", url)
-		}
-		// The external URL is used as the redirectURL in the get token process of OAuth, and the
-		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend gets it through window.location.origin in the get code
-		// process, so port 80/443 need to be cropped.
-		if port == 80 || port == 443 {
-			r = strings.Join(parts[0:2], ":")
-		}
-	}
-	return r, nil
-}
 
 func checkDataDir() error {
 	// Clean data directory path.
@@ -220,10 +192,13 @@ func start() {
 	defer log.Sync()
 
 	var err error
-	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
-	if err != nil {
-		log.Error("invalid --external-url", zap.Error(err))
-		return
+
+	if flags.externalURL != "" {
+		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
+		if err != nil {
+			log.Error("invalid --external-url", zap.Error(err))
+			return
+		}
 	}
 	if err := checkDataDir(); err != nil {
 		log.Error(err.Error())
@@ -284,7 +259,7 @@ func start() {
 	}
 
 	externalAddr := profile.ExternalURL
-	if profile.ExternalURL == common.ExternalURLPlaceholder {
+	if profile.ExternalURL == "" {
 		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLPlaceholder)
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s (schema version %v) has started on port %d", profile.Version, s.SchemaVersion, flags.port), externalAddr)

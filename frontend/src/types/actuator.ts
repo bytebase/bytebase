@@ -2,6 +2,7 @@ export type ServerInfo = {
   version: string;
   gitCommit: string;
   readonly: boolean;
+  saas: boolean;
   demoName: string;
   externalUrl: string;
   needAdminSetup: boolean;

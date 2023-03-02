@@ -24,10 +24,11 @@ service AnomalyService {
 
 message SearchAnomaliesRequest {
   // filter is the filter to apply on the search anomaly request,
-  // follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Only support filter by resource and type for now.
   // For example:
-  // Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
-  // Search the specified type of anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
+  // Search the anomalies of a specific resource: 'resource="environments/{environemnt}/instances/{instance}".'
+  // Search the specified types of anomalies: 'type="DATABASE_BACKUP_POLICY_VIOLATION" | "MIGRATION_SCHEMA".'
   string filter = 1;
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
@@ -79,15 +80,15 @@ message Anomaly {
     DATABASE_SCHEMA_DRIFT = 6;
   }
 
-  // AnomalyServerity is the severity of the anomaly.
-  enum AnomalyServerity {
-    // Unspecified anomaly serverity.
-    ANOMALY_SERVERITY_UNSPECIFIED = 0;
-    // MEDIUM is the info level anomaly serverity.
+  // AnomalySeverity is the severity of the anomaly.
+  enum AnomalySeverity {
+    // Unspecified anomaly severity.
+    ANOMALY_SEVERITY_UNSPECIFIED = 0;
+    // MEDIUM is the info level anomaly severity.
     MEDIUM = 1;
-    // HIGH is the warning level anomaly serverity.
+    // HIGH is the warning level anomaly severity.
     HIGH = 2;
-    // CRITICAL is the critical level anomaly serverity.
+    // CRITICAL is the critical level anomaly severity.
     CRITICAL = 3;
   }
 
@@ -100,8 +101,8 @@ message Anomaly {
   // type is the type of the anomaly.
   AnomalyType type = 2;
 
-  // serverity is the serverity of the anomaly.
-  AnomalyServerity serverity = 3;
+  // severity is the severity of the anomaly.
+  AnomalySeverity severity = 3;
 
   // Instance level anomaly detail.
   //
@@ -149,8 +150,8 @@ message Anomaly {
     // expected_schedule is the expected backup plan schedule in the database.
     BackupPlanSchedule expected_schedule = 1;
 
-    // lastest_backup_time is the last backup time in the database.
-    google.protobuf.Timestamp lastest_backup_time = 2;
+    // latest_backup_time is the latest backup time in the database.
+    google.protobuf.Timestamp latest_backup_time = 2;
   }
 
   // DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.

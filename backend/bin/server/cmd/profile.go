@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -19,11 +21,11 @@ func getBaseProfile(dataDir string) config.Profile {
 		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
 		SampleDatabasePort:   flags.port + 3, // Using flags.port + 3 as our sample database port.
 		Readonly:             flags.readonly,
+		SaaS:                 flags.saas,
 		DataDir:              dataDir,
 		ResourceDir:          common.GetResourceDir(dataDir),
 		Debug:                flags.debug,
 		DemoName:             flags.demoName,
-		DisallowSignup:       flags.disallowSignup,
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
@@ -33,5 +35,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		BackupBucket:         flags.backupBucket,
 		BackupCredentialFile: flags.backupCredential,
 		FeishuAPIURL:         feishu.APIPath,
+		LastActiveTs:         time.Now().Unix(),
 	}
 }

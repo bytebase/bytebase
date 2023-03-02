@@ -3,7 +3,8 @@ import { SettingId } from "./id";
 export type SettingName =
   | "bb.branding.logo"
   | "bb.app.im"
-  | "bb.workspace.watermark";
+  | "bb.workspace.watermark"
+  | "bb.workspace.profile";
 
 export type Setting = {
   id: SettingId;

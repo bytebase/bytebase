@@ -8,10 +8,11 @@ export const protobufPackage = "bytebase.v1";
 export interface SearchAnomaliesRequest {
   /**
    * filter is the filter to apply on the search anomaly request,
-   * follow the [google cel-spec](https://github.com/google/cel-spec) syntax.
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * Only support filter by resource and type for now.
    * For example:
-   * Search the anomalies of a specific resource: 'anomaly.resource_name="environments/{environemnt}/instances/{instance}"'
-   * Search the specified type of anomalies: 'anomaly.type="DATABASE_BACKUP_POLICY_VIOLATION"'
+   * Search the anomalies of a specific resource: 'resource="environments/{environemnt}/instances/{instance}".'
+   * Search the specified types of anomalies: 'type="DATABASE_BACKUP_POLICY_VIOLATION" | "MIGRATION_SCHEMA".'
    */
   filter: string;
   /**
@@ -51,8 +52,8 @@ export interface Anomaly {
   resource: string;
   /** type is the type of the anomaly. */
   type: Anomaly_AnomalyType;
-  /** serverity is the serverity of the anomaly. */
-  serverity: Anomaly_AnomalyServerity;
+  /** severity is the severity of the anomaly. */
+  severity: Anomaly_AnomalySeverity;
   instanceConnectionDetail?: Anomaly_InstanceConnectionDetail | undefined;
   databaseConnectionDetail?: Anomaly_DatabaseConnectionDetail | undefined;
   databaseBackupPolicyViolationDetail?: Anomaly_DatabaseBackupPolicyViolationDetail | undefined;
@@ -143,51 +144,51 @@ export function anomaly_AnomalyTypeToJSON(object: Anomaly_AnomalyType): string {
   }
 }
 
-/** AnomalyServerity is the severity of the anomaly. */
-export enum Anomaly_AnomalyServerity {
-  /** ANOMALY_SERVERITY_UNSPECIFIED - Unspecified anomaly serverity. */
-  ANOMALY_SERVERITY_UNSPECIFIED = 0,
-  /** MEDIUM - MEDIUM is the info level anomaly serverity. */
+/** AnomalySeverity is the severity of the anomaly. */
+export enum Anomaly_AnomalySeverity {
+  /** ANOMALY_SEVERITY_UNSPECIFIED - Unspecified anomaly severity. */
+  ANOMALY_SEVERITY_UNSPECIFIED = 0,
+  /** MEDIUM - MEDIUM is the info level anomaly severity. */
   MEDIUM = 1,
-  /** HIGH - HIGH is the warning level anomaly serverity. */
+  /** HIGH - HIGH is the warning level anomaly severity. */
   HIGH = 2,
-  /** CRITICAL - CRITICAL is the critical level anomaly serverity. */
+  /** CRITICAL - CRITICAL is the critical level anomaly severity. */
   CRITICAL = 3,
   UNRECOGNIZED = -1,
 }
 
-export function anomaly_AnomalyServerityFromJSON(object: any): Anomaly_AnomalyServerity {
+export function anomaly_AnomalySeverityFromJSON(object: any): Anomaly_AnomalySeverity {
   switch (object) {
     case 0:
-    case "ANOMALY_SERVERITY_UNSPECIFIED":
-      return Anomaly_AnomalyServerity.ANOMALY_SERVERITY_UNSPECIFIED;
+    case "ANOMALY_SEVERITY_UNSPECIFIED":
+      return Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED;
     case 1:
     case "MEDIUM":
-      return Anomaly_AnomalyServerity.MEDIUM;
+      return Anomaly_AnomalySeverity.MEDIUM;
     case 2:
     case "HIGH":
-      return Anomaly_AnomalyServerity.HIGH;
+      return Anomaly_AnomalySeverity.HIGH;
     case 3:
     case "CRITICAL":
-      return Anomaly_AnomalyServerity.CRITICAL;
+      return Anomaly_AnomalySeverity.CRITICAL;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return Anomaly_AnomalyServerity.UNRECOGNIZED;
+      return Anomaly_AnomalySeverity.UNRECOGNIZED;
   }
 }
 
-export function anomaly_AnomalyServerityToJSON(object: Anomaly_AnomalyServerity): string {
+export function anomaly_AnomalySeverityToJSON(object: Anomaly_AnomalySeverity): string {
   switch (object) {
-    case Anomaly_AnomalyServerity.ANOMALY_SERVERITY_UNSPECIFIED:
-      return "ANOMALY_SERVERITY_UNSPECIFIED";
-    case Anomaly_AnomalyServerity.MEDIUM:
+    case Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED:
+      return "ANOMALY_SEVERITY_UNSPECIFIED";
+    case Anomaly_AnomalySeverity.MEDIUM:
       return "MEDIUM";
-    case Anomaly_AnomalyServerity.HIGH:
+    case Anomaly_AnomalySeverity.HIGH:
       return "HIGH";
-    case Anomaly_AnomalyServerity.CRITICAL:
+    case Anomaly_AnomalySeverity.CRITICAL:
       return "CRITICAL";
-    case Anomaly_AnomalyServerity.UNRECOGNIZED:
+    case Anomaly_AnomalySeverity.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -280,8 +281,8 @@ export interface Anomaly_DatabaseBackupPolicyViolationDetail {
 export interface Anomaly_DatabaseBackupMissingDetail {
   /** expected_schedule is the expected backup plan schedule in the database. */
   expectedSchedule: Anomaly_BackupPlanSchedule;
-  /** lastest_backup_time is the last backup time in the database. */
-  lastestBackupTime?: Date;
+  /** latest_backup_time is the latest backup time in the database. */
+  latestBackupTime?: Date;
 }
 
 /** DatabaseSchemaDriftDetail is the detail for database schema drift anomaly. */
@@ -427,7 +428,7 @@ function createBaseAnomaly(): Anomaly {
   return {
     resource: "",
     type: 0,
-    serverity: 0,
+    severity: 0,
     instanceConnectionDetail: undefined,
     databaseConnectionDetail: undefined,
     databaseBackupPolicyViolationDetail: undefined,
@@ -444,8 +445,8 @@ export const Anomaly = {
     if (message.type !== 0) {
       writer.uint32(16).int32(message.type);
     }
-    if (message.serverity !== 0) {
-      writer.uint32(24).int32(message.serverity);
+    if (message.severity !== 0) {
+      writer.uint32(24).int32(message.severity);
     }
     if (message.instanceConnectionDetail !== undefined) {
       Anomaly_InstanceConnectionDetail.encode(message.instanceConnectionDetail, writer.uint32(34).fork()).ldelim();
@@ -483,7 +484,7 @@ export const Anomaly = {
           message.type = reader.int32() as any;
           break;
         case 3:
-          message.serverity = reader.int32() as any;
+          message.severity = reader.int32() as any;
           break;
         case 4:
           message.instanceConnectionDetail = Anomaly_InstanceConnectionDetail.decode(reader, reader.uint32());
@@ -515,7 +516,7 @@ export const Anomaly = {
     return {
       resource: isSet(object.resource) ? String(object.resource) : "",
       type: isSet(object.type) ? anomaly_AnomalyTypeFromJSON(object.type) : 0,
-      serverity: isSet(object.serverity) ? anomaly_AnomalyServerityFromJSON(object.serverity) : 0,
+      severity: isSet(object.severity) ? anomaly_AnomalySeverityFromJSON(object.severity) : 0,
       instanceConnectionDetail: isSet(object.instanceConnectionDetail)
         ? Anomaly_InstanceConnectionDetail.fromJSON(object.instanceConnectionDetail)
         : undefined,
@@ -538,7 +539,7 @@ export const Anomaly = {
     const obj: any = {};
     message.resource !== undefined && (obj.resource = message.resource);
     message.type !== undefined && (obj.type = anomaly_AnomalyTypeToJSON(message.type));
-    message.serverity !== undefined && (obj.serverity = anomaly_AnomalyServerityToJSON(message.serverity));
+    message.severity !== undefined && (obj.severity = anomaly_AnomalySeverityToJSON(message.severity));
     message.instanceConnectionDetail !== undefined && (obj.instanceConnectionDetail = message.instanceConnectionDetail
       ? Anomaly_InstanceConnectionDetail.toJSON(message.instanceConnectionDetail)
       : undefined);
@@ -564,7 +565,7 @@ export const Anomaly = {
     const message = createBaseAnomaly();
     message.resource = object.resource ?? "";
     message.type = object.type ?? 0;
-    message.serverity = object.serverity ?? 0;
+    message.severity = object.severity ?? 0;
     message.instanceConnectionDetail =
       (object.instanceConnectionDetail !== undefined && object.instanceConnectionDetail !== null)
         ? Anomaly_InstanceConnectionDetail.fromPartial(object.instanceConnectionDetail)
@@ -757,7 +758,7 @@ export const Anomaly_DatabaseBackupPolicyViolationDetail = {
 };
 
 function createBaseAnomaly_DatabaseBackupMissingDetail(): Anomaly_DatabaseBackupMissingDetail {
-  return { expectedSchedule: 0, lastestBackupTime: undefined };
+  return { expectedSchedule: 0, latestBackupTime: undefined };
 }
 
 export const Anomaly_DatabaseBackupMissingDetail = {
@@ -765,8 +766,8 @@ export const Anomaly_DatabaseBackupMissingDetail = {
     if (message.expectedSchedule !== 0) {
       writer.uint32(8).int32(message.expectedSchedule);
     }
-    if (message.lastestBackupTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastestBackupTime), writer.uint32(18).fork()).ldelim();
+    if (message.latestBackupTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.latestBackupTime), writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -782,7 +783,7 @@ export const Anomaly_DatabaseBackupMissingDetail = {
           message.expectedSchedule = reader.int32() as any;
           break;
         case 2:
-          message.lastestBackupTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.latestBackupTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -797,7 +798,7 @@ export const Anomaly_DatabaseBackupMissingDetail = {
       expectedSchedule: isSet(object.expectedSchedule)
         ? anomaly_BackupPlanScheduleFromJSON(object.expectedSchedule)
         : 0,
-      lastestBackupTime: isSet(object.lastestBackupTime) ? fromJsonTimestamp(object.lastestBackupTime) : undefined,
+      latestBackupTime: isSet(object.latestBackupTime) ? fromJsonTimestamp(object.latestBackupTime) : undefined,
     };
   },
 
@@ -805,14 +806,14 @@ export const Anomaly_DatabaseBackupMissingDetail = {
     const obj: any = {};
     message.expectedSchedule !== undefined &&
       (obj.expectedSchedule = anomaly_BackupPlanScheduleToJSON(message.expectedSchedule));
-    message.lastestBackupTime !== undefined && (obj.lastestBackupTime = message.lastestBackupTime.toISOString());
+    message.latestBackupTime !== undefined && (obj.latestBackupTime = message.latestBackupTime.toISOString());
     return obj;
   },
 
   fromPartial(object: DeepPartial<Anomaly_DatabaseBackupMissingDetail>): Anomaly_DatabaseBackupMissingDetail {
     const message = createBaseAnomaly_DatabaseBackupMissingDetail();
     message.expectedSchedule = object.expectedSchedule ?? 0;
-    message.lastestBackupTime = object.lastestBackupTime ?? undefined;
+    message.latestBackupTime = object.latestBackupTime ?? undefined;
     return message;
   },
 };

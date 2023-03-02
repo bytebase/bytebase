@@ -211,6 +211,47 @@ func getFilter(filter, filterKey string) (string, error) {
 	return "", retErr
 }
 
+// getEBNFTokens will parse the simple filter such as `project = "abc" | "def".` to {project: ["abc", "def"]} .
+func getEBNFTokens(filter, filterKey string) ([]string, error) {
+	grammar, err := ebnf.Parse("", strings.NewReader(filter))
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid filter %q", filter)
+	}
+	productions, ok := grammar[filterKey]
+	if !ok {
+		return nil, nil
+	}
+	switch expr := productions.Expr.(type) {
+	case *ebnf.Token:
+		// filterKey = "abc".
+		return []string{expr.String}, nil
+	case ebnf.Alternative:
+		// filterKey = "abc" | "def".
+		var tokens []string
+		for _, expr := range expr {
+			token, ok := expr.(*ebnf.Token)
+			if !ok {
+				return nil, errors.Errorf("invalid filter %q", filter)
+			}
+			tokens = append(tokens, token.String)
+		}
+		return tokens, nil
+	case *ebnf.Alternative:
+		// filterKey = "abc" | "def".
+		var tokens []string
+		for _, expr := range *expr {
+			token, ok := expr.(*ebnf.Token)
+			if !ok {
+				return nil, errors.Errorf("invalid filter %q", filter)
+			}
+			tokens = append(tokens, token.String)
+		}
+		return tokens, nil
+	default:
+		return nil, errors.Errorf("invalid filter %q", filter)
+	}
+}
+
 func convertToEngine(engine db.Type) v1pb.Engine {
 	switch engine {
 	case db.ClickHouse:

@@ -273,7 +273,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 }
 
-func TestVCS1(t *testing.T) {
+func TestVCS(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -599,7 +599,7 @@ func TestVCS1(t *testing.T) {
 			status, err = ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, prodEnvironment.Name, database.Name)
+			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, prodEnvironment.ResourceID, database.Name)
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
 			a.NoError(err)
 			a.Len(files, 1)

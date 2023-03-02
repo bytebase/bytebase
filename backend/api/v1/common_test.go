@@ -104,3 +104,57 @@ func TestGetEnvironmentInstanceDatabaseID(t *testing.T) {
 	_, _, err = getEnvironmentInstanceID("environments/e1/instances/i2/databases/d3")
 	require.Error(t, err)
 }
+
+func TestGetEBNFTokens(t *testing.T) {
+	testCases := []struct {
+		input   string
+		key     string
+		want    []string
+		wantErr bool
+	}{
+		{
+			input: `resource="environments/e1/instances/i2".`,
+			key:   "resource",
+			want: []string{
+				"environments/e1/instances/i2",
+			},
+			wantErr: false,
+		},
+		{
+			input: `resource="environments/e1/instances/i2/databases/db3".`,
+			key:   "resource",
+			want: []string{
+				"environments/e1/instances/i2/databases/db3",
+			},
+			wantErr: false,
+		},
+		{
+			input: `type="DATABASE_BACKUP_MISSING" | "DATABASE_BACKUP_FAILED".`,
+			key:   "type",
+			want: []string{
+				"DATABASE_BACKUP_MISSING",
+				"DATABASE_BACKUP_FAILED",
+			},
+			wantErr: false,
+		},
+		{
+			input: `a="1" | "2". b="3" | "4".`,
+			key:   "b",
+			want: []string{
+				"3",
+				"4",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		got, err := getEBNFTokens(tc.input, tc.key)
+		if tc.wantErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		}
+	}
+}
