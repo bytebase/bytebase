@@ -479,6 +479,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
 	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
+	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.

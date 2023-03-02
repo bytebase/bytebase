@@ -32,7 +32,7 @@
         <NTabPane name="diff" :tab="$t('issue.sdl.schema-change')">
           <CodeDiff
             :old-string="sdlState.detail.previousSDL"
-            :new-string="sdlState.detail.expectedSDL"
+            :new-string="sdlState.detail.prettyExpectedSDL"
             output-format="side-by-side"
             data-label="bb-change-detail-code-diff-block"
         /></NTabPane>
@@ -71,11 +71,14 @@ import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
 import HighlightCodeBlock from "../HighlightCodeBlock";
 import axios from "axios";
+import { sqlClient } from "@/grpcweb";
+import { convertEngineType } from "@/types";
 
 type TabView = "diff" | "statement" | "schema";
 
 type SDLDetail = {
   previousSDL: string;
+  prettyExpectedSDL: string;
   expectedSDL: string;
   diffDDL: string;
 };
@@ -149,11 +152,22 @@ const useSDLState = () => {
     };
     const diffDDL = (await getSchemaDiff()) ?? "";
 
+    const { prettyDumpedSDL, prettyUserSDL } = await sqlClient.pretty({
+      engine: convertEngineType(database.instance.engine),
+      dumpedSDL: previousSDL ?? "",
+      userSDL: expectedSDL ?? "",
+    });
+
     if (task.status === "DONE") {
       throw new Error();
     }
 
-    return { previousSDL, expectedSDL, diffDDL };
+    return {
+      previousSDL: prettyDumpedSDL,
+      prettyExpectedSDL: prettyUserSDL,
+      expectedSDL,
+      diffDDL,
+    };
   };
 
   const fetchSDLDetailFromMigrationHistory = async (
@@ -177,6 +191,7 @@ const useSDLState = () => {
     }
     return {
       previousSDL: history.schemaPrev,
+      prettyExpectedSDL: history.schema,
       expectedSDL: history.schema,
       diffDDL: history.statement,
     };
