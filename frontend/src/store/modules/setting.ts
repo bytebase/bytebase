@@ -26,7 +26,7 @@ export const useSettingStore = defineStore("setting", {
         return;
       }
 
-      return JSON.parse(setting.value) as WorkspaceGeneralSettingPayload;
+      return WorkspaceGeneralSettingPayload.fromJSON(JSON.parse(setting.value));
     },
   },
   actions: {
