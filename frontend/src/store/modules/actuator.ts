@@ -33,11 +33,15 @@ export const useActuatorStore = defineStore("actuator", {
     isReadonly: (state) => {
       return state.serverInfo?.readonly || false;
     },
+    isSaaSMode: (state) => {
+      return state.serverInfo?.saas || false;
+    },
     needAdminSetup: (state) => {
       return state.serverInfo?.needAdminSetup || false;
     },
     needConfigureExternalUrl: (state) => {
-      return state.serverInfo?.externalUrl === EXTERNAL_URL_PLACEHOLDER;
+      const url = state.serverInfo?.externalUrl ?? "";
+      return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
     },
     disallowSignup: (state) => {
       return state.serverInfo?.disallowSignup || false;
@@ -58,8 +62,9 @@ export const useActuatorStore = defineStore("actuator", {
       this.serverInfo = serverInfo;
     },
     async fetchServerInfo() {
-      const serverInfo = (await axios.get(`/api/actuator/info`))
-        .data as ServerInfo;
+      const { data: serverInfo } = await axios.get<ServerInfo>(
+        `/v1/actuator/info`
+      );
 
       this.setServerInfo(serverInfo);
 

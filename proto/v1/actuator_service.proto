@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "generated-go/v1";
+
+service ActuatorService {
+  rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
+    option (google.api.http) = {
+      get: "/v1/actuator/info"
+    };
+    option (google.api.method_signature) = "";
+  }
+}
+
+message GetActuatorInfoRequest {
+}
+
+// ServerInfo is the API message for server info.
+// Actuator concept is similar to the Spring Boot Actuator.
+message ActuatorInfo {
+  string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string git_commit = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool readonly = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool saas = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string demo_name = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string host = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string port = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string external_url = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool need_admin_setup = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool disallow_signup = 10;
+}

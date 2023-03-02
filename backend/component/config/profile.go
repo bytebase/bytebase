@@ -29,6 +29,8 @@ type Profile struct {
 	// - Requests other than GET will be rejected
 	// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
 	Readonly bool
+	// When we are running in SaaS mode, some features are only controlled by use.
+	SaaS bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
 	// ResourceDir is the directory stores the resources including embedded postgres, mysqlutil, mongoutil and etc.
@@ -71,4 +73,13 @@ type Profile struct {
 // UseEmbedDB returns whether to use embedDB.
 func (prof *Profile) UseEmbedDB() bool {
 	return len(prof.PgURL) == 0
+}
+
+var saasFeatureControlMap = map[string]bool{
+	string(api.SettingWorkspaceGeneral): true,
+}
+
+// IsFeatureUnavailable returns if the feature is unavailable in SaaS mode.
+func (prof *Profile) IsFeatureUnavailable(feature string) bool {
+	return prof.SaaS && saasFeatureControlMap[feature]
 }
