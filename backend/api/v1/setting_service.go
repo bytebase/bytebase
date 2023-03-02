@@ -87,7 +87,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err := json.Unmarshal([]byte(settingValue), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 		}
-		externalURL, err := utils.NormalizeExternalURL(payload.ExternalUrl)
+		externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
 		}
