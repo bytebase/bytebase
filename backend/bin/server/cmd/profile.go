@@ -19,6 +19,7 @@ func getBaseProfile(dataDir string) config.Profile {
 		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
 		SampleDatabasePort:   flags.port + 3, // Using flags.port + 3 as our sample database port.
 		Readonly:             flags.readonly,
+		SaaS:                 flags.saas,
 		DataDir:              dataDir,
 		ResourceDir:          common.GetResourceDir(dataDir),
 		Debug:                flags.debug,
