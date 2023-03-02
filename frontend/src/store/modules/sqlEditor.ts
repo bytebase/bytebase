@@ -5,6 +5,7 @@ import {
   QueryInfo,
   QueryHistory,
   ActivitySQLEditorQueryPayload,
+  SingleSQLResult,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useActivityStore } from "./activity";
@@ -96,3 +97,10 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
   },
 });
+
+export const mockAffectedRows0 = (): SingleSQLResult => {
+  return {
+    data: [["Affected Rows"], ["BIGINT"], [[0]], [false]],
+    error: "",
+  };
+};

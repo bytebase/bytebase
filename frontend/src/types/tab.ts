@@ -39,7 +39,7 @@ export interface TabInfo {
     option?: Partial<ExecuteOption>;
   };
   isExecutingSQL: boolean;
-  queryResult?: SingleSQLResult["data"];
+  queryResult?: SingleSQLResult;
   sheetId?: SheetId;
   adviceList?: Advice[];
 }

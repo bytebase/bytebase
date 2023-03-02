@@ -31,7 +31,7 @@
           <div v-if="query.queryResult" class="max-h-[20rem] flex flex-col">
             <TableView
               class="flex-1 overflow-hidden"
-              :query-result="query.queryResult.data"
+              :query-result="query.queryResult"
               :loading="query.status === 'RUNNING'"
               :dark="true"
             />
@@ -72,7 +72,12 @@ import type {
   ExecuteOption,
   WebTerminalQueryItem,
 } from "@/types";
-import { createQueryItem, useTabStore, useWebTerminalStore } from "@/store";
+import {
+  createQueryItem,
+  mockAffectedRows0,
+  useTabStore,
+  useWebTerminalStore,
+} from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
   EditorAction,
@@ -147,6 +152,9 @@ const handleExecute = async (
     // If the queryItem is still the currentQuery
     // which means it hasn't been cancelled.
     if (queryItem === currentQuery.value) {
+      if (sqlResultSet?.data?.[0].length === 0) {
+        sqlResultSet.data = mockAffectedRows0().data;
+      }
       queryItem.queryResult = sqlResultSet;
       pushQueryItem();
       // Clear the tab's statement and keep it sync with the latest query
