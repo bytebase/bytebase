@@ -1,4 +1,4 @@
-import { SQLResultSet } from "./sqlAdvice";
+import { SQLResultSet } from "./sql";
 import { ExecuteConfig, ExecuteOption } from "./tab";
 
 export type WebTerminalQueryItem = {
