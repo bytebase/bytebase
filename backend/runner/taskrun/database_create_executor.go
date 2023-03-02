@@ -124,7 +124,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		Version:        schemaVersion,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
-		Environment:    environment.Title,
+		Environment:    environment.ResourceID,
 		Source:         db.UI,
 		Type:           db.Migrate,
 		Description:    "Create database",
