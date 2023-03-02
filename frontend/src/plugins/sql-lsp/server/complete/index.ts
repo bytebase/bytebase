@@ -162,7 +162,7 @@ export const complete = (
     const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
       subQueryMapping.virtualTableList
     );
-    const suggestionsForKeyword = createKeywordCandidates();
+    const suggestionsForKeyword = createKeywordCandidates(dialect);
 
     suggestions = [
       ...suggestionsForAliases,
