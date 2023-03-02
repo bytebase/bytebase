@@ -40,6 +40,7 @@
             <router-link
               to="/auth/password-forgot"
               class="text-sm font-normal text-control-light hover:underline focus:outline-none"
+              tabindex="-1"
               >{{ $t("auth.sign-in.forget-password") }}</router-link
             >
           </label>
