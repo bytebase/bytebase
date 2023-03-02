@@ -44,7 +44,7 @@ const mountDemoApp = async () => {
     await axios.get<{
       demoName: string;
       version: string;
-    }>(`/api/actuator/info`)
+    }>(`/v1/actuator/info`)
   ).data;
 
   // only show feature demo if it's not the default demo.
