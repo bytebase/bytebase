@@ -14,9 +14,10 @@
     <div class="flex flex-col space-y-1">
       <BBTextField
         :required="item.required"
+        :force-required="false"
         :value="getLabelValue(item.label)"
         :placeholder="getLabelPlaceholder(item.label)"
-        class="textfield"
+        class="text-sm"
         @input="
           setLabelValue(item.label, ($event.target as HTMLInputElement).value)
         "
@@ -29,7 +30,7 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { capitalize } from "lodash-es";
-import { computed } from "vue";
+import { computed, defineComponent } from "vue";
 import type {
   DatabaseLabel,
   LabelKeyType,
@@ -112,5 +113,11 @@ defineExpose({
   validate: (): boolean => {
     return validateLabelsWithTemplate(props.labelList, requiredLabelDict.value);
   },
+});
+</script>
+
+<script lang="ts">
+export default defineComponent({
+  inheritAttrs: false,
 });
 </script>

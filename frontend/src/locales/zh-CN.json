@@ -1067,7 +1067,9 @@
     },
     "show-missing-databases": "显示未找到的数据库",
     "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
-    "doesnt-match-database-name-template": "不符合租户数据库名称模板"
+    "doesnt-match-database-name-template": "不符合租户数据库名称模板",
+    "doesnt-match-tenant-value": "与租户标签值不匹配",
+    "should-follow-database-name-template": "需要遵循租户数据库名称模板"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

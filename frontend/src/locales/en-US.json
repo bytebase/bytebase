@@ -1069,7 +1069,9 @@
     },
     "show-missing-databases": "Show missing databases",
     "n-selected-m-in-total": "({selected} selected, {total} in total)",
-    "doesnt-match-database-name-template": "Doesn't match tenant database name template"
+    "doesnt-match-database-name-template": "Doesn't match tenant database name template",
+    "doesnt-match-tenant-value": "Doesn't match label value",
+    "should-follow-database-name-template": "Should follow tenant database name template"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

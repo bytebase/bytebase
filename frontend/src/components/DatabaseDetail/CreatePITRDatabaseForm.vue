@@ -13,7 +13,7 @@
     />
   </div>
 
-  <div class="col-span-2 col-start-2 w-64">
+  <div class="col-span-2 col-start-2">
     <label for="name" class="textlabel">
       {{ $t("create-db.new-database-name") }}
       <span class="text-red-600">*</span>
@@ -108,7 +108,7 @@
     />
   </div>
 
-  <div class="col-span-2 col-start-2 w-64">
+  <div class="col-span-2 col-start-2">
     <label for="collation" class="textlabel">
       {{ $t("db.collation") }}
     </label>
@@ -126,7 +126,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, PropType, reactive, ref, watch } from "vue";
+import {
+  computed,
+  onBeforeMount,
+  PropType,
+  reactive,
+  ref,
+  toRef,
+  watch,
+} from "vue";
 import { cloneDeep, isEmpty } from "lodash-es";
 import {
   Database,
@@ -139,6 +147,7 @@ import { CreatePITRDatabaseContext } from "./utils";
 import {
   DatabaseLabelForm,
   DatabaseNameTemplateTips,
+  useDBNameTemplateInputState,
 } from "@/components/CreateDatabasePrepForm";
 import { useInstanceStore, useProjectStore, useDBSchemaStore } from "@/store";
 import { isPITRAvailableOnInstance } from "@/plugins/pitr";
@@ -226,6 +235,11 @@ const selectedInstance = computed((): Instance => {
 const instanceFilter = (instance: Instance): boolean => {
   return isPITRAvailableOnInstance(instance);
 };
+
+useDBNameTemplateInputState(project, {
+  databaseName: toRef(state.context, "databaseName"),
+  labels: toRef(state.context, "labelList"),
+});
 
 // Sync values from props when changes.
 watch([() => props.database, () => props.context], () => {

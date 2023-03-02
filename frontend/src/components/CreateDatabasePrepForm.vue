@@ -238,12 +238,14 @@ import {
   watchEffect,
   defineComponent,
   ref,
+  toRef,
 } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import {
   DatabaseLabelForm,
   DatabaseNameTemplateTips,
+  useDBNameTemplateInputState,
 } from "./CreateDatabasePrepForm/";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -463,6 +465,11 @@ export default defineComponent({
       }
 
       return state.instanceUserId !== undefined;
+    });
+
+    useDBNameTemplateInputState(project, {
+      databaseName: toRef(state, "databaseName"),
+      labels: toRef(state, "labelList"),
     });
 
     const selectProject = (projectId: ProjectId) => {

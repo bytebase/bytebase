@@ -65,3 +65,19 @@ export const buildDatabaseNameRegExpByTemplate = (template: string): RegExp => {
   const regexp = new RegExp(`^${regexpString}$`);
   return regexp;
 };
+
+export const parseDatabaseLabelValueByTemplate = (
+  template: string,
+  name: string,
+  group: "DB_NAME" | "TENANT"
+) => {
+  if (!template) return "";
+
+  const regex = buildDatabaseNameRegExpByTemplate(template);
+  const matches = name.match(regex);
+  if (!matches) return "";
+
+  const value = matches.groups?.[group];
+  if (!value) return "";
+  return value;
+};
