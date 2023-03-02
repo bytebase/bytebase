@@ -9,10 +9,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 )
 
-// SchemaTransformer is the interface for schema transformer.
+// SchemaTransformer is the interface for schema SDL format transformer.
 type SchemaTransformer interface {
 	Transform(schema string) (string, error)
 	Check(schema string) (int, error)
+	Normalize(schema string, standard string) (string, error)
 }
 
 var (
@@ -35,7 +36,7 @@ func Register(engineType parser.EngineType, t SchemaTransformer) {
 	transformers[engineType] = t
 }
 
-// SchemaTransform returns the transformed schema.
+// SchemaTransform returns the transformed schema(SDL format).
 func SchemaTransform(engineType parser.EngineType, schema string) (string, error) {
 	transformMu.RLock()
 	p, ok := transformers[engineType]
@@ -55,4 +56,15 @@ func CheckFormat(engineType parser.EngineType, schema string) (int, error) {
 		return 0, errors.Errorf("engine: unknown engine type %v", engineType)
 	}
 	return p.Check(schema)
+}
+
+// Normalize normalizes the schema format. The schema and standard should be SDL format.
+func Normalize(engineType parser.EngineType, schema string, standard string) (string, error) {
+	transformMu.RLock()
+	p, ok := transformers[engineType]
+	transformMu.RUnlock()
+	if !ok {
+		return "", errors.Errorf("engine: unknown engine type %v", engineType)
+	}
+	return p.Normalize(schema, standard)
 }
