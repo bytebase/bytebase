@@ -107,10 +107,8 @@ const updateExternalUrl = async () => {
 
   const payload: WorkspaceProfileSetting = {
     disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
-    externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
+    externalUrl: state.externalUrl,
   };
-  payload.externalUrl = state.externalUrl;
-
   await settingStore.updateSettingByName({
     name: "bb.workspace.profile",
     value: JSON.stringify(payload),
