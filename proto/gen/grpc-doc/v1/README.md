@@ -205,7 +205,6 @@
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
-    - [GetWebhookRequest](#bytebase-v1-GetWebhookRequest)
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [LabelSelector](#bytebase-v1-LabelSelector)
     - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
@@ -213,9 +212,6 @@
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
-    - [ListWebhooksRequest](#bytebase-v1-ListWebhooksRequest)
-    - [ListWebhooksResponse](#bytebase-v1-ListWebhooksResponse)
-    - [ModifyWebhookRequest](#bytebase-v1-ModifyWebhookRequest)
     - [Project](#bytebase-v1-Project)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [Review](#bytebase-v1-Review)
@@ -228,6 +224,7 @@
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
+    - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
     - [Webhook](#bytebase-v1-Webhook)
   
     - [LgtmCheck](#bytebase-v1-LgtmCheck)
@@ -2908,7 +2905,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of webhooks. Format: projects/{project} |
+| project | [string](#string) |  | The name of the project to add the webhook to. Format: projects/{project} |
 | webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to add. |
 
 
@@ -3090,21 +3087,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-GetWebhookRequest"></a>
-
-### GetWebhookRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the webhook to retrieve. Format: projects/{project}/webhooks/{webhook} |
-
-
-
-
-
-
 <a name="bytebase-v1-IamPolicy"></a>
 
 ### IamPolicy
@@ -3222,59 +3204,6 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
-<a name="bytebase-v1-ListWebhooksRequest"></a>
-
-### ListWebhooksRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of webhooks. Format: projects/{project} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of reviews to return. The service may return fewer than this value. If unspecified, at most 50 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReviews` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListReviews` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListWebhooksResponse"></a>
-
-### ListWebhooksResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| webhooks | [Webhook](#bytebase-v1-Webhook) | repeated | The webhooks from the specified request. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ModifyWebhookRequest"></a>
-
-### ModifyWebhookRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify.
-
-The webhook&#39;s `name` field is used to identify the webhook to modify. Format: projects/{project}/webhooks/{webhook} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
-
 <a name="bytebase-v1-Project"></a>
 
 ### Project
@@ -3295,6 +3224,7 @@ The webhook&#39;s `name` field is used to identify the webhook to modify. Format
 | schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | lgtm_check | [LgtmCheck](#bytebase-v1-LgtmCheck) |  |  |
+| webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 
 
 
@@ -3309,7 +3239,8 @@ The webhook&#39;s `name` field is used to identify the webhook to modify. Format
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the webhook to remove. Format: projects/{project}/webhooks/{webhook} |
+| project | [string](#string) |  | The name of the project to remove the webhook from. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to remove. Identified by its url. |
 
 
 
@@ -3396,7 +3327,8 @@ The webhook&#39;s `name` field is used to identify the webhook to modify. Format
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the webhook to test. Format: projects/{project}/webhooks/{webhook} |
+| project | [string](#string) |  | The name of the project which owns the webhook to test. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to test. Identified by its url. |
 
 
 
@@ -3484,6 +3416,23 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 
 
 
+<a name="bytebase-v1-UpdateWebhookRequest"></a>
+
+### UpdateWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project which owns the webhook to be updated. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. Identified by its url. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+
 <a name="bytebase-v1-Webhook"></a>
 
 ### Webhook
@@ -3492,10 +3441,9 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the Webhook, generated by server. And it&#39;s unique within the project. Format: projects/{project}/webhooks/{webhook} |
 | type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  | type is the type of the webhook. |
 | title | [string](#string) |  | title is the title of the webhook. |
-| url | [string](#string) |  | url is the url of the webhook. |
+| url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
 | sub_types | [activity.Activity.Type](#bytebase-v1-activity-Activity-Type) | repeated | sub_types is the list of activities types that the webhook is interested in. It should not be empty, and shoule be a subset of the following: - TYPE_ISSUE_CREATED - TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_COMMENT_CREAT |
 
 
@@ -3667,11 +3615,9 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | GetDeploymentConfig | [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest) | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |
 | UpdateDeploymentConfig | [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest) | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |
-| ListWebhooks | [ListWebhooksRequest](#bytebase-v1-ListWebhooksRequest) | [ListWebhooksResponse](#bytebase-v1-ListWebhooksResponse) |  |
-| GetWebhook | [GetWebhookRequest](#bytebase-v1-GetWebhookRequest) | [Webhook](#bytebase-v1-Webhook) |  |
-| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Webhook](#bytebase-v1-Webhook) |  |
-| ModifyWebhook | [ModifyWebhookRequest](#bytebase-v1-ModifyWebhookRequest) | [Webhook](#bytebase-v1-Webhook) |  |
-| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) |  |
+| UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
+| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 
  

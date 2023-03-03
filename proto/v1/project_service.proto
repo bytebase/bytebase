@@ -116,49 +116,35 @@ service ProjectService {
     };
   }
 
-  rpc ListWebhooks(ListWebhooksRequest) returns (ListWebhooksResponse) {
+  rpc AddWebhook(AddWebhookRequest) returns (Project) {
     option (google.api.http) = {
-      get: "/v1/{parent=projects/*}/webhooks"
-    };
-    option (google.api.method_signature) = "parent";
-  }
-
-  rpc GetWebhook(GetWebhookRequest) returns (Webhook) {
-    option (google.api.http) = {
-      get: "/v1/{name=projects/*/webhooks/*}"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
-  rpc AddWebhook(AddWebhookRequest) returns (Webhook) {
-    option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/webhooks"
+      post: "/v1/{project=projects/*}:addWebhook"
       body: "webhook"
     };
     option (google.api.method_signature) = "parent";
   }
 
-  rpc ModifyWebhook(ModifyWebhookRequest) returns (Webhook) {
+  rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
-      patch: "/v1/{webhook.name=projects/*/webhooks/*}"
+      patch: "/v1/{project=projects/*}:modifyWebhook"
       body: "webhook"
     };
-    option (google.api.method_signature) = "webhook,update_mask";
+    option (google.api.method_signature) = "project,update_mask";
   }
 
-  rpc RemoveWebhook(RemoveWebhookRequest) returns (google.protobuf.Empty) {
+  rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
     option (google.api.http) = {
-      delete: "/v1/{name=projects/*/webhooks/*}"
+      delete: "/v1/{project=projects/*}:removeWebhook"
     };
-    option (google.api.method_signature) = "name";
+    option (google.api.method_signature) = "project";
   }
 
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=projects/*/webhooks/*}:test"
-      body: "*"
+      post: "/v1/{project=projects/*}:testWebhook"
+      body: "webhook"
     };
-    option (google.api.method_signature) = "name";
+    option (google.api.method_signature) = "project";
   }
 }
 
@@ -283,6 +269,8 @@ message Project {
   SchemaChange schema_change = 11;
 
   LgtmCheck lgtm_check = 12;
+
+  repeated Webhook webhooks = 13;
 }
 
 message IamPolicy {
@@ -412,70 +400,44 @@ message BatchUpdateReviewsResponse {
   repeated Review reviews = 1;
 }
 
-message ListWebhooksRequest {
-  // The parent, which owns this collection of webhooks.
-  // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Not used. The maximum number of reviews to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 reviews will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
-
-  // Not used. A page token, received from a previous `ListReviews` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListReviews` must match
-  // the call that provided the page token.
-  string page_token = 3;
-}
-
-message ListWebhooksResponse {
-  // The webhooks from the specified request.
-  repeated Webhook webhooks = 1;
-
-  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message GetWebhookRequest {
-  // The name of the webhook to retrieve.
-  // Format: projects/{project}/webhooks/{webhook}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
 message AddWebhookRequest {
-  // The parent, which owns this collection of webhooks.
+  // The name of the project to add the webhook to.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The webhook to add.
   Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ModifyWebhookRequest {
+message UpdateWebhookRequest {
+  // The name of the project which owns the webhook to be updated.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
   // The webhook to modify.
-  //
-  // The webhook's `name` field is used to identify the webhook to modify.
-  // Format: projects/{project}/webhooks/{webhook}
-  Webhook webhook = 1 [(google.api.field_behavior) = REQUIRED];
+  // Identified by its url.
+  Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
+  google.protobuf.FieldMask update_mask = 3;
 }
 
 message RemoveWebhookRequest {
-  // The name of the webhook to remove.
-  // Format: projects/{project}/webhooks/{webhook}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the project to remove the webhook from.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The webhook to remove. Identified by its url.
+  Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message TestWebhookRequest {
-  // The name of the webhook to test.
-  // Format: projects/{project}/webhooks/{webhook}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the project which owns the webhook to test.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The webhook to test. Identified by its url.
+  Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message TestWebhookResponse {
@@ -484,10 +446,6 @@ message TestWebhookResponse {
 }
 
 message Webhook {
-  // The name of the Webhook, generated by server. And it's unique within the project.
-  // Format: projects/{project}/webhooks/{webhook}
-  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   enum Type {
     TYPE_UNSPECIFIED = 0;
     TYPE_SLACK = 1;
@@ -500,13 +458,13 @@ message Webhook {
   }
 
   // type is the type of the webhook.
-  Type type = 2 [(google.api.field_behavior) = REQUIRED];
+  Type type = 1 [(google.api.field_behavior) = REQUIRED];
 
   // title is the title of the webhook.
-  string title = 3 [(google.api.field_behavior) = REQUIRED];
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // url is the url of the webhook.
-  string url = 4 [(google.api.field_behavior) = REQUIRED];
+  // url is the url of the webhook, should be unique within the project.
+  string url = 3 [(google.api.field_behavior) = REQUIRED];
 
   // sub_types is the list of activities types that the webhook is interested in.
   // It should not be empty, and shoule be a subset of the following:
@@ -516,7 +474,7 @@ message Webhook {
   // - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
   // - TYPE_ISSUE_FIELD_UPDATE
   // - TYPE_ISSUE_COMMENT_CREAT
-  repeated activity.Activity.Type sub_types = 5 [(google.api.field_behavior) = UNORDERED_LIST];
+  repeated activity.Activity.Type sub_types = 4 [(google.api.field_behavior) = UNORDERED_LIST];
 }
 
 message Review {

@@ -37,11 +37,9 @@ type ProjectServiceClient interface {
 	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
 	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
 	UpdateDeploymentConfig(ctx context.Context, in *UpdateDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
-	ListWebhooks(ctx context.Context, in *ListWebhooksRequest, opts ...grpc.CallOption) (*ListWebhooksResponse, error)
-	GetWebhook(ctx context.Context, in *GetWebhookRequest, opts ...grpc.CallOption) (*Webhook, error)
-	AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Webhook, error)
-	ModifyWebhook(ctx context.Context, in *ModifyWebhookRequest, opts ...grpc.CallOption) (*Webhook, error)
-	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
 }
 
@@ -179,26 +177,8 @@ func (c *projectServiceClient) UpdateDeploymentConfig(ctx context.Context, in *U
 	return out, nil
 }
 
-func (c *projectServiceClient) ListWebhooks(ctx context.Context, in *ListWebhooksRequest, opts ...grpc.CallOption) (*ListWebhooksResponse, error) {
-	out := new(ListWebhooksResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/ListWebhooks", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetWebhook(ctx context.Context, in *GetWebhookRequest, opts ...grpc.CallOption) (*Webhook, error) {
-	out := new(Webhook)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/GetWebhook", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Webhook, error) {
-	out := new(Webhook)
+func (c *projectServiceClient) AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Project, error) {
+	out := new(Project)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/AddWebhook", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -206,17 +186,17 @@ func (c *projectServiceClient) AddWebhook(ctx context.Context, in *AddWebhookReq
 	return out, nil
 }
 
-func (c *projectServiceClient) ModifyWebhook(ctx context.Context, in *ModifyWebhookRequest, opts ...grpc.CallOption) (*Webhook, error) {
-	out := new(Webhook)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/ModifyWebhook", in, out, opts...)
+func (c *projectServiceClient) UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error) {
+	out := new(Project)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/UpdateWebhook", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *projectServiceClient) RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *projectServiceClient) RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error) {
+	out := new(Project)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/RemoveWebhook", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -251,11 +231,9 @@ type ProjectServiceServer interface {
 	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
 	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*DeploymentConfig, error)
 	UpdateDeploymentConfig(context.Context, *UpdateDeploymentConfigRequest) (*DeploymentConfig, error)
-	ListWebhooks(context.Context, *ListWebhooksRequest) (*ListWebhooksResponse, error)
-	GetWebhook(context.Context, *GetWebhookRequest) (*Webhook, error)
-	AddWebhook(context.Context, *AddWebhookRequest) (*Webhook, error)
-	ModifyWebhook(context.Context, *ModifyWebhookRequest) (*Webhook, error)
-	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*emptypb.Empty, error)
+	AddWebhook(context.Context, *AddWebhookRequest) (*Project, error)
+	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
+	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
@@ -306,19 +284,13 @@ func (UnimplementedProjectServiceServer) GetDeploymentConfig(context.Context, *G
 func (UnimplementedProjectServiceServer) UpdateDeploymentConfig(context.Context, *UpdateDeploymentConfigRequest) (*DeploymentConfig, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDeploymentConfig not implemented")
 }
-func (UnimplementedProjectServiceServer) ListWebhooks(context.Context, *ListWebhooksRequest) (*ListWebhooksResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListWebhooks not implemented")
-}
-func (UnimplementedProjectServiceServer) GetWebhook(context.Context, *GetWebhookRequest) (*Webhook, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetWebhook not implemented")
-}
-func (UnimplementedProjectServiceServer) AddWebhook(context.Context, *AddWebhookRequest) (*Webhook, error) {
+func (UnimplementedProjectServiceServer) AddWebhook(context.Context, *AddWebhookRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddWebhook not implemented")
 }
-func (UnimplementedProjectServiceServer) ModifyWebhook(context.Context, *ModifyWebhookRequest) (*Webhook, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ModifyWebhook not implemented")
+func (UnimplementedProjectServiceServer) UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateWebhook not implemented")
 }
-func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveWebhookRequest) (*emptypb.Empty, error) {
+func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveWebhook not implemented")
 }
 func (UnimplementedProjectServiceServer) TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error) {
@@ -589,42 +561,6 @@ func _ProjectService_UpdateDeploymentConfig_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_ListWebhooks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListWebhooksRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).ListWebhooks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.ProjectService/ListWebhooks",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).ListWebhooks(ctx, req.(*ListWebhooksRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetWebhookRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetWebhook(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.ProjectService/GetWebhook",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetWebhook(ctx, req.(*GetWebhookRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_AddWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddWebhookRequest)
 	if err := dec(in); err != nil {
@@ -643,20 +579,20 @@ func _ProjectService_AddWebhook_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_ModifyWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ModifyWebhookRequest)
+func _ProjectService_UpdateWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateWebhookRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProjectServiceServer).ModifyWebhook(ctx, in)
+		return srv.(ProjectServiceServer).UpdateWebhook(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bytebase.v1.ProjectService/ModifyWebhook",
+		FullMethod: "/bytebase.v1.ProjectService/UpdateWebhook",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).ModifyWebhook(ctx, req.(*ModifyWebhookRequest))
+		return srv.(ProjectServiceServer).UpdateWebhook(ctx, req.(*UpdateWebhookRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -761,20 +697,12 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_UpdateDeploymentConfig_Handler,
 		},
 		{
-			MethodName: "ListWebhooks",
-			Handler:    _ProjectService_ListWebhooks_Handler,
-		},
-		{
-			MethodName: "GetWebhook",
-			Handler:    _ProjectService_GetWebhook_Handler,
-		},
-		{
 			MethodName: "AddWebhook",
 			Handler:    _ProjectService_AddWebhook_Handler,
 		},
 		{
-			MethodName: "ModifyWebhook",
-			Handler:    _ProjectService_ModifyWebhook_Handler,
+			MethodName: "UpdateWebhook",
+			Handler:    _ProjectService_UpdateWebhook_Handler,
 		},
 		{
 			MethodName: "RemoveWebhook",
