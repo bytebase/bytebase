@@ -18,6 +18,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
@@ -29,6 +30,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/server"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -247,6 +249,9 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err := ctl.start(ctx, serverPort); err != nil {
 		return err
 	}
+	if err := ctl.initWorkspaceProfile(); err != nil {
+		return err
+	}
 	if err := ctl.Signup(); err != nil {
 		return err
 	}
@@ -268,7 +273,25 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, serverPort)
+	if err := ctl.start(ctx, serverPort); err != nil {
+		return err
+	}
+
+	return ctl.initWorkspaceProfile()
+}
+
+func (ctl *controller) initWorkspaceProfile() error {
+	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
+		ExternalUrl:    ctl.profile.ExternalURL,
+		DisallowSignup: false,
+	})
+	if err != nil {
+		return err
+	}
+	return ctl.patchSetting(api.SettingPatch{
+		Name:  api.SettingWorkspaceProfile,
+		Value: string(bytes),
+	})
 }
 
 // GetTestProfile will return a profile for testing.
