@@ -835,6 +835,21 @@ func TestProvider_CreateWebhook(t *testing.T) {
 	assert.Equal(t, "6611a7e9-6890-4e8e-84c5-b9707397da8b", got)
 }
 
+func TestProvider_PatchWebhook(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	err := p.PatchWebhook(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "1", []byte(""))
+	require.NoError(t, err)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
