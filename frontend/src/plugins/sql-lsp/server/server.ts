@@ -42,28 +42,37 @@ connection.onInitialize((params): InitializeResult => {
   };
 });
 
-connection.onCompletion((params: CompletionParams): CompletionItem[] => {
-  console.debug("onCompletion", params);
-  // Make sure the client does not send use completion request for characters
-  // other than the dot which we asked for.
-  if (params.context?.triggerKind === CompletionTriggerKind.TriggerCharacter) {
-    const triggerCharacter = params.context?.triggerCharacter;
-    if (!triggerCharacter || !TRIGGER_CHARACTERS.includes(triggerCharacter)) {
+connection.onCompletion(
+  async (params: CompletionParams): Promise<CompletionItem[]> => {
+    console.debug("onCompletion", params);
+    // Make sure the client does not send use completion request for characters
+    // other than the dot which we asked for.
+    if (
+      params.context?.triggerKind === CompletionTriggerKind.TriggerCharacter
+    ) {
+      const triggerCharacter = params.context?.triggerCharacter;
+      if (!triggerCharacter || !TRIGGER_CHARACTERS.includes(triggerCharacter)) {
+        return [];
+      }
+    }
+    const document = documents.get(params.textDocument.uri);
+    if (!document) {
       return [];
     }
+    const text = documents.get(params.textDocument.uri)?.getText();
+    if (!text) {
+      return [];
+    }
+    const candidates = await complete(
+      params,
+      document,
+      state.schema,
+      state.dialect
+    );
+    console.debug("onCompletion returns: " + JSON.stringify(candidates));
+    return candidates;
   }
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return [];
-  }
-  const text = documents.get(params.textDocument.uri)?.getText();
-  if (!text) {
-    return [];
-  }
-  const candidates = complete(params, document, state.schema, state.dialect);
-  console.debug("onCompletion returns: " + JSON.stringify(candidates));
-  return candidates;
-});
+);
 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   console.debug("onCompletionResolve", item);
