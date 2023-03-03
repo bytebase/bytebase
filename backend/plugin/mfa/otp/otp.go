@@ -1,3 +1,4 @@
+// Package otp is the plugin for OTP Multi-Factor Authentication.
 package otp
 
 import (
