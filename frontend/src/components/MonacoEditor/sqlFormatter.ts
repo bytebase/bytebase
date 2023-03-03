@@ -1,4 +1,4 @@
-import { format, FormatOptions, supportedDialects } from "sql-formatter";
+import { format, FormatOptions } from "sql-formatter";
 
 import { SQLDialect } from "../../types";
 
@@ -7,12 +7,20 @@ type FormatResult = {
   error: Error | null;
 };
 
+type FormatterLanguage = FormatOptions["language"];
+
+const convertDialectToFormatterLanguage = (
+  dialect: SQLDialect
+): FormatterLanguage => {
+  if (dialect === "MYSQL" || dialect === "TIDB") return "mysql";
+  if (dialect === "POSTGRES") return "postgresql";
+  if (dialect === "SNOWFLAKE") return "snowflake";
+  return "sql";
+};
+
 const formatSQL = (sql: string, dialect: SQLDialect): FormatResult => {
-  if (!supportedDialects.includes(dialect)) {
-    dialect = "mysql";
-  }
   const options: Partial<FormatOptions> = {
-    language: dialect as FormatOptions["language"],
+    language: convertDialectToFormatterLanguage(dialect),
   };
 
   try {

@@ -1,7 +1,7 @@
 export type SQLDialect =
-  | "mysql"
-  | "postgresql"
-  | "snowflake"
-  | "clickhouse"
-  | "tidb"
-  | "spanner";
+  | "MYSQL"
+  | "CLICKHOUSE"
+  | "POSTGRES"
+  | "SNOWFLAKE"
+  | "TIDB"
+  | "SPANNER";
