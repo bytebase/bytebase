@@ -116,6 +116,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := pushEvent.Repository.FullName
 
+		nonBytebaseCommitList := filterBytebaseCommit(pushEvent.Commits)
+		if len(nonBytebaseCommitList) == 0 {
+			var commitList []string
+			for _, commit := range pushEvent.Commits {
+				commitList = append(commitList, commit.ID)
+			}
+			log.Debug("all commits are created by Bytebase",
+				zap.String("repoURL", pushEvent.Repository.HTMLURL),
+				zap.String("repoName", pushEvent.Repository.FullName),
+				zap.String("commits", strings.Join(commitList, ", ")),
+			)
+			return c.String(http.StatusOK, "OK")
+		}
+		pushEvent.Commits = nonBytebaseCommitList
+
 		filter := func(repo *api.Repository) (bool, error) {
 			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
@@ -1345,4 +1360,15 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 		Status:  status,
 		Content: messageList,
 	}
+}
+
+func filterBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
+	var result []github.WebhookCommit
+	for _, commit := range list {
+		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
+			continue
+		}
+		result = append(result, commit)
+	}
+	return result
 }
