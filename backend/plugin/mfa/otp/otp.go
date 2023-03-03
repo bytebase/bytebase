@@ -19,13 +19,6 @@ const (
 	maxPastSecretCount = 5
 )
 
-// getCurrentTimestampInMinute returns the current timestamp truncated to the minute.
-func getCurrentTimestampInMinute() int64 {
-	now := time.Now()
-	truncated := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
-	return truncated.Unix()
-}
-
 // removeSecondsFromTimestamp removes the seconds from the timestamp.
 func removeSecondsFromTimestamp(timestamp int64) int64 {
 	t := time.Unix(timestamp, 0)
@@ -81,7 +74,7 @@ func GetPastSecrets(accountName string, timestamp int64) ([]string, error) {
 // ValidateWithCodeAndAccountName validates the given code against the given account name.
 // It will check the current secret and the past 5 secrets.
 func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
-	currentTimestamp := getCurrentTimestampInMinute()
+	currentTimestamp := removeSecondsFromTimestamp(time.Now().Unix())
 	secret, err := GenerateSecret(accountName, currentTimestamp)
 	if err != nil {
 		return false, err
