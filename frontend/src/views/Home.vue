@@ -119,7 +119,7 @@
   >
     <div class="min-w-0 md:min-w-400 max-w-2xl">
       <div class="flex justify-center items-center">
-        <img :src="planImage" class="w-56 p-4" />
+        <img :src="planImage" class="w-56 px-4" />
         <div class="text-lg space-y-2">
           <p>
             <i18n-t keypath="subscription.trial-start-modal.content">
@@ -153,6 +153,15 @@
             </i18n-t>
           </p>
         </div>
+      </div>
+      <div class="flex justify-end space-x-2 pb-4">
+        <button
+          type="button"
+          class="btn-primary"
+          @click.prevent="onTrialingModalClose"
+        >
+          {{ $t("subscription.trial-start-modal.button") }}
+        </button>
       </div>
     </div>
   </BBModal>
