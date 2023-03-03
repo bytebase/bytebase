@@ -33,11 +33,11 @@ func (s *SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1
 
 	prettyUserSDL, err := transform.SchemaTransform(engine, request.UserSDL)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to transform user SDL", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to transform user SDL: %s", err.Error())
 	}
 	prettyDumpedSDL, err := transform.Normalize(engine, request.DumpedSDL, prettyUserSDL)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to normalize dumped SDL", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to normalize dumped SDL: %s", err.Error())
 	}
 	return &v1pb.PrettyResponse{
 		PrettyDumpedSDL: prettyDumpedSDL,
