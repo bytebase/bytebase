@@ -723,6 +723,73 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_CreatePullRequest(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/octocat/Hello-World/pullrequests", r.URL.Path)
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"title":"Amazing new feature","description":"Please pull these awesome changes in!","close_source_branch":true,"source":{"branch":{"name":"new-topic"}},"destination":{"branch":{"name":"master"}}}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "links": {
+    "self": {
+      "href": "<string>",
+      "name": "<string>"
+    },
+    "html": {
+      "href": "https://bitbucket.org/octocat/Hello-World/pull-requests/108"
+    }
+  },
+  "id": 108,
+  "title": "Amazing new feature",
+  "state": "OPEN",
+  "source": {
+    "branch": {
+      "name": "new-topic",
+      "merge_strategies": [
+        "merge_commit"
+      ]
+    }
+  },
+  "destination": {
+    "branch": {
+      "name": "master",
+      "merge_strategies": [
+        "merge_commit"
+      ]
+    }
+  },
+  "comment_count": 51,
+  "task_count": 53,
+  "close_source_branch": true
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.CreatePullRequest(
+		ctx,
+		common.OauthContext{},
+		bitbucketCloudURL,
+		"octocat/Hello-World",
+		&vcs.PullRequestCreate{
+			Title:                 "Amazing new feature",
+			Body:                  "Please pull these awesome changes in!",
+			Head:                  "new-topic",
+			Base:                  "master",
+			RemoveHeadAfterMerged: true,
+		},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "https://bitbucket.org/octocat/Hello-World/pull-requests/108", got.URL)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

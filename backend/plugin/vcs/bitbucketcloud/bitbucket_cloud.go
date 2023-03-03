@@ -772,9 +772,87 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	return files, nil
 }
 
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
-	// TODO implement me
-	panic("implement me")
+type pullRequestCreateBranch struct {
+	Name string `json:"name"`
+}
+type pullRequestCreateTarget struct {
+	Branch pullRequestCreateBranch `json:"branch"`
+}
+
+type pullRequestCreate struct {
+	Title             string                  `json:"title"`
+	Description       string                  `json:"description"`
+	CloseSourceBranch bool                    `json:"close_source_branch"`
+	Source            pullRequestCreateTarget `json:"source"`
+	Destination       pullRequestCreateTarget `json:"destination"`
+}
+
+// CreatePullRequest creates the pull request in the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-post
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, create *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
+	payload, err := json.Marshal(
+		pullRequestCreate{
+			Title:             create.Title,
+			Description:       create.Body,
+			CloseSourceBranch: create.RemoveHeadAfterMerged,
+			Source: pullRequestCreateTarget{
+				Branch: pullRequestCreateBranch{Name: create.Head},
+			},
+			Destination: pullRequestCreateTarget{
+				Branch: pullRequestCreateBranch{Name: create.Base},
+			},
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal pull request create")
+	}
+
+	url := fmt.Sprintf("%s/repositories/%s/pullrequests", p.APIURL(instanceURL), repositoryID)
+	code, _, body, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	var resp struct {
+		Links struct {
+			HTML struct {
+				Href string `json:"href"`
+			} `json:"html"`
+		} `json:"links"`
+	}
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		return nil, err
+	}
+
+	return &vcs.PullRequest{
+		URL: resp.Links.HTML.Href,
+	}, nil
 }
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
