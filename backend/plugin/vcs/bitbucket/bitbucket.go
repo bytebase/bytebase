@@ -114,6 +114,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
+// TryLogin tries to fetch the user info from the current OAuth context.
 func (*Provider) TryLogin(context.Context, common.OauthContext, string) (*vcs.UserInfo, error) {
 	// TODO: We will remove VCS login as part of https://linear.app/bytebase/issue/BYT-2615,
 	// so leaving it as unimplemented here.
