@@ -117,10 +117,9 @@ const disallowSignupEnabled = computed((): boolean => {
 
 const handleDisallowSignupToggle = async (on: boolean) => {
   const payload: WorkspaceProfileSetting = {
-    disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
+    disallowSignup: on,
     externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
   };
-  payload.disallowSignup = on;
 
   await settingStore.updateSettingByName({
     name: "bb.workspace.profile",

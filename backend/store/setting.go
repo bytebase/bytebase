@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -55,7 +55,7 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 	}
 
 	payload := new(storepb.WorkspaceProfileSetting)
-	if err := json.Unmarshal([]byte(setting.Value), payload); err != nil {
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return nil, err
 	}
 	return payload, nil
