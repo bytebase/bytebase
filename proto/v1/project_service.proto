@@ -123,7 +123,7 @@ service ProjectService {
 
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
-      patch: "/v1/{project=projects/*}:modifyWebhook"
+      patch: "/v1/{project=projects/*}:updateWebhook"
       body: "webhook"
     };
     option (google.api.method_signature) = "project,update_mask";
