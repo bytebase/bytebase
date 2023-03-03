@@ -63,6 +63,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
+		nonBytebaseCommitList := filterGitLabBytebaseCommit(pushEvent.CommitList)
+		if len(nonBytebaseCommitList) == 0 {
+			var commitList []string
+			for _, commit := range pushEvent.CommitList {
+				commitList = append(commitList, commit.ID)
+			}
+			log.Debug("all commits are created by Bytebase",
+				zap.String("repoURL", pushEvent.Project.WebURL),
+				zap.String("repoName", pushEvent.Project.FullPath),
+				zap.String("commits", strings.Join(commitList, ", ")),
+			)
+			return c.String(http.StatusOK, "OK")
+		}
+		pushEvent.CommitList = nonBytebaseCommitList
+
 		filter := func(repo *api.Repository) (bool, error) {
 			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
 				return false, nil
@@ -116,7 +131,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := pushEvent.Repository.FullName
 
-		nonBytebaseCommitList := filterBytebaseCommit(pushEvent.Commits)
+		nonBytebaseCommitList := filterGitHubBytebaseCommit(pushEvent.Commits)
 		if len(nonBytebaseCommitList) == 0 {
 			var commitList []string
 			for _, commit := range pushEvent.Commits {
@@ -1362,8 +1377,19 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 	}
 }
 
-func filterBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
+func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
 	var result []github.WebhookCommit
+	for _, commit := range list {
+		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
+			continue
+		}
+		result = append(result, commit)
+	}
+	return result
+}
+
+func filterGitLabBytebaseCommit(list []gitlab.WebhookCommit) []gitlab.WebhookCommit {
+	var result []gitlab.WebhookCommit
 	for _, commit := range list {
 		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
 			continue
