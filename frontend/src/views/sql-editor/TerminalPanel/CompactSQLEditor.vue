@@ -29,7 +29,13 @@ import {
   useInstanceById,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { Database, ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
+import {
+  Database,
+  dialectOfEngine,
+  ExecuteConfig,
+  ExecuteOption,
+  SQLDialect,
+} from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { useInstanceEditorLanguage } from "@/utils";
 
@@ -75,11 +81,8 @@ const selectedInstanceEngine = computed(() => {
 });
 const selectedLanguage = useInstanceEditorLanguage(selectedInstance);
 const selectedDialect = computed((): SQLDialect => {
-  const engine = selectedInstanceEngine.value;
-  if (engine === "PostgreSQL") {
-    return "postgresql";
-  }
-  return "mysql";
+  const engine = selectedInstance.value.engine;
+  return dialectOfEngine(engine);
 });
 const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
