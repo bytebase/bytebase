@@ -19,7 +19,7 @@ func TestGenerateTimeBasedSecret(t *testing.T) {
 		isSecretExpired   bool
 	}{
 		{
-			name:              "20s",
+			name:              "-5min",
 			generateTimestamp: currentTimestamp,
 			validateTimestamp: currentTimestamp - 5*secondsInMinute,
 			isSecretExpired:   true,
