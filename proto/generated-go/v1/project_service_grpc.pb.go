@@ -42,6 +42,7 @@ type ProjectServiceClient interface {
 	AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Webhook, error)
 	ModifyWebhook(ctx context.Context, in *ModifyWebhookRequest, opts ...grpc.CallOption) (*Webhook, error)
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
 }
 
 type projectServiceClient struct {
@@ -223,6 +224,15 @@ func (c *projectServiceClient) RemoveWebhook(ctx context.Context, in *RemoveWebh
 	return out, nil
 }
 
+func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error) {
+	out := new(TestWebhookResponse)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/TestWebhook", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -246,6 +256,7 @@ type ProjectServiceServer interface {
 	AddWebhook(context.Context, *AddWebhookRequest) (*Webhook, error)
 	ModifyWebhook(context.Context, *ModifyWebhookRequest) (*Webhook, error)
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*emptypb.Empty, error)
+	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -309,6 +320,9 @@ func (UnimplementedProjectServiceServer) ModifyWebhook(context.Context, *ModifyW
 }
 func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveWebhookRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveWebhook not implemented")
+}
+func (UnimplementedProjectServiceServer) TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TestWebhook not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -665,6 +679,24 @@ func _ProjectService_RemoveWebhook_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_TestWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestWebhookRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).TestWebhook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/TestWebhook",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).TestWebhook(ctx, req.(*TestWebhookRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -747,6 +779,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveWebhook",
 			Handler:    _ProjectService_RemoveWebhook_Handler,
+		},
+		{
+			MethodName: "TestWebhook",
+			Handler:    _ProjectService_TestWebhook_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

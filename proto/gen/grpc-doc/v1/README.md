@@ -222,6 +222,8 @@
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
+    - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
+    - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
@@ -3386,6 +3388,36 @@ The webhook&#39;s `name` field is used to identify the webhook to modify. Format
 
 
 
+<a name="bytebase-v1-TestWebhookRequest"></a>
+
+### TestWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the webhook to test. Format: projects/{project}/webhooks/{webhook} |
+
+
+
+
+
+
+<a name="bytebase-v1-TestWebhookResponse"></a>
+
+### TestWebhookResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | The result of the test, empty if the test is successful. |
+
+
+
+
+
+
 <a name="bytebase-v1-UndeleteProjectRequest"></a>
 
 ### UndeleteProjectRequest
@@ -3640,6 +3672,7 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 | AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Webhook](#bytebase-v1-Webhook) |  |
 | ModifyWebhook | [ModifyWebhookRequest](#bytebase-v1-ModifyWebhookRequest) | [Webhook](#bytebase-v1-Webhook) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 
  
 
