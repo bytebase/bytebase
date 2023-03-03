@@ -15,7 +15,6 @@ import {
   IssueCreate,
   IssuePatch,
   IssueType,
-  SQLDialect,
   Task,
   TaskCreate,
   TaskDatabaseCreatePayload,
@@ -33,6 +32,7 @@ import {
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   SheetId,
   MigrationContext,
+  dialectOfEngine,
 } from "@/types";
 import { useIssueLogic } from "./index";
 import { isDev, isTaskTriggeredByVCS, taskCheckRunSummary } from "@/utils";
@@ -292,11 +292,7 @@ export const maybeFormatStatementOnSave = (
     return statement;
   }
 
-  // Default to use mysql dialect but use postgresql dialect if needed
-  let dialect: SQLDialect = "mysql";
-  if (database && database.instance.engine === "POSTGRES") {
-    dialect = "postgresql";
-  }
+  const dialect = dialectOfEngine(database?.instance.engine);
 
   const result = formatSQL(statement, dialect);
   if (!result.error) {

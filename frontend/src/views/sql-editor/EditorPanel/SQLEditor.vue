@@ -30,8 +30,9 @@ import {
   useDBSchemaStore,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import type {
+import {
   Database,
+  dialectOfEngine,
   ExecuteConfig,
   ExecuteOption,
   SQLDialect,
@@ -67,11 +68,8 @@ const selectedInstanceEngine = computed(() => {
 });
 const selectedLanguage = useInstanceEditorLanguage(selectedInstance);
 const selectedDialect = computed((): SQLDialect => {
-  const engine = selectedInstanceEngine.value;
-  if (engine === "PostgreSQL") {
-    return "postgresql";
-  }
-  return "mysql";
+  const engine = selectedInstance.value.engine;
+  return dialectOfEngine(engine);
 });
 const readonly = computed(() => sheetStore.isReadOnly);
 const currentTabId = computed(() => tabStore.currentTabId);
