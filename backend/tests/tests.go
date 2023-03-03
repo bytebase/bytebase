@@ -249,13 +249,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err := ctl.start(ctx, serverPort); err != nil {
 		return err
 	}
-	if err := ctl.initWorkspaceProfile(); err != nil {
-		return err
-	}
-	if err := ctl.Signup(); err != nil {
-		return err
-	}
-	return ctl.Login()
+	return ctl.initWorkspaceProfile()
 }
 
 // StartServer starts the main server with embed Postgres.
@@ -281,6 +275,12 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 }
 
 func (ctl *controller) initWorkspaceProfile() error {
+	if err := ctl.Signup(); err != nil {
+		return err
+	}
+	if err := ctl.Login(); err != nil {
+		return err
+	}
 	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
 		ExternalUrl:    ctl.profile.ExternalURL,
 		DisallowSignup: false,
