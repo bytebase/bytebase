@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -69,7 +70,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 
 		if settingPatch.Name == api.SettingWorkspaceProfile {
 			payload := new(storepb.WorkspaceProfileSetting)
-			if err := json.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
+			if err := protojson.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
 			}
 			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
