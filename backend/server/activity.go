@@ -36,9 +36,14 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerID))
 		}
 
-		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
-			IssueName: issue.Title,
-		})
+		var payload api.ActivityIssueCommentCreatePayload
+		if activityCreate.Payload != "" {
+			if err := json.Unmarshal([]byte(activityCreate.Payload), &payload); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to unmarshal payload %v", activityCreate.Payload).SetInternal(err)
+			}
+		}
+		payload.IssueName = issue.Title
+		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 		}

@@ -878,7 +878,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				schemaVersion := common.DefaultMigrationVersion()
 				migrationDetailList := databaseToMigrationList[database.UID]
 				for _, migrationDetail := range migrationDetailList {
-					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+						EnvironmentID: &database.EnvironmentID,
+						ResourceID:    &database.InstanceID,
+					})
 					if err != nil {
 						return nil, err
 					}
@@ -1242,6 +1245,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	case db.Spanner:
+		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
+	case db.Oracle:
 		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)

@@ -59,7 +59,7 @@ export function stageSlug(stageName: string, stageIndex: number): string {
   return [slug(stageName), stageIndex + 1].join("-");
 }
 
-export function taskSlug(name: string, id: number): string {
+export function taskSlug(name: string, id: IdType): string {
   return [slug(name), id].join("-");
 }
 

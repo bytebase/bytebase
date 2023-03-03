@@ -18,37 +18,50 @@
   </div>
   <div class="w-full">
     <div
-      v-if="changeHistory.loading"
+      v-if="sdlState.loading"
       class="h-20 flex flex-col items-center justify-center"
     >
       <BBSpin />
     </div>
     <template v-else>
       <NTabs
-        v-if="changeHistory.history"
+        v-if="sdlState.detail"
         v-model:value="state.tab"
         pane-style="padding-top: 0.25rem"
       >
         <NTabPane name="diff" :tab="$t('issue.sdl.schema-change')">
           <CodeDiff
-            :old-string="changeHistory.history.schemaPrev"
-            :new-string="changeHistory.history.schema"
+            :old-string="sdlState.detail.previousSDL"
+            :new-string="sdlState.detail.expectedSDL"
             output-format="side-by-side"
-            data-label="bb-change-history-code-diff-block"
+            data-label="bb-change-detail-code-diff-block"
         /></NTabPane>
         <NTabPane
           name="statement"
           :tab="$t('issue.sdl.generated-ddl-statements')"
         >
-          <HighlightCodeBlock
-            class="border px-2 whitespace-pre-wrap"
-            :code="changeHistory.history.statement"
+          <MonacoEditor
+            ref="editorRef"
+            class="w-full border h-auto max-h-[360px]"
+            data-label="bb-issue-sql-editor"
+            :value="sdlState.detail.diffDDL"
+            :readonly="true"
+            :auto-focus="false"
+            language="sql"
+            @ready="handleMonacoEditorReady"
           />
         </NTabPane>
         <NTabPane name="schema" :tab="$t('issue.sdl.full-schema')">
-          <HighlightCodeBlock
-            class="border px-2 whitespace-pre-wrap"
-            :code="changeHistory.history.schema"
+          <MonacoEditor
+            ref="editorRef"
+            class="w-full border h-auto max-h-[360px]"
+            data-label="bb-issue-sql-editor"
+            :value="sdlState.detail.expectedSDL"
+            :readonly="true"
+            :auto-focus="false"
+            :advices="markers"
+            language="sql"
+            @ready="handleMonacoEditorReady"
           />
         </NTabPane>
       </NTabs>
@@ -63,15 +76,29 @@
 
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
-import { reactive, watch, computed } from "vue";
+import { reactive, watch, computed, ref } from "vue";
 import { CodeDiff } from "v-code-diff";
 
-import { hasFeature, useInstanceStore } from "@/store";
+import { hasFeature, useDatabaseStore, useInstanceStore } from "@/store";
 import { useIssueLogic } from "./logic";
-import { MigrationHistory, Task, TaskId } from "@/types";
-import HighlightCodeBlock from "../HighlightCodeBlock";
+import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
+import MonacoEditor from "../MonacoEditor";
+import axios from "axios";
+import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 type TabView = "diff" | "statement" | "schema";
+
+type SDLDetail = {
+  previousSDL: string;
+  expectedSDL: string;
+  diffDDL: string;
+};
+
+type SDLState = {
+  task: Task;
+  loading: boolean;
+  detail: SDLDetail | undefined;
+};
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -84,22 +111,18 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   tab: "diff",
 });
+const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
-const useChangeHistory = () => {
-  type ChangeHistoryState = {
-    task: Task;
-    loading: boolean;
-    history: MigrationHistory | undefined;
-  };
-  const emptyState = (task: Task): ChangeHistoryState => {
+const useSDLState = () => {
+  const emptyState = (task: Task): SDLState => {
     return {
       task,
       loading: true,
-      history: undefined,
+      detail: undefined,
     };
   };
 
-  const map = reactive(new Map<TaskId, ChangeHistoryState>());
+  const map = reactive(new Map<TaskId, SDLState>());
 
   const findLatestMigrationId = (task: Task) => {
     if (task.status !== "DONE") return undefined;
@@ -118,33 +141,88 @@ const useChangeHistory = () => {
     return findLatestMigrationId(task);
   });
 
+  const fetchOngoingSDLDetail = async (
+    task: Task
+  ): Promise<SDLDetail | undefined> => {
+    const database = task.database;
+    if (!database) return undefined;
+    const previousSDL = await useDatabaseStore().fetchDatabaseSchemaById(
+      task.database!.id,
+      true // fetch SDL format
+    );
+    const payload = task.payload as TaskDatabaseSchemaUpdateSDLPayload;
+    if (!payload) return undefined;
+    const expectedSDL = payload.statement;
+
+    const getSchemaDiff = async () => {
+      const { data } = await axios.post("/v1/sql/schema/diff", {
+        engineType: database.instance.engine,
+        sourceSchema: previousSDL ?? "",
+        targetSchema: expectedSDL ?? "",
+      });
+      return data;
+    };
+    const diffDDL = (await getSchemaDiff()) ?? "";
+
+    if (task.status === "DONE") {
+      throw new Error();
+    }
+
+    return { previousSDL, expectedSDL, diffDDL };
+  };
+
+  const fetchSDLDetailFromMigrationHistory = async (
+    task: Task,
+    migrationId: string | undefined
+  ): Promise<SDLDetail | undefined> => {
+    if (!migrationId) {
+      return undefined;
+    }
+    const history = await useInstanceStore().fetchMigrationHistoryById({
+      instanceId: task.instance.id,
+      migrationHistoryId: migrationId,
+      sdl: true,
+    });
+    // The latestMigrationId might change during fetching the
+    // migrationHistory.
+    // Should give up the result.
+    const latestMigrationId = findLatestMigrationId(task);
+    if (history.id !== latestMigrationId) {
+      throw new Error();
+    }
+    return {
+      previousSDL: history.schemaPrev,
+      expectedSDL: history.schema,
+      diffDDL: history.statement,
+    };
+  };
+
   watch(
-    [() => (selectedTask.value as Task).id, migrationId],
-    ([taskId, migrationId]) => {
+    [
+      () => (selectedTask.value as Task).id,
+      () => (selectedTask.value as Task).status,
+      migrationId,
+    ],
+    ([taskId, taskStatus, migrationId]) => {
       const task = selectedTask.value as Task;
       if (!map.has(taskId)) {
         map.set(taskId, emptyState(task));
       }
-      const finish = (ch?: MigrationHistory) => {
+      const finish = (detail?: SDLState["detail"]) => {
         const state = map.get(taskId)!;
         state.loading = false;
-        state.history = ch;
+        state.detail = detail;
       };
-
-      if (!migrationId) return finish();
-      useInstanceStore()
-        .fetchMigrationHistoryById({
-          instanceId: task.instance.id,
-          migrationHistoryId: migrationId,
-        })
-        .then((history) => {
-          // The latestMigrationId might change during fetching the
-          // migrationHistory.
-          // Should give up the result.
-          const latestMigrationId = findLatestMigrationId(task);
-          if (history.id !== latestMigrationId) return;
-          finish(history);
-        });
+      try {
+        if (taskStatus === "DONE") {
+          fetchSDLDetailFromMigrationHistory(task, migrationId).then(finish);
+        } else {
+          fetchOngoingSDLDetail(task).then(finish);
+        }
+      } catch {
+        // The task has been changed during the fetch
+        // The result is meaningless.
+      }
     },
     { immediate: true }
   );
@@ -155,5 +233,17 @@ const useChangeHistory = () => {
   });
 };
 
-const changeHistory = useChangeHistory();
+const sdlState = useSDLState();
+
+const updateEditorHeight = () => {
+  const contentHeight =
+    editorRef.value?.editorInstance?.getContentHeight() as number;
+  editorRef.value?.setEditorContentHeight(contentHeight);
+};
+
+const handleMonacoEditorReady = () => {
+  updateEditorHeight();
+};
+
+const { markers } = useSQLAdviceMarkers();
 </script>

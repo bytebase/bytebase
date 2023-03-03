@@ -183,6 +183,7 @@ export interface SchemaPolicyRule {
     | StringArrayLimitPayload
     | CommentFormatPayload
     | NumberLimitPayload;
+  comment: string;
 }
 
 // The API for SQL review policy in backend.
@@ -205,6 +206,7 @@ export interface RuleTemplate {
   engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
+  comment?: string;
 }
 
 // SQLReviewPolicyTemplate is the rule template set
@@ -271,6 +273,15 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
   });
 })();
 
+export const findRuleTemplate = (type: RuleType) => {
+  for (let i = 0; i < TEMPLATE_LIST.length; i++) {
+    const template = TEMPLATE_LIST[i];
+    const rule = template.ruleList.find((rule) => rule.type === type);
+    if (rule) return rule;
+  }
+  return undefined;
+};
+
 export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
   TEMPLATE_LIST.reduce((map, template) => {
     for (const rule of template.ruleList) {
@@ -324,7 +335,11 @@ export const convertPolicyRuleToRuleTemplate = (
     );
   }
 
-  const res = { ...ruleTemplate, level: policyRule.level };
+  const res = {
+    ...ruleTemplate,
+    level: policyRule.level,
+    comment: policyRule.comment,
+  };
 
   if (ruleTemplate.componentList.length === 0) {
     return res;
@@ -532,6 +547,7 @@ export const convertRuleTemplateToPolicyRule = (
   const base: SchemaPolicyRule = {
     type: rule.type,
     level: rule.level,
+    comment: rule.comment ?? "",
   };
   if (rule.componentList.length === 0) {
     return base;

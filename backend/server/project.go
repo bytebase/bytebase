@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -58,7 +57,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
-			ResourceID:       fmt.Sprintf("project-%s", uuid.New().String()[:8]),
+			ResourceID:       projectCreate.ResourceID,
 			Title:            projectCreate.Name,
 			Key:              projectCreate.Key,
 			TenantMode:       projectCreate.TenantMode,
@@ -247,6 +246,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
 		}
 
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+		}
+
 		repositoryCreate := &api.RepositoryCreate{
 			ProjectID:         projectID,
 			ProjectResourceID: project.ResourceID,
@@ -300,7 +304,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository with web url: %s", repositoryCreate.WebURL)).SetInternal(err)
 		}
 
-		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
+		repositoryCreate.WebhookURLHost = setting.ExternalUrl
 		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
 		if len(repositories) > 0 {
 			repo := repositories[0]
@@ -308,6 +312,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
 			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
 		} else {
+			// Bytebase needs to create a webbook in the connecting repository pointing back to the
+			// Bytebase address exposed at --external-url.
+			if setting.ExternalUrl == "" {
+				return echo.NewHTTPError(http.StatusBadRequest, "Bytebase must start with --external-url to configure GitOps workflow, docs: %s", common.ExternalURLPlaceholder)
+			}
+
 			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", s.workspaceID, time.Now().Unix())
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
@@ -315,7 +325,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			repositoryCreate.WebhookSecretToken = secretToken
 
-			webhookID, err := s.createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID)
+			webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, setting.ExternalUrl)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
@@ -893,10 +903,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 			var sheetSource api.SheetSource
 			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				sheetSource = api.SheetFromGitLabSelfHost
-			case vcsPlugin.GitHubCom:
-				sheetSource = api.SheetFromGitHubCom
+			case vcsPlugin.GitLab:
+				sheetSource = api.SheetFromGitLab
+			case vcsPlugin.GitHub:
+				sheetSource = api.SheetFromGitHub
 			}
 			vscSheetType := api.SheetForSQL
 			sheetFind := &api.SheetFind{
@@ -952,6 +962,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 }
 
 func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
 		return nil, err
@@ -974,14 +989,14 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		return nil, err
 	}
 
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", s.profile.ExternalURL, repository.WebhookEndpointID)
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", setting.ExternalUrl, repository.WebhookEndpointID)
 
 	switch repository.VCS.Type {
-	case vcsPlugin.GitHubCom:
+	case vcsPlugin.GitHub:
 		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
-	case vcsPlugin.GitLabSelfHost:
+	case vcsPlugin.GitLab:
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
@@ -1232,14 +1247,14 @@ func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 	)
 }
 
-func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID string) (string, error) {
+func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, externalURL string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsType {
-	case vcsPlugin.GitLabSelfHost:
+	case vcsPlugin.GitLab:
 		webhookCreate := gitlab.WebhookCreate{
-			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", s.profile.ExternalURL, webhookEndpointID),
+			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", externalURL, webhookEndpointID),
 			SecretToken:           secretToken,
 			PushEvents:            true,
 			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
@@ -1248,10 +1263,10 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcsPlugin.GitHubCom:
+	case vcsPlugin.GitHub:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
-				URL:         fmt.Sprintf("%s/hook/github/%s", s.profile.ExternalURL, webhookEndpointID),
+				URL:         fmt.Sprintf("%s/hook/github/%s", externalURL, webhookEndpointID),
 				ContentType: "json",
 				Secret:      secretToken,
 				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate

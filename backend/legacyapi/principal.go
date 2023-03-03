@@ -23,6 +23,9 @@ const (
 
 	// PrincipalIDForFirstUser is the principal id for the first user in workspace.
 	PrincipalIDForFirstUser = 101
+
+	// ServiceAccountAccessKeyPrefix is the prefix for service account access key.
+	ServiceAccountAccessKeyPrefix = "bbs_"
 )
 
 // PrincipalAuthProvider is the type of an authentication provider.
@@ -31,10 +34,10 @@ type PrincipalAuthProvider string
 const (
 	// PrincipalAuthProviderBytebase is the Bytebase's own authentication provider.
 	PrincipalAuthProviderBytebase PrincipalAuthProvider = "BYTEBASE"
-	// PrincipalAuthProviderGitlabSelfHost is the self-hosted GitLab authentication provider.
-	PrincipalAuthProviderGitlabSelfHost PrincipalAuthProvider = "GITLAB_SELF_HOST"
-	// PrincipalAuthProviderGitHubCom is the GitHub.com authentication provider.
-	PrincipalAuthProviderGitHubCom PrincipalAuthProvider = "GITHUB_COM"
+	// PrincipalAuthProviderGitlab is the GitLab (for both GitLab.com and self-hosted GitLab) authentication provider.
+	PrincipalAuthProviderGitlab PrincipalAuthProvider = "GITLAB"
+	// PrincipalAuthProviderGitHub is the GitHub (for both GitHub.com and GitHub Enterprise) authentication provider.
+	PrincipalAuthProviderGitHub PrincipalAuthProvider = "GITHUB"
 )
 
 // Principal is the API message for principals.
@@ -52,8 +55,7 @@ type Principal struct {
 	Role Role `jsonapi:"attr,role"`
 	// The ServiceKey is the password, only used for SERVICE_ACCOUNT.
 	// We only return the service key for the first time after the creation for SERVICE_ACCOUNT.
-	ServiceKey           string `jsonapi:"attr,serviceKey"`
-	IdentityProviderName string `jsonapi:"attr,identityProviderName"`
+	ServiceKey string `jsonapi:"attr,serviceKey"`
 }
 
 // MarshalJSON customizes the Principal Marshal method so the returned object

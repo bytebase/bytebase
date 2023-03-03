@@ -222,8 +222,8 @@
     "error-message": "错误信息",
     "demo-mode": "演示模式",
     "operations": "操作",
-    "on": "开启",
-    "off": "关闭"
+    "on": "开",
+    "off": "关"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -258,7 +258,7 @@
       "compatibility": "兼容性",
       "connection": "连接",
       "migration-schema": "变更 schema",
-      "sql-review": "SQL 审查",
+      "sql-review": "SQL 审核",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
       "statement-type": "语句类型",
@@ -308,7 +308,7 @@
       "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。"
+      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。{link}"
     }
   },
   "banner": {
@@ -452,20 +452,31 @@
     "general": {
       "workspace": {
         "branding": "品牌",
-        "only-owner-can-edit": "仅管理员可以更新品牌信息",
+        "only-owner-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "select-logo": "选择",
         "drag-logo": "或拖拽文件",
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "logo-upload-succeed": "Logo 更新完成",
+        "security": "安全",
         "watermark": {
           "self": "水印",
           "update-success": "水印设置已更新",
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
-          "only-owner-can-edit": "仅管理员可以更新水印设置"
+          "only-owner-can-edit": "仅管理员可以更新水印设置",
+          "enable": "开启水印"
         },
-        "enable-watermark": "开启水印"
+        "disallow-signup": {
+          "enable": "禁用自助注册",
+          "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
+        },
+        "network": "网络",
+        "external-url": {
+          "self": "外部链接",
+          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。{viewDoc}"
+        },
+        "config-updated": "配置已更新"
       }
     },
     "sensitive-data": {
@@ -637,7 +648,7 @@
       "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
-    "rollback-from": "当前任务回滚自 {link}。",
+    "will-rollback": "当前任务将会回滚 {link}",
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "{im}审批请求发送成功",
@@ -1286,6 +1297,7 @@
         "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
+        "gitlab-com-admin-requirement": "您的账号必须对您打算关联的代码仓库拥有管理员权限。通常这个账号对应的是一个专门的服务账号而非个人账号。",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "oauth-info-correct": "OAuth 信息验证成功",
         "check-oauth-info-match": "请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。",
@@ -1303,9 +1315,12 @@
         },
         "oauth-info": {
           "self": "OAuth 应用信息",
-          "gitlab-register-oauth-application": "注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。",
-          "gitlab-login-as-admin": "以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。",
-          "gitlab-visit-admin-page": "通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。",
+          "gitlab-self-host-register-oauth-application": "注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。",
+          "gitlab-self-host-login-as-admin": "以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。",
+          "gitlab-self-host-visit-admin-page": "通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。",
+          "gitlab-com-register-oauth-application": "注册 Bytebase 为一个 GitLab 用户的 OAuth 应用。",
+          "gitlab-com-login": "通过账号登陆 GitLab.com。通常这个账号对应的是一个专门的服务账号而非个人账号。",
+          "gitlab-com-visit-application-page": "访问 Preferences -> Applications 页面。您可以通过右上角的头像下拉菜单访问到该页面。",
           "gitlab-paste-oauth-info": "从刚创建好的应用上粘贴它的应用 ID 和 Secret 到下面的字段。",
           "github-register-oauth-application": "注册 Bytebase 为一个 GitHub 组织级别 (organization-wide) 的 OAuth 应用。",
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
@@ -1326,9 +1341,11 @@
         }
       },
       "git-provider": {
-        "gitlab-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",
+        "gitlab-self-host-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",
+        "gitlab-com-application-id-label": "注册为 GitLab OAuth 应用的应用 ID。",
         "view-in-gitlab": "查看 GitLab",
-        "secret-label-gitlab": "注册为 GitLab 实例级 OAuth 应用的 Secret。",
+        "gitlab-self-host-secret-label": "注册为 GitLab 实例级 OAuth 应用的 Secret。",
+        "gitlab-com-secret-label": "注册为 GitLab OAuth 应用的 Secret。",
         "github-application-id-label": "注册为 GitHub 组织级别 OAuth 应用的 Client ID。",
         "secret-label-github": "注册为 GitHub 组织级别 OAuth 应用的 Client secret。",
         "delete-forbidden": "删除这个提供方前，需要先解除所有仓库的关联。",
@@ -1766,8 +1783,8 @@
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
-    "disable": "停用审查策略",
-    "enable": "开启审查策略",
+    "disable": "停用审核策略",
+    "enable": "开启审核策略",
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
@@ -1804,7 +1821,8 @@
     "rule": {
       "active": "开启"
     },
-    "enabled-rules": "开启的规则"
+    "enabled-rules": "开启的规则数",
+    "rule-detail": "规则详情"
   },
   "debug-log": {
     "title": "Debug 日志",
@@ -1886,6 +1904,12 @@
   },
   "sensitive-data": {
     "self": "敏感数据"
+  },
+  "resource": {
+    "environment": "环境",
+    "instance": "实例",
+    "project": "项目",
+    "idp": "身份提供商"
   },
   "resource-id": {
     "self": "{resource} ID",

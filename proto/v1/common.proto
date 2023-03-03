@@ -19,4 +19,7 @@ enum Engine {
   SQLITE = 5;
   TIDB = 6;
   MONGODB = 7;
+  REDIS = 8;
+  ORACLE = 9;
+  SPANNER = 10;
 }

@@ -24,6 +24,7 @@ const (
 	identityProviderNamePrefix = "idps/"
 	settingNamePrefix          = "settings/"
 	backupPrefix               = "backups/"
+	bookmarkPrefix             = "bookmarks/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -132,6 +133,22 @@ func getIdentityProviderID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+func getUserBookmarkID(name string) (int, int, error) {
+	tokens, err := getNameParentTokens(name, userNamePrefix, bookmarkPrefix)
+	if err != nil {
+		return 0, 0, err
+	}
+	userID, err := strconv.Atoi(tokens[0])
+	if err != nil {
+		return 0, 0, errors.Errorf("invalid user ID %q", tokens[0])
+	}
+	bookmarkID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return 0, 0, errors.Errorf("invalid bookmark ID %q", tokens[1])
+	}
+	return userID, bookmarkID, nil
+}
+
 func trimSuffix(name, suffix string) (string, error) {
 	if !strings.HasSuffix(name, suffix) {
 		return "", errors.Errorf("invalid request %q with suffix %q", name, suffix)
@@ -194,6 +211,47 @@ func getFilter(filter, filterKey string) (string, error) {
 	return "", retErr
 }
 
+// getEBNFTokens will parse the simple filter such as `project = "abc" | "def".` to {project: ["abc", "def"]} .
+func getEBNFTokens(filter, filterKey string) ([]string, error) {
+	grammar, err := ebnf.Parse("", strings.NewReader(filter))
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid filter %q", filter)
+	}
+	productions, ok := grammar[filterKey]
+	if !ok {
+		return nil, nil
+	}
+	switch expr := productions.Expr.(type) {
+	case *ebnf.Token:
+		// filterKey = "abc".
+		return []string{expr.String}, nil
+	case ebnf.Alternative:
+		// filterKey = "abc" | "def".
+		var tokens []string
+		for _, expr := range expr {
+			token, ok := expr.(*ebnf.Token)
+			if !ok {
+				return nil, errors.Errorf("invalid filter %q", filter)
+			}
+			tokens = append(tokens, token.String)
+		}
+		return tokens, nil
+	case *ebnf.Alternative:
+		// filterKey = "abc" | "def".
+		var tokens []string
+		for _, expr := range *expr {
+			token, ok := expr.(*ebnf.Token)
+			if !ok {
+				return nil, errors.Errorf("invalid filter %q", filter)
+			}
+			tokens = append(tokens, token.String)
+		}
+		return tokens, nil
+	default:
+		return nil, errors.Errorf("invalid filter %q", filter)
+	}
+}
+
 func convertToEngine(engine db.Type) v1pb.Engine {
 	switch engine {
 	case db.ClickHouse:
@@ -210,6 +268,12 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_TIDB
 	case db.MongoDB:
 		return v1pb.Engine_MONGODB
+	case db.Redis:
+		return v1pb.Engine_REDIS
+	case db.Oracle:
+		return v1pb.Engine_ORACLE
+	case db.Spanner:
+		return v1pb.Engine_SPANNER
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -230,6 +294,12 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.TiDB
 	case v1pb.Engine_MONGODB:
 		return db.MongoDB
+	case v1pb.Engine_REDIS:
+		return db.Redis
+	case v1pb.Engine_ORACLE:
+		return db.Oracle
+	case v1pb.Engine_SPANNER:
+		return db.Spanner
 	}
 	return db.UnknownType
 }

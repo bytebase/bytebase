@@ -1,14 +1,19 @@
 import { computed } from "vue";
 import { head } from "lodash-es";
 
-import type {
+import {
+  ActivityCreate,
+  ActivityIssueCommentCreatePayload,
   Database,
   Issue,
   IssueCreate,
+  IssueId,
   MigrationContext,
   Task,
   TaskCreate,
   TaskDatabaseDataUpdatePayload,
+  TaskId,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   hasProjectPermission,
@@ -17,8 +22,13 @@ import {
   isTaskSkipped,
   semverCompare,
 } from "@/utils";
-import { useIssueLogic } from "../logic";
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import { flattenTaskList, useIssueLogic } from "../logic";
+import {
+  useActivityStore,
+  useCurrentUser,
+  useDatabaseStore,
+  useIssueStore,
+} from "@/store";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
 
@@ -178,4 +188,72 @@ const databaseOfTask = (task: Task | TaskCreate): Database => {
   }
 
   return task.database!;
+};
+
+export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
+  if (newIssue.type !== "bb.issue.database.data.update") return;
+  const rollbackList = [] as Array<{
+    byTask: Task;
+    fromIssueId: IssueId;
+    fromTaskId: TaskId;
+  }>;
+  const taskList = flattenTaskList<Task>(newIssue);
+  for (let i = 0; i < taskList.length; i++) {
+    const byTask = taskList[i];
+    if (byTask.type !== "bb.task.database.data.update") continue;
+    const payload = byTask.payload as TaskDatabaseDataUpdatePayload;
+    if (!payload) continue;
+    if (
+      payload.rollbackFromIssueId &&
+      payload.rollbackFromIssueId !== UNKNOWN_ID &&
+      payload.rollbackFromTaskId &&
+      payload.rollbackFromTaskId !== UNKNOWN_ID
+    ) {
+      rollbackList.push({
+        byTask,
+        fromIssueId: payload.rollbackFromIssueId,
+        fromTaskId: payload.rollbackFromTaskId,
+      });
+    }
+  }
+  if (rollbackList.length === 0) return;
+
+  const issueStore = useIssueStore();
+  for (let i = 0; i < rollbackList.length; i++) {
+    const { byTask, fromIssueId, fromTaskId } = rollbackList[i];
+    const fromIssue = await issueStore.getOrFetchIssueById(fromIssueId);
+    if (fromIssue.id === UNKNOWN_ID) continue;
+    const fromTask = flattenTaskList<Task>(fromIssue).find(
+      (task) => task.id === fromTaskId
+    );
+    if (!fromTask || fromTask.id === UNKNOWN_ID) continue;
+
+    const comment = [
+      `Create issue #${newIssue.id}`,
+      "to rollback task",
+      `[${fromTask.name}]`,
+    ].join(" ");
+
+    const payload: ActivityIssueCommentCreatePayload = {
+      issueName: fromIssue.name,
+      taskRollbackBy: {
+        issueId: fromIssue.id,
+        taskId: fromTask.id,
+        rollbackByIssueId: newIssue.id,
+        rollbackByTaskId: byTask.id,
+      },
+    };
+    const createActivity: ActivityCreate = {
+      type: "bb.issue.comment.create",
+      containerId: fromIssue.id,
+      comment,
+      payload,
+    };
+    try {
+      await useActivityStore().createActivity(createActivity);
+    } catch {
+      // do nothing
+      // failing to comment to won't be too bad
+    }
+  }
 };

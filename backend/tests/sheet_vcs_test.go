@@ -24,14 +24,14 @@ func TestSheetVCS(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLabSelfHost,
+			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 		},
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHubCom,
+			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 		},
@@ -70,8 +70,9 @@ func TestSheetVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					ResourceID: generateRandomString("project", 10),
+					Name:       "Test VCS Project",
+					Key:        "TestVCSSchemaUpdate",
 				},
 			)
 			a.NoError(err)

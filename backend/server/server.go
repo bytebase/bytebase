@@ -69,6 +69,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
@@ -209,11 +210,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
 	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	log.Info(fmt.Sprintf("disallowSignup=%t", profile.DisallowSignup))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
@@ -298,14 +297,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := getInitSetting(ctx, storeInstance)
+	config, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = activity.NewManager(storeInstance, profile)
+	s.ActivityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 	e := echo.New()
 	e.Debug = profile.Debug
@@ -316,6 +315,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			defer func() {
+				if !common.HasPrefixes(c.Request().URL.Path, "/healthz", "/v1/actuator") {
+					s.profile.LastActiveTs = time.Now().Unix()
+				}
+			}()
+			return next(c)
+		}
+	})
 
 	embedFrontend(e)
 	s.e = e
@@ -359,7 +369,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
 		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance)
+		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
 		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
@@ -420,7 +430,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
-	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
 	s.registerOAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
@@ -471,14 +480,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			return nil
 		}))
+	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService, &profile))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store))
+	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile))
+	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -489,6 +500,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
@@ -513,6 +527,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -580,7 +597,7 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
+func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
@@ -648,6 +665,22 @@ func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConf
 		return nil, err
 	}
 
+	// initial workspace general setting
+	bytes, err := json.Marshal(storepb.WorkspaceProfileSetting{
+		ExternalUrl:    s.profile.ExternalURL,
+		DisallowSignup: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingWorkspaceProfile,
+		Value:       string(bytes),
+		Description: "Workspace general settings",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	return conf, nil
 }
 
@@ -672,10 +705,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		if s.profile.Mode == common.ReleaseModeDev {
-			s.runnerWG.Add(1)
-			go s.RollbackRunner.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
@@ -862,9 +893,11 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	dbName := postgres.SampleDatabase
+	envID := api.DefaultProdEnvironmentID
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &dbName,
+		EnvironmentID: &envID,
+		InstanceID:    &instance.ResourceID,
+		DatabaseName:  &dbName,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance")
@@ -932,11 +965,10 @@ Click "Approve" button to apply the schema update.`,
 	}
 
 	// Bookmark the issue.
-	if _, err := s.store.CreateBookmark(ctx, &api.BookmarkCreate{
-		CreatorID: userID,
-		Name:      "Sample Issue",
-		Link:      fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
-	}); err != nil {
+	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
+		Name: "Sample Issue",
+		Link: fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
+	}, userID); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
 	}
 

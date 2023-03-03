@@ -81,7 +81,12 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
-	if s.profile.DisallowSignup {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+	}
+
+	if setting.DisallowSignup {
 		return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
 	}
 	if request.User == nil {
@@ -93,12 +98,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
 	}
-	if request.User.Password == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
+	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.UserType != v1pb.UserType_USER {
+		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.Password == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
 	}
 
 	existingUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
@@ -130,6 +134,18 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
 	}
 
+	password := request.User.Password
+	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
+		pwd, err := common.RandomString(20)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
+		}
+		password = fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, pwd)
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+	}
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
@@ -178,7 +194,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
-	return convertToUser(user), nil
+	userResponse := convertToUser(user)
+	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
+		userResponse.ServiceKey = password
+	}
+	return userResponse, nil
 }
 
 // UpdateUser updates a user.
@@ -211,6 +231,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
 	}
 
+	var passwordPatch *string
 	patch := &store.UpdateUserMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -232,12 +253,20 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "user.title":
 			patch.Name = &request.User.Title
 		case "user.password":
-			passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+			if user.Type != api.EndUser {
+				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
 			}
-			passwordHashStr := string(passwordHash)
-			patch.PasswordHash = &passwordHashStr
+			passwordPatch = &request.User.Password
+		case "user.service_key":
+			if user.Type != api.ServiceAccount {
+				return nil, status.Errorf(codes.InvalidArgument, "service key can be mutated for service accounts only")
+			}
+			val, err := common.RandomString(20)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
+			}
+			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
+			passwordPatch = &password
 		case "user.role":
 			if role != api.Owner {
 				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
@@ -249,12 +278,25 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			patch.Role = &userRole
 		}
 	}
+	if passwordPatch != nil {
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
+		}
+		passwordHashStr := string(passwordHash)
+		patch.PasswordHash = &passwordHashStr
+	}
 
 	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
-	return convertToUser(user), nil
+
+	userResponse := convertToUser(user)
+	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
+		userResponse.ServiceKey = *passwordPatch
+	}
+	return userResponse, nil
 }
 
 // DeleteUser deletes a user.
@@ -455,6 +497,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "identity provider not found")
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+
 	var userInfo *storepb.IdentityProviderUserInfo
 	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
@@ -466,7 +513,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
@@ -495,7 +542,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", s.profile.ExternalURL)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
 		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)

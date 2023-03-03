@@ -1,11 +1,21 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
     <BrandingSetting />
-
-    <WatermarkSetting />
+    <SecuritySetting />
+    <NetworkSetting v-if="!isSaaSMode" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { BrandingSetting, WatermarkSetting } from "@/components/GeneralSetting";
+import { storeToRefs } from "pinia";
+import {
+  BrandingSetting,
+  SecuritySetting,
+  NetworkSetting,
+} from "@/components/GeneralSetting";
+import { useActuatorStore } from "@/store";
+
+const actuatorStore = useActuatorStore();
+
+const { isSaaSMode } = storeToRefs(actuatorStore);
 </script>

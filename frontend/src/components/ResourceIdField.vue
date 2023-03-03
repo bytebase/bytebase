@@ -2,7 +2,7 @@
   <div
     v-bind="$attrs"
     class="w-full max-w-full"
-    :class="[shouldShowResourceIdField ? 'mt-6' : '']"
+    :class="[shouldShowResourceIdField ? 'mt-4' : '']"
   >
     <template v-if="!shouldShowResourceIdField">
       <p v-if="state.resourceId" class="w-full text-gray-500 text-sm pt-2">
@@ -36,20 +36,23 @@
           handleResourceIdInput(($event.target as HTMLInputElement).value)
         "
       />
-      <ul class="w-full my-2 space-y-2 list-disc list-outside pl-4">
-        <li
-          v-for="validateMessage in state.validatedMessages"
-          :key="validateMessage.message"
-          class="break-words w-full text-xs"
-          :class="[
-            validateMessage.type === 'warning' && 'text-yellow-600',
-            validateMessage.type === 'error' && 'text-red-600',
-          ]"
-        >
-          {{ validateMessage.message }}
-        </li>
-      </ul>
     </template>
+    <ul
+      v-if="state.validatedMessages.length > 0"
+      class="w-full my-2 space-y-2 list-disc list-outside pl-4"
+    >
+      <li
+        v-for="validateMessage in state.validatedMessages"
+        :key="validateMessage.message"
+        class="break-words w-full text-xs"
+        :class="[
+          validateMessage.type === 'warning' && 'text-yellow-600',
+          validateMessage.type === 'error' && 'text-red-600',
+        ]"
+      >
+        {{ validateMessage.message }}
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -60,11 +63,18 @@ import { useDebounceFn } from "@vueuse/core";
 import { randomString } from "@/utils";
 import { ResourceId } from "@/types";
 
-const characters = "abcdefghijklmnopqrstuvwxyz1234567890";
+// characters is the validated characters for resource id.
+const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";
+
+// randomCharacter returns a random character from the english alphabet.
+const randomCharacter = (): string => {
+  const characters = "abcdefghijklmnopqrstuvwxyz";
+  return characters.charAt(Math.floor(Math.random() * characters.length));
+};
 
 const resourceIdPattern = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
-interface ValidateMessage {
+interface ValidatedMessage {
   type: "warning" | "error";
   message: string;
 }
@@ -72,80 +82,59 @@ interface ValidateMessage {
 interface LocalState {
   resourceId: string;
   isResourceIdChanged: boolean;
-  validatedMessages: ValidateMessage[];
+  validatedMessages: ValidatedMessage[];
 }
 
-type ResourceType = "environment";
+type ResourceType = "environment" | "instance" | "project" | "idp";
 
 const props = withDefaults(
   defineProps<{
     resource: ResourceType;
-    defaultValue: string;
+    value: string;
     resourceTitle: string;
     readonly: boolean;
+    randomString: boolean;
     validator: (resourceId: ResourceId) => Promise<string | undefined>;
   }>(),
   {
-    defaultValue: "",
+    value: "",
     resourceTitle: "",
+    randomString: false,
     readonly: false,
+    validator: () => Promise.resolve(undefined),
   }
 );
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
-  resourceId: props.defaultValue,
+  resourceId: props.value,
   isResourceIdChanged: false,
   validatedMessages: [],
+});
+
+const resourceName = computed(() => {
+  return t(`resource.${props.resource}`);
 });
 
 const getPrefix = (resource: string) => {
   switch (resource) {
     case "environment":
       return "env";
+    case "instance":
+      return "ins";
+    case "project":
+      return "proj";
+    case "idp":
+      return "idp";
     default:
       return "";
   }
 };
 const randomSuffix = randomString(4).toLowerCase();
 
-const resourceName = computed(() => {
-  return t(`common.${props.resource}`);
-});
-
 const shouldShowResourceIdField = computed(() => {
   return !props.readonly && state.isResourceIdChanged;
 });
-
-watch(
-  () => props.resourceTitle,
-  (newValue) => {
-    if (props.readonly) {
-      return;
-    }
-
-    if (!state.isResourceIdChanged) {
-      const formatedTitle = newValue
-        .toLowerCase()
-        .split("")
-        .map((char) => {
-          if (char === " ") {
-            return "-";
-          }
-          if (characters.includes(char)) {
-            return char;
-          }
-          return randomString(1);
-        })
-        .join("")
-        .toLowerCase();
-
-      state.resourceId = `${getPrefix(props.resource)}-${
-        formatedTitle || randomString(4).toLowerCase()
-      }-${randomSuffix}`;
-    }
-  }
-);
 
 const handleResourceIdInput = (newValue: string) => {
   if (!state.isResourceIdChanged) {
@@ -160,6 +149,11 @@ const debounceHandleResourceIdChange = useDebounceFn(
   async (newValue: string) => {
     state.resourceId = newValue;
     state.validatedMessages = [];
+
+    // if the resource id is empty, do not validate.
+    if (newValue === "" && !state.isResourceIdChanged) {
+      return;
+    }
 
     // common validation for resource id (min length, max length, pattern).
     if (state.resourceId.length < 1) {
@@ -196,7 +190,55 @@ const debounceHandleResourceIdChange = useDebounceFn(
       }
     }
   },
-  300
+  200
+);
+
+watch(
+  () => props.value,
+  (newValue) => {
+    state.resourceId = newValue;
+  }
+);
+
+watch(
+  () => props.resourceTitle,
+  (resourceTitle) => {
+    if (props.readonly) {
+      return;
+    }
+
+    if (!state.isResourceIdChanged) {
+      let name = "";
+      if (resourceTitle) {
+        const formatedTitle = resourceTitle
+          .toLowerCase()
+          .split("")
+          .map((char) => {
+            if (char === " ") {
+              return "";
+            }
+            if (characters.includes(char)) {
+              return char;
+            }
+            return randomCharacter();
+          })
+          .join("")
+          .toLowerCase();
+
+        if (props.randomString) {
+          name = `${getPrefix(
+            props.resource
+          )}-${formatedTitle}-${randomSuffix}`;
+        } else {
+          name = `${formatedTitle || randomString(4).toLowerCase()}`;
+        }
+      }
+      debounceHandleResourceIdChange(name);
+    }
+  },
+  {
+    immediate: true,
+  }
 );
 
 defineExpose({

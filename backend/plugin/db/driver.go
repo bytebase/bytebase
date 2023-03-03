@@ -38,6 +38,10 @@ const (
 	MongoDB Type = "MONGODB"
 	// Spanner is the database type for Spanner.
 	Spanner Type = "SPANNER"
+	// Redis is the database type for Redis.
+	Redis Type = "REDIS"
+	// Oracle is the database type for Oracle.
+	Oracle Type = "ORACLE"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
@@ -419,7 +423,7 @@ type Driver interface {
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
-	Query(ctx context.Context, statement string, queryContext *QueryContext) ([]interface{}, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]interface{}, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.

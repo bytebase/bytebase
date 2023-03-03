@@ -78,8 +78,9 @@ DROP SCHEMA "schema_a";
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test sync schema Project",
-		Key:  "TestSyncSchemaProject",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test sync schema Project",
+		Key:        "TestSyncSchemaProject",
 	})
 	a.NoError(err)
 
@@ -89,6 +90,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "pgTestSyncSchema",
 		Engine:        db.Postgres,

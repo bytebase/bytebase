@@ -303,6 +303,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 	dstInstance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID: generateRandomString("instance", 10),
 		// The target instance must be within the same environment as the instance of the original database now.
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "DestinationInstance",
@@ -418,6 +419,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	a.NoError(err)
 
 	project, err := ctl.createProject(api.ProjectCreate{
+		ResourceID: generateRandomString("project", 10),
 		Name:       "PITRTest",
 		Key:        "PTT",
 		TenantMode: api.TenantModeDisabled,
@@ -445,6 +447,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          baseName + "_Instance",
 		Engine:        db.MySQL,

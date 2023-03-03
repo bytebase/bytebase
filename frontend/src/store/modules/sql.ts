@@ -9,14 +9,49 @@ import {
   ResourceObject,
   SQLResultSet,
   Advice,
+  SingleSQLResult,
+  Attributes,
 } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
+import { last } from "lodash-es";
+
+export function convertSingleSQLResult(
+  attributes: Attributes
+): SingleSQLResult {
+  try {
+    return {
+      data: JSON.parse((attributes.data as string) || "null"),
+      error: attributes.error as string,
+    };
+  } catch {
+    return {
+      data: null as any,
+      error: attributes.error as string,
+    };
+  }
+}
 
 export function convert(resultSet: ResourceObject): SQLResultSet {
+  const resultList: SingleSQLResult[] = [];
+  const singleSQLResultAttributesList = resultSet.attributes
+    .singleSQLResultList as Attributes[];
+  if (Array.isArray(singleSQLResultAttributesList)) {
+    singleSQLResultAttributesList.forEach((attributes) => {
+      resultList.push(convertSingleSQLResult(attributes));
+    });
+  }
+
+  // Our UI doesn't support multiple results by now.
+  // So we use the last result as the final result.
+  const lastResult = last(resultList) ?? {
+    data: null as any,
+    error: "",
+  };
+
   return {
-    data: JSON.parse((resultSet.attributes.data as string) || "null"),
-    error: resultSet.attributes.error as string,
+    ...lastResult,
+    error: lastResult?.error || (resultSet.attributes.error as string) || "",
     adviceList: resultSet.attributes.adviceList as Advice[],
   };
 }
@@ -112,9 +147,6 @@ export const useSQLStore = defineStore("sql", {
       ).data;
 
       const resultSet = convert(res.data);
-      if (resultSet.error) {
-        throw new Error(resultSet.error);
-      }
 
       return resultSet;
     },
@@ -138,9 +170,6 @@ export const useSQLStore = defineStore("sql", {
       ).data;
 
       const resultSet = convert(res.data);
-      if (resultSet.error) {
-        throw new Error(resultSet.error);
-      }
 
       return resultSet;
     },

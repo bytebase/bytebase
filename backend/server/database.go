@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/edit"
+	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -229,19 +230,46 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dbSchema = newDBSchema
 		}
 
-		isQuerySchema := c.QueryParam("metadata") == ""
-		if isQuerySchema {
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
-			}
-		} else {
+		isMetadata := c.QueryParam("metadata") == "true"
+		isSDL := c.QueryParam("sdl") == "true"
+		if isMetadata && isSDL {
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot choose metadata and sdl format together")
+		}
+		if isMetadata {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
 			if err != nil {
 				return err
 			}
 			if _, err := c.Response().Write(metadataBytes); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
+			}
+		} else if isSDL {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+			if err != nil {
+				return err
+			}
+			// We only support MySQL now.
+			var engineType parser.EngineType
+			switch instance.Engine {
+			case db.MySQL:
+				engineType = parser.MySQL
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not support SDL format for %s instance", instance.Engine))
+			}
+
+			sdlSchema, err := transform.SchemaTransform(engineType, string(dbSchema.Schema))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to transform SDL format for database %q", database.DatabaseName)).SetInternal(err)
+			}
+
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+			if _, err := c.Response().Write([]byte(sdlSchema)); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
+			}
+		} else {
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
 			}
 		}

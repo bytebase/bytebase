@@ -18,7 +18,18 @@
         </div>
       </template>
       <template v-else-if="payload?.rollbackSqlStatus === 'DONE'">
+        <template v-if="taskRollbackBy && rollbackByIssue.id !== UNKNOWN_ID">
+          <router-link
+            :to="`/issue/${taskRollbackBy.rollbackByIssueId}`"
+            class="text-accent inline-flex gap-x-1"
+          >
+            <span>{{ $t("common.issue") }}</span>
+            <span>#{{ taskRollbackBy.rollbackByIssueId }}</span>
+            <IssueStatusIcon :issue-status="rollbackByIssue.status" />
+          </router-link>
+        </template>
         <BBTooltipButton
+          v-else
           :disabled="!allowPreviewRollback"
           tooltip-mode="DISABLED-ONLY"
           class="btn-normal !px-3 !py-1"
@@ -42,22 +53,22 @@
 import { computed, reactive, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
-import dayjs from "dayjs";
 
-import type {
-  ActivityCreate,
+import {
+  ActivityIssueCommentCreatePayload,
   Issue,
-  IssueCreate,
-  MigrationContext,
   Task,
   TaskDatabaseDataUpdatePayload,
+  TaskRollbackBy,
+  UNKNOWN_ID,
 } from "@/types";
 import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
-import { useActivityStore, useIssueStore } from "@/store";
 import { useRollbackLogic } from "./common";
+import IssueStatusIcon from "../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
+import { useActivityStore, useIssueById } from "@/store";
 
 type LocalState = {
   loading: boolean;
@@ -65,7 +76,6 @@ type LocalState = {
 };
 
 const router = useRouter();
-const issueStore = useIssueStore();
 
 const context = useIssueLogic();
 const { allowRollback } = useRollbackLogic();
@@ -91,6 +101,29 @@ const allowPreviewRollback = computed(() => {
   return true;
 });
 
+const taskRollbackBy = computed((): TaskRollbackBy | undefined => {
+  const activityList = useActivityStore().getActivityListByIssue(
+    issue.value.id
+  );
+  // Find the latest comment activity with TaskRollbackBy struct if possible.
+  for (let i = activityList.length - 1; i >= 0; i--) {
+    const activity = activityList[i];
+    if (activity.type !== "bb.issue.comment.create") continue;
+    const payload = activity.payload as
+      | ActivityIssueCommentCreatePayload
+      | undefined;
+    if (!payload) continue;
+    const taskRollbackBy = payload.taskRollbackBy;
+    if (!taskRollbackBy) continue;
+    return taskRollbackBy;
+  }
+  return undefined;
+});
+
+const rollbackByIssue = useIssueById(
+  computed(() => taskRollbackBy.value?.rollbackByIssueId ?? UNKNOWN_ID)
+);
+
 const tryRollbackTask = async () => {
   const navigateToRollbackIssue = () => {
     if (!state.rollbackIssue) return;
@@ -104,79 +137,35 @@ const tryRollbackTask = async () => {
   try {
     state.loading = true;
 
-    const rollbackContext: MigrationContext = {
-      detailList: [
-        {
-          migrationType: "DATA",
-          databaseId: task.value.database!.id,
-          statement: payload.value!.rollbackStatement!,
-          earliestAllowedTs: 0,
-          rollbackDetail: {
-            issueId: issue.value.id,
-            taskId: task.value.id,
-          },
-        },
-      ],
-    };
-
-    const datetime = `${dayjs(issue.value.createdTs * 1000).format(
-      "MM-DD HH:mm:ss"
-    )}`;
-    const tz = `UTC${dayjs().format("ZZ")}`;
-
     const issueName = [
-      `[${task.value.database!.name}]`,
-      `Rollback ${task.value.name}`,
-      `in #${issue.value.id}`,
-      `@${datetime} ${tz}`,
+      `Rollback`,
+      `#${issue.value.id}`,
+      `${issue.value.name}`,
     ].join(" ");
 
-    const description = `The original SQL statement:
-    ${payload.value!.statement}`;
+    const description = [
+      "The original SQL statement:",
+      `${payload.value!.statement}`,
+    ].join("\n");
 
-    const issueCreate: IssueCreate = {
-      type: "bb.issue.database.data.update",
-      projectId: issue.value.project.id,
-      name: issueName,
-      description,
-      payload: {},
-      // Use the same assignee as the original issue
-      assigneeId: issue.value.assignee.id,
-      createContext: rollbackContext,
-    };
-
-    const createdIssue = await issueStore.createIssue(issueCreate);
-    state.rollbackIssue = createdIssue;
-
-    await createRollbackCommentActivity(task.value, issue.value, createdIssue);
-
-    navigateToRollbackIssue();
+    router.push({
+      name: "workspace.issue.detail",
+      params: {
+        issueSlug: "new",
+      },
+      query: {
+        template: "bb.issue.database.data.update",
+        name: issueName,
+        project: issue.value.project.id,
+        databaseList: [task.value.database!.id].join(","),
+        rollbackIssueId: issue.value.id,
+        rollbackTaskIdList: [task.value.id].join(","),
+        sql: payload.value!.rollbackStatement!,
+        description,
+      },
+    });
   } finally {
     state.loading = false;
-  }
-};
-
-const createRollbackCommentActivity = async (
-  task: Task,
-  issue: Issue,
-  newIssue: Issue
-) => {
-  const comment = [
-    "Rollback task",
-    `[${task.name}]`,
-    `in issue #${newIssue.id}`,
-  ].join(" ");
-
-  const createActivity: ActivityCreate = {
-    type: "bb.issue.comment.create",
-    containerId: issue.id,
-    comment,
-  };
-  try {
-    await useActivityStore().createActivity(createActivity);
-  } catch {
-    // do nothing
-    // failing to comment to won't be too bad
   }
 };
 </script>

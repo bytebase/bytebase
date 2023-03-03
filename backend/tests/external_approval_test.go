@@ -68,8 +68,9 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestExternalApprovalFeishu",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestExternalApprovalFeishu",
 	})
 	a.NoError(err)
 
@@ -86,6 +87,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
@@ -222,8 +224,9 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestExternalApprovalFeishu",
+		ResourceID: generateRandomString("project", 10),
+		Name:       "Test Project",
+		Key:        "TestExternalApprovalFeishu",
 	})
 	a.NoError(err)
 
@@ -240,6 +243,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
+		ResourceID:    generateRandomString("instance", 10),
 		EnvironmentID: prodEnvironment.ID,
 		Name:          instanceName,
 		Engine:        db.SQLite,

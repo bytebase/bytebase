@@ -85,12 +85,10 @@
       <div v-if="selectedInstance.engine == 'CLICKHOUSE'" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.cluster") }}
-          <span class="text-red-600">*</span>
         </label>
         <input
           id="name"
           v-model="state.cluster"
-          required
           name="cluster"
           type="text"
           class="textfield mt-1 w-full"
@@ -418,6 +416,8 @@ export default defineComponent({
 
     const isDbNameTemplateMode = computed((): boolean => {
       if (project.value.id === UNKNOWN_ID) return false;
+
+      if (project.value.tenantMode !== "TENANT") return false;
 
       // true if dbNameTemplate is not empty
       return !!project.value.dbNameTemplate;

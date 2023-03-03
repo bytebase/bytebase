@@ -311,6 +311,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
 			}
+			dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return err
+			}
+			// The schema isn't loaded yet, let's load it on-demand.
+			if dbSchema == nil {
+				if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+					return err
+				}
+			}
+			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return err
+			}
+			if dbSchema == nil {
+				return errors.Errorf("database schema %v not found", database.UID)
+			}
 
 			catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine)
 			if err != nil {
@@ -325,13 +342,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			connection, err := driver.GetDBConnection(ctx, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
-			}
-			dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-			if err != nil {
-				return err
-			}
-			if dbSchema == nil {
-				return errors.Errorf("database schema %v not found", database.UID)
 			}
 
 			adviceLevel, adviceList, err = s.sqlCheck(
@@ -392,14 +402,25 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		start := time.Now().UnixNano()
 
-		bytes, queryErr := func() ([]byte, error) {
+		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			defer driver.Close(ctx)
+			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
+			if err != nil {
+				return nil, err
+			}
+			conn, err := sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
 
-			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+			var singleSQLResults []api.SingleSQLResult
+
+			rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
 				Limit:           exec.Limit,
 				ReadOnly:        true,
 				CurrentDatabase: exec.DatabaseName,
@@ -408,10 +429,24 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				SensitiveSchemaInfo:   sensitiveSchemaInfo,
 			})
 			if err != nil {
-				return nil, err
+				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+					Error: err.Error(),
+				})
+				//nolint
+				return singleSQLResults, nil
 			}
-
-			return json.Marshal(rowSet)
+			data, err := json.Marshal(rowSet)
+			if err != nil {
+				singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+					Error: err.Error(),
+				})
+				//nolint
+				return singleSQLResults, nil
+			}
+			singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+				Data: string(data),
+			})
+			return singleSQLResults, nil
 		}()
 
 		if instance.Engine == db.Postgres {
@@ -422,8 +457,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if len(stmts) != 1 {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one statement, but found %d, statement: %s", len(stmts), exec.Statement))
 			}
+
 			if _, ok := stmts[0].(*ast.ExplainStmt); ok {
-				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, string(bytes))
+				if len(singleSQLResults) != 1 {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one result, but found %d, statement: %s, consider syntax error", len(singleSQLResults), exec.Statement))
+				}
+				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, singleSQLResults[0].Data)
 				if len(indexAdvice) > 0 {
 					adviceLevel = advisor.Error
 					adviceList = append(adviceList, indexAdvice...)
@@ -469,14 +508,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return err
 		}
 
-		resultSet := &api.SQLResultSet{AdviceList: adviceList}
-		if queryErr == nil {
-			resultSet.Data = string(bytes)
-			log.Debug("Query result advice",
-				zap.String("statement", exec.Statement),
-				zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
-			)
-		} else {
+		resultSet := &api.SQLResultSet{
+			AdviceList:          adviceList,
+			SingleSQLResultList: singleSQLResults,
+		}
+
+		if queryErr != nil {
 			resultSet.Error = queryErr.Error()
 			if s.profile.Mode == common.ReleaseModeDev {
 				log.Error("Failed to execute query",
@@ -543,31 +580,99 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		exec.Readonly = true
 		start := time.Now().UnixNano()
 
-		bytes, queryErr := func() ([]byte, error) {
+		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			defer driver.Close(ctx)
-
-			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
-				Limit:               exec.Limit,
-				ReadOnly:            false,
-				CurrentDatabase:     exec.DatabaseName,
-				SensitiveSchemaInfo: nil,
-			})
+			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
+			conn, err := sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
 
-			return json.Marshal(rowSet)
+			var singleSQLResults []api.SingleSQLResult
+			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
+			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB {
+				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to split statements")
+				}
+				for _, singleSQL := range singleSQLs {
+					rowSet, err := driver.QueryConn(ctx, conn, singleSQL.Text, &db.QueryContext{
+						Limit:               exec.Limit,
+						ReadOnly:            false,
+						CurrentDatabase:     exec.DatabaseName,
+						SensitiveSchemaInfo: nil,
+					})
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+							Error: err.Error(),
+						})
+						continue
+					}
+					data, err := json.Marshal(rowSet)
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+							Error: err.Error(),
+						})
+						continue
+					}
+					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+						Data: string(data),
+					})
+				}
+			} else {
+				if err := util.ApplyMultiStatements(strings.NewReader(exec.Statement), func(statement string) error {
+					rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
+						Limit:               exec.Limit,
+						ReadOnly:            false,
+						CurrentDatabase:     exec.DatabaseName,
+						SensitiveSchemaInfo: nil,
+					})
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+							Error: err.Error(),
+						})
+						//nolint
+						return nil
+					}
+					data, err := json.Marshal(rowSet)
+					if err != nil {
+						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+							Error: err.Error(),
+						})
+						//nolint
+						return nil
+					}
+					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
+						Data: string(data),
+					})
+					return nil
+				}); err != nil {
+					// It should never happen.
+					return nil, err
+				}
+			}
+			return singleSQLResults, nil
 		}()
 
 		level := api.ActivityInfo
 		errMessage := ""
-		if queryErr != nil {
+		if err != nil {
 			level = api.ActivityError
-			errMessage = queryErr.Error()
+			errMessage += err.Error()
+		}
+		for idx, singleSQLResult := range singleSQLResults {
+			level = api.ActivityError
+			if singleSQLResult.Error != "" {
+				errMessage += fmt.Sprintf("\nFor query statement #%d: %s", idx+1, singleSQLResult.Error)
+			}
 		}
 		var databaseID int
 		if database != nil {
@@ -586,14 +691,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{
-			AdviceList: []advisor.Advice{},
+			AdviceList:          []advisor.Advice{},
+			SingleSQLResultList: singleSQLResults,
 		}
-		if queryErr == nil {
-			resultSet.Data = string(bytes)
-			log.Debug("Query result advice",
-				zap.String("statement", exec.Statement),
-			)
-		} else {
+
+		if queryErr != nil {
 			resultSet.Error = queryErr.Error()
 			if s.profile.Mode == common.ReleaseModeDev {
 				log.Error("Failed to execute query",

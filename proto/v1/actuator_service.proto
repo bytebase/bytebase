@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service ActuatorService {
+  rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
+    option (google.api.http) = {
+      get: "/v1/actuator/info"
+    };
+    option (google.api.method_signature) = "";
+  }
+}
+
+message GetActuatorInfoRequest {
+}
+
+// ServerInfo is the API message for server info.
+// Actuator concept is similar to the Spring Boot Actuator.
+message ActuatorInfo {
+  // version is the bytebase's server version
+  string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // git_commit is the git commit hash of the build
+  string git_commit = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // readonly flag means if the Bytebase is running in readonly mode.
+  bool readonly = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users.
+  bool saas = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // demo_name specifies the demo name, empty string means no demo.
+  string demo_name = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // host is the Bytebase instance host.
+  string host = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // port is the Bytebase instance port.
+  string port = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // external_url is the URL where user or webhook callback visits Bytebase.
+  string external_url = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // need_admin_setup flag means the Bytebase instance doesn't have any end users.
+  bool need_admin_setup = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // disallow_signup is the flag to disable self-service signup.
+  bool disallow_signup = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value.
+  google.protobuf.Timestamp last_active_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

@@ -22,7 +22,7 @@
         ref="resourceIdField"
         resource="environment"
         :readonly="!create"
-        :default-value="state.environment.resourceId"
+        :value="state.environment.resourceId"
         :resource-title="state.environment.name"
         :validator="validateResourceId"
       />
@@ -204,7 +204,6 @@
             <BBSwitch
               v-if="allowEditSQLReviewPolicy"
               class="mr-2"
-              size="small"
               :text="true"
               :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
               @toggle="toggleSQLReviewPolicy"
@@ -487,7 +486,7 @@ const validateResourceId = async (resourceId: ResourceId) => {
     );
     if (env) {
       return t("resource-id.validation.duplicated", {
-        resource: t(`common.environment`),
+        resource: t("resource.environment"),
       });
     }
   } catch (error) {

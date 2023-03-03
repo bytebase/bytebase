@@ -105,7 +105,7 @@ const selectVCS = (vcs: VCS) => {
   emit("set-vcs", vcs);
 
   let authorizeUrl = `${vcs.instanceUrl}/oauth/authorize`;
-  if (vcs.type == "GITHUB_COM") {
+  if (vcs.type == "GITHUB") {
     authorizeUrl = `https://github.com/login/oauth/authorize`;
   }
   openWindowForOAuth(

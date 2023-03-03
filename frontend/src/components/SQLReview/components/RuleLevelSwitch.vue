@@ -41,7 +41,7 @@ defineEmits<{
 
 <style lang="postcss" scoped>
 .button {
-  @apply relative py-1 w-[4rem] whitespace-nowrap border border-control-border text-control font-medium hover:z-[2];
+  @apply relative py-1 w-[4.5rem] whitespace-nowrap border border-control-border text-control font-medium hover:z-[2];
   @apply disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50;
 }
 .button:not(:first-child) {

@@ -2,7 +2,7 @@
   <div class="mt-4 space-y-4">
     <div class="flex justify-end">
       <div
-        v-if="vcs.type == 'GITLAB_SELF_HOST'"
+        v-if="vcs.uiType == 'GITLAB_SELF_HOST'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
@@ -11,7 +11,14 @@
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
       <div
-        v-if="vcs.type == 'GITHUB_COM'"
+        v-else-if="vcs.uiType == 'GITLAB_COM'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">GitLab.com</div>
+        <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
+      </div>
+      <div
+        v-else-if="vcs.uiType == 'GITHUB_COM'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">GitHub.com</div>
@@ -56,13 +63,25 @@
         {{ $t("common.application") }} ID
       </label>
       <p class="mt-1 textinfolabel">
-        <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t("gitops.setting.git-provider.gitlab-application-id-label") }}
+        <template v-if="vcs.uiType == 'GITLAB_SELF_HOST'">
+          {{
+            $t(
+              "gitops.setting.git-provider.gitlab-self-host-application-id-label"
+            )
+          }}
           <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
             $t("gitops.setting.git-provider.view-in-gitlab")
           }}</a>
         </template>
-        <template v-if="vcs.type == 'GITHUB_COM'">
+        <template v-else-if="vcs.uiType == 'GITLAB_COM'">
+          {{
+            $t("gitops.setting.git-provider.gitlab-com-application-id-label")
+          }}
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
+            $t("gitops.setting.git-provider.view-in-gitlab")
+          }}</a>
+        </template>
+        <template v-else-if="vcs.uiType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.github-application-id-label") }}
         </template>
       </p>
@@ -78,10 +97,13 @@
     <div>
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
-        <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t("gitops.setting.git-provider.secret-label-gitlab") }}
+        <template v-if="vcs.uiType == 'GITLAB_SELF_HOST'">
+          {{ $t("gitops.setting.git-provider.gitlab-self-host-secret-label") }}
         </template>
-        <template v-if="vcs.type == 'GITHUB_COM'">
+        <template v-else-if="vcs.uiType == 'GITLAB_COM'">
+          {{ $t("gitops.setting.git-provider.gitlab-com-secret-label") }}
+        </template>
+        <template v-else-if="vcs.uiType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.secret-label-github") }}
         </template>
       </p>
@@ -214,10 +236,7 @@ export default defineComponent({
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        if (
-          vcs.value.type == "GITLAB_SELF_HOST" ||
-          vcs.value.type == "GITHUB_COM"
-        ) {
+        if (vcs.value.type == "GITLAB" || vcs.value.type == "GITHUB") {
           useOAuthStore()
             .exchangeVCSTokenWithID({
               code: payload.code,
@@ -244,8 +263,10 @@ export default defineComponent({
     watchEffect(prepareRepositoryList);
 
     const adminApplicationUrl = computed(() => {
-      if (vcs.value.type == "GITLAB_SELF_HOST") {
+      if (vcs.value.uiType == "GITLAB_SELF_HOST") {
         return `${vcs.value.instanceUrl}/admin/applications`;
+      } else if (vcs.value.uiType == "GITLAB_COM") {
+        return "https://gitlab.com/-/profile/applications";
       }
       return "";
     });
@@ -268,7 +289,7 @@ export default defineComponent({
         !isEmpty(state.secret)
       ) {
         let authorizeUrl = `${vcs.value.instanceUrl}/oauth/authorize`;
-        if (vcs.value.type == "GITHUB_COM") {
+        if (vcs.value.type == "GITHUB") {
           authorizeUrl = `https://github.com/login/oauth/authorize`;
         }
         const newWindow = openWindowForOAuth(
@@ -307,10 +328,10 @@ export default defineComponent({
               // So the only possibility to reach here is we have a matching application ID, while
               // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
               let description = "";
-              if (vcs.value.type == "GITLAB_SELF_HOST") {
+              if (vcs.value.type == "GITLAB") {
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
-              } else if (vcs.value.type == "GITHUB_COM") {
+              } else if (vcs.value.type == "GITHUB") {
                 description =
                   "Please make sure Client secret matches the one from your GitHub.com Application.";
               }
