@@ -249,6 +249,12 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err := ctl.start(ctx, serverPort); err != nil {
 		return err
 	}
+	if err := ctl.Signup(); err != nil {
+		return err
+	}
+	if err := ctl.Login(); err != nil {
+		return err
+	}
 	return ctl.initWorkspaceProfile()
 }
 
@@ -267,20 +273,10 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	if err := ctl.start(ctx, serverPort); err != nil {
-		return err
-	}
-
-	return ctl.initWorkspaceProfile()
+	return ctl.start(ctx, serverPort)
 }
 
 func (ctl *controller) initWorkspaceProfile() error {
-	if err := ctl.Signup(); err != nil {
-		return err
-	}
-	if err := ctl.Login(); err != nil {
-		return err
-	}
 	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
 		ExternalUrl:    ctl.profile.ExternalURL,
 		DisallowSignup: false,
