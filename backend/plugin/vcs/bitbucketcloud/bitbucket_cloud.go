@@ -947,9 +947,40 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
+// DeleteWebhook deletes the webhook from the repository.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-uid-delete
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	// TODO implement me
-	panic("implement me")
+	url := fmt.Sprintf("%s/repositories/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
+	code, _, body, err := oauth.Delete(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "DELETE %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil // It is OK if the webhook has already gone
+	} else if code >= 300 {
+		return errors.Errorf("failed to delete webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
 // oauthContext is the request context for refreshing OAuth token.

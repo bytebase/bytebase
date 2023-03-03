@@ -837,6 +837,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 
 func TestProvider_PatchWebhook(t *testing.T) {
 	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodPut, r.Method)
 		assert.Equal(t, "/2.0/repositories/1/hooks/1", r.URL.Path)
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -847,6 +848,22 @@ func TestProvider_PatchWebhook(t *testing.T) {
 
 	ctx := context.Background()
 	err := p.PatchWebhook(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "1", []byte(""))
+	require.NoError(t, err)
+}
+
+func TestProvider_DeleteWebhook(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/2.0/repositories/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	err := p.DeleteWebhook(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "1")
 	require.NoError(t, err)
 }
 
