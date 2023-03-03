@@ -11,7 +11,7 @@ import {
   createSubQueryCandidates,
   createTableCandidates,
 } from "./candidates";
-import { getFromClauses } from "./utils";
+import { getFromClauses, isDialectWithSchema } from "./utils";
 import { simpleTokenize } from "./tokenizer";
 import { AliasMapping } from "./alias";
 import { SubQueryMapping } from "./sub-query";
@@ -35,6 +35,7 @@ export const complete = async (
   const { fromTables, subQueries } = getFromClauses(sql);
   const subQueryMapping = new SubQueryMapping(tableList, subQueries, dialect);
   const aliasMapping = new AliasMapping(tableList, fromTables, dialect);
+  const withSchema = isDialectWithSchema(dialect);
 
   let suggestions: CompletionItem[] = [];
 
@@ -92,20 +93,20 @@ export const complete = async (
       provideColumnAutoCompletionByAlias(maybeAlias);
 
       // - "{database_name}." (mysql)
-      if (dialect === "mysql") {
+      if (!withSchema) {
         const maybeDatabaseName = tokenListBeforeDot[0];
         provideTableAutoCompletion(maybeDatabaseName, tableList);
       }
       // - "{table_name}." (mysql)
       const maybeTableName = tokenListBeforeDot[0];
-      if (dialect === "mysql") {
+      if (!withSchema) {
         provideColumnAutoCompletion(maybeTableName, tableList);
         provideColumnAutoCompletion(
           maybeTableName,
           subQueryMapping.virtualTableList
         );
       }
-      if (dialect === "postgresql") {
+      if (withSchema) {
         // for postgresql, we also try "public.{table_name}."
         // since "public" schema can be omitted by default
         provideColumnAutoCompletion(`public.${maybeTableName}`, tableList);
@@ -118,21 +119,21 @@ export const complete = async (
       // - "{database_name}.{table_name}." (mysql)
       // - "{schema_name}.{table_name}." (postgresql)
       const [maybeDatabaseName, maybeTableName] = tokenListBeforeDot;
-      if (dialect === "mysql") {
+      if (!withSchema) {
         provideColumnAutoCompletion(
           maybeTableName,
           tableList,
           maybeDatabaseName
         );
       }
-      if (dialect === "postgresql") {
+      if (withSchema) {
         const maybeTableNameWithSchema = tokenListBeforeDot.join(".");
         provideColumnAutoCompletion(maybeTableNameWithSchema, tableList);
       }
       // TODO: "{database_name}.{schema_name}." (postgresql)
     }
 
-    if (dialect === "postgresql" && tokenListBeforeDot.length === 3) {
+    if (withSchema && tokenListBeforeDot.length === 3) {
       // if the input is "x.y.z." it might be
       // - "{database_name}.{schema_name}.{table_name}." (postgresql only)
       //   and bytebase save {schema_name}.{table_name} as the table name
@@ -153,11 +154,12 @@ export const complete = async (
     const suggestionsForAliases = aliasMapping.createAllAliasCandidates();
 
     // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
-    const suggestionsForDatabase =
-      dialect === "mysql" ? createDatabaseCandidates(schema.databases) : [];
+    const suggestionsForDatabase = !withSchema
+      ? createDatabaseCandidates(schema.databases)
+      : [];
     const suggestionsForTable = createTableCandidates(
       tableList,
-      dialect === "mysql" // Add database prefix to table candidates only for MySQL.
+      !withSchema // Add database prefix to table candidates only for MySQL.
     );
     const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
       subQueryMapping.virtualTableList

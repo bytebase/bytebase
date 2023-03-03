@@ -219,7 +219,7 @@
           data-label="bb-issue-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
-          :dialect="(state.engineType as SQLDialect)"
+          :dialect="dialectOfEngine(state.engineType)"
           @change="onStatementChange"
           @ready="updateEditorHeight"
         />
@@ -273,7 +273,7 @@ import {
   MigrationHistory,
   MigrationType,
   ProjectId,
-  SQLDialect,
+  dialectOfEngine,
   UNKNOWN_ID,
 } from "@/types";
 import {

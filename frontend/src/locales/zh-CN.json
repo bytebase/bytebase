@@ -468,9 +468,8 @@
           "enable": "开启水印"
         },
         "disallow-signup": {
-          "enable": "禁止自主注册",
-          "description": "禁止之后，新用户将无法自主注册，只能通过管理员邀请来创建账户。",
-          "only-owner-can-edit": "仅管理员可以修改自主注册"
+          "enable": "禁用自助注册",
+          "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
         },
         "network": "网络",
         "external-url": {
@@ -649,7 +648,7 @@
       "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
-    "will-rollback": "当前任务将会回滚 {link}。",
+    "will-rollback": "当前任务将会回滚 {link}",
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "{im}审批请求发送成功",
@@ -1617,6 +1616,7 @@
     "trial-start-modal": {
       "title": "已开启{plan}试用",
       "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
+      "button": "了解",
       "subscription-page": "订阅页面",
       "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
     },

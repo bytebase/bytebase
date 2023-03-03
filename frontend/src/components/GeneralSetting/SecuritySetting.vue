@@ -54,11 +54,7 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{
-              $t(
-                "settings.general.workspace.disallow-signup.only-owner-can-edit"
-              )
-            }}
+            {{ $t("settings.general.workspace.only-owner-can-edit") }}
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
@@ -121,10 +117,9 @@ const disallowSignupEnabled = computed((): boolean => {
 
 const handleDisallowSignupToggle = async (on: boolean) => {
   const payload: WorkspaceProfileSetting = {
-    disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
+    disallowSignup: on,
     externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
   };
-  payload.disallowSignup = on;
 
   await settingStore.updateSettingByName({
     name: "bb.workspace.profile",

@@ -1,5 +1,11 @@
 import { computed, unref } from "vue";
-import { Environment, Instance, Language, MaybeRef } from "../types";
+import {
+  Environment,
+  Instance,
+  Language,
+  languageOfEngine,
+  MaybeRef,
+} from "../types";
 
 export function instanceName(instance: Instance) {
   let name = instance.name;
@@ -38,10 +44,7 @@ export const useInstanceEditorLanguage = (
   instance: MaybeRef<Instance | undefined>
 ) => {
   return computed((): Language => {
-    if (unref(instance)?.engine === "MONGODB") {
-      return "javascript";
-    }
-    return "sql";
+    return languageOfEngine(unref(instance)?.engine);
   });
 };
 

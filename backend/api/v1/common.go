@@ -272,6 +272,8 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_REDIS
 	case db.Oracle:
 		return v1pb.Engine_ORACLE
+	case db.Spanner:
+		return v1pb.Engine_SPANNER
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -296,6 +298,8 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.Redis
 	case v1pb.Engine_ORACLE:
 		return db.Oracle
+	case v1pb.Engine_SPANNER:
+		return db.Spanner
 	}
 	return db.UnknownType
 }

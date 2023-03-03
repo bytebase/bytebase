@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -665,8 +666,8 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
-	// initial workspace general setting
-	bytes, err := json.Marshal(storepb.WorkspaceProfileSetting{
+	// initial workspace profile setting
+	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
 		ExternalUrl:    s.profile.ExternalURL,
 		DisallowSignup: false,
 	})

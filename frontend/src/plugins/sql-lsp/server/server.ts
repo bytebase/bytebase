@@ -5,7 +5,7 @@ import {
   CompletionItem,
 } from "vscode-languageserver/browser";
 import { initializeConnection } from "./initializeConnection";
-import type { Schema, SQLDialect } from "@sql-lsp/types";
+import { EngineTypesUsingSQL, Schema, SQLDialect } from "@sql-lsp/types";
 import { complete } from "./complete";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -21,7 +21,7 @@ type LocalState = {
 
 const state: LocalState = {
   schema: { databases: [] } as Schema,
-  dialect: "mysql",
+  dialect: "MYSQL",
 };
 
 connection.onInitialize((params): InitializeResult => {
@@ -96,13 +96,11 @@ connection.onExecuteCommand((request) => {
     state.schema = schema;
   } else if (request.command === "changeDialect") {
     const dialect = args[0];
-    if (!["mysql", "postgresql"].includes(dialect)) {
-      connection.sendNotification("error", {
-        message: `unknown dialect "${dialect}"`,
-      });
-      return;
+    if (EngineTypesUsingSQL.includes(dialect)) {
+      state.dialect = dialect;
+    } else {
+      state.dialect = "MYSQL";
     }
-    state.dialect = dialect;
   } else {
     connection.sendNotification("error", {
       message: "unknown command requested",

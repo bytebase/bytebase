@@ -38,7 +38,7 @@ const props = defineProps({
   },
   dialect: {
     type: String as PropType<SQLDialect>,
-    default: "mysql",
+    default: "MYSQL",
   },
   readonly: {
     type: Boolean,

@@ -470,9 +470,8 @@
           "enable": "Enable watermark"
         },
         "disallow-signup": {
-          "enable": "Disallow self-service signup",
-          "description": "Once disallowed, users cannot self-service signup and can only be invited by the workspace owner.",
-          "only-owner-can-edit": "Only workspace owner can update the self-service signup."
+          "enable": "Disable self-service signup",
+          "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
         },
         "network": "Network",
         "external-url": {
@@ -651,7 +650,7 @@
       "dont-apply-to-database-in-baseline-migration": "Baselining only records the current schema in the change history and won't apply the SQL to the database",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
-    "will-rollback": "This task will rollback {link}.",
+    "will-rollback": "This task will rollback {link}",
     "issue-link-with-task": "Issue {issue} - task {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "Send a {im} approval request successfully",
@@ -1618,6 +1617,7 @@
     "trial-start-modal": {
       "title": "Start your {plan} trial",
       "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
+      "button": "Got it",
       "subscription-page": "subscription page",
       "subscription": "Go to the {page} to learn these features and our plans."
     },

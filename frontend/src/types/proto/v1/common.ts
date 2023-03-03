@@ -52,6 +52,7 @@ export enum Engine {
   MONGODB = 7,
   REDIS = 8,
   ORACLE = 9,
+  SPANNER = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -87,6 +88,9 @@ export function engineFromJSON(object: any): Engine {
     case 9:
     case "ORACLE":
       return Engine.ORACLE;
+    case 10:
+    case "SPANNER":
+      return Engine.SPANNER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -116,6 +120,8 @@ export function engineToJSON(object: Engine): string {
       return "REDIS";
     case Engine.ORACLE:
       return "ORACLE";
+    case Engine.SPANNER:
+      return "SPANNER";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

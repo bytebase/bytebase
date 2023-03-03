@@ -157,7 +157,14 @@ import {
   useUIStateStore,
 } from "@/store";
 import { useIssueLogic, TaskTypeWithSheetId, sheetIdOfTask } from "./logic";
-import type { Database, SQLDialect, Task, TaskCreate, TaskId } from "@/types";
+import {
+  Database,
+  dialectOfEngine,
+  SQLDialect,
+  Task,
+  TaskCreate,
+  TaskId,
+} from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
@@ -316,11 +323,7 @@ const language = useInstanceEditorLanguage(
 
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
-  if (db?.instance.engine === "POSTGRES") {
-    return "postgresql";
-  }
-  // fallback to mysql dialect anyway
-  return "mysql";
+  return dialectOfEngine(db?.instance.engine);
 });
 
 const formatOnSave = computed({
