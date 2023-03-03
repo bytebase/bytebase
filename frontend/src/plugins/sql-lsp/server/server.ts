@@ -21,7 +21,7 @@ type LocalState = {
 
 const state: LocalState = {
   schema: { databases: [] } as Schema,
-  dialect: "mysql",
+  dialect: "MYSQL",
 };
 
 connection.onInitialize((params): InitializeResult => {
