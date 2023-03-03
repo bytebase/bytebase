@@ -85,7 +85,7 @@ func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
 		return false, err
 	}
 	if !slices.Contains(pastSecrets, secret) {
-		return false, errors.New("secret is outdate")
+		return false, errors.New("OTP has expired")
 	}
 
 	for _, pastSecret := range pastSecrets {
