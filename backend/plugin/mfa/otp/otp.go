@@ -78,8 +78,9 @@ func GetPastSecrets(accountName string, timestamp int64) ([]string, error) {
 	return secrets, nil
 }
 
-// Validate validates the given code against the given account name and timestamp.
-func Validate(accountName string, code string) (bool, error) {
+// ValidateWithCodeAndAccountName validates the given code against the given account name.
+// It will check the current secret and the past 5 secrets.
+func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
 	currentTimestamp := getCurrentTimestampInMinute()
 	secret, err := GenerateSecret(accountName, currentTimestamp)
 	if err != nil {
@@ -95,9 +96,14 @@ func Validate(accountName string, code string) (bool, error) {
 	}
 
 	for _, pastSecret := range pastSecrets {
-		if totp.Validate(code, pastSecret) {
+		if ValidateWithCodeAndSecret(code, pastSecret) {
 			return true, nil
 		}
 	}
 	return false, errors.New("invalid code")
+}
+
+// ValidateWithCodeAndSecret validates the given code against the given secret.
+func ValidateWithCodeAndSecret(code, secret string) bool {
+	return totp.Validate(code, secret)
 }
