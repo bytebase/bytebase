@@ -118,13 +118,12 @@ service ProjectService {
       post: "/v1/{project=projects/*}:addWebhook"
       body: "webhook"
     };
-    option (google.api.method_signature) = "parent";
   }
 
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
       patch: "/v1/{project=projects/*}:updateWebhook"
-      body: "webhook"
+      body: "*"
     };
     option (google.api.method_signature) = "project,update_mask";
   }
@@ -133,7 +132,6 @@ service ProjectService {
     option (google.api.http) = {
       delete: "/v1/{project=projects/*}:removeWebhook"
     };
-    option (google.api.method_signature) = "project";
   }
 
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
@@ -141,7 +139,6 @@ service ProjectService {
       post: "/v1/{project=projects/*}:testWebhook"
       body: "webhook"
     };
-    option (google.api.method_signature) = "project";
   }
 }
 
@@ -463,7 +460,8 @@ message Webhook {
   // url is the url of the webhook, should be unique within the project.
   string url = 3 [(google.api.field_behavior) = REQUIRED];
 
-  // sub_types is the list of activities types that the webhook is interested in.
+  // notification_types is the list of activities types that the webhook is interested in.
+  // Bytebase will only send notifications to the webhook if the activity type is in the list.
   // It should not be empty, and shoule be a subset of the following:
   // - TYPE_ISSUE_CREATED
   // - TYPE_ISSUE_STATUS_UPDATE
@@ -471,7 +469,7 @@ message Webhook {
   // - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
   // - TYPE_ISSUE_FIELD_UPDATE
   // - TYPE_ISSUE_COMMENT_CREAT
-  repeated Activity.Type sub_types = 4 [(google.api.field_behavior) = UNORDERED_LIST];
+  repeated Activity.Type notification_types = 4 [(google.api.field_behavior) = UNORDERED_LIST];
 }
 
 message Review {

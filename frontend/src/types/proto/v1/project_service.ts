@@ -658,7 +658,8 @@ export interface Webhook {
   /** url is the url of the webhook, should be unique within the project. */
   url: string;
   /**
-   * sub_types is the list of activities types that the webhook is interested in.
+   * notification_types is the list of activities types that the webhook is interested in.
+   * Bytebase will only send notifications to the webhook if the activity type is in the list.
    * It should not be empty, and shoule be a subset of the following:
    * - TYPE_ISSUE_CREATED
    * - TYPE_ISSUE_STATUS_UPDATE
@@ -667,7 +668,7 @@ export interface Webhook {
    * - TYPE_ISSUE_FIELD_UPDATE
    * - TYPE_ISSUE_COMMENT_CREAT
    */
-  subTypes: Activity_Type[];
+  notificationTypes: Activity_Type[];
 }
 
 export enum Webhook_Type {
@@ -2516,7 +2517,7 @@ export const TestWebhookResponse = {
 };
 
 function createBaseWebhook(): Webhook {
-  return { type: 0, title: "", url: "", subTypes: [] };
+  return { type: 0, title: "", url: "", notificationTypes: [] };
 }
 
 export const Webhook = {
@@ -2531,7 +2532,7 @@ export const Webhook = {
       writer.uint32(26).string(message.url);
     }
     writer.uint32(34).fork();
-    for (const v of message.subTypes) {
+    for (const v of message.notificationTypes) {
       writer.int32(v);
     }
     writer.ldelim();
@@ -2558,10 +2559,10 @@ export const Webhook = {
           if ((tag & 7) === 2) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
-              message.subTypes.push(reader.int32() as any);
+              message.notificationTypes.push(reader.int32() as any);
             }
           } else {
-            message.subTypes.push(reader.int32() as any);
+            message.notificationTypes.push(reader.int32() as any);
           }
           break;
         default:
@@ -2577,7 +2578,9 @@ export const Webhook = {
       type: isSet(object.type) ? webhook_TypeFromJSON(object.type) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       url: isSet(object.url) ? String(object.url) : "",
-      subTypes: Array.isArray(object?.subTypes) ? object.subTypes.map((e: any) => activity_TypeFromJSON(e)) : [],
+      notificationTypes: Array.isArray(object?.notificationTypes)
+        ? object.notificationTypes.map((e: any) => activity_TypeFromJSON(e))
+        : [],
     };
   },
 
@@ -2586,10 +2589,10 @@ export const Webhook = {
     message.type !== undefined && (obj.type = webhook_TypeToJSON(message.type));
     message.title !== undefined && (obj.title = message.title);
     message.url !== undefined && (obj.url = message.url);
-    if (message.subTypes) {
-      obj.subTypes = message.subTypes.map((e) => activity_TypeToJSON(e));
+    if (message.notificationTypes) {
+      obj.notificationTypes = message.notificationTypes.map((e) => activity_TypeToJSON(e));
     } else {
-      obj.subTypes = [];
+      obj.notificationTypes = [];
     }
     return obj;
   },
@@ -2599,7 +2602,7 @@ export const Webhook = {
     message.type = object.type ?? 0;
     message.title = object.title ?? "";
     message.url = object.url ?? "";
-    message.subTypes = object.subTypes?.map((e) => e) || [];
+    message.notificationTypes = object.notificationTypes?.map((e) => e) || [];
     return message;
   },
 };
