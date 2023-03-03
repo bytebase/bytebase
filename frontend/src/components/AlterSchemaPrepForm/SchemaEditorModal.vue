@@ -215,6 +215,8 @@ const allowSyncSQLFromSchemaEditor = computed(() => {
 const databaseList = props.databaseIdList.map((databaseId) => {
   return databaseStore.getDatabaseById(databaseId);
 });
+// Returns the type if it's uniq.
+// Returns "unknown" if there are more than ONE types.
 const databaseEngineType = computed((): EngineType | "unknown" => {
   const engineTypes = uniq(databaseList.map((db) => db.instance.engine));
   if (engineTypes.length !== 1) return "unknown";
