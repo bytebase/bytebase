@@ -7,13 +7,21 @@ type FormatResult = {
   error: Error | null;
 };
 
+type FormatterLanguage = FormatOptions["language"];
+
+const convertDialectToFormatterLanguage = (
+  dialect: SQLDialect
+): FormatterLanguage => {
+  if (dialect === "MYSQL" || dialect === "TIDB") return "mysql";
+  if (dialect === "POSTGRES") return "postgresql";
+  if (dialect === "SNOWFLAKE") return "snowflake";
+  return "sql";
+};
+
 const formatSQL = (sql: string, dialect: SQLDialect): FormatResult => {
-  const options: FormatOptions = {
-    language: dialect,
+  const options: Partial<FormatOptions> = {
+    language: convertDialectToFormatterLanguage(dialect),
   };
-  if (dialect !== "mysql" && dialect !== "postgresql") {
-    options.language = "mysql";
-  }
 
   try {
     const formatted = format(sql, options);
