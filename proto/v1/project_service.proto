@@ -120,12 +120,14 @@ service ProjectService {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/webhooks"
     };
+    option (google.api.method_signature) = "parent";
   }
 
   rpc GetWebhook(GetWebhookRequest) returns (Webhook) {
     option (google.api.http) = {
       get: "/v1/{name=projects/*/webhooks/*}"
     };
+    option (google.api.method_signature) = "name";
   }
 
   rpc AddWebhook(AddWebhookRequest) returns (Webhook) {
@@ -133,6 +135,7 @@ service ProjectService {
       post: "/v1/{parent=projects/*}/webhooks"
       body: "webhook"
     };
+    option (google.api.method_signature) = "parent";
   }
 
   rpc ModifyWebhook(ModifyWebhookRequest) returns (Webhook) {
@@ -147,6 +150,7 @@ service ProjectService {
     option (google.api.http) = {
       delete: "/v1/{name=projects/*/webhooks/*}"
     };
+    option (google.api.method_signature) = "name";
   }
 }
 
