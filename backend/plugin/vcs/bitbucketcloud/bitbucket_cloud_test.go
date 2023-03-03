@@ -790,6 +790,51 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	assert.Equal(t, "https://bitbucket.org/octocat/Hello-World/pull-requests/108", got.URL)
 }
 
+func TestProvider_CreateWebhook(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/2.0/repositories/1/hooks", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusCreated,
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "uuid": "6611a7e9-6890-4e8e-84c5-b9707397da8b",
+  "description": "Webhook Description",
+  "url": "https://example.com/",
+  "subject_type": "repository",
+  "active": true,
+  "events": [
+	"repo:push",
+	"issue:created",
+	"issue:updated"
+  ]
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.CreateWebhook(
+		ctx,
+		common.OauthContext{},
+		bitbucketCloudURL,
+		"1",
+		[]byte(`
+{
+  "description": "Webhook Description",
+  "url": "https://example.com/",
+  "active": true,
+  "events": [
+	"repo:push",
+	"issue:created",
+	"issue:updated"
+  ]
+}`),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "6611a7e9-6890-4e8e-84c5-b9707397da8b", got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

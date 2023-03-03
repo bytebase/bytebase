@@ -862,9 +862,52 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx commo
 	return errors.New("not supported")
 }
 
+// CreateWebhook creates a webhook in the repository with given payload.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-post
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	// TODO implement me
-	panic("implement me")
+	url := fmt.Sprintf("%s/repositories/%s/hooks", p.APIURL(instanceURL), repositoryID)
+	code, _, body, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return "", errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
+	}
+
+	// Bitbucket Cloud returns 201 HTTP status codes upon successful webhook creation,
+	// see https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-post-responses for details.
+	if code != http.StatusCreated {
+		return "", errors.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	var resp struct {
+		UUID string `json:"uuid"`
+	}
+	if err = json.Unmarshal([]byte(body), &resp); err != nil {
+		return "", errors.Wrap(err, "unmarshal body")
+	}
+	return resp.UUID, nil
 }
 
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
