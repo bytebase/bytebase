@@ -1617,6 +1617,7 @@
     "trial-start-modal": {
       "title": "Start your {plan} trial",
       "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
+      "button": "Got it",
       "subscription-page": "subscription page",
       "subscription": "Go to the {page} to learn these features and our plans."
     },
