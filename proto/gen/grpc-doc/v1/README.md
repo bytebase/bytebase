@@ -329,6 +329,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | MONGODB | 7 |  |
 | REDIS | 8 |  |
 | ORACLE | 9 |  |
+| SPANNER | 10 |  |
 
 
 
