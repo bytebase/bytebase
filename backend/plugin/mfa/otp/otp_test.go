@@ -9,49 +9,49 @@ import (
 )
 
 func TestGenerateTimeBasedSecret(t *testing.T) {
-	currentTimestamp := time.Now().Unix()
+	currentTimestamp := time.Now()
 	accountName := "test-user"
 
 	tests := []struct {
 		name              string
-		generateTimestamp int64
-		validateTimestamp int64
+		generateTimestamp time.Time
+		validateTimestamp time.Time
 		isSecretExpired   bool
 	}{
 		{
 			name:              "-5min",
 			generateTimestamp: currentTimestamp,
-			validateTimestamp: currentTimestamp - 5*secondsInMinute,
+			validateTimestamp: time.Unix(currentTimestamp.Unix()-5*secondsInMinute, 0),
 			isSecretExpired:   true,
 		},
 		{
 			name:              "20s",
 			generateTimestamp: currentTimestamp,
-			validateTimestamp: currentTimestamp + 20,
+			validateTimestamp: time.Unix(currentTimestamp.Unix()+20, 0),
 			isSecretExpired:   false,
 		},
 		{
 			name:              "2min",
 			generateTimestamp: currentTimestamp,
-			validateTimestamp: currentTimestamp + 2*secondsInMinute,
+			validateTimestamp: time.Unix(currentTimestamp.Unix()+2*secondsInMinute, 0),
 			isSecretExpired:   false,
 		},
 		{
 			name:              "4min - 1s",
 			generateTimestamp: currentTimestamp,
-			validateTimestamp: currentTimestamp + 4*secondsInMinute - 1,
+			validateTimestamp: time.Unix(currentTimestamp.Unix()+4*secondsInMinute-1, 0),
 			isSecretExpired:   false,
 		},
 		{
 			name:              "5min",
 			generateTimestamp: currentTimestamp,
-			validateTimestamp: currentTimestamp + 5*secondsInMinute,
+			validateTimestamp: time.Unix(currentTimestamp.Unix()+5*secondsInMinute, 0),
 			isSecretExpired:   true,
 		},
 		{
 			name:              "5min + 1s",
 			generateTimestamp: currentTimestamp,
-			validateTimestamp: currentTimestamp + 5*secondsInMinute + 1,
+			validateTimestamp: time.Unix(currentTimestamp.Unix()+5*secondsInMinute+1, 0),
 			isSecretExpired:   true,
 		},
 	}

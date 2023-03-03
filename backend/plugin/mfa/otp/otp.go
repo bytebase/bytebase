@@ -21,9 +21,8 @@ const (
 )
 
 // removeSecondsFromTimestamp removes the seconds from the timestamp.
-func removeSecondsFromTimestamp(timestamp int64) int64 {
-	t := time.Unix(timestamp, 0)
-	truncated := time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
+func removeSecondsFromTimestamp(timestamp time.Time) int64 {
+	truncated := time.Date(timestamp.Year(), timestamp.Month(), timestamp.Day(), timestamp.Hour(), timestamp.Minute(), 0, 0, timestamp.Location())
 	return truncated.Unix()
 }
 
@@ -33,7 +32,7 @@ type TimeBasedReader struct {
 }
 
 // NewTimeBasedReaderWithTimestamp creates a new TimeBasedReader with the given timestamp.
-func NewTimeBasedReaderWithTimestamp(timestamp int64) *TimeBasedReader {
+func NewTimeBasedReader(timestamp time.Time) *TimeBasedReader {
 	return &TimeBasedReader{
 		reader: strings.NewReader(strconv.FormatInt(removeSecondsFromTimestamp(timestamp), 10)),
 	}
@@ -44,11 +43,11 @@ func (r *TimeBasedReader) Read(p []byte) (int, error) {
 }
 
 // GenerateSecret generates a new secret for the given account name and timestamp.
-func GenerateSecret(accountName string, timestamp int64) (string, error) {
+func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      issuerName,
 		AccountName: accountName,
-		Rand:        NewTimeBasedReaderWithTimestamp(timestamp),
+		Rand:        NewTimeBasedReader(timestamp),
 	})
 	if err != nil {
 		return "", err
@@ -57,13 +56,13 @@ func GenerateSecret(accountName string, timestamp int64) (string, error) {
 }
 
 // GetPastSecrets returns the past 5 secrets for the given account name and timestamp.
-func GetPastSecrets(accountName string, timestamp int64) ([]string, error) {
+func GetPastSecrets(accountName string, timestamp time.Time) ([]string, error) {
 	secrets := make([]string, 0)
 	for i := 0; i < maxPastSecretCount; i++ {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReaderWithTimestamp(timestamp - int64(i)*secondsInMinute),
+			Rand:        NewTimeBasedReader(time.Unix(timestamp.Unix()-int64(i)*secondsInMinute, 0)),
 		})
 		if err != nil {
 			return nil, err
@@ -76,13 +75,13 @@ func GetPastSecrets(accountName string, timestamp int64) ([]string, error) {
 // ValidateWithCodeAndAccountName validates the given code against the given account name.
 // It will check the current secret and the past 5 secrets.
 func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
-	currentTimestamp := removeSecondsFromTimestamp(time.Now().Unix())
-	secret, err := GenerateSecret(accountName, currentTimestamp)
+	now := time.Now()
+	secret, err := GenerateSecret(accountName, now)
 	if err != nil {
 		return false, err
 	}
 
-	pastSecrets, err := GetPastSecrets(accountName, currentTimestamp)
+	pastSecrets, err := GetPastSecrets(accountName, now)
 	if err != nil {
 		return false, err
 	}
