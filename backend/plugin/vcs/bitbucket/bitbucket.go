@@ -30,7 +30,7 @@ const (
 )
 
 func init() {
-	vcs.Register(vcs.BitbucketCloud, newProvider)
+	vcs.Register(vcs.Bitbucket, newProvider)
 }
 
 var _ vcs.Provider = (*Provider)(nil)
