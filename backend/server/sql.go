@@ -677,8 +677,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					})
 				}
 			} else {
-				if err := util.ApplyMultiStatements(strings.NewReader(exec.Statement), func(statement string) error {
-					rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
+				stmts, err := util.SplitMultiSQL(strings.NewReader(exec.Statement))
+				if err != nil {
+					return nil, err
+				}
+				for _, stmt := range stmts {
+					rowSet, err := driver.QueryConn(ctx, conn, stmt, &db.QueryContext{
 						Limit:               exec.Limit,
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,
@@ -688,24 +692,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
-						//nolint
-						return nil
+						continue
 					}
 					data, err := json.Marshal(rowSet)
 					if err != nil {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 							Error: err.Error(),
 						})
-						//nolint
-						return nil
+						continue
 					}
 					singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
 						Data: string(data),
 					})
-					return nil
-				}); err != nil {
-					// It should never happen.
-					return nil, err
 				}
 			}
 			return singleSQLResults, nil
@@ -781,14 +779,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
-	count := 0
-	if err := util.ApplyMultiStatements(strings.NewReader(sqlStatement), func(_ string) error {
-		count++
-		return nil
-	}); err != nil {
+	stmts, err := util.SplitMultiSQL(strings.NewReader(sqlStatement))
+	if err != nil {
 		return false
 	}
-	if count != 1 {
+	if len(stmts) != 1 {
 		return false
 	}
 

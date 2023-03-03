@@ -36,13 +36,14 @@ func FormatErrorWithQuery(err error, query string) error {
 	return common.Wrapf(err, common.DbExecutionError, "failed to execute query %q", query)
 }
 
-// ApplyMultiStatements will apply the split statements from scanner.
-// This function only used for SQLite, snowflake and clickhouse.
+// SplitMultiSQL will split the statements from scanner.
+// This function is only used for SQLite, snowflake and clickhouse.
 // For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
-func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
+func SplitMultiSQL(sc io.Reader) ([]string, error) {
 	// TODO(rebelice): use parser/tokenizer to split SQL statements.
 	reader := bufio.NewReader(sc)
 	var sb strings.Builder
+	var sqls []string
 	delimiter := false
 	comment := false
 	done := false
@@ -52,17 +53,17 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			if err == io.EOF {
 				done = true
 			} else {
-				return err
+				return nil, err
 			}
 		}
 		line = strings.TrimRight(line, "\r\n")
 
-		execute := false
+		terminate := false
 		switch {
 		case strings.HasPrefix(line, "/*"):
 			if strings.Contains(line, "*/") {
 				if !strings.HasSuffix(line, "*/") {
-					return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
+					return nil, errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
 				}
 			} else {
 				comment = true
@@ -73,7 +74,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			continue
 		case comment && strings.Contains(line, "*/"):
 			if !strings.HasSuffix(line, "*/") {
-				return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
+				return nil, errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
 			}
 			comment = false
 			continue
@@ -86,25 +87,23 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			continue
 		case line == "DELIMITER ;" && delimiter:
 			delimiter = false
-			execute = true
+			terminate = true
 		case strings.HasSuffix(line, ";"):
 			_, _ = sb.WriteString(line)
 			_, _ = sb.WriteString("\n")
 			if !delimiter {
-				execute = true
+				terminate = true
 			}
 		default:
 			_, _ = sb.WriteString(line)
 			_, _ = sb.WriteString("\n")
 			continue
 		}
-		if execute {
+		if terminate {
 			s := sb.String()
 			s = strings.Trim(s, "\n\t ")
 			if s != "" {
-				if err := f(s); err != nil {
-					return errors.Wrapf(err, "execute query %q failed", s)
-				}
+				sqls = append(sqls, s)
 			}
 			sb.Reset()
 		}
@@ -113,12 +112,10 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	s := sb.String()
 	s = strings.Trim(s, "\n\t ")
 	if s != "" {
-		if err := f(s); err != nil {
-			return errors.Wrapf(err, "execute query %q failed", s)
-		}
+		sqls = append(sqls, s)
 	}
 
-	return nil
+	return sqls, nil
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.

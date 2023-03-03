@@ -158,15 +158,15 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	}
 	defer txn.Rollback()
 
-	f := func(stmt string) error {
+	stmts, err := util.SplitMultiSQL(sc)
+	if err != nil {
+		return err
+	}
+
+	for _, stmt := range stmts {
 		if _, err := txn.Exec(stmt); err != nil {
 			return err
 		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(sc, f); err != nil {
-		return err
 	}
 
 	return txn.Commit()

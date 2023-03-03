@@ -128,10 +128,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	defer tx.Rollback()
 
 	totalRowsAffected := int64(0)
-	f := func(stmt string) error {
+
+	sqls, err := util.SplitMultiSQL(strings.NewReader(statement))
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to split statements")
+	}
+
+	for _, stmt := range sqls {
 		sqlResult, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
@@ -140,12 +146,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		} else {
 			totalRowsAffected += rowsAffected
 		}
-
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return 0, err
 	}
 
 	if err := tx.Commit(); err != nil {

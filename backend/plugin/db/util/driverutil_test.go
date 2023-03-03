@@ -180,7 +180,7 @@ func TestGetMySQLStatementWithResultLimit(t *testing.T) {
 	}
 }
 
-func TestApplyMultiStatements(t *testing.T) {
+func TestSplitMultiSQL(t *testing.T) {
 	type testData struct {
 		statement string
 		total     int
@@ -214,17 +214,10 @@ func TestApplyMultiStatements(t *testing.T) {
 		},
 	}
 
-	total := 0
-	countStatements := func(string) error {
-		total++
-		return nil
-	}
-
 	for _, test := range tests {
-		total = 0
-		err := ApplyMultiStatements(strings.NewReader(test.statement), countStatements)
+		stmts, err := SplitMultiSQL(strings.NewReader(test.statement))
 		require.NoError(t, err)
-		require.Equal(t, test.total, total)
+		require.Equal(t, test.total, len(stmts))
 	}
 }
 

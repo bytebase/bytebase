@@ -223,17 +223,12 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
-	count := 0
-	f := func(stmt string) error {
-		count++
-		return nil
+	stmts, err := util.SplitMultiSQL(strings.NewReader(statement))
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to split statements")
 	}
 
-	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return 0, err
-	}
-
-	if count <= 0 {
+	if len(stmts) <= 0 {
 		return 0, nil
 	}
 
@@ -245,7 +240,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, err
 	}
 	defer tx.Rollback()
-	mctx, err := snow.WithMultiStatement(ctx, count)
+	mctx, err := snow.WithMultiStatement(ctx, len(stmts))
 	if err != nil {
 		return 0, err
 	}

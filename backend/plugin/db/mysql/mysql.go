@@ -240,6 +240,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		rows := [][]interface{}{{affectedRows}}
 		return []interface{}{field, types, rows}, nil
 	}
+
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
 }
 

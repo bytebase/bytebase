@@ -132,30 +132,31 @@ func (driver *Driver) hasBytebaseDatabase() (bool, error) {
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	var remainingStmts []string
-	f := func(stmt string) error {
+
+	stmts, err := util.SplitMultiSQL(strings.NewReader(statement))
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to split statements")
+	}
+
+	for _, stmt := range stmts {
 		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
 		stmt = strings.TrimLeft(stmt, " \t")
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
 			parts := strings.Split(stmt, `'`)
 			if len(parts) != 3 {
-				return errors.Errorf("invalid statement %q", stmt)
+				return 0, errors.Errorf("invalid statement %q", stmt)
 			}
 			db, err := driver.GetDBConnection(ctx, parts[1])
 			if err != nil {
-				return err
+				return 0, err
 			}
 			// We need to query to persist the database file.
 			if _, err := db.ExecContext(ctx, "SELECT 1;"); err != nil {
-				return err
+				return 0, err
 			}
 		} else if !strings.HasPrefix(stmt, "USE ") { // ignore the fake use database statement.
 			remainingStmts = append(remainingStmts, stmt)
 		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return 0, err
 	}
 
 	if len(remainingStmts) == 0 {
