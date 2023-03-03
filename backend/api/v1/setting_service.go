@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -93,7 +92,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
 		}
 		payload.ExternalUrl = externalURL
-		bytes, err := json.Marshal(payload)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
 		}

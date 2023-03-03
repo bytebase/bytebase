@@ -78,7 +78,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid external url").SetInternal(err)
 			}
 			payload.ExternalUrl = externalURL
-			bytes, err := json.Marshal(payload)
+			bytes, err := protojson.Marshal(payload)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting value").SetInternal(err)
 			}
