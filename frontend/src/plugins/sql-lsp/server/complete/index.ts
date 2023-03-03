@@ -16,12 +16,12 @@ import { simpleTokenize } from "./tokenizer";
 import { AliasMapping } from "./alias";
 import { SubQueryMapping } from "./sub-query";
 
-export const complete = (
+export const complete = async (
   params: CompletionParams,
   document: TextDocument,
   schema: Schema,
   dialect: SQLDialect
-): CompletionItem[] => {
+): Promise<CompletionItem[]> => {
   const sql = document.getText();
   const textBeforeCursor = document.getText({
     start: { line: 0, character: 0 },
@@ -164,7 +164,7 @@ export const complete = (
     const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
       subQueryMapping.virtualTableList
     );
-    const suggestionsForKeyword = createKeywordCandidates();
+    const suggestionsForKeyword = await createKeywordCandidates(dialect);
 
     suggestions = [
       ...suggestionsForAliases,

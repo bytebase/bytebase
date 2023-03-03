@@ -194,7 +194,8 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   payload: cloneDeep(props.payload),
   level: props.rule.level,
-  comment: props.rule.comment ?? "",
+  comment:
+    props.rule.comment || getRuleLocalization(props.rule.type).description,
 });
 
 const displayDescription = computed(() => {
