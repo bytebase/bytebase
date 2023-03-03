@@ -32,8 +32,8 @@ type TimeBasedReader struct {
 	reader *strings.Reader
 }
 
-// NewTimeBasedReader creates a new TimeBasedReader.
-func NewTimeBasedReader(timestamp int64) *TimeBasedReader {
+// NewTimeBasedReaderWithTimestamp creates a new TimeBasedReader with the given timestamp.
+func NewTimeBasedReaderWithTimestamp(timestamp int64) *TimeBasedReader {
 	return &TimeBasedReader{
 		reader: strings.NewReader(strconv.FormatInt(removeSecondsFromTimestamp(timestamp), 10)),
 	}
@@ -48,7 +48,7 @@ func GenerateSecret(accountName string, timestamp int64) (string, error) {
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      issuerName,
 		AccountName: accountName,
-		Rand:        NewTimeBasedReader(timestamp),
+		Rand:        NewTimeBasedReaderWithTimestamp(timestamp),
 	})
 	if err != nil {
 		return "", err
@@ -63,7 +63,7 @@ func GetPastSecrets(accountName string, timestamp int64) ([]string, error) {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(timestamp - int64(i)*secondsInMinute),
+			Rand:        NewTimeBasedReaderWithTimestamp(timestamp - int64(i)*secondsInMinute),
 		})
 		if err != nil {
 			return nil, err
