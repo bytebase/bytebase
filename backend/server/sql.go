@@ -408,6 +408,31 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return nil, err
 			}
 			defer driver.Close(ctx)
+
+			// TODO(p0ny): refactor
+			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner {
+				data, err := driver.QueryConn(ctx, nil, exec.Statement, &db.QueryContext{
+					Limit:                 exec.Limit,
+					ReadOnly:              true,
+					CurrentDatabase:       exec.DatabaseName,
+					SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
+					SensitiveSchemaInfo:   sensitiveSchemaInfo,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				dataJSON, err := json.Marshal(data)
+				if err != nil {
+					return nil, err
+				}
+				return []api.SingleSQLResult{
+					{
+						Data: string(dataJSON),
+					},
+				}, nil
+			}
+
 			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -586,6 +611,30 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return nil, err
 			}
 			defer driver.Close(ctx)
+
+			// TODO(p0ny): refactor
+			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner {
+				data, err := driver.QueryConn(ctx, nil, exec.Statement, &db.QueryContext{
+					Limit:               exec.Limit,
+					ReadOnly:            false,
+					CurrentDatabase:     exec.DatabaseName,
+					SensitiveSchemaInfo: nil,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				dataJSON, err := json.Marshal(data)
+				if err != nil {
+					return nil, err
+				}
+				return []api.SingleSQLResult{
+					{
+						Data: string(dataJSON),
+					},
+				}, nil
+			}
+
 			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
 			if err != nil {
 				return nil, err
