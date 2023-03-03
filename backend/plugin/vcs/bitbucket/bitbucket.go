@@ -1,4 +1,4 @@
-package bitbucketcloud
+package bitbucket
 
 import (
 	"bytes"
