@@ -31,7 +31,7 @@ type TimeBasedReader struct {
 	reader *strings.Reader
 }
 
-// NewTimeBasedReaderWithTimestamp creates a new TimeBasedReader with the given timestamp.
+// NewTimeBasedReader creates a new TimeBasedReader with the given timestamp
 func NewTimeBasedReader(timestamp time.Time) *TimeBasedReader {
 	return &TimeBasedReader{
 		reader: strings.NewReader(strconv.FormatInt(removeSecondsFromTimestamp(timestamp), 10)),
