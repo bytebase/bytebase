@@ -18,17 +18,14 @@
         </div>
       </template>
       <template v-else-if="payload?.rollbackSqlStatus === 'DONE'">
-        <template
-          v-if="
-            taskRollbackBy && taskRollbackBy.rollbackByIssueId !== UNKNOWN_ID
-          "
-        >
+        <template v-if="taskRollbackBy && rollbackByIssue.id !== UNKNOWN_ID">
           <router-link
             :to="`/issue/${taskRollbackBy.rollbackByIssueId}`"
             class="text-accent inline-flex gap-x-1"
           >
             <span>{{ $t("common.issue") }}</span>
             <span>#{{ taskRollbackBy.rollbackByIssueId }}</span>
+            <IssueStatusIcon :issue-status="rollbackByIssue.status" />
           </router-link>
         </template>
         <BBTooltipButton
@@ -68,9 +65,10 @@ import {
 import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
 import { useRollbackLogic } from "./common";
+import IssueStatusIcon from "../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
-import { useActivityStore } from "@/store";
+import { useActivityStore, useIssueById } from "@/store";
 
 type LocalState = {
   loading: boolean;
@@ -121,6 +119,10 @@ const taskRollbackBy = computed((): TaskRollbackBy | undefined => {
   }
   return undefined;
 });
+
+const rollbackByIssue = useIssueById(
+  computed(() => taskRollbackBy.value?.rollbackByIssueId ?? UNKNOWN_ID)
+);
 
 const tryRollbackTask = async () => {
   const navigateToRollbackIssue = () => {
