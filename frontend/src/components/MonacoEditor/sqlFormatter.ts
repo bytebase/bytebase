@@ -1,4 +1,4 @@
-import { format, FormatOptions } from "sql-formatter";
+import { format, FormatOptions, supportedDialects } from "sql-formatter";
 
 import { SQLDialect } from "../../types";
 
@@ -8,12 +8,12 @@ type FormatResult = {
 };
 
 const formatSQL = (sql: string, dialect: SQLDialect): FormatResult => {
-  const options: FormatOptions = {
-    language: dialect,
-  };
-  if (dialect !== "mysql" && dialect !== "postgresql") {
-    options.language = "mysql";
+  if (!supportedDialects.includes(dialect)) {
+    dialect = "mysql";
   }
+  const options: Partial<FormatOptions> = {
+    language: dialect as FormatOptions["language"],
+  };
 
   try {
     const formatted = format(sql, options);

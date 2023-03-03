@@ -79,7 +79,7 @@
           data-label="bb-issue-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
-          :dialect="(databaseEngineType as SQLDialect)"
+          :dialect="dialectOfEngine(databaseEngineType)"
           @change="handleStatementChange"
         />
       </div>
@@ -124,7 +124,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -132,7 +132,8 @@ import {
   Database,
   DatabaseEdit,
   DatabaseId,
-  SQLDialect,
+  dialectOfEngine,
+  EngineType,
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration } from "@/utils";
@@ -214,17 +215,12 @@ const allowSyncSQLFromSchemaEditor = computed(() => {
 const databaseList = props.databaseIdList.map((databaseId) => {
   return databaseStore.getDatabaseById(databaseId);
 });
-const databaseEngineType = databaseList.reduce(
-  (engine: string, database: Database) => {
-    if (engine === "") {
-      engine = database.instance.engine;
-    } else {
-      engine = database.instance.engine === engine ? engine : "unknown";
-    }
-    return engine;
-  },
-  ""
-);
+const databaseEngineType = computed((): EngineType | "unknown" => {
+  const engineTypes = uniq(databaseList.map((db) => db.instance.engine));
+  if (engineTypes.length !== 1) return "unknown";
+  return engineTypes[0];
+});
+
 const project = useProjectStore().getProjectById(
   head(databaseList)?.projectId || UNKNOWN_ID
 );
