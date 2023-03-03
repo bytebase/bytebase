@@ -1,5 +1,5 @@
 import { SQLDialect } from "@/plugins/sql-lsp/types";
-import { keywords, operators, builtinFunctions } from "./keywords";
+import * as common from "./common";
 
 export type KeywordGroups = {
   keywords: string[];
@@ -7,10 +7,24 @@ export type KeywordGroups = {
   builtinFunctions: string[];
 };
 
-export const keywordGroupsOfDialect = (dialect: SQLDialect) => {
+export const keywordGroupsOfDialect = async (dialect: SQLDialect) => {
+  const dialectOnly: KeywordGroups = {
+    keywords: [],
+    operators: [],
+    builtinFunctions: [],
+  };
+  try {
+    const additional: KeywordGroups = await import(`./${dialect}.ts`);
+    Object.assign(dialectOnly, additional);
+  } catch (ex) {
+    // nothing
+  }
   return {
-    keywords,
-    operators,
-    builtinFunctions,
+    keywords: [...common.keywords, ...dialectOnly.keywords],
+    operators: [...common.operators, ...dialectOnly.operators],
+    builtinFunctions: [
+      ...common.builtinFunctions,
+      ...dialectOnly.builtinFunctions,
+    ],
   };
 };

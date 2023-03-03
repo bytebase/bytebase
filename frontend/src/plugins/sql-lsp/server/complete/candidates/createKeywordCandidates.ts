@@ -24,14 +24,14 @@ const createCandidate = (
 
 const cache = new Map<SQLDialect, CompletionItem[]>();
 
-export const createKeywordCandidates = (
+export const createKeywordCandidates = async (
   dialect: SQLDialect
-): CompletionItem[] => {
+): Promise<CompletionItem[]> => {
   const existed = cache.get(dialect);
   if (existed) return existed;
 
   const { keywords, operators, builtinFunctions } =
-    keywordGroupsOfDialect(dialect);
+    await keywordGroupsOfDialect(dialect);
   const suggestions = uniqBy(
     [
       ...keywords.map((keyword) =>
