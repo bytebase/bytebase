@@ -1,3 +1,4 @@
+// Package bitbucket is the plugin for Bitbucket Cloud.
 package bitbucket
 
 import (
@@ -50,7 +51,7 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 }
 
 // APIURL returns the API URL path of Bitbucket Cloud.
-func (p *Provider) APIURL(string) string {
+func (*Provider) APIURL(string) string {
 	return "https://api.bitbucket.org/2.0"
 }
 
@@ -113,7 +114,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
+func (p *Provider) TryLogin(context.Context, common.OauthContext, string) (*vcs.UserInfo, error) {
 	// TODO: We will remove VCS login as part of https://linear.app/bytebase/issue/BYT-2615,
 	// so leaving it as unimplemented here.
 	return nil, errors.New("not implemented")
@@ -858,7 +859,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 //
 // WARNING: This is not supported in Bitbucket Cloud.
-func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error {
+func (p *Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
 	return errors.New("not supported")
 }
 
