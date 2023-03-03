@@ -11,16 +11,18 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const (
+var (
 	// issuerName is the name of the issuer of the OTP token.
 	issuerName = "Bytebase"
+	// secondsInMinute is the number of seconds in a minute.
+	secondsInMinute = int64(time.Minute.Seconds())
 	// maxPastSecretCount is the maximum number of past secret we will check.
 	maxPastSecretCount = 5
 )
 
 // removeSecondsFromTimestamp removes the seconds from the timestamp.
 func removeSecondsFromTimestamp(timestamp time.Time) int64 {
-	return timestamp.Unix() - timestamp.Unix()%int64(time.Minute.Seconds())
+	return timestamp.Unix() - timestamp.Unix()%secondsInMinute
 }
 
 // TimeBasedReader is a reader that returns the same value for the same timestamp.
@@ -59,7 +61,7 @@ func GetPastSecrets(accountName string, timestamp time.Time) ([]string, error) {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(time.Unix(timestamp.Unix()-int64(i*int(time.Minute.Seconds())), 0)),
+			Rand:        NewTimeBasedReader(time.Unix(timestamp.Unix()-int64(i)*secondsInMinute, 0)),
 		})
 		if err != nil {
 			return nil, err
