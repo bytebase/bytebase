@@ -14,16 +14,13 @@ import (
 const (
 	// issuerName is the name of the issuer of the OTP token.
 	issuerName = "Bytebase"
-	// secondsInMinute is the number of seconds in a minute.
-	secondsInMinute = 60
 	// maxPastSecretCount is the maximum number of past secret we will check.
 	maxPastSecretCount = 5
 )
 
 // removeSecondsFromTimestamp removes the seconds from the timestamp.
 func removeSecondsFromTimestamp(timestamp time.Time) int64 {
-	truncated := time.Date(timestamp.Year(), timestamp.Month(), timestamp.Day(), timestamp.Hour(), timestamp.Minute(), 0, 0, timestamp.Location())
-	return truncated.Unix()
+	return timestamp.Unix() - timestamp.Unix()%int64(time.Minute.Seconds())
 }
 
 // TimeBasedReader is a reader that returns the same value for the same timestamp.
@@ -57,12 +54,12 @@ func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 
 // GetPastSecrets returns the past 5 secrets for the given account name and timestamp.
 func GetPastSecrets(accountName string, timestamp time.Time) ([]string, error) {
-	secrets := make([]string, 0)
+	var secrets []string
 	for i := 0; i < maxPastSecretCount; i++ {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(time.Unix(timestamp.Unix()-int64(i)*secondsInMinute, 0)),
+			Rand:        NewTimeBasedReader(time.Unix(timestamp.Unix()-int64(i*int(time.Minute.Seconds())), 0)),
 		})
 		if err != nil {
 			return nil, err
