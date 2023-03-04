@@ -187,7 +187,7 @@ message ExternalVCS {
     string schema_path_template = 8;
   
     // The file path template for matching the sql files for sheet.
-    // If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_NAME}}, {{DB_NAME}}
+    // If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_NAME}}, {{DB_NAME}}.
     string sheet_path_template = 9;
   
     // Set to true to enable SQL review CI for all PR/MRs.
