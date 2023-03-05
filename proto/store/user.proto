@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// MFAConfig is the MFA configuration for a user.
+message MFAConfig {
+  // The otp_secret is the secret key used to validate the OTP code.
+  string otp_secret = 1;
+
+  //  The recovery_codes are the codes that can be used to recover the account.
+  repeated string recovery_codes = 2;
+}
