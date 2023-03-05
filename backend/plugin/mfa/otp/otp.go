@@ -11,29 +11,24 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var (
+const (
 	// issuerName is the name of the issuer of the OTP token.
 	issuerName = "Bytebase"
-	// secondsInMinute is the number of seconds in a minute.
-	secondsInMinute = int64(time.Minute.Seconds())
-	// maxPastSecretCount is the maximum number of past secret we will check.
-	maxPastSecretCount = 5
+	// secretMaxExpiredDuration is the maximum duration that a secret is valid.
+	// The secret is valid for 5 minutes.
+	secretMaxExpiredDuration = 5 * time.Minute
 )
-
-// removeSecondsFromTimestamp removes the seconds from the timestamp.
-func removeSecondsFromTimestamp(timestamp time.Time) int64 {
-	return timestamp.Unix() - timestamp.Unix()%secondsInMinute
-}
 
 // TimeBasedReader is a reader that returns the same value for the same timestamp.
 type TimeBasedReader struct {
 	reader *strings.Reader
 }
 
-// NewTimeBasedReader creates a new TimeBasedReader with the given timestamp.
+// NewTimeBasedReader creates a new TimeBasedReader for the given timestamp.
 func NewTimeBasedReader(timestamp time.Time) *TimeBasedReader {
+	formatedTimestampUnix := timestamp.Unix() - int64(timestamp.Second())
 	return &TimeBasedReader{
-		reader: strings.NewReader(strconv.FormatInt(removeSecondsFromTimestamp(timestamp), 10)),
+		reader: strings.NewReader(strconv.FormatInt(formatedTimestampUnix, 10)),
 	}
 }
 
@@ -41,7 +36,7 @@ func (r *TimeBasedReader) Read(p []byte) (int, error) {
 	return r.reader.Read(p)
 }
 
-// GenerateSecret generates a new secret for the given account name and timestamp.
+// GenerateSecret generates a secret for the given account name and timestamp.
 func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      issuerName,
@@ -54,42 +49,46 @@ func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 	return key.Secret(), nil
 }
 
-// GetPastSecrets returns the past 5 secrets for the given account name and timestamp.
-func GetPastSecrets(accountName string, timestamp time.Time) ([]string, error) {
+// GetValidSecrets returns a list of valid secrets for the given account name and timestamp.
+func GetValidSecrets(accountName string, timestamp time.Time) ([]string, error) {
 	var secrets []string
-	for i := 0; i < maxPastSecretCount; i++ {
+	tempTime := timestamp
+	expiredTime := timestamp.Add(-1 * secretMaxExpiredDuration)
+	// Iterate from the current time to the expired time, and generate a secret for each time.
+	for tempTime.After(expiredTime) {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(time.Unix(timestamp.Unix()-int64(i)*secondsInMinute, 0)),
+			Rand:        NewTimeBasedReader(tempTime),
 		})
 		if err != nil {
 			return nil, err
 		}
 		secrets = append(secrets, key.Secret())
+		// Move the time back by 1 minute.
+		tempTime = tempTime.Add(-1 * time.Minute)
 	}
 	return secrets, nil
 }
 
 // ValidateWithCodeAndAccountName validates the given code against the given account name.
-// It will check the current secret and the past 5 secrets.
 func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
-	now := time.Now()
-	secret, err := GenerateSecret(accountName, now)
+	currentTime := time.Now()
+	secret, err := GenerateSecret(accountName, currentTime)
 	if err != nil {
 		return false, err
 	}
 
-	pastSecrets, err := GetPastSecrets(accountName, now)
+	validSecrets, err := GetValidSecrets(accountName, currentTime)
 	if err != nil {
 		return false, err
 	}
-	if !slices.Contains(pastSecrets, secret) {
+	if !slices.Contains(validSecrets, secret) {
 		return false, errors.New("OTP has expired")
 	}
 
-	for _, pastSecret := range pastSecrets {
-		if ValidateWithCodeAndSecret(code, pastSecret) {
+	for _, secret := range validSecrets {
+		if ValidateWithCodeAndSecret(code, secret) {
 			return true, nil
 		}
 	}
