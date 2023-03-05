@@ -16,6 +16,7 @@ import {
 } from "@/types";
 import { randomString } from "@/utils";
 import { useAuthStore } from "./auth";
+import { getUserNameWithUserId } from "./user";
 
 function convert(principal: ResourceObject): Principal {
   return {
@@ -145,7 +146,9 @@ export const usePrincipalStore = defineStore("principal", {
 
       this.upsertPrincipalInList(updatedPrincipal);
 
-      useAuthStore().refreshUserIfNeeded(updatedPrincipal.id);
+      await useAuthStore().refreshUserIfNeeded(
+        getUserNameWithUserId(updatedPrincipal.id as number)
+      );
 
       return updatedPrincipal;
     },
