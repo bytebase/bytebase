@@ -442,6 +442,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 				return nil, err
 			}
 		} else {
+			// Return FailedPrecondition error to indicate MFA is required.
 			return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
 		}
 	}
