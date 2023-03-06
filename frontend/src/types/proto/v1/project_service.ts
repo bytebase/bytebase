@@ -502,6 +502,7 @@ export interface Project {
   schemaVersion: SchemaVersion;
   schemaChange: SchemaChange;
   lgtmCheck: LgtmCheck;
+  webhooks: Webhook[];
 }
 
 export interface IamPolicy {
@@ -599,6 +600,146 @@ export interface BatchUpdateReviewsResponse {
   reviews: Review[];
 }
 
+export interface AddWebhookRequest {
+  /**
+   * The name of the project to add the webhook to.
+   * Format: projects/{project}
+   */
+  project: string;
+  /** The webhook to add. */
+  webhook?: Webhook;
+}
+
+export interface UpdateWebhookRequest {
+  /**
+   * The name of the project which owns the webhook to be updated.
+   * Format: projects/{project}
+   */
+  project: string;
+  /**
+   * The webhook to modify.
+   * Identified by its url.
+   */
+  webhook?: Webhook;
+  /** The list of fields to update. */
+  updateMask?: string[];
+}
+
+export interface RemoveWebhookRequest {
+  /**
+   * The name of the project to remove the webhook from.
+   * Format: projects/{project}
+   */
+  project: string;
+  /** The webhook to remove. Identified by its url. */
+  webhook?: Webhook;
+}
+
+export interface TestWebhookRequest {
+  /**
+   * The name of the project which owns the webhook to test.
+   * Format: projects/{project}
+   */
+  project: string;
+  /** The webhook to test. Identified by its url. */
+  webhook?: Webhook;
+}
+
+export interface TestWebhookResponse {
+  /** The result of the test, empty if the test is successful. */
+  error: string;
+}
+
+export interface Webhook {
+  /** type is the type of the webhook. */
+  type: Webhook_Type;
+  /** title is the title of the webhook. */
+  title: string;
+  /** url is the url of the webhook, should be unique within the project. */
+  url: string;
+  /**
+   * notification_types is the list of activities types that the webhook is interested in.
+   * Bytebase will only send notifications to the webhook if the activity type is in the list.
+   * It should not be empty, and shoule be a subset of the following:
+   * - TYPE_ISSUE_CREATED
+   * - TYPE_ISSUE_STATUS_UPDATE
+   * - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
+   * - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
+   * - TYPE_ISSUE_FIELD_UPDATE
+   * - TYPE_ISSUE_COMMENT_CREAT
+   */
+  notificationTypes: Activity_Type[];
+}
+
+export enum Webhook_Type {
+  TYPE_UNSPECIFIED = 0,
+  TYPE_SLACK = 1,
+  TYPE_DISCORD = 2,
+  TYPE_TEAMS = 3,
+  TYPE_DINGTALK = 4,
+  TYPE_FEISHU = 5,
+  TYPE_WECOM = 6,
+  TYPE_CUSTOM = 7,
+  UNRECOGNIZED = -1,
+}
+
+export function webhook_TypeFromJSON(object: any): Webhook_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return Webhook_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "TYPE_SLACK":
+      return Webhook_Type.TYPE_SLACK;
+    case 2:
+    case "TYPE_DISCORD":
+      return Webhook_Type.TYPE_DISCORD;
+    case 3:
+    case "TYPE_TEAMS":
+      return Webhook_Type.TYPE_TEAMS;
+    case 4:
+    case "TYPE_DINGTALK":
+      return Webhook_Type.TYPE_DINGTALK;
+    case 5:
+    case "TYPE_FEISHU":
+      return Webhook_Type.TYPE_FEISHU;
+    case 6:
+    case "TYPE_WECOM":
+      return Webhook_Type.TYPE_WECOM;
+    case 7:
+    case "TYPE_CUSTOM":
+      return Webhook_Type.TYPE_CUSTOM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Webhook_Type.UNRECOGNIZED;
+  }
+}
+
+export function webhook_TypeToJSON(object: Webhook_Type): string {
+  switch (object) {
+    case Webhook_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case Webhook_Type.TYPE_SLACK:
+      return "TYPE_SLACK";
+    case Webhook_Type.TYPE_DISCORD:
+      return "TYPE_DISCORD";
+    case Webhook_Type.TYPE_TEAMS:
+      return "TYPE_TEAMS";
+    case Webhook_Type.TYPE_DINGTALK:
+      return "TYPE_DINGTALK";
+    case Webhook_Type.TYPE_FEISHU:
+      return "TYPE_FEISHU";
+    case Webhook_Type.TYPE_WECOM:
+      return "TYPE_WECOM";
+    case Webhook_Type.TYPE_CUSTOM:
+      return "TYPE_CUSTOM";
+    case Webhook_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface Review {
   /**
    * The name of the review.
@@ -658,6 +799,195 @@ export interface LabelSelectorRequirement {
   key: string;
   operator: OperatorType;
   values: string[];
+}
+
+/** TODO(zp): move to activity later. */
+export interface Activity {
+}
+
+export enum Activity_Type {
+  TYPE_UNSPECIFIED = 0,
+  /**
+   * TYPE_ISSUE_CREATE - Issue related activity types.
+   *
+   * TYPE_ISSUE_CREATE represents creating an issue.
+   */
+  TYPE_ISSUE_CREATE = 1,
+  /** TYPE_ISSUE_COMMENT_CREATE - TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. */
+  TYPE_ISSUE_COMMENT_CREATE = 2,
+  /** TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. */
+  TYPE_ISSUE_FIELD_UPDATE = 3,
+  /** TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. */
+  TYPE_ISSUE_STATUS_UPDATE = 4,
+  /** TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. */
+  TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
+  /** TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
+  TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6,
+  /** TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT - TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. */
+  TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT = 7,
+  /** TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
+  TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = 8,
+  /** TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
+  TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 9,
+  /**
+   * TYPE_MEMBER_CREATE - Member related activity types.
+   *
+   * TYPE_MEMBER_CREATE represents creating a members.
+   */
+  TYPE_MEMBER_CREATE = 10,
+  /** TYPE_MEMBER_ROLE_UPDATE - TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
+  TYPE_MEMBER_ROLE_UPDATE = 11,
+  /** TYPE_MEMBER_ACTIVATE - TYPE_MEMBER_ACTIVATE represents activating a deactivated member. */
+  TYPE_MEMBER_ACTIVATE = 12,
+  /** TYPE_MEMBER_DEACTIVATE - TYPE_MEMBER_DEACTIVATE represents deactivating an active member. */
+  TYPE_MEMBER_DEACTIVATE = 13,
+  /**
+   * TYPE_PROJECT_REPOSITORY_PUSH - Project related activity types.
+   *
+   * TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
+   */
+  TYPE_PROJECT_REPOSITORY_PUSH = 14,
+  /** TYPE_PROJECT_DATABASE_TRANSFER - TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another. */
+  TYPE_PROJECT_DATABASE_TRANSFER = 15,
+  /** TYPE_PROJECT_MEMBER_CREATE - TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project. */
+  TYPE_PROJECT_MEMBER_CREATE = 16,
+  /** TYPE_PROJECT_MEMBER_DELETE - TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. */
+  TYPE_PROJECT_MEMBER_DELETE = 17,
+  /** TYPE_PROJECT_MEMBER_ROLE_UPDATE - TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
+  TYPE_PROJECT_MEMBER_ROLE_UPDATE = 18,
+  /**
+   * TYPE_SQL_EDITOR_QUERY - SQL Editor related activity types.
+   * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
+   */
+  TYPE_SQL_EDITOR_QUERY = 19,
+  /**
+   * TYPE_DATABASE_RECOVERY_PITR_DONE - Database related activity types.
+   * TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
+   */
+  TYPE_DATABASE_RECOVERY_PITR_DONE = 20,
+  UNRECOGNIZED = -1,
+}
+
+export function activity_TypeFromJSON(object: any): Activity_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return Activity_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "TYPE_ISSUE_CREATE":
+      return Activity_Type.TYPE_ISSUE_CREATE;
+    case 2:
+    case "TYPE_ISSUE_COMMENT_CREATE":
+      return Activity_Type.TYPE_ISSUE_COMMENT_CREATE;
+    case 3:
+    case "TYPE_ISSUE_FIELD_UPDATE":
+      return Activity_Type.TYPE_ISSUE_FIELD_UPDATE;
+    case 4:
+    case "TYPE_ISSUE_STATUS_UPDATE":
+      return Activity_Type.TYPE_ISSUE_STATUS_UPDATE;
+    case 5:
+    case "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE;
+    case 6:
+    case "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE;
+    case 7:
+    case "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT;
+    case 8:
+    case "TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE;
+    case 9:
+    case "TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE;
+    case 10:
+    case "TYPE_MEMBER_CREATE":
+      return Activity_Type.TYPE_MEMBER_CREATE;
+    case 11:
+    case "TYPE_MEMBER_ROLE_UPDATE":
+      return Activity_Type.TYPE_MEMBER_ROLE_UPDATE;
+    case 12:
+    case "TYPE_MEMBER_ACTIVATE":
+      return Activity_Type.TYPE_MEMBER_ACTIVATE;
+    case 13:
+    case "TYPE_MEMBER_DEACTIVATE":
+      return Activity_Type.TYPE_MEMBER_DEACTIVATE;
+    case 14:
+    case "TYPE_PROJECT_REPOSITORY_PUSH":
+      return Activity_Type.TYPE_PROJECT_REPOSITORY_PUSH;
+    case 15:
+    case "TYPE_PROJECT_DATABASE_TRANSFER":
+      return Activity_Type.TYPE_PROJECT_DATABASE_TRANSFER;
+    case 16:
+    case "TYPE_PROJECT_MEMBER_CREATE":
+      return Activity_Type.TYPE_PROJECT_MEMBER_CREATE;
+    case 17:
+    case "TYPE_PROJECT_MEMBER_DELETE":
+      return Activity_Type.TYPE_PROJECT_MEMBER_DELETE;
+    case 18:
+    case "TYPE_PROJECT_MEMBER_ROLE_UPDATE":
+      return Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE;
+    case 19:
+    case "TYPE_SQL_EDITOR_QUERY":
+      return Activity_Type.TYPE_SQL_EDITOR_QUERY;
+    case 20:
+    case "TYPE_DATABASE_RECOVERY_PITR_DONE":
+      return Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Activity_Type.UNRECOGNIZED;
+  }
+}
+
+export function activity_TypeToJSON(object: Activity_Type): string {
+  switch (object) {
+    case Activity_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case Activity_Type.TYPE_ISSUE_CREATE:
+      return "TYPE_ISSUE_CREATE";
+    case Activity_Type.TYPE_ISSUE_COMMENT_CREATE:
+      return "TYPE_ISSUE_COMMENT_CREATE";
+    case Activity_Type.TYPE_ISSUE_FIELD_UPDATE:
+      return "TYPE_ISSUE_FIELD_UPDATE";
+    case Activity_Type.TYPE_ISSUE_STATUS_UPDATE:
+      return "TYPE_ISSUE_STATUS_UPDATE";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
+      return "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
+      return "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
+      return "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
+      return "TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
+      return "TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE";
+    case Activity_Type.TYPE_MEMBER_CREATE:
+      return "TYPE_MEMBER_CREATE";
+    case Activity_Type.TYPE_MEMBER_ROLE_UPDATE:
+      return "TYPE_MEMBER_ROLE_UPDATE";
+    case Activity_Type.TYPE_MEMBER_ACTIVATE:
+      return "TYPE_MEMBER_ACTIVATE";
+    case Activity_Type.TYPE_MEMBER_DEACTIVATE:
+      return "TYPE_MEMBER_DEACTIVATE";
+    case Activity_Type.TYPE_PROJECT_REPOSITORY_PUSH:
+      return "TYPE_PROJECT_REPOSITORY_PUSH";
+    case Activity_Type.TYPE_PROJECT_DATABASE_TRANSFER:
+      return "TYPE_PROJECT_DATABASE_TRANSFER";
+    case Activity_Type.TYPE_PROJECT_MEMBER_CREATE:
+      return "TYPE_PROJECT_MEMBER_CREATE";
+    case Activity_Type.TYPE_PROJECT_MEMBER_DELETE:
+      return "TYPE_PROJECT_MEMBER_DELETE";
+    case Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE:
+      return "TYPE_PROJECT_MEMBER_ROLE_UPDATE";
+    case Activity_Type.TYPE_SQL_EDITOR_QUERY:
+      return "TYPE_SQL_EDITOR_QUERY";
+    case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:
+      return "TYPE_DATABASE_RECOVERY_PITR_DONE";
+    case Activity_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -1267,6 +1597,7 @@ function createBaseProject(): Project {
     schemaVersion: 0,
     schemaChange: 0,
     lgtmCheck: 0,
+    webhooks: [],
   };
 }
 
@@ -1307,6 +1638,9 @@ export const Project = {
     }
     if (message.lgtmCheck !== 0) {
       writer.uint32(96).int32(message.lgtmCheck);
+    }
+    for (const v of message.webhooks) {
+      Webhook.encode(v!, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -1354,6 +1688,9 @@ export const Project = {
         case 12:
           message.lgtmCheck = reader.int32() as any;
           break;
+        case 13:
+          message.webhooks.push(Webhook.decode(reader, reader.uint32()));
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1376,6 +1713,7 @@ export const Project = {
       schemaVersion: isSet(object.schemaVersion) ? schemaVersionFromJSON(object.schemaVersion) : 0,
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       lgtmCheck: isSet(object.lgtmCheck) ? lgtmCheckFromJSON(object.lgtmCheck) : 0,
+      webhooks: Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
     };
   },
 
@@ -1393,6 +1731,11 @@ export const Project = {
     message.schemaVersion !== undefined && (obj.schemaVersion = schemaVersionToJSON(message.schemaVersion));
     message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
     message.lgtmCheck !== undefined && (obj.lgtmCheck = lgtmCheckToJSON(message.lgtmCheck));
+    if (message.webhooks) {
+      obj.webhooks = message.webhooks.map((e) => e ? Webhook.toJSON(e) : undefined);
+    } else {
+      obj.webhooks = [];
+    }
     return obj;
   },
 
@@ -1410,6 +1753,7 @@ export const Project = {
     message.schemaVersion = object.schemaVersion ?? 0;
     message.schemaChange = object.schemaChange ?? 0;
     message.lgtmCheck = object.lgtmCheck ?? 0;
+    message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1872,6 +2216,393 @@ export const BatchUpdateReviewsResponse = {
   fromPartial(object: DeepPartial<BatchUpdateReviewsResponse>): BatchUpdateReviewsResponse {
     const message = createBaseBatchUpdateReviewsResponse();
     message.reviews = object.reviews?.map((e) => Review.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseAddWebhookRequest(): AddWebhookRequest {
+  return { project: "", webhook: undefined };
+}
+
+export const AddWebhookRequest = {
+  encode(message: AddWebhookRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.webhook !== undefined) {
+      Webhook.encode(message.webhook, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AddWebhookRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddWebhookRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        case 2:
+          message.webhook = Webhook.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddWebhookRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
+    };
+  },
+
+  toJSON(message: AddWebhookRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<AddWebhookRequest>): AddWebhookRequest {
+    const message = createBaseAddWebhookRequest();
+    message.project = object.project ?? "";
+    message.webhook = (object.webhook !== undefined && object.webhook !== null)
+      ? Webhook.fromPartial(object.webhook)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateWebhookRequest(): UpdateWebhookRequest {
+  return { project: "", webhook: undefined, updateMask: undefined };
+}
+
+export const UpdateWebhookRequest = {
+  encode(message: UpdateWebhookRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.webhook !== undefined) {
+      Webhook.encode(message.webhook, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateWebhookRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateWebhookRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        case 2:
+          message.webhook = Webhook.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateWebhookRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateWebhookRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<UpdateWebhookRequest>): UpdateWebhookRequest {
+    const message = createBaseUpdateWebhookRequest();
+    message.project = object.project ?? "";
+    message.webhook = (object.webhook !== undefined && object.webhook !== null)
+      ? Webhook.fromPartial(object.webhook)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseRemoveWebhookRequest(): RemoveWebhookRequest {
+  return { project: "", webhook: undefined };
+}
+
+export const RemoveWebhookRequest = {
+  encode(message: RemoveWebhookRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.webhook !== undefined) {
+      Webhook.encode(message.webhook, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RemoveWebhookRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveWebhookRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        case 2:
+          message.webhook = Webhook.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveWebhookRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
+    };
+  },
+
+  toJSON(message: RemoveWebhookRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<RemoveWebhookRequest>): RemoveWebhookRequest {
+    const message = createBaseRemoveWebhookRequest();
+    message.project = object.project ?? "";
+    message.webhook = (object.webhook !== undefined && object.webhook !== null)
+      ? Webhook.fromPartial(object.webhook)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTestWebhookRequest(): TestWebhookRequest {
+  return { project: "", webhook: undefined };
+}
+
+export const TestWebhookRequest = {
+  encode(message: TestWebhookRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.webhook !== undefined) {
+      Webhook.encode(message.webhook, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TestWebhookRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestWebhookRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        case 2:
+          message.webhook = Webhook.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TestWebhookRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
+    };
+  },
+
+  toJSON(message: TestWebhookRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<TestWebhookRequest>): TestWebhookRequest {
+    const message = createBaseTestWebhookRequest();
+    message.project = object.project ?? "";
+    message.webhook = (object.webhook !== undefined && object.webhook !== null)
+      ? Webhook.fromPartial(object.webhook)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTestWebhookResponse(): TestWebhookResponse {
+  return { error: "" };
+}
+
+export const TestWebhookResponse = {
+  encode(message: TestWebhookResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.error !== "") {
+      writer.uint32(10).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TestWebhookResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestWebhookResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.error = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TestWebhookResponse {
+    return { error: isSet(object.error) ? String(object.error) : "" };
+  },
+
+  toJSON(message: TestWebhookResponse): unknown {
+    const obj: any = {};
+    message.error !== undefined && (obj.error = message.error);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<TestWebhookResponse>): TestWebhookResponse {
+    const message = createBaseTestWebhookResponse();
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseWebhook(): Webhook {
+  return { type: 0, title: "", url: "", notificationTypes: [] };
+}
+
+export const Webhook = {
+  encode(message: Webhook, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.url !== "") {
+      writer.uint32(26).string(message.url);
+    }
+    writer.uint32(34).fork();
+    for (const v of message.notificationTypes) {
+      writer.int32(v);
+    }
+    writer.ldelim();
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Webhook {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWebhook();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.type = reader.int32() as any;
+          break;
+        case 2:
+          message.title = reader.string();
+          break;
+        case 3:
+          message.url = reader.string();
+          break;
+        case 4:
+          if ((tag & 7) === 2) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.notificationTypes.push(reader.int32() as any);
+            }
+          } else {
+            message.notificationTypes.push(reader.int32() as any);
+          }
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Webhook {
+    return {
+      type: isSet(object.type) ? webhook_TypeFromJSON(object.type) : 0,
+      title: isSet(object.title) ? String(object.title) : "",
+      url: isSet(object.url) ? String(object.url) : "",
+      notificationTypes: Array.isArray(object?.notificationTypes)
+        ? object.notificationTypes.map((e: any) => activity_TypeFromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: Webhook): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = webhook_TypeToJSON(message.type));
+    message.title !== undefined && (obj.title = message.title);
+    message.url !== undefined && (obj.url = message.url);
+    if (message.notificationTypes) {
+      obj.notificationTypes = message.notificationTypes.map((e) => activity_TypeToJSON(e));
+    } else {
+      obj.notificationTypes = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<Webhook>): Webhook {
+    const message = createBaseWebhook();
+    message.type = object.type ?? 0;
+    message.title = object.title ?? "";
+    message.url = object.url ?? "";
+    message.notificationTypes = object.notificationTypes?.map((e) => e) || [];
     return message;
   },
 };
@@ -2391,6 +3122,45 @@ export const LabelSelectorRequirement = {
   },
 };
 
+function createBaseActivity(): Activity {
+  return {};
+}
+
+export const Activity = {
+  encode(_: Activity, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Activity {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseActivity();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): Activity {
+    return {};
+  },
+
+  toJSON(_: Activity): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(_: DeepPartial<Activity>): Activity {
+    const message = createBaseActivity();
+    return message;
+  },
+};
+
 export type ProjectServiceDefinition = typeof ProjectServiceDefinition;
 export const ProjectServiceDefinition = {
   name: "ProjectService",
@@ -2508,6 +3278,38 @@ export const ProjectServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    addWebhook: {
+      name: "AddWebhook",
+      requestType: AddWebhookRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+    updateWebhook: {
+      name: "UpdateWebhook",
+      requestType: UpdateWebhookRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+    removeWebhook: {
+      name: "RemoveWebhook",
+      requestType: RemoveWebhookRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+    testWebhook: {
+      name: "TestWebhook",
+      requestType: TestWebhookRequest,
+      requestStream: false,
+      responseType: TestWebhookResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -2544,6 +3346,13 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: UpdateDeploymentConfigRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<DeploymentConfig>>;
+  addWebhook(request: AddWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
+  updateWebhook(request: UpdateWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
+  removeWebhook(request: RemoveWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
+  testWebhook(
+    request: TestWebhookRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<TestWebhookResponse>>;
 }
 
 export interface ProjectServiceClient<CallOptionsExt = {}> {
@@ -2579,6 +3388,13 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateDeploymentConfigRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<DeploymentConfig>;
+  addWebhook(request: DeepPartial<AddWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
+  updateWebhook(request: DeepPartial<UpdateWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
+  removeWebhook(request: DeepPartial<RemoveWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
+  testWebhook(
+    request: DeepPartial<TestWebhookRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<TestWebhookResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
