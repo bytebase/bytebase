@@ -136,7 +136,7 @@ service ProjectService {
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:testWebhook"
-      body: "webhook"
+      body: "*"
     };
   }
 }
