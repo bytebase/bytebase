@@ -7,6 +7,7 @@ import {
   MigrationHistoryId,
   ResourceId,
 } from "./id";
+import { Engine } from "./proto/v1/common";
 import { VCSPushEvent } from "./vcs";
 
 export type EngineType =
@@ -17,6 +18,25 @@ export type EngineType =
   | "TIDB"
   | "MONGODB"
   | "SPANNER";
+
+export function convertEngineType(type: EngineType): Engine {
+  switch (type) {
+    case "CLICKHOUSE":
+      return Engine.CLICKHOUSE;
+    case "MYSQL":
+      return Engine.MYSQL;
+    case "POSTGRES":
+      return Engine.POSTGRES;
+    case "SNOWFLAKE":
+      return Engine.SNOWFLAKE;
+    case "TIDB":
+      return Engine.TIDB;
+    case "MONGODB":
+      return Engine.MONGODB;
+    // TODO(xz): add Spanner here.
+  }
+  return Engine.ENGINE_UNSPECIFIED;
+}
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
