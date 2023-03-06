@@ -371,6 +371,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 	return convertToProject(project), nil
 }
 
+// UpdateWebhook updates a webhook.
 func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.UpdateWebhookRequest) (*v1pb.Project, error) {
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
@@ -421,7 +422,6 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 	}
 
 	if _, err := s.store.UpdateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.UID, project.ResourceID, webhook.ID, update); err != nil {
-
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -434,6 +434,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 	return convertToProject(project), nil
 }
 
+// Remove removes a webhook from a given project.
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
@@ -476,6 +477,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 	return convertToProject(project), nil
 }
 
+// TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebhookRequest) (*v1pb.TestWebhookResponse, error) {
 	projectID, err := getProjectID(request.Project)
 	if err != nil {

@@ -30,6 +30,7 @@ type ProjectWebhookMessage struct {
 	ProjectID int
 }
 
+// ToAPIProjectWebhook converts a ProjectWebhookMessage to an api.ProjectWebhook.
 func (p *ProjectWebhookMessage) ToAPIProjectWebhook() *api.ProjectWebhook {
 	return &api.ProjectWebhook{
 		ID:           p.ID,
@@ -59,7 +60,7 @@ type FindProjectWebhookMessage struct {
 	ActivityType *api.ActivityType
 }
 
-// CreateProjectWebhook creates an instance of ProjectWebhook.
+// CreateProjectWebhookV2 creates an instance of ProjectWebhook.
 func (s *Store) CreateProjectWebhookV2(ctx context.Context, principalUID int, projectUID int, projectResourceID string, create *ProjectWebhookMessage) (*ProjectWebhookMessage, error) {
 	query := `
 		INSERT INTO project_webhook (
@@ -235,7 +236,7 @@ func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectUID int, proj
 	return nil
 }
 
-func (s *Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
+func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
