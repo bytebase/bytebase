@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -151,12 +150,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
-
-		var bytes bytes.Buffer
-		if err := jsonapi.MarshalPayload(&bytes, instance); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
-		}
-		log.Debug(bytes.String())
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
