@@ -141,6 +141,7 @@ type ProjectMessage struct {
 	DBNameTemplate   string
 	SchemaChangeType api.ProjectSchemaChangeType
 	LGTMCheckSetting api.LGTMCheckSetting
+	Webhooks         []*ProjectWebhookMessage
 	// The following fields are output only and not used for create().
 	UID     int
 	Deleted bool
@@ -358,7 +359,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 }
 
 // WARNING: calling updateProjectImplV2 from other store library has to invalidate the cache.
-func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) (*ProjectMessage, error) {
+func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) (*ProjectMessage, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -428,11 +429,16 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 		}
 		return nil, FormatError(err)
 	}
+	projectWebhooks, err := s.findProjectWebhookImplV2(ctx, tx, &FindProjectWebhookMessage{ProjectID: &project.UID})
+	if err != nil {
+		return nil, err
+	}
+	project.Webhooks = projectWebhooks
 	project.Deleted = convertRowStatusToDeleted(rowStatus)
 	return project, nil
 }
 
-func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
+func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
@@ -485,6 +491,11 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 		); err != nil {
 			return nil, FormatError(err)
 		}
+		projectWebhooks, err := s.findProjectWebhookImplV2(ctx, tx, &FindProjectWebhookMessage{ProjectID: &projectMessage.UID})
+		if err != nil {
+			return nil, err
+		}
+		projectMessage.Webhooks = projectWebhooks
 		projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		projectMessages = append(projectMessages, &projectMessage)
 	}

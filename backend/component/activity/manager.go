@@ -74,7 +74,7 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 	anyActivity := activityList[0]
 
 	activityType := api.ActivityPipelineTaskStatusUpdate
-	webhookList, err := m.store.FindProjectWebhook(ctx, &api.ProjectWebhookFind{
+	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &issue.Project.UID,
 		ActivityType: &activityType,
 	})
@@ -138,11 +138,10 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 		}
 	}
 
-	hookFind := &api.ProjectWebhookFind{
+	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &meta.Issue.Project.UID,
 		ActivityType: &create.Type,
-	}
-	webhookList, err := m.store.FindProjectWebhook(ctx, hookFind)
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", meta.Issue.Title)
 	}
@@ -171,7 +170,7 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 	return activity, nil
 }
 
-func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook) {
+func postWebhookList(webhookCtx webhook.Context, webhookList []*store.ProjectWebhookMessage) {
 	for _, hook := range webhookList {
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
@@ -181,7 +180,7 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 			// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
 			log.Warn("Failed to post webhook event on activity",
 				zap.String("webhook type", hook.Type),
-				zap.String("webhook name", hook.Name),
+				zap.String("webhook name", hook.Title),
 				zap.String("activity type", webhookCtx.ActivityType),
 				zap.String("title", webhookCtx.Title),
 				zap.Error(err))
