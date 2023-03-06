@@ -127,7 +127,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
 	}
 	if existingUser != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
+		return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 	}
 
 	password := request.User.Password
@@ -243,7 +243,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				return nil, status.Errorf(codes.Internal, "failed to find user list, error: %v", err)
 			}
 			if len(users) != 0 {
-				return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
+				return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 			}
 			patch.Email = &request.User.Email
 		case "user.title":
