@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func TestGenerateTimeBasedSecret(t *testing.T) {
+func TestValidateTimeBasedSecretDuration(t *testing.T) {
 	currentTime := time.Now()
 	accountName := "test-user"
 
@@ -75,6 +75,33 @@ func TestGenerateTimeBasedSecret(t *testing.T) {
 			validSecrets, err := GetValidSecrets(accountName, test.validateTime)
 			assert.NoError(t, err)
 			assert.Equal(t, test.isSecretExpired, !slices.Contains(validSecrets, secret))
+		})
+	}
+}
+
+func TestGenerateTimeBasedSecret(t *testing.T) {
+	tests := []struct {
+		accountName  string
+		timestamp    time.Time
+		wantedSecret string
+	}{
+		{
+			accountName:  "frank",
+			timestamp:    time.Unix(1678115520, 0),
+			wantedSecret: "MZZGC3TLFU2TKOJTG4YTQAAAAAAAAAAA",
+		},
+		{
+			accountName:  "jack",
+			timestamp:    time.Unix(1678115520, 0),
+			wantedSecret: "NJQWG2ZNGU2TSMZXGE4AAAAAAAAAAAAA",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.accountName, func(t *testing.T) {
+			secret, err := GenerateSecret(test.accountName, test.timestamp)
+			assert.NoError(t, err)
+			assert.Equal(t, test.wantedSecret, secret)
 		})
 	}
 }
