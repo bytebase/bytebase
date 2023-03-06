@@ -240,8 +240,9 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 type CommitAuthor struct {
 	// Date expects corresponding JSON value is a string in RFC 3339 format,
 	// see https://pkg.go.dev/time#Time.MarshalJSON.
-	Date time.Time `json:"date"`
-	Name string    `json:"name"`
+	Date  time.Time `json:"date"`
+	Name  string    `json:"name"`
+	Email string    `json:"email"`
 }
 
 // Commit represents a GitHub API response for a commit.
@@ -252,10 +253,11 @@ type Commit struct {
 
 // FileCommit represents a GitHub API request for committing a file.
 type FileCommit struct {
-	Message string `json:"message"`
-	Content string `json:"content"`
-	SHA     string `json:"sha,omitempty"`
-	Branch  string `json:"branch,omitempty"`
+	Message string       `json:"message"`
+	Content string       `json:"content"`
+	SHA     string       `json:"sha,omitempty"`
+	Branch  string       `json:"branch,omitempty"`
+	Author  CommitAuthor `json:"author,omitempty"`
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -574,14 +576,19 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
 func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
-	body, err := json.Marshal(
-		FileCommit{
-			Message: fileCommitCreate.CommitMessage,
-			Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
-			Branch:  fileCommitCreate.Branch,
-			SHA:     fileCommitCreate.LastCommitID,
-		},
-	)
+	fileCommit := FileCommit{
+		Message: fileCommitCreate.CommitMessage,
+		Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
+		Branch:  fileCommitCreate.Branch,
+		SHA:     fileCommitCreate.LastCommitID,
+	}
+	if fileCommitCreate.AuthorName != "" && fileCommitCreate.AuthorEmail != "" {
+		fileCommit.Author = CommitAuthor{
+			Name:  fileCommitCreate.AuthorName,
+			Email: fileCommitCreate.AuthorEmail,
+		}
+	}
+	body, err := json.Marshal(fileCommit)
 	if err != nil {
 		return errors.Wrap(err, "marshal file commit")
 	}
