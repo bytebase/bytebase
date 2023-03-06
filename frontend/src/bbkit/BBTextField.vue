@@ -34,6 +34,7 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     required?: boolean;
+    forceRequired?: boolean;
     value?: string;
     placeholder?: string;
     disabled?: boolean;
@@ -43,6 +44,7 @@ const props = withDefaults(
   }>(),
   {
     required: false,
+    forceRequired: true,
     value: "",
     placeholder: "",
     disabled: false,
@@ -76,6 +78,11 @@ watch(
   () => props.value,
   (cur) => {
     state.text = cur;
+    if (props.required && isEmpty(state.text.trim())) {
+      state.hasError = true;
+    } else {
+      state.hasError = false;
+    }
   }
 );
 
@@ -87,8 +94,8 @@ const onBlur = () => {
   if (props.required && isEmpty(state.text.trim())) {
     state.hasError = true;
     nextTick(() => {
-      state.text = state.originalText;
-      if (inputField.value) {
+      if (props.forceRequired && inputField.value) {
+        state.text = state.originalText;
         // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
         inputField.value.focus();
         nextTick(() => {

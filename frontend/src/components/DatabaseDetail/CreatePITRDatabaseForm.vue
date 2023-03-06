@@ -9,40 +9,11 @@
       :disabled="true"
       :include-default-project="true"
       :selected-id="state.context.projectId"
-      @select-project-id="(id) => (state.context.projectId = id)"
+      @select-project-id="(id: number) => (state.context.projectId = id)"
     />
   </div>
 
-  <!-- Providing a preview of generated database name in template mode -->
-  <div v-if="isDbNameTemplateMode" class="space-y-2">
-    <label class="textlabel w-full flex items-center gap-1">
-      {{ $t("create-db.generated-database-name") }}
-      <NTooltip trigger="hover" placement="top">
-        <template #trigger>
-          <heroicons-outline:question-mark-circle
-            class="w-4 h-4 inline-block"
-          />
-        </template>
-        <div class="whitespace-nowrap">
-          {{
-            $t("create-db.db-name-generated-by-template", {
-              template: project.dbNameTemplate,
-            })
-          }}
-        </div>
-      </NTooltip>
-    </label>
-    <input
-      id="name"
-      disabled
-      name="name"
-      type="text"
-      class="textfield mt-1 w-full"
-      :value="generatedDatabaseName"
-    />
-  </div>
-
-  <div class="col-span-2 col-start-2 w-64">
+  <div class="col-span-2 col-start-2">
     <label for="name" class="textlabel">
       {{ $t("create-db.new-database-name") }}
       <span class="text-red-600">*</span>
@@ -62,6 +33,12 @@
         </template>
       </i18n-t>
     </span>
+    <DatabaseNameTemplateTips
+      v-if="isDbNameTemplateMode"
+      :project="project"
+      :name="state.context.databaseName"
+      :label-list="state.context.labelList"
+    />
   </div>
 
   <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
@@ -82,7 +59,7 @@
       class="mt-1"
       :selected-id="state.context.environmentId"
       :disabled="true"
-      @select-environment-id="(id) => (state.context.environmentId = id)"
+      @select-environment-id="(id: number) => (state.context.environmentId = id)"
     />
   </div>
 
@@ -101,7 +78,7 @@
       :selected-id="state.context.instanceId"
       :environment-id="state.context.environmentId"
       :filter="instanceFilter"
-      @select-instance-id="(id) => (state.context.instanceId = id)"
+      @select-instance-id="(id: number) => (state.context.instanceId = id)"
     />
   </div>
 
@@ -131,7 +108,7 @@
     />
   </div>
 
-  <div class="col-span-2 col-start-2 w-64">
+  <div class="col-span-2 col-start-2">
     <label for="collation" class="textlabel">
       {{ $t("db.collation") }}
     </label>
@@ -149,7 +126,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, PropType, reactive, ref, watch } from "vue";
+import {
+  computed,
+  onBeforeMount,
+  PropType,
+  reactive,
+  ref,
+  toRef,
+  watch,
+} from "vue";
 import { cloneDeep, isEmpty } from "lodash-es";
 import {
   Database,
@@ -159,9 +144,12 @@ import {
   defaultCollation,
 } from "@/types";
 import { CreatePITRDatabaseContext } from "./utils";
-import { DatabaseLabelForm } from "@/components/CreateDatabasePrepForm";
+import {
+  DatabaseLabelForm,
+  DatabaseNameTemplateTips,
+  useDBNameTemplateInputState,
+} from "@/components/CreateDatabasePrepForm";
 import { useInstanceStore, useProjectStore, useDBSchemaStore } from "@/store";
-import { buildDatabaseNameByTemplateAndLabelList } from "@/utils";
 import { isPITRAvailableOnInstance } from "@/plugins/pitr";
 
 interface LocalState {
@@ -240,20 +228,6 @@ const isDbNameTemplateMode = computed((): boolean => {
   return !!project.value.dbNameTemplate;
 });
 
-const generatedDatabaseName = computed((): string => {
-  if (!isDbNameTemplateMode.value) {
-    // don't modify anything if we are not in template mode
-    return state.context.databaseName;
-  }
-
-  return buildDatabaseNameByTemplateAndLabelList(
-    project.value.dbNameTemplate,
-    state.context.databaseName,
-    state.context.labelList,
-    true // keepEmpty: true to keep non-selected values as original placeholders
-  );
-});
-
 const selectedInstance = computed((): Instance => {
   return instanceStore.getInstanceById(state.context.instanceId);
 });
@@ -261,6 +235,11 @@ const selectedInstance = computed((): Instance => {
 const instanceFilter = (instance: Instance): boolean => {
   return isPITRAvailableOnInstance(instance);
 };
+
+useDBNameTemplateInputState(project, {
+  databaseName: toRef(state.context, "databaseName"),
+  labels: toRef(state.context, "labelList"),
+});
 
 // Sync values from props when changes.
 watch([() => props.database, () => props.context], () => {

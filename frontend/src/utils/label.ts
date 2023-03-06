@@ -35,13 +35,42 @@ export const hidePrefix = (key: LabelKeyType): LabelKeyType => {
   return key.replace(/^bb\./, "");
 };
 
+export const getLabelValueFromLabelList = (
+  labels: DatabaseLabel[],
+  key: LabelKeyType
+): LabelValueType => {
+  const label = labels.find((target) => target.key === key);
+  if (!label) return LABEL_VALUE_EMPTY;
+  return label.value;
+};
+
 export const getLabelValue = (
   db: Database,
   key: LabelKeyType
 ): LabelValueType => {
-  const label = db.labels.find((target) => target.key === key);
-  if (!label) return LABEL_VALUE_EMPTY;
-  return label.value;
+  return getLabelValueFromLabelList(db.labels, key);
+};
+
+export const setLabelValue = (
+  labels: DatabaseLabel[],
+  key: LabelKeyType,
+  value: LabelValueType
+) => {
+  const index = labels.findIndex((label) => label.key === key);
+
+  if (index < 0) {
+    if (value) {
+      // push new value
+      labels.push({ key, value });
+    }
+  } else {
+    if (value) {
+      labels[index].value = value;
+    } else {
+      // remove empty value from the list
+      labels.splice(index, 1);
+    }
+  }
 };
 
 export const groupingDatabaseListByLabelKey = (
