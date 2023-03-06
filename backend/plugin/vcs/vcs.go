@@ -22,6 +22,8 @@ const (
 	GitLab Type = "GITLAB"
 	// GitHub is the VCS type for GitHub (both GitHub.com and GitHun Enterprise).
 	GitHub Type = "GITHUB"
+	// Bitbucket is the VCS type for Bitbucket Cloud (bitbucket.org).
+	Bitbucket Type = "BITBUCKET"
 
 	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
 	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
