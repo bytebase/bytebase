@@ -1893,7 +1893,7 @@ func TestGetLatestSchema(t *testing.T) {
 			wantSDL: "CREATE TABLE `book` (\n" +
 				"  `id` INT DEFAULT NULL,\n" +
 				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
-				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n",
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
 			wantDatabaseMetadata: &storepb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "utf8mb4",
@@ -2516,11 +2516,11 @@ WHERE table_schema = '%s';
 			const updatedSDL = "CREATE TABLE `projects` (\n" +
 				"  `id` INT NOT NULL,\n" +
 				"  PRIMARY KEY (`id`)\n" +
-				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n" +
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n" +
 				"CREATE TABLE `users` (\n" +
 				"  `id` INT NOT NULL,\n" +
 				"  PRIMARY KEY (`id`)\n" +
-				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n"
+				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n"
 
 			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 			a.NoError(err)

@@ -410,7 +410,7 @@ func deparse(newNodeList []ast.Node) (string, error) {
 		if err := node.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags|format.RestoreStringWithoutCharset|format.RestorePrettyFormat, &buf)); err != nil {
 			return "", err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
+		if _, err := buf.Write([]byte(";\n\n")); err != nil {
 			return "", err
 		}
 	}
