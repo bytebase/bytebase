@@ -438,9 +438,9 @@ CREATE TABLE instance_change_history (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_unique_instance_change_history_instance_id_database_id_sequence ON instance_change_history (instance_id, database_id, sequence);
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequence ON instance_change_history (instance_id, database_id, sequence);
 
-CREATE UNIQUE INDEX idx_unique_instance_change_history_instance_id_database_id_version ON instance_change_history (instance_id, database_id, version);
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_version ON instance_change_history (instance_id, database_id, version);
 
 ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
