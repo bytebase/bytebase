@@ -80,23 +80,26 @@ func TestValidateTimeBasedSecretDuration(t *testing.T) {
 }
 
 func TestGenerateTimeBasedSecret(t *testing.T) {
-	accountName := "test-user"
-
 	tests := []struct {
 		accountName  string
 		timestamp    time.Time
 		wantedSecret string
 	}{
 		{
-			accountName:  "test-user",
+			accountName:  "frank",
 			timestamp:    time.Unix(1678115520, 0),
-			wantedSecret: "ORSXG5BNOVZWK4RVGU4TGNZRHAAAAAAA",
+			wantedSecret: "MZZGC3TLGU2TSMZXGE4AAAAAAAAAAAAA",
+		},
+		{
+			accountName:  "jack",
+			timestamp:    time.Unix(1678115520, 0),
+			wantedSecret: "NJQWG2ZVGU4TGNZRHAAAAAAAAAAAAAAA",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.accountName, func(t *testing.T) {
-			secret, err := GenerateSecret(accountName, test.timestamp)
+			secret, err := GenerateSecret(test.accountName, test.timestamp)
 			assert.NoError(t, err)
 			assert.Equal(t, test.wantedSecret, secret)
 		})
