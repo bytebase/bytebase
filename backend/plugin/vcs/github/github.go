@@ -967,7 +967,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		),
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
+		return nil, errors.Wrapf(err, "POST %s", url)
 	}
 
 	if code == http.StatusNotFound {
