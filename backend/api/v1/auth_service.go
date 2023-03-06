@@ -432,7 +432,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if loginUser.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
-	if loginUser.MFAConfig.OtpSecret != "" {
+	if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
 		if request.MfaCode != nil {
 			if err := challengeMFACode(loginUser, *request.MfaCode); err != nil {
 				return nil, err
