@@ -125,7 +125,6 @@ service ProjectService {
       patch: "/v1/{project=projects/*}:updateWebhook"
       body: "*"
     };
-    option (google.api.method_signature) = "project,update_mask";
   }
 
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
