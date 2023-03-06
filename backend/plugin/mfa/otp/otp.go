@@ -13,9 +13,8 @@ import (
 const (
 	// issuerName is the name of the issuer of the OTP token.
 	issuerName = "Bytebase"
-	// secretMaxExpiredDuration is the maximum duration that a secret is valid.
-	// The secret is valid for 5 minutes.
-	secretMaxExpiredDuration = 5 * time.Minute
+	// generateSecretPeriod is the period that we generate a new secret.
+	generateSecretPeriod = 5 * time.Minute
 )
 
 // TimeBasedReader is a reader that returns the same value for the same timestamp.
@@ -25,7 +24,9 @@ type TimeBasedReader struct {
 
 // NewTimeBasedReader creates a new TimeBasedReader for the given timestamp.
 func NewTimeBasedReader(timestamp time.Time) *TimeBasedReader {
-	formatedTimestampUnix := timestamp.Unix() - int64(timestamp.Second())
+	// Convert the timestamp to Unix time and divide by the secretMaxExpiredDuration.
+	// We generate a new secret every 5 minutes. e.g. 15:00, 15:05
+	formatedTimestampUnix := timestamp.Unix() / int64(generateSecretPeriod/time.Second)
 	return &TimeBasedReader{
 		reader: strings.NewReader(strconv.FormatInt(formatedTimestampUnix, 10)),
 	}
@@ -51,22 +52,19 @@ func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 // GetValidSecrets returns a list of valid secrets for the given account name and timestamp.
 func GetValidSecrets(accountName string, timestamp time.Time) ([]string, error) {
 	var secrets []string
-	expiredTime := timestamp.Add(-1 * secretMaxExpiredDuration)
-	tempTime := timestamp
-	// Iterate through the time from the current time to the expired time.
-	// The secret is valid for 5 minutes, so we need to generate a secret for each minute.
-	for !tempTime.Before(expiredTime) {
+	// validTimestamps is a list of timestamps that are valid for the secret.
+	// The secret is valid for 5 minutes. So we need to check the current timestamp and the timestamp 5 minutes ago.
+	validTimestamps := []time.Time{timestamp, timestamp.Add(-1 * generateSecretPeriod)}
+	for _, temp := range validTimestamps {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(tempTime),
+			Rand:        NewTimeBasedReader(temp),
 		})
 		if err != nil {
 			return nil, err
 		}
 		secrets = append(secrets, key.Secret())
-		// Move the time back by 1 minute.
-		tempTime = tempTime.Add(-1 * time.Minute)
 	}
 	return secrets, nil
 }

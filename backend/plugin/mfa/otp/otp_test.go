@@ -61,9 +61,9 @@ func TestGenerateTimeBasedSecret(t *testing.T) {
 			isSecretExpired: false,
 		},
 		{
-			name:            "6min",
+			name:            "10min",
 			generateTime:    currentTime,
-			validateTime:    currentTime.Add(6 * time.Minute),
+			validateTime:    currentTime.Add(10 * time.Minute),
 			isSecretExpired: true,
 		},
 	}
