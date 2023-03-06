@@ -438,7 +438,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 				return nil, err
 			}
 		} else if request.RecoveryCode != nil {
-			if err := s.challengeMFACode(ctx, loginUser, *request.RecoveryCode); err != nil {
+			if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
 				return nil, err
 			}
 		} else {
@@ -641,9 +641,6 @@ func (s *AuthService) challengeMFACode(ctx context.Context, user *store.UserMess
 }
 
 func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.UserMessage, recoveryCode string) error {
-	if user.MFAConfig.RecoveryCodes == nil {
-		return status.Errorf(codes.FailedPrecondition, "user %s does not have MFA enabled", user.Email)
-	}
 	for i, code := range user.MFAConfig.RecoveryCodes {
 		if code == recoveryCode {
 			user.MFAConfig.RecoveryCodes = slices.Delete(user.MFAConfig.RecoveryCodes, i, i+1)
