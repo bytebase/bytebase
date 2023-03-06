@@ -147,13 +147,13 @@ message LoginRequest {
   // Format: idps/{idp}
   string idp_name = 4 [(google.api.field_behavior) = REQUIRED];
 
-  // The idp_context data is using to get the user information from identity provider.
+  // The idp_context is using to get the user information from identity provider.
   IdentityProviderContext idp_context = 5;
 
-  // The mfa_code code is used to verify the user's identity by MFA.
+  // The mfa_code is used to verify the user's identity by MFA.
   optional string mfa_code = 6;
 
-  // The recovery_code code is used to recovery the user's identity with MFA.
+  // The recovery_code is used to recovery the user's identity with MFA.
   optional string recovery_code = 7;
 }
 

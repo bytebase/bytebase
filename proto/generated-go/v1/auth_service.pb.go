@@ -526,11 +526,11 @@ type LoginRequest struct {
 	// The name of the identity provider.
 	// Format: idps/{idp}
 	IdpName string `protobuf:"bytes,4,opt,name=idp_name,json=idpName,proto3" json:"idp_name,omitempty"`
-	// The idp_context data is using to get the user information from identity provider.
+	// The idp_context is using to get the user information from identity provider.
 	IdpContext *IdentityProviderContext `protobuf:"bytes,5,opt,name=idp_context,json=idpContext,proto3" json:"idp_context,omitempty"`
-	// The mfa_code code is used to verify the user's identity by MFA.
+	// The mfa_code is used to verify the user's identity by MFA.
 	MfaCode *string `protobuf:"bytes,6,opt,name=mfa_code,json=mfaCode,proto3,oneof" json:"mfa_code,omitempty"`
-	// The recovery_code code is used to recovery the user's identity with MFA.
+	// The recovery_code is used to recovery the user's identity with MFA.
 	RecoveryCode *string `protobuf:"bytes,7,opt,name=recovery_code,json=recoveryCode,proto3,oneof" json:"recovery_code,omitempty"`
 }
 

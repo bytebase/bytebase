@@ -178,13 +178,13 @@ export interface LoginRequest {
    * Format: idps/{idp}
    */
   idpName: string;
-  /** The idp_context data is using to get the user information from identity provider. */
+  /** The idp_context is using to get the user information from identity provider. */
   idpContext?: IdentityProviderContext;
-  /** The mfa_code code is used to verify the user's identity by MFA. */
+  /** The mfa_code is used to verify the user's identity by MFA. */
   mfaCode?:
     | string
     | undefined;
-  /** The recovery_code code is used to recovery the user's identity with MFA. */
+  /** The recovery_code is used to recovery the user's identity with MFA. */
   recoveryCode?: string | undefined;
 }
 
