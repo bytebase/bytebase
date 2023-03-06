@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -123,7 +124,8 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 		dbType := instance.Engine
 		databaseType = string(dbType)
-		catalog, err = s.store.NewCatalog(ctx, database.UID, dbType)
+		// TODO(rebelice): support SDL mode for open api.
+		catalog, err = s.store.NewCatalog(ctx, database.UID, dbType, advisor.SyntaxModeNormal)
 		if err != nil {
 			return err
 		}
