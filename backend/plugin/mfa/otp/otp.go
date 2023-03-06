@@ -54,11 +54,11 @@ func GetValidSecrets(accountName string, timestamp time.Time) ([]string, error) 
 	// validTimestamps is a list of timestamps that are valid for the secret.
 	// The secret is valid for 5 minutes. So we need to check the current timestamp and the timestamp 5 minutes ago.
 	validTimestamps := []time.Time{timestamp, timestamp.Add(-1 * generateSecretPeriod)}
-	for _, temp := range validTimestamps {
+	for _, t := range validTimestamps {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(temp),
+			Rand:        NewTimeBasedReader(t),
 		})
 		if err != nil {
 			return nil, err
