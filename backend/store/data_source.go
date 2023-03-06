@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // DataSourceMessage is the message for data source.
@@ -77,8 +79,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		return nil, FormatError(err)
 	}
 	defer rows.Close()
-	var dataSourceOptions api.DataSourceOptions
 	for rows.Next() {
+		var protoBytes []byte
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
 			&dataSourceMessage.UID,
@@ -93,11 +95,16 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			&dataSourceMessage.Host,
 			&dataSourceMessage.Port,
 			&dataSourceMessage.Database,
-			&dataSourceOptions,
+			&protoBytes,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		dataSourceMessage.SRV = dataSourceOptions.SRV
+		var dataSourceOptions storepb.DataSourceOptions
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
+			return nil, err
+		}
+		dataSourceMessage.SRV = dataSourceOptions.Srv
 		dataSourceMessage.AuthenticationDatabase = dataSourceOptions.AuthenticationDatabase
 
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
@@ -196,6 +203,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 
 	// Use jsonb_build_object to build the jsonb object to update some fields in jsonb instead of whole column.
+	// To view the json tag, please refer to the struct definition of storepb.DataSourceOptions.
 	var optionSet []string
 	if v := patch.SRV; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('srv', to_jsonb($%d::BOOLEAN))", len(args)+1)), append(args, *v)
@@ -241,9 +249,13 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 
 func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, databaseUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
-	dataSourceOptions := api.DataSourceOptions{
-		SRV:                    dataSource.SRV,
+	dataSourceOptions := storepb.DataSourceOptions{
+		Srv:                    dataSource.SRV,
 		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+	}
+	protoBytes, err := protojson.Marshal(&dataSourceOptions)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal data source options")
 	}
 
 	if _, err := tx.ExecContext(ctx, `
@@ -268,7 +280,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.Title,
 		dataSource.Type, dataSource.Username, dataSource.ObfuscatedPassword, dataSource.ObfuscatedSslKey,
 		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
-		dataSourceOptions, dataSource.Database,
+		protoBytes, dataSource.Database,
 	); err != nil {
 		return FormatError(err)
 	}
