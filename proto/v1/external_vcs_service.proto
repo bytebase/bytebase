@@ -120,7 +120,8 @@ message DeleteExternalVCSRequest {
 }
 
 message ListProjectLinkedRepositoriesRequest {
-  // The name of the external VCS to retrieve.
+  // The resource name of the external vcs associated with the projects that
+  // you want to list.
   // Format: externalVCS/{externalVCS}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -204,7 +205,7 @@ message LinkedRepository {
 
 
 message SearchExternalVCSRepositoriesRequest {
-  // The name of the external VCS to retrieve.
+  // The name of the external VCS to retrieve the external vcs repositories.
   // Format: externalVCS/{externalVCS}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
