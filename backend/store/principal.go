@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetPrincipalList gets a list of Principal instances.
@@ -83,6 +85,7 @@ type UpdateUserMessage struct {
 	PasswordHash *string
 	Role         *api.Role
 	Delete       *bool
+	MFAConfig    *storepb.MFAConfig
 }
 
 // UserMessage is the message for an user.
@@ -95,6 +98,7 @@ type UserMessage struct {
 	PasswordHash  string
 	Role          api.Role
 	MemberDeleted bool
+	MFAConfig     *storepb.MFAConfig
 }
 
 // GetUser gets an user.
@@ -195,51 +199,109 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	}
 
 	var userMessages []*UserMessage
-	rows, err := tx.QueryContext(ctx, `
-			SELECT
-				principal.id AS user_id,
-				principal.email,
-				principal.name,
-				principal.type,
-				principal.password_hash,
-				member.role,
-				member.row_status AS row_status
-			FROM principal
-			LEFT JOIN member ON principal.id = member.principal_id
-			WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var userMessage UserMessage
-		var role, rowStatus sql.NullString
-		if err := rows.Scan(
-			&userMessage.ID,
-			&userMessage.Email,
-			&userMessage.Name,
-			&userMessage.Type,
-			&userMessage.PasswordHash,
-			&role,
-			&rowStatus,
-		); err != nil {
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		rows, err := tx.QueryContext(ctx, `
+				SELECT
+					principal.id AS user_id,
+					principal.email,
+					principal.name,
+					principal.type,
+					principal.password_hash,
+					principal.mfa_config,
+					member.role,
+					member.row_status AS row_status
+				FROM principal
+				LEFT JOIN member ON principal.id = member.principal_id
+				WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
 			return nil, FormatError(err)
 		}
-		if role.Valid {
-			userMessage.Role = api.Role(role.String)
-		} else if userMessage.ID == api.SystemBotID {
-			userMessage.Role = api.Owner
-		} else {
-			userMessage.Role = api.Developer
+		defer rows.Close()
+		for rows.Next() {
+			var userMessage UserMessage
+			var role, rowStatus sql.NullString
+			var mfaConfigBytes []byte
+			if err := rows.Scan(
+				&userMessage.ID,
+				&userMessage.Email,
+				&userMessage.Name,
+				&userMessage.Type,
+				&userMessage.PasswordHash,
+				&mfaConfigBytes,
+				&role,
+				&rowStatus,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			if role.Valid {
+				userMessage.Role = api.Role(role.String)
+			} else if userMessage.ID == api.SystemBotID {
+				userMessage.Role = api.Owner
+			} else {
+				userMessage.Role = api.Developer
+			}
+			if rowStatus.Valid {
+				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+			} else if userMessage.ID != api.SystemBotID {
+				userMessage.MemberDeleted = true
+			}
+			var mfaConfig storepb.MFAConfig
+			decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+			if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
+				return nil, err
+			}
+			userMessage.MFAConfig = &mfaConfig
+			userMessages = append(userMessages, &userMessage)
 		}
-		if rowStatus.Valid {
-			userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-		} else if userMessage.ID != api.SystemBotID {
-			userMessage.MemberDeleted = true
+	} else {
+		rows, err := tx.QueryContext(ctx, `
+				SELECT
+					principal.id AS user_id,
+					principal.email,
+					principal.name,
+					principal.type,
+					principal.password_hash,
+					member.role,
+					member.row_status AS row_status
+				FROM principal
+				LEFT JOIN member ON principal.id = member.principal_id
+				WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
 		}
-		userMessages = append(userMessages, &userMessage)
+		defer rows.Close()
+		for rows.Next() {
+			var userMessage UserMessage
+			var role, rowStatus sql.NullString
+			if err := rows.Scan(
+				&userMessage.ID,
+				&userMessage.Email,
+				&userMessage.Name,
+				&userMessage.Type,
+				&userMessage.PasswordHash,
+				&role,
+				&rowStatus,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			if role.Valid {
+				userMessage.Role = api.Role(role.String)
+			} else if userMessage.ID == api.SystemBotID {
+				userMessage.Role = api.Owner
+			} else {
+				userMessage.Role = api.Developer
+			}
+			if rowStatus.Valid {
+				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+			} else if userMessage.ID != api.SystemBotID {
+				userMessage.MemberDeleted = true
+			}
+			userMessages = append(userMessages, &userMessage)
+		}
 	}
 	return userMessages, nil
 }
@@ -341,6 +403,13 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
+	if v := patch.MFAConfig; v != nil {
+		mfaConfigBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("mfa_config = $%d", len(principalArgs)+1)), append(principalArgs, mfaConfigBytes)
 	}
 	principalArgs = append(principalArgs, userID)
 
