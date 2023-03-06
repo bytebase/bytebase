@@ -329,7 +329,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return errors.Errorf("database schema %v not found", database.UID)
 			}
 
-			catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine)
+			catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
