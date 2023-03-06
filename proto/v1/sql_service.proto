@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service SQLService {
+  rpc Pretty(PrettyRequest) returns (PrettyResponse) {
+    option (google.api.http) = {
+      post: "/v1/sql/pretty"
+      body: "*"
+    };
+  }
+}
+
+message PrettyRequest {
+  Engine engine = 1;
+
+  // The SDL format SQL schema information that was dumped from a database engine.
+  // This information will be sorted to match the order of statements in the userSchema.
+  string current_schema = 2;
+  
+  // The expected SDL schema. This schema will be checked for correctness and normalized.
+  string expected_schema = 3;
+}
+
+message PrettyResponse {
+  // The pretty-formatted version of current schema.
+  string current_schema = 1;
+
+  // The expected SDL schema after normalizing.
+  string expected_schema = 2;
+}

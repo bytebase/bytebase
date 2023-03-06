@@ -237,6 +237,12 @@
   
     - [SettingService](#bytebase-v1-SettingService)
   
+- [v1/sql_service.proto](#v1_sql_service-proto)
+    - [PrettyRequest](#bytebase-v1-PrettyRequest)
+    - [PrettyResponse](#bytebase-v1-PrettyResponse)
+  
+    - [SQLService](#bytebase-v1-SQLService)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -3528,6 +3534,65 @@ The data in setting value.
 | ----------- | ------------ | ------------- | ------------|
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
 | SetSetting | [SetSettingRequest](#bytebase-v1-SetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
+
+ 
+
+
+
+<a name="v1_sql_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/sql_service.proto
+
+
+
+<a name="bytebase-v1-PrettyRequest"></a>
+
+### PrettyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| current_schema | [string](#string) |  | The SDL format SQL schema information that was dumped from a database engine. This information will be sorted to match the order of statements in the userSchema. |
+| expected_schema | [string](#string) |  | The expected SDL schema. This schema will be checked for correctness and normalized. |
+
+
+
+
+
+
+<a name="bytebase-v1-PrettyResponse"></a>
+
+### PrettyResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| current_schema | [string](#string) |  | The pretty-formatted version of current schema. |
+| expected_schema | [string](#string) |  | The expected SDL schema after normalizing. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SQLService"></a>
+
+### SQLService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 
  
 
