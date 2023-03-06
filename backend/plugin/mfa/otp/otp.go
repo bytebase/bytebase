@@ -2,7 +2,6 @@
 package otp
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -81,7 +80,7 @@ func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, errors.New("invalid code")
+	return false, nil
 }
 
 // ValidateWithCodeAndSecret validates the given code against the given secret.
