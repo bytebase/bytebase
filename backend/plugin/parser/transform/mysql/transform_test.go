@@ -20,10 +20,10 @@ func TestCreateTableSeparateIndex(t *testing.T) {
 		"  `id` INT DEFAULT NULL,\n" +
 		"  `c1` INT DEFAULT NULL,\n" +
 		"  `c2` INT DEFAULT NULL\n" +
-		") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_0900_AI_CI;\n" +
-		"CREATE UNIQUE INDEX `c1` ON `t1` (`c1`, `c2`);\n" +
-		"CREATE UNIQUE INDEX `haha` ON `t1` (`c2`);\n" +
-		"CREATE INDEX `t1` ON `t1` (`c1`);\n"
+		") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_0900_AI_CI;\n\n" +
+		"CREATE UNIQUE INDEX `c1` ON `t1` (`c1`, `c2`);\n\n" +
+		"CREATE UNIQUE INDEX `haha` ON `t1` (`c2`);\n\n" +
+		"CREATE INDEX `t1` ON `t1` (`c1`);\n\n"
 
 	a := require.New(t)
 	mysqlTransformer := &SchemaTransformer{}
@@ -52,16 +52,16 @@ func TestNormalize(t *testing.T) {
 	want := "" +
 		"CREATE TABLE `t2` (\n" +
 		"  `a` INT\n" +
-		") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n" +
+		") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n" +
 		"CREATE TABLE `t` (\n" +
 		"  `a` INT\n" +
-		");\n" +
-		"CREATE INDEX `idx_xxx` ON `t` (`a`);\n" +
-		"CREATE UNIQUE INDEX `uk_t_a` ON `t` (`a`);\n" +
-		"CREATE INDEX `idx_a` ON `t` (`a`);\n" +
+		");\n\n" +
+		"CREATE INDEX `idx_xxx` ON `t` (`a`);\n\n" +
+		"CREATE UNIQUE INDEX `uk_t_a` ON `t` (`a`);\n\n" +
+		"CREATE INDEX `idx_a` ON `t` (`a`);\n\n" +
 		"CREATE TABLE `t3` (\n" +
 		"  `a` INT\n" +
-		");\n"
+		");\n\n"
 	a := require.New(t)
 	mysqlTransformer := &SchemaTransformer{}
 	got, err := mysqlTransformer.Normalize(input, standard)
