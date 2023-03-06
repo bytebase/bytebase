@@ -2,7 +2,7 @@
 package otp
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
 	"time"
 
@@ -27,7 +27,7 @@ func NewTimeBasedReader(accountName string, timestamp time.Time) *TimeBasedReade
 	// We generate a new secret every 5 minutes. e.g. 15:00, 15:05
 	formatedTimestampUnix := timestamp.Unix() / int64(generateSecretPeriod/time.Second)
 	return &TimeBasedReader{
-		reader: strings.NewReader(accountName + strconv.FormatInt(formatedTimestampUnix, 10)),
+		reader: strings.NewReader(fmt.Sprintf("%s-%d", accountName, formatedTimestampUnix)),
 	}
 }
 

@@ -88,12 +88,12 @@ func TestGenerateTimeBasedSecret(t *testing.T) {
 		{
 			accountName:  "frank",
 			timestamp:    time.Unix(1678115520, 0),
-			wantedSecret: "MZZGC3TLGU2TSMZXGE4AAAAAAAAAAAAA",
+			wantedSecret: "MZZGC3TLFU2TKOJTG4YTQAAAAAAAAAAA",
 		},
 		{
 			accountName:  "jack",
 			timestamp:    time.Unix(1678115520, 0),
-			wantedSecret: "NJQWG2ZVGU4TGNZRHAAAAAAAAAAAAAAA",
+			wantedSecret: "NJQWG2ZNGU2TSMZXGE4AAAAAAAAAAAAA",
 		},
 	}
 
