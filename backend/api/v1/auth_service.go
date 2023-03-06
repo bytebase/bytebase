@@ -643,6 +643,7 @@ func (s *AuthService) challengeMFACode(ctx context.Context, user *store.UserMess
 func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.UserMessage, recoveryCode string) error {
 	for i, code := range user.MFAConfig.RecoveryCodes {
 		if code == recoveryCode {
+			// If the recovery code is valid, delete it from the user's recovery code list.
 			user.MFAConfig.RecoveryCodes = slices.Delete(user.MFAConfig.RecoveryCodes, i, i+1)
 			_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
 				MFAConfig: &storepb.MFAConfig{
