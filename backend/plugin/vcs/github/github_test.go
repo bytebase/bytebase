@@ -371,7 +371,7 @@ func TestProvider_CreateFile(t *testing.T) {
 
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master"}`
+		wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master","author":{"date":"0001-01-01T00:00:00Z","name":"","email":""}}`
 		assert.Equal(t, wantBody, string(body))
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -456,7 +456,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master"}`
+		wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master","author":{"date":"0001-01-01T00:00:00Z","name":"","email":""}}`
 		assert.Equal(t, wantBody, string(body))
 		return &http.Response{
 			StatusCode: http.StatusOK,

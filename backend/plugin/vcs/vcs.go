@@ -25,6 +25,11 @@ const (
 
 	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
 	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
+
+	// BytebaseAuthorName is the author name of bytebase.
+	BytebaseAuthorName = "Bytebase"
+	// BytebaseAuthorEmail is the author email of bytebase.
+	BytebaseAuthorEmail = "support@bytebase.com"
 )
 
 // OAuthToken is the API message for OAuthToken.
@@ -73,6 +78,8 @@ type FileCommitCreate struct {
 	Content       string
 	CommitMessage string
 	LastCommitID  string
+	AuthorName    string
+	AuthorEmail   string
 }
 
 // FileMeta records the file metadata.
