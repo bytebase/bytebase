@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pquerna/otp/totp"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -52,10 +51,11 @@ func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 // GetValidSecrets returns a list of valid secrets for the given account name and timestamp.
 func GetValidSecrets(accountName string, timestamp time.Time) ([]string, error) {
 	var secrets []string
-	tempTime := timestamp
 	expiredTime := timestamp.Add(-1 * secretMaxExpiredDuration)
-	// Iterate from the current time to the expired time, and generate a secret for each time.
-	for tempTime.After(expiredTime) {
+	tempTime := timestamp
+	// Iterate through the time from the current time to the expired time.
+	// The secret is valid for 5 minutes, so we need to generate a secret for each minute.
+	for !tempTime.Before(expiredTime) {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
@@ -73,18 +73,9 @@ func GetValidSecrets(accountName string, timestamp time.Time) ([]string, error) 
 
 // ValidateWithCodeAndAccountName validates the given code against the given account name.
 func ValidateWithCodeAndAccountName(code, accountName string) (bool, error) {
-	currentTime := time.Now()
-	secret, err := GenerateSecret(accountName, currentTime)
+	validSecrets, err := GetValidSecrets(accountName, time.Now())
 	if err != nil {
 		return false, err
-	}
-
-	validSecrets, err := GetValidSecrets(accountName, currentTime)
-	if err != nil {
-		return false, err
-	}
-	if !slices.Contains(validSecrets, secret) {
-		return false, errors.New("OTP has expired")
 	}
 
 	for _, secret := range validSecrets {

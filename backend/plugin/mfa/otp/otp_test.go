@@ -25,6 +25,12 @@ func TestGenerateTimeBasedSecret(t *testing.T) {
 			isSecretExpired: true,
 		},
 		{
+			name:            "0",
+			generateTime:    currentTime,
+			validateTime:    currentTime,
+			isSecretExpired: false,
+		},
+		{
 			name:            "20s",
 			generateTime:    currentTime,
 			validateTime:    currentTime.Add(20 * time.Second),
@@ -43,15 +49,21 @@ func TestGenerateTimeBasedSecret(t *testing.T) {
 			isSecretExpired: false,
 		},
 		{
+			name:            "5min - 1s",
+			generateTime:    currentTime,
+			validateTime:    currentTime.Add(5*time.Minute - 1*time.Second),
+			isSecretExpired: false,
+		},
+		{
 			name:            "5min",
 			generateTime:    currentTime,
 			validateTime:    currentTime.Add(5 * time.Minute),
-			isSecretExpired: true,
+			isSecretExpired: false,
 		},
 		{
-			name:            "5min + 1s",
+			name:            "6min",
 			generateTime:    currentTime,
-			validateTime:    currentTime.Add(5*time.Minute + 1*time.Second),
+			validateTime:    currentTime.Add(6 * time.Minute),
 			isSecretExpired: true,
 		},
 	}
