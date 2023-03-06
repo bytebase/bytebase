@@ -491,13 +491,15 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		projectWebhooks, err := s.findProjectWebhookImplV2(ctx, tx, &FindProjectWebhookMessage{ProjectID: &projectMessage.UID})
+		projectMessages = append(projectMessages, &projectMessage)
+	}
+
+	for _, project := range projectMessages {
+		projectWebhooks, err := s.findProjectWebhookImplV2(ctx, tx, &FindProjectWebhookMessage{ProjectID: &project.UID})
 		if err != nil {
 			return nil, err
 		}
-		projectMessage.Webhooks = projectWebhooks
-		projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-		projectMessages = append(projectMessages, &projectMessage)
+		project.Webhooks = projectWebhooks
 	}
 
 	return projectMessages, nil
