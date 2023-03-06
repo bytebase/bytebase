@@ -633,7 +633,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	return user, nil
 }
 
-func (s *AuthService) challengeMFACode(ctx context.Context, user *store.UserMessage, mfaCode string) error {
+func (_ *AuthService) challengeMFACode(ctx context.Context, user *store.UserMessage, mfaCode string) error {
 	if !otp.ValidateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
 		return status.Errorf(codes.Unauthenticated, "invalid MFA code")
 	}
