@@ -44,11 +44,12 @@ func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Set
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
 func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
 	settingName := api.SettingWorkspaceProfile
-	setting, err := s.GetSetting(ctx, &api.SettingFind{
-		Name: &settingName,
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name:    &settingName,
+		Enforce: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
 	}
 	if setting == nil {
 		return nil, errors.Errorf("cannot find setting %v", settingName)
@@ -75,7 +76,8 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 
 // FindSettingMessage is the message for finding setting.
 type FindSettingMessage struct {
-	Name *api.SettingName
+	Name    *api.SettingName
+	Enforce bool
 }
 
 // SetSettingMessage is the message for updating setting.
@@ -102,7 +104,7 @@ func (sm *SettingMessage) toAPISetting() *api.Setting {
 
 // GetSettingV2 returns the setting by name.
 func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
-	if find.Name != nil {
+	if find.Name != nil && !find.Enforce {
 		if setting, ok := s.settingCache.Load(*find.Name); ok {
 			return setting.(*SettingMessage), nil
 		}
