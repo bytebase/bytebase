@@ -3554,8 +3554,8 @@ The data in setting value.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
-| dumpedSDL | [string](#string) |  | The SDL format SQL schema information that was dumped from a database engine. This information will be sorted to match the order of statements in the userSchema. |
-| userSDL | [string](#string) |  | The user-defined SDL schema. This schema will be checked for correctness and normalized. |
+| current_schema | [string](#string) |  | The SDL format SQL schema information that was dumped from a database engine. This information will be sorted to match the order of statements in the userSchema. |
+| expected_schema | [string](#string) |  | The expected SDL schema. This schema will be checked for correctness and normalized. |
 
 
 
@@ -3570,8 +3570,8 @@ The data in setting value.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| prettyDumpedSDL | [string](#string) |  | The pretty-formatted version of dumpedSDL. |
-| prettyUserSDL | [string](#string) |  | The user-defined SDL schema after normalizing. |
+| current_schema | [string](#string) |  | The pretty-formatted version of current schema. |
+| expected_schema | [string](#string) |  | The expected SDL schema after normalizing. |
 
 
 

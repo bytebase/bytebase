@@ -11,20 +11,20 @@ export interface PrettyRequest {
    * The SDL format SQL schema information that was dumped from a database engine.
    * This information will be sorted to match the order of statements in the userSchema.
    */
-  dumpedSDL: string;
-  /** The user-defined SDL schema. This schema will be checked for correctness and normalized. */
-  userSDL: string;
+  currentSchema: string;
+  /** The expected SDL schema. This schema will be checked for correctness and normalized. */
+  expectedSchema: string;
 }
 
 export interface PrettyResponse {
-  /** The pretty-formatted version of dumpedSDL. */
-  prettyDumpedSDL: string;
-  /** The user-defined SDL schema after normalizing. */
-  prettyUserSDL: string;
+  /** The pretty-formatted version of current schema. */
+  currentSchema: string;
+  /** The expected SDL schema after normalizing. */
+  expectedSchema: string;
 }
 
 function createBasePrettyRequest(): PrettyRequest {
-  return { engine: 0, dumpedSDL: "", userSDL: "" };
+  return { engine: 0, currentSchema: "", expectedSchema: "" };
 }
 
 export const PrettyRequest = {
@@ -32,11 +32,11 @@ export const PrettyRequest = {
     if (message.engine !== 0) {
       writer.uint32(8).int32(message.engine);
     }
-    if (message.dumpedSDL !== "") {
-      writer.uint32(18).string(message.dumpedSDL);
+    if (message.currentSchema !== "") {
+      writer.uint32(18).string(message.currentSchema);
     }
-    if (message.userSDL !== "") {
-      writer.uint32(26).string(message.userSDL);
+    if (message.expectedSchema !== "") {
+      writer.uint32(26).string(message.expectedSchema);
     }
     return writer;
   },
@@ -52,10 +52,10 @@ export const PrettyRequest = {
           message.engine = reader.int32() as any;
           break;
         case 2:
-          message.dumpedSDL = reader.string();
+          message.currentSchema = reader.string();
           break;
         case 3:
-          message.userSDL = reader.string();
+          message.expectedSchema = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -68,39 +68,39 @@ export const PrettyRequest = {
   fromJSON(object: any): PrettyRequest {
     return {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      dumpedSDL: isSet(object.dumpedSDL) ? String(object.dumpedSDL) : "",
-      userSDL: isSet(object.userSDL) ? String(object.userSDL) : "",
+      currentSchema: isSet(object.currentSchema) ? String(object.currentSchema) : "",
+      expectedSchema: isSet(object.expectedSchema) ? String(object.expectedSchema) : "",
     };
   },
 
   toJSON(message: PrettyRequest): unknown {
     const obj: any = {};
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.dumpedSDL !== undefined && (obj.dumpedSDL = message.dumpedSDL);
-    message.userSDL !== undefined && (obj.userSDL = message.userSDL);
+    message.currentSchema !== undefined && (obj.currentSchema = message.currentSchema);
+    message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
     return obj;
   },
 
   fromPartial(object: DeepPartial<PrettyRequest>): PrettyRequest {
     const message = createBasePrettyRequest();
     message.engine = object.engine ?? 0;
-    message.dumpedSDL = object.dumpedSDL ?? "";
-    message.userSDL = object.userSDL ?? "";
+    message.currentSchema = object.currentSchema ?? "";
+    message.expectedSchema = object.expectedSchema ?? "";
     return message;
   },
 };
 
 function createBasePrettyResponse(): PrettyResponse {
-  return { prettyDumpedSDL: "", prettyUserSDL: "" };
+  return { currentSchema: "", expectedSchema: "" };
 }
 
 export const PrettyResponse = {
   encode(message: PrettyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.prettyDumpedSDL !== "") {
-      writer.uint32(10).string(message.prettyDumpedSDL);
+    if (message.currentSchema !== "") {
+      writer.uint32(10).string(message.currentSchema);
     }
-    if (message.prettyUserSDL !== "") {
-      writer.uint32(18).string(message.prettyUserSDL);
+    if (message.expectedSchema !== "") {
+      writer.uint32(18).string(message.expectedSchema);
     }
     return writer;
   },
@@ -113,10 +113,10 @@ export const PrettyResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.prettyDumpedSDL = reader.string();
+          message.currentSchema = reader.string();
           break;
         case 2:
-          message.prettyUserSDL = reader.string();
+          message.expectedSchema = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -128,22 +128,22 @@ export const PrettyResponse = {
 
   fromJSON(object: any): PrettyResponse {
     return {
-      prettyDumpedSDL: isSet(object.prettyDumpedSDL) ? String(object.prettyDumpedSDL) : "",
-      prettyUserSDL: isSet(object.prettyUserSDL) ? String(object.prettyUserSDL) : "",
+      currentSchema: isSet(object.currentSchema) ? String(object.currentSchema) : "",
+      expectedSchema: isSet(object.expectedSchema) ? String(object.expectedSchema) : "",
     };
   },
 
   toJSON(message: PrettyResponse): unknown {
     const obj: any = {};
-    message.prettyDumpedSDL !== undefined && (obj.prettyDumpedSDL = message.prettyDumpedSDL);
-    message.prettyUserSDL !== undefined && (obj.prettyUserSDL = message.prettyUserSDL);
+    message.currentSchema !== undefined && (obj.currentSchema = message.currentSchema);
+    message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
     return obj;
   },
 
   fromPartial(object: DeepPartial<PrettyResponse>): PrettyResponse {
     const message = createBasePrettyResponse();
-    message.prettyDumpedSDL = object.prettyDumpedSDL ?? "";
-    message.prettyUserSDL = object.prettyUserSDL ?? "";
+    message.currentSchema = object.currentSchema ?? "";
+    message.expectedSchema = object.expectedSchema ?? "";
     return message;
   },
 };

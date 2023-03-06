@@ -167,10 +167,10 @@ const useSDLState = () => {
     };
     const diffDDL = (await getSchemaDiff()) ?? "";
 
-    const { prettyDumpedSDL, prettyUserSDL } = await sqlClient.pretty({
+    const { currentSchema, expectedSchema } = await sqlClient.pretty({
       engine: convertEngineType(database.instance.engine),
-      dumpedSDL: previousSDL ?? "",
-      userSDL: expectedSDL ?? "",
+      currentSchema: previousSDL ?? "",
+      expectedSchema: expectedSDL ?? "",
     });
 
     if (task.status === "DONE") {
@@ -178,8 +178,8 @@ const useSDLState = () => {
     }
 
     return {
-      previousSDL: prettyDumpedSDL,
-      prettyExpectedSDL: prettyUserSDL,
+      previousSDL: currentSchema,
+      prettyExpectedSDL: expectedSchema,
       expectedSDL,
       diffDDL,
     };
