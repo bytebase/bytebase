@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -23,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	"github.com/bytebase/bytebase/backend/plugin/mfa/otp"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -98,6 +100,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
 	}
+
+	principalType, err := convertToPrincipalType(request.User.UserType)
+	if err != nil {
+		return nil, err
+	}
 	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.UserType != v1pb.UserType_USER {
 		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
@@ -105,20 +112,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
 	}
 
-	existingUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-		ShowDeleted: true,
-	})
+	count, err := s.store.CountUsers(ctx, api.EndUser)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find existing users, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to count users, error: %v", err)
 	}
-
-	firstEndUser := true
-	for _, user := range existingUsers {
-		if user.Type == api.EndUser {
-			firstEndUser = false
-			break
-		}
-	}
+	firstEndUser := count == 0
 
 	if err := validateEmail(request.User.Email); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
@@ -131,7 +129,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
 	}
 	if existingUser != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
+		return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 	}
 
 	password := request.User.Password
@@ -149,7 +147,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
-		Type:         api.EndUser,
+		Type:         principalType,
 		PasswordHash: string(passwordHash),
 	}, api.SystemBotID)
 	if err != nil {
@@ -247,7 +245,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				return nil, status.Errorf(codes.Internal, "failed to find user list, error: %v", err)
 			}
 			if len(users) != 0 {
-				return nil, status.Errorf(codes.InvalidArgument, "email %s is already existed", request.User.Email)
+				return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 			}
 			patch.Email = &request.User.Email
 		case "user.title":
@@ -389,6 +387,21 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	return convertedUser
 }
 
+func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {
+	var t api.PrincipalType
+	switch userType {
+	case v1pb.UserType_USER:
+		t = api.EndUser
+	case v1pb.UserType_SYSTEM_BOT:
+		t = api.SystemBot
+	case v1pb.UserType_SERVICE_ACCOUNT:
+		t = api.ServiceAccount
+	default:
+		return t, status.Errorf(codes.InvalidArgument, "invalid user type %s", userType)
+	}
+	return t, nil
+}
+
 func convertUserRole(userRole v1pb.UserRole) api.Role {
 	switch userRole {
 	case v1pb.UserRole_OWNER:
@@ -415,6 +428,23 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 	if loginUser == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
+	}
+	if loginUser.MemberDeleted {
+		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
+	}
+	if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
+		if request.MfaCode != nil {
+			if err := challengeMFACode(loginUser, *request.MfaCode); err != nil {
+				return nil, err
+			}
+		} else if request.RecoveryCode != nil {
+			if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
+				return nil, err
+			}
+		} else {
+			// Return FailedPrecondition error to indicate MFA is required.
+			return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
+		}
 	}
 
 	var accessToken string
@@ -471,9 +501,6 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
 	}
-	if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
-	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
@@ -505,7 +532,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	var userInfo *storepb.IdentityProviderUserInfo
 	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
-		oauth2Context := request.Context.GetOauth2Context()
+		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
@@ -524,7 +551,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
 	} else if idp.Type == storepb.IdentityProviderType_OIDC {
-		oauth2Context := request.Context.GetOauth2Context()
+		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
@@ -602,11 +629,35 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	} else {
 		user = users[0]
 	}
-	if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
-	}
 
 	return user, nil
+}
+
+func challengeMFACode(user *store.UserMessage, mfaCode string) error {
+	if !otp.ValidateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
+		return status.Errorf(codes.Unauthenticated, "invalid MFA code")
+	}
+	return nil
+}
+
+func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.UserMessage, recoveryCode string) error {
+	for i, code := range user.MFAConfig.RecoveryCodes {
+		if code == recoveryCode {
+			// If the recovery code is valid, delete it from the user's recovery code list.
+			user.MFAConfig.RecoveryCodes = slices.Delete(user.MFAConfig.RecoveryCodes, i, i+1)
+			_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
+				MFAConfig: &storepb.MFAConfig{
+					OtpSecret:     user.MFAConfig.OtpSecret,
+					RecoveryCodes: user.MFAConfig.RecoveryCodes,
+				},
+			}, user.ID)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to update user: %v", err)
+			}
+			return nil
+		}
+	}
+	return status.Errorf(codes.Unauthenticated, "invalid recovery code")
 }
 
 func validateEmail(email string) error {

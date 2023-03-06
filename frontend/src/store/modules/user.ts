@@ -68,15 +68,17 @@ export const useUserStore = defineStore("user", {
       return this.userMapByName.get(name);
     },
     async getOrFetchUserById(id: number) {
-      const name = `${userNamePrefix}${id}`;
-      return await this.getOrFetchUserByName(name);
+      return await this.getOrFetchUserByName(getUserNameWithUserId(id));
     },
     getUserById(id: number) {
-      const name = `${userNamePrefix}${id}`;
-      return this.userMapByName.get(name);
+      return this.userMapByName.get(getUserNameWithUserId(id));
     },
   },
 });
+
+export const getUserNameWithUserId = (userId: number) => {
+  return `${userNamePrefix}${userId}`;
+};
 
 const getUpdateMaskFromUsers = (
   origin: User,

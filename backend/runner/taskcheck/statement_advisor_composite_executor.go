@@ -75,7 +75,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 	}
 
-	catalog, err := e.store.NewCatalog(ctx, *task.DatabaseID, payload.DbType)
+	catalog, err := e.store.NewCatalog(ctx, *task.DatabaseID, payload.DbType, task.GetSyntaxMode())
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}

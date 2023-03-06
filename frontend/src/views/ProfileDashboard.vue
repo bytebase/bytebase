@@ -185,24 +185,11 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  nextTick,
-  computed,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
+import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { PrincipalPatch } from "../types";
 import { hasWorkspacePermission } from "../utils";
-import {
-  featureToRef,
-  useCurrentUser,
-  usePrincipalStore,
-  useUserStore,
-} from "@/store";
+import { featureToRef, useCurrentUser, usePrincipalStore } from "@/store";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 
 interface LocalState {
@@ -217,7 +204,6 @@ const props = defineProps<{
 
 const currentUser = useCurrentUser();
 const principalStore = usePrincipalStore();
-const userStore = useUserStore();
 const state = reactive<LocalState>({
   editing: false,
 });
@@ -301,23 +287,12 @@ const cancelEdit = () => {
   state.editing = false;
 };
 
-const saveEdit = () => {
-  principalStore
-    .patchPrincipal({
-      principalId: principal.value.id,
-      principalPatch: state.editingPrincipal!,
-    })
-    .then(() => {
-      state.editingPrincipal = undefined;
-      state.editing = false;
-    });
+const saveEdit = async () => {
+  await principalStore.patchPrincipal({
+    principalId: principal.value.id,
+    principalPatch: state.editingPrincipal!,
+  });
+  state.editingPrincipal = undefined;
+  state.editing = false;
 };
-
-watch(
-  principal,
-  async () => {
-    await userStore.fetchUser(`users/${principal.value.id}`);
-  },
-  { immediate: true }
-);
 </script>

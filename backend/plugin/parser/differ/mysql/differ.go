@@ -38,7 +38,7 @@ func init() {
 }
 
 const (
-	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n"
+	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n\n"
 	enableFKCheckStmt  string = "SET FOREIGN_KEY_CHECKS=1;\n"
 )
 

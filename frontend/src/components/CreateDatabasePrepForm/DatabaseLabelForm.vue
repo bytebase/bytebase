@@ -14,9 +14,10 @@
     <div class="flex flex-col space-y-1">
       <BBTextField
         :required="item.required"
+        :force-required="false"
         :value="getLabelValue(item.label)"
         :placeholder="getLabelPlaceholder(item.label)"
-        class="textfield"
+        class="text-sm"
         @input="
           setLabelValue(item.label, ($event.target as HTMLInputElement).value)
         "
@@ -29,8 +30,7 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { capitalize } from "lodash-es";
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, defineComponent } from "vue";
 import type {
   DatabaseLabel,
   LabelKeyType,
@@ -50,8 +50,6 @@ const props = defineProps<{
   labelList: DatabaseLabel[];
   filter: "required" | "optional";
 }>();
-
-const { t } = useI18n();
 
 const isDbNameTemplateMode = computed((): boolean => {
   return !!props.project.dbNameTemplate;
@@ -94,7 +92,7 @@ const getLabelPlaceholder = (key: LabelKeyType): string => {
   key = requiredLabelDict.value.has(key)
     ? `{{${hidePrefix(key).toUpperCase()}}}`
     : capitalize(hidePrefix(key));
-  return t("create-db.input-label-value", { key });
+  return key;
 };
 
 const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
@@ -115,5 +113,11 @@ defineExpose({
   validate: (): boolean => {
     return validateLabelsWithTemplate(props.labelList, requiredLabelDict.value);
   },
+});
+</script>
+
+<script lang="ts">
+export default defineComponent({
+  inheritAttrs: false,
 });
 </script>

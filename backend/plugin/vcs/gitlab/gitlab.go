@@ -110,6 +110,8 @@ type FileCommit struct {
 	Content       string `json:"content"`
 	CommitMessage string `json:"commit_message"`
 	LastCommitID  string `json:"last_commit_id,omitempty"`
+	AuthorName    string `json:"author_name,omitempty"`
+	AuthorEmail   string `json:"author_email,omitempty"`
 }
 
 // RepositoryTreeNode represents a GitLab API response for a repository tree
@@ -543,6 +545,8 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 			Branch:        fileCommitCreate.Branch,
 			CommitMessage: fileCommitCreate.CommitMessage,
 			Content:       fileCommitCreate.Content,
+			AuthorName:    fileCommitCreate.AuthorName,
+			AuthorEmail:   fileCommitCreate.AuthorEmail,
 		},
 	)
 	if err != nil {
@@ -592,6 +596,8 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 			Content:       fileCommitCreate.Content,
 			CommitMessage: fileCommitCreate.CommitMessage,
 			LastCommitID:  fileCommitCreate.LastCommitID,
+			AuthorName:    fileCommitCreate.AuthorName,
+			AuthorEmail:   fileCommitCreate.AuthorEmail,
 		},
 	)
 	if err != nil {

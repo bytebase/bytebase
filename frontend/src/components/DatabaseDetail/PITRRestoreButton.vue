@@ -70,7 +70,7 @@
       </template>
 
       <template v-else>
-        <div class="w-[16.5rem] space-y-4">
+        <div class="w-72 space-y-4">
           <div class="space-y-2">
             <label class="textlabel w-full flex items-baseline">
               <span>{{ $t("database.pitr.point-in-time") }}</span>

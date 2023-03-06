@@ -63,6 +63,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
+		nonBytebaseCommitList := filterGitLabBytebaseCommit(pushEvent.CommitList)
+		if len(nonBytebaseCommitList) == 0 {
+			var commitList []string
+			for _, commit := range pushEvent.CommitList {
+				commitList = append(commitList, commit.ID)
+			}
+			log.Debug("all commits are created by Bytebase",
+				zap.String("repoURL", pushEvent.Project.WebURL),
+				zap.String("repoName", pushEvent.Project.FullPath),
+				zap.String("commits", strings.Join(commitList, ", ")),
+			)
+			return c.String(http.StatusOK, "OK")
+		}
+		pushEvent.CommitList = nonBytebaseCommitList
+
 		filter := func(repo *api.Repository) (bool, error) {
 			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
 				return false, nil
@@ -115,6 +130,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 		repositoryID := pushEvent.Repository.FullName
+
+		nonBytebaseCommitList := filterGitHubBytebaseCommit(pushEvent.Commits)
+		if len(nonBytebaseCommitList) == 0 {
+			var commitList []string
+			for _, commit := range pushEvent.Commits {
+				commitList = append(commitList, commit.ID)
+			}
+			log.Debug("all commits are created by Bytebase",
+				zap.String("repoURL", pushEvent.Repository.HTMLURL),
+				zap.String("repoName", pushEvent.Repository.FullName),
+				zap.String("commits", strings.Join(commitList, ", ")),
+			)
+			return c.String(http.StatusOK, "OK")
+		}
+		pushEvent.Commits = nonBytebaseCommitList
 
 		filter := func(repo *api.Repository) (bool, error) {
 			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
@@ -363,7 +393,8 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", instance.Engine, err)
 		}
 
-		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine)
+		// TODO(rebelice): support SDL mode for webhook.
+		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
 		if err != nil {
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}
@@ -1030,7 +1061,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 // schema details derived from the given push event for SDL.
 func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo.Database
-	if dbName == "" {
+	if dbName == "" && repo.Project.TenantMode == api.TenantModeDisabled {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
 		return nil, nil
 	}
@@ -1345,4 +1376,26 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 		Status:  status,
 		Content: messageList,
 	}
+}
+
+func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
+	var result []github.WebhookCommit
+	for _, commit := range list {
+		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
+			continue
+		}
+		result = append(result, commit)
+	}
+	return result
+}
+
+func filterGitLabBytebaseCommit(list []gitlab.WebhookCommit) []gitlab.WebhookCommit {
+	var result []gitlab.WebhookCommit
+	for _, commit := range list {
+		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
+			continue
+		}
+		result = append(result, commit)
+	}
+	return result
 }

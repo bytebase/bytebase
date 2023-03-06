@@ -3,6 +3,9 @@
 
 ## Table of Contents
 
+- [store/data_source.proto](#store_data_source-proto)
+    - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+  
 - [store/database.proto](#store_database-proto)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
@@ -26,7 +29,42 @@
 - [store/setting.proto](#store_setting-proto)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
+- [store/user.proto](#store_user-proto)
+    - [MFAConfig](#bytebase-store-MFAConfig)
+  
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="store_data_source-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/data_source.proto
+
+
+
+<a name="bytebase-store-DataSourceOptions"></a>
+
+### DataSourceOptions
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
 
 
 
@@ -369,6 +407,38 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 The external URL is used for: 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend. 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend. |
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_user-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/user.proto
+
+
+
+<a name="bytebase-store-MFAConfig"></a>
+
+### MFAConfig
+MFAConfig is the MFA configuration for a user.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| otp_secret | [string](#string) |  | The otp_secret is the secret key used to validate the OTP code. |
+| recovery_codes | [string](#string) | repeated | The recovery_codes are the codes that can be used to recover the account. |
 
 
 

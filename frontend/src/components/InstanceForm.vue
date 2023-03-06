@@ -659,7 +659,7 @@ const getDataSourceWithType = (type: DataSourceType) =>
 
 // We only support one admin data source and one read-only data source.
 const adminDataSource = ref<EditDataSource>({
-  ...(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),
+  ...cloneDeep(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),
   updatedPassword: "",
   useEmptyPassword: false,
 });
@@ -667,7 +667,7 @@ const adminDataSource = ref<EditDataSource>({
 const readonlyDataSource = ref<EditDataSource | undefined>(
   getDataSourceWithType("RO")
     ? ({
-        ...getDataSourceWithType("RO"),
+        ...cloneDeep(getDataSourceWithType("RO")),
         updatedPassword: "",
         useEmptyPassword: false,
       } as EditDataSource)
@@ -693,10 +693,8 @@ const isCreating = computed(() => props.instance === undefined);
 
 onMounted(() => {
   if (isCreating.value) {
-    (adminDataSource.value.host = isDev()
-      ? "127.0.0.1"
-      : "host.docker.internal"),
-      (adminDataSource.value.options.srv = false);
+    adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
+    adminDataSource.value.options.srv = false;
     adminDataSource.value.options.authenticationDatabase = "";
   }
 });

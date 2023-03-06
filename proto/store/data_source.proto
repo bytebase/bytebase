@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message DataSourceOptions {
+  // srv is a boolean flag that indicates whether the host is a DNS SRV record.
+  bool srv = 1;
+
+  // authentication_database is the database name to authenticate against, which stores the user credentials.
+  string authentication_database = 2;
+}

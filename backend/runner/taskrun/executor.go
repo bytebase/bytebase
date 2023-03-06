@@ -589,6 +589,8 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		Branch:        writebackBranch,
 		CommitMessage: commitMessage,
 		Content:       schema,
+		AuthorName:    vcsPlugin.BytebaseAuthorName,
+		AuthorEmail:   vcsPlugin.BytebaseAuthorEmail,
 	}
 	if createSchemaFile {
 		log.Debug("Create latest schema file",
