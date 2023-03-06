@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -23,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	"github.com/bytebase/bytebase/backend/plugin/mfa/otp"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -427,6 +429,22 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if loginUser == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
 	}
+	if loginUser.MemberDeleted {
+		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
+	}
+	if loginUser.MFAConfig.OtpSecret != "" {
+		if request.MfaCode != nil {
+			if err := s.challengeMFACode(ctx, loginUser, *request.MfaCode); err != nil {
+				return nil, err
+			}
+		} else if request.RecoveryCode != nil {
+			if err := s.challengeMFACode(ctx, loginUser, *request.RecoveryCode); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
+		}
+	}
 
 	var accessToken string
 	if request.Web {
@@ -482,9 +500,6 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
 	}
-	if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
-	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
@@ -516,7 +531,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	var userInfo *storepb.IdentityProviderUserInfo
 	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
-		oauth2Context := request.Context.GetOauth2Context()
+		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
@@ -535,7 +550,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
 	} else if idp.Type == storepb.IdentityProviderType_OIDC {
-		oauth2Context := request.Context.GetOauth2Context()
+		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
@@ -613,11 +628,37 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	} else {
 		user = users[0]
 	}
-	if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
-	}
 
 	return user, nil
+}
+
+func (s *AuthService) challengeMFACode(ctx context.Context, user *store.UserMessage, mfaCode string) error {
+	if !otp.ValidateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
+		return status.Errorf(codes.Unauthenticated, "invalid MFA code")
+	}
+	return nil
+}
+
+func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.UserMessage, recoveryCode string) error {
+	if user.MFAConfig.RecoveryCodes == nil {
+		return status.Errorf(codes.FailedPrecondition, "user %s does not have MFA enabled", user.Email)
+	}
+	for i, code := range user.MFAConfig.RecoveryCodes {
+		if code == recoveryCode {
+			user.MFAConfig.RecoveryCodes = slices.Delete(user.MFAConfig.RecoveryCodes, i, i+1)
+			_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
+				MFAConfig: &storepb.MFAConfig{
+					OtpSecret:     user.MFAConfig.OtpSecret,
+					RecoveryCodes: user.MFAConfig.RecoveryCodes,
+				},
+			}, user.ID)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to update user: %v", err)
+			}
+			return nil
+		}
+	}
+	return status.Errorf(codes.Unauthenticated, "invalid recovery code")
 }
 
 func validateEmail(email string) error {

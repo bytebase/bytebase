@@ -147,14 +147,20 @@ message LoginRequest {
   // Format: idps/{idp}
   string idp_name = 4 [(google.api.field_behavior) = REQUIRED];
 
-  // The context data is using to get the user information from identity provider.
-  IdentityProviderContext context = 5;
+  // The idp_context data is using to get the user information from identity provider.
+  IdentityProviderContext idp_context = 5;
+
+  // The mfa_code code is used to verify the user's identity by MFA.
+  optional string mfa_code = 6;
+
+  // The recovery_code code is used to recovery the user's identity with MFA.
+  optional string recovery_code = 7;
 }
 
 message IdentityProviderContext {
   oneof context {
     OAuth2IdentityProviderContext oauth2_context = 1;
-    OIDCIdentityProviderContextx oidc_context = 2;
+    OIDCIdentityProviderContext oidc_context = 2;
   }
 }
 
@@ -162,7 +168,7 @@ message OAuth2IdentityProviderContext {
   string code = 1;
 }
 
-message OIDCIdentityProviderContextx {
+message OIDCIdentityProviderContext {
 }
 
 message LoginResponse {

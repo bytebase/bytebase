@@ -178,20 +178,26 @@ export interface LoginRequest {
    * Format: idps/{idp}
    */
   idpName: string;
-  /** The context data is using to get the user information from identity provider. */
-  context?: IdentityProviderContext;
+  /** The idp_context data is using to get the user information from identity provider. */
+  idpContext?: IdentityProviderContext;
+  /** The mfa_code code is used to verify the user's identity by MFA. */
+  mfaCode?:
+    | string
+    | undefined;
+  /** The recovery_code code is used to recovery the user's identity with MFA. */
+  recoveryCode?: string | undefined;
 }
 
 export interface IdentityProviderContext {
   oauth2Context?: OAuth2IdentityProviderContext | undefined;
-  oidcContext?: OIDCIdentityProviderContextx | undefined;
+  oidcContext?: OIDCIdentityProviderContext | undefined;
 }
 
 export interface OAuth2IdentityProviderContext {
   code: string;
 }
 
-export interface OIDCIdentityProviderContextx {
+export interface OIDCIdentityProviderContext {
 }
 
 export interface LoginResponse {
@@ -593,7 +599,15 @@ export const UndeleteUserRequest = {
 };
 
 function createBaseLoginRequest(): LoginRequest {
-  return { email: "", password: "", web: false, idpName: "", context: undefined };
+  return {
+    email: "",
+    password: "",
+    web: false,
+    idpName: "",
+    idpContext: undefined,
+    mfaCode: undefined,
+    recoveryCode: undefined,
+  };
 }
 
 export const LoginRequest = {
@@ -610,8 +624,14 @@ export const LoginRequest = {
     if (message.idpName !== "") {
       writer.uint32(34).string(message.idpName);
     }
-    if (message.context !== undefined) {
-      IdentityProviderContext.encode(message.context, writer.uint32(42).fork()).ldelim();
+    if (message.idpContext !== undefined) {
+      IdentityProviderContext.encode(message.idpContext, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.mfaCode !== undefined) {
+      writer.uint32(50).string(message.mfaCode);
+    }
+    if (message.recoveryCode !== undefined) {
+      writer.uint32(58).string(message.recoveryCode);
     }
     return writer;
   },
@@ -636,7 +656,13 @@ export const LoginRequest = {
           message.idpName = reader.string();
           break;
         case 5:
-          message.context = IdentityProviderContext.decode(reader, reader.uint32());
+          message.idpContext = IdentityProviderContext.decode(reader, reader.uint32());
+          break;
+        case 6:
+          message.mfaCode = reader.string();
+          break;
+        case 7:
+          message.recoveryCode = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -652,7 +678,9 @@ export const LoginRequest = {
       password: isSet(object.password) ? String(object.password) : "",
       web: isSet(object.web) ? Boolean(object.web) : false,
       idpName: isSet(object.idpName) ? String(object.idpName) : "",
-      context: isSet(object.context) ? IdentityProviderContext.fromJSON(object.context) : undefined,
+      idpContext: isSet(object.idpContext) ? IdentityProviderContext.fromJSON(object.idpContext) : undefined,
+      mfaCode: isSet(object.mfaCode) ? String(object.mfaCode) : undefined,
+      recoveryCode: isSet(object.recoveryCode) ? String(object.recoveryCode) : undefined,
     };
   },
 
@@ -662,8 +690,10 @@ export const LoginRequest = {
     message.password !== undefined && (obj.password = message.password);
     message.web !== undefined && (obj.web = message.web);
     message.idpName !== undefined && (obj.idpName = message.idpName);
-    message.context !== undefined &&
-      (obj.context = message.context ? IdentityProviderContext.toJSON(message.context) : undefined);
+    message.idpContext !== undefined &&
+      (obj.idpContext = message.idpContext ? IdentityProviderContext.toJSON(message.idpContext) : undefined);
+    message.mfaCode !== undefined && (obj.mfaCode = message.mfaCode);
+    message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
     return obj;
   },
 
@@ -673,9 +703,11 @@ export const LoginRequest = {
     message.password = object.password ?? "";
     message.web = object.web ?? false;
     message.idpName = object.idpName ?? "";
-    message.context = (object.context !== undefined && object.context !== null)
-      ? IdentityProviderContext.fromPartial(object.context)
+    message.idpContext = (object.idpContext !== undefined && object.idpContext !== null)
+      ? IdentityProviderContext.fromPartial(object.idpContext)
       : undefined;
+    message.mfaCode = object.mfaCode ?? undefined;
+    message.recoveryCode = object.recoveryCode ?? undefined;
     return message;
   },
 };
@@ -690,7 +722,7 @@ export const IdentityProviderContext = {
       OAuth2IdentityProviderContext.encode(message.oauth2Context, writer.uint32(10).fork()).ldelim();
     }
     if (message.oidcContext !== undefined) {
-      OIDCIdentityProviderContextx.encode(message.oidcContext, writer.uint32(18).fork()).ldelim();
+      OIDCIdentityProviderContext.encode(message.oidcContext, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -706,7 +738,7 @@ export const IdentityProviderContext = {
           message.oauth2Context = OAuth2IdentityProviderContext.decode(reader, reader.uint32());
           break;
         case 2:
-          message.oidcContext = OIDCIdentityProviderContextx.decode(reader, reader.uint32());
+          message.oidcContext = OIDCIdentityProviderContext.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -721,7 +753,7 @@ export const IdentityProviderContext = {
       oauth2Context: isSet(object.oauth2Context)
         ? OAuth2IdentityProviderContext.fromJSON(object.oauth2Context)
         : undefined,
-      oidcContext: isSet(object.oidcContext) ? OIDCIdentityProviderContextx.fromJSON(object.oidcContext) : undefined,
+      oidcContext: isSet(object.oidcContext) ? OIDCIdentityProviderContext.fromJSON(object.oidcContext) : undefined,
     };
   },
 
@@ -731,7 +763,7 @@ export const IdentityProviderContext = {
       ? OAuth2IdentityProviderContext.toJSON(message.oauth2Context)
       : undefined);
     message.oidcContext !== undefined &&
-      (obj.oidcContext = message.oidcContext ? OIDCIdentityProviderContextx.toJSON(message.oidcContext) : undefined);
+      (obj.oidcContext = message.oidcContext ? OIDCIdentityProviderContext.toJSON(message.oidcContext) : undefined);
     return obj;
   },
 
@@ -741,7 +773,7 @@ export const IdentityProviderContext = {
       ? OAuth2IdentityProviderContext.fromPartial(object.oauth2Context)
       : undefined;
     message.oidcContext = (object.oidcContext !== undefined && object.oidcContext !== null)
-      ? OIDCIdentityProviderContextx.fromPartial(object.oidcContext)
+      ? OIDCIdentityProviderContext.fromPartial(object.oidcContext)
       : undefined;
     return message;
   },
@@ -794,19 +826,19 @@ export const OAuth2IdentityProviderContext = {
   },
 };
 
-function createBaseOIDCIdentityProviderContextx(): OIDCIdentityProviderContextx {
+function createBaseOIDCIdentityProviderContext(): OIDCIdentityProviderContext {
   return {};
 }
 
-export const OIDCIdentityProviderContextx = {
-  encode(_: OIDCIdentityProviderContextx, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const OIDCIdentityProviderContext = {
+  encode(_: OIDCIdentityProviderContext, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): OIDCIdentityProviderContextx {
+  decode(input: _m0.Reader | Uint8Array, length?: number): OIDCIdentityProviderContext {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOIDCIdentityProviderContextx();
+    const message = createBaseOIDCIdentityProviderContext();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -818,17 +850,17 @@ export const OIDCIdentityProviderContextx = {
     return message;
   },
 
-  fromJSON(_: any): OIDCIdentityProviderContextx {
+  fromJSON(_: any): OIDCIdentityProviderContext {
     return {};
   },
 
-  toJSON(_: OIDCIdentityProviderContextx): unknown {
+  toJSON(_: OIDCIdentityProviderContext): unknown {
     const obj: any = {};
     return obj;
   },
 
-  fromPartial(_: DeepPartial<OIDCIdentityProviderContextx>): OIDCIdentityProviderContextx {
-    const message = createBaseOIDCIdentityProviderContextx();
+  fromPartial(_: DeepPartial<OIDCIdentityProviderContext>): OIDCIdentityProviderContext {
+    const message = createBaseOIDCIdentityProviderContext();
     return message;
   },
 };
