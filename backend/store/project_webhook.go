@@ -118,7 +118,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, principalUID int, pr
 
 // FindProjectWebhookV2 finds a list of ProjectWebhook instances.
 func (s *Store) FindProjectWebhookV2(ctx context.Context, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -136,7 +136,7 @@ func (s *Store) FindProjectWebhookV2(ctx context.Context, find *FindProjectWebho
 
 // GetProjectWebhookV2 gets an instance of ProjectWebhook.
 func (s *Store) GetProjectWebhookV2(ctx context.Context, find *FindProjectWebhookMessage) (*ProjectWebhookMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
