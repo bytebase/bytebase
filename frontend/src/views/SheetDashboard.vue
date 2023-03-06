@@ -198,7 +198,7 @@ const shownSheetList = computed(() => {
 
       if (
         projectSelectorValue.value !== "" &&
-        projectSelectorValue.value !== sheet.project.name
+        projectSelectorValue.value !== sheet.project.resourceId
       ) {
         t = false;
       }
@@ -222,7 +222,7 @@ const projectList = computed(() => {
 
 const selectedProject = computed(() => {
   for (const project of projectList.value) {
-    if (project.name === projectSelectorValue.value) {
+    if (project.resourceId === projectSelectorValue.value) {
       return project;
     }
   }
@@ -240,7 +240,7 @@ const projectSelectOptions = computed(() => {
     projectList.value.map((project) => {
       return {
         label: project.name,
-        value: project.name,
+        value: project.resourceId,
       };
     })
   );
