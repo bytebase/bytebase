@@ -188,6 +188,8 @@
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
 - [v1/project_service.proto](#v1_project_service-proto)
+    - [Activity](#bytebase-v1-Activity)
+    - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
     - [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest)
     - [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse)
     - [Binding](#bytebase-v1-Binding)
@@ -207,15 +209,21 @@
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
     - [Project](#bytebase-v1-Project)
+    - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [Review](#bytebase-v1-Review)
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
+    - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
+    - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
+    - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
+    - [Webhook](#bytebase-v1-Webhook)
   
+    - [Activity.Type](#bytebase-v1-Activity-Type)
     - [LgtmCheck](#bytebase-v1-LgtmCheck)
     - [OperatorType](#bytebase-v1-OperatorType)
     - [ProjectRole](#bytebase-v1-ProjectRole)
@@ -224,6 +232,7 @@
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
     - [Visibility](#bytebase-v1-Visibility)
+    - [Webhook.Type](#bytebase-v1-Webhook-Type)
     - [Workflow](#bytebase-v1-Workflow)
   
     - [ProjectService](#bytebase-v1-ProjectService)
@@ -2828,6 +2837,32 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
+<a name="bytebase-v1-Activity"></a>
+
+### Activity
+TODO(zp): move to activity later.
+
+
+
+
+
+
+<a name="bytebase-v1-AddWebhookRequest"></a>
+
+### AddWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project to add the webhook to. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to add. |
+
+
+
+
+
+
 <a name="bytebase-v1-BatchUpdateReviewsRequest"></a>
 
 ### BatchUpdateReviewsRequest
@@ -3139,6 +3174,23 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | lgtm_check | [LgtmCheck](#bytebase-v1-LgtmCheck) |  |  |
+| webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RemoveWebhookRequest"></a>
+
+### RemoveWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project to remove the webhook from. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to remove. Identified by its url. |
 
 
 
@@ -3217,6 +3269,37 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
+<a name="bytebase-v1-TestWebhookRequest"></a>
+
+### TestWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project which owns the webhook to test. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to test. Identified by its url. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestWebhookResponse"></a>
+
+### TestWebhookResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | The result of the test, empty if the test is successful. |
+
+
+
+
+
+
 <a name="bytebase-v1-UndeleteProjectRequest"></a>
 
 ### UndeleteProjectRequest
@@ -3282,7 +3365,79 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 
 
 
+
+<a name="bytebase-v1-UpdateWebhookRequest"></a>
+
+### UpdateWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project which owns the webhook to be updated. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. Identified by its url. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-Webhook"></a>
+
+### Webhook
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  | type is the type of the webhook. |
+| title | [string](#string) |  | title is the title of the webhook. |
+| url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
+| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and shoule be a subset of the following: - TYPE_ISSUE_CREATED - TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_COMMENT_CREAT |
+
+
+
+
+
  
+
+
+<a name="bytebase-v1-Activity-Type"></a>
+
+### Activity.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_ISSUE_CREATE | 1 | Issue related activity types.
+
+TYPE_ISSUE_CREATE represents creating an issue. |
+| TYPE_ISSUE_COMMENT_CREATE | 2 | TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. |
+| TYPE_ISSUE_FIELD_UPDATE | 3 | TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. |
+| TYPE_ISSUE_STATUS_UPDATE | 4 | TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
+| TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE | 6 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
+| TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT | 7 | TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
+| TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE | 8 | TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
+| TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 9 | TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
+| TYPE_MEMBER_CREATE | 10 | Member related activity types.
+
+TYPE_MEMBER_CREATE represents creating a members. |
+| TYPE_MEMBER_ROLE_UPDATE | 11 | TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
+| TYPE_MEMBER_ACTIVATE | 12 | TYPE_MEMBER_ACTIVATE represents activating a deactivated member. |
+| TYPE_MEMBER_DEACTIVATE | 13 | TYPE_MEMBER_DEACTIVATE represents deactivating an active member. |
+| TYPE_PROJECT_REPOSITORY_PUSH | 14 | Project related activity types.
+
+TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
+| TYPE_PROJECT_DATABASE_TRANSFER | 15 | TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another. |
+| TYPE_PROJECT_MEMBER_CREATE | 16 | TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project. |
+| TYPE_PROJECT_MEMBER_DELETE | 17 | TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. |
+| TYPE_PROJECT_MEMBER_ROLE_UPDATE | 18 | TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
+| TYPE_SQL_EDITOR_QUERY | 19 | SQL Editor related activity types. TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor. |
+| TYPE_DATABASE_RECOVERY_PITR_DONE | 20 | Database related activity types. TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done. |
+
 
 
 <a name="bytebase-v1-LgtmCheck"></a>
@@ -3391,6 +3546,24 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 
 
 
+<a name="bytebase-v1-Webhook-Type"></a>
+
+### Webhook.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_SLACK | 1 |  |
+| TYPE_DISCORD | 2 |  |
+| TYPE_TEAMS | 3 |  |
+| TYPE_DINGTALK | 4 |  |
+| TYPE_FEISHU | 5 |  |
+| TYPE_WECOM | 6 |  |
+| TYPE_CUSTOM | 7 |  |
+
+
+
 <a name="bytebase-v1-Workflow"></a>
 
 ### Workflow
@@ -3429,6 +3602,10 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | GetDeploymentConfig | [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest) | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |
 | UpdateDeploymentConfig | [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest) | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |
+| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) |  |
+| UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
+| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
+| TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 
  
 
