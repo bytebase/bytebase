@@ -3,6 +3,9 @@
 
 ## Table of Contents
 
+- [store/data_source.proto](#store_data_source-proto)
+    - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+  
 - [store/database.proto](#store_database-proto)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
@@ -30,6 +33,38 @@
     - [MFAConfig](#bytebase-store-MFAConfig)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="store_data_source-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/data_source.proto
+
+
+
+<a name="bytebase-store-DataSourceOptions"></a>
+
+### DataSourceOptions
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
 
 
 
