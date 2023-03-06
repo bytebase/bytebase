@@ -21,13 +21,13 @@ type TimeBasedReader struct {
 	reader *strings.Reader
 }
 
-// NewTimeBasedReader creates a new TimeBasedReader for the given timestamp.
-func NewTimeBasedReader(timestamp time.Time) *TimeBasedReader {
+// NewTimeBasedReader creates a new TimeBasedReader with the given account name and timestamp.
+func NewTimeBasedReader(accountName string, timestamp time.Time) *TimeBasedReader {
 	// Convert the timestamp to Unix time and divide by the secretMaxExpiredDuration.
 	// We generate a new secret every 5 minutes. e.g. 15:00, 15:05
 	formatedTimestampUnix := timestamp.Unix() / int64(generateSecretPeriod/time.Second)
 	return &TimeBasedReader{
-		reader: strings.NewReader(strconv.FormatInt(formatedTimestampUnix, 10)),
+		reader: strings.NewReader(accountName + strconv.FormatInt(formatedTimestampUnix, 10)),
 	}
 }
 
@@ -40,7 +40,7 @@ func GenerateSecret(accountName string, timestamp time.Time) (string, error) {
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      issuerName,
 		AccountName: accountName,
-		Rand:        NewTimeBasedReader(timestamp),
+		Rand:        NewTimeBasedReader(accountName, timestamp),
 	})
 	if err != nil {
 		return "", err
@@ -58,7 +58,7 @@ func GetValidSecrets(accountName string, timestamp time.Time) ([]string, error) 
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuerName,
 			AccountName: accountName,
-			Rand:        NewTimeBasedReader(t),
+			Rand:        NewTimeBasedReader(accountName, t),
 		})
 		if err != nil {
 			return nil, err
