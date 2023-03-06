@@ -98,6 +98,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
 	}
+
+	principalType, err := convertToPrincipalType(request.User.UserType)
+	if err != nil {
+		return nil, err
+	}
 	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.UserType != v1pb.UserType_USER {
 		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
@@ -105,20 +110,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
 	}
 
-	existingUsers, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-		ShowDeleted: true,
-	})
+	count, err := s.store.CountUsers(ctx, api.EndUser)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find existing users, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to count users, error: %v", err)
 	}
-
-	firstEndUser := true
-	for _, user := range existingUsers {
-		if user.Type == api.EndUser {
-			firstEndUser = false
-			break
-		}
-	}
+	firstEndUser := count == 0
 
 	if err := validateEmail(request.User.Email); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
@@ -149,7 +145,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
-		Type:         api.EndUser,
+		Type:         principalType,
 		PasswordHash: string(passwordHash),
 	}, api.SystemBotID)
 	if err != nil {
@@ -387,6 +383,21 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserRole: role,
 	}
 	return convertedUser
+}
+
+func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {
+	var t api.PrincipalType
+	switch userType {
+	case v1pb.UserType_USER:
+		t = api.EndUser
+	case v1pb.UserType_SYSTEM_BOT:
+		t = api.SystemBot
+	case v1pb.UserType_SERVICE_ACCOUNT:
+		t = api.ServiceAccount
+	default:
+		return t, status.Errorf(codes.InvalidArgument, "invalid user type %s", userType)
+	}
+	return t, nil
 }
 
 func convertUserRole(userRole v1pb.UserRole) api.Role {
