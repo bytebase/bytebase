@@ -116,7 +116,7 @@ service ProjectService {
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:addWebhook"
-      body: "webhook"
+      body: "*"
     };
   }
 
@@ -129,7 +129,8 @@ service ProjectService {
 
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
     option (google.api.http) = {
-      delete: "/v1/{project=projects/*}:removeWebhook"
+      post: "/v1/{project=projects/*}:removeWebhook"
+      body: "*"
     };
   }
 
