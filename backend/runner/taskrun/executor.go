@@ -77,6 +77,9 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	}
 
 	mi := &db.MigrationInfo{
+		InstanceID:     instance.UID,
+		DatabaseID:     &database.UID,
+		CreatorID:      api.SystemBotID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
 		// TODO(d): support semantic versioning.
@@ -94,6 +97,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		// more context of the migration.
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
 		mi.IssueID = strconv.Itoa(issue.UID)
+		mi.IssueIDInt = &issue.UID
 	}
 
 	if vcsPushEvent == nil {
@@ -108,6 +112,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 			)
 		} else {
 			mi.Creator = creator.Name
+			mi.CreatorID = creator.ID
 		}
 	} else {
 		mi.Source = db.VCS
@@ -428,9 +433,9 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}
 
 	// Remove schema drift anomalies.
-	if err := stores.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-		DatabaseID: task.DatabaseID,
-		Type:       api.AnomalyDatabaseSchemaDrift,
+	if err := stores.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+		DatabaseUID: task.DatabaseID,
+		Type:        api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to archive anomaly",
 			zap.String("instance", instance.ResourceID),

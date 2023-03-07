@@ -57,7 +57,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 		}
 		for _, tp := range types {
 			if v, ok := typesMap[tp]; ok {
-				find.Types = append(find.Types, &v)
+				find.Types = append(find.Types, v)
 			} else {
 				return nil, status.Errorf(codes.InvalidArgument, "Invalid type filter %q", tp)
 			}

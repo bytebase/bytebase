@@ -1925,5 +1925,13 @@
       "minlength": "{resource} ID 至少包含 1 个字符。",
       "overflow": "{resource} ID 应该少于 64 个字符。"
     }
+  },
+  "two-factor": {
+    "self": "双重认证",
+    "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
+    "setup-steps": {
+      "setup-auth-app": "设置认证器应用程序",
+      "download-recovery-codes": "下载恢复码"
+    }
   }
 }
