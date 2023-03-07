@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 // ProjectWebhook is the API message for project webhooks.
 type ProjectWebhook struct {
 	ID int `jsonapi:"primary,projectWebhookMember"`
@@ -35,23 +31,6 @@ type ProjectWebhookCreate struct {
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
 
-// ProjectWebhookFind is the API message for finding project webhooks.
-type ProjectWebhookFind struct {
-	ID *int
-
-	// Related fields
-	ProjectID    *int
-	ActivityType *ActivityType
-}
-
-func (find *ProjectWebhookFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
 // ProjectWebhookPatch is the API message for patching a project webhook.
 type ProjectWebhookPatch struct {
 	ID int
@@ -64,15 +43,6 @@ type ProjectWebhookPatch struct {
 	Name         *string `jsonapi:"attr,name"`
 	URL          *string `jsonapi:"attr,url"`
 	ActivityList *string `jsonapi:"attr,activityList"`
-}
-
-// ProjectWebhookDelete is the API message for deleting a project webhook.
-type ProjectWebhookDelete struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
 }
 
 // ProjectWebhookTestResult is the test result of a project webhook.
