@@ -21,6 +21,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingAppIM,
 	api.SettingWatermark,
 	api.SettingWorkspaceProfile,
+	api.SettingPluginOpenAIKey,
 }
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {

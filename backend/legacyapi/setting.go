@@ -27,6 +27,9 @@ const (
 	// SettingAgentToken is the setting name for the agent token to call the internal API.
 	// For now we will call the hub to fetch the subscription license.
 	SettingAgentToken SettingName = "bb.agent.token"
+	// SettingPluginOpenAIKey is used for OpenAI's API key.
+	// For AI-related features.
+	SettingPluginOpenAIKey SettingName = "bb.plugin.openai-key"
 )
 
 // IMType is the type of IM.
