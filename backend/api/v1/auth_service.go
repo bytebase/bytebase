@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	"github.com/bytebase/bytebase/backend/plugin/mfa"
 	"github.com/bytebase/bytebase/backend/plugin/mfa/otp"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
@@ -274,6 +275,15 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
 			}
 			patch.Role = &userRole
+		case "user.mfa_enabled":
+			// We only do disable MFA in this case.
+			if !request.User.MfaEnabled {
+				// TODO(steven): update MFA config in user.
+				patch.MFAConfig = &storepb.MFAConfig{
+					OtpSecret:     "",
+					RecoveryCodes: []string{},
+				}
+			}
 		}
 	}
 	if passwordPatch != nil {
@@ -283,6 +293,26 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 		passwordHashStr := string(passwordHash)
 		patch.PasswordHash = &passwordHashStr
+	}
+	if request.MfaCode != nil {
+		accountName := fmt.Sprintf("users/%d", userID)
+		isValid, err := otp.ValidateWithCodeAndAccountName(*request.MfaCode, accountName)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to validate MFA code, error: %v", err)
+		}
+		if !isValid {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid MFA code")
+		}
+		// TODO(steven): update MFA config in user.
+		// Since we have not confirmed MFA config structure yet, we just ignore it for now.
+	}
+	if request.RegenerateRecoveryCodes != nil && *request.RegenerateRecoveryCodes {
+		_, err := mfa.GenerateRecoveryCodes(10)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
+		}
+		// TODO(steven): update MFA config in user.
+		// Since we have not confirmed MFA config structure yet, we just ignore it for now.
 	}
 
 	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
@@ -383,6 +413,9 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		Title:    user.Name,
 		UserType: userType,
 		UserRole: role,
+	}
+	if user.MFAConfig != nil && user.MFAConfig.OtpSecret != "" {
+		convertedUser.MfaEnabled = true
 	}
 	return convertedUser
 }

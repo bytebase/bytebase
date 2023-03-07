@@ -150,6 +150,12 @@ export interface UpdateUserRequest {
   user?: User;
   /** The list of fields to update. */
   updateMask?: string[];
+  /** The mfa_code is used to verify the user's identity by MFA. */
+  mfaCode?:
+    | string
+    | undefined;
+  /** The regenerate_recovery_codes flag means to regenerate recovery codes for user. */
+  regenerateRecoveryCodes?: boolean | undefined;
 }
 
 export interface DeleteUserRequest {
@@ -221,6 +227,7 @@ export interface User {
   userRole: UserRole;
   password: string;
   serviceKey: string;
+  mfaEnabled: boolean;
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -447,7 +454,7 @@ export const CreateUserRequest = {
 };
 
 function createBaseUpdateUserRequest(): UpdateUserRequest {
-  return { user: undefined, updateMask: undefined };
+  return { user: undefined, updateMask: undefined, mfaCode: undefined, regenerateRecoveryCodes: undefined };
 }
 
 export const UpdateUserRequest = {
@@ -457,6 +464,12 @@ export const UpdateUserRequest = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.mfaCode !== undefined) {
+      writer.uint32(26).string(message.mfaCode);
+    }
+    if (message.regenerateRecoveryCodes !== undefined) {
+      writer.uint32(32).bool(message.regenerateRecoveryCodes);
     }
     return writer;
   },
@@ -474,6 +487,12 @@ export const UpdateUserRequest = {
         case 2:
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           break;
+        case 3:
+          message.mfaCode = reader.string();
+          break;
+        case 4:
+          message.regenerateRecoveryCodes = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -486,6 +505,10 @@ export const UpdateUserRequest = {
     return {
       user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      mfaCode: isSet(object.mfaCode) ? String(object.mfaCode) : undefined,
+      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes)
+        ? Boolean(object.regenerateRecoveryCodes)
+        : undefined,
     };
   },
 
@@ -493,6 +516,8 @@ export const UpdateUserRequest = {
     const obj: any = {};
     message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.mfaCode !== undefined && (obj.mfaCode = message.mfaCode);
+    message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
     return obj;
   },
 
@@ -500,6 +525,8 @@ export const UpdateUserRequest = {
     const message = createBaseUpdateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.mfaCode = object.mfaCode ?? undefined;
+    message.regenerateRecoveryCodes = object.regenerateRecoveryCodes ?? undefined;
     return message;
   },
 };
@@ -952,7 +979,17 @@ export const LogoutRequest = {
 };
 
 function createBaseUser(): User {
-  return { name: "", state: 0, email: "", title: "", userType: 0, userRole: 0, password: "", serviceKey: "" };
+  return {
+    name: "",
+    state: 0,
+    email: "",
+    title: "",
+    userType: 0,
+    userRole: 0,
+    password: "",
+    serviceKey: "",
+    mfaEnabled: false,
+  };
 }
 
 export const User = {
@@ -980,6 +1017,9 @@ export const User = {
     }
     if (message.serviceKey !== "") {
       writer.uint32(66).string(message.serviceKey);
+    }
+    if (message.mfaEnabled === true) {
+      writer.uint32(72).bool(message.mfaEnabled);
     }
     return writer;
   },
@@ -1015,6 +1055,9 @@ export const User = {
         case 8:
           message.serviceKey = reader.string();
           break;
+        case 9:
+          message.mfaEnabled = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1033,6 +1076,7 @@ export const User = {
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
       password: isSet(object.password) ? String(object.password) : "",
       serviceKey: isSet(object.serviceKey) ? String(object.serviceKey) : "",
+      mfaEnabled: isSet(object.mfaEnabled) ? Boolean(object.mfaEnabled) : false,
     };
   },
 
@@ -1046,6 +1090,7 @@ export const User = {
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
     message.password !== undefined && (obj.password = message.password);
     message.serviceKey !== undefined && (obj.serviceKey = message.serviceKey);
+    message.mfaEnabled !== undefined && (obj.mfaEnabled = message.mfaEnabled);
     return obj;
   },
 
@@ -1059,6 +1104,7 @@ export const User = {
     message.userRole = object.userRole ?? 0;
     message.password = object.password ?? "";
     message.serviceKey = object.serviceKey ?? "";
+    message.mfaEnabled = object.mfaEnabled ?? false;
     return message;
   },
 };

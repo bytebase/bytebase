@@ -121,6 +121,12 @@ message UpdateUserRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // The mfa_code is used to verify the user's identity by MFA.
+  optional string mfa_code = 3;
+
+  // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
+  optional bool regenerate_recovery_codes = 4;
 }
 
 message DeleteUserRequest {
@@ -197,6 +203,8 @@ message User {
   string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
 
   string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
+
+  bool mfa_enabled = 9;
 }
 
 enum UserType {

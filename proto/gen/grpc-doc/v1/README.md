@@ -785,6 +785,8 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 
 The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| mfa_code | [string](#string) | optional | The mfa_code is used to verify the user&#39;s identity by MFA. |
+| regenerate_recovery_codes | [bool](#bool) | optional | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 
 
 
@@ -807,6 +809,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. |
 | password | [string](#string) |  |  |
 | service_key | [string](#string) |  |  |
+| mfa_enabled | [bool](#bool) |  |  |
 
 
 
