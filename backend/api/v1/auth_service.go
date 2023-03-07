@@ -292,8 +292,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	}
 	// This flag mainly using to validate MFA code when user setup MFA.
 	if request.OtpCode != nil {
-		secret := user.MFAConfig.TempOtpSecret
-		isValid := validateWithCodeAndSecret(*request.OtpCode, secret)
+		isValid := validateWithCodeAndSecret(*request.OtpCode, user.MFAConfig.TempOtpSecret)
 		if !isValid {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid MFA code")
 		}
@@ -308,7 +307,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
 		}
-		tempRecoveryCodes, err := renerateRecoveryCodes(10)
+		tempRecoveryCodes, err := generateRecoveryCodes(10)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
@@ -324,7 +323,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
 		}
-		recoveryCodes, err := renerateRecoveryCodes(10)
+		recoveryCodes, err := generateRecoveryCodes(10)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
@@ -747,8 +746,8 @@ func validateWithCodeAndSecret(code, secret string) bool {
 	return totp.Validate(code, secret)
 }
 
-// renerateRecoveryCodes generates n recovery codes.
-func renerateRecoveryCodes(n int) ([]string, error) {
+// generateRecoveryCodes generates n recovery codes.
+func generateRecoveryCodes(n int) ([]string, error) {
 	recoveryCodes := make([]string, n)
 	for i := 0; i < n; i++ {
 		code, err := common.RandomString(10)
