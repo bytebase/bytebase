@@ -25,7 +25,7 @@ type InstanceChangeHistoryMessage struct {
 	Description         string
 	Statement           string
 	Schema              string
-	SchemPrev           string
+	SchemaPrev          string
 	ExecutionDurationNs int64
 	Payload             string
 
@@ -101,7 +101,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		create.Description,
 		create.Statement,
 		create.Schema,
-		create.SchemPrev,
+		create.SchemaPrev,
 		create.ExecutionDurationNs,
 		create.Payload,
 	).Scan(&id, &createdTs); err != nil {
@@ -121,7 +121,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		Description:         create.Description,
 		Statement:           create.Statement,
 		Schema:              create.Schema,
-		SchemPrev:           create.SchemPrev,
+		SchemaPrev:          create.SchemaPrev,
 		ExecutionDurationNs: create.ExecutionDurationNs,
 		Payload:             create.Payload,
 
@@ -157,7 +157,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
     row_status,
     creator_id,
     created_ts,
-    updator_id,
+    updater_id,
     updated_ts,
     instance_id,
     database_id,
@@ -215,7 +215,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.Description,
 			&changeHistory.Statement,
 			&changeHistory.Schema,
-			&changeHistory.SchemPrev,
+			&changeHistory.SchemaPrev,
 			&changeHistory.ExecutionDurationNs,
 			&changeHistory.Payload,
 		); err != nil {
@@ -267,7 +267,7 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 
 func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, tx *Tx, instanceID int, databaseID *int, baseline bool) (int64, error) {
 	query := `
-    SEELCT
+    SELECT
       MAX(sequence)
     FROM instance_change_history
     WHERE instance_id = $1 AND database_id = $1`
@@ -358,7 +358,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		Description:         m.Description,
 		Statement:           statement,
 		Schema:              prevSchema,
-		SchemPrev:           prevSchema,
+		SchemaPrev:          prevSchema,
 		ExecutionDurationNs: 0,
 		Payload:             m.Payload,
 	}, m.CreatorID)
