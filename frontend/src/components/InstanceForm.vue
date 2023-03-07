@@ -1367,6 +1367,7 @@ const getTestConnectionContext = () => {
 
   const connectionInfo: ConnectionInfo = {
     ...basicInformation.value,
+    instanceId: basicInformation.value.id,
     host: connectionHost,
     port: connectionPort,
     username: dataSource.username,
