@@ -63,27 +63,26 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 	}
 
 	query := `
-    INSERT INTO instance_change_history (
-      creator_id,
-      updater_id,
-      instance_id,
-      database_id,
-      issue_id,
-      release_version,
-      sequence,
-      source,
-      type,
-      status,
-      version,
-      description,
-      statement,
-      "schema",
-      schema_prev,
-      execution_duration_ns,
-      payload
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-    RETURNING id, created_ts
-  `
+	INSERT INTO instance_change_history (
+		creator_id,
+		updater_id,
+		instance_id,
+		database_id,
+		issue_id,
+		release_version,
+		sequence,
+		source,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		"schema",
+		schema_prev,
+		execution_duration_ns,
+		payload
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+	RETURNING id, created_ts`
 
 	var id, createdTs int64
 	if err := tx.QueryRowContext(ctx, query,
@@ -152,30 +151,30 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 
 	query := `
-  SELECT
-    id,
-    row_status,
-    creator_id,
-    created_ts,
-    updater_id,
-    updated_ts,
-    instance_id,
-    database_id,
-    issue_id,
-    release_version,
-    sequence,
-    source,
-    type,
-    status,
-    version,
-    description,
-    statement,
-    schema,
-    schema_prev,
-    execution_duration_ns,
-    payload
-  FROM instance_change_history
-  WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_id, database_id, sequence DESC`
+	SELECT
+		id,
+		row_status,
+		creator_id,
+		created_ts,
+		updater_id,
+		updated_ts,
+		instance_id,
+		database_id,
+		issue_id,
+		release_version,
+		sequence,
+		source,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		schema,
+		schema_prev,
+		execution_duration_ns,
+		payload
+	FROM instance_change_history
+	WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_id, database_id, sequence DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -247,9 +246,9 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 		set, args = append(set, fmt.Sprintf("schema = $%d", len(args)+1)), append(args, *v)
 	}
 	query := `
-  UPDATE instance_change_history
-  SET` + strings.Join(set, ", ") + `
-  WHERE` + fmt.Sprintf("id = $%d", len(args)+1)
+	UPDATE instance_change_history
+	SET` + strings.Join(set, ", ") + `
+	WHERE` + fmt.Sprintf("id = $%d", len(args)+1)
 	args = append(args, update.ID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -267,10 +266,10 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 
 func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, tx *Tx, instanceID int, databaseID *int, baseline bool) (int64, error) {
 	query := `
-    SELECT
-      MAX(sequence)
-    FROM instance_change_history
-    WHERE instance_id = $1 AND database_id = $1`
+	SELECT
+		MAX(sequence)
+	FROM instance_change_history
+	WHERE instance_id = $1 AND database_id = $1`
 	if baseline {
 		query += fmt.Sprintf(" AND (type = '%s' OR type = '%s')", db.Baseline, db.Branch)
 	}
@@ -319,10 +318,10 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 	}
 
 	query := `
-  SELECT
-    MAX(version)
-  FROM instance_change_history
-  WHERE instance_id = $1 AND database_id = $2 AND sequence >= $3`
+  	SELECT
+		MAX(version)
+	FROM instance_change_history
+	WHERE instance_id = $1 AND database_id = $2 AND sequence >= $3`
 
 	var version string
 	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID, sequence).Scan(&version); err != nil {
