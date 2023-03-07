@@ -301,7 +301,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 		}
 	}
-	// This flag mainly using to regenerate temp secret and recovery codes when user setup MFA.
+	// This flag is mainly used for regenerating temp secret and recovery codes when user setup MFA.
 	if request.RegenerateTempMfaSecret {
 		tempSecret, err := generateRandSecret(user.Name)
 		if err != nil {
