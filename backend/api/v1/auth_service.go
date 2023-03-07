@@ -276,8 +276,12 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 			patch.Role = &userRole
 		case "user.mfa_enabled":
-			// We only do disable MFA in this case.
-			if !request.User.MfaEnabled {
+			if request.User.MfaEnabled {
+				patch.MFAConfig = &storepb.MFAConfig{
+					OtpSecret:     user.MFAConfig.TempOtpSecret,
+					RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+				}
+			} else {
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
 		}
@@ -290,15 +294,12 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		passwordHashStr := string(passwordHash)
 		patch.PasswordHash = &passwordHashStr
 	}
-	// This flag is mainly used for validating MFA code when user setup MFA.
+	// This flag is mainly used for validating OTP code when user setup MFA.
+	// We only validate OTP code but not update user.
 	if request.OtpCode != nil {
 		isValid := validateWithCodeAndSecret(*request.OtpCode, user.MFAConfig.TempOtpSecret)
 		if !isValid {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid MFA code")
-		}
-		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:     user.MFAConfig.TempOtpSecret,
-			RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+			return nil, status.Errorf(codes.InvalidArgument, "invalid OTP code")
 		}
 	}
 	// This flag is mainly used for regenerating temp secret and recovery codes when user setup MFA.
