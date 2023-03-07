@@ -150,6 +150,17 @@ export interface UpdateUserRequest {
   user?: User;
   /** The list of fields to update. */
   updateMask?: string[];
+  /** The otp_code is used to verify the user's identity by MFA. */
+  otpCode?:
+    | string
+    | undefined;
+  /**
+   * The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
+   * This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
+   */
+  regenerateTempMfaSecret: boolean;
+  /** The regenerate_recovery_codes flag means to regenerate recovery codes for user. */
+  regenerateRecoveryCodes: boolean;
 }
 
 export interface DeleteUserRequest {
@@ -180,8 +191,8 @@ export interface LoginRequest {
   idpName: string;
   /** The idp_context is using to get the user information from identity provider. */
   idpContext?: IdentityProviderContext;
-  /** The mfa_code is used to verify the user's identity by MFA. */
-  mfaCode?:
+  /** The otp_code is used to verify the user's identity by MFA. */
+  otpCode?:
     | string
     | undefined;
   /** The recovery_code is used to recovery the user's identity with MFA. */
@@ -221,6 +232,12 @@ export interface User {
   userRole: UserRole;
   password: string;
   serviceKey: string;
+  /** The mfa_enabled flag means if the user has enabled MFA. */
+  mfaEnabled: boolean;
+  /** The mfa_secret is the tempary secret using in two phase verification. */
+  mfaSecret: string;
+  /** The recovery_codes is the tempary recovery codes using in two phase verification. */
+  recoveryCodes: string[];
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -447,7 +464,13 @@ export const CreateUserRequest = {
 };
 
 function createBaseUpdateUserRequest(): UpdateUserRequest {
-  return { user: undefined, updateMask: undefined };
+  return {
+    user: undefined,
+    updateMask: undefined,
+    otpCode: undefined,
+    regenerateTempMfaSecret: false,
+    regenerateRecoveryCodes: false,
+  };
 }
 
 export const UpdateUserRequest = {
@@ -457,6 +480,15 @@ export const UpdateUserRequest = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.otpCode !== undefined) {
+      writer.uint32(26).string(message.otpCode);
+    }
+    if (message.regenerateTempMfaSecret === true) {
+      writer.uint32(32).bool(message.regenerateTempMfaSecret);
+    }
+    if (message.regenerateRecoveryCodes === true) {
+      writer.uint32(40).bool(message.regenerateRecoveryCodes);
     }
     return writer;
   },
@@ -474,6 +506,15 @@ export const UpdateUserRequest = {
         case 2:
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           break;
+        case 3:
+          message.otpCode = reader.string();
+          break;
+        case 4:
+          message.regenerateTempMfaSecret = reader.bool();
+          break;
+        case 5:
+          message.regenerateRecoveryCodes = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -486,6 +527,9 @@ export const UpdateUserRequest = {
     return {
       user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
+      regenerateTempMfaSecret: isSet(object.regenerateTempMfaSecret) ? Boolean(object.regenerateTempMfaSecret) : false,
+      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes) ? Boolean(object.regenerateRecoveryCodes) : false,
     };
   },
 
@@ -493,6 +537,9 @@ export const UpdateUserRequest = {
     const obj: any = {};
     message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
+    message.regenerateTempMfaSecret !== undefined && (obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret);
+    message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
     return obj;
   },
 
@@ -500,6 +547,9 @@ export const UpdateUserRequest = {
     const message = createBaseUpdateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.otpCode = object.otpCode ?? undefined;
+    message.regenerateTempMfaSecret = object.regenerateTempMfaSecret ?? false;
+    message.regenerateRecoveryCodes = object.regenerateRecoveryCodes ?? false;
     return message;
   },
 };
@@ -605,7 +655,7 @@ function createBaseLoginRequest(): LoginRequest {
     web: false,
     idpName: "",
     idpContext: undefined,
-    mfaCode: undefined,
+    otpCode: undefined,
     recoveryCode: undefined,
   };
 }
@@ -627,8 +677,8 @@ export const LoginRequest = {
     if (message.idpContext !== undefined) {
       IdentityProviderContext.encode(message.idpContext, writer.uint32(42).fork()).ldelim();
     }
-    if (message.mfaCode !== undefined) {
-      writer.uint32(50).string(message.mfaCode);
+    if (message.otpCode !== undefined) {
+      writer.uint32(50).string(message.otpCode);
     }
     if (message.recoveryCode !== undefined) {
       writer.uint32(58).string(message.recoveryCode);
@@ -659,7 +709,7 @@ export const LoginRequest = {
           message.idpContext = IdentityProviderContext.decode(reader, reader.uint32());
           break;
         case 6:
-          message.mfaCode = reader.string();
+          message.otpCode = reader.string();
           break;
         case 7:
           message.recoveryCode = reader.string();
@@ -679,7 +729,7 @@ export const LoginRequest = {
       web: isSet(object.web) ? Boolean(object.web) : false,
       idpName: isSet(object.idpName) ? String(object.idpName) : "",
       idpContext: isSet(object.idpContext) ? IdentityProviderContext.fromJSON(object.idpContext) : undefined,
-      mfaCode: isSet(object.mfaCode) ? String(object.mfaCode) : undefined,
+      otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
       recoveryCode: isSet(object.recoveryCode) ? String(object.recoveryCode) : undefined,
     };
   },
@@ -692,7 +742,7 @@ export const LoginRequest = {
     message.idpName !== undefined && (obj.idpName = message.idpName);
     message.idpContext !== undefined &&
       (obj.idpContext = message.idpContext ? IdentityProviderContext.toJSON(message.idpContext) : undefined);
-    message.mfaCode !== undefined && (obj.mfaCode = message.mfaCode);
+    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
     message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
     return obj;
   },
@@ -706,7 +756,7 @@ export const LoginRequest = {
     message.idpContext = (object.idpContext !== undefined && object.idpContext !== null)
       ? IdentityProviderContext.fromPartial(object.idpContext)
       : undefined;
-    message.mfaCode = object.mfaCode ?? undefined;
+    message.otpCode = object.otpCode ?? undefined;
     message.recoveryCode = object.recoveryCode ?? undefined;
     return message;
   },
@@ -952,7 +1002,19 @@ export const LogoutRequest = {
 };
 
 function createBaseUser(): User {
-  return { name: "", state: 0, email: "", title: "", userType: 0, userRole: 0, password: "", serviceKey: "" };
+  return {
+    name: "",
+    state: 0,
+    email: "",
+    title: "",
+    userType: 0,
+    userRole: 0,
+    password: "",
+    serviceKey: "",
+    mfaEnabled: false,
+    mfaSecret: "",
+    recoveryCodes: [],
+  };
 }
 
 export const User = {
@@ -980,6 +1042,15 @@ export const User = {
     }
     if (message.serviceKey !== "") {
       writer.uint32(66).string(message.serviceKey);
+    }
+    if (message.mfaEnabled === true) {
+      writer.uint32(72).bool(message.mfaEnabled);
+    }
+    if (message.mfaSecret !== "") {
+      writer.uint32(82).string(message.mfaSecret);
+    }
+    for (const v of message.recoveryCodes) {
+      writer.uint32(90).string(v!);
     }
     return writer;
   },
@@ -1015,6 +1086,15 @@ export const User = {
         case 8:
           message.serviceKey = reader.string();
           break;
+        case 9:
+          message.mfaEnabled = reader.bool();
+          break;
+        case 10:
+          message.mfaSecret = reader.string();
+          break;
+        case 11:
+          message.recoveryCodes.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1033,6 +1113,9 @@ export const User = {
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
       password: isSet(object.password) ? String(object.password) : "",
       serviceKey: isSet(object.serviceKey) ? String(object.serviceKey) : "",
+      mfaEnabled: isSet(object.mfaEnabled) ? Boolean(object.mfaEnabled) : false,
+      mfaSecret: isSet(object.mfaSecret) ? String(object.mfaSecret) : "",
+      recoveryCodes: Array.isArray(object?.recoveryCodes) ? object.recoveryCodes.map((e: any) => String(e)) : [],
     };
   },
 
@@ -1046,6 +1129,13 @@ export const User = {
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
     message.password !== undefined && (obj.password = message.password);
     message.serviceKey !== undefined && (obj.serviceKey = message.serviceKey);
+    message.mfaEnabled !== undefined && (obj.mfaEnabled = message.mfaEnabled);
+    message.mfaSecret !== undefined && (obj.mfaSecret = message.mfaSecret);
+    if (message.recoveryCodes) {
+      obj.recoveryCodes = message.recoveryCodes.map((e) => e);
+    } else {
+      obj.recoveryCodes = [];
+    }
     return obj;
   },
 
@@ -1059,6 +1149,9 @@ export const User = {
     message.userRole = object.userRole ?? 0;
     message.password = object.password ?? "";
     message.serviceKey = object.serviceKey ?? "";
+    message.mfaEnabled = object.mfaEnabled ?? false;
+    message.mfaSecret = object.mfaSecret ?? "";
+    message.recoveryCodes = object.recoveryCodes?.map((e) => e) || [];
     return message;
   },
 };
