@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -328,6 +332,299 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return convertToDeploymentConfig(project.ResourceID, deploymentConfig), nil
+}
+
+// AddWebhook adds a webhook to a given project.
+func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhookRequest) (*v1pb.Project, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+	}
+
+	create, err := convertToStoreProjectWebhookMessage(request.Webhook)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	if _, err := s.store.CreateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.UID, project.ResourceID, create); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToProject(project), nil
+}
+
+// UpdateWebhook updates a webhook.
+func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.UpdateWebhookRequest) (*v1pb.Project, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+	}
+
+	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID: &project.UID,
+		URL:       &request.Webhook.Url,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if webhook == nil {
+		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
+	}
+
+	update := &store.UpdateProjectWebhookMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "webhook.type":
+			return nil, status.Errorf(codes.InvalidArgument, "type cannot be updated")
+		case "webhook.title":
+			update.Title = &request.Webhook.Title
+		case "webhook.url":
+			update.URL = &request.Webhook.Url
+		case "webhook.notification_type":
+			types, err := convertToActivityTypeStrings(request.Webhook.NotificationTypes)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			update.ActivityList = types
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid field %q", path)
+		}
+	}
+
+	if _, err := s.store.UpdateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.UID, project.ResourceID, webhook.ID, update); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToProject(project), nil
+}
+
+// RemoveWebhook removes a webhook from a given project.
+func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+	}
+
+	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID: &project.UID,
+		URL:       &request.Webhook.Url,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if webhook == nil {
+		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
+	}
+
+	if err := s.store.DeleteProjectWebhookV2(ctx, project.UID, project.ResourceID, webhook.ID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToProject(project), nil
+}
+
+// TestWebhook tests a webhook.
+func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebhookRequest) (*v1pb.TestWebhookResponse, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+	}
+
+	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID: &project.UID,
+		URL:       &request.Webhook.Url,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if webhook == nil {
+		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
+	}
+
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	err = webhookPlugin.Post(
+		webhook.Type,
+		webhookPlugin.Context{
+			URL:          webhook.URL,
+			Level:        webhookPlugin.WebhookInfo,
+			ActivityType: string(api.ActivityIssueCreate),
+			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
+			Description:  "This is a test",
+			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
+			CreatorID:    api.SystemBotID,
+			CreatorName:  "Bytebase",
+			CreatorEmail: "support@bytebase.com",
+			CreatedTs:    time.Now().Unix(),
+			Project:      &webhookPlugin.Project{Name: project.Title},
+		},
+	)
+
+	return &v1pb.TestWebhookResponse{Error: err.Error()}, nil
+}
+
+func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {
+	tp, err := convertToAPIWebhookTypeString(webhook.Type)
+	if err != nil {
+		return nil, err
+	}
+	activityTypes, err := convertToActivityTypeStrings(webhook.NotificationTypes)
+	if err != nil {
+		return nil, err
+	}
+	return &store.ProjectWebhookMessage{
+		Type:         tp,
+		URL:          webhook.Url,
+		Title:        webhook.Title,
+		ActivityList: activityTypes,
+	}, nil
+}
+
+func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) {
+	var result []string
+
+	for _, tp := range types {
+		switch tp {
+		case v1pb.Activity_TYPE_UNSPECIFIED:
+			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
+		case v1pb.Activity_TYPE_ISSUE_CREATE:
+			result = append(result, string(api.ActivityIssueCreate))
+		case v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE:
+			result = append(result, string(api.ActivityIssueCommentCreate))
+		case v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE:
+			result = append(result, string(api.ActivityIssueFieldUpdate))
+		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
+			result = append(result, string(api.ActivityIssueStatusUpdate))
+		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
+			result = append(result, string(api.ActivityPipelineStageStatusUpdate))
+		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
+			result = append(result, string(api.ActivityPipelineTaskStatusUpdate))
+		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
+			result = append(result, string(api.ActivityPipelineTaskFileCommit))
+		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
+			result = append(result, string(api.ActivityPipelineTaskStatementUpdate))
+		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
+			result = append(result, string(api.ActivityPipelineTaskEarliestAllowedTimeUpdate))
+		case v1pb.Activity_TYPE_MEMBER_CREATE:
+			result = append(result, string(api.ActivityMemberCreate))
+		case v1pb.Activity_TYPE_MEMBER_ROLE_UPDATE:
+			result = append(result, string(api.ActivityMemberRoleUpdate))
+		case v1pb.Activity_TYPE_MEMBER_ACTIVATE:
+			result = append(result, string(api.ActivityMemberActivate))
+		case v1pb.Activity_TYPE_MEMBER_DEACTIVATE:
+			result = append(result, string(api.ActivityMemberDeactivate))
+		case v1pb.Activity_TYPE_PROJECT_REPOSITORY_PUSH:
+			result = append(result, string(api.ActivityProjectRepositoryPush))
+		case v1pb.Activity_TYPE_PROJECT_DATABASE_TRANSFER:
+			result = append(result, string(api.ActivityProjectDatabaseTransfer))
+		case v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE:
+			result = append(result, string(api.ActivityProjectMemberCreate))
+		case v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE:
+			result = append(result, string(api.ActivityProjectMemberDelete))
+		case v1pb.Activity_TYPE_PROJECT_MEMBER_ROLE_UPDATE:
+			result = append(result, string(api.ActivityProjectMemberRoleUpdate))
+		case v1pb.Activity_TYPE_SQL_EDITOR_QUERY:
+			result = append(result, string(api.ActivitySQLEditorQuery))
+		case v1pb.Activity_TYPE_DATABASE_RECOVERY_PITR_DONE:
+			result = append(result, string(api.ActivityDatabaseRecoveryPITRDone))
+		default:
+			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
+		}
+	}
+	return result, nil
+}
+
+func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
+	switch tp {
+	case v1pb.Webhook_TYPE_UNSPECIFIED:
+		return "", common.Errorf(common.Invalid, "webhook type must not be unspecified")
+	// TODO(zp): find a better way to place the "bb.plugin.webhook.*".
+	case v1pb.Webhook_TYPE_SLACK:
+		return "bb.plugin.webhook.slack", nil
+	case v1pb.Webhook_TYPE_DISCORD:
+		return "bb.plugin.webhook.discord", nil
+	case v1pb.Webhook_TYPE_TEAMS:
+		return "bb.plugin.webhook.teams", nil
+	case v1pb.Webhook_TYPE_DINGTALK:
+		return "bb.plugin.webhook.dingtalk", nil
+	case v1pb.Webhook_TYPE_FEISHU:
+		return "bb.plugin.webhook.feishu", nil
+	case v1pb.Webhook_TYPE_WECOM:
+		return "bb.plugin.webhook.wecom", nil
+	case v1pb.Webhook_TYPE_CUSTOM:
+		return "bb.plugin.webhook.custom", nil
+	default:
+		return "", common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
+	}
 }
 
 func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConfig) (*store.DeploymentConfigMessage, error) {
