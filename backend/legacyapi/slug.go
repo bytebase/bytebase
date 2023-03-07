@@ -22,6 +22,6 @@ func EnvSlug(env *Environment) string {
 }
 
 // ProjectWebhookSlug is the slug formatter for project webhooks.
-func ProjectWebhookSlug(projectWebhook *ProjectWebhook) string {
-	return fmt.Sprintf("%s-%d", slug.Make(projectWebhook.Name), projectWebhook.ID)
+func ProjectWebhookSlug(name string, id int) string {
+	return fmt.Sprintf("%s-%d", slug.Make(name), id)
 }
