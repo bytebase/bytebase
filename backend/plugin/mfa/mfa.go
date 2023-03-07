@@ -1,3 +1,4 @@
+// Package mfa provides functions for multi-factor authentication.
 package mfa
 
 import (
