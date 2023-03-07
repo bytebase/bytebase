@@ -122,8 +122,8 @@ message UpdateUserRequest {
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 
-  // The mfa_code is used to verify the user's identity by MFA.
-  optional string mfa_code = 3;
+  // The otp_code is used to verify the user's identity by MFA.
+  optional string otp_code = 3;
 
   // The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
   // This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
@@ -160,8 +160,8 @@ message LoginRequest {
   // The idp_context is using to get the user information from identity provider.
   IdentityProviderContext idp_context = 5;
 
-  // The mfa_code is used to verify the user's identity by MFA.
-  optional string mfa_code = 6;
+  // The otp_code is used to verify the user's identity by MFA.
+  optional string otp_code = 6;
 
   // The recovery_code is used to recovery the user's identity with MFA.
   optional string recovery_code = 7;

@@ -16,6 +16,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/pquerna/otp/totp"
+
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -24,8 +26,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/plugin/mfa"
-	"github.com/bytebase/bytebase/backend/plugin/mfa/otp"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -278,12 +278,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "user.mfa_enabled":
 			// We only do disable MFA in this case.
 			if !request.User.MfaEnabled {
-				patch.MFAConfig = &storepb.MFAConfig{
-					OtpSecret:         "",
-					TempOtpSecret:     "",
-					RecoveryCodes:     []string{},
-					TempRecoveryCodes: []string{},
-				}
+				patch.MFAConfig = &storepb.MFAConfig{}
 			}
 		}
 	}
@@ -295,28 +290,25 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		passwordHashStr := string(passwordHash)
 		patch.PasswordHash = &passwordHashStr
 	}
-	if request.MfaCode != nil {
+	// This flag mainly using to validate MFA code when user setup MFA.
+	if request.OtpCode != nil {
 		secret := user.MFAConfig.TempOtpSecret
-		isValid := otp.ValidateWithCodeAndSecret(*request.MfaCode, secret)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to validate MFA code, error: %v", err)
-		}
+		isValid := validateWithCodeAndSecret(*request.OtpCode, secret)
 		if !isValid {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid MFA code")
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:         user.MFAConfig.TempOtpSecret,
-			TempOtpSecret:     user.MFAConfig.TempOtpSecret,
-			RecoveryCodes:     user.MFAConfig.TempRecoveryCodes,
-			TempRecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+			OtpSecret:     user.MFAConfig.TempOtpSecret,
+			RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 		}
 	}
+	// This flag mainly using to regenerate temp secret and recovery codes when user setup MFA.
 	if request.RegenerateTempMfaSecret {
-		tempSecret, err := otp.GenerateRandSecret(user.Name)
+		tempSecret, err := generateRandSecret(user.Name)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
 		}
-		tempRecoveryCodes, err := mfa.GenerateRecoveryCodes(10)
+		tempRecoveryCodes, err := renerateRecoveryCodes(10)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
@@ -327,19 +319,18 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			TempRecoveryCodes: tempRecoveryCodes,
 		}
 	}
+	// This flag mainly using to regenerate recovery codes after user enabled MFA.
 	if request.RegenerateRecoveryCodes {
 		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
 		}
-		recoveryCodes, err := mfa.GenerateRecoveryCodes(10)
+		recoveryCodes, err := renerateRecoveryCodes(10)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:         user.MFAConfig.OtpSecret,
-			TempOtpSecret:     user.MFAConfig.TempOtpSecret,
-			RecoveryCodes:     recoveryCodes,
-			TempRecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+			OtpSecret:     user.MFAConfig.OtpSecret,
+			RecoveryCodes: recoveryCodes,
 		}
 	}
 
@@ -496,8 +487,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
 	if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
-		if request.MfaCode != nil {
-			if err := challengeMFACode(loginUser, *request.MfaCode); err != nil {
+		if request.OtpCode != nil {
+			if err := challengeMFACode(loginUser, *request.OtpCode); err != nil {
 				return nil, err
 			}
 		} else if request.RecoveryCode != nil {
@@ -697,7 +688,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 }
 
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {
-	if !otp.ValidateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
+	if !validateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
 		return status.Errorf(codes.Unauthenticated, "invalid MFA code")
 	}
 	return nil
@@ -732,4 +723,39 @@ func validateEmail(email string) error {
 		return err
 	}
 	return nil
+}
+
+const (
+	// issuerName is the name of the issuer of the OTP token.
+	issuerName = "Bytebase"
+)
+
+// generateRandSecret generates a random secret for the given account name.
+func generateRandSecret(accountName string) (string, error) {
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      issuerName,
+		AccountName: accountName,
+	})
+	if err != nil {
+		return "", err
+	}
+	return key.Secret(), nil
+}
+
+// validateWithCodeAndSecret validates the given code against the given secret.
+func validateWithCodeAndSecret(code, secret string) bool {
+	return totp.Validate(code, secret)
+}
+
+// renerateRecoveryCodes generates n recovery codes.
+func renerateRecoveryCodes(n int) ([]string, error) {
+	recoveryCodes := make([]string, n)
+	for i := 0; i < n; i++ {
+		code, err := common.RandomString(10)
+		if err != nil {
+			return nil, err
+		}
+		recoveryCodes[i] = code
+	}
+	return recoveryCodes, nil
 }

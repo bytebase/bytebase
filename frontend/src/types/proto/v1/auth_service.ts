@@ -150,8 +150,8 @@ export interface UpdateUserRequest {
   user?: User;
   /** The list of fields to update. */
   updateMask?: string[];
-  /** The mfa_code is used to verify the user's identity by MFA. */
-  mfaCode?:
+  /** The otp_code is used to verify the user's identity by MFA. */
+  otpCode?:
     | string
     | undefined;
   /**
@@ -191,8 +191,8 @@ export interface LoginRequest {
   idpName: string;
   /** The idp_context is using to get the user information from identity provider. */
   idpContext?: IdentityProviderContext;
-  /** The mfa_code is used to verify the user's identity by MFA. */
-  mfaCode?:
+  /** The otp_code is used to verify the user's identity by MFA. */
+  otpCode?:
     | string
     | undefined;
   /** The recovery_code is used to recovery the user's identity with MFA. */
@@ -467,7 +467,7 @@ function createBaseUpdateUserRequest(): UpdateUserRequest {
   return {
     user: undefined,
     updateMask: undefined,
-    mfaCode: undefined,
+    otpCode: undefined,
     regenerateTempMfaSecret: false,
     regenerateRecoveryCodes: false,
   };
@@ -481,8 +481,8 @@ export const UpdateUserRequest = {
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
     }
-    if (message.mfaCode !== undefined) {
-      writer.uint32(26).string(message.mfaCode);
+    if (message.otpCode !== undefined) {
+      writer.uint32(26).string(message.otpCode);
     }
     if (message.regenerateTempMfaSecret === true) {
       writer.uint32(32).bool(message.regenerateTempMfaSecret);
@@ -507,7 +507,7 @@ export const UpdateUserRequest = {
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           break;
         case 3:
-          message.mfaCode = reader.string();
+          message.otpCode = reader.string();
           break;
         case 4:
           message.regenerateTempMfaSecret = reader.bool();
@@ -527,7 +527,7 @@ export const UpdateUserRequest = {
     return {
       user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      mfaCode: isSet(object.mfaCode) ? String(object.mfaCode) : undefined,
+      otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
       regenerateTempMfaSecret: isSet(object.regenerateTempMfaSecret) ? Boolean(object.regenerateTempMfaSecret) : false,
       regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes) ? Boolean(object.regenerateRecoveryCodes) : false,
     };
@@ -537,7 +537,7 @@ export const UpdateUserRequest = {
     const obj: any = {};
     message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
-    message.mfaCode !== undefined && (obj.mfaCode = message.mfaCode);
+    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
     message.regenerateTempMfaSecret !== undefined && (obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret);
     message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
     return obj;
@@ -547,7 +547,7 @@ export const UpdateUserRequest = {
     const message = createBaseUpdateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     message.updateMask = object.updateMask ?? undefined;
-    message.mfaCode = object.mfaCode ?? undefined;
+    message.otpCode = object.otpCode ?? undefined;
     message.regenerateTempMfaSecret = object.regenerateTempMfaSecret ?? false;
     message.regenerateRecoveryCodes = object.regenerateRecoveryCodes ?? false;
     return message;
@@ -655,7 +655,7 @@ function createBaseLoginRequest(): LoginRequest {
     web: false,
     idpName: "",
     idpContext: undefined,
-    mfaCode: undefined,
+    otpCode: undefined,
     recoveryCode: undefined,
   };
 }
@@ -677,8 +677,8 @@ export const LoginRequest = {
     if (message.idpContext !== undefined) {
       IdentityProviderContext.encode(message.idpContext, writer.uint32(42).fork()).ldelim();
     }
-    if (message.mfaCode !== undefined) {
-      writer.uint32(50).string(message.mfaCode);
+    if (message.otpCode !== undefined) {
+      writer.uint32(50).string(message.otpCode);
     }
     if (message.recoveryCode !== undefined) {
       writer.uint32(58).string(message.recoveryCode);
@@ -709,7 +709,7 @@ export const LoginRequest = {
           message.idpContext = IdentityProviderContext.decode(reader, reader.uint32());
           break;
         case 6:
-          message.mfaCode = reader.string();
+          message.otpCode = reader.string();
           break;
         case 7:
           message.recoveryCode = reader.string();
@@ -729,7 +729,7 @@ export const LoginRequest = {
       web: isSet(object.web) ? Boolean(object.web) : false,
       idpName: isSet(object.idpName) ? String(object.idpName) : "",
       idpContext: isSet(object.idpContext) ? IdentityProviderContext.fromJSON(object.idpContext) : undefined,
-      mfaCode: isSet(object.mfaCode) ? String(object.mfaCode) : undefined,
+      otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
       recoveryCode: isSet(object.recoveryCode) ? String(object.recoveryCode) : undefined,
     };
   },
@@ -742,7 +742,7 @@ export const LoginRequest = {
     message.idpName !== undefined && (obj.idpName = message.idpName);
     message.idpContext !== undefined &&
       (obj.idpContext = message.idpContext ? IdentityProviderContext.toJSON(message.idpContext) : undefined);
-    message.mfaCode !== undefined && (obj.mfaCode = message.mfaCode);
+    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
     message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
     return obj;
   },
@@ -756,7 +756,7 @@ export const LoginRequest = {
     message.idpContext = (object.idpContext !== undefined && object.idpContext !== null)
       ? IdentityProviderContext.fromPartial(object.idpContext)
       : undefined;
-    message.mfaCode = object.mfaCode ?? undefined;
+    message.otpCode = object.otpCode ?? undefined;
     message.recoveryCode = object.recoveryCode ?? undefined;
     return message;
   },
