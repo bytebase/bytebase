@@ -434,7 +434,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 	return convertToProject(project), nil
 }
 
-// Remove removes a webhook from a given project.
+// RemoveWebhook removes a webhook from a given project.
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
