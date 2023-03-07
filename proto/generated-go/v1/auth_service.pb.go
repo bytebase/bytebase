@@ -370,8 +370,8 @@ type UpdateUserRequest struct {
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// The mfa_code is used to verify the user's identity by MFA.
 	MfaCode *string `protobuf:"bytes,3,opt,name=mfa_code,json=mfaCode,proto3,oneof" json:"mfa_code,omitempty"`
-	// The regenerate_temp_mfa_secret flag means to regenerate temperary MFA secret for user.
-	// This is used for MFA setup. The temperary MFA secret and recovery codes will be returned in the response.
+	// The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
+	// This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
 	RegenerateTempMfaSecret bool `protobuf:"varint,4,opt,name=regenerate_temp_mfa_secret,json=regenerateTempMfaSecret,proto3" json:"regenerate_temp_mfa_secret,omitempty"`
 	// The regenerate_recovery_codes flag means to regenerate recovery codes for user.
 	RegenerateRecoveryCodes bool `protobuf:"varint,5,opt,name=regenerate_recovery_codes,json=regenerateRecoveryCodes,proto3" json:"regenerate_recovery_codes,omitempty"`

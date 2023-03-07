@@ -155,8 +155,8 @@ export interface UpdateUserRequest {
     | string
     | undefined;
   /**
-   * The regenerate_temp_mfa_secret flag means to regenerate temperary MFA secret for user.
-   * This is used for MFA setup. The temperary MFA secret and recovery codes will be returned in the response.
+   * The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
+   * This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
    */
   regenerateTempMfaSecret: boolean;
   /** The regenerate_recovery_codes flag means to regenerate recovery codes for user. */

@@ -786,7 +786,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | mfa_code | [string](#string) | optional | The mfa_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temperary MFA secret for user. This is used for MFA setup. The temperary MFA secret and recovery codes will be returned in the response. |
+| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user. This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response. |
 | regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 
 
