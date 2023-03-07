@@ -153,7 +153,7 @@ const requestAI = async (query: string) => {
   try {
     const response: AxiosResponse<string> = await axios.post(
       url,
-      JSON.stringify(body, null, "  "),
+      JSON.stringify(body),
       {
         headers,
       }
