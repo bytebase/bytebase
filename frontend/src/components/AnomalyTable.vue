@@ -88,7 +88,11 @@ import {
   AnomalyType,
 } from "../types";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
-import { useEnvironmentStore } from "@/store";
+import {
+  useDatabaseStore,
+  useEnvironmentStore,
+  useInstanceStore,
+} from "@/store";
 
 type Action = {
   onClick: () => void;
@@ -165,11 +169,11 @@ export default defineComponent({
         case "bb.anomaly.instance.migration-schema":
           return "Please create migration schema on the instance first.";
         case "bb.anomaly.database.backup.policy-violation": {
-          const environment = useEnvironmentStore().getEnvironmentById(
-            anomaly.instance.environment.id
-          );
           const payload =
             anomaly.payload as AnomalyDatabaseBackupPolicyViolationPayload;
+          const environment = useEnvironmentStore().getEnvironmentById(
+            payload.environmentId
+          );
           return `'${environment.name}' environment requires ${payload.expectedSchedule} auto-backup.`;
         }
         case "bb.anomaly.database.backup.missing": {
@@ -198,37 +202,48 @@ export default defineComponent({
 
     const action = (anomaly: Anomaly): Action => {
       switch (anomaly.type) {
-        case "bb.anomaly.instance.connection":
+        case "bb.anomaly.instance.connection": {
+          const instance = useInstanceStore().getInstanceById(
+            anomaly.instanceId!
+          );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.instance.detail",
                 params: {
-                  instanceSlug: instanceSlug(anomaly.instance),
+                  instanceSlug: instanceSlug(instance),
                 },
               });
             },
             title: t("anomaly.action.check-instance"),
           };
-        case "bb.anomaly.instance.migration-schema":
+        }
+        case "bb.anomaly.instance.migration-schema": {
+          const instance = useInstanceStore().getInstanceById(
+            anomaly.instanceId!
+          );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.instance.detail",
                 params: {
-                  instanceSlug: instanceSlug(anomaly.instance),
+                  instanceSlug: instanceSlug(instance),
                 },
               });
             },
             title: t("anomaly.action.check-instance"),
           };
+        }
         case "bb.anomaly.database.backup.policy-violation": {
+          const database = useDatabaseStore().getDatabaseById(
+            anomaly.databaseId!
+          );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.database.detail",
                 params: {
-                  databaseSlug: databaseSlug(anomaly.database!),
+                  databaseSlug: databaseSlug(database),
                 },
                 hash: "#backup-and-restore",
               });
@@ -236,31 +251,39 @@ export default defineComponent({
             title: t("anomaly.action.configure-backup"),
           };
         }
-        case "bb.anomaly.database.backup.missing":
+        case "bb.anomaly.database.backup.missing": {
+          const database = useDatabaseStore().getDatabaseById(
+            anomaly.databaseId!
+          );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.database.detail",
                 params: {
-                  databaseSlug: databaseSlug(anomaly.database!),
+                  databaseSlug: databaseSlug(database),
                 },
                 hash: "#backup-and-restore",
               });
             },
             title: t("anomaly.action.view-backup"),
           };
-        case "bb.anomaly.database.connection":
+        }
+        case "bb.anomaly.database.connection": {
+          const instance = useInstanceStore().getInstanceById(
+            anomaly.instanceId!
+          );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.instance.detail",
                 params: {
-                  instanceSlug: instanceSlug(anomaly.instance),
+                  instanceSlug: instanceSlug(instance),
                 },
               });
             },
             title: t("anomaly.action.check-instance"),
           };
+        }
         case "bb.anomaly.database.schema.drift":
           return {
             onClick: () => {
