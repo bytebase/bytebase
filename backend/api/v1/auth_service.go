@@ -296,9 +296,6 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		patch.PasswordHash = &passwordHashStr
 	}
 	if request.MfaCode != nil {
-		if user.MFAConfig == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "MFA secret is not set")
-		}
 		secret := user.MFAConfig.TempOtpSecret
 		isValid := otp.ValidateWithCodeAndSecret(*request.MfaCode, secret)
 		if err != nil {
@@ -315,11 +312,6 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 	if request.RegenerateTempMfaSecret {
-		originSecret, originRecoveryCodes := "", []string{}
-		if user.MFAConfig != nil {
-			originSecret = user.MFAConfig.OtpSecret
-			originRecoveryCodes = user.MFAConfig.RecoveryCodes
-		}
 		tempSecret, err := otp.GenerateRandSecret(user.Name)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
@@ -329,14 +321,14 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:         originSecret,
+			OtpSecret:         user.MFAConfig.OtpSecret,
 			TempOtpSecret:     tempSecret,
-			RecoveryCodes:     originRecoveryCodes,
+			RecoveryCodes:     user.MFAConfig.RecoveryCodes,
 			TempRecoveryCodes: tempRecoveryCodes,
 		}
 	}
 	if request.RegenerateRecoveryCodes {
-		if user.MFAConfig == nil {
+		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
 		}
 		recoveryCodes, err := mfa.GenerateRecoveryCodes(10)
