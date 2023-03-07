@@ -318,7 +318,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			TempRecoveryCodes: tempRecoveryCodes,
 		}
 	}
-	// This flag mainly using to regenerate recovery codes after user enabled MFA.
+	// This flag is mainly used for regenerating recovery codes with MFA enabled.
 	if request.RegenerateRecoveryCodes {
 		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
