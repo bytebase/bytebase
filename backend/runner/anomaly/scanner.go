@@ -164,11 +164,10 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorID:  api.SystemBotID,
-				InstanceID: instance.UID,
-				Type:       api.AnomalyInstanceConnection,
-				Payload:    string(payload),
+			if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+				InstanceUID: instance.UID,
+				Type:        api.AnomalyInstanceConnection,
+				Payload:     string(payload),
 			}); err != nil {
 				log.Error("Failed to create anomaly",
 					zap.String("instance", instance.ResourceID),
@@ -180,9 +179,9 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 	}
 
 	defer driver.Close(ctx)
-	err = s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-		InstanceID: &instance.UID,
-		Type:       api.AnomalyInstanceConnection,
+	err = s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+		InstanceUID: &instance.UID,
+		Type:        api.AnomalyInstanceConnection,
 	})
 	if err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to close anomaly",
@@ -201,10 +200,9 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 				zap.Error(err))
 		} else {
 			if setup {
-				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SystemBotID,
-					InstanceID: instance.UID,
-					Type:       api.AnomalyInstanceMigrationSchema,
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+					InstanceUID: instance.UID,
+					Type:        api.AnomalyInstanceMigrationSchema,
 				}); err != nil {
 					log.Error("Failed to create anomaly",
 						zap.String("instance", instance.ResourceID),
@@ -212,9 +210,9 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 						zap.Error(err))
 				}
 			} else {
-				err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					InstanceID: &instance.UID,
-					Type:       api.AnomalyInstanceMigrationSchema,
+				err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+					InstanceUID: &instance.UID,
+					Type:        api.AnomalyInstanceMigrationSchema,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
 					log.Error("Failed to close anomaly",
@@ -243,12 +241,11 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorID:  api.SystemBotID,
-				InstanceID: instance.UID,
-				DatabaseID: &database.UID,
-				Type:       api.AnomalyDatabaseConnection,
-				Payload:    string(payload),
+			if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+				InstanceUID: instance.UID,
+				DatabaseUID: &database.UID,
+				Type:        api.AnomalyDatabaseConnection,
+				Payload:     string(payload),
 			}); err != nil {
 				log.Error("Failed to create anomaly",
 					zap.String("instance", instance.ResourceID),
@@ -260,9 +257,9 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 		return
 	}
 	defer driver.Close(ctx)
-	err = s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-		DatabaseID: &database.UID,
-		Type:       api.AnomalyDatabaseConnection,
+	err = s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+		DatabaseUID: &database.UID,
+		Type:        api.AnomalyDatabaseConnection,
 	})
 	if err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to close anomaly",
@@ -332,12 +329,11 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
-					if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-						CreatorID:  api.SystemBotID,
-						InstanceID: instance.UID,
-						DatabaseID: &database.UID,
-						Type:       api.AnomalyDatabaseSchemaDrift,
-						Payload:    string(payload),
+					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+						InstanceUID: instance.UID,
+						DatabaseUID: &database.UID,
+						Type:        api.AnomalyDatabaseSchemaDrift,
+						Payload:     string(payload),
 					}); err != nil {
 						log.Error("Failed to create anomaly",
 							zap.String("instance", instance.ResourceID),
@@ -347,9 +343,9 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 					}
 				}
 			} else {
-				err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					DatabaseID: &database.UID,
-					Type:       api.AnomalyDatabaseSchemaDrift,
+				err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+					DatabaseUID: &database.UID,
+					Type:        api.AnomalyDatabaseSchemaDrift,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
 					log.Error("Failed to close anomaly",
@@ -417,12 +413,11 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SystemBotID,
-					InstanceID: instance.UID,
-					DatabaseID: &database.UID,
-					Type:       api.AnomalyDatabaseBackupPolicyViolation,
-					Payload:    string(payload),
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+					InstanceUID: instance.UID,
+					DatabaseUID: &database.UID,
+					Type:        api.AnomalyDatabaseBackupPolicyViolation,
+					Payload:     string(payload),
 				}); err != nil {
 					log.Error("Failed to create anomaly",
 						zap.String("instance", instance.ResourceID),
@@ -432,9 +427,9 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 				}
 			}
 		} else {
-			err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseID: &database.UID,
-				Type:       api.AnomalyDatabaseBackupPolicyViolation,
+			err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+				DatabaseUID: &database.UID,
+				Type:        api.AnomalyDatabaseBackupPolicyViolation,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				log.Error("Failed to close anomaly",
@@ -500,12 +495,11 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
-				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SystemBotID,
-					InstanceID: instance.UID,
-					DatabaseID: &database.UID,
-					Type:       api.AnomalyDatabaseBackupMissing,
-					Payload:    string(payload),
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+					InstanceUID: instance.UID,
+					DatabaseUID: &database.UID,
+					Type:        api.AnomalyDatabaseBackupMissing,
+					Payload:     string(payload),
 				}); err != nil {
 					log.Error("Failed to create anomaly",
 						zap.String("instance", instance.ResourceID),
@@ -515,9 +509,9 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 				}
 			}
 		} else {
-			err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseID: &database.UID,
-				Type:       api.AnomalyDatabaseBackupMissing,
+			err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+				DatabaseUID: &database.UID,
+				Type:        api.AnomalyDatabaseBackupMissing,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				log.Error("Failed to close anomaly",
