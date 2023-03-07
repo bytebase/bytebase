@@ -277,6 +277,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			patch.Role = &userRole
 		case "user.mfa_enabled":
 			if request.User.MfaEnabled {
+				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
+					return nil, status.Errorf(codes.InvalidArgument, "MFA is not setup yet")
+				}
 				patch.MFAConfig = &storepb.MFAConfig{
 					OtpSecret:     user.MFAConfig.TempOtpSecret,
 					RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
