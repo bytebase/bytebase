@@ -300,6 +300,15 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "profile/two-factor",
+                name: "setting.profile.two-factor",
+                meta: {
+                  title: () => t("two-factor.self"),
+                },
+                component: () => import("../views/TwoFactorSetup.vue"),
+                props: true,
+              },
+              {
                 path: "general",
                 name: "setting.workspace.general",
                 meta: { title: () => t("settings.sidebar.general") },
