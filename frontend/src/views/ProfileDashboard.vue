@@ -3,194 +3,209 @@
     class="flex-1 relative z-0 overflow-auto focus:outline-none xl:order-last"
     tabindex="0"
   >
-    <article>
-      <!-- Profile header -->
-      <div>
-        <div class="h-32 w-full bg-accent lg:h-48"></div>
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
-            <PrincipalAvatar :principal="principal" :size="'HUGE'" />
-            <div
-              class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
-            >
-              <div class="mt-6 flex flex-row justify-stretch space-x-4">
-                <button v-if="false" type="button" class="btn-normal">
-                  <!-- Heroicon name: solid/mail -->
-                  <heroicons-solid:mail
-                    class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                  />
-                  <span>Message</span>
-                </button>
-                <template v-if="allowEdit">
-                  <template v-if="state.editing">
-                    <button
-                      type="button"
-                      class="btn-normal"
-                      @click.prevent="cancelEdit"
-                    >
-                      {{ $t("common.cancel") }}
-                    </button>
-                    <button
-                      type="button"
-                      class="btn-normal"
-                      :disabled="!allowSaveEdit"
-                      @click.prevent="saveEdit"
-                    >
-                      <!-- Heroicon name: solid/save -->
-                      <heroicons-solid:save
-                        class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                      />
-                      <span>{{ $t("common.save") }}</span>
-                    </button>
-                  </template>
+    <!-- Profile header -->
+    <div>
+      <div class="h-32 w-full bg-accent lg:h-48"></div>
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
+          <PrincipalAvatar :principal="principal" :size="'HUGE'" />
+          <div
+            class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
+          >
+            <div class="mt-6 flex flex-row justify-stretch space-x-4">
+              <template v-if="allowEdit">
+                <template v-if="state.editing">
                   <button
-                    v-else
                     type="button"
                     class="btn-normal"
-                    @click.prevent="editUser"
+                    @click.prevent="cancelEdit"
                   >
-                    <!-- Heroicon name: solid/pencil -->
-                    <heroicons-solid:pencil
+                    {{ $t("common.cancel") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-normal"
+                    :disabled="!allowSaveEdit"
+                    @click.prevent="saveEdit"
+                  >
+                    <heroicons-solid:save
                       class="-ml-1 mr-2 h-5 w-5 text-control-light"
                     />
-                    <span>{{ $t("common.edit") }}</span>
+                    <span>{{ $t("common.save") }}</span>
                   </button>
                 </template>
-              </div>
+                <button
+                  v-else
+                  type="button"
+                  class="btn-normal"
+                  @click.prevent="editUser"
+                >
+                  <heroicons-solid:pencil
+                    class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                  />
+                  <span>{{ $t("common.edit") }}</span>
+                </button>
+              </template>
             </div>
           </div>
-          <div class="block mt-6 min-w-0 flex-1">
-            <input
-              v-if="state.editing"
-              id="name"
-              ref="editNameTextField"
-              required
-              autocomplete="off"
-              name="name"
-              type="text"
-              class="textfield"
-              :value="state.editingPrincipal?.name"
-              @input="(e: any)=>updatePrincipal('name', e.target.value)"
-            />
-            <!-- pb-1.5 is to avoid flicking when entering/existing the editing state -->
-            <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
-              {{ principal.name }}
-            </h1>
-            <span
-              v-if="principal.type === 'SERVICE_ACCOUNT'"
-              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-            >
-              {{ $t("settings.members.service-account") }}
-            </span>
-          </div>
+        </div>
+        <div class="block mt-6 min-w-0 flex-1">
+          <input
+            v-if="state.editing"
+            id="name"
+            ref="editNameTextField"
+            required
+            autocomplete="off"
+            name="name"
+            type="text"
+            class="textfield"
+            :value="state.editingPrincipal?.name"
+            @input="(e: any)=>updatePrincipal('name', e.target.value)"
+          />
+          <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
+            {{ principal.name }}
+          </h1>
+          <span
+            v-if="principal.type === 'SERVICE_ACCOUNT'"
+            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+          >
+            {{ $t("settings.members.service-account") }}
+          </span>
         </div>
       </div>
+    </div>
 
-      <!-- Description list -->
-      <div
-        v-if="principal.type == 'END_USER'"
-        class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
-      >
-        <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+    <!-- Description list -->
+    <div
+      v-if="principal.type === 'END_USER'"
+      class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
+    >
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-control-light">
+            {{ $t("settings.profile.role") }}
+          </dt>
+          <dd class="mt-1 text-sm text-main">
+            <router-link
+              :to="'/setting/member'"
+              class="normal-link capitalize"
+              >{{
+                $t(`common.role.${principal.role.toLowerCase()}`)
+              }}</router-link
+            >
+            <router-link
+              v-if="!hasRBACFeature"
+              :to="'/setting/subscription'"
+              class="normal-link"
+            >
+              {{ $t("settings.profile.subscription") }}
+            </router-link>
+          </dd>
+        </div>
+
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-control-light">
+            {{ $t("settings.profile.email") }}
+          </dt>
+          <dd class="mt-1 text-sm text-main">
+            <input
+              v-if="state.editing"
+              id="email"
+              required
+              autocomplete="off"
+              name="email"
+              type="text"
+              class="textfield"
+              :value="state.editingPrincipal?.email"
+              @input="(e: any)=>updatePrincipal('email', e.target.value)"
+            />
+            <template v-else>
+              {{ principal.email }}
+            </template>
+          </dd>
+        </div>
+
+        <template v-if="state.editing">
           <div class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">
-              {{ $t("settings.profile.role") }}
-            </dt>
-            <dd class="mt-1 text-sm text-main">
-              <router-link
-                :to="'/setting/member'"
-                class="normal-link capitalize"
-                >{{
-                  $t(`common.role.${principal.role.toLowerCase()}`)
-                }}</router-link
-              >
-              <router-link
-                v-if="!hasRBACFeature"
-                :to="'/setting/subscription'"
-                class="normal-link"
-              >
-                {{ $t("settings.profile.subscription") }}
-              </router-link>
-            </dd>
-          </div>
-
-          <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">
-              {{ $t("settings.profile.email") }}
+              {{ $t("settings.profile.password") }}
             </dt>
             <dd class="mt-1 text-sm text-main">
               <input
-                v-if="state.editing"
-                id="email"
-                required
-                autocomplete="off"
-                name="email"
+                id="password"
+                name="password"
                 type="text"
-                class="textfield"
-                :value="state.editingPrincipal?.email"
-                @input="(e: any)=>updatePrincipal('email', e.target.value)"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                :placeholder="$t('common.sensitive-placeholder')"
+                :value="state.editingPrincipal?.password"
+                @input="(e: any) => updatePrincipal('password', e.target.value)"
               />
-              <template v-else>
-                {{ principal.email }}
-              </template>
             </dd>
           </div>
 
-          <template v-if="state.editing">
-            <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("settings.profile.password") }}
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                <input
-                  id="password"
-                  name="password"
-                  type="text"
-                  class="textfield mt-1 w-full"
-                  autocomplete="off"
-                  :placeholder="$t('common.sensitive-placeholder')"
-                  :value="state.editingPrincipal?.password"
-                  @input="(e: any) => updatePrincipal('password', e.target.value)"
-                />
-              </dd>
-            </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-control-light">
+              {{ $t("settings.profile.password-confirm") }}
+              <span v-if="passwordMismatch" class="text-error">{{
+                $t("settings.profile.password-mismatch")
+              }}</span>
+            </dt>
+            <dd class="mt-1 text-sm text-main">
+              <input
+                id="password-confirm"
+                name="password-confirm"
+                type="text"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                :placeholder="
+                  $t('settings.profile.password-confirm-placeholder')
+                "
+                :value="state.passwordConfirm"
+                @input="(e: any) => state.passwordConfirm = e.target.value"
+              />
+            </dd>
+          </div>
+        </template>
+      </dl>
+    </div>
 
-            <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("settings.profile.password-confirm") }}
-                <span v-if="passwordMismatch" class="text-error">{{
-                  $t("settings.profile.password-mismatch")
-                }}</span>
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                <input
-                  id="password-confirm"
-                  name="password-confirm"
-                  type="text"
-                  class="textfield mt-1 w-full"
-                  autocomplete="off"
-                  :placeholder="
-                    $t('settings.profile.password-confirm-placeholder')
-                  "
-                  :value="state.passwordConfirm"
-                  @input="(e: any) => state.passwordConfirm = e.target.value"
-                />
-              </dd>
-            </div>
-          </template>
-        </dl>
+    <!-- 2FA setting section -->
+    <div
+      v-if="isDev"
+      class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 border-t mt-16 pt-8 pb-4"
+    >
+      <div class="w-full flex flex-row justify-between items-center">
+        <span class="text-lg font-medium">{{ $t("two-factor.self") }}</span>
+        <BBSwitch
+          :value="isMFAEnabled"
+          @toggle="handle2FAEnableStatusChanged"
+        />
       </div>
-    </article>
+      <p class="mt-4 text-sm text-gray-500">
+        {{ $t("two-factor.description") }}
+        <!-- TODO(steven): update the docs link -->
+        <LearnMoreLink url="docs-link" />
+      </p>
+    </div>
   </main>
 </template>
 
 <script lang="ts" setup>
-import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
+import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { PrincipalPatch } from "../types";
 import { hasWorkspacePermission } from "../utils";
-import { featureToRef, useCurrentUser, usePrincipalStore } from "@/store";
+import {
+  featureToRef,
+  useAuthStore,
+  useCurrentUser,
+  usePrincipalStore,
+} from "@/store";
+import { BBSwitch } from "@/bbkit";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { useRouter } from "vue-router";
 
 interface LocalState {
   editing: boolean;
@@ -202,6 +217,8 @@ const props = defineProps<{
   principalId?: string;
 }>();
 
+const router = useRouter();
+const authStore = useAuthStore();
 const currentUser = useCurrentUser();
 const principalStore = usePrincipalStore();
 const state = reactive<LocalState>({
@@ -212,9 +229,9 @@ const editNameTextField = ref();
 
 const keyboardHandler = (e: KeyboardEvent) => {
   if (state.editing) {
-    if (e.code == "Escape") {
+    if (e.code === "Escape") {
       cancelEdit();
-    } else if (e.code == "Enter" && e.metaKey) {
+    } else if (e.code === "Enter" && e.metaKey) {
       if (allowSaveEdit.value) {
         saveEdit();
       }
@@ -231,6 +248,10 @@ onUnmounted(() => {
 });
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
+
+const isMFAEnabled = computed(() => {
+  return authStore.currentUser.mfaEnabled;
+});
 
 const principal = computed(() => {
   if (props.principalId) {
@@ -250,7 +271,7 @@ const passwordMismatch = computed(() => {
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
 const allowEdit = computed(() => {
   return (
-    currentUser.value.id == principal.value.id ||
+    currentUser.value.id === principal.value.id ||
     hasWorkspacePermission(
       "bb.permission.workspace.manage-member",
       currentUser.value.role
@@ -261,8 +282,8 @@ const allowEdit = computed(() => {
 const allowSaveEdit = computed(() => {
   return (
     !isEqual(principal.value, state.editingPrincipal) &&
-    (state.passwordConfirm == "" ||
-      state.passwordConfirm == state.editingPrincipal?.password)
+    (state.passwordConfirm === "" ||
+      state.passwordConfirm === state.editingPrincipal?.password)
   );
 });
 
@@ -294,5 +315,13 @@ const saveEdit = async () => {
   });
   state.editingPrincipal = undefined;
   state.editing = false;
+};
+
+const handle2FAEnableStatusChanged = (enabled: boolean) => {
+  if (enabled) {
+    router.push({ name: "setting.profile.two-factor" });
+  } else {
+    // TODO(steven): double confirm user to disable 2FA.
+  }
 };
 </script>
