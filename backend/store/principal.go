@@ -247,7 +247,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			} else if userMessage.ID != api.SystemBotID {
 				userMessage.MemberDeleted = true
 			}
-			var mfaConfig storepb.MFAConfig
+			mfaConfig := storepb.MFAConfig{}
 			decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 			if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
 				return nil, err

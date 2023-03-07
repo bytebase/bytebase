@@ -700,7 +700,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
 | idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
 | idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
-| mfa_code | [string](#string) | optional | The mfa_code is used to verify the user&#39;s identity by MFA. |
+| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
 
 
@@ -785,6 +785,9 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 
 The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
+| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user. This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response. |
+| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 
 
 
@@ -807,6 +810,9 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. |
 | password | [string](#string) |  |  |
 | service_key | [string](#string) |  |  |
+| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
+| mfa_secret | [string](#string) |  | The mfa_secret is the tempary secret using in two phase verification. |
+| recovery_codes | [string](#string) | repeated | The recovery_codes is the tempary recovery codes using in two phase verification. |
 
 
 
