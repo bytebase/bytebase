@@ -19,7 +19,6 @@
       <BBTableHeaderCell :title="columnList[4].title" />
     </template>
     <template #body="{ rowData: anomaly }">
-      {{ anomaly.databaseId }}
       <BBTableCell :left-padding="4">
         <heroicons-outline:information-circle
           v-if="anomaly.severity == 'MEDIUM'"
