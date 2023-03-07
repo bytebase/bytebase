@@ -290,7 +290,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		passwordHashStr := string(passwordHash)
 		patch.PasswordHash = &passwordHashStr
 	}
-	// This flag mainly using to validate MFA code when user setup MFA.
+	// This flag is mainly used for validating MFA code when user setup MFA.
 	if request.OtpCode != nil {
 		isValid := validateWithCodeAndSecret(*request.OtpCode, user.MFAConfig.TempOtpSecret)
 		if !isValid {
