@@ -345,19 +345,6 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 	}
 	defer tx.Rollback()
 
-	id, err := s.createPendingInstanceChangeHistoryImpl(ctx, tx, sequence, prevSchema, m, storedVersion, statement)
-	if err != nil {
-		return -1, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return -1, err
-	}
-
-	return id, nil
-}
-
-func (s *Store) createPendingInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, sequence int64, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
 	h, err := s.createInstanceChangeHistoryImpl(ctx, tx, &InstanceChangeHistoryMessage{
 		InstanceID:          m.InstanceID,
 		DatabaseID:          m.DatabaseID,
@@ -378,5 +365,10 @@ func (s *Store) createPendingInstanceChangeHistoryImpl(ctx context.Context, tx *
 	if err != nil {
 		return -1, err
 	}
+
+	if err := tx.Commit(); err != nil {
+		return -1, err
+	}
+
 	return h.ID, nil
 }
