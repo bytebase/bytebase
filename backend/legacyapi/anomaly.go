@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 // AnomalyType is the type of a task.
 type AnomalyType string
 
@@ -110,46 +106,4 @@ type Anomaly struct {
 	// Calculated field derived from type
 	Severity AnomalySeverity `jsonapi:"attr,severity"`
 	Payload  string          `jsonapi:"attr,payload"`
-}
-
-// AnomalyUpsert is the API message for creating an anomaly.
-type AnomalyUpsert struct {
-	// Standard fields
-	CreatorID int
-
-	// Related fields
-	InstanceID int
-	DatabaseID *int
-
-	// Domain specific fields
-	Type    AnomalyType `jsonapi:"attr,type"`
-	Payload string      `jsonapi:"attr,payload"`
-}
-
-// AnomalyFind is the API message for finding anomalies.
-type AnomalyFind struct {
-	// Standard fields
-	RowStatus *RowStatus
-
-	// Related fields
-	InstanceID *int
-	DatabaseID *int
-	Type       *AnomalyType
-	// Only applicable if InstanceID is specified, if true, then we only return instance anomaly (database_id is NULL)
-	InstanceOnly bool
-}
-
-func (find *AnomalyFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
-// AnomalyArchive is the API message for archiving an anomaly.
-type AnomalyArchive struct {
-	InstanceID *int
-	DatabaseID *int
-	Type       AnomalyType
 }

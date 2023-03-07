@@ -428,9 +428,9 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}
 
 	// Remove schema drift anomalies.
-	if err := stores.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-		DatabaseID: task.DatabaseID,
-		Type:       api.AnomalyDatabaseSchemaDrift,
+	if err := stores.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+		DatabaseUID: task.DatabaseID,
+		Type:        api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to archive anomaly",
 			zap.String("instance", instance.ResourceID),
