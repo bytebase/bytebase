@@ -278,10 +278,11 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "user.mfa_enabled":
 			// We only do disable MFA in this case.
 			if !request.User.MfaEnabled {
-				// TODO(steven): update MFA config in user.
 				patch.MFAConfig = &storepb.MFAConfig{
-					OtpSecret:     "",
-					RecoveryCodes: []string{},
+					OtpSecret:         "",
+					TempOtpSecret:     "",
+					RecoveryCodes:     []string{},
+					TempRecoveryCodes: []string{},
 				}
 			}
 		}
@@ -295,24 +296,59 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		patch.PasswordHash = &passwordHashStr
 	}
 	if request.MfaCode != nil {
-		accountName := fmt.Sprintf("users/%d", userID)
-		isValid, err := otp.ValidateWithCodeAndAccountName(*request.MfaCode, accountName)
+		if user.MFAConfig == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "MFA secret is not set")
+		}
+		secret := user.MFAConfig.TempOtpSecret
+		isValid := otp.ValidateWithCodeAndSecret(*request.MfaCode, secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to validate MFA code, error: %v", err)
 		}
 		if !isValid {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid MFA code")
 		}
-		// TODO(steven): update MFA config in user.
-		// Since we have not confirmed MFA config structure yet, we just ignore it for now.
+		patch.MFAConfig = &storepb.MFAConfig{
+			OtpSecret:         user.MFAConfig.TempOtpSecret,
+			TempOtpSecret:     user.MFAConfig.TempOtpSecret,
+			RecoveryCodes:     user.MFAConfig.TempRecoveryCodes,
+			TempRecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+		}
 	}
-	if request.RegenerateRecoveryCodes != nil && *request.RegenerateRecoveryCodes {
-		_, err := mfa.GenerateRecoveryCodes(10)
+	if request.RegenerateTempMfaSecret {
+		originSecret, originRecoveryCodes := "", []string{}
+		if user.MFAConfig != nil {
+			originSecret = user.MFAConfig.OtpSecret
+			originRecoveryCodes = user.MFAConfig.RecoveryCodes
+		}
+		tempSecret, err := otp.GenerateRandSecret(user.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
+		}
+		tempRecoveryCodes, err := mfa.GenerateRecoveryCodes(10)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
-		// TODO(steven): update MFA config in user.
-		// Since we have not confirmed MFA config structure yet, we just ignore it for now.
+		patch.MFAConfig = &storepb.MFAConfig{
+			OtpSecret:         originSecret,
+			TempOtpSecret:     tempSecret,
+			RecoveryCodes:     originRecoveryCodes,
+			TempRecoveryCodes: tempRecoveryCodes,
+		}
+	}
+	if request.RegenerateRecoveryCodes {
+		if user.MFAConfig == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
+		}
+		recoveryCodes, err := mfa.GenerateRecoveryCodes(10)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
+		}
+		patch.MFAConfig = &storepb.MFAConfig{
+			OtpSecret:         user.MFAConfig.OtpSecret,
+			TempOtpSecret:     user.MFAConfig.TempOtpSecret,
+			RecoveryCodes:     recoveryCodes,
+			TempRecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+		}
 	}
 
 	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
@@ -414,8 +450,10 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
-	if user.MFAConfig != nil && user.MFAConfig.OtpSecret != "" {
-		convertedUser.MfaEnabled = true
+	if user.MFAConfig != nil {
+		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
+		convertedUser.MfaSecret = user.MFAConfig.TempOtpSecret
+		convertedUser.RecoveryCodes = user.MFAConfig.TempRecoveryCodes
 	}
 	return convertedUser
 }

@@ -125,8 +125,12 @@ message UpdateUserRequest {
   // The mfa_code is used to verify the user's identity by MFA.
   optional string mfa_code = 3;
 
+  // The regenerate_temp_mfa_secret flag means to regenerate temperary MFA secret for user.
+  // This is used for MFA setup. The temperary MFA secret and recovery codes will be returned in the response.
+  bool regenerate_temp_mfa_secret = 4;
+
   // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
-  optional bool regenerate_recovery_codes = 4;
+  bool regenerate_recovery_codes = 5;
 }
 
 message DeleteUserRequest {
@@ -204,7 +208,14 @@ message User {
 
   string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
 
+  // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 9;
+
+  // The mfa_secret is the tempary secret using in two phase verification.
+  string mfa_secret = 10;
+
+  // The recovery_codes is the tempary recovery codes using in two phase verification.
+  repeated string recovery_codes = 11;
 }
 
 enum UserType {

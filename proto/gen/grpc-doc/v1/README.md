@@ -786,7 +786,8 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | mfa_code | [string](#string) | optional | The mfa_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_recovery_codes | [bool](#bool) | optional | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
+| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temperary MFA secret for user. This is used for MFA setup. The temperary MFA secret and recovery codes will be returned in the response. |
+| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 
 
 
@@ -809,7 +810,9 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. |
 | password | [string](#string) |  |  |
 | service_key | [string](#string) |  |  |
-| mfa_enabled | [bool](#bool) |  |  |
+| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
+| mfa_secret | [string](#string) |  | The mfa_secret is the tempary secret using in two phase verification. |
+| recovery_codes | [string](#string) | repeated | The recovery_codes is the tempary recovery codes using in two phase verification. |
 
 
 

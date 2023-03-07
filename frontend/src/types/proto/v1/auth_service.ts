@@ -154,8 +154,13 @@ export interface UpdateUserRequest {
   mfaCode?:
     | string
     | undefined;
+  /**
+   * The regenerate_temp_mfa_secret flag means to regenerate temperary MFA secret for user.
+   * This is used for MFA setup. The temperary MFA secret and recovery codes will be returned in the response.
+   */
+  regenerateTempMfaSecret: boolean;
   /** The regenerate_recovery_codes flag means to regenerate recovery codes for user. */
-  regenerateRecoveryCodes?: boolean | undefined;
+  regenerateRecoveryCodes: boolean;
 }
 
 export interface DeleteUserRequest {
@@ -227,7 +232,12 @@ export interface User {
   userRole: UserRole;
   password: string;
   serviceKey: string;
+  /** The mfa_enabled flag means if the user has enabled MFA. */
   mfaEnabled: boolean;
+  /** The mfa_secret is the tempary secret using in two phase verification. */
+  mfaSecret: string;
+  /** The recovery_codes is the tempary recovery codes using in two phase verification. */
+  recoveryCodes: string[];
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -454,7 +464,13 @@ export const CreateUserRequest = {
 };
 
 function createBaseUpdateUserRequest(): UpdateUserRequest {
-  return { user: undefined, updateMask: undefined, mfaCode: undefined, regenerateRecoveryCodes: undefined };
+  return {
+    user: undefined,
+    updateMask: undefined,
+    mfaCode: undefined,
+    regenerateTempMfaSecret: false,
+    regenerateRecoveryCodes: false,
+  };
 }
 
 export const UpdateUserRequest = {
@@ -468,8 +484,11 @@ export const UpdateUserRequest = {
     if (message.mfaCode !== undefined) {
       writer.uint32(26).string(message.mfaCode);
     }
-    if (message.regenerateRecoveryCodes !== undefined) {
-      writer.uint32(32).bool(message.regenerateRecoveryCodes);
+    if (message.regenerateTempMfaSecret === true) {
+      writer.uint32(32).bool(message.regenerateTempMfaSecret);
+    }
+    if (message.regenerateRecoveryCodes === true) {
+      writer.uint32(40).bool(message.regenerateRecoveryCodes);
     }
     return writer;
   },
@@ -491,6 +510,9 @@ export const UpdateUserRequest = {
           message.mfaCode = reader.string();
           break;
         case 4:
+          message.regenerateTempMfaSecret = reader.bool();
+          break;
+        case 5:
           message.regenerateRecoveryCodes = reader.bool();
           break;
         default:
@@ -506,9 +528,8 @@ export const UpdateUserRequest = {
       user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
       mfaCode: isSet(object.mfaCode) ? String(object.mfaCode) : undefined,
-      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes)
-        ? Boolean(object.regenerateRecoveryCodes)
-        : undefined,
+      regenerateTempMfaSecret: isSet(object.regenerateTempMfaSecret) ? Boolean(object.regenerateTempMfaSecret) : false,
+      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes) ? Boolean(object.regenerateRecoveryCodes) : false,
     };
   },
 
@@ -517,6 +538,7 @@ export const UpdateUserRequest = {
     message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     message.mfaCode !== undefined && (obj.mfaCode = message.mfaCode);
+    message.regenerateTempMfaSecret !== undefined && (obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret);
     message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
     return obj;
   },
@@ -526,7 +548,8 @@ export const UpdateUserRequest = {
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     message.updateMask = object.updateMask ?? undefined;
     message.mfaCode = object.mfaCode ?? undefined;
-    message.regenerateRecoveryCodes = object.regenerateRecoveryCodes ?? undefined;
+    message.regenerateTempMfaSecret = object.regenerateTempMfaSecret ?? false;
+    message.regenerateRecoveryCodes = object.regenerateRecoveryCodes ?? false;
     return message;
   },
 };
@@ -989,6 +1012,8 @@ function createBaseUser(): User {
     password: "",
     serviceKey: "",
     mfaEnabled: false,
+    mfaSecret: "",
+    recoveryCodes: [],
   };
 }
 
@@ -1020,6 +1045,12 @@ export const User = {
     }
     if (message.mfaEnabled === true) {
       writer.uint32(72).bool(message.mfaEnabled);
+    }
+    if (message.mfaSecret !== "") {
+      writer.uint32(82).string(message.mfaSecret);
+    }
+    for (const v of message.recoveryCodes) {
+      writer.uint32(90).string(v!);
     }
     return writer;
   },
@@ -1058,6 +1089,12 @@ export const User = {
         case 9:
           message.mfaEnabled = reader.bool();
           break;
+        case 10:
+          message.mfaSecret = reader.string();
+          break;
+        case 11:
+          message.recoveryCodes.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1077,6 +1114,8 @@ export const User = {
       password: isSet(object.password) ? String(object.password) : "",
       serviceKey: isSet(object.serviceKey) ? String(object.serviceKey) : "",
       mfaEnabled: isSet(object.mfaEnabled) ? Boolean(object.mfaEnabled) : false,
+      mfaSecret: isSet(object.mfaSecret) ? String(object.mfaSecret) : "",
+      recoveryCodes: Array.isArray(object?.recoveryCodes) ? object.recoveryCodes.map((e: any) => String(e)) : [],
     };
   },
 
@@ -1091,6 +1130,12 @@ export const User = {
     message.password !== undefined && (obj.password = message.password);
     message.serviceKey !== undefined && (obj.serviceKey = message.serviceKey);
     message.mfaEnabled !== undefined && (obj.mfaEnabled = message.mfaEnabled);
+    message.mfaSecret !== undefined && (obj.mfaSecret = message.mfaSecret);
+    if (message.recoveryCodes) {
+      obj.recoveryCodes = message.recoveryCodes.map((e) => e);
+    } else {
+      obj.recoveryCodes = [];
+    }
     return obj;
   },
 
@@ -1105,6 +1150,8 @@ export const User = {
     message.password = object.password ?? "";
     message.serviceKey = object.serviceKey ?? "";
     message.mfaEnabled = object.mfaEnabled ?? false;
+    message.mfaSecret = object.mfaSecret ?? "";
+    message.recoveryCodes = object.recoveryCodes?.map((e) => e) || [];
     return message;
   },
 };
