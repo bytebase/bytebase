@@ -169,7 +169,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get principal list").SetInternal(err)
 				}
 				if len(users) != 0 {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
+					return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email %s is already existed", *principalPatch.Email))
 				}
 			} else {
 				principalPatch.Email = nil
