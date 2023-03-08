@@ -150,7 +150,7 @@ export const useRollbackLogic = () => {
     }
   });
 
-  const toggleRollback = (on: boolean) => {
+  const toggleRollback = async (on: boolean) => {
     if (create.value) {
       if (isTenantMode.value) {
         // In tenant mode, all tasks share a common MigrationDetail
@@ -168,9 +168,29 @@ export const useRollbackLogic = () => {
     } else {
       // Once the issue has been created, we need to patch the task.
       const taskEntity = task.value as Task;
-      patchTask(taskEntity.id, {
+      await patchTask(taskEntity.id, {
         rollbackEnabled: on,
       });
+
+      const issueEntity = issue.value as Issue;
+      const action = on ? "Enable" : "Disable";
+      const taskName = `[${taskEntity.name}]`;
+      const comment = `${action} SQL rollback log for task ${taskName}.`;
+      const payload: ActivityIssueCommentCreatePayload = {
+        issueName: issueEntity.name,
+      };
+      const createActivity: ActivityCreate = {
+        type: "bb.issue.comment.create",
+        containerId: issueEntity.id,
+        comment,
+        payload,
+      };
+      try {
+        await useActivityStore().createActivity(createActivity);
+      } catch {
+        // do nothing
+        // failing to comment to won't be too bad
+      }
     }
   };
 
