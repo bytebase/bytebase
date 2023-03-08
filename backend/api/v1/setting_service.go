@@ -35,6 +35,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
 	api.SettingAppIM,
 	api.SettingWatermark,
+	api.SettingPluginOpenAIKey,
 }
 
 // GetSetting gets the setting by name.

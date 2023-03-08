@@ -1934,5 +1934,25 @@
       "setup-auth-app": "Setup authenticator app",
       "download-recovery-codes": "Download your recovery codes"
     }
+  },
+  "plugin": {
+    "ai": {
+      "examples": "Examples",
+      "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL",
+      "run-automatically": "Run automatically",
+      "conversation": {
+        "conversations": "Conversations",
+        "untitled": "Untitled conversation",
+        "delete": "Delete conversation",
+        "rename": "Rename conversation",
+        "select-or-create": "Select or {create} a conversation to start."
+      },
+      "preset-suggestion": {
+        "1": "Which department has most employees?",
+        "2": "Which manager has most direct reports in each department?",
+        "3": "What's the gender ratio in each department?"
+      },
+      "statement-copied": "Statement copied to clipboard"
+    }
   }
 }
