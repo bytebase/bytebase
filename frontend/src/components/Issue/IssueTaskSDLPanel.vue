@@ -45,14 +45,6 @@
         </NTab>
       </NTabs>
 
-      <div
-        v-if="sdlState.detail.error"
-        class="flex text-error gap-x-1 items-start text-sm mb-1"
-      >
-        <heroicons:exclamation-circle class="w-4 h-4 shrink-0 mt-0.5" />
-        <div>{{ sdlState.detail.error }}</div>
-      </div>
-
       <CodeDiff
         v-if="state.tab === 'diff'"
         :old-string="sdlState.detail.previousSDL"
@@ -99,7 +91,12 @@ import { CodeDiff } from "v-code-diff";
 import axios from "axios";
 
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { hasFeature, useDatabaseStore, useInstanceStore } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useDatabaseStore,
+  useInstanceStore,
+} from "@/store";
 import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
 import MonacoEditor from "../MonacoEditor";
@@ -214,11 +211,13 @@ const useSDLState = () => {
     if (!migrationId) {
       return undefined;
     }
-    const history = await useInstanceStore().fetchMigrationHistoryById({
-      instanceId: task.instance.id,
-      migrationHistoryId: migrationId,
-      sdl: true,
-    });
+    const history = await useSilentRequest(() =>
+      useInstanceStore().fetchMigrationHistoryById({
+        instanceId: task.instance.id,
+        migrationHistoryId: migrationId,
+        sdl: true,
+      })
+    );
     // The latestMigrationId might change during fetching the
     // migrationHistory.
     // Should give up the result.
@@ -270,6 +269,11 @@ const useSDLState = () => {
         const message =
           err.response?.data?.message ?? err.details ?? "Internal server error";
 
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: message,
+        });
         finish({
           error: message,
           diffDDL: "",

@@ -100,7 +100,7 @@
         </template>
       </BBSelect>
     </div>
-    <div v-if="isProjectSchemaChangeTypeDDL">
+    <div>
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
@@ -134,7 +134,7 @@
         {{ $t("common.optional-directory-wildcard") }}:
         {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
       </div>
-      <div class="mt-2 textinfolabel">
+      <div v-if="isProjectSchemaChangeTypeDDL" class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
         {{
           sampleFilePath(
