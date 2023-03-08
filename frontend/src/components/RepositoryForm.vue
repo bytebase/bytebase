@@ -197,14 +197,10 @@
         :value="getRquiredPlanString('bb.feature.vcs-schema-write-back')"
         :disabled="true"
       />
-      <div class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span> {{ $t("repository.if-specified") }},
-        {{ $t("common.required-placeholder") }}:
-        {{ SCHEMA_REQUIRED_PLACEHOLDER }};
-        <template v-if="schemaOptionalTagPlaceholder.length > 0">
-          {{ $t("common.optional-placeholder") }}:
-          {{ schemaOptionalTagPlaceholder.join(", ") }}
-        </template>
+      <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
+        <span class="text-red-600">*</span>
+        <span class="ml-1">{{ $t("repository.if-specified") }},</span>
+        <span class="ml-1">{{ schemaTagPlaceholder }}</span>
       </div>
       <div
         v-if="repositoryConfig.schemaPathTemplate"
@@ -448,11 +444,35 @@ export default defineComponent({
       return tags;
     });
 
+    const schemaRequiredTagPlaceholder = computed(() => {
+      const tags = [] as string[];
+      // Only allows {{DB_NAME}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push(SCHEMA_REQUIRED_PLACEHOLDER);
+      return tags;
+    });
+
     const schemaOptionalTagPlaceholder = computed(() => {
       const tags = [] as string[];
       // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
       if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
       return tags;
+    });
+
+    const schemaTagPlaceholder = computed(() => {
+      const placeholders: string[] = [];
+      const required = schemaRequiredTagPlaceholder.value;
+      const optional = schemaOptionalTagPlaceholder.value;
+      if (required.length > 0) {
+        placeholders.push(
+          `${t("common.required-placeholder")}: ${required.join(", ")}`
+        );
+      }
+      if (optional.length > 0) {
+        placeholders.push(
+          `${t("common.optional-placeholder")}: ${optional.join(", ")}`
+        );
+      }
+      return placeholders.join("; ");
     });
 
     const onSQLReviewCIToggle = (on: boolean) => {
@@ -467,6 +487,7 @@ export default defineComponent({
       FILE_OPTIONAL_DIRECTORY_WILDCARD,
       fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
+      schemaTagPlaceholder,
       state,
       hasFeature,
       getRquiredPlanString: subscriptionStore.getRquiredPlanString,
