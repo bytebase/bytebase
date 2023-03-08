@@ -81,7 +81,7 @@ message ListExternalVersionControlsResponse {
 }
 
 message UpdateExternalVersionControlRequest {
-  ExternalVersionControl external_version_controls = 1 [(google.api.field_behavior) = REQUIRED];
+  ExternalVersionControl external_version_control = 1 [(google.api.field_behavior) = REQUIRED];
     
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
