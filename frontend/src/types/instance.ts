@@ -17,7 +17,8 @@ export type EngineType =
   | "SNOWFLAKE"
   | "TIDB"
   | "MONGODB"
-  | "SPANNER";
+  | "SPANNER"
+  | "REDIS";
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {
@@ -33,7 +34,10 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.TIDB;
     case "MONGODB":
       return Engine.MONGODB;
-    // TODO(xz): add Spanner here.
+    case "SPANNER":
+      return Engine.SPANNER;
+    case "REDIS":
+      return Engine.REDIS;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -51,6 +55,8 @@ export function defaultCharset(type: EngineType): string {
     case "MONGODB":
       return "";
     case "SPANNER":
+      return "";
+    case "REDIS":
       return "";
   }
 }
@@ -71,6 +77,8 @@ export function engineName(type: EngineType): string {
       return "MongoDB";
     case "SPANNER":
       return "Spanner";
+    case "REDIS":
+      return "Redis";
   }
 }
 
@@ -90,6 +98,8 @@ export function defaultCollation(type: EngineType): string {
     case "MONGODB":
       return "";
     case "SPANNER":
+      return "";
+    case "REDIS":
       return "";
   }
 }
