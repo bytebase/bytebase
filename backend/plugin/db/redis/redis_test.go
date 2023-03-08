@@ -20,7 +20,7 @@ func TestRedisDriver(t *testing.T) {
 
 	connStr := strings.Split(redisClient.Options().Addr, ":")
 	a.Equal(2, len(connStr))
-	host := connStr[0]
+	host := "127.0.0.1"
 	port := connStr[1]
 
 	driver, err := newDriver(db.DriverConfig{}).Open(ctx, db.Redis, db.ConnectionConfig{
