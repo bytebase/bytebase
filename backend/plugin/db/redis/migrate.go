@@ -165,6 +165,6 @@ func (*Driver) endMigration(ctx context.Context, store db.InstanceChangeHistoryS
 }
 
 // FindMigrationHistoryList finds the migration history list and return most recent item first.
-func (*Driver) FindMigrationHistoryList(context.Context, *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return nil, errors.New("redis: not supported")
+func (*Driver) FindMigrationHistoryList(ctx context.Context, store db.InstanceChangeHistoryStore, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+	return store.FindInstanceChangeHistoryList(ctx, find)
 }

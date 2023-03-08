@@ -462,7 +462,7 @@ type Driver interface {
 	// It returns the migration history id and the schema after migration on success.
 	ExecuteMigration(ctx context.Context, store InstanceChangeHistoryStore, m *MigrationInfo, statement string) (string, string, error)
 	// Find the migration history list and return most recent item first.
-	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
+	FindMigrationHistoryList(ctx context.Context, store InstanceChangeHistoryStore, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.

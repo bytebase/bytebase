@@ -64,7 +64,7 @@ func (*Driver) ExecuteMigration(_ context.Context, _ db.InstanceChangeHistorySto
 }
 
 // FindMigrationHistoryList finds the migration history.
-func (*Driver) FindMigrationHistoryList(_ context.Context, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (*Driver) FindMigrationHistoryList(_ context.Context, _ db.InstanceChangeHistoryStore, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	// TODO(d): implement it.
 	return nil, nil
 }

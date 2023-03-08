@@ -138,11 +138,14 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 }
 
 // Dump and restore
+
 // Dump the database, if dbName is empty, then dump all databases.
-// The returned string is the JSON encoded metadata for the logical dump.
-// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-func (*Driver) Dump(context.Context, string, io.Writer, bool) (string, error) {
-	return "", errors.New("redis: not supported")
+// Redis is schemaless, we don't support dump Redis data currently.
+func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, schemaOnly bool) (string, error) {
+	if !schemaOnly {
+		return "", errors.New("redis: not supported")
+	}
+	return "", nil
 }
 
 // Restore the database from src, which is a full backup.

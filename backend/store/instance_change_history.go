@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"strconv"
 	"strings"
 
@@ -349,8 +350,8 @@ func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	}
 	query := `
 	UPDATE instance_change_history
-	SET` + strings.Join(set, ", ") + `
-	WHERE` + fmt.Sprintf("id = $%d", len(args)+1)
+	SET ` + strings.Join(set, ", ") + `
+	WHERE ` + fmt.Sprintf("id = $%d", len(args)+1)
 	args = append(args, update.ID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -371,11 +372,11 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 	SELECT
 		MAX(sequence)
 	FROM instance_change_history
-	WHERE instance_id = $1 AND database_id = $1`
+	WHERE instance_id = $1 AND database_id = $2`
 	if baseline {
 		query += fmt.Sprintf(" AND (type = '%s' OR type = '%s')", db.Baseline, db.Branch)
 	}
-	var sequence int64
+	var sequence sql.NullInt64
 	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID).Scan(&sequence); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -383,7 +384,10 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 		return -1, util.FormatErrorWithQuery(err, query)
 	}
 
-	return sequence, nil
+	if sequence.Valid {
+		return sequence.Int64, nil
+	}
+	return 0, nil
 }
 
 // GetLargestInstanceChangeHistorySequence will get the largest sequence number.
@@ -425,7 +429,7 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 	FROM instance_change_history
 	WHERE instance_id = $1 AND database_id = $2 AND sequence >= $3`
 
-	var version string
+	var version sql.NullString
 	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID, sequence).Scan(&version); err != nil {
 		return nil, err
 	}
@@ -434,7 +438,11 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 		return nil, err
 	}
 
-	return &version, nil
+	if version.Valid {
+		return &version.String, nil
+	}
+
+	return nil, nil
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
@@ -454,7 +462,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		Sequence:            sequence,
 		Source:              m.Source,
 		Type:                m.Type,
-		Status:              m.Status,
+		Status:              db.Pending,
 		Version:             storedVersion,
 		Description:         m.Description,
 		Statement:           statement,

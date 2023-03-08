@@ -239,7 +239,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
-	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+	if list, err := executor.FindMigrationHistoryList(ctx, nil, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {

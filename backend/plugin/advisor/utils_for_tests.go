@@ -308,7 +308,7 @@ func (*MockDriver) ExecuteMigration(_ context.Context, _ database.InstanceChange
 }
 
 // FindMigrationHistoryList implements the Driver interface.
-func (*MockDriver) FindMigrationHistoryList(_ context.Context, _ *database.MigrationHistoryFind) ([]*database.MigrationHistory, error) {
+func (*MockDriver) FindMigrationHistoryList(_ context.Context, _ database.InstanceChangeHistoryStore, _ *database.MigrationHistoryFind) ([]*database.MigrationHistory, error) {
 	return nil, nil
 }
 

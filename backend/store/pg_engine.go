@@ -192,7 +192,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 // If there's no migration history, version will be nil.
 func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (*semver.Version, error) {
 	// We look back the past migration history records and return the latest successful (DONE) migration version.
-	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+	history, err := d.FindMigrationHistoryList(ctx, nil, &dbdriver.MigrationHistoryFind{
 		Database: &database,
 	})
 	if err != nil {
@@ -321,7 +321,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
 	// figure out whether the migration statement has already been applied.
 	if mode == common.ReleaseModeDev {
-		h, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		h, err := d.FindMigrationHistoryList(ctx, nil, &dbdriver.MigrationHistoryFind{
 			Database: &databaseName,
 		})
 		if err != nil {

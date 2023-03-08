@@ -221,7 +221,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, _ db.InstanceChangeH
 }
 
 // FindMigrationHistoryList finds the migration history.
-func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (driver *Driver) FindMigrationHistoryList(ctx context.Context, _ db.InstanceChangeHistoryStore, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `
 	SELECT
 		id,

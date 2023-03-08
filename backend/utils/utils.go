@@ -20,12 +20,14 @@ import (
 )
 
 // GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
+func GetLatestSchemaVersion(ctx context.Context, store db.InstanceChangeHistoryStore, driver db.Driver, instanceID int, databaseID int, databaseName string) (string, error) {
 	// TODO(d): support semantic versioning.
 	limit := 1
-	history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-		Database: &databaseName,
-		Limit:    &limit,
+	history, err := driver.FindMigrationHistoryList(ctx, store, &db.MigrationHistoryFind{
+		InstanceID: instanceID,
+		Database:   &databaseName,
+		DatabaseID: &databaseID,
+		Limit:      &limit,
 	})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
