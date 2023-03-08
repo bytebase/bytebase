@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -43,12 +44,18 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
 
+	database, err := strconv.Atoi(config.Database)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
+	}
+
 	rdb := redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:     []string{addr},
 		Username:  config.Username,
 		Password:  config.Password,
 		TLSConfig: tlsConfig,
 		ReadOnly:  config.ReadOnly,
+		DB:        database,
 	})
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, err
