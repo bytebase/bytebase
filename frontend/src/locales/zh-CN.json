@@ -1933,5 +1933,25 @@
       "setup-auth-app": "设置认证器应用程序",
       "download-recovery-codes": "下载恢复码"
     }
+  },
+  "plugin": {
+    "ai": {
+      "examples": "例子",
+      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会马上转换成 SQL 语句",
+      "run-automatically": "自动运行",
+      "conversation": {
+        "conversations": "会话",
+        "untitled": "未命名会话",
+        "delete": "删除会话",
+        "rename": "修改会话名称",
+        "select-or-create": "选择或{create}一个会话以开始。"
+      },
+      "preset-suggestion": {
+        "1": "哪个部门的员工最多？",
+        "2": "哪个部门经理的下属最多？",
+        "3": "各个部门的性别比例如何？"
+      },
+      "statement-copied": "语句已复制到剪贴板"
+    }
   }
 }

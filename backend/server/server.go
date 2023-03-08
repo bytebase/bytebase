@@ -670,6 +670,15 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial OpenAI key setting
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingPluginOpenAIKey,
+		Value:       "",
+		Description: "API key to request OpenAI (ChatGPT)",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace profile setting
 	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
 		ExternalUrl:    s.profile.ExternalURL,

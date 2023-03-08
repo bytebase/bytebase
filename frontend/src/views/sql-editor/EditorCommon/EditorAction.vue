@@ -78,6 +78,20 @@
         </NPopover>
       </template>
     </div>
+
+    <div
+      v-if="
+        tabStore.currentTab.mode === TabMode.ReadOnly &&
+        !tabStore.isDisconnected
+      "
+      class="w-full -mb-1"
+    >
+      <AIPromptButton
+        :engine-type="instance.engine"
+        :database-metadata="databaseMetadata"
+        @apply-statement="handleApplySQL"
+      />
+    </div>
   </div>
 </template>
 
@@ -89,9 +103,11 @@ import {
   useSQLEditorStore,
   useInstanceById,
   useWebTerminalStore,
+  useMetadataByDatabaseId,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
+import { AIPromptButton } from "@/plugins/ai";
 import SharePopover from "./SharePopover.vue";
 import AdminModeButton from "./AdminModeButton.vue";
 
@@ -189,5 +205,18 @@ const handleFormatSQL = () => {
 
 const handleClearScreen = () => {
   emit("clear-screen");
+};
+
+const databaseId = computed(() => tabStore.currentTab.connection.databaseId);
+const databaseMetadata = useMetadataByDatabaseId(databaseId, false);
+const instance = useInstanceById(
+  computed(() => tabStore.currentTab.connection.instanceId)
+);
+
+const handleApplySQL = (sql: string, run: boolean) => {
+  tabStore.currentTab.statement = sql;
+  if (run) {
+    emit("execute", sql, { databaseType: selectedInstanceEngine.value });
+  }
 };
 </script>

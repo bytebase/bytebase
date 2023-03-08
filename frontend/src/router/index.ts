@@ -52,6 +52,7 @@ import {
   useIdentityProviderStore,
   useCurrentUser,
 } from "@/store";
+import { useConversationStore } from "@/plugins/ai/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -1018,6 +1019,7 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_FORGOT_MODULE
   ) {
     useTabStore().reset();
+    useConversationStore().reset();
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
