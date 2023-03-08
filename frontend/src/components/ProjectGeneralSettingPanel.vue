@@ -80,35 +80,6 @@
       </div>
     </div>
 
-    <div>
-      <dl class="">
-        <div class="textlabel">
-          {{ $t("project.settings.schema-change-type") }}
-          <span class="text-red-600">*</span>
-        </div>
-        <BBSelect
-          id="schemamigrationtype"
-          :disabled="!allowEdit"
-          :selected-item="state.schemaChangeType"
-          :item-list="['DDL', 'SDL']"
-          class="mt-1"
-          @select-item="
-            (type: SchemaChangeType) => {
-              state.schemaChangeType = type;
-            }
-          "
-        >
-          <template #menuItem="{ item }">
-            {{
-              $t(
-                `project.settings.select-schema-change-type-${item.toLowerCase()}`
-              )
-            }}
-          </template>
-        </BBSelect>
-      </dl>
-    </div>
-
     <div v-if="allowEdit" class="flex justify-end">
       <button
         type="button"
@@ -137,7 +108,6 @@ import {
   Project,
   ProjectPatch,
   ProjectTenantMode,
-  SchemaChangeType,
   FeatureType,
 } from "../types";
 import FeatureModal from "@/components/FeatureModal.vue";
@@ -147,7 +117,6 @@ import ResourceIdField from "./ResourceIdField.vue";
 interface LocalState {
   name: string;
   key: string;
-  schemaChangeType: SchemaChangeType;
   tenantMode: ProjectTenantMode;
   requiredFeature: FeatureType | undefined;
 }
@@ -175,7 +144,6 @@ export default defineComponent({
     const state = reactive<LocalState>({
       name: props.project.name,
       key: props.project.key,
-      schemaChangeType: props.project.schemaChangeType,
       tenantMode: props.project.tenantMode,
       requiredFeature: undefined,
     });
@@ -186,7 +154,6 @@ export default defineComponent({
         !isEmpty(state.name) &&
         (state.name !== props.project.name ||
           state.key !== props.project.key ||
-          state.schemaChangeType !== props.project.schemaChangeType ||
           state.tenantMode !== props.project.tenantMode)
       );
     });
@@ -199,9 +166,6 @@ export default defineComponent({
       }
       if (state.key !== props.project.key) {
         projectPatch.key = state.key;
-      }
-      if (state.schemaChangeType !== props.project.schemaChangeType) {
-        projectPatch.schemaChangeType = state.schemaChangeType;
       }
       if (state.tenantMode !== props.project.tenantMode) {
         if (state.tenantMode === "TENANT") {
@@ -227,7 +191,6 @@ export default defineComponent({
           });
           state.name = updatedProject.name;
           state.key = updatedProject.key;
-          state.schemaChangeType = updatedProject.schemaChangeType;
           state.tenantMode = updatedProject.tenantMode;
         });
     };
