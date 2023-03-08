@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-row items-center text-control text-sm">
     <svg
-      class="animate-spin h-5 w-5 mr-1 text-blue-600"
+      class="animate-spin h-5 w-5 text-blue-600"
+      :class="[title && 'mr-1']"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

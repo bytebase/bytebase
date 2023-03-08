@@ -1,6 +1,7 @@
+import { computed, unref, watchEffect } from "vue";
 import axios from "axios";
 import { defineStore } from "pinia";
-import { DatabaseId, DBSchemaState } from "@/types";
+import { DatabaseId, DBSchemaState, MaybeRef, UNKNOWN_ID } from "@/types";
 import {
   DatabaseMetadata,
   ExtensionMetadata,
@@ -144,3 +145,17 @@ export const useDBSchemaStore = defineStore("dbSchema", {
     },
   },
 });
+
+export const useMetadataByDatabaseId = (
+  databaseId: MaybeRef<DatabaseId>,
+  skipCache: MaybeRef<boolean>
+) => {
+  const store = useDBSchemaStore();
+  watchEffect(() => {
+    const id = unref(databaseId);
+    if (id !== UNKNOWN_ID) {
+      store.getOrFetchDatabaseMetadataById(id, unref(skipCache));
+    }
+  });
+  return computed(() => store.databaseMetadataById.get(unref(databaseId)));
+};
