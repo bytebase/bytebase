@@ -5,6 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/spanner v1.44.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.5.0
+	github.com/alicebob/miniredis/v2 v2.30.0
 	github.com/aws/aws-sdk-go-v2 v1.17.1
 	github.com/aws/aws-sdk-go-v2/config v1.17.10
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.23
@@ -15,7 +16,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/github/gh-ost v1.1.5
-	github.com/go-redis/redismock/v9 v9.0.2
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.2
@@ -63,7 +63,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+require (
+	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64 // indirect
+)
 
 require (
 	cloud.google.com/go v0.110.0 // indirect

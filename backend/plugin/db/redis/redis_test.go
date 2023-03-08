@@ -2,30 +2,23 @@ package redis
 
 import (
 	"context"
-	"strings"
 	"testing"
 
-	"github.com/go-redis/redismock/v9"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 func TestRedisDriver(t *testing.T) {
-	redisClient, _ := redismock.NewClientMock()
-	defer redisClient.Close()
+	redisServer := miniredis.RunT(t)
 
 	a := require.New(t)
 	ctx := context.Background()
 
-	connStr := strings.Split(redisClient.Options().Addr, ":")
-	a.Equal(2, len(connStr))
-	host := "127.0.0.1"
-	port := connStr[1]
-
 	driver, err := newDriver(db.DriverConfig{}).Open(ctx, db.Redis, db.ConnectionConfig{
-		Host: host,
-		Port: port,
+		Host: redisServer.Host(),
+		Port: redisServer.Port(),
 	}, db.ConnectionContext{})
 	a.NoError(err)
 	defer driver.Close(ctx)
