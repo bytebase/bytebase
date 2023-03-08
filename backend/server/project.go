@@ -1070,6 +1070,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
 	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
 	fileLastCommitID := ""
+	fileSHA := ""
 
 	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
@@ -1095,6 +1096,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 		)
 	} else if fileMeta != nil {
 		fileLastCommitID = fileMeta.LastCommitID
+		fileSHA = fileMeta.SHA
 	}
 
 	return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
@@ -1114,6 +1116,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 			CommitMessage: sqlReviewInVCSPRTitle,
 			Content:       sqlReviewConfig,
 			LastCommitID:  fileLastCommitID,
+			SHA:           fileSHA,
 		},
 	)
 }
@@ -1223,6 +1226,7 @@ func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 				CommitMessage: sqlReviewInVCSPRTitle,
 				Content:       newContent,
 				LastCommitID:  fileMeta.LastCommitID,
+				SHA:           fileMeta.SHA,
 			},
 		)
 	}
