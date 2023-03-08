@@ -10,6 +10,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 import "v1/common.proto";
+import "v1/externalvs_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -140,6 +141,13 @@ service ProjectService {
       body: "*"
     };
   }
+
+  rpc BindExternalVersionControl(BindExternalVersionControlRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:bindExternalVersionControl"
+      body: "*"
+    };
+  }
 }
 
 message GetProjectRequest {
@@ -234,6 +242,15 @@ message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED]; 
 }
 
+message BindExternalVersionControlRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The binding for the project and external version control.
+  ExternalVersionControlBinding binding = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
 message Project {
   // The name of the project.
   // Format: projects/{project}
@@ -265,6 +282,9 @@ message Project {
   LgtmCheck lgtm_check = 12;
 
   repeated Webhook webhooks = 13;
+
+  // The binding for the project and external version control.
+  optional ExternalVersionControlBinding repository = 14;
 }
 
 message IamPolicy {
