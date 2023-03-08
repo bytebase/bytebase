@@ -1,3 +1,9 @@
+- statement: CREATE TABLE t(a date default '');
+  want: null
+  err:
+    type: 407
+    content: '[types:1292]Incorrect datetime value: '''''
+    line: 1
 - statement: |-
     CREATE TABLE t(a TEXT);
     ALTER TABLE t ALTER COLUMN a SET DEFAULT '1';

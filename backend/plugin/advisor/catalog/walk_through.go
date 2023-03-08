@@ -12,7 +12,8 @@ import (
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/parser/types"
+	"github.com/pingcap/tidb/sessionctx/stmtctx"
+	"github.com/pingcap/tidb/types"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -1102,14 +1103,24 @@ func isAutoIncrement(column *tidbast.ColumnDef) bool {
 	return false
 }
 
-func checkDefault(columnName string, columnType *types.FieldType, valueType *types.FieldType) *WalkThroughError {
-	if valueType.GetType() != mysql.TypeNull {
+func checkDefault(columnName string, columnType *types.FieldType, value tidbast.ExprNode) *WalkThroughError {
+	if value.GetType().GetType() != mysql.TypeNull {
 		switch columnType.GetType() {
 		case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob, mysql.TypeJSON, mysql.TypeGeometry:
 			return &WalkThroughError{
 				Type: ErrorTypeInvalidColumnTypeForDefaultValue,
 				// Content comes from MySQL Error content.
 				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+			}
+		}
+	}
+
+	if valueExpr, yes := value.(tidbast.ValueExpr); yes {
+		datum := types.NewDatum(valueExpr.GetValue())
+		if _, err := datum.ConvertTo(&stmtctx.StatementContext{}, columnType); err != nil {
+			return &WalkThroughError{
+				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
+				Content: err.Error(),
 			}
 		}
 	}
@@ -1158,7 +1169,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
-			if err := checkDefault(col.name, column.Tp, option.Expr.GetType()); err != nil {
+			if err := checkDefault(col.name, column.Tp, option.Expr); err != nil {
 				return err
 			}
 			if option.Expr.GetType().GetType() != mysql.TypeNull {
