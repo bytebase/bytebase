@@ -12,227 +12,93 @@ import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
-service ExternalVCSService {
-  rpc GetExternalVCS(GetExternalVCSRequest) returns (ExternalVCS) {
+service ExternalVersionControlService {
+  rpc GetExternalVersionControl(GetExternalVersionControlRequest) returns (ExternalVersionControl) {
     option (google.api.http) = {
-      get: "/v1/{name=externalVCS/*}"
+      get: "/v1/{name=externalVersionControls/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListExternalVCS(ListExternalVCSRequest) returns (ListExternalVCSResponse) {
+  rpc ListExternalVersionControls(ListExternalVersionControlsRequest) returns (ListExternalVersionControlsResponse) {
     option (google.api.http) = {
-      get: "/v1/externalVCS"
+      get: "/v1/externalVersionControls"
     };
     option (google.api.method_signature) = "";
   }
 
-  rpc CreateExternalVCS(CreateExternalVCSRequest) returns (ExternalVCS) {
+  rpc CreateExternalVersionControl(CreateExternalVersionControlRequest) returns (ExternalVersionControl) {
     option (google.api.http) = {
-      post: "/v1/externalVCS"
-      body: "external_vcs"
+      post: "/v1/externalVersionControls"
+      body: "external_version_control"
     };
     option (google.api.method_signature) = "";
   }
 
-  rpc UpdateExternalVCS(UpdateExternalVCSRequest) returns (ExternalVCS) {
+  rpc UpdateExternalVersionControl(UpdateExternalVersionControlRequest) returns (ExternalVersionControl) {
     option (google.api.http) = {
-      patch: "/v1/{external_vcs.name=externalVCS/*}"
-      body: "external_vcs"
+      patch: "/v1/{external_version_control.name=externalVersionControls/*}"
+      body: "external_verison_control"
     };
-    option (google.api.method_signature) = "external_vcs,update_mask";
+    option (google.api.method_signature) = "external_verison_control,update_mask";
   }
 
-  rpc DeleteExternalVCS(DeleteExternalVCSRequest) returns (google.protobuf.Empty) {
+  rpc DeleteExternalVersionControl(DeleteExternalVersionControlRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/v1/{name=externalVCS/*}"
-    };
-  }
-
-  rpc GetProjectLinkedRepository(GetProjectLinkedRepositoryRequest) returns (LinkedRepository) {
-    option (google.api.http) = {
-      get: "/v1/{name=projects/*}/linkedRepository"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
-  rpc UpdateProjectLinkedRepository(UpdateProjectLinkedRepositoryRequest) returns (LinkedRepository) {
-    option (google.api.http) = {
-      put: "/v1/{name=project/*}/linkedRepository"
-      body: "linked_repository"
-    };
-  }
-
-  rpc ListProjectLinkedRepositories(ListProjectLinkedRepositoriesRequest) returns (ListProjectLinkedRepositoriesResponse) {
-    option (google.api.http) = {
-      get: "/v1/{name=externalVCS/*}/projects"
-    };
-  }
-
-  rpc SearchExternalVCSRepositories(SearchExternalVCSRepositoriesRequest) returns (SearchExternalVCSRepositoriesResponse) {
-    option (google.api.http) = {
-      post: "/v1/{name=externalVCS/*}:searchExternalVCSRepositories" 
+      delete: "/v1/{name=externalVersionControls/*}"
     };
   }
 }
 
-message CreateExternalVCSRequest {
-  ExternalVCS external_vcs = 1 [(google.api.field_behavior) = REQUIRED];
+message CreateExternalVersionControlRequest {
+  ExternalVersionControl external_version_control = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message GetExternalVCSRequest {
-    // The name of the external VCS to retrieve.
-    // Format: externalVCS/{externalVCS}
+message GetExternalVersionControlRequest {
+    // The name of the external version control to retrieve.
+    // Format: externalVersionControls/{externalVersionControl}
     string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListExternalVCSRequest {
-  // Not used. The maximum number of external VCS to return. The service may return fewer than this value.
-  // If unspecified, at most 100 external VCS will be returned.
+message ListExternalVersionControlsRequest {
+  // Not used. The maximum number of external version control to return. The service may return fewer than this value.
+  // If unspecified, at most 100 external version control will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
     
-  // Not used. A page token, received from a previous `ListExternalVCS` call.
+  // Not used. A page token, received from a previous `ListExternalVersionControls` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 2;
 }
 
-message ListExternalVCSResponse {
-  // The list of external VCS.
-  repeated ExternalVCS external_vcs = 1;
+message ListExternalVersionControlsResponse {
+  // The list of external version control.
+  repeated ExternalVersionControl external_version_controls = 1;
     
   // Not used. A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-message UpdateExternalVCSRequest {
-  ExternalVCS external_vcs = 1 [(google.api.field_behavior) = REQUIRED];
+message UpdateExternalVersionControlRequest {
+  ExternalVersionControl external_version_controls = 1 [(google.api.field_behavior) = REQUIRED];
     
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message DeleteExternalVCSRequest {
-  // The name of the external VCS to delete.
-  // Format: externalVCS/{externalVCS}
+message DeleteExternalVersionControlRequest {
+  // The name of the external version control to delete.
+  // Format: externalVersionControls/{externalVersionControl}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListProjectLinkedRepositoriesRequest {
-  // The resource name of the external vcs associated with the projects that
-  // you want to list.
-  // Format: externalVCS/{externalVCS}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Not used. Requested page size. The maximum page size is 100; this is also the
-  // default.
-  int32 page_size = 2;
-
-  // Not used. A token identifying a page of results to be returned. This should be a
-  // `next_page_token` value returned from a previous `ListProjectLinkedRepositories`
-  // call. If unspecified, the first page of results is returned.
-  string page_token = 3;
-}
-
-message ListProjectLinkedRepositoriesResponse {
-  // The list of linked repositories.
-  repeated LinkedRepository linked_repository = 1;
-
-  // Not used. A token to retrieve the next page of results. To retrieve the next page,
-  // call `ListProjectLinkedRepositories` again with the `page_token` field set to this
-  // value. This field is empty if there are no more results to retrieve.
-  string next_page_token = 2;
-}
-
-message GetProjectLinkedRepositoryRequest {
-  // The resource name of the project for which linked repository is retrieved.
-  // Format: projects/{project}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateProjectLinkedRepositoryRequest {
-  // The resource name of the project for which linked repository that you want to update.
-  // Format: projects/{project}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The new linked repository for the project. Read-only fields are ignored;
-  // thus, you may leave empty all fields except `billing_account_name`.
-  LinkedRepository linked_repository = 2;
-}
-
-message LinkedRepository {
-  // The name of the linked repository, generated by the server, and also is the unique identifier.
-  // Format: projects/{project}/linkedRepository
-  string name = 1 [(google.api.field_behavior) = READ_ONLY];
-
-  // The title of the repository. For axample: sample.
-  string title = 2;
-
-  // The full_path of the repository. For example: bytebase/sample.
-  string full_path = 3;
-
-  // The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample.
-  string web_url = 4;
-
-  // The branch Bytebase listens to for changes. For example: main.
-  string branch_filter = 5;
-
-  // The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.
-  string base_directory = 6;
-
-  // Bytebase only observes the file path name matching the template pattern **relative** to the base directory.
-  // Required Placeholder: {{DB_NAME}}, {{VERSION}}, {{TYPE]}.
-  // Optional Placeholder: {{ENV_NAME}}, {{DESCRIPTION}}.
-  // Optional Directory Wildcard: '*', '**'.
-  string file_path_template = 7 [(google.api.field_behavior) = REQUIRED];
-
-  // The file path template for storing the latest schema auto-generated by Bytebase after migration.
-  // If empty, then Bytebase won't auto generate it.
-  // If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_NAME}}.
-  string schema_path_template = 8;
-
-  // The file path template for matching the sql files for sheet.
-  // If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_NAME}}, {{DB_NAME}}.
-  string sheet_path_template = 9;
-
-  // Set to true to enable SQL review CI for all PR/MRs.
-  bool enable_sql_review_ci = 10;
-
-  // The webhook endpoint ID of the repository.
-  string webhook_endpoint_id = 11 [(google.api.field_behavior) = READ_ONLY];
-}
-
-
-message SearchExternalVCSRepositoriesRequest {
-  // The name of the external VCS to retrieve the external vcs repositories.
-  // Format: externalVCS/{externalVCS}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SearchExternalVCSRepositoriesResponse {
-  message ExternalRepository {
-    // The id of the external repository.
-    string id = 1;
-    // The title of the external repository.
-    string title = 2;
-    // The fullpath of the external repository.
-    string fullpath = 3;
-    // Web url of the external repository.
-    string web_url = 4;
-  }
-  // The list of external repositories.
-  repeated ExternalRepository external_repositories = 1;
-}
-
-
-
-message ExternalVCS {
-  // The name of the external VCS, generated by the server, and also is the unique identifier.
-  // Format: externalVCS/{externalVCS}
+message ExternalVersionControl {
+  // The name of the external version control, generated by the server, and also is the unique identifier.
+  // Format: externalVersionControls/{externalVersionControl}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The title of the external VCS. It is used to display in the UI. Specified by the client.
+  // The title of the external version control. It is used to display in the UI. Specified by the client.
   string title = 2 [(google.api.field_behavior) = REQUIRED];
 
   enum Type {
@@ -245,16 +111,16 @@ message ExternalVCS {
 
   Type type = 3 [(google.api.field_behavior) = REQUIRED];
 
-  // The url of the external VCS. Specified by the client.
+  // The url of the external version control. Specified by the client.
   // For example: github.com, gitlab.com, gitlab.bytebase.com.
   string url = 4 [(google.api.field_behavior) = REQUIRED];
 
-  // The API url of the external VCS. Derived from the url.
+  // The API url of the external version control. Derived from the url.
   string api_url = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The application ID of the external VCS. Specified by the client.
+  // The application ID of the external version control. Specified by the client.
   string application_id = 6 [(google.api.field_behavior) = REQUIRED];
 
-  // The application secret of the external VCS. Specified by the client.
+  // The application secret of the external version control. Specified by the client.
   string secret = 7 [(google.api.field_behavior) = INPUT_ONLY];
 }
