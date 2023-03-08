@@ -1,19 +1,13 @@
 <template>
-  <div
-    class="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4"
-  >
+  <div v-if="!hasFeature('bb.feature.sql-review')">
     <div class="flex space-x-4 flex-1">
-      <div class="py-2 text-sm font-medium text-control">
-        {{ $t("common.sql") }}
-        <button
-          v-if="!hasFeature('bb.feature.sql-review')"
-          type="button"
-          class="ml-1 btn-small py-0.5 inline-flex items-center text-accent"
-          @click.prevent="state.showFeatureModal = true"
-        >
-          🎈{{ $t("sql-review.unlock-full-feature") }}
-        </button>
-      </div>
+      <button
+        type="button"
+        class="btn-small py-0.5 inline-flex items-center text-accent"
+        @click.prevent="state.showFeatureModal = true"
+      >
+        🎈{{ $t("sql-review.unlock-full-feature") }}
+      </button>
     </div>
   </div>
   <div class="w-full">
@@ -23,48 +17,72 @@
     >
       <BBSpin />
     </div>
-    <template v-else>
-      <NTabs
-        v-if="sdlState.detail"
-        v-model:value="state.tab"
-        pane-style="padding-top: 0.25rem"
-      >
-        <NTabPane name="diff" :tab="$t('issue.sdl.schema-change')">
-          <CodeDiff
-            :old-string="sdlState.detail.previousSDL"
-            :new-string="sdlState.detail.prettyExpectedSDL"
-            output-format="side-by-side"
-            data-label="bb-change-detail-code-diff-block"
-        /></NTabPane>
-        <NTabPane
-          name="statement"
-          :tab="$t('issue.sdl.generated-ddl-statements')"
-        >
-          <MonacoEditor
-            ref="editorRef"
-            class="w-full border h-auto max-h-[360px]"
-            data-label="bb-issue-sql-editor"
-            :value="sdlState.detail.diffDDL"
-            :readonly="true"
-            :auto-focus="false"
-            language="sql"
-            @ready="handleMonacoEditorReady"
-          />
-        </NTabPane>
-        <NTabPane name="schema" :tab="$t('issue.sdl.full-schema')">
-          <MonacoEditor
-            ref="editorRef"
-            class="w-full border h-auto max-h-[360px]"
-            data-label="bb-issue-sql-editor"
-            :value="sdlState.detail.expectedSDL"
-            :readonly="true"
-            :auto-focus="false"
-            :advices="markers"
-            language="sql"
-            @ready="handleMonacoEditorReady"
-          />
-        </NTabPane>
+    <template v-else-if="sdlState.detail">
+      <NTabs v-model:value="state.tab" class="mb-1">
+        <NTab name="diff" :disabled="!!sdlState.detail.error">
+          <div class="flex items-center gap-x-1">
+            {{ $t("issue.sdl.schema-change") }}
+            <NTooltip>
+              <template #trigger>
+                <heroicons:question-mark-circle class="w-4 h-4" />
+              </template>
+              <div class="whitespace-nowrap">
+                <span>{{ $t("issue.sdl.left-schema-may-change") }}</span>
+                <LearnMoreLink
+                  url="https://www.bytebase.com/docs/change-database/state-based-migration?source=console#caveats"
+                  color="light"
+                  class="ml-1"
+                />
+              </div>
+            </NTooltip>
+          </div>
+        </NTab>
+        <NTab name="statement" :disabled="!!sdlState.detail.error">
+          {{ $t("issue.sdl.generated-ddl-statements") }}
+        </NTab>
+        <NTab name="schema">
+          {{ $t("issue.sdl.full-schema") }}
+        </NTab>
       </NTabs>
+
+      <div
+        v-if="sdlState.detail.error"
+        class="flex text-error gap-x-1 items-start text-sm mb-1"
+      >
+        <heroicons:exclamation-circle class="w-4 h-4 shrink-0 mt-0.5" />
+        <div>{{ sdlState.detail.error }}</div>
+      </div>
+
+      <CodeDiff
+        v-if="state.tab === 'diff'"
+        :old-string="sdlState.detail.previousSDL"
+        :new-string="sdlState.detail.prettyExpectedSDL"
+        output-format="side-by-side"
+        data-label="bb-change-detail-code-diff-block"
+      />
+      <MonacoEditor
+        v-if="state.tab === 'statement'"
+        ref="editorRef"
+        class="w-full border h-auto max-h-[360px]"
+        data-label="bb-issue-sql-editor"
+        :value="sdlState.detail.diffDDL"
+        :readonly="true"
+        :auto-focus="false"
+        language="sql"
+        @ready="handleMonacoEditorReady"
+      />
+      <MonacoEditor
+        v-if="state.tab === 'schema'"
+        ref="editorRef"
+        class="w-full border h-auto max-h-[360px]"
+        data-label="bb-issue-sql-editor"
+        :value="sdlState.detail.expectedSDL"
+        :readonly="true"
+        :auto-focus="false"
+        :advices="markers"
+        language="sql"
+        @ready="handleMonacoEditorReady"
+      />
     </template>
   </div>
   <FeatureModal
@@ -75,22 +93,25 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTab, NTooltip } from "naive-ui";
 import { reactive, watch, computed, ref } from "vue";
 import { CodeDiff } from "v-code-diff";
+import axios from "axios";
 
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { hasFeature, useDatabaseStore, useInstanceStore } from "@/store";
 import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
 import MonacoEditor from "../MonacoEditor";
-import axios from "axios";
 import { sqlClient } from "@/grpcweb";
 import { convertEngineType } from "@/types";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
+import { useSilentRequest } from "@/plugins/silent-request";
 
 type TabView = "diff" | "statement" | "schema";
 
 type SDLDetail = {
+  error: string;
   previousSDL: string;
   prettyExpectedSDL: string;
   expectedSDL: string;
@@ -163,9 +184,9 @@ const useSDLState = () => {
         sourceSchema: previousSDL ?? "",
         targetSchema: expectedSDL ?? "",
       });
-      return data;
+      return data ?? "";
     };
-    const diffDDL = (await getSchemaDiff()) ?? "";
+    const diffDDL = await useSilentRequest(getSchemaDiff);
 
     const { currentSchema, expectedSchema } = await sqlClient.pretty({
       engine: convertEngineType(database.instance.engine),
@@ -178,6 +199,7 @@ const useSDLState = () => {
     }
 
     return {
+      error: "",
       previousSDL: currentSchema,
       prettyExpectedSDL: expectedSchema,
       expectedSDL,
@@ -205,6 +227,7 @@ const useSDLState = () => {
       throw new Error();
     }
     return {
+      error: "",
       previousSDL: history.schemaPrev,
       prettyExpectedSDL: history.schema,
       expectedSDL: history.schema,
@@ -218,7 +241,7 @@ const useSDLState = () => {
       () => (selectedTask.value as Task).status,
       migrationId,
     ],
-    ([taskId, taskStatus, migrationId]) => {
+    async ([taskId, taskStatus, migrationId]) => {
       const task = selectedTask.value as Task;
       if (!map.has(taskId)) {
         map.set(taskId, emptyState(task));
@@ -230,13 +253,30 @@ const useSDLState = () => {
       };
       try {
         if (taskStatus === "DONE") {
-          fetchSDLDetailFromMigrationHistory(task, migrationId).then(finish);
+          const detail = await fetchSDLDetailFromMigrationHistory(
+            task,
+            migrationId
+          );
+          finish(detail);
         } else {
-          fetchOngoingSDLDetail(task).then(finish);
+          const detail = await fetchOngoingSDLDetail(task);
+          finish(detail);
         }
-      } catch {
+      } catch (err: any) {
         // The task has been changed during the fetch
         // The result is meaningless.
+        state.tab = "schema";
+        const payload = task.payload as TaskDatabaseSchemaUpdateSDLPayload;
+        const message =
+          err.response?.data?.message ?? err.details ?? "Internal server error";
+
+        finish({
+          error: message,
+          diffDDL: "",
+          expectedSDL: payload?.statement,
+          previousSDL: "",
+          prettyExpectedSDL: "",
+        });
       }
     },
     { immediate: true }

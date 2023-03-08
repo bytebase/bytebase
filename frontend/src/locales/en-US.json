@@ -661,7 +661,8 @@
     "sdl": {
       "schema-change": "Schema change",
       "generated-ddl-statements": "Generated DDL statements",
-      "full-schema": "Full schema"
+      "full-schema": "Full schema",
+      "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     }
   },
   "alter-schema": {
