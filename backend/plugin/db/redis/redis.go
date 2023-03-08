@@ -149,7 +149,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 	}
 
 	for _, cmd := range cmds {
-		data = append(data, []interface{}{cmd.Val()})
+		if cmd.Err() == redis.Nil {
+			data = append(data, []interface{}{"redis: nil"})
+		} else {
+			data = append(data, []interface{}{cmd.Val()})
+		}
 	}
 
 	return []interface{}{[]string{"result"}, []string{"TEXT"}, data}, nil
