@@ -5,7 +5,7 @@
     <span class="text-red-600">*</span>
   </div>
   <div class="pt-4 radio-set-row">
-    <div class="radio space-x-2">
+    <label class="radio space-x-2">
       <input
         v-model="config.uiType"
         name="Self-host GitLab"
@@ -16,11 +16,11 @@
         @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      <label class="whitespace-nowrap"
-        >{{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
-      </label>
-    </div>
-    <div class="radio space-x-2">
+      <span class="whitespace-nowrap">
+        {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
+      </span>
+    </label>
+    <label class="radio space-x-2">
       <input
         v-model="config.uiType"
         name="GitLab.com"
@@ -31,9 +31,9 @@
         @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      <label class="whitespace-nowrap">GitLab.com </label>
-    </div>
-    <div class="radio space-x-2">
+      <span class="whitespace-nowrap">GitLab.com</span>
+    </label>
+    <label class="radio space-x-2">
       <input
         v-model="config.uiType"
         name="GitHub.com"
@@ -44,8 +44,8 @@
         @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-      <label class="whitespace-nowrap">GitHub.com</label>
-    </div>
+      <span class="whitespace-nowrap">GitHub.com</span>
+    </label>
   </div>
   <div class="mt-4 relative">
     <div class="relative flex justify-start">
