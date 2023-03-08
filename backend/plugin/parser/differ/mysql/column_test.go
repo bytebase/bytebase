@@ -279,6 +279,12 @@ func TestColumnOrder(t *testing.T) {
 				"ALTER TABLE `book` DROP COLUMN `c1`;\n\n" +
 				"ALTER TABLE `book` DROP COLUMN `c3`;\n\n",
 		},
+		{
+			old: `CREATE TABLE t(a int);`,
+			new: `CREATE TABLE t(b int);`,
+			want: "ALTER TABLE `t` ADD COLUMN `b` INT FIRST;\n\n" +
+				"ALTER TABLE `t` DROP COLUMN `a`;\n\n",
+		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
