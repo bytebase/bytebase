@@ -1367,7 +1367,6 @@ const getTestConnectionContext = () => {
 
   const connectionInfo: ConnectionInfo = {
     ...basicInformation.value,
-    instanceId: basicInformation.value.id,
     host: connectionHost,
     port: connectionPort,
     username: dataSource.username,
@@ -1377,6 +1376,10 @@ const getTestConnectionContext = () => {
     srv: dataSource.options.srv,
     authenticationDatabase: dataSource.options.authenticationDatabase,
   };
+
+  if (!isCreating.value) {
+    connectionInfo.instanceId = basicInformation.value.id;
+  }
 
   if (showSSL.value) {
     // Default to "NONE"
