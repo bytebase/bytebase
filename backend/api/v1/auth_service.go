@@ -307,7 +307,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	}
 	// This flag is mainly used for regenerating temp secret and recovery codes when user setup MFA.
 	if request.RegenerateTempMfaSecret {
-		tempSecret, err := generateRandSecret(user.Name)
+		tempSecret, err := generateRandSecret(fmt.Sprintf("%s%d", userNamePrefix, user.ID))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
 		}
@@ -429,17 +429,15 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 
 	convertedUser := &v1pb.User{
-		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
-		State:    convertDeletedToState(user.MemberDeleted),
-		Email:    user.Email,
-		Title:    user.Name,
-		UserType: userType,
-		UserRole: role,
-	}
-	if user.MFAConfig != nil {
-		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
-		convertedUser.MfaSecret = user.MFAConfig.TempOtpSecret
-		convertedUser.RecoveryCodes = user.MFAConfig.TempRecoveryCodes
+		Name:          fmt.Sprintf("%s%d", userNamePrefix, user.ID),
+		State:         convertDeletedToState(user.MemberDeleted),
+		Email:         user.Email,
+		Title:         user.Name,
+		UserType:      userType,
+		UserRole:      role,
+		MfaEnabled:    user.MFAConfig.OtpSecret != "",
+		MfaSecret:     user.MFAConfig.TempOtpSecret,
+		RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 	}
 	return convertedUser
 }
@@ -730,7 +728,7 @@ func validateEmail(email string) error {
 
 const (
 	// issuerName is the name of the issuer of the OTP token.
-	issuerName = "Bytebase"
+	issuerName = "bytebase"
 )
 
 // generateRandSecret generates a random secret for the given account name.
