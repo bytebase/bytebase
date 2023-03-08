@@ -149,7 +149,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 	}
 
 	for _, cmd := range cmds {
-		data = append(data, []string{cmd.String()})
+		data = append(data, []interface{}{cmd.Val()})
 	}
 
 	return []interface{}{[]string{"result"}, []string{"TEXT"}, data}, nil
