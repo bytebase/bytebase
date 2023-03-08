@@ -7,6 +7,7 @@ import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
 import mountDemoApp from "./plugins/demo";
+import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
 import {
   pinia,
@@ -89,7 +90,7 @@ axios.interceptors.response.use(
         }
       }
 
-      if (error.response.data.message) {
+      if (error.response.data.message && !isSilent()) {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
@@ -100,7 +101,7 @@ axios.interceptors.response.use(
             : undefined,
         });
       }
-    } else if (error.code == "ECONNABORTED") {
+    } else if (error.code == "ECONNABORTED" && !isSilent()) {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
