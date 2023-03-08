@@ -142,10 +142,16 @@ service ProjectService {
     };
   }
 
-  rpc BindExternalVersionControl(BindExternalVersionControlRequest) returns (Project) {
+  rpc SetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
     option (google.api.http) = {
-      post: "/v1/{project=projects/*}:bindExternalVersionControl"
+      put: "/v1/{project=projects/*}/gitOpsInfo"
       body: "*"
+    };
+  }
+
+  rpc GetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
+    option (google.api.http) = {
+      get: "/v1/{project=projects/*}/gitOpsInfo"
     };
   }
 }
@@ -242,13 +248,19 @@ message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED]; 
 }
 
-message BindExternalVersionControlRequest {
+message SetProjectGitOpsInfoRequest {
   // The name of the project.
   // Format: projects/{project}
   string project = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The binding for the project and external version control.
-  ExternalVersionControlBinding binding = 2 [(google.api.field_behavior) = REQUIRED];
+  ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetProjectGitOpsInfoRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Project {
@@ -282,9 +294,6 @@ message Project {
   LgtmCheck lgtm_check = 12;
 
   repeated Webhook webhooks = 13;
-
-  // The binding for the project and external version control.
-  optional ExternalVersionControlBinding repository = 14;
 }
 
 message IamPolicy {
