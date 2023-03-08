@@ -187,7 +187,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		task = updatedTask
 	}
 
-	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
+	migrationID, schema, err = driver.ExecuteMigration(ctx, stores, mi, statement)
 	if err != nil {
 		return "", "", err
 	}

@@ -58,7 +58,7 @@ func (Driver) UpdateHistoryAsFailed(_ context.Context, _ *sql.Tx, _ int64, _ str
 }
 
 // ExecuteMigration will execute the migration.
-func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (string, string, error) {
+func (*Driver) ExecuteMigration(_ context.Context, _ db.InstanceChangeHistoryStore, _ *db.MigrationInfo, _ string) (string, string, error) {
 	// TODO(d): implement it.
 	return "", "", nil
 }

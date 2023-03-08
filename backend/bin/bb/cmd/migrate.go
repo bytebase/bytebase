@@ -84,7 +84,7 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID str
 		return errors.Wrap(err, "failed to read sql file")
 	}
 	// TODO(d): support semantic versioning.
-	if _, _, err := driver.ExecuteMigration(ctx, &db.MigrationInfo{
+	if _, _, err := driver.ExecuteMigration(ctx, nil, &db.MigrationInfo{
 		ReleaseVersion: version,
 		Version:        common.DefaultMigrationVersion(),
 		Database:       getDatabase(u),

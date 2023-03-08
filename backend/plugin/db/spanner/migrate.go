@@ -83,7 +83,7 @@ func (d *Driver) creataDatabase(ctx context.Context, createStatement string, ext
 // ExecuteMigration executes a migration.
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
+func (d *Driver) ExecuteMigration(ctx context.Context, _ db.InstanceChangeHistoryStore, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
 	if !m.CreateDatabase {

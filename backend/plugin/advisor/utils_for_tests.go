@@ -303,7 +303,7 @@ func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
 }
 
 // ExecuteMigration implements the Driver interface.
-func (*MockDriver) ExecuteMigration(_ context.Context, _ *database.MigrationInfo, _ string) (string, string, error) {
+func (*MockDriver) ExecuteMigration(_ context.Context, _ database.InstanceChangeHistoryStore, _ *database.MigrationInfo, _ string) (string, string, error) {
 	return "", "", nil
 }
 

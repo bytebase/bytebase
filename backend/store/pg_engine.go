@@ -356,7 +356,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		}
 
 		if _, _, err := d.ExecuteMigration(
-			ctx,
+			ctx, nil,
 			&dbdriver.MigrationInfo{
 				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
@@ -419,7 +419,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				}
 				log.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				if _, _, err := d.ExecuteMigration(
-					ctx,
+					ctx, nil,
 					&dbdriver.MigrationInfo{
 						ReleaseVersion:        serverVersion,
 						UseSemanticVersion:    true,
@@ -510,7 +510,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 		log.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		if _, _, err := d.ExecuteMigration(
-			ctx,
+			ctx, nil,
 			&dbdriver.MigrationInfo{
 				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
