@@ -87,11 +87,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
-		lines[i] = strings.TrimSuffix(lines[i], "\r")
+		lines[i] = strings.Trim(lines[i], " \n\t\r")
 	}
 
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
+			if line == "" {
+				continue
+			}
 			var input []interface{}
 			for _, s := range strings.Split(line, " ") {
 				input = append(input, s)
@@ -110,7 +113,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]interface{}, error) {
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
-		lines[i] = strings.TrimSuffix(lines[i], "\r")
+		lines[i] = strings.Trim(lines[i], " \n\t\r")
 	}
 
 	var data []interface{}
@@ -118,6 +121,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
+			if line == "" {
+				continue
+			}
 			var input []interface{}
 			for _, s := range strings.Split(line, " ") {
 				input = append(input, s)
