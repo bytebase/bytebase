@@ -659,7 +659,8 @@
     "sdl": {
       "schema-change": "Schema 变化",
       "generated-ddl-statements": "生成的 DDL 语句",
-      "full-schema": "完整 schema"
+      "full-schema": "完整 schema",
+      "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
     }
   },
   "alter-schema": {
