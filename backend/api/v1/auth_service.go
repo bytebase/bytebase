@@ -429,15 +429,17 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 
 	convertedUser := &v1pb.User{
-		Name:          fmt.Sprintf("%s%d", userNamePrefix, user.ID),
-		State:         convertDeletedToState(user.MemberDeleted),
-		Email:         user.Email,
-		Title:         user.Name,
-		UserType:      userType,
-		UserRole:      role,
-		MfaEnabled:    user.MFAConfig.OtpSecret != "",
-		MfaSecret:     user.MFAConfig.TempOtpSecret,
-		RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
+		State:    convertDeletedToState(user.MemberDeleted),
+		Email:    user.Email,
+		Title:    user.Name,
+		UserType: userType,
+		UserRole: role,
+	}
+	if user.MFAConfig != nil {
+		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
+		convertedUser.MfaSecret = user.MFAConfig.TempOtpSecret
+		convertedUser.RecoveryCodes = user.MFAConfig.TempRecoveryCodes
 	}
 	return convertedUser
 }
