@@ -102,7 +102,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 			_ = p.Do(ctx, input...)
 		}
 		return nil
-	}); err != nil {
+	}); err != nil && err != redis.Nil {
 		return 0, err
 	}
 
@@ -132,7 +132,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 			cmds = append(cmds, cmd)
 		}
 		return nil
-	}); err != nil {
+	}); err != nil && err != redis.Nil {
 		return nil, err
 	}
 
@@ -140,7 +140,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 		data = append(data, cmd.String())
 	}
 
-	return []interface{}{nil, nil, data}, nil
+	return []interface{}{[]string{"result"}, []string{"TEXT"}, data}, nil
 }
 
 // Dump and restore
