@@ -262,21 +262,28 @@ func TestColumnOrder(t *testing.T) {
 		{
 			old: `CREATE TABLE book(c1 INT, c2 INT, c3 INT, c4 INT, c5 INT);`,
 			new: `CREATE TABLE book(c6 INT, c2 INT, c3 INT, c7 INT, c8 INT, c4 INT, c5 INT);`,
-			want: "ALTER TABLE `book` DROP COLUMN `c1`;\n\n" + // c2, c3, c4, c5
-				"ALTER TABLE `book` ADD COLUMN `c6` INT FIRST, " + // c6, c2, c3, c4, c5
-				"ADD COLUMN `c7` INT AFTER `c3`, " + // c6, c2, c3, c7, c4, c5
-				"ADD COLUMN `c8` INT AFTER `c7`;\n\n", // c6, c2, c3, c7, c8, c4, c5
+			want: "ALTER TABLE `book` ADD COLUMN `c6` INT FIRST, " + // c6, c1, c2, c3, c4, c5
+				"ADD COLUMN `c7` INT AFTER `c3`, " + // c6, c1, c2, c3, c7, c4, c5
+				"ADD COLUMN `c8` INT AFTER `c7`;\n\n" + // c6, c1, c2, c3, c7, c8, c4, c5
+				"ALTER TABLE `book` DROP COLUMN `c1`;\n\n", // c6, c2, c3, c7, c8, c4, c5
+
 		},
 		{
 			old: `CREATE TABLE book(c1 INT, c2 INT, c3 INT, c4 INT, c8 INT);`,
 			new: `CREATE TABLE book(c9 INT, c8 VARCHAR(10), c4 INT, c2 VARCHAR(10), c9 INT);`,
-			want: "ALTER TABLE `book` DROP COLUMN `c1`;\n\n" +
-				"ALTER TABLE `book` DROP COLUMN `c3`;\n\n" +
-				"ALTER TABLE `book` ADD COLUMN `c9` INT FIRST, " +
+			want: "ALTER TABLE `book` ADD COLUMN `c9` INT FIRST, " +
 				"MODIFY COLUMN `c8` VARCHAR(10) AFTER `c9`, " +
 				"MODIFY COLUMN `c4` INT AFTER `c8`, " +
 				"MODIFY COLUMN `c2` VARCHAR(10), " +
-				"ADD COLUMN `c9` INT AFTER `c2`;\n\n",
+				"ADD COLUMN `c9` INT AFTER `c2`;\n\n" +
+				"ALTER TABLE `book` DROP COLUMN `c1`;\n\n" +
+				"ALTER TABLE `book` DROP COLUMN `c3`;\n\n",
+		},
+		{
+			old: `CREATE TABLE t(a int);`,
+			new: `CREATE TABLE t(b int);`,
+			want: "ALTER TABLE `t` ADD COLUMN `b` INT FIRST;\n\n" +
+				"ALTER TABLE `t` DROP COLUMN `a`;\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
