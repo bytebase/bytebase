@@ -105,7 +105,10 @@ watch(
 );
 
 const firstLinePrompt = computed(() => {
-  return selectedLanguage.value === "sql" ? "SQL>" : "MONGO>";
+  const lang = selectedLanguage.value;
+  if (lang === "javascript") return "MONGO>";
+  if (lang === "redis") return "REDIS>";
+  return "SQL>";
 });
 
 const getLineNumber = (lineNumber: number) => {

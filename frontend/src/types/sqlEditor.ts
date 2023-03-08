@@ -6,7 +6,7 @@ export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
 export type CompletionItems = monaco.languages.CompletionItem[];
 
-export type Language = "sql" | "javascript";
+export type Language = "sql" | "javascript" | "redis";
 
 export const EngineTypesUsingSQL = [
   "MYSQL",
@@ -21,6 +21,9 @@ export type SQLDialect = typeof EngineTypesUsingSQL[number];
 export const languageOfEngine = (engine?: EngineType | "unknown"): Language => {
   if (engine === "MONGODB") {
     return "javascript";
+  }
+  if (engine === "REDIS") {
+    return "redis";
   }
 
   return "sql";

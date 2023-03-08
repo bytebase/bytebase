@@ -53,3 +53,25 @@ export const isValidSpannerHost = (host: string) => {
     /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])+)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])+)$/;
   return RE.test(host);
 };
+
+export const instanceHasAlterSchema = (instance: Instance): boolean => {
+  const { engine } = instance;
+  if (engine === "MONGODB") return false;
+  if (engine === "REDIS") return false;
+  return true;
+};
+
+export const instanceHasBackupRestore = (instance: Instance): boolean => {
+  const { engine } = instance;
+  if (engine === "MONGODB") return false;
+  if (engine === "REDIS") return false;
+  if (engine === "SPANNER") return false;
+  return true;
+};
+
+export const instanceHasReadonlyMode = (instance: Instance): boolean => {
+  const { engine } = instance;
+  if (engine === "MONGODB") return false;
+  if (engine === "REDIS") return false;
+  return true;
+};

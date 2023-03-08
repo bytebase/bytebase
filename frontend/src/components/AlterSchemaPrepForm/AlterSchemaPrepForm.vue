@@ -191,6 +191,7 @@ import { Database, DatabaseId, Project, ProjectId, UNKNOWN_ID } from "@/types";
 import {
   allowGhostMigration,
   allowUsingSchemaEditor,
+  instanceHasAlterSchema,
   filterDatabaseByKeyword,
   sortDatabaseList,
 } from "@/utils";
@@ -294,7 +295,7 @@ const databaseList = computed(() => {
   list = list.filter((db) => db.syncStatus === "OK");
   if (isAlterSchema.value) {
     // We disallow users to alter schema for MongoDB databases.
-    list = list.filter((db) => db.instance.engine !== "MONGODB");
+    list = list.filter((db) => instanceHasAlterSchema(db.instance));
   }
 
   const keyword = state.searchText.trim();
