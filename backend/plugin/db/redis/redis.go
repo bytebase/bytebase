@@ -44,9 +44,14 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
 
-	database, err := strconv.Atoi(config.Database)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
+	// connect to 0 by default
+	db := 0
+	if config.Database != "" {
+		database, err := strconv.Atoi(config.Database)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
+		}
+		db = database
 	}
 
 	rdb := redis.NewUniversalClient(&redis.UniversalOptions{
@@ -55,7 +60,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		Password:  config.Password,
 		TLSConfig: tlsConfig,
 		ReadOnly:  config.ReadOnly,
-		DB:        database,
+		DB:        db,
 	})
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, err
