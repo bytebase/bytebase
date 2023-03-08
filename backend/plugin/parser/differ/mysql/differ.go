@@ -54,12 +54,12 @@ type diffNode struct {
 	dropConstraintExceptFkList []ast.Node
 	dropIndexList              []ast.Node
 	dropViewList               []ast.Node
-	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
 
 	createTableList                 []ast.Node
 	alterTableOptionList            []ast.Node
 	addAndModifyColumnList          []ast.Node
+	dropColumnList                  []ast.Node
 	createTempViewList              []ast.Node
 	createIndexList                 []ast.Node
 	addConstraintExceptFkList       []ast.Node
@@ -481,9 +481,6 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := sortAndWriteNodeList(&buf, diff.dropViewList, flag); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.dropColumnList, flag); err != nil {
-		return "", err
-	}
 	if err := sortAndWriteNodeList(&buf, diff.dropTableList, flag); err != nil {
 		return "", err
 	}
@@ -494,6 +491,9 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 	if err := sortAndWriteNodeList(&buf, diff.addAndModifyColumnList, flag); err != nil {
+		return "", err
+	}
+	if err := sortAndWriteNodeList(&buf, diff.dropColumnList, flag); err != nil {
 		return "", err
 	}
 	if err := sortAndWriteNodeList(&buf, diff.createTempViewList, flag); err != nil {
