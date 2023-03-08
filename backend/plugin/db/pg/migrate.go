@@ -242,7 +242,7 @@ func (*Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationD
 }
 
 // ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, _ db.InstanceChangeHistoryStore, m *db.MigrationInfo, statement string) (string, string, error) {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
 	if driver.strictUseDb() {
 		return util.ExecuteMigration(ctx, driver, m, statement, driver.strictDatabase)
 	}
@@ -250,7 +250,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, _ db.InstanceChangeH
 }
 
 // FindMigrationHistoryList finds the migration history.
-func (driver *Driver) FindMigrationHistoryList(ctx context.Context, _ db.InstanceChangeHistoryStore, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `
 	SELECT
 		id,

@@ -160,7 +160,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 }
 
 // Dump and restore
-
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
 func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, schemaOnly bool) (string, error) {

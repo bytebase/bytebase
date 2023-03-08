@@ -548,7 +548,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		return "", "", err
 	}
 	defer targetDriver.Close(ctx)
-	migrationID, _, err := targetDriver.ExecuteMigration(ctx, stores, m, "")
+	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create migration history")
 	}

@@ -2,33 +2,52 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, store db.InstanceChangeHistoryStore, driver db.Driver, instanceID int, databaseID int, databaseName string) (string, error) {
+func GetLatestSchemaVersion(ctx context.Context, store *store.Store, driver db.Driver, instanceID int, databaseID int, databaseName string) (string, error) {
 	// TODO(d): support semantic versioning.
 	limit := 1
-	history, err := driver.FindMigrationHistoryList(ctx, store, &db.MigrationHistoryFind{
+	find := &db.MigrationHistoryFind{
 		InstanceID: instanceID,
 		Database:   &databaseName,
 		DatabaseID: &databaseID,
 		Limit:      &limit,
-	})
+	}
+
+	if driver.GetType() == db.Redis {
+		history, err := store.FindInstanceChangeHistoryList(ctx, find)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
+		}
+		var schemaVersion string
+		if len(history) == 1 {
+			schemaVersion = history[0].Version
+		}
+		return schemaVersion, nil
+	}
+
+	history, err := driver.FindMigrationHistoryList(ctx, find)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
 	}
@@ -468,4 +487,146 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 	}
 
 	return true, nil
+}
+
+// ExecuteMigration executes migration.
+func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
+	var prevSchemaBuf bytes.Buffer
+	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
+	if !m.CreateDatabase {
+		// For baseline migration, we also record the live schema to detect the schema drift.
+		// See https://bytebase.com/blog/what-is-database-schema-drift
+		if _, err := driver.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+			return "", "", err
+		}
+	}
+
+	insertedID, err := beginMigration(ctx, store, m, prevSchemaBuf.String(), statement)
+	if err != nil {
+		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
+			return insertedID, prevSchemaBuf.String(), nil
+		}
+		return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
+	}
+
+	startedNs := time.Now().UnixNano()
+
+	defer func() {
+		if err := endMigration(ctx, store, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
+			log.Error("Failed to update migration history record",
+				zap.Error(err),
+				zap.String("migration_id", migrationHistoryID),
+			)
+		}
+	}()
+
+	// Phase 3 - Executing migration
+	// Branch migration type always has empty sql.
+	// Baseline migration type could has non-empty sql but will not execute.
+	// https://github.com/bytebase/bytebase/issues/394
+	doMigrate := true
+	if statement == "" {
+		doMigrate = false
+	}
+	if m.Type == db.Baseline {
+		doMigrate = false
+	}
+	if doMigrate {
+		if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
+			return "", "", err
+		}
+	}
+
+	// Phase 4 - Dump the schema after migration
+	var afterSchemaBuf bytes.Buffer
+	if _, err := driver.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+		// We will ignore the dump error if the database is dropped.
+		if strings.Contains(err.Error(), "not found") {
+			return insertedID, "", nil
+		}
+		return "", "", err
+	}
+
+	return insertedID, afterSchemaBuf.String(), nil
+}
+
+// beginMigration checks before executing migration and inserts a migration history record with pending status.
+func beginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema string, statement string) (string, error) {
+	// Convert version to stored version.
+	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to convert to stored version")
+	}
+	// Phase 1 - Pre-check before executing migration
+	// Check if the same migration version has already been applied.
+	if list, err := store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
+		InstanceID: m.InstanceID,
+		DatabaseID: m.DatabaseID,
+		Version:    &m.Version,
+	}); err != nil {
+		return "", errors.Wrap(err, "failed to check duplicate version")
+	} else if len(list) > 0 {
+		migrationHistory := list[0]
+		switch migrationHistory.Status {
+		case db.Done:
+			if migrationHistory.IssueID != m.IssueID {
+				return migrationHistory.ID, common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
+			}
+			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+		case db.Pending:
+			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return migrationHistory.ID, nil
+			}
+			return "", common.Wrap(err, common.MigrationPending)
+		case db.Failed:
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return migrationHistory.ID, nil
+			}
+			return "", common.Wrap(err, common.MigrationFailed)
+		}
+	}
+
+	largestSequence, err := store.GetLargestInstanceChangeHistorySequence(ctx, m.InstanceID, m.DatabaseID, false /* baseline */)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if there is any higher version already been applied since the last baseline or branch.
+	if version, err := store.GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx, m.InstanceID, m.DatabaseID); err != nil {
+		return "", err
+	} else if version != nil && len(*version) > 0 && *version >= m.Version {
+		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
+	}
+
+	// Phase 2 - Record migration history as PENDING.
+	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
+	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
+	// update the record to DONE together with the updated schema.
+	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
+	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord)
+	if err != nil {
+		return "", err
+	}
+
+	return insertedID, nil
+}
+
+func endMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, _ string, isDone bool) error {
+	var err error
+	migrationDurationNs := time.Now().UnixNano() - startedNs
+
+	if isDone {
+		err = store.UpdateInstanceChangeHistoryAsDone(ctx, migrationDurationNs, updatedSchema, insertedID)
+		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
+	} else {
+		// Otherwise, update the migration history as 'FAILED', execution_duration.
+		err = store.UpdateInstanceChangeHistoryAsFailed(ctx, migrationDurationNs, insertedID)
+	}
+	return err
 }

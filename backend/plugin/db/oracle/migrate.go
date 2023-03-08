@@ -58,13 +58,13 @@ func (Driver) UpdateHistoryAsFailed(_ context.Context, _ *sql.Tx, _ int64, _ str
 }
 
 // ExecuteMigration will execute the migration.
-func (*Driver) ExecuteMigration(_ context.Context, _ db.InstanceChangeHistoryStore, _ *db.MigrationInfo, _ string) (string, string, error) {
+func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (string, string, error) {
 	// TODO(d): implement it.
 	return "", "", nil
 }
 
 // FindMigrationHistoryList finds the migration history.
-func (*Driver) FindMigrationHistoryList(_ context.Context, _ db.InstanceChangeHistoryStore, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (*Driver) FindMigrationHistoryList(_ context.Context, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	// TODO(d): implement it.
 	return nil, nil
 }

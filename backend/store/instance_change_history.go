@@ -4,15 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
 	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
-
-var _ db.InstanceChangeHistoryStore = (*Store)(nil)
 
 // InstanceChangeHistoryMessage records the change history of an instance.
 // it deprecates the old MigrationHistory.
@@ -350,8 +347,8 @@ func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	}
 	query := `
 	UPDATE instance_change_history
-	SET ` + strings.Join(set, ", ") + `
-	WHERE ` + fmt.Sprintf("id = $%d", len(args)+1)
+	SET` + strings.Join(set, ", ") + `
+	WHERE` + fmt.Sprintf("id = $%d", len(args)+1)
 	args = append(args, update.ID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -372,11 +369,11 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 	SELECT
 		MAX(sequence)
 	FROM instance_change_history
-	WHERE instance_id = $1 AND database_id = $2`
+	WHERE instance_id = $1 AND database_id = $1`
 	if baseline {
 		query += fmt.Sprintf(" AND (type = '%s' OR type = '%s')", db.Baseline, db.Branch)
 	}
-	var sequence sql.NullInt64
+	var sequence int64
 	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID).Scan(&sequence); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -384,10 +381,7 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 		return -1, util.FormatErrorWithQuery(err, query)
 	}
 
-	if sequence.Valid {
-		return sequence.Int64, nil
-	}
-	return 0, nil
+	return sequence, nil
 }
 
 // GetLargestInstanceChangeHistorySequence will get the largest sequence number.
@@ -429,7 +423,7 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 	FROM instance_change_history
 	WHERE instance_id = $1 AND database_id = $2 AND sequence >= $3`
 
-	var version sql.NullString
+	var version string
 	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID, sequence).Scan(&version); err != nil {
 		return nil, err
 	}
@@ -438,11 +432,7 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 		return nil, err
 	}
 
-	if version.Valid {
-		return &version.String, nil
-	}
-
-	return nil, nil
+	return &version, nil
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
@@ -462,7 +452,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		Sequence:            sequence,
 		Source:              m.Source,
 		Type:                m.Type,
-		Status:              db.Pending,
+		Status:              m.Status,
 		Version:             storedVersion,
 		Description:         m.Description,
 		Statement:           statement,

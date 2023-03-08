@@ -83,7 +83,7 @@ func (d *Driver) creataDatabase(ctx context.Context, createStatement string, ext
 // ExecuteMigration executes a migration.
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func (d *Driver) ExecuteMigration(ctx context.Context, _ db.InstanceChangeHistoryStore, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
+func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
 	if !m.CreateDatabase {
@@ -175,7 +175,7 @@ func (d *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSc
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
-	if list, err := d.FindMigrationHistoryList(ctx, nil, &db.MigrationHistoryFind{
+	if list, err := d.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {
@@ -256,7 +256,7 @@ func (d *Driver) endMigration(ctx context.Context, startedNs int64, migrationHis
 }
 
 // FindMigrationHistoryList finds the migration history list.
-func (d *Driver) FindMigrationHistoryList(ctx context.Context, _ db.InstanceChangeHistoryStore, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (d *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	defer func(db string) {
 		if err := d.switchDatabase(ctx, db); err != nil {
 			log.Error("failed to switch back database for spanner driver", zap.String("database", db), zap.Error(err))

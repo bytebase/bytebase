@@ -182,7 +182,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = migrate(ctx, d, nil, common.ReleaseModeProd, false /*strictDb*/, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := d.FindMigrationHistoryList(ctx, nil, &dbdriver.MigrationHistoryFind{
+	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &databaseName,
 	})
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeProd, false /*strictDb*/, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = d.FindMigrationHistoryList(ctx, nil, &dbdriver.MigrationHistoryFind{
+	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &databaseName,
 	})
 	require.NoError(t, err)
@@ -206,7 +206,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	// Check migration history.
 	devMigrations, err := getDevMigrations()
 	require.NoError(t, err)
-	histories, err = d.FindMigrationHistoryList(ctx, nil, &dbdriver.MigrationHistoryFind{
+	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &databaseName,
 	})
 	require.NoError(t, err)

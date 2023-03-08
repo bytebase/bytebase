@@ -460,9 +460,9 @@ type Driver interface {
 	// Execute migration will apply the statement and record the migration history, the schema after migration on success.
 	// The migration type is determined by m.Type. Note, it can also perform data migration (DML) in addition to schema migration (DDL).
 	// It returns the migration history id and the schema after migration on success.
-	ExecuteMigration(ctx context.Context, store InstanceChangeHistoryStore, m *MigrationInfo, statement string) (string, string, error)
+	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (string, string, error)
 	// Find the migration history list and return most recent item first.
-	FindMigrationHistoryList(ctx context.Context, store InstanceChangeHistoryStore, find *MigrationHistoryFind) ([]*MigrationHistory, error)
+	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.
@@ -471,22 +471,6 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from src, which is a full backup.
 	Restore(ctx context.Context, src io.Reader) error
-}
-
-// InstanceChangeHistoryStore is used to store instance change history when changing instances or databases.
-type InstanceChangeHistoryStore interface {
-	// FindInstanceChangeHistoryList finds the instance change history list.
-	FindInstanceChangeHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
-	// GetLargestInstanceChangeHistorySequence gets the largest sequence of the instance change history grouped by (instanceID, databaseID).
-	GetLargestInstanceChangeHistorySequence(ctx context.Context, instanceID int, databaseID *int, baseline bool) (int64, error)
-	// GetLargestInstanceChangeHistoryVersionSinceBaseline gets the largest version of the instance change history grouped by (instanceID, databaseID) since baseline
-	GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.Context, instanceID int, databaseID *int) (*string, error)
-	// CreatePendingInstanceChangeHistory inserts a pending instance change history.
-	CreatePendingInstanceChangeHistory(ctx context.Context, sequence int64, prevSchema string, m *MigrationInfo, storedVersion, statement string) (string, error)
-	// UpdateInstanceChangeHistoryAsDone updates an instance change history as done.
-	UpdateInstanceChangeHistoryAsDone(ctx context.Context, migrationDurationNs int64, updatedSchema string, insertedID string) error
-	// UpdateInstanceChangeHistoryAsFailed updates an instance change history as failed.
-	UpdateInstanceChangeHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID string) error
 }
 
 // Register makes a database driver available by the provided type.

@@ -302,7 +302,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 			return
 		}
 		limit := 1
-		list, err := driver.FindMigrationHistoryList(ctx, s.store, &db.MigrationHistoryFind{
+		list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 			Database: &database.DatabaseName,
 			Limit:    &limit,
 		})
