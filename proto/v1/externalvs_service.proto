@@ -38,9 +38,9 @@ service ExternalVersionControlService {
   rpc UpdateExternalVersionControl(UpdateExternalVersionControlRequest) returns (ExternalVersionControl) {
     option (google.api.http) = {
       patch: "/v1/{external_version_control.name=externalVersionControls/*}"
-      body: "external_verison_control"
+      body: "external_version_control"
     };
-    option (google.api.method_signature) = "external_verison_control,update_mask";
+    option (google.api.method_signature) = "external_version_control,update_mask";
   }
 
   rpc DeleteExternalVersionControl(DeleteExternalVersionControlRequest) returns (google.protobuf.Empty) {
