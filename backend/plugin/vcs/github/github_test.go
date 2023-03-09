@@ -530,7 +530,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 			Branch:        "master",
 			Content:       "my new file contents",
 			CommitMessage: "update file",
-			LastCommitID:  "7638417db6d59f3c431d3e1f261cc637155684cd",
+			SHA:           "7638417db6d59f3c431d3e1f261cc637155684cd",
 		},
 	)
 	require.NoError(t, err)
@@ -538,11 +538,12 @@ func TestProvider_OverwriteFile(t *testing.T) {
 
 func TestProvider_ReadFileMeta(t *testing.T) {
 	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
-		assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
-			Body: io.NopCloser(strings.NewReader(`
+		switch r.URL.Path {
+		case "/repos/octocat/Hello-World/contents/README.md":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
+				Body: io.NopCloser(strings.NewReader(`
 {
   "type": "file",
   "encoding": "base64",
@@ -562,7 +563,28 @@ func TestProvider_ReadFileMeta(t *testing.T) {
   }
 }
 `)),
-		}, nil
+			}, nil
+		case "/repos/octocat/Hello-World/git/ref/heads/master":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response derived from https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#get-a-reference
+				Body: io.NopCloser(strings.NewReader(`
+{
+  "ref": "refs/heads/master",
+  "node_id": "MDM6UmVmcmVmcy9oZWFkcy9mZWF0dXJlQQ==",
+  "url": "https://api.github.com/repos/octocat/Hello-World/git/refs/heads/master",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}
+        `)),
+			}, nil
+		default:
+			assert.Truef(t, false, "Unsupported API: %s", r.URL.Path)
+			return nil, nil
+		}
 	},
 	)
 
@@ -574,7 +596,8 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 		Name:         "README.md",
 		Path:         "README.md",
 		Size:         442,
-		LastCommitID: "3d21ec53a331a6f037a91c368710b99387d012c1",
+		SHA:          "3d21ec53a331a6f037a91c368710b99387d012c1",
+		LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
 	}
 	assert.Equal(t, want, got)
 }
