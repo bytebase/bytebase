@@ -14,17 +14,18 @@ import (
 )
 
 const (
-	projectNamePrefix          = "projects/"
-	environmentNamePrefix      = "environments/"
-	instanceNamePrefix         = "instances/"
-	policyNamePrefix           = "policies/"
-	databaseIDPrefix           = "databases/"
-	instanceRolePrefix         = "roles/"
-	userNamePrefix             = "users/"
-	identityProviderNamePrefix = "idps/"
-	settingNamePrefix          = "settings/"
-	backupPrefix               = "backups/"
-	bookmarkPrefix             = "bookmarks/"
+	projectNamePrefix            = "projects/"
+	environmentNamePrefix        = "environments/"
+	instanceNamePrefix           = "instances/"
+	policyNamePrefix             = "policies/"
+	databaseIDPrefix             = "databases/"
+	instanceRolePrefix           = "roles/"
+	userNamePrefix               = "users/"
+	identityProviderNamePrefix   = "idps/"
+	settingNamePrefix            = "settings/"
+	backupPrefix                 = "backups/"
+	bookmarkPrefix               = "bookmarks/"
+	externalVersionControlPrefix = "externalVersionControls/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -147,6 +148,18 @@ func getUserBookmarkID(name string) (int, int, error) {
 		return 0, 0, errors.Errorf("invalid bookmark ID %q", tokens[1])
 	}
 	return userID, bookmarkID, nil
+}
+
+func getExternalVersionControlID(name string) (int, error) {
+	tokens, err := getNameParentTokens(name, externalVersionControlPrefix)
+	if err != nil {
+		return 0, err
+	}
+	externalVersionControlID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return 0, errors.Errorf("invalid external version control ID %q", tokens[1])
+	}
+	return externalVersionControlID, nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {
