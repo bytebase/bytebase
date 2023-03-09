@@ -347,6 +347,10 @@ type MigrationHistoryFind struct {
 	Version  *string
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit *int
+
+	// Fields below should be set if fetching from metaDB instance_change_history table.
+	DatabaseID *int
+	InstanceID int
 }
 
 // ConnectionConfig is the configuration for connections.

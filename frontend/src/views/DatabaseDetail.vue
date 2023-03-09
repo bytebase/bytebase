@@ -315,6 +315,8 @@ import {
   isDatabaseAccessible,
   allowUsingSchemaEditor,
   isArchivedDatabase,
+  instanceHasBackupRestore,
+  instanceHasAlterSchema,
 } from "@/utils";
 import {
   ProjectId,
@@ -395,7 +397,7 @@ const database = computed((): Database => {
 });
 
 const hasSchemaDiagramFeature = computed((): boolean => {
-  return database.value.instance.engine !== "MONGODB";
+  return instanceHasAlterSchema(database.value.instance);
 });
 
 const accessControlPolicy = usePolicyByDatabaseAndType(
@@ -520,7 +522,7 @@ const allowAlterSchemaOrChangeData = computed(() => {
 const allowAlterSchema = computed(() => {
   return (
     allowAlterSchemaOrChangeData.value &&
-    database.value.instance.engine !== "MONGODB"
+    instanceHasAlterSchema(database.value.instance)
   );
 });
 
@@ -530,10 +532,7 @@ const allowEditDatabaseLabels = computed((): boolean => {
 });
 
 const tabItemList = computed((): BBTabFilterItem[] => {
-  if (
-    database.value.instance.engine === "SPANNER" ||
-    database.value.instance.engine === "MONGODB"
-  ) {
+  if (!instanceHasBackupRestore(database.value.instance)) {
     return databaseTabItemList
       .filter((item) => item.hash !== "backup-and-restore")
       .map((item) => {

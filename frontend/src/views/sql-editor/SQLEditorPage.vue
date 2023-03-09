@@ -66,7 +66,7 @@
               >
                 <template #instance>
                   <span class="inline-flex items-center mx-1">
-                    <InstanceEngineIcon :instance="instance" />
+                    <InstanceEngineIcon :instance="instance" class="mr-1" />
                     <span>{{ instanceName(instance) }}</span>
                   </span>
                 </template>
@@ -127,7 +127,11 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
-import { allowUsingSchemaEditor, isDatabaseAccessible } from "@/utils";
+import {
+  allowUsingSchemaEditor,
+  instanceHasReadonlyMode,
+  isDatabaseAccessible,
+} from "@/utils";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { useWindowSize } from "@vueuse/core";
@@ -178,10 +182,7 @@ const instance = useInstanceById(
 const allowReadOnlyMode = computed(() => {
   if (isDisconnected.value) return true;
 
-  if (instance.value.engine === "MONGODB") {
-    return false;
-  }
-  return true;
+  return instanceHasReadonlyMode(instance.value);
 });
 
 const alterSchemaState = reactive<AlterSchemaState>({

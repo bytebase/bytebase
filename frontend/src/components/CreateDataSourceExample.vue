@@ -173,6 +173,8 @@ const grantStatement = (
         return 'use admin;\ndb.createUser({\n\tuser: "bytebase", \n\tpwd: "YOUR_DB_PWD", \n\troles: [\n\t\t{role: "readWriteAnyDatabase", db: "admin"},\n\t\t{role: "dbAdminAnyDatabase", db: "admin"},\n\t\t{role: "userAdminAnyDatabase", db: "admin"}\n\t]\n});';
       case "SPANNER":
         return "";
+      case "REDIS":
+        return "ACL SETUSER bytebase on >YOUR_DB_PWD +@all &*";
     }
   } else {
     switch (engineType) {
@@ -188,6 +190,9 @@ const grantStatement = (
       case "MONGODB":
         return 'use admin;\ndb.createUser({\n\tuser: "bytebase", \n\tpwd: "YOUR_DB_PWD", \n\troles: [\n\t\t{role: "readAnyDatabase", db: "admin"},\n\t\t{role: "dbAdminAnyDatabase", db: "admin"},\n\t\t{role: "userAdminAnyDatabase", db: "admin"}\n\t]\n});';
       case "SPANNER":
+        return "";
+      case "REDIS":
+        // TODO(xz)
         return "";
     }
   }

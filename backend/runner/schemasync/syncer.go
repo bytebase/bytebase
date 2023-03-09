@@ -274,7 +274,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if force {
 		// When there are too many databases, this might have performance issue and will
 		// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
-		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, databaseMetadata.Name)
+		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, s.store, driver, instance.UID, database.UID, databaseMetadata.Name)
 		if err != nil {
 			return err
 		}

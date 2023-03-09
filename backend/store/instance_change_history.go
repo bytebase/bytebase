@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -130,8 +131,76 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		UpdaterID: creatorID,
 		UpdatedTs: createdTs,
 	}
-
 	return changeHistory, nil
+}
+
+func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistoryMessage) (*db.MigrationHistory, error) {
+	var issueID string
+	if v := change.IssueID; v != nil {
+		issueID = strconv.Itoa(*v)
+	}
+
+	useSemanticVersion, version, semanticVersionSuffix, err := util.FromStoredVersion(change.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &db.MigrationHistory{
+		ID:                    strconv.FormatInt(change.ID, 10),
+		Creator:               "",
+		CreatedTs:             change.CreatedTs,
+		Updater:               "",
+		UpdatedTs:             change.UpdatedTs,
+		ReleaseVersion:        change.ReleaseVersion,
+		Namespace:             "",
+		Sequence:              int(change.Sequence),
+		Source:                change.Source,
+		Type:                  change.Type,
+		Status:                change.Status,
+		Version:               version,
+		Description:           change.Description,
+		Statement:             change.Statement,
+		Schema:                change.Schema,
+		SchemaPrev:            change.SchemaPrev,
+		ExecutionDurationNs:   change.ExecutionDurationNs,
+		IssueID:               issueID,
+		Payload:               change.Payload,
+		UseSemanticVersion:    useSemanticVersion,
+		SemanticVersionSuffix: semanticVersionSuffix,
+	}, nil
+}
+
+// FindInstanceChangeHistoryList finds a list of instance change history and returns as a list of migration history.
+func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+	findMessage := &FindInstanceChangeHistoryMessage{
+		InstanceID: find.InstanceID,
+		DatabaseID: find.DatabaseID,
+		Source:     find.Source,
+		Version:    find.Version,
+		Limit:      find.Limit,
+	}
+	if v := find.ID; v != nil {
+		id, err := strconv.ParseInt(*v, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		findMessage.ID = &id
+	}
+
+	list, err := s.ListInstanceChangeHistory(ctx, findMessage)
+	if err != nil {
+		return nil, err
+	}
+	var migrationHistoryList []*db.MigrationHistory
+	for _, change := range list {
+		migrationHistory, err := convertInstanceChangeHistoryToMigrationHistory(change)
+		if err != nil {
+			return nil, err
+		}
+		migrationHistoryList = append(migrationHistoryList, migrationHistory)
+	}
+
+	return migrationHistoryList, nil
 }
 
 // ListInstanceChangeHistory finds the instance change history.
@@ -232,9 +301,40 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	return list, nil
 }
 
+// UpdateInstanceChangeHistoryAsDone updates a change history to done.
+func (s *Store) UpdateInstanceChangeHistoryAsDone(ctx context.Context, migrationDurationNs int64, updatedSchema string, insertedID string) error {
+	status := db.Done
+	id, err := strconv.ParseInt(insertedID, 10, 64)
+	if err != nil {
+		return err
+	}
+	update := &UpdateInstanceChangeHistoryMessage{
+		ID:                  id,
+		ExecutionDurationNs: &migrationDurationNs,
+		Status:              &status,
+		Schema:              &updatedSchema,
+	}
+	return s.updateInstanceChangeHistory(ctx, update)
+}
+
+// UpdateInstanceChangeHistoryAsFailed updates a change history to failed.
+func (s *Store) UpdateInstanceChangeHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID string) error {
+	status := db.Failed
+	id, err := strconv.ParseInt(insertedID, 10, 64)
+	if err != nil {
+		return err
+	}
+	update := &UpdateInstanceChangeHistoryMessage{
+		ID:                  id,
+		ExecutionDurationNs: &migrationDurationNs,
+		Status:              &status,
+	}
+	return s.updateInstanceChangeHistory(ctx, update)
+}
+
 // UpdateInstanceChangeHistory updates an instance change history.
 // it deprecates the old UpdateHistoryAsDone and UpdateHistoryAsFailed.
-func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateInstanceChangeHistoryMessage) error {
+func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateInstanceChangeHistoryMessage) error {
 	set, args := []string{}, []interface{}{}
 	if v := update.Status; v != nil {
 		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
@@ -337,10 +437,10 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
 // it deprecates the old InsertPendingHistory.
-func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence int64, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
+func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence int64, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 	defer tx.Rollback()
 
@@ -362,12 +462,12 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		Payload:             m.Payload,
 	}, m.CreatorID)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return -1, err
+		return "", err
 	}
 
-	return h.ID, nil
+	return strconv.FormatInt(h.ID, 10), nil
 }
