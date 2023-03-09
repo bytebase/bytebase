@@ -16,26 +16,6 @@ import "v1/common.proto";
 option go_package = "generated-go/v1";
 
 service ActivityService {
-  rpc CreateActivity(CreateActivityRequest) returns (Activity) {
-  // We only allow create the activity which type is ACTION_ISSUE_COMMENT_CREATE.
-  // So using {parent=projects/*} is enough for now.
-  option (google.api.http) = {
-    post: "/v1/{parent=projects/*}/activities"
-    body: "activity"
-  };
-  option (google.api.method_signature) = "parent,activity";
-  }
-
-  rpc UpdateActivity(UpdateActivityRequest) returns (Activity) {
-  // We only allow update the activity which type is ACTION_ISSUE_COMMENT_CREATE.
-  // So using {parent=projects/*} is enough for now.
-  option (google.api.http) = {
-    patch: "/v1/{parent=projects/*/issues/*}/activities"
-    body: "activity"
-  };
-  option (google.api.method_signature) = "parent,activity";
-  }
-
   rpc SearchActivities(SearchActivitiesRequest) returns (SearchActivitiesResponse) {
   option (google.api.http) = {
     post: "/v1/{parent=projects/*}/activities"
@@ -45,28 +25,6 @@ service ActivityService {
   };
   option (google.api.method_signature) = "parent";
   }
-}
-
-message CreateActivityRequest {
-  // The parent resource name.
-  // Format:
-  // projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The activity to create.
-  // The type must be ACTION_ISSUE_COMMENT_CREATE for now.
-  Activity activity = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateActivityRequest {
-  // The parent resource name.
-  // Format:
-  // projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The activity to update.
-  // The type must be ACTION_ISSUE_COMMENT_CREATE for now.
-  Activity activity = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SearchActivitiesRequest {
