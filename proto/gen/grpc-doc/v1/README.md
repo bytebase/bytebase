@@ -1915,6 +1915,8 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the external version control to retrieve the external version control repositories. Format: externalVersionControls/{externalVersionControl} |
+| access_token | [string](#string) |  |  |
+| refresh_token | [string](#string) |  |  |
 
 
 
@@ -1982,6 +1984,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
 | TYPE_GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| TYPE_BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
 
 
  
