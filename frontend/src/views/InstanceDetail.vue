@@ -45,7 +45,10 @@
               {{ $t("common.sync-now") }}
             </button>
             <button
-              v-if="instance.rowStatus == 'NORMAL'"
+              v-if="
+                instance.rowStatus == 'NORMAL' &&
+                instanceHasCreateDatabase(instance)
+              "
               type="button"
               class="btn-primary"
               @click.prevent="createDatabase"
@@ -150,7 +153,11 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { idFromSlug, hasWorkspacePermission } from "../utils";
+import {
+  idFromSlug,
+  hasWorkspacePermission,
+  instanceHasCreateDatabase,
+} from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
