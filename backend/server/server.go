@@ -89,6 +89,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
 	// Register redis driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
+	// Register oracle driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
