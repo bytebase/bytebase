@@ -103,8 +103,8 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		schema_prev,
 		execution_duration_ns,
 		payload,
-    created_ts,
-    updated_ts
+		created_ts,
+		updated_ts
 	) VALUES `)
 
 	count := 1
