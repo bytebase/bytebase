@@ -79,6 +79,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					Database:               instanceCreate.Database,
 					SRV:                    instanceCreate.SRV,
 					AuthenticationDatabase: instanceCreate.AuthenticationDatabase,
+					SID:                    instanceCreate.SID,
+					ServiceName:            instanceCreate.ServiceName,
 				},
 			},
 		}, creator)

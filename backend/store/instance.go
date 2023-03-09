@@ -89,7 +89,7 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 			Username:   ds.Username,
 			Host:       ds.Host,
 			Port:       ds.Port,
-			Options:    api.DataSourceOptions{SRV: ds.SRV, AuthenticationDatabase: ds.AuthenticationDatabase},
+			Options:    api.DataSourceOptions{SRV: ds.SRV, AuthenticationDatabase: ds.AuthenticationDatabase, SID: ds.SID, ServiceName: ds.ServiceName},
 			Database:   ds.Database,
 		})
 		if ds.Type == api.Admin {

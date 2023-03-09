@@ -55,6 +55,9 @@ type InstanceCreate struct {
 	SRV bool `jsonapi:"attr,srv"`
 	// AuthenticationDatabase is used for MongoDB only.
 	AuthenticationDatabase string `jsonapi:"attr,authenticationDatabase"`
+	// SID and ServiceName are used for Oracle.
+	SID         string `jsonapi:"attr,sid"`
+	ServiceName string `jsonapi:"attr,serviceName"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -86,6 +89,7 @@ type InstancePatch struct {
 	Name          *string `jsonapi:"attr,name"`
 	EngineVersion *string
 	ExternalLink  *string `jsonapi:"attr,externalLink"`
+	// TODO(zp): deprecate SRV and AuthenticationDatabase in InstancePatch.
 	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
 	// AuthenticationDatabase is used for MongoDB only.

@@ -46,27 +46,33 @@ export const isMultipleStatements = (data: ParseResult["data"]) => {
   return isArray(data) && data.length > 1;
 };
 
-export const isDDLStatement = (data: ParseResult["data"]) => {
+export const isDDLStatement = (
+  data: ParseResult["data"],
+  method: "every" | "some" = "every"
+) => {
   // if the sql statement is an object, it's a single sql statement
   if (isObject(data) && !isArray(data)) {
     return DDL_TYPE.includes(data.type.toLowerCase());
   }
   // if the sql statement is an array, it's a multiple sql statements
   if (isArray(data)) {
-    return data.every((statement) =>
+    return data[method]((statement) =>
       DDL_TYPE.includes(statement.type.toLowerCase())
     );
   }
 };
 
-export const isDMLStatement = (data: ParseResult["data"]) => {
+export const isDMLStatement = (
+  data: ParseResult["data"],
+  method: "every" | "some" = "every"
+) => {
   // if the sql statement is an object, it's a single sql statement
   if (isObject(data) && !isArray(data)) {
     return DML_TYPE.includes(data.type.toLowerCase());
   }
   // if the sql statement is an array, it's a multiple sql statements
   if (isArray(data)) {
-    return data.every((statement) =>
+    return data[method]((statement) =>
       DML_TYPE.includes(statement.type.toLowerCase())
     );
   }
