@@ -88,6 +88,8 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 			Database:               databaseName,
 			SRV:                    adminDataSource.SRV,
 			AuthenticationDatabase: adminDataSource.AuthenticationDatabase,
+			SID:                    adminDataSource.SID,
+			ServiceName:            adminDataSource.ServiceName,
 		},
 		db.ConnectionContext{
 			EnvironmentID: instance.EnvironmentID,

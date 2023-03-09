@@ -48,10 +48,7 @@ type DataSourceOptions struct {
 
 // getDefaultDataSourceOptions returns the default data source options.
 func getDefaultDataSourceOptions() DataSourceOptions {
-	return DataSourceOptions{
-		SRV:                    false,
-		AuthenticationDatabase: "",
-	}
+	return DataSourceOptions{}
 }
 
 // Scan implements database/sql Scanner interface, converts JSONB to DataSourceOptions struct.
