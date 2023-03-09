@@ -369,6 +369,9 @@ type ConnectionConfig struct {
 	SRV bool
 	// AuthenticationDatabase is only supported for MongoDB now.
 	AuthenticationDatabase string
+	// SID and ServiceName are Oracle only.
+	SID         string
+	ServiceName string
 }
 
 // ConnectionContext is the context for connection.
