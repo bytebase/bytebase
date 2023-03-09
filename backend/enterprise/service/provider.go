@@ -10,12 +10,14 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -63,7 +65,7 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	settingName := api.SettingAgentToken
+	settingName := api.SettingPluginAgent
 	setting, err := p.store.GetSetting(ctx, &api.SettingFind{
 		Name: &settingName,
 	})
@@ -71,10 +73,13 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		return "", errors.Wrapf(err, "failed to find the hub token from settings")
 	}
 	if setting == nil || setting.Value == "" {
-		return "", errors.Wrapf(err, "hub token not found")
+		return "", errors.Wrapf(err, "agent not found")
 	}
-	claims, err := p.parseJWTToken(setting.Value)
-	if err != nil {
+	payload := new(storepb.AgentPluginSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return "", errors.Wrapf(err, "failed to parse agent")
+	}
+	if _, err := p.parseJWTToken(payload.Token); err != nil {
 		return "", errors.Wrapf(err, "invalid internal token")
 	}
 
@@ -82,25 +87,24 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		p.lastFetchTime = time.Now().Unix()
 	}()
 
-	return p.requestLicense(ctx, setting.Value, claims)
+	return p.requestLicense(ctx, payload.Url, setting.Value)
 }
 
-func (p *LicenseProvider) requestLicense(ctx context.Context, token string, claims *internalTokenClaims) (string, error) {
-	url := fmt.Sprintf("%s/v1/orgs/%s/workspaces/%s/license", p.config.HubAPIURL, claims.OrgID, claims.WorkspaceID)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, agentURL, nil)
 	if err != nil {
-		return "", errors.Wrapf(err, "construct GET %s", url)
+		return "", errors.Wrapf(err, "construct GET %s", agentURL)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", agentToken))
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return "", errors.Wrapf(err, "GET %s", url)
+		return "", errors.Wrapf(err, "GET %s", agentURL)
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrapf(err, "read body of GET %s", url)
+		return "", errors.Wrapf(err, "read body of GET %s", agentURL)
 	}
 	defer resp.Body.Close()
 
@@ -110,7 +114,7 @@ func (p *LicenseProvider) requestLicense(ctx context.Context, token string, clai
 
 	var response getLicenseResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return "", errors.Wrapf(err, "unmarshal body from GET %s", url)
+		return "", errors.Wrapf(err, "unmarshal body from GET %s", agentURL)
 	}
 
 	return response.License, nil
