@@ -24,6 +24,8 @@ type ConnectionInfo struct {
 	SRV bool `jsonapi:"attr,srv"`
 	// AuthenticationDatabase is used for MongoDB only.
 	AuthenticationDatabase string `json:"authenticationDatabase" jsonapi:"attr,authenticationDatabase"`
+	SID                    string `json:"sid" jsonapi:"attr,sid"`
+	ServiceName            string `json:"serviceName" jsonapi:"attr,serviceName"`
 }
 
 // SQLSyncSchema is the API message for sync schemas.

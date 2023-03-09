@@ -122,10 +122,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				Password:               password,
 				Host:                   connectionInfo.Host,
 				Port:                   connectionInfo.Port,
+				Database:               connectionInfo.Database,
 				TLSConfig:              tlsConfig,
 				SRV:                    connectionInfo.SRV,
 				AuthenticationDatabase: connectionInfo.AuthenticationDatabase,
-				Database:               connectionInfo.Database,
+				SID:                    connectionInfo.SID,
+				ServiceName:            connectionInfo.ServiceName,
 			},
 			db.ConnectionContext{},
 		)

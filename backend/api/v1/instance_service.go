@@ -330,6 +330,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			patch.SRV = &request.DataSources.Srv
 		case "authentication_database":
 			patch.AuthenticationDatabase = &request.DataSources.AuthenticationDatabase
+		case "sid":
+			patch.SID = &request.DataSources.Sid
+		case "service_name":
+			patch.SID = &request.DataSources.ServiceName
 		}
 	}
 
@@ -406,6 +410,8 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 			Database:               ds.Database,
 			Srv:                    ds.SRV,
 			AuthenticationDatabase: ds.AuthenticationDatabase,
+			Sid:                    ds.SID,
+			ServiceName:            ds.ServiceName,
 		})
 	}
 
@@ -467,6 +473,8 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		Database:               dataSource.Database,
 		SRV:                    dataSource.Srv,
 		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+		SID:                    dataSource.Sid,
+		ServiceName:            dataSource.ServiceName,
 	}, nil
 }
 
