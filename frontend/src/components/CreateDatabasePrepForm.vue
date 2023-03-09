@@ -107,15 +107,15 @@
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
-          <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
             id="instance"
             class="mt-1"
             name="instance"
             required
             :disabled="!allowEditInstance"
-            :selectedId="state.instanceId"
-            :environmentId="state.environmentId"
+            :selected-id="state.instanceId"
+            :environment-id="state.environmentId"
+            :filter="instanceHasCreateDatabase"
             @select-instance-id="selectInstance"
           />
         </div>
@@ -130,8 +130,8 @@
           id="instance-user"
           class="mt-1"
           name="instance-user"
-          :instanceId="state.instanceId"
-          :selectedId="state.instanceUserId"
+          :instance-id="state.instanceId"
+          :selected-id="state.instanceUserId"
           @select="selectInstanceUser"
         />
       </div>
@@ -271,7 +271,11 @@ import {
   InstanceUserId,
   PITRContext,
 } from "../types";
-import { hasWorkspacePermission, issueSlug } from "../utils";
+import {
+  hasWorkspacePermission,
+  instanceHasCreateDatabase,
+  issueSlug,
+} from "../utils";
 import { useEventListener } from "@vueuse/core";
 import {
   hasFeature,
@@ -622,6 +626,7 @@ export default defineComponent({
       showCollationAndCharacterSet,
       requireDatabaseOwnerName,
       showAssigneeSelect,
+      instanceHasCreateDatabase,
       selectProject,
       selectEnvironment,
       selectInstance,
