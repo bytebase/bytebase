@@ -1,7 +1,7 @@
 <template>
-  <TableView
+  <ResultView
     class="w-full h-full"
-    :query-result="queryResult"
+    :result-set="queryResult"
     :loading="loading"
   />
 </template>
@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import { TableView } from "../EditorCommon/";
+import { ResultView } from "../EditorCommon/";
 import { useTabStore } from "@/store";
 
 const tabStore = useTabStore();

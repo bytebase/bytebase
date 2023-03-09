@@ -83,6 +83,15 @@ export const instanceHasCreateDatabase = (instance: Instance): boolean => {
   return true;
 };
 
+export const instanceHasStructuredQueryResult = (
+  instance: Instance
+): boolean => {
+  const { engine } = instance;
+  if (engine === "MONGODB") return false;
+  if (engine === "REDIS") return false;
+  return true;
+};
+
 export const instanceHasSSL = (
   instanceOrEngine: Instance | EngineType
 ): boolean => {

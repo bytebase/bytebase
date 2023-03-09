@@ -42,7 +42,6 @@ export type SingleSQLResult = {
 
 export type SQLResultSet = {
   error: string;
-  // resultList: SingleSQLResult[];
-  data: SingleSQLResult["data"];
+  resultList: SingleSQLResult[];
   adviceList: Advice[];
 };
