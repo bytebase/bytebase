@@ -5,6 +5,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { State, stateFromJSON, stateToJSON } from "./common";
+import { ProjectGitOpsInfo } from "./externalvs_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -480,6 +481,24 @@ export interface GetDeploymentConfigRequest {
 
 export interface UpdateDeploymentConfigRequest {
   config?: DeploymentConfig;
+}
+
+export interface SetProjectGitOpsInfoRequest {
+  /**
+   * The name of the project.
+   * Format: projects/{project}
+   */
+  project: string;
+  /** The binding for the project and external version control. */
+  projectGitopsInfo?: ProjectGitOpsInfo;
+}
+
+export interface GetProjectGitOpsInfoRequest {
+  /**
+   * The name of the project.
+   * Format: projects/{project}
+   */
+  project: string;
 }
 
 export interface Project {
@@ -1579,6 +1598,117 @@ export const UpdateDeploymentConfigRequest = {
     message.config = (object.config !== undefined && object.config !== null)
       ? DeploymentConfig.fromPartial(object.config)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSetProjectGitOpsInfoRequest(): SetProjectGitOpsInfoRequest {
+  return { project: "", projectGitopsInfo: undefined };
+}
+
+export const SetProjectGitOpsInfoRequest = {
+  encode(message: SetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.projectGitopsInfo !== undefined) {
+      ProjectGitOpsInfo.encode(message.projectGitopsInfo, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetProjectGitOpsInfoRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetProjectGitOpsInfoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        case 2:
+          message.projectGitopsInfo = ProjectGitOpsInfo.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetProjectGitOpsInfoRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      projectGitopsInfo: isSet(object.projectGitopsInfo)
+        ? ProjectGitOpsInfo.fromJSON(object.projectGitopsInfo)
+        : undefined,
+    };
+  },
+
+  toJSON(message: SetProjectGitOpsInfoRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.projectGitopsInfo !== undefined && (obj.projectGitopsInfo = message.projectGitopsInfo
+      ? ProjectGitOpsInfo.toJSON(message.projectGitopsInfo)
+      : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<SetProjectGitOpsInfoRequest>): SetProjectGitOpsInfoRequest {
+    const message = createBaseSetProjectGitOpsInfoRequest();
+    message.project = object.project ?? "";
+    message.projectGitopsInfo = (object.projectGitopsInfo !== undefined && object.projectGitopsInfo !== null)
+      ? ProjectGitOpsInfo.fromPartial(object.projectGitopsInfo)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetProjectGitOpsInfoRequest(): GetProjectGitOpsInfoRequest {
+  return { project: "" };
+}
+
+export const GetProjectGitOpsInfoRequest = {
+  encode(message: GetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetProjectGitOpsInfoRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetProjectGitOpsInfoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetProjectGitOpsInfoRequest {
+    return { project: isSet(object.project) ? String(object.project) : "" };
+  },
+
+  toJSON(message: GetProjectGitOpsInfoRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<GetProjectGitOpsInfoRequest>): GetProjectGitOpsInfoRequest {
+    const message = createBaseGetProjectGitOpsInfoRequest();
+    message.project = object.project ?? "";
     return message;
   },
 };
@@ -3310,6 +3440,22 @@ export const ProjectServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    setProjectGitOpsInfo: {
+      name: "SetProjectGitOpsInfo",
+      requestType: SetProjectGitOpsInfoRequest,
+      requestStream: false,
+      responseType: ProjectGitOpsInfo,
+      responseStream: false,
+      options: {},
+    },
+    getProjectGitOpsInfo: {
+      name: "GetProjectGitOpsInfo",
+      requestType: SetProjectGitOpsInfoRequest,
+      requestStream: false,
+      responseType: ProjectGitOpsInfo,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -3353,6 +3499,14 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: TestWebhookRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<TestWebhookResponse>>;
+  setProjectGitOpsInfo(
+    request: SetProjectGitOpsInfoRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ProjectGitOpsInfo>>;
+  getProjectGitOpsInfo(
+    request: SetProjectGitOpsInfoRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ProjectGitOpsInfo>>;
 }
 
 export interface ProjectServiceClient<CallOptionsExt = {}> {
@@ -3395,6 +3549,14 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<TestWebhookRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<TestWebhookResponse>;
+  setProjectGitOpsInfo(
+    request: DeepPartial<SetProjectGitOpsInfoRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ProjectGitOpsInfo>;
+  getProjectGitOpsInfo(
+    request: DeepPartial<SetProjectGitOpsInfoRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ProjectGitOpsInfo>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
