@@ -18,7 +18,8 @@ export type EngineType =
   | "TIDB"
   | "MONGODB"
   | "SPANNER"
-  | "REDIS";
+  | "REDIS"
+  | "ORACLE";
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {
@@ -38,6 +39,8 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.SPANNER;
     case "REDIS":
       return Engine.REDIS;
+    case "ORACLE":
+      return Engine.ORACLE;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -58,6 +61,8 @@ export function defaultCharset(type: EngineType): string {
       return "";
     case "REDIS":
       return "";
+    case "ORACLE":
+      return "UTF8";
   }
 }
 
@@ -79,6 +84,8 @@ export function engineName(type: EngineType): string {
       return "Spanner";
     case "REDIS":
       return "Redis";
+    case "ORACLE":
+      return "Oracle";
   }
 }
 
@@ -101,6 +108,8 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "REDIS":
       return "";
+    case "ORACLE":
+      return "BINARY_CI";
   }
 }
 
@@ -146,6 +155,9 @@ export type InstanceCreate = {
   srv: boolean;
   // For MongoDB, the auth database is used to authenticate the user.
   authenticationDatabase: string;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type InstancePatch = {

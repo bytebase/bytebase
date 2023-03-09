@@ -21,6 +21,9 @@ export type ConnectionInfo = {
   sslKey?: string;
   srv: boolean;
   authenticationDatabase: string;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type QueryInfo = {
