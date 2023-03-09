@@ -48,3 +48,4 @@ export * from "./utils";
 export * from "./onboardingGuide";
 export * from "./schemaEditor";
 export * from "./externalApproval";
+export * from "./mfa";
