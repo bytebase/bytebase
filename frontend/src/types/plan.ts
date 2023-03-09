@@ -5,6 +5,7 @@ import planData from "./plan.yaml";
 export type FeatureType =
   // Admin & Security
   | "bb.feature.sso"
+  | "bb.feature.2fa"
   | "bb.feature.rbac"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"

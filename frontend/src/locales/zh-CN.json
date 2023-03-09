@@ -1754,6 +1754,10 @@
       "bb-feature-sso": {
         "title": "Single Sign-On (SSO)",
         "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
+      },
+      "bb-feature-2fa": {
+        "title": "双重认证",
+        "desc": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。"
       }
     }
   },

@@ -176,7 +176,12 @@
       class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 border-t mt-16 pt-8 pb-4"
     >
       <div class="w-full flex flex-row justify-between items-center">
-        <span class="text-lg font-medium">{{ $t("two-factor.self") }}</span>
+        <span
+          class="text-lg font-medium flex flex-row justify-start items-center"
+        >
+          {{ $t("two-factor.self") }}
+          <FeatureBadge :feature="'bb.feature.2fa'" class="ml-2 text-accent" />
+        </span>
         <BBSwitch
           :value="isMFAEnabled"
           @toggle="handle2FAEnableStatusChanged"
@@ -226,6 +231,12 @@
     </div>
   </main>
 
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.2fa"
+    @cancel="state.showFeatureModal = false"
+  />
+
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
     v-if="state.showDisable2FAConfirmModal"
@@ -261,6 +272,7 @@ interface LocalState {
   editing: boolean;
   editingPrincipal?: PrincipalPatch;
   passwordConfirm?: string;
+  showFeatureModal: boolean;
   showDisable2FAConfirmModal: boolean;
   showRegenerateRecoveryCodesView: boolean;
 }
@@ -277,6 +289,7 @@ const userStore = useUserStore();
 const principalStore = usePrincipalStore();
 const state = reactive<LocalState>({
   editing: false,
+  showFeatureModal: false,
   showDisable2FAConfirmModal: false,
   showRegenerateRecoveryCodesView: false,
 });
@@ -305,6 +318,7 @@ onUnmounted(() => {
 });
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
+const has2FAFeature = featureToRef("bb.feature.2fa");
 
 const isMFAEnabled = computed(() => {
   return authStore.currentUser.mfaEnabled;
@@ -375,6 +389,10 @@ const saveEdit = async () => {
 };
 
 const handle2FAEnableStatusChanged = (enabled: boolean) => {
+  if (!has2FAFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   if (enabled) {
     router.push({ name: "setting.profile.two-factor" });
   } else {

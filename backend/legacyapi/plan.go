@@ -52,6 +52,8 @@ const (
 
 	// FeatureSSO allows user to manage SSO provider and authenticate (login) with SSO.
 	FeatureSSO FeatureType = "bb.feature.sso"
+	// Feature2FA allows user to manage 2FA provider and authenticate (login) with 2FA.
+	Feature2FA FeatureType = "bb.feature.2fa"
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
@@ -161,6 +163,8 @@ func (e FeatureType) Name() string {
 	// Admin & Security
 	case FeatureSSO:
 		return "SSO"
+	case Feature2FA:
+		return "2FA"
 	case FeatureRBAC:
 		return "RBAC"
 	case FeatureWatermark:
@@ -240,6 +244,7 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	FeatureSSO:       {false, false, true},
+	Feature2FA:       {false, false, true},
 	FeatureRBAC:      {false, true, true},
 	FeatureWatermark: {false, false, true},
 	FeatureAuditLog:  {false, false, true},

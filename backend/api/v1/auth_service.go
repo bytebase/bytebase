@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
@@ -37,13 +38,14 @@ type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
 	store          *store.Store
 	secret         string
+	licenseService enterpriseAPI.LicenseService
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
 	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
@@ -489,18 +491,21 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if loginUser.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
-	if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
-		if request.OtpCode != nil {
-			if err := challengeMFACode(loginUser, *request.OtpCode); err != nil {
-				return nil, err
+
+	if s.licenseService.IsFeatureEnabled(api.Feature2FA) {
+		if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
+			if request.OtpCode != nil {
+				if err := challengeMFACode(loginUser, *request.OtpCode); err != nil {
+					return nil, err
+				}
+			} else if request.RecoveryCode != nil {
+				if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
+					return nil, err
+				}
+			} else {
+				// Return FailedPrecondition error to indicate MFA is required.
+				return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
 			}
-		} else if request.RecoveryCode != nil {
-			if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
-				return nil, err
-			}
-		} else {
-			// Return FailedPrecondition error to indicate MFA is required.
-			return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
 		}
 	}
 

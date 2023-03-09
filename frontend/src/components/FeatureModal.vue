@@ -3,7 +3,7 @@
     :title="$t('subscription.disabled-feature')"
     @close="$emit('cancel')"
   >
-    <div class="min-w-0 md:min-w-400">
+    <div class="min-w-0 md:min-w-[400px] max-w-4xl">
       <div class="flex items-start space-x-2">
         <div class="flex items-center">
           <heroicons-solid:sparkles class="h-6 w-6 text-accent" />
