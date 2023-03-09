@@ -10,6 +10,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 import "v1/common.proto";
+import "v1/externalvs_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -140,6 +141,19 @@ service ProjectService {
       body: "*"
     };
   }
+
+  rpc SetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
+    option (google.api.http) = {
+      put: "/v1/{project=projects/*}/gitOpsInfo"
+      body: "*"
+    };
+  }
+
+  rpc GetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
+    option (google.api.http) = {
+      get: "/v1/{project=projects/*}/gitOpsInfo"
+    };
+  }
 }
 
 message GetProjectRequest {
@@ -232,6 +246,21 @@ message GetDeploymentConfigRequest{
 
 message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED]; 
+}
+
+message SetProjectGitOpsInfoRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The binding for the project and external version control.
+  ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetProjectGitOpsInfoRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Project {

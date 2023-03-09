@@ -38,6 +38,8 @@ const (
 	ProjectService_UpdateWebhook_FullMethodName          = "/bytebase.v1.ProjectService/UpdateWebhook"
 	ProjectService_RemoveWebhook_FullMethodName          = "/bytebase.v1.ProjectService/RemoveWebhook"
 	ProjectService_TestWebhook_FullMethodName            = "/bytebase.v1.ProjectService/TestWebhook"
+	ProjectService_SetProjectGitOpsInfo_FullMethodName   = "/bytebase.v1.ProjectService/SetProjectGitOpsInfo"
+	ProjectService_GetProjectGitOpsInfo_FullMethodName   = "/bytebase.v1.ProjectService/GetProjectGitOpsInfo"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -62,6 +64,8 @@ type ProjectServiceClient interface {
 	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
+	SetProjectGitOpsInfo(ctx context.Context, in *SetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
+	GetProjectGitOpsInfo(ctx context.Context, in *SetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
 }
 
 type projectServiceClient struct {
@@ -234,6 +238,24 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 	return out, nil
 }
 
+func (c *projectServiceClient) SetProjectGitOpsInfo(ctx context.Context, in *SetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error) {
+	out := new(ProjectGitOpsInfo)
+	err := c.cc.Invoke(ctx, ProjectService_SetProjectGitOpsInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) GetProjectGitOpsInfo(ctx context.Context, in *SetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error) {
+	out := new(ProjectGitOpsInfo)
+	err := c.cc.Invoke(ctx, ProjectService_GetProjectGitOpsInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -256,6 +278,8 @@ type ProjectServiceServer interface {
 	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
+	SetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
+	GetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -316,6 +340,12 @@ func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveW
 }
 func (UnimplementedProjectServiceServer) TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestWebhook not implemented")
+}
+func (UnimplementedProjectServiceServer) SetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetProjectGitOpsInfo not implemented")
+}
+func (UnimplementedProjectServiceServer) GetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectGitOpsInfo not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -654,6 +684,42 @@ func _ProjectService_TestWebhook_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_SetProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetProjectGitOpsInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SetProjectGitOpsInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SetProjectGitOpsInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SetProjectGitOpsInfo(ctx, req.(*SetProjectGitOpsInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_GetProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetProjectGitOpsInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetProjectGitOpsInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_GetProjectGitOpsInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetProjectGitOpsInfo(ctx, req.(*SetProjectGitOpsInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -732,6 +798,14 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TestWebhook",
 			Handler:    _ProjectService_TestWebhook_Handler,
+		},
+		{
+			MethodName: "SetProjectGitOpsInfo",
+			Handler:    _ProjectService_SetProjectGitOpsInfo_Handler,
+		},
+		{
+			MethodName: "GetProjectGitOpsInfo",
+			Handler:    _ProjectService_GetProjectGitOpsInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
