@@ -11,6 +11,7 @@
       </div>
       <div class="flex justify-end gap-x-0.5">
         <SchemaDiagramButton
+          v-if="instanceHasAlterSchema(database.instance)"
           :database="database"
           :database-metadata="databaseMetadata"
         />
@@ -19,6 +20,7 @@
           :tooltip="$t('common.detail')"
         />
         <AlterSchemaButton
+          v-if="instanceHasAlterSchema(database.instance)"
           :database="database"
           @click="
             emit('alter-schema', {
@@ -60,7 +62,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/store/database";
 import type { Database, DatabaseId } from "@/types";
-import { databaseSlug } from "@/utils";
+import { databaseSlug, instanceHasAlterSchema } from "@/utils";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
