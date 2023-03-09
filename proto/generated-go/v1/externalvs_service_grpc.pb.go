@@ -20,11 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ExternalVersionControlService_GetExternalVersionControl_FullMethodName    = "/bytebase.v1.ExternalVersionControlService/GetExternalVersionControl"
-	ExternalVersionControlService_ListExternalVersionControls_FullMethodName  = "/bytebase.v1.ExternalVersionControlService/ListExternalVersionControls"
-	ExternalVersionControlService_CreateExternalVersionControl_FullMethodName = "/bytebase.v1.ExternalVersionControlService/CreateExternalVersionControl"
-	ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName = "/bytebase.v1.ExternalVersionControlService/UpdateExternalVersionControl"
-	ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName = "/bytebase.v1.ExternalVersionControlService/DeleteExternalVersionControl"
+	ExternalVersionControlService_GetExternalVersionControl_FullMethodName            = "/bytebase.v1.ExternalVersionControlService/GetExternalVersionControl"
+	ExternalVersionControlService_ListExternalVersionControls_FullMethodName          = "/bytebase.v1.ExternalVersionControlService/ListExternalVersionControls"
+	ExternalVersionControlService_CreateExternalVersionControl_FullMethodName         = "/bytebase.v1.ExternalVersionControlService/CreateExternalVersionControl"
+	ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName         = "/bytebase.v1.ExternalVersionControlService/UpdateExternalVersionControl"
+	ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName         = "/bytebase.v1.ExternalVersionControlService/DeleteExternalVersionControl"
+	ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName = "/bytebase.v1.ExternalVersionControlService/SearchExternalVersionControlProjects"
+	ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName                = "/bytebase.v1.ExternalVersionControlService/ListProjectGitOpsInfo"
 )
 
 // ExternalVersionControlServiceClient is the client API for ExternalVersionControlService service.
@@ -36,6 +38,8 @@ type ExternalVersionControlServiceClient interface {
 	CreateExternalVersionControl(ctx context.Context, in *CreateExternalVersionControlRequest, opts ...grpc.CallOption) (*ExternalVersionControl, error)
 	UpdateExternalVersionControl(ctx context.Context, in *UpdateExternalVersionControlRequest, opts ...grpc.CallOption) (*ExternalVersionControl, error)
 	DeleteExternalVersionControl(ctx context.Context, in *DeleteExternalVersionControlRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	SearchExternalVersionControlProjects(ctx context.Context, in *SearchExternalVersionControlProjectsRequest, opts ...grpc.CallOption) (*SearchExternalVersionControlProjectsResponse, error)
+	ListProjectGitOpsInfo(ctx context.Context, in *ListProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ListProjectGitOpsInfoResponse, error)
 }
 
 type externalVersionControlServiceClient struct {
@@ -91,6 +95,24 @@ func (c *externalVersionControlServiceClient) DeleteExternalVersionControl(ctx c
 	return out, nil
 }
 
+func (c *externalVersionControlServiceClient) SearchExternalVersionControlProjects(ctx context.Context, in *SearchExternalVersionControlProjectsRequest, opts ...grpc.CallOption) (*SearchExternalVersionControlProjectsResponse, error) {
+	out := new(SearchExternalVersionControlProjectsResponse)
+	err := c.cc.Invoke(ctx, ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *externalVersionControlServiceClient) ListProjectGitOpsInfo(ctx context.Context, in *ListProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ListProjectGitOpsInfoResponse, error) {
+	out := new(ListProjectGitOpsInfoResponse)
+	err := c.cc.Invoke(ctx, ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExternalVersionControlServiceServer is the server API for ExternalVersionControlService service.
 // All implementations must embed UnimplementedExternalVersionControlServiceServer
 // for forward compatibility
@@ -100,6 +122,8 @@ type ExternalVersionControlServiceServer interface {
 	CreateExternalVersionControl(context.Context, *CreateExternalVersionControlRequest) (*ExternalVersionControl, error)
 	UpdateExternalVersionControl(context.Context, *UpdateExternalVersionControlRequest) (*ExternalVersionControl, error)
 	DeleteExternalVersionControl(context.Context, *DeleteExternalVersionControlRequest) (*emptypb.Empty, error)
+	SearchExternalVersionControlProjects(context.Context, *SearchExternalVersionControlProjectsRequest) (*SearchExternalVersionControlProjectsResponse, error)
+	ListProjectGitOpsInfo(context.Context, *ListProjectGitOpsInfoRequest) (*ListProjectGitOpsInfoResponse, error)
 	mustEmbedUnimplementedExternalVersionControlServiceServer()
 }
 
@@ -121,6 +145,12 @@ func (UnimplementedExternalVersionControlServiceServer) UpdateExternalVersionCon
 }
 func (UnimplementedExternalVersionControlServiceServer) DeleteExternalVersionControl(context.Context, *DeleteExternalVersionControlRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteExternalVersionControl not implemented")
+}
+func (UnimplementedExternalVersionControlServiceServer) SearchExternalVersionControlProjects(context.Context, *SearchExternalVersionControlProjectsRequest) (*SearchExternalVersionControlProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchExternalVersionControlProjects not implemented")
+}
+func (UnimplementedExternalVersionControlServiceServer) ListProjectGitOpsInfo(context.Context, *ListProjectGitOpsInfoRequest) (*ListProjectGitOpsInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
 }
 func (UnimplementedExternalVersionControlServiceServer) mustEmbedUnimplementedExternalVersionControlServiceServer() {
 }
@@ -226,6 +256,42 @@ func _ExternalVersionControlService_DeleteExternalVersionControl_Handler(srv int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ExternalVersionControlService_SearchExternalVersionControlProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchExternalVersionControlProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExternalVersionControlServiceServer).SearchExternalVersionControlProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExternalVersionControlServiceServer).SearchExternalVersionControlProjects(ctx, req.(*SearchExternalVersionControlProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ExternalVersionControlService_ListProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectGitOpsInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExternalVersionControlServiceServer).ListProjectGitOpsInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExternalVersionControlServiceServer).ListProjectGitOpsInfo(ctx, req.(*ListProjectGitOpsInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ExternalVersionControlService_ServiceDesc is the grpc.ServiceDesc for ExternalVersionControlService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -252,6 +318,14 @@ var ExternalVersionControlService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteExternalVersionControl",
 			Handler:    _ExternalVersionControlService_DeleteExternalVersionControl_Handler,
+		},
+		{
+			MethodName: "SearchExternalVersionControlProjects",
+			Handler:    _ExternalVersionControlService_SearchExternalVersionControlProjects_Handler,
+		},
+		{
+			MethodName: "ListProjectGitOpsInfo",
+			Handler:    _ExternalVersionControlService_ListProjectGitOpsInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -80,6 +80,7 @@ type FileCommitCreate struct {
 	Content       string
 	CommitMessage string
 	LastCommitID  string
+	SHA           string
 	AuthorName    string
 	AuthorEmail   string
 }
@@ -90,6 +91,7 @@ type FileMeta struct {
 	Path         string
 	Size         int64
 	LastCommitID string
+	SHA          string
 }
 
 // FileDiffType is the type of file diff.

@@ -187,9 +187,16 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		task = updatedTask
 	}
 
-	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
-	if err != nil {
-		return "", "", err
+	if instance.Engine == db.Redis {
+		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement)
+		if err != nil {
+			return "", "", err
+		}
+	} else {
+		migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
@@ -625,6 +632,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		)
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
+		schemaFileCommit.SHA = schemaFileMeta.SHA
 		err := vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{

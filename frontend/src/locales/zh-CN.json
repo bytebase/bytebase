@@ -223,7 +223,8 @@
     "demo-mode": "演示模式",
     "operations": "操作",
     "on": "开",
-    "off": "关"
+    "off": "关",
+    "verify": "验证"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1925,6 +1926,22 @@
       "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
       "minlength": "{resource} ID 至少包含 1 个字符。",
       "overflow": "{resource} ID 应该少于 64 个字符。"
+    }
+  },
+  "multi-factor": {
+    "self": "多重认证",
+    "auth-code": "认证码",
+    "recovery-code": "恢复码",
+    "other-methods": {
+      "self": "其他方法",
+      "use-auth-app": {
+        "self": "使用身份验证器应用程序",
+        "description": "在您的移动设备上打开双因素认证器（TOTP）应用程序，查看认证码。"
+      },
+      "use-recovery-code": {
+        "self": "使用恢复码",
+        "description": "如果您无法访问你的移动设备，请输入一个恢复代码来验证您的身份。"
+      }
     }
   },
   "two-factor": {

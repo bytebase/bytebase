@@ -94,6 +94,18 @@ type RepositoryTreeNode struct {
 	Type string `json:"type"`
 }
 
+// Reference represents a GitHub API response for a reference.
+type Reference struct {
+	Ref    string `json:"ref"`
+	NodeID string `json:"node_id"`
+	URL    string `json:"url"`
+	Object struct {
+		Type string `json:"type"`
+		SHA  string `json:"sha"`
+		URL  string `json:"url"`
+	} `json:"object"`
+}
+
 // File represents a GitHub API response for a repository file.
 type File struct {
 	Encoding string `json:"encoding"`
@@ -580,7 +592,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		Message: fileCommitCreate.CommitMessage,
 		Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
 		Branch:  fileCommitCreate.Branch,
-		SHA:     fileCommitCreate.LastCommitID,
+		SHA:     fileCommitCreate.SHA,
 	}
 	if fileCommitCreate.AuthorName != "" && fileCommitCreate.AuthorEmail != "" {
 		fileCommit.Author = CommitAuthor{
@@ -637,7 +649,11 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
 func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
+	lastCommitID, err := p.getLastCommitID(ctx, oauthCtx, instanceURL, repositoryID, ref)
+	if err != nil {
+		return nil, errors.Wrap(err, "get last commit ID")
+	}
+	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, lastCommitID)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
 	}
@@ -646,8 +662,53 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 		Name:         file.Name,
 		Path:         file.Path,
 		Size:         file.Size,
-		LastCommitID: file.SHA,
+		SHA:          file.SHA,
+		LastCommitID: lastCommitID,
 	}, nil
+}
+
+// getLastCommitID gets the last commit ID of given reference in the repository.
+//
+// Docs: https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#get-a-reference
+func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, ref)
+
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return "", errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, "failed to get last commit ID from URL %s", url)
+	} else if code >= 300 {
+		return "",
+			errors.Errorf("failed to get last commit ID from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var reference Reference
+	if err = json.Unmarshal([]byte(body), &reference); err != nil {
+		return "", errors.Wrap(err, "unmarshal body")
+	}
+
+	return reference.Object.SHA, nil
 }
 
 // ReadFileContent reads the content of the given file in the repository.

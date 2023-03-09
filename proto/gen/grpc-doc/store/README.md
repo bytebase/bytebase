@@ -53,6 +53,8 @@
 | ----- | ---- | ----- | ----------- |
 | srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
 | authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+| sid | [string](#string) |  | sid and service_name are used for Oracle. |
+| service_name | [string](#string) |  |  |
 
 
 

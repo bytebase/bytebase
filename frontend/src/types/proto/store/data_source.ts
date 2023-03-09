@@ -8,10 +8,13 @@ export interface DataSourceOptions {
   srv: boolean;
   /** authentication_database is the database name to authenticate against, which stores the user credentials. */
   authenticationDatabase: string;
+  /** sid and service_name are used for Oracle. */
+  sid: string;
+  serviceName: string;
 }
 
 function createBaseDataSourceOptions(): DataSourceOptions {
-  return { srv: false, authenticationDatabase: "" };
+  return { srv: false, authenticationDatabase: "", sid: "", serviceName: "" };
 }
 
 export const DataSourceOptions = {
@@ -21,6 +24,12 @@ export const DataSourceOptions = {
     }
     if (message.authenticationDatabase !== "") {
       writer.uint32(18).string(message.authenticationDatabase);
+    }
+    if (message.sid !== "") {
+      writer.uint32(26).string(message.sid);
+    }
+    if (message.serviceName !== "") {
+      writer.uint32(34).string(message.serviceName);
     }
     return writer;
   },
@@ -38,6 +47,12 @@ export const DataSourceOptions = {
         case 2:
           message.authenticationDatabase = reader.string();
           break;
+        case 3:
+          message.sid = reader.string();
+          break;
+        case 4:
+          message.serviceName = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -50,6 +65,8 @@ export const DataSourceOptions = {
     return {
       srv: isSet(object.srv) ? Boolean(object.srv) : false,
       authenticationDatabase: isSet(object.authenticationDatabase) ? String(object.authenticationDatabase) : "",
+      sid: isSet(object.sid) ? String(object.sid) : "",
+      serviceName: isSet(object.serviceName) ? String(object.serviceName) : "",
     };
   },
 
@@ -57,6 +74,8 @@ export const DataSourceOptions = {
     const obj: any = {};
     message.srv !== undefined && (obj.srv = message.srv);
     message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
+    message.sid !== undefined && (obj.sid = message.sid);
+    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
     return obj;
   },
 
@@ -64,6 +83,8 @@ export const DataSourceOptions = {
     const message = createBaseDataSourceOptions();
     message.srv = object.srv ?? false;
     message.authenticationDatabase = object.authenticationDatabase ?? "";
+    message.sid = object.sid ?? "";
+    message.serviceName = object.serviceName ?? "";
     return message;
   },
 };

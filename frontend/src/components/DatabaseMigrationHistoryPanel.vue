@@ -5,7 +5,7 @@
     >
       <span>{{ $t("change-history.self") }}</span>
       <BBTooltipButton
-        v-if="!isTenantProject && allowEdit"
+        v-if="showEstablishBaselineButton"
         type="primary"
         :disabled="!allowMigrate"
         tooltip-mode="DISABLED-ONLY"
@@ -85,7 +85,11 @@ import {
 } from "../types";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { hasWorkspacePermission, instanceSlug } from "../utils";
+import {
+  hasWorkspacePermission,
+  instanceHasAlterSchema,
+  instanceSlug,
+} from "../utils";
 import { useCurrentUser, useInstanceStore } from "@/store";
 
 interface LocalState {
@@ -154,9 +158,15 @@ export default defineComponent({
         currentUser.value.role
       );
     });
-
     const isTenantProject = computed(() => {
       return props.database.project.tenantMode === "TENANT";
+    });
+
+    const showEstablishBaselineButton = computed(() => {
+      if (!instanceHasAlterSchema(props.database.instance)) return false;
+      if (isTenantProject.value) return false;
+      if (!props.allowEdit) return false;
+      return true;
     });
 
     const allowMigrate = computed(() => {
@@ -242,6 +252,7 @@ export default defineComponent({
       state,
       allowConfigInstance,
       isTenantProject,
+      showEstablishBaselineButton,
       allowMigrate,
       attentionTitle,
       migrationHistorySectionList,

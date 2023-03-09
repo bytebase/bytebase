@@ -13,7 +13,7 @@
           <i18n-t keypath="sql-editor.want-to-action">
             <template #want>
               {{
-                isDDLSQLStatement
+                isDDL
                   ? $t("database.alter-schema").toLowerCase()
                   : $t("database.change-data").toLowerCase()
               }}
@@ -21,7 +21,7 @@
             <template #action>
               <strong>
                 {{
-                  isDDLSQLStatement
+                  isDDL
                     ? $t("database.alter-schema")
                     : $t("database.change-data")
                 }}
@@ -39,11 +39,7 @@
       <div class="flex justify-end items-center space-x-2">
         <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
         <NButton type="primary" @click="gotoAlterSchema">
-          {{
-            isDDLSQLStatement
-              ? $t("database.alter-schema")
-              : $t("database.change-data")
-          }}
+          {{ isDDL ? $t("database.alter-schema") : $t("database.change-data") }}
         </NButton>
       </div>
     </div>
@@ -74,9 +70,9 @@ const sqlStatement = computed(
   () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
 );
 
-const isDDLSQLStatement = computed(() => {
+const isDDL = computed(() => {
   const { data } = parseSQL(sqlStatement.value);
-  return data !== null ? isDDLStatement(data) : false;
+  return data !== null ? isDDLStatement(data, "some") : false;
 });
 
 const handleClose = () => {
@@ -104,9 +100,9 @@ const gotoAlterSchema = () => {
       issueSlug: "new",
     },
     query: {
-      template: isDDLSQLStatement.value ? DDLIssueTemplate : DMLIssueTemplate,
+      template: isDDL.value ? DDLIssueTemplate : DMLIssueTemplate,
       name: `[${database.name}] ${
-        isDDLSQLStatement.value ? "Alter schema" : "Change Data"
+        isDDL.value ? "Alter schema" : "Change Data"
       }`,
       project: database.project.id,
       databaseList: databaseId,

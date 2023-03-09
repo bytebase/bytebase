@@ -172,7 +172,6 @@
 
     <!-- 2FA setting section -->
     <div
-      v-if="isDev"
       class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 border-t mt-16 pt-8 pb-4"
     >
       <div class="w-full flex flex-row justify-between items-center">

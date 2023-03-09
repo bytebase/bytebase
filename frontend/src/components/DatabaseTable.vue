@@ -36,7 +36,7 @@
               :tooltip="true"
               @failed="handleGotoSQLEditorFailed"
             />
-            <span>{{ database.name }}</span>
+            <DatabaseName :database="database" tag="span" />
             <BBBadge
               v-if="isPITRDatabase(database)"
               text="PITR"
@@ -242,6 +242,7 @@ import { Database, Policy } from "../types";
 import { BBGridColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
+import DatabaseName from "@/components/DatabaseName.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import { useCurrentUser, usePolicyStore } from "@/store";
 import {
@@ -342,7 +343,7 @@ const sortedDatabaseList = computed(() => {
         return 1;
       }
       // Fallback to `id` DESC
-      return -(a.id - b.id);
+      return -(+a.id - +b.id);
     });
   }
 

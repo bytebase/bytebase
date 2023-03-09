@@ -423,7 +423,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 	defer driver.Close(ctx)
 
-	migrationHistoryVersion, err := utils.GetLatestSchemaVersion(ctx, driver, database.DatabaseName)
+	migrationHistoryVersion, err := utils.GetLatestSchemaVersion(ctx, r.store, driver, instance.UID, database.UID, database.DatabaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get migration history for database %q", database.DatabaseName)
 	}

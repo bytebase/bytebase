@@ -39,6 +39,7 @@ export default defineComponent({
       CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
       MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
       SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
+      REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
     };
     const SelectedEngineIconPath = computed(() => {
       return EngineIconPath[props.instance.engine];

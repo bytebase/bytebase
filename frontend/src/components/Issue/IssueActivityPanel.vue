@@ -694,6 +694,8 @@ const actionSubject = (activity: Activity): ActionSubject => {
 
 const fileCommitActivityUrl = (activity: Activity) => {
   const payload = activity.payload as ActivityTaskFileCommitPayload;
+  if (payload.vcsInstanceUrl.includes("https://github.com"))
+    return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/commit/${payload.commitId}`;
   return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/-/commit/${payload.commitId}`;
 };
 

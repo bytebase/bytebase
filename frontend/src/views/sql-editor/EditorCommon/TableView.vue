@@ -273,6 +273,7 @@ const table = useVueTable<string[]>({
 table.setPageSize(DEFAULT_PAGE_SIZE);
 
 const showPlaceholder = computed(() => {
+  if (props.queryResult?.error) return false;
   if (!props.queryResult?.data) return true;
   if (props.loading) return true;
   return false;
