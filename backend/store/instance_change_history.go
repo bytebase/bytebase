@@ -549,3 +549,26 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 	return fmt.Sprintf("%d", list[0].ID), nil
 }
 
+func (s *Store) ListInstanceHavingInstanceChangeHistory(ctx context.Context) ([]int, error) {
+	query := `
+	SELECT DISTINCT
+		instance_id
+	FROM instance_change_history
+	`
+	rows, err := s.db.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		list = append(list, id)
+	}
+
+	return list, nil
+}

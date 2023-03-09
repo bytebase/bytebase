@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -559,6 +560,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
+	// TODO: remove this on May 2023
+	s.backfillInstanceChangeHistory(ctx)
+
 	serverStarted = true
 	return s, nil
 }
@@ -1035,4 +1039,123 @@ Click "Approve" button to apply the schema update.`,
 	}
 
 	return nil
+}
+
+func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
+	err := func() error {
+		migratedInstanceList, err := s.store.ListInstanceHavingInstanceChangeHistory(ctx)
+		if err != nil {
+			return err
+		}
+		instanceMigrated := make(map[int]bool)
+		for _, id := range migratedInstanceList {
+			instanceMigrated[id] = true
+		}
+
+		instanceList, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
+		if err != nil {
+			return err
+		}
+
+		principalList, err := s.store.GetPrincipalList(ctx)
+		if err != nil {
+			return err
+		}
+		nameToPrincipal := make(map[string]*api.Principal)
+		for _, principal := range principalList {
+			nameToPrincipal[principal.Name] = principal
+		}
+
+		var errList error
+		for _, instance := range instanceList {
+			if instance.Engine == db.Redis {
+				continue
+			}
+			if instanceMigrated[instance.UID] {
+				continue
+			}
+
+			databaseList, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, ShowDeleted: true})
+			if err != nil {
+				errList = multierr.Append(errList, err)
+				continue
+			}
+			nameToDatabase := make(map[string]*store.DatabaseMessage)
+			for i, db := range databaseList {
+				nameToDatabase[db.DatabaseName] = databaseList[i]
+			}
+
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+			if err != nil {
+				errList = multierr.Append(errList, err)
+				continue
+			}
+			defer driver.Close(ctx)
+
+			history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+				InstanceID: instance.UID,
+			})
+			if err != nil {
+				errList = multierr.Append(errList, err)
+				continue
+			}
+			if len(history) == 0 {
+				continue
+			}
+
+			var creates []*store.InstanceChangeHistoryMessage
+			for _, h := range history {
+				var databaseID *int
+				if database, ok := nameToDatabase[h.Namespace]; ok {
+					databaseID = &database.UID
+				}
+				issueID, err := strconv.Atoi(h.IssueID)
+				if err != nil {
+					errList = multierr.Append(errList, err)
+					continue
+				}
+				var creatorID, updaterID int
+				if principal, ok := nameToPrincipal[h.Creator]; ok {
+					creatorID = principal.ID
+				}
+				if principal, ok := nameToPrincipal[h.Updater]; ok {
+					updaterID = principal.ID
+				}
+				changeHistory := store.InstanceChangeHistoryMessage{
+					CreatorID:           creatorID,
+					CreatedTs:           h.CreatedTs,
+					UpdaterID:           updaterID,
+					UpdatedTs:           h.UpdatedTs,
+					InstanceID:          instance.UID,
+					DatabaseID:          databaseID,
+					IssueID:             &issueID,
+					ReleaseVersion:      h.ReleaseVersion,
+					Sequence:            int64(h.Sequence),
+					Source:              h.Source,
+					Type:                h.Type,
+					Status:              h.Status,
+					Version:             h.Version,
+					Description:         h.Description,
+					Statement:           h.Statement,
+					Schema:              h.Schema,
+					SchemaPrev:          h.SchemaPrev,
+					ExecutionDurationNs: h.ExecutionDurationNs,
+					Payload:             h.Payload,
+				}
+
+				creates = append(creates, &changeHistory)
+			}
+
+			if _, err := s.store.CreateInstanceChangeHistory(ctx, creates...); err != nil {
+				errList = multierr.Append(errList, err)
+				continue
+			}
+		}
+
+		return errList
+	}()
+
+	if err != nil {
+		log.Error("failed to backfill migration history", zap.Error(err))
+	}
 }
