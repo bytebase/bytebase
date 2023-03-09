@@ -3,7 +3,8 @@
     <div class="divide-y divide-block-border w-[850px]">
       <div
         v-if="isCreating"
-        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-5"
+        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4"
+        :class="[isDev() ? 'sm:grid-cols-5' : 'sm:grid-cols-4']"
       >
         <template v-for="engine in engineList" :key="engine">
           <div
