@@ -199,8 +199,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	}
 
 	var userMessages []*UserMessage
-	if common.FeatureFlag(common.FeatureFlagNoop) {
-		rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 				SELECT
 					principal.id AS user_id,
 					principal.email,
@@ -213,96 +212,49 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 				FROM principal
 				LEFT JOIN member ON principal.id = member.principal_id
 				WHERE `+strings.Join(where, " AND "),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var userMessage UserMessage
-			var role, rowStatus sql.NullString
-			var mfaConfigBytes []byte
-			if err := rows.Scan(
-				&userMessage.ID,
-				&userMessage.Email,
-				&userMessage.Name,
-				&userMessage.Type,
-				&userMessage.PasswordHash,
-				&mfaConfigBytes,
-				&role,
-				&rowStatus,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-			if role.Valid {
-				userMessage.Role = api.Role(role.String)
-			} else if userMessage.ID == api.SystemBotID {
-				userMessage.Role = api.Owner
-			} else {
-				userMessage.Role = api.Developer
-			}
-			if rowStatus.Valid {
-				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-			} else if userMessage.ID != api.SystemBotID {
-				userMessage.MemberDeleted = true
-			}
-			mfaConfig := storepb.MFAConfig{}
-			decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-			if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
-				return nil, err
-			}
-			userMessage.MFAConfig = &mfaConfig
-			userMessages = append(userMessages, &userMessage)
-		}
-	} else {
-		rows, err := tx.QueryContext(ctx, `
-				SELECT
-					principal.id AS user_id,
-					principal.email,
-					principal.name,
-					principal.type,
-					principal.password_hash,
-					member.role,
-					member.row_status AS row_status
-				FROM principal
-				LEFT JOIN member ON principal.id = member.principal_id
-				WHERE `+strings.Join(where, " AND "),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var userMessage UserMessage
-			var role, rowStatus sql.NullString
-			if err := rows.Scan(
-				&userMessage.ID,
-				&userMessage.Email,
-				&userMessage.Name,
-				&userMessage.Type,
-				&userMessage.PasswordHash,
-				&role,
-				&rowStatus,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-			if role.Valid {
-				userMessage.Role = api.Role(role.String)
-			} else if userMessage.ID == api.SystemBotID {
-				userMessage.Role = api.Owner
-			} else {
-				userMessage.Role = api.Developer
-			}
-			if rowStatus.Valid {
-				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-			} else if userMessage.ID != api.SystemBotID {
-				userMessage.MemberDeleted = true
-			}
-			userMessages = append(userMessages, &userMessage)
-		}
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
 	}
+	defer rows.Close()
+	for rows.Next() {
+		var userMessage UserMessage
+		var role, rowStatus sql.NullString
+		var mfaConfigBytes []byte
+		if err := rows.Scan(
+			&userMessage.ID,
+			&userMessage.Email,
+			&userMessage.Name,
+			&userMessage.Type,
+			&userMessage.PasswordHash,
+			&mfaConfigBytes,
+			&role,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if role.Valid {
+			userMessage.Role = api.Role(role.String)
+		} else if userMessage.ID == api.SystemBotID {
+			userMessage.Role = api.Owner
+		} else {
+			userMessage.Role = api.Developer
+		}
+		if rowStatus.Valid {
+			userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+		} else if userMessage.ID != api.SystemBotID {
+			userMessage.MemberDeleted = true
+		}
+		mfaConfig := storepb.MFAConfig{}
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
+			return nil, err
+		}
+		userMessage.MFAConfig = &mfaConfig
+		userMessages = append(userMessages, &userMessage)
+	}
+
 	return userMessages, nil
 }
 
@@ -433,55 +385,33 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	defer tx.Rollback()
 
 	user := &UserMessage{}
-	if common.FeatureFlag(common.FeatureFlagNoop) {
-		var mfaConfigBytes []byte
-		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	var mfaConfigBytes []byte
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE principal
 		SET `+strings.Join(principalSet, ", ")+`
 		WHERE id = $%d
 		RETURNING id, email, name, type, password_hash, mfa_config
 	`, len(principalArgs)),
-			principalArgs...,
-		).Scan(
-			&user.ID,
-			&user.Email,
-			&user.Name,
-			&user.Type,
-			&user.PasswordHash,
-			&mfaConfigBytes,
-		); err != nil {
-			if err == sql.ErrNoRows {
-				return nil, nil
-			}
-			return nil, FormatError(err)
+		principalArgs...,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Name,
+		&user.Type,
+		&user.PasswordHash,
+		&mfaConfigBytes,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
 		}
-		mfaConfig := storepb.MFAConfig{}
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
-			return nil, err
-		}
-		user.MFAConfig = &mfaConfig
-	} else {
-		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			UPDATE principal
-			SET `+strings.Join(principalSet, ", ")+`
-			WHERE id = $%d
-			RETURNING id, email, name, type, password_hash
-		`, len(principalArgs)),
-			principalArgs...,
-		).Scan(
-			&user.ID,
-			&user.Email,
-			&user.Name,
-			&user.Type,
-			&user.PasswordHash,
-		); err != nil {
-			if err == sql.ErrNoRows {
-				return nil, nil
-			}
-			return nil, FormatError(err)
-		}
+		return nil, FormatError(err)
 	}
+	mfaConfig := storepb.MFAConfig{}
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
+		return nil, err
+	}
+	user.MFAConfig = &mfaConfig
 
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`

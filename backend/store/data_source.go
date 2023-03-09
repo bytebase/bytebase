@@ -27,6 +27,8 @@ type DataSourceMessage struct {
 	// Flatten data source options.
 	SRV                    bool
 	AuthenticationDatabase string
+	SID                    string
+	ServiceName            string
 	// (deprecated) Output only.
 	UID        int
 	DatabaseID int
@@ -51,6 +53,8 @@ type UpdateDataSourceMessage struct {
 	// Flatten data source options.
 	SRV                    *bool
 	AuthenticationDatabase *string
+	SID                    *string
+	ServiceName            *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -106,6 +110,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		}
 		dataSourceMessage.SRV = dataSourceOptions.Srv
 		dataSourceMessage.AuthenticationDatabase = dataSourceOptions.AuthenticationDatabase
+		dataSourceMessage.SID = dataSourceOptions.Sid
+		dataSourceMessage.ServiceName = dataSourceOptions.ServiceName
 
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
@@ -211,6 +217,12 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.AuthenticationDatabase; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationDatabase', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
 	}
+	if v := patch.SID; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sid', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
+	if v := patch.ServiceName; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('serviceName', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -252,6 +264,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 	dataSourceOptions := storepb.DataSourceOptions{
 		Srv:                    dataSource.SRV,
 		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+		Sid:                    dataSource.SID,
+		ServiceName:            dataSource.ServiceName,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

@@ -50,7 +50,7 @@ const state = reactive<LocalState>({
   showDialog: false,
 });
 
-const openAIKeySetting = useSettingByName("bb.plugin.openai-key");
+const openAIKeySetting = useSettingByName("bb.plugin.openai.key");
 const openAIKey = computed(() => openAIKeySetting.value?.value ?? "");
 
 const events: AIContextEvents = new Emittery();

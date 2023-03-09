@@ -219,7 +219,7 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 	).Scan(
 		&anomaly.ID,
 		&anomaly.InstanceUID,
-		databaseUID,
+		&databaseUID,
 		&anomaly.Type,
 		&anomaly.Payload,
 	); err != nil {

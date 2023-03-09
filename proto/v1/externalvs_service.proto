@@ -110,6 +110,10 @@ message SearchExternalVersionControlProjectsRequest {
   // The name of the external version control to retrieve the external version control repositories.
   // Format: externalVersionControls/{externalVersionControl}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  string access_token = 2 [(google.api.field_behavior) = REQUIRED];
+  
+  string refresh_token = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SearchExternalVersionControlProjectsResponse {
@@ -152,6 +156,8 @@ message ExternalVersionControl {
     TYPE_GITHUB = 1;
     // GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).
     TYPE_GITLAB = 2;
+    // BitBucket type. Using for BitBucket cloud or BitBucket server.
+    TYPE_BITBUCKET = 3;
   }
 
   Type type = 3 [(google.api.field_behavior) = REQUIRED];

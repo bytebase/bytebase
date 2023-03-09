@@ -3,7 +3,8 @@
     <div class="divide-y divide-block-border w-[850px]">
       <div
         v-if="isCreating"
-        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4"
+        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4"
+        :class="[isDev() ? 'sm:grid-cols-5' : 'sm:grid-cols-4']"
       >
         <template v-for="engine in engineList" :key="engine">
           <div
@@ -334,7 +335,6 @@
             />
           </div>
         </template>
-
         <SpannerCredentialInput
           v-else
           :value="currentDataSource.updatedPassword"
@@ -342,6 +342,14 @@
           class="mt-2 sm:col-span-3 sm:col-start-1"
           @update:value="handleUpdateSpannerCredential"
         />
+
+        <template v-if="basicInformation.engine === 'ORACLE'">
+          <OracleSIDAndServiceNameInput
+            v-model:sid="currentDataSource.options.sid"
+            v-model:service-name="currentDataSource.options.serviceName"
+            :allow-edit="allowEdit"
+          />
+        </template>
 
         <template v-if="showAuthenticationDatabase">
           <div class="sm:col-span-1 sm:col-start-1">
@@ -538,6 +546,7 @@ import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
 import {
   hasWorkspacePermission,
+  instanceHasSSL,
   instanceSlug,
   isDev,
   isValidSpannerHost,
@@ -578,6 +587,7 @@ import {
   SpannerHostInput,
   SpannerCredentialInput,
   SslCertificateForm,
+  OracleSIDAndServiceNameInput,
 } from "./InstanceForm";
 import ResourceIdField from "./ResourceIdField.vue";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
@@ -687,6 +697,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "27017";
   } else if (engine === "REDIS") {
     return "6379";
+  } else if (engine === "ORACLE") {
+    return "1521";
   }
   return "3306";
 };
@@ -726,6 +738,9 @@ const engineList = computed(() => {
     "SPANNER",
     "REDIS",
   ];
+  if (isDev()) {
+    engines.push("ORACLE");
+  }
   return engines;
 });
 
@@ -738,6 +753,7 @@ const EngineIconPath = {
   MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
   SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
   REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
+  ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
@@ -863,13 +879,7 @@ const showDatabase = computed((): boolean => {
 });
 
 const showSSL = computed((): boolean => {
-  return (
-    basicInformation.value.engine === "CLICKHOUSE" ||
-    basicInformation.value.engine === "MYSQL" ||
-    basicInformation.value.engine === "TIDB" ||
-    basicInformation.value.engine === "POSTGRES" ||
-    basicInformation.value.engine === "REDIS"
-  );
+  return instanceHasSSL(basicInformation.value.engine);
 });
 
 const showAuthenticationDatabase = computed((): boolean => {
@@ -895,7 +905,7 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: EngineType): boolean => {
-  return engine === "MONGODB" || engine === "SPANNER";
+  return ["MONGODB", "SPANNER", "REDIS", "ORACLE"].includes(engine);
 };
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
@@ -1047,6 +1057,8 @@ const handleCreateRODataSource = () => {
     options: {
       authenticationDatabase: "",
       srv: false,
+      sid: "",
+      serviceName: "",
     },
   } as DataSource;
   if (basicInformation.value.engine === "SPANNER") {
@@ -1196,6 +1208,8 @@ const doCreate = async () => {
     srv: adminDataSource.value.options.srv,
     authenticationDatabase:
       adminDataSource.value.options.authenticationDatabase,
+    sid: "",
+    serviceName: "",
   };
 
   if (
@@ -1204,6 +1218,11 @@ const doCreate = async () => {
   ) {
     // Clear the `database` field if not needed.
     instanceCreate.database = "";
+  }
+
+  if (instanceCreate.engine === "ORACLE") {
+    instanceCreate.sid = adminDataSource.value.options.sid;
+    instanceCreate.serviceName = adminDataSource.value.options.serviceName;
   }
 
   state.isRequesting = true;
@@ -1380,10 +1399,17 @@ const getTestConnectionContext = () => {
     database: dataSource.database,
     srv: dataSource.options.srv,
     authenticationDatabase: dataSource.options.authenticationDatabase,
+    sid: "",
+    serviceName: "",
   };
 
   if (!isCreating.value) {
     connectionInfo.instanceId = basicInformation.value.id;
+  }
+
+  if (basicInformation.value.engine === "ORACLE") {
+    connectionInfo.sid = dataSource.options.sid;
+    connectionInfo.serviceName = dataSource.options.serviceName;
   }
 
   if (showSSL.value) {

@@ -15,3 +15,11 @@ message WorkspaceProfileSetting {
   // Disallow self-service signup, users can only be invited by the owner.
   bool disallow_signup = 2;
 }
+
+message AgentPluginSetting {
+  // The URL for the agent API.
+  string url = 1;
+
+  // The token for the agent.
+  string token = 2;
+}

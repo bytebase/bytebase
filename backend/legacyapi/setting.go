@@ -24,12 +24,12 @@ const (
 	SettingAppIM SettingName = "bb.app.im"
 	// SettingWatermark is the setting name for watermark displaying.
 	SettingWatermark SettingName = "bb.workspace.watermark"
-	// SettingAgentToken is the setting name for the agent token to call the internal API.
-	// For now we will call the hub to fetch the subscription license.
-	SettingAgentToken SettingName = "bb.agent.token"
 	// SettingPluginOpenAIKey is used for OpenAI's API key.
 	// For AI-related features.
-	SettingPluginOpenAIKey SettingName = "bb.plugin.openai-key"
+	SettingPluginOpenAIKey SettingName = "bb.plugin.openai.key"
+	// SettingPluginAgent is the setting name for the internal agent API.
+	// For now we will call the hub to fetch the subscription license.
+	SettingPluginAgent SettingName = "bb.plugin.agent"
 )
 
 // IMType is the type of IM.
