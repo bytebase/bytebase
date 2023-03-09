@@ -263,6 +263,8 @@ const makeUnknown = (type: ResourceType) => {
     options: { srv: false, authenticationDatabase: "" },
     // UI-only fields
     updateSsl: false,
+    sid: "",
+    serviceName: "",
   };
 
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {
@@ -618,6 +620,8 @@ const makeEmpty = (type: ResourceType) => {
     options: { srv: false, authenticationDatabase: "" },
     // UI-only fields
     updateSsl: false,
+    sid: "",
+    serviceName: "",
   };
 
   const EMPTY_BACKUP_SETTING: BackupSetting = {
