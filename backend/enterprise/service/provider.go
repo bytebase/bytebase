@@ -79,8 +79,7 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return "", errors.Wrapf(err, "failed to parse agent")
 	}
-	claims, err := p.parseJWTToken(payload.Token)
-	if err != nil {
+	if _, err := p.parseJWTToken(payload.Token); err != nil {
 		return "", errors.Wrapf(err, "invalid internal token")
 	}
 
@@ -88,10 +87,10 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		p.lastFetchTime = time.Now().Unix()
 	}()
 
-	return p.requestLicense(ctx, payload.Url, setting.Value, claims)
+	return p.requestLicense(ctx, payload.Url, setting.Value)
 }
 
-func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string, claims *internalTokenClaims) (string, error) {
+func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, agentURL, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "construct GET %s", agentURL)
