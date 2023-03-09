@@ -346,8 +346,8 @@
 
         <template v-if="basicInformation.engine === 'ORACLE'">
           <OracleSIDAndServiceNameInput
-            v-model:sid="currentDataSource.sid"
-            v-model:service-name="currentDataSource.serviceName"
+            v-model:sid="currentDataSource.options.sid"
+            v-model:service-name="currentDataSource.options.serviceName"
             :allow-edit="allowEdit"
           />
         </template>
@@ -1056,9 +1056,9 @@ const handleCreateRODataSource = () => {
     options: {
       authenticationDatabase: "",
       srv: false,
+      sid: "",
+      serviceName: "",
     },
-    sid: "",
-    serviceName: "",
   } as DataSource;
   if (basicInformation.value.engine === "SPANNER") {
     tempDataSource.host = adminDataSource.value.host;
@@ -1220,8 +1220,8 @@ const doCreate = async () => {
   }
 
   if (instanceCreate.engine === "ORACLE") {
-    instanceCreate.sid = adminDataSource.value.sid;
-    instanceCreate.serviceName = adminDataSource.value.serviceName;
+    instanceCreate.sid = adminDataSource.value.options.sid;
+    instanceCreate.serviceName = adminDataSource.value.options.serviceName;
   }
 
   state.isRequesting = true;
@@ -1326,8 +1326,6 @@ const doUpdate = async () => {
               host: dataSource.host,
               port: dataSource.port,
               database: dataSource.database,
-              sid: "",
-              serviceName: "",
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -1337,10 +1335,6 @@ const doUpdate = async () => {
             }
             if (typeof dataSource.sslCert !== "undefined") {
               dataSourceCreate.sslCert = dataSource.sslCert;
-            }
-            if (instance.engine === "ORACLE") {
-              dataSourceCreate.sid = dataSource.sid;
-              dataSourceCreate.serviceName = dataSource.serviceName;
             }
             requests.push(dataSourceStore.createDataSource(dataSourceCreate));
           } else {
@@ -1413,8 +1407,8 @@ const getTestConnectionContext = () => {
   }
 
   if (basicInformation.value.engine === "ORACLE") {
-    connectionInfo.sid = dataSource.sid;
-    connectionInfo.serviceName = dataSource.serviceName;
+    connectionInfo.sid = dataSource.options.sid;
+    connectionInfo.serviceName = dataSource.options.serviceName;
   }
 
   if (showSSL.value) {
