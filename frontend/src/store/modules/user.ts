@@ -1,6 +1,11 @@
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
-import { User, userRoleToJSON, UserType } from "@/types/proto/v1/auth_service";
+import {
+  UpdateUserRequest,
+  User,
+  userRoleToJSON,
+  UserType,
+} from "@/types/proto/v1/auth_service";
 import { isEqual, isUndefined } from "lodash-es";
 import { getUserId, userNamePrefix } from "./v1/common";
 import { Principal, PrincipalType, RoleType } from "@/types";
@@ -40,16 +45,14 @@ export const useUserStore = defineStore("user", {
       this.userMapByName.set(user.name, user);
       return user;
     },
-    async updateUser(update: Partial<User>) {
-      const originData = await this.getOrFetchUserByName(update.name || "");
+    async updateUser(updateUserRequest: UpdateUserRequest) {
+      const name = updateUserRequest.user?.name || "";
+      const originData = await this.getOrFetchUserByName(name);
       if (!originData) {
-        throw new Error(`user with name ${update.name} not found`);
+        throw new Error(`user with name ${name} not found`);
       }
 
-      const user = await authServiceClient.updateUser({
-        user: update,
-        updateMask: getUpdateMaskFromUsers(originData, update),
-      });
+      const user = await authServiceClient.updateUser(updateUserRequest);
       this.userMapByName.set(user.name, user);
       return user;
     },
@@ -80,9 +83,9 @@ export const getUserNameWithUserId = (userId: number) => {
   return `${userNamePrefix}${userId}`;
 };
 
-const getUpdateMaskFromUsers = (
+export const getUpdateMaskFromUsers = (
   origin: User,
-  update: Partial<User>
+  update: User | Partial<User>
 ): string[] => {
   const updateMask: string[] = [];
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {

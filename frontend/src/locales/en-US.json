@@ -225,7 +225,8 @@
     "demo-mode": "Demo",
     "operations": "Operations",
     "on": "On",
-    "off": "Off"
+    "off": "Off",
+    "verify": "Verify"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1926,6 +1927,22 @@
       "pattern": "The {resource} ID can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
       "minlength": "The {resource} ID is too short. It should have at least 1 character.",
       "overflow": "The {resource} ID is too long. It should have less than 64 characters."
+    }
+  },
+  "multi-factor": {
+    "self": "Multi-factor authentication",
+    "auth-code": "Authentication code",
+    "recovery-code": "Recovery code",
+    "other-methods": {
+      "self": "Other methods",
+      "use-auth-app": {
+        "self": "Use your authenticator app",
+        "description": "Open the two-factor authenticator (TOTP) app on your mobile device to view your authentication code."
+      },
+      "use-recovery-code": {
+        "self": "Use a recovery code",
+        "description": "If you are unable to access your mobile device, enter one of your recovery codes to verify your identity."
+      }
     }
   },
   "two-factor": {

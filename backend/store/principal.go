@@ -433,24 +433,54 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	defer tx.Rollback()
 
 	user := &UserMessage{}
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		var mfaConfigBytes []byte
+		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		UPDATE principal
+		SET `+strings.Join(principalSet, ", ")+`
+		WHERE id = $%d
+		RETURNING id, email, name, type, password_hash, mfa_config
+	`, len(principalArgs)),
+			principalArgs...,
+		).Scan(
+			&user.ID,
+			&user.Email,
+			&user.Name,
+			&user.Type,
+			&user.PasswordHash,
+			&mfaConfigBytes,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, FormatError(err)
+		}
+		mfaConfig := storepb.MFAConfig{}
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
+			return nil, err
+		}
+		user.MFAConfig = &mfaConfig
+	} else {
+		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE principal
 			SET `+strings.Join(principalSet, ", ")+`
 			WHERE id = $%d
 			RETURNING id, email, name, type, password_hash
 		`, len(principalArgs)),
-		principalArgs...,
-	).Scan(
-		&user.ID,
-		&user.Email,
-		&user.Name,
-		&user.Type,
-		&user.PasswordHash,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+			principalArgs...,
+		).Scan(
+			&user.ID,
+			&user.Email,
+			&user.Name,
+			&user.Type,
+			&user.PasswordHash,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, FormatError(err)
 		}
-		return nil, FormatError(err)
 	}
 
 	var rowStatus string
