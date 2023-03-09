@@ -347,8 +347,8 @@ func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	}
 	query := `
 	UPDATE instance_change_history
-	SET` + strings.Join(set, ", ") + `
-	WHERE` + fmt.Sprintf("id = $%d", len(args)+1)
+	SET ` + strings.Join(set, ", ") + `
+	WHERE ` + fmt.Sprintf("id = $%d", len(args)+1)
 	args = append(args, update.ID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -369,7 +369,7 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 	SELECT
 		MAX(sequence)
 	FROM instance_change_history
-	WHERE instance_id = $1 AND database_id = $1`
+	WHERE instance_id = $1 AND database_id = $2`
 	if baseline {
 		query += fmt.Sprintf(" AND (type = '%s' OR type = '%s')", db.Baseline, db.Branch)
 	}
