@@ -50,7 +50,7 @@ service ActivityService {
 message CreateActivityRequest {
   // The parent resource name.
   // Format:
-  // projects/{project}/activities
+  // projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The activity to create.
@@ -61,7 +61,7 @@ message CreateActivityRequest {
 message UpdateActivityRequest {
   // The parent resource name.
   // Format:
-  // projects/{project}/issues/{issue}/activities
+  // projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The activity to update.
@@ -72,8 +72,8 @@ message UpdateActivityRequest {
 message SearchActivitiesRequest {
   // The parent resource name.
   // Format:
-  // projects/{project}/activities
-  // workspaces/{workspace}/activities
+  // projects/{project}
+  // workspaces/{workspace}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // filter is the filter to apply on the search activities request,
