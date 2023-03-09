@@ -671,7 +671,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 //
 // Docs: https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#get-a-reference
 func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref string) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/git/refs/heads/%s", p.APIURL(instanceURL), repositoryID, ref)
+	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, ref)
 
 	code, _, body, err := oauth.Get(
 		ctx,
