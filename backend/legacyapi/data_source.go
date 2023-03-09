@@ -41,6 +41,9 @@ type DataSourceOptions struct {
 	SRV bool `json:"srv" jsonapi:"attr,srv"`
 	// AuthenticationDatabase is used for MongoDB only.
 	AuthenticationDatabase string `json:"authenticationDatabase" jsonapi:"attr,authenticationDatabase"`
+	// SID and ServiceName are used for Oracle.
+	SID         string `json:"sid" jsonapi:"attr,sid"`
+	ServiceName string `json:"serviceName" jsonapi:"attr,serviceName"`
 }
 
 // getDefaultDataSourceOptions returns the default data source options.

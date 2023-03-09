@@ -2536,8 +2536,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
 | database | [string](#string) |  |  |
-| srv | [bool](#bool) |  |  |
+| srv | [bool](#bool) |  | srv and authentication_database are used for MongoDB. |
 | authentication_database | [string](#string) |  |  |
+| sid | [string](#string) |  | sid and service_name are used for Oracle. |
+| service_name | [string](#string) |  |  |
 
 
 

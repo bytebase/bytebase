@@ -200,8 +200,12 @@ export interface DataSource {
   host: string;
   port: string;
   database: string;
+  /** srv and authentication_database are used for MongoDB. */
   srv: boolean;
   authenticationDatabase: string;
+  /** sid and service_name are used for Oracle. */
+  sid: string;
+  serviceName: string;
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
@@ -925,6 +929,8 @@ function createBaseDataSource(): DataSource {
     database: "",
     srv: false,
     authenticationDatabase: "",
+    sid: "",
+    serviceName: "",
   };
 }
 
@@ -965,6 +971,12 @@ export const DataSource = {
     }
     if (message.authenticationDatabase !== "") {
       writer.uint32(98).string(message.authenticationDatabase);
+    }
+    if (message.sid !== "") {
+      writer.uint32(106).string(message.sid);
+    }
+    if (message.serviceName !== "") {
+      writer.uint32(114).string(message.serviceName);
     }
     return writer;
   },
@@ -1012,6 +1024,12 @@ export const DataSource = {
         case 12:
           message.authenticationDatabase = reader.string();
           break;
+        case 13:
+          message.sid = reader.string();
+          break;
+        case 14:
+          message.serviceName = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1034,6 +1052,8 @@ export const DataSource = {
       database: isSet(object.database) ? String(object.database) : "",
       srv: isSet(object.srv) ? Boolean(object.srv) : false,
       authenticationDatabase: isSet(object.authenticationDatabase) ? String(object.authenticationDatabase) : "",
+      sid: isSet(object.sid) ? String(object.sid) : "",
+      serviceName: isSet(object.serviceName) ? String(object.serviceName) : "",
     };
   },
 
@@ -1051,6 +1071,8 @@ export const DataSource = {
     message.database !== undefined && (obj.database = message.database);
     message.srv !== undefined && (obj.srv = message.srv);
     message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
+    message.sid !== undefined && (obj.sid = message.sid);
+    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
     return obj;
   },
 
@@ -1068,6 +1090,8 @@ export const DataSource = {
     message.database = object.database ?? "";
     message.srv = object.srv ?? false;
     message.authenticationDatabase = object.authenticationDatabase ?? "";
+    message.sid = object.sid ?? "";
+    message.serviceName = object.serviceName ?? "";
     return message;
   },
 };
