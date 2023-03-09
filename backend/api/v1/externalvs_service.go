@@ -150,8 +150,8 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 		common.OauthContext{
 			ClientID:     externalVersionControl.ApplicationID,
 			ClientSecret: externalVersionControl.Secret,
-			AccessToken:  "",
-			RefreshToken: "",
+			AccessToken:  request.AccessToken,
+			RefreshToken: request.RefreshToken,
 			Refresher:    nil,
 		},
 		externalVersionControl.InstanceURL,
