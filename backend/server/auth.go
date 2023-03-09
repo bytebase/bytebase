@@ -220,7 +220,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to list users").SetInternal(err)
 	}
 	if len(users) != 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Email %s is already existed", signUp.Email)
+		return nil, echo.NewHTTPError(http.StatusConflict, "Email %s is already existed", signUp.Email)
 	}
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        signUp.Email,
