@@ -377,11 +377,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		var entry *db.MigrationHistory
+		find := &db.MigrationHistoryFind{ID: &historyID, InstanceID: instanceID}
 		if instance.Engine == db.Redis {
-			list, err := s.store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
-				InstanceID: instanceID,
-				ID:         &historyID,
-			})
+			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 			}
@@ -390,7 +388,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			entry = list[0]
 		} else {
-			find := &db.MigrationHistoryFind{ID: &historyID}
 			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %v for instance %q", historyID, instance.Title)).SetInternal(err)
@@ -468,8 +465,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		var migrationHistoryList []*db.MigrationHistory
+		find := &db.MigrationHistoryFind{
+			InstanceID: instance.UID,
+		}
 		if instance.Engine == db.Redis {
-			find := &db.MigrationHistoryFind{}
 			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
 				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:   &instance.ResourceID,
@@ -501,7 +500,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			migrationHistoryList = list
 		} else {
-			find := &db.MigrationHistoryFind{}
 			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
 				find.Database = &databaseStr
 			}
