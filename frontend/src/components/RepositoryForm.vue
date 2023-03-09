@@ -158,13 +158,14 @@
     <div>
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.schema-path-template") }}
+        <span v-if="isProjectSchemaChangeTypeSDL" class="text-red-600">*</span>
         <FeatureBadge
           feature="bb.feature.vcs-schema-write-back"
           class="text-accent"
         />
       </div>
       <div class="mt-1 textinfolabel">
-        <template v-if="!isProjectSchemaChangeTypeDDL">
+        <template v-if="isProjectSchemaChangeTypeSDL">
           {{ $t("project.settings.schema-path-template-sdl-description") }}
         </template>
         <template v-else>
@@ -366,6 +367,9 @@ export default defineComponent({
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
     });
+    const isProjectSchemaChangeTypeSDL = computed(() => {
+      return (props.schemaChangeType || "DDL") === "SDL";
+    });
     const enableSQLReviewTitle = computed(() => {
       return props.vcsType.startsWith("GITLAB")
         ? t("repository.sql-review-ci-enable-gitlab")
@@ -492,6 +496,7 @@ export default defineComponent({
       hasFeature,
       getRquiredPlanString: subscriptionStore.getRquiredPlanString,
       isProjectSchemaChangeTypeDDL,
+      isProjectSchemaChangeTypeSDL,
       enableSQLReviewTitle,
       sampleFilePath,
       sampleSchemaPath,
