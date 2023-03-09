@@ -529,7 +529,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		Sequence:            sequence,
 		Source:              m.Source,
 		Type:                m.Type,
-		Status:              m.Status,
+		Status:              db.Pending,
 		Version:             storedVersion,
 		Description:         m.Description,
 		Statement:           statement,
