@@ -49,6 +49,7 @@ func NewAuthService(store *store.Store, secret string, licenseService enterprise
 	return &AuthService{
 		store:          store,
 		secret:         secret,
+		licenseService: licenseService,
 		metricReporter: metricReporter,
 		profile:        profile,
 		postCreateUser: postCreateUser,
