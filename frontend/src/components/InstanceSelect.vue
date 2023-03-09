@@ -17,7 +17,7 @@
 <script lang="ts">
 import { useInstanceStore } from "@/store";
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
-import { Instance, UNKNOWN_ID } from "../types";
+import { IdType, Instance, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   selectedInstance?: Instance;
@@ -28,11 +28,11 @@ export default defineComponent({
   components: {},
   props: {
     selectedId: {
-      type: Number,
+      type: [String, Number] as PropType<IdType>,
       default: undefined,
     },
     environmentId: {
-      type: Number,
+      type: [String, Number] as PropType<IdType>,
       default: undefined,
     },
     filter: {
