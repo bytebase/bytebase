@@ -10,7 +10,12 @@ export const isSilent = () => {
 // error handling (pushNotifications)
 export const useSilentRequest = async <T>(fn: () => Promise<T>): Promise<T> => {
   state.silent = true;
-  const result = await fn();
-  state.silent = false;
-  return result;
+  try {
+    const result = await fn();
+    state.silent = false;
+    return result;
+  } catch (err) {
+    state.silent = false;
+    throw err;
+  }
 };
