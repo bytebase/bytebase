@@ -360,7 +360,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 	g.GET("/instance/:instanceID/migration/history/:historyID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("instanceID"))
+		instanceID, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
@@ -368,28 +368,40 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		historyID := c.Param("historyID")
 		isSDL := c.QueryParam("sdl") == "true"
 
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &id})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", instanceID)).SetInternal(err)
 		}
 		if instance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", instanceID))
 		}
 
-		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Title)).SetInternal(err)
+		var entry *db.MigrationHistory
+		find := &db.MigrationHistoryFind{ID: &historyID, InstanceID: instanceID}
+		if instance.Engine == db.Redis {
+			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			}
+			if len(list) == 0 {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
+			}
+			entry = list[0]
+		} else {
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %v for instance %q", historyID, instance.Title)).SetInternal(err)
+			}
+			defer driver.Close(ctx)
+			list, err := driver.FindMigrationHistoryList(ctx, find)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			}
+			if len(list) == 0 {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
+			}
+			entry = list[0]
 		}
-		defer driver.Close(ctx)
-		list, err := driver.FindMigrationHistoryList(ctx, find)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-		}
-		if len(list) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
-		}
-		entry := list[0]
 
 		if isSDL {
 			var engineType parser.EngineType
@@ -452,35 +464,70 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
-		find := &db.MigrationHistoryFind{}
-		databaseStr := c.QueryParams().Get("database")
-		if databaseStr != "" {
-			find.Database = &databaseStr
+		var migrationHistoryList []*db.MigrationHistory
+		find := &db.MigrationHistoryFind{
+			InstanceID: instance.UID,
 		}
-		versionStr := c.QueryParams().Get("version")
-		if versionStr != "" {
-			find.Version = &versionStr
-		}
-		if limitStr := c.QueryParam("limit"); limitStr != "" {
-			limit, err := strconv.Atoi(limitStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
+		if instance.Engine == db.Redis {
+			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:   &instance.ResourceID,
+					DatabaseName: &databaseStr,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database %q from instance ID %v", databaseStr, instance.ResourceID)).SetInternal(err)
+				}
+				if database == nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find database %q from instance ID %v", databaseStr, instance.ResourceID)).SetInternal(err)
+				}
+				find.Database = &databaseStr
+				find.DatabaseID = &database.UID
 			}
-			find.Limit = &limit
+			if versionStr := c.QueryParams().Get("version"); versionStr != "" {
+				find.Version = &versionStr
+			}
+			if limitStr := c.QueryParam("limit"); limitStr != "" {
+				limit, err := strconv.Atoi(limitStr)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
+				}
+				find.Limit = &limit
+			}
+
+			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			}
+			migrationHistoryList = list
+		} else {
+			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
+				find.Database = &databaseStr
+			}
+			if versionStr := c.QueryParams().Get("version"); versionStr != "" {
+				find.Version = &versionStr
+			}
+			if limitStr := c.QueryParam("limit"); limitStr != "" {
+				limit, err := strconv.Atoi(limitStr)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
+				}
+				find.Limit = &limit
+			}
+
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Title)).SetInternal(err)
+			}
+			defer driver.Close(ctx)
+			list, err := driver.FindMigrationHistoryList(ctx, find)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			}
+			migrationHistoryList = list
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Title)).SetInternal(err)
-		}
-		defer driver.Close(ctx)
-		list, err := driver.FindMigrationHistoryList(ctx, find)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-		}
-
-		for _, entry := range list {
+		for _, entry := range migrationHistoryList {
 			historyList = append(historyList, &api.MigrationHistory{
 				ID:                    entry.ID,
 				Creator:               entry.Creator,

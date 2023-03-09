@@ -271,6 +271,10 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 
 	// Check schema drift
 	if s.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
+		// Redis is schemaless.
+		if instance.Engine == db.Redis {
+			return
+		}
 		setup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
 			log.Debug("Failed to check anomaly",

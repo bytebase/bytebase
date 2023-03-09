@@ -3,7 +3,7 @@
     <div class="divide-y divide-block-border w-[850px]">
       <div
         v-if="isCreating"
-        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-7"
+        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4"
       >
         <template v-for="engine in engineList" :key="engine">
           <div
@@ -685,6 +685,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "4000";
   } else if (engine == "MONGODB") {
     return "27017";
+  } else if (engine === "REDIS") {
+    return "6379";
   }
   return "3306";
 };
@@ -722,6 +724,7 @@ const engineList = computed(() => {
     "CLICKHOUSE",
     "MONGODB",
     "SPANNER",
+    "REDIS",
   ];
   return engines;
 });
@@ -734,6 +737,7 @@ const EngineIconPath = {
   CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
   MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
   SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
+  REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
@@ -863,7 +867,8 @@ const showSSL = computed((): boolean => {
     basicInformation.value.engine === "CLICKHOUSE" ||
     basicInformation.value.engine === "MYSQL" ||
     basicInformation.value.engine === "TIDB" ||
-    basicInformation.value.engine === "POSTGRES"
+    basicInformation.value.engine === "POSTGRES" ||
+    basicInformation.value.engine === "REDIS"
   );
 });
 

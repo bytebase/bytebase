@@ -95,33 +95,35 @@
         </BBSelect>
       </div>
 
-      <div class="text-lg leading-6 font-medium text-main mb-4">
-        <span v-if="databaseEngine === 'MONGODB'">{{
-          $t("db.collections")
-        }}</span>
-        <span v-else>{{ $t("db.tables") }}</span>
-      </div>
-
-      <TableTable
-        :database="database"
-        :schema-name="state.selectedSchemaName"
-        :table-list="tableList"
-      />
-
-      <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
-        {{ $t("db.views") }}
-      </div>
-      <ViewTable
-        :database="database"
-        :schema-name="state.selectedSchemaName"
-        :view-list="viewList"
-      />
-
-      <template v-if="database.instance.engine == 'POSTGRES'">
-        <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
-          {{ $t("db.extensions") }}
+      <template v-if="databaseEngine !== 'REDIS'">
+        <div class="text-lg leading-6 font-medium text-main mb-4">
+          <span v-if="databaseEngine === 'MONGODB'">{{
+            $t("db.collections")
+          }}</span>
+          <span v-else>{{ $t("db.tables") }}</span>
         </div>
-        <DBExtensionTable :db-extension-list="dbExtensionList" />
+
+        <TableTable
+          :database="database"
+          :schema-name="state.selectedSchemaName"
+          :table-list="tableList"
+        />
+
+        <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          {{ $t("db.views") }}
+        </div>
+        <ViewTable
+          :database="database"
+          :schema-name="state.selectedSchemaName"
+          :view-list="viewList"
+        />
+
+        <template v-if="database.instance.engine == 'POSTGRES'">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.extensions") }}
+          </div>
+          <DBExtensionTable :db-extension-list="dbExtensionList" />
+        </template>
       </template>
     </div>
 

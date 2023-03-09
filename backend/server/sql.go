@@ -410,7 +410,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			defer driver.Close(ctx)
 
 			// TODO(p0ny): refactor
-			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner {
+			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis {
 				data, err := driver.QueryConn(ctx, nil, exec.Statement, &db.QueryContext{
 					Limit:                 exec.Limit,
 					ReadOnly:              true,
@@ -613,7 +613,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			defer driver.Close(ctx)
 
 			// TODO(p0ny): refactor
-			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner {
+			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis {
 				data, err := driver.QueryConn(ctx, nil, exec.Statement, &db.QueryContext{
 					Limit:               exec.Limit,
 					ReadOnly:            false,
