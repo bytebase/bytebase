@@ -17,6 +17,9 @@ export type DataSourceType = "ADMIN" | "RW" | "RO";
 export type DataSourceOptions = {
   srv: boolean;
   authenticationDatabase: string;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type DataSource = {
@@ -60,6 +63,7 @@ export type DataSourceCreate = {
   host: string;
   port: string;
   database: string;
+  options: DataSourceOptions;
 };
 
 export type DataSourcePatch = {
