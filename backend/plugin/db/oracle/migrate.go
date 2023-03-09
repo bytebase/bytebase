@@ -2,69 +2,40 @@ package snowflake
 
 import (
 	"context"
-	"database/sql"
-
-	// embed will embeds the migration schema.
-	_ "embed"
+	"errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-var (
-	_ util.MigrationExecutor = (*Driver)(nil)
-)
+// Migration related.
 
-// NeedsSetupMigration returns whether it needs to setup migration.
-func (*Driver) NeedsSetupMigration(_ context.Context) (bool, error) {
-	// TODO(d): implement it.
+// NeedsSetupMigration checks whether we need to setup migration (e.g. creating/upgrading the migration related tables).
+// No need because redis uses bytebase metaDB InstanceChangeHistory.
+func (*Driver) NeedsSetupMigration(context.Context) (bool, error) {
 	return false, nil
 }
 
-// SetupMigrationIfNeeded sets up migration if needed.
-func (*Driver) SetupMigrationIfNeeded(_ context.Context) error {
-	// TODO(d): implement it.
+// SetupMigrationIfNeeded create or upgrade migration related tables.
+// No need for redis because it uses bytebase metaDB InstanceChangeHistory.
+func (*Driver) SetupMigrationIfNeeded(context.Context) error {
 	return nil
 }
 
-// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
-func (Driver) FindLargestVersionSinceBaseline(_ context.Context, _ *sql.Tx, _ string) (*string, error) {
-	// TODO(d): implement it.
-	return nil, nil
-}
-
-// FindLargestSequence will return the largest sequence number.
-func (Driver) FindLargestSequence(_ context.Context, _ *sql.Tx, _ string, _ bool) (int, error) {
-	// TODO(d): implement it.
-	return 0, nil
-}
-
-// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (Driver) InsertPendingHistory(_ context.Context, _ *sql.Tx, _ int, _ string, _ *db.MigrationInfo, _, _ string) (string, error) {
-	// TODO(d): implement it.
-	return "", nil
-}
-
-// UpdateHistoryAsDone will update the migration record as done.
-func (Driver) UpdateHistoryAsDone(_ context.Context, _ *sql.Tx, _ int64, _ string, _ string) error {
-	// TODO(d): implement it.
-	return nil
-}
-
-// UpdateHistoryAsFailed will update the migration record as failed.
-func (Driver) UpdateHistoryAsFailed(_ context.Context, _ *sql.Tx, _ int64, _ string) error {
-	// TODO(d): implement it.
-	return nil
-}
-
-// ExecuteMigration will execute the migration.
-func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (string, string, error) {
-	// TODO(d): implement it.
+// ExecuteMigration executes a migration.
+// ExecuteMigration will execute the database migration.
+// Returns the created migration history id and the updated schema on success.
+func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
+	if m.CreateDatabase {
+		return "", "", errors.New("redis: creating databases is not supported")
+	}
+	if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
+		return "", "", util.FormatError(err)
+	}
 	return "", "", nil
 }
 
-// FindMigrationHistoryList finds the migration history.
-func (*Driver) FindMigrationHistoryList(_ context.Context, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	// TODO(d): implement it.
-	return nil, nil
+// FindMigrationHistoryList finds the migration history list and return most recent item first.
+func (*Driver) FindMigrationHistoryList(context.Context, *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+	return nil, errors.New("redis: not supported")
 }

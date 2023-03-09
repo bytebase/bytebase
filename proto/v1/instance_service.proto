@@ -218,8 +218,12 @@ message DataSource {
   string host = 8;
   string port = 9;
   string database = 10;
+  // srv and authentication_database are used for MongoDB.
   bool srv = 11;
   string authentication_database = 12;
+  // sid and service_name are used for Oracle.
+  string sid = 13;
+  string service_name = 14;
 }
 
 enum DataSourceType {
