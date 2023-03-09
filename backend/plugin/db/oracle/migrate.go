@@ -1,4 +1,4 @@
-package snowflake
+package oracle
 
 import (
 	"context"
@@ -11,13 +11,11 @@ import (
 // Migration related.
 
 // NeedsSetupMigration checks whether we need to setup migration (e.g. creating/upgrading the migration related tables).
-// No need because redis uses bytebase metaDB InstanceChangeHistory.
 func (*Driver) NeedsSetupMigration(context.Context) (bool, error) {
 	return false, nil
 }
 
 // SetupMigrationIfNeeded create or upgrade migration related tables.
-// No need for redis because it uses bytebase metaDB InstanceChangeHistory.
 func (*Driver) SetupMigrationIfNeeded(context.Context) error {
 	return nil
 }
@@ -27,7 +25,7 @@ func (*Driver) SetupMigrationIfNeeded(context.Context) error {
 // Returns the created migration history id and the updated schema on success.
 func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
 	if m.CreateDatabase {
-		return "", "", errors.New("redis: creating databases is not supported")
+		return "", "", errors.New("creating databases is not supported")
 	}
 	if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
 		return "", "", util.FormatError(err)
@@ -37,5 +35,5 @@ func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, stat
 
 // FindMigrationHistoryList finds the migration history list and return most recent item first.
 func (*Driver) FindMigrationHistoryList(context.Context, *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return nil, errors.New("redis: not supported")
+	return nil, errors.New("unsupported")
 }
