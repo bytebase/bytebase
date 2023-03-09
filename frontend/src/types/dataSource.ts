@@ -42,6 +42,9 @@ export type DataSource = {
   options: DataSourceOptions;
   // UI-only fields
   updateSsl?: boolean;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type DataSourceCreate = {
@@ -60,6 +63,9 @@ export type DataSourceCreate = {
   host: string;
   port: string;
   database: string;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type DataSourcePatch = {
@@ -75,6 +81,9 @@ export type DataSourcePatch = {
   port?: string;
   database?: string;
   options?: DataSourceOptions;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type DataSourceMember = {

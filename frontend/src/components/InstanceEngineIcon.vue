@@ -40,6 +40,7 @@ export default defineComponent({
       MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
       SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
       REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
+      ORACLE: new URL("../assets/db-oracle.png", import.meta.url).href,
     };
     const SelectedEngineIconPath = computed(() => {
       return EngineIconPath[props.instance.engine];

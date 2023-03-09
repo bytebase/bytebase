@@ -1,5 +1,6 @@
 import { computed, unref } from "vue";
 import {
+  EngineType,
   Environment,
   Instance,
   Language,
@@ -80,4 +81,21 @@ export const instanceHasCreateDatabase = (instance: Instance): boolean => {
   const { engine } = instance;
   if (engine === "REDIS") return false;
   return true;
+};
+
+export const instanceHasSSL = (
+  instanceOrEngine: Instance | EngineType
+): boolean => {
+  const engine =
+    typeof instanceOrEngine === "string"
+      ? instanceOrEngine
+      : instanceOrEngine.engine;
+  return [
+    "CLICKHOUSE",
+    "MYSQL",
+    "TIDB",
+    "POSTGRES",
+    "REDIS",
+    "ORACLE",
+  ].includes(engine);
 };
