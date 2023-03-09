@@ -632,6 +632,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		)
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
+		schemaFileCommit.SHA = schemaFileMeta.SHA
 		err := vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
