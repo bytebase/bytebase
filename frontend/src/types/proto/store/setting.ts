@@ -16,6 +16,13 @@ export interface WorkspaceProfileSetting {
   disallowSignup: boolean;
 }
 
+export interface AgentPluginSetting {
+  /** The URL for the agent API. */
+  url: string;
+  /** The token for the agent. */
+  token: string;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return { externalUrl: "", disallowSignup: false };
 }
@@ -70,6 +77,61 @@ export const WorkspaceProfileSetting = {
     const message = createBaseWorkspaceProfileSetting();
     message.externalUrl = object.externalUrl ?? "";
     message.disallowSignup = object.disallowSignup ?? false;
+    return message;
+  },
+};
+
+function createBaseAgentPluginSetting(): AgentPluginSetting {
+  return { url: "", token: "" };
+}
+
+export const AgentPluginSetting = {
+  encode(message: AgentPluginSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.url !== "") {
+      writer.uint32(10).string(message.url);
+    }
+    if (message.token !== "") {
+      writer.uint32(18).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AgentPluginSetting {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAgentPluginSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.url = reader.string();
+          break;
+        case 2:
+          message.token = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AgentPluginSetting {
+    return { url: isSet(object.url) ? String(object.url) : "", token: isSet(object.token) ? String(object.token) : "" };
+  },
+
+  toJSON(message: AgentPluginSetting): unknown {
+    const obj: any = {};
+    message.url !== undefined && (obj.url = message.url);
+    message.token !== undefined && (obj.token = message.token);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
+    const message = createBaseAgentPluginSetting();
+    message.url = object.url ?? "";
+    message.token = object.token ?? "";
     return message;
   },
 };
