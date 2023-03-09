@@ -46,19 +46,19 @@ const useExecuteSQL = () => {
     }
 
     if (data !== null && !isSelectStatement(data)) {
+      // only DDL and DML statements are allowed
+      if (isDDLStatement(data, "some") || isDMLStatement(data, "some")) {
+        sqlEditorStore.setSQLEditorState({
+          isShowExecutingHint: true,
+        });
+        return;
+      }
       if (isMultipleStatements(data)) {
         notify(
           "INFO",
           t("common.tips"),
           t("sql-editor.notify-multiple-statements")
         );
-        return;
-      }
-      // only DDL and DML statements are allowed
-      if (isDDLStatement(data) || isDMLStatement(data)) {
-        sqlEditorStore.setSQLEditorState({
-          isShowExecutingHint: true,
-        });
         return;
       }
     }
