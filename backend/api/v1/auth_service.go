@@ -308,7 +308,8 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			return nil, status.Errorf(codes.InvalidArgument, "invalid OTP code")
 		}
 	}
-	// This flag is mainly used for regenerating temp secret and recovery codes when user setup MFA.
+	// This flag will regenerate temp secret and temp recovery codes.
+	// It will be used when user setup MFA and regenerating recovery codes.
 	if request.RegenerateTempMfaSecret {
 		tempSecret, err := generateRandSecret(user.Email)
 		if err != nil {
@@ -325,8 +326,8 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			TempRecoveryCodes: tempRecoveryCodes,
 		}
 	}
-	// This flag is mainly used for regenerating recovery codes with MFA enabled.
-	// Update recovery codes with temp recovery codes after two phase commit.
+	// This flag will update user's recovery codes with temp recovery codes.
+	// It will be used when user regenerate recovery codes after two phase commit.
 	if request.RegenerateRecoveryCodes {
 		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
