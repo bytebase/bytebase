@@ -46,8 +46,7 @@ CREATE TABLE principal (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
-    idp_id INTEGER REFERENCES idp (id),
-    idp_user_info JSONB NOT NULL DEFAULT '{}'
+    mfa_config JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE TRIGGER update_principal_updated_ts
