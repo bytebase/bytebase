@@ -17,11 +17,13 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// ExternalVersionControlService represents a service for managing external version control.
 type ExternalVersionControlService struct {
 	v1pb.UnimplementedExternalVersionControlServiceServer
 	store *store.Store
 }
 
+// NewExternalVersionControlService returns a new instance of ExternalVersionControlService.
 func NewExternalVersioControlService(store *store.Store) *ExternalVersionControlService {
 	return &ExternalVersionControlService{store: store}
 }
@@ -175,6 +177,7 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 	}, nil
 }
 
+// ListProjectGitOpsInfo lists GitOps info of a project.
 func (s *ExternalVersionControlService) ListProjectGitOpsInfo(ctx context.Context, request *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
 }
