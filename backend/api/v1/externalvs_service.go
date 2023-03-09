@@ -24,7 +24,7 @@ type ExternalVersionControlService struct {
 }
 
 // NewExternalVersionControlService returns a new instance of ExternalVersionControlService.
-func NewExternalVersioControlService(store *store.Store) *ExternalVersionControlService {
+func NewExternalVersionControlService(store *store.Store) *ExternalVersionControlService {
 	return &ExternalVersionControlService{store: store}
 }
 
@@ -47,7 +47,7 @@ func (s *ExternalVersionControlService) GetExternalVersionControl(ctx context.Co
 }
 
 // ListExternalVersionControls lists external version controls.
-func (s *ExternalVersionControlService) ListExternalVersionControls(ctx context.Context, request *v1pb.ListExternalVersionControlsRequest) (*v1pb.ListExternalVersionControlsResponse, error) {
+func (s *ExternalVersionControlService) ListExternalVersionControls(ctx context.Context, _ *v1pb.ListExternalVersionControlsRequest) (*v1pb.ListExternalVersionControlsResponse, error) {
 	externalVersionControls, err := s.store.ListExternalVersionControls(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to retrieve external version control: %v", err)
@@ -55,7 +55,7 @@ func (s *ExternalVersionControlService) ListExternalVersionControls(ctx context.
 	return &v1pb.ListExternalVersionControlsResponse{ExternalVersionControls: convertToExternalVersionControls(externalVersionControls)}, nil
 }
 
-// CreateEXternalVersionControl creates a new external version control.
+// CreateExternalVersionControl creates a new external version control.
 func (s *ExternalVersionControlService) CreateExternalVersionControl(ctx context.Context, request *v1pb.CreateExternalVersionControlRequest) (*v1pb.ExternalVersionControl, error) {
 	externalVersionControl, err := checkAndConvertToStoreVersionControl(request.ExternalVersionControl)
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 }
 
 // ListProjectGitOpsInfo lists GitOps info of a project.
-func (s *ExternalVersionControlService) ListProjectGitOpsInfo(ctx context.Context, request *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
+func (s *ExternalVersionControlService) ListProjectGitOpsInfo(context.Context, *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
 }
 
@@ -253,5 +253,5 @@ func convertExternalVersionControlTypeToVCSType(tp v1pb.ExternalVersionControl_T
 	case v1pb.ExternalVersionControl_TYPE_BITBUCKET:
 		return vcs.Bitbucket, nil
 	}
-	return "", fmt.Errorf("unknown external version control type: %v", tp)
+	return "", errors.Errorf("unknown external version control type: %v", tp)
 }
