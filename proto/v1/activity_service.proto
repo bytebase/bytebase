@@ -198,9 +198,7 @@ message Activity {
   // For ACTION_PROJECT_*: projects/{project}
   // For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project}
   string container = 6 [(google.api.field_behavior) = REQUIRED];
-
-  string comment = 7;
   
   // The payload of the activity.
-  google.protobuf.Struct json_payload = 8;
+  google.protobuf.Struct json_payload = 7;
 }
