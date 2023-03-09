@@ -194,6 +194,8 @@ func convertToExternalVersionControl(externalVersionControl *store.ExternalVersi
 		tp = v1pb.ExternalVersionControl_TYPE_GITHUB
 	case vcs.GitLab:
 		tp = v1pb.ExternalVersionControl_TYPE_GITLAB
+	case vcs.Bitbucket:
+		tp = v1pb.ExternalVersionControl_TYPE_BITBUCKET
 	}
 
 	return &v1pb.ExternalVersionControl{
@@ -245,6 +247,8 @@ func convertExternalVersionControlTypeToVCSType(tp v1pb.ExternalVersionControl_T
 		return vcs.GitHub, nil
 	case v1pb.ExternalVersionControl_TYPE_GITLAB:
 		return vcs.GitLab, nil
+	case v1pb.ExternalVersionControl_TYPE_BITBUCKET:
+		return vcs.Bitbucket, nil
 	}
 	return "", fmt.Errorf("unknown external version control type: %v", tp)
 }
