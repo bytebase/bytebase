@@ -43,7 +43,12 @@
 <script lang="ts" setup>
 import { computed, ref, watchEffect } from "vue";
 
-import { useConnectionTreeStore, useCurrentUser, useTabStore } from "@/store";
+import {
+  useConnectionTreeStore,
+  useCurrentUser,
+  useInstanceStore,
+  useTabStore,
+} from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
@@ -76,7 +81,15 @@ const hasInstanceView = computed((): boolean => {
 });
 
 const showSchemaPanel = computed(() => {
-  return tabStore.currentTab.connection.databaseId !== UNKNOWN_ID;
+  const conn = tabStore.currentTab.connection;
+  if (conn.databaseId === UNKNOWN_ID) {
+    return false;
+  }
+  const instance = useInstanceStore().getInstanceById(conn.instanceId);
+  if (instance.engine === "REDIS") {
+    return false;
+  }
+  return true;
 });
 
 watchEffect(() => {
