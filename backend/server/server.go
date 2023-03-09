@@ -1068,90 +1068,91 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 
 		var errList error
 		for _, instance := range instanceList {
-			if instance.Engine == db.Redis {
-				continue
-			}
-			if instanceMigrated[instance.UID] {
-				continue
-			}
-
-			databaseList, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, ShowDeleted: true})
-			if err != nil {
-				errList = multierr.Append(errList, err)
-				continue
-			}
-			nameToDatabase := make(map[string]*store.DatabaseMessage)
-			for i, db := range databaseList {
-				nameToDatabase[db.DatabaseName] = databaseList[i]
-			}
-
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
-			if err != nil {
-				errList = multierr.Append(errList, err)
-				continue
-			}
-			defer driver.Close(ctx)
-
-			history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-				InstanceID: instance.UID,
-			})
-			if err != nil {
-				errList = multierr.Append(errList, err)
-				continue
-			}
-			if len(history) == 0 {
-				continue
-			}
-
-			var creates []*store.InstanceChangeHistoryMessage
-			for _, h := range history {
-				var databaseID *int
-				if database, ok := nameToDatabase[h.Namespace]; ok {
-					databaseID = &database.UID
+			err := func() error {
+				if instance.Engine == db.Redis {
+					return nil
 				}
-				issueID, err := strconv.Atoi(h.IssueID)
+				if instanceMigrated[instance.UID] {
+					return nil
+				}
+
+				databaseList, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, ShowDeleted: true})
 				if err != nil {
-					errList = multierr.Append(errList, err)
-					continue
+					return err
 				}
-				var creatorID, updaterID int
-				if principal, ok := nameToPrincipal[h.Creator]; ok {
-					creatorID = principal.ID
-				}
-				if principal, ok := nameToPrincipal[h.Updater]; ok {
-					updaterID = principal.ID
-				}
-				changeHistory := store.InstanceChangeHistoryMessage{
-					CreatorID:           creatorID,
-					CreatedTs:           h.CreatedTs,
-					UpdaterID:           updaterID,
-					UpdatedTs:           h.UpdatedTs,
-					InstanceID:          instance.UID,
-					DatabaseID:          databaseID,
-					IssueID:             &issueID,
-					ReleaseVersion:      h.ReleaseVersion,
-					Sequence:            int64(h.Sequence),
-					Source:              h.Source,
-					Type:                h.Type,
-					Status:              h.Status,
-					Version:             h.Version,
-					Description:         h.Description,
-					Statement:           h.Statement,
-					Schema:              h.Schema,
-					SchemaPrev:          h.SchemaPrev,
-					ExecutionDurationNs: h.ExecutionDurationNs,
-					Payload:             h.Payload,
+				nameToDatabase := make(map[string]*store.DatabaseMessage)
+				for i, db := range databaseList {
+					nameToDatabase[db.DatabaseName] = databaseList[i]
 				}
 
-				creates = append(creates, &changeHistory)
-			}
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+				if err != nil {
+					return err
+				}
+				defer driver.Close(ctx)
 
-			if _, err := s.store.CreateInstanceChangeHistory(ctx, creates...); err != nil {
+				history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+					InstanceID: instance.UID,
+				})
+				if err != nil {
+					return err
+				}
+				if len(history) == 0 {
+					return nil
+				}
+
+				var creates []*store.InstanceChangeHistoryMessage
+				for _, h := range history {
+					var databaseID *int
+					if database, ok := nameToDatabase[h.Namespace]; ok {
+						databaseID = &database.UID
+					}
+					issueID, err := strconv.Atoi(h.IssueID)
+					if err != nil {
+						errList = multierr.Append(errList, err)
+						continue
+					}
+					var creatorID, updaterID int
+					if principal, ok := nameToPrincipal[h.Creator]; ok {
+						creatorID = principal.ID
+					}
+					if principal, ok := nameToPrincipal[h.Updater]; ok {
+						updaterID = principal.ID
+					}
+					changeHistory := store.InstanceChangeHistoryMessage{
+						CreatorID:           creatorID,
+						CreatedTs:           h.CreatedTs,
+						UpdaterID:           updaterID,
+						UpdatedTs:           h.UpdatedTs,
+						InstanceID:          instance.UID,
+						DatabaseID:          databaseID,
+						IssueID:             &issueID,
+						ReleaseVersion:      h.ReleaseVersion,
+						Sequence:            int64(h.Sequence),
+						Source:              h.Source,
+						Type:                h.Type,
+						Status:              h.Status,
+						Version:             h.Version,
+						Description:         h.Description,
+						Statement:           h.Statement,
+						Schema:              h.Schema,
+						SchemaPrev:          h.SchemaPrev,
+						ExecutionDurationNs: h.ExecutionDurationNs,
+						Payload:             h.Payload,
+					}
+
+					creates = append(creates, &changeHistory)
+				}
+
+				if _, err := s.store.CreateInstanceChangeHistory(ctx, creates...); err != nil {
+					return err
+				}
+				return nil
+			}()
+			if err != nil {
 				errList = multierr.Append(errList, err)
-				continue
 			}
 		}
-
 		return errList
 	}()
 
