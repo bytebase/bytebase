@@ -62,6 +62,8 @@ export interface SearchExternalVersionControlProjectsRequest {
    * Format: externalVersionControls/{externalVersionControl}
    */
   name: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface SearchExternalVersionControlProjectsResponse {
@@ -121,6 +123,8 @@ export enum ExternalVersionControl_Type {
   TYPE_GITHUB = 1,
   /** TYPE_GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
   TYPE_GITLAB = 2,
+  /** TYPE_BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
+  TYPE_BITBUCKET = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -135,6 +139,9 @@ export function externalVersionControl_TypeFromJSON(object: any): ExternalVersio
     case 2:
     case "TYPE_GITLAB":
       return ExternalVersionControl_Type.TYPE_GITLAB;
+    case 3:
+    case "TYPE_BITBUCKET":
+      return ExternalVersionControl_Type.TYPE_BITBUCKET;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -150,6 +157,8 @@ export function externalVersionControl_TypeToJSON(object: ExternalVersionControl
       return "TYPE_GITHUB";
     case ExternalVersionControl_Type.TYPE_GITLAB:
       return "TYPE_GITLAB";
+    case ExternalVersionControl_Type.TYPE_BITBUCKET:
+      return "TYPE_BITBUCKET";
     case ExternalVersionControl_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -537,13 +546,19 @@ export const DeleteExternalVersionControlRequest = {
 };
 
 function createBaseSearchExternalVersionControlProjectsRequest(): SearchExternalVersionControlProjectsRequest {
-  return { name: "" };
+  return { name: "", accessToken: "", refreshToken: "" };
 }
 
 export const SearchExternalVersionControlProjectsRequest = {
   encode(message: SearchExternalVersionControlProjectsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.accessToken !== "") {
+      writer.uint32(18).string(message.accessToken);
+    }
+    if (message.refreshToken !== "") {
+      writer.uint32(26).string(message.refreshToken);
     }
     return writer;
   },
@@ -558,6 +573,12 @@ export const SearchExternalVersionControlProjectsRequest = {
         case 1:
           message.name = reader.string();
           break;
+        case 2:
+          message.accessToken = reader.string();
+          break;
+        case 3:
+          message.refreshToken = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -567,12 +588,18 @@ export const SearchExternalVersionControlProjectsRequest = {
   },
 
   fromJSON(object: any): SearchExternalVersionControlProjectsRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
+      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
+    };
   },
 
   toJSON(message: SearchExternalVersionControlProjectsRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
+    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
     return obj;
   },
 
@@ -581,6 +608,8 @@ export const SearchExternalVersionControlProjectsRequest = {
   ): SearchExternalVersionControlProjectsRequest {
     const message = createBaseSearchExternalVersionControlProjectsRequest();
     message.name = object.name ?? "";
+    message.accessToken = object.accessToken ?? "";
+    message.refreshToken = object.refreshToken ?? "";
     return message;
   },
 };
