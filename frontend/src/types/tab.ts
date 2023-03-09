@@ -3,7 +3,7 @@ import {
   DatabaseId,
   InstanceId,
   SheetId,
-  SingleSQLResult,
+  SQLResultSet,
 } from "../types";
 
 export type ExecuteConfig = {
@@ -39,7 +39,7 @@ export interface TabInfo {
     option?: Partial<ExecuteOption>;
   };
   isExecutingSQL: boolean;
-  queryResult?: SingleSQLResult;
+  queryResult?: SQLResultSet;
   sheetId?: SheetId;
   adviceList?: Advice[];
 }

@@ -47,7 +47,7 @@
                 <EditorPanel />
               </Pane>
               <Pane :size="isDisconnected ? 0 : 40">
-                <TablePanel />
+                <ResultPanel />
               </Pane>
             </Splitpanes>
 
@@ -126,7 +126,7 @@ import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
-import TablePanel from "./TablePanel/TablePanel.vue";
+import ResultPanel from "./ResultPanel";
 import {
   allowUsingSchemaEditor,
   instanceHasReadonlyMode,

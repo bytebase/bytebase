@@ -28,14 +28,13 @@
             @history="handleHistory"
             @clear-screen="handleClearScreen"
           />
-          <div v-if="query.queryResult" class="max-h-[20rem] flex flex-col">
-            <TableView
-              class="flex-1 overflow-hidden"
-              :query-result="query.queryResult"
-              :loading="query.status === 'RUNNING'"
-              :dark="true"
-            />
-          </div>
+          <ResultView
+            v-if="query.queryResult"
+            class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
+            :result-set="query.queryResult"
+            :loading="query.status === 'RUNNING'"
+            :dark="true"
+          />
           <div
             v-else-if="query.status === 'CANCELLED'"
             class="text-control-light pl-2"
@@ -83,7 +82,7 @@ import {
   EditorAction,
   ConnectionPathBar,
   ConnectionHolder,
-  TableView,
+  ResultView,
 } from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
@@ -152,9 +151,17 @@ const handleExecute = async (
     // If the queryItem is still the currentQuery
     // which means it hasn't been cancelled.
     if (queryItem === currentQuery.value) {
-      if (sqlResultSet?.data?.[0].length === 0) {
-        sqlResultSet.data = mockAffectedRows0().data;
-      }
+      // If the result is empty, mock it as "Affected rows: 0"
+      const resultList = sqlResultSet?.resultList ?? [];
+      resultList.forEach((result) => {
+        if (
+          !Array.isArray(result.data) ||
+          !Array.isArray(result.data[0]) ||
+          result.data[0].length === 0
+        ) {
+          result.data = mockAffectedRows0().data;
+        }
+      });
       queryItem.queryResult = sqlResultSet;
       pushQueryItem();
       // Clear the tab's statement and keep it sync with the latest query
