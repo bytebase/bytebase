@@ -10,4 +10,8 @@ message DataSourceOptions {
 
   // authentication_database is the database name to authenticate against, which stores the user credentials.
   string authentication_database = 2;
+
+  // sid and service_name are used for Oracle.
+  string sid = 3;
+  string service_name = 4;
 }
