@@ -11,9 +11,7 @@
             @click.capture="changeInstanceEngine(engine)"
           >
             <div class="flex flex-col items-center">
-              <div class="w-auto h-8 flex flex-col justify-center">
-                <img class="max-h-8 w-auto" :src="EngineIconPath[engine]" />
-              </div>
+              <img class="h-8 w-auto" :src="EngineIconPath[engine]" />
               <p class="mt-2 text-center textlabel">
                 {{ engineName(engine) }}
               </p>
