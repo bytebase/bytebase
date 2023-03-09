@@ -27,6 +27,7 @@
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
 - [store/setting.proto](#store_setting-proto)
+    - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
 - [store/user.proto](#store_user-proto)
@@ -394,6 +395,22 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/setting.proto
+
+
+
+<a name="bytebase-store-AgentPluginSetting"></a>
+
+### AgentPluginSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  | The URL for the agent API. |
+| token | [string](#string) |  | The token for the agent. |
+
+
+
 
 
 
