@@ -14,6 +14,10 @@ import (
 // InstanceChangeHistoryMessage records the change history of an instance.
 // it deprecates the old MigrationHistory.
 type InstanceChangeHistoryMessage struct {
+	CreatorID           int
+	CreatedTs           int64
+	UpdaterID           int
+	UpdatedTs           int64
 	InstanceID          int
 	DatabaseID          *int
 	IssueID             *int
@@ -31,12 +35,8 @@ type InstanceChangeHistoryMessage struct {
 	Payload             string
 
 	// Output only
-	ID        int64
-	Deleted   bool
-	CreatedTs int64
-	UpdatedTs int64
-	CreatorID int
-	UpdaterID int
+	ID      int64
+	Deleted bool
 }
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
@@ -58,12 +58,33 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Schema              *string
 }
 
-func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, create *InstanceChangeHistoryMessage, creatorID int) (*InstanceChangeHistoryMessage, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
+func (s *Store) CreateInstanceChangeHistory(ctx context.Context, creates ...*InstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	list, err := s.createInstanceChangeHistoryImpl(ctx, tx, creates...)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
-	query := `
+	return list, nil
+}
+
+func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creates ...*InstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
+	if len(creates) == 0 {
+		return nil, nil
+	}
+	var query strings.Builder
+	var values []interface{}
+	var queryValues []string
+
+	_, _ = query.WriteString(`
 	INSERT INTO instance_change_history (
 		creator_id,
 		updater_id,
@@ -81,57 +102,104 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		"schema",
 		schema_prev,
 		execution_duration_ns,
-		payload
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-	RETURNING id, created_ts`
+		payload,
+    created_ts,
+    updated_ts
+	) VALUES `)
 
-	var id, createdTs int64
-	if err := tx.QueryRowContext(ctx, query,
-		creatorID,
-		creatorID,
-		create.InstanceID,
-		create.DatabaseID,
-		create.IssueID,
-		create.ReleaseVersion,
-		create.Sequence,
-		create.Source,
-		create.Type,
-		create.Status,
-		create.Version,
-		create.Description,
-		create.Statement,
-		create.Schema,
-		create.SchemaPrev,
-		create.ExecutionDurationNs,
-		create.Payload,
-	).Scan(&id, &createdTs); err != nil {
+	count := 1
+	for _, create := range creates {
+		if create.Payload == "" {
+			create.Payload = "{}"
+		}
+		values = append(values,
+			create.CreatorID,
+			create.CreatorID,
+			create.InstanceID,
+			create.DatabaseID,
+			create.IssueID,
+			create.ReleaseVersion,
+			create.Sequence,
+			create.Source,
+			create.Type,
+			create.Status,
+			create.Version,
+			create.Description,
+			create.Statement,
+			create.Schema,
+			create.SchemaPrev,
+			create.ExecutionDurationNs,
+			create.Payload,
+		)
+		const countToPayload = 17
+		var valueStr []string
+		for i := 0; i < countToPayload; i++ {
+			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
+			count++
+		}
+		if create.CreatedTs != 0 {
+			valueStr = append(valueStr, "DEFAULT")
+		} else {
+			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
+			values = append(values, create.CreatedTs)
+			count++
+		}
+		if create.UpdatedTs != 0 {
+			valueStr = append(valueStr, "DEFAULT")
+		} else {
+			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
+			values = append(values, create.UpdatedTs)
+			count++
+		}
+		queryValues = append(queryValues, fmt.Sprintf("(%s)", strings.Join(valueStr, " , ")))
+	}
+
+	_, _ = query.WriteString(strings.Join(queryValues, ", "))
+	_, _ = query.WriteString(` RETURNING id, created_ts`)
+
+	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	changeHistory := &InstanceChangeHistoryMessage{
-		InstanceID:          create.InstanceID,
-		DatabaseID:          create.DatabaseID,
-		IssueID:             create.IssueID,
-		ReleaseVersion:      create.ReleaseVersion,
-		Sequence:            create.Sequence,
-		Source:              create.Source,
-		Type:                create.Type,
-		Status:              create.Status,
-		Version:             create.Version,
-		Description:         create.Description,
-		Statement:           create.Statement,
-		Schema:              create.Schema,
-		SchemaPrev:          create.SchemaPrev,
-		ExecutionDurationNs: create.ExecutionDurationNs,
-		Payload:             create.Payload,
+	var list []*InstanceChangeHistoryMessage
 
-		ID:        id,
-		CreatorID: creatorID,
-		CreatedTs: createdTs,
-		UpdaterID: creatorID,
-		UpdatedTs: createdTs,
+	i := 0
+	for rows.Next() {
+		var id, createdTs int64
+		if err := rows.Scan(&id, &createdTs); err != nil {
+			return nil, err
+		}
+
+		create := creates[i]
+		list = append(list, &InstanceChangeHistoryMessage{
+			CreatorID:           create.CreatorID,
+			UpdaterID:           create.CreatorID,
+			InstanceID:          create.InstanceID,
+			DatabaseID:          create.DatabaseID,
+			IssueID:             create.IssueID,
+			ReleaseVersion:      create.ReleaseVersion,
+			Sequence:            create.Sequence,
+			Source:              create.Source,
+			Type:                create.Type,
+			Status:              create.Status,
+			Version:             create.Version,
+			Description:         create.Description,
+			Statement:           create.Statement,
+			Schema:              create.Schema,
+			SchemaPrev:          create.SchemaPrev,
+			ExecutionDurationNs: create.ExecutionDurationNs,
+			Payload:             create.Payload,
+
+			ID:        id,
+			CreatedTs: createdTs,
+			UpdatedTs: createdTs,
+		})
+		i++
 	}
-	return changeHistory, nil
+
+	return list, nil
 }
 
 func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistoryMessage) (*db.MigrationHistory, error) {
@@ -452,7 +520,8 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 	}
 	defer tx.Rollback()
 
-	h, err := s.createInstanceChangeHistoryImpl(ctx, tx, &InstanceChangeHistoryMessage{
+	list, err := s.createInstanceChangeHistoryImpl(ctx, tx, &InstanceChangeHistoryMessage{
+		CreatorID:           m.CreatorID,
 		InstanceID:          m.InstanceID,
 		DatabaseID:          m.DatabaseID,
 		IssueID:             m.IssueIDInt,
@@ -468,7 +537,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		SchemaPrev:          prevSchema,
 		ExecutionDurationNs: 0,
 		Payload:             m.Payload,
-	}, m.CreatorID)
+	})
 	if err != nil {
 		return "", err
 	}
@@ -477,5 +546,6 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		return "", err
 	}
 
-	return strconv.FormatInt(h.ID, 10), nil
+	return fmt.Sprintf("%d", list[0].ID), nil
 }
+
