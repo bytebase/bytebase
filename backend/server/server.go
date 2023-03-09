@@ -1107,11 +1107,14 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					if database, ok := nameToDatabase[h.Namespace]; ok {
 						databaseID = &database.UID
 					}
-					issueID, err := strconv.Atoi(h.IssueID)
-					if err != nil {
+
+					var issueID *int
+					if id, err := strconv.Atoi(h.IssueID); err != nil {
 						errList = multierr.Append(errList, err)
-						continue
+					} else {
+						issueID = &id
 					}
+
 					var creatorID, updaterID int
 					if principal, ok := nameToPrincipal[h.Creator]; ok {
 						creatorID = principal.ID
@@ -1126,7 +1129,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						UpdatedTs:           h.UpdatedTs,
 						InstanceID:          instance.UID,
 						DatabaseID:          databaseID,
-						IssueID:             &issueID,
+						IssueID:             issueID,
 						ReleaseVersion:      h.ReleaseVersion,
 						Sequence:            int64(h.Sequence),
 						Source:              h.Source,
