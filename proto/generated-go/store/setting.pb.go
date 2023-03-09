@@ -81,6 +81,63 @@ func (x *WorkspaceProfileSetting) GetDisallowSignup() bool {
 	return false
 }
 
+type AgentPluginSetting struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The URL for the agent API.
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	// The token for the agent.
+	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (x *AgentPluginSetting) Reset() {
+	*x = AgentPluginSetting{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AgentPluginSetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentPluginSetting) ProtoMessage() {}
+
+func (x *AgentPluginSetting) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentPluginSetting.ProtoReflect.Descriptor instead.
+func (*AgentPluginSetting) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *AgentPluginSetting) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *AgentPluginSetting) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 var File_store_setting_proto protoreflect.FileDescriptor
 
 var file_store_setting_proto_rawDesc = []byte{
@@ -92,9 +149,13 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
 	0x55, 0x72, 0x6c, 0x12, 0x27, 0x0a, 0x0f, 0x64, 0x69, 0x73, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x5f,
 	0x73, 0x69, 0x67, 0x6e, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0e, 0x64, 0x69,
-	0x73, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x53, 0x69, 0x67, 0x6e, 0x75, 0x70, 0x42, 0x14, 0x5a, 0x12,
-	0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f,
-	0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x53, 0x69, 0x67, 0x6e, 0x75, 0x70, 0x22, 0x3c, 0x0a, 0x12,
+	0x41, 0x67, 0x65, 0x6e, 0x74, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x53, 0x65, 0x74, 0x74, 0x69,
+	0x6e, 0x67, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x03, 0x75, 0x72, 0x6c, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65,
+	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -109,9 +170,10 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 	return file_store_setting_proto_rawDescData
 }
 
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_setting_proto_goTypes = []interface{}{
 	(*WorkspaceProfileSetting)(nil), // 0: bytebase.store.WorkspaceProfileSetting
+	(*AgentPluginSetting)(nil),      // 1: bytebase.store.AgentPluginSetting
 }
 var file_store_setting_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -139,6 +201,18 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
+		file_store_setting_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AgentPluginSetting); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -146,7 +220,7 @@ func file_store_setting_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_setting_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
