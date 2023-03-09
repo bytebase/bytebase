@@ -58,6 +58,7 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Schema              *string
 }
 
+// CreateInstanceChangeHistory creates instance change history in batch.
 func (s *Store) CreateInstanceChangeHistory(ctx context.Context, creates ...*InstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -549,6 +550,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 	return fmt.Sprintf("%d", list[0].ID), nil
 }
 
+// ListInstanceHavingInstanceChangeHistory finds the instance id lists that have instance change history.
 func (s *Store) ListInstanceHavingInstanceChangeHistory(ctx context.Context) ([]int, error) {
 	query := `
 	SELECT DISTINCT
