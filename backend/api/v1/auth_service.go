@@ -307,7 +307,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	}
 	// This flag is mainly used for regenerating temp secret and recovery codes when user setup MFA.
 	if request.RegenerateTempMfaSecret {
-		tempSecret, err := generateRandSecret(fmt.Sprintf("%s%d", userNamePrefix, user.ID))
+		tempSecret, err := generateRandSecret(user.Email)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
 		}
@@ -323,17 +323,17 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 	// This flag is mainly used for regenerating recovery codes with MFA enabled.
+	// Update recovery codes with temp recovery codes after two phase commit.
 	if request.RegenerateRecoveryCodes {
 		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
 		}
-		recoveryCodes, err := generateRecoveryCodes(10)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
+		if len(user.MFAConfig.TempRecoveryCodes) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "No recovery codes to update")
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
 			OtpSecret:     user.MFAConfig.OtpSecret,
-			RecoveryCodes: recoveryCodes,
+			RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 		}
 	}
 
@@ -730,7 +730,7 @@ func validateEmail(email string) error {
 
 const (
 	// issuerName is the name of the issuer of the OTP token.
-	issuerName = "bytebase"
+	issuerName = "Bytebase"
 )
 
 // generateRandSecret generates a random secret for the given account name.

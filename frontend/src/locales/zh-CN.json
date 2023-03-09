@@ -224,7 +224,9 @@
     "operations": "操作",
     "on": "开",
     "off": "关",
-    "verify": "验证"
+    "verify": "验证",
+    "regenerate": "重新生成",
+    "download": "下载"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -434,10 +436,10 @@
         "domain": "域名",
         "domain-description": "OAuth 提供商的域名",
         "identity-provider-information": "OAuth 提供商信息",
-        "identity-provider-information-description": "这些信息是由你的身份提供商提供的。",
-        "identity-provider-needed-information": "用以下信息创建你的 SSO 应用程序。",
+        "identity-provider-information-description": "这些信息是由您的身份提供商提供的。",
+        "identity-provider-needed-information": "用以下信息创建您的 SSO 应用程序。",
         "endpoints": "链接信息",
-        "endpoints-description": "链接信息是由你的 OAuth 提供商提供。",
+        "endpoints-description": "链接信息是由您的 OAuth 提供商提供。",
         "auth-url-description": "登录页面的链接",
         "scopes-description": "访问 Auth URL 时携带的范围参数，使用空格分隔多个值",
         "token-url-description": "用于获取 accessToken 的 API 地址",
@@ -481,7 +483,7 @@
       }
     },
     "sensitive-data": {
-      "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，你可以将多个列标记为敏感数据。",
+      "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，您可以将多个列标记为敏感数据。",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     },
     "access-control": {
@@ -1074,7 +1076,7 @@
       "preview-issue": "预览工单"
     },
     "sensitive": "敏感",
-    "access-denied": "你没有访问该数据库的权限",
+    "access-denied": "您没有访问该数据库的权限",
     "schema": {
       "select": "选择 schema"
     },
@@ -1296,7 +1298,7 @@
   "gitops": {
     "setting": {
       "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
-      "description-highlight": "如果你想通过你配置的VCS启用第三方登录，请在SSO中进行配置。",
+      "description-highlight": "如果您想通过您配置的VCS启用第三方登录，请在SSO中进行配置。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
         "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",
@@ -1370,7 +1372,7 @@
     "stage-n": "阶段 {n}",
     "add-selector": "添加选择条件",
     "update-success": "成功更新部署配置",
-    "this-is-example-deployment-config": "这是部署配置的样例，你需要在此基础上编辑并保存。",
+    "this-is-example-deployment-config": "这是部署配置的样例，您需要在此基础上编辑并保存。",
     "n-databases": "{n} 个数据库",
     "selectors": "选择条件",
     "add-stage": "添加阶段",
@@ -1502,7 +1504,7 @@
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
     "visualize-explain": "可视化 Explain",
-    "sql-execute-in-production-environment": "小心，你正在操作生产环境下的数据库。",
+    "sql-execute-in-production-environment": "小心，您正在操作生产环境下的数据库。",
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",
@@ -1940,7 +1942,7 @@
       },
       "use-recovery-code": {
         "self": "使用恢复码",
-        "description": "如果您无法访问你的移动设备，请输入一个恢复代码来验证您的身份。"
+        "description": "如果您无法访问您的移动设备，请输入一个恢复码来验证您的身份。"
       }
     }
   },
@@ -1948,8 +1950,38 @@
     "self": "双重认证",
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
     "setup-steps": {
-      "setup-auth-app": "设置认证器应用程序",
-      "download-recovery-codes": "下载恢复码"
+      "setup-auth-app": {
+        "self": "设置认证器应用程序",
+        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行 2FA 认证操作。",
+        "scan-qr-code": {
+          "self": "扫描二维码",
+          "description": "使用您手机中的认证器应用程序进行扫描。如果您无法扫描，可以{action}。",
+          "enter-the-text": "输入文本"
+        },
+        "verify-code": "验证应用程序的代码"
+      },
+      "download-recovery-codes": {
+        "self": "下载恢复码",
+        "tips": "保持您的恢复码和您的密码一样安全。建议将它们保存在一个密码管理器中，如 Lastpass、1Password 或 Keeper。",
+        "keep-safe": {
+          "self": "把您的恢复码放在一个安全的地方。",
+          "description": "这些代码是在您丢失密码和第二要素的情况下访问您的账户的最后手段。如果您找不到这些代码，您将失去对您账户的访问。"
+        }
+      },
+      "recovery-codes-saved": "确定已经保存了我的恢复码"
+    },
+    "recovery-codes": {
+      "self": "恢复码",
+      "description": "恢复码可以在您失去对设备的访问权和无法收到双因素认证代码的情况下用于访问您的账户。"
+    },
+    "disable": {
+      "self": "禁用双重认证",
+      "description": "您即将禁用您账户的双因素认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。"
+    },
+    "messages": {
+      "2fa-enabled": "双重认证开启成功",
+      "2fa-disabled": "双重认证禁用成功",
+      "recovery-codes-regenerated": "恢复码已经重新生成"
     }
   },
   "plugin": {

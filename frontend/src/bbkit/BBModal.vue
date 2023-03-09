@@ -10,7 +10,7 @@
       :data-bb-modal-active="active"
     >
       <div class="modal-header" :class="headerClass">
-        <div class="text-xl text-main">
+        <div class="text-xl text-main mr-2">
           <slot name="title"><component :is="renderTitle" /></slot>
           <component :is="renderSubtitle" />
         </div>
