@@ -86,6 +86,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	// Register spanner driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
+	// Register redis driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
