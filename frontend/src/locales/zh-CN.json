@@ -1938,7 +1938,7 @@
       "self": "其他方法",
       "use-auth-app": {
         "self": "使用身份验证器应用程序",
-        "description": "在您的移动设备上打开双因素认证器（TOTP）应用程序，查看认证码。"
+        "description": "在您的移动设备上打开双重认证器（TOTP）应用程序，查看认证码。"
       },
       "use-recovery-code": {
         "self": "使用恢复码",
@@ -1976,7 +1976,7 @@
     },
     "disable": {
       "self": "禁用双重认证",
-      "description": "您即将禁用您账户的双因素认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。"
+      "description": "您即将禁用您账户的双重认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。"
     },
     "messages": {
       "2fa-enabled": "双重认证开启成功",
