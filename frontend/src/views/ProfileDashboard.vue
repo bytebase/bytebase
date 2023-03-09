@@ -1,6 +1,6 @@
 <template>
   <main
-    class="flex-1 relative z-0 overflow-auto focus:outline-none xl:order-last"
+    class="flex-1 h-full relative z-0 overflow-auto pb-8 focus:outline-none xl:order-last"
     tabindex="0"
   >
     <!-- Profile header -->
@@ -175,7 +175,12 @@
       class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 border-t mt-16 pt-8 pb-4"
     >
       <div class="w-full flex flex-row justify-between items-center">
-        <span class="text-lg font-medium">{{ $t("two-factor.self") }}</span>
+        <span
+          class="text-lg font-medium flex flex-row justify-start items-center"
+        >
+          {{ $t("two-factor.self") }}
+          <FeatureBadge :feature="'bb.feature.2fa'" class="ml-2 text-accent" />
+        </span>
         <BBSwitch
           :value="isMFAEnabled"
           @toggle="handle2FAEnableStatusChanged"
@@ -184,10 +189,61 @@
       <p class="mt-4 text-sm text-gray-500">
         {{ $t("two-factor.description") }}
         <!-- TODO(steven): update the docs link -->
-        <LearnMoreLink url="docs-link" />
+        <LearnMoreLink class="ml-1" url="" />
       </p>
+      <template v-if="isMFAEnabled">
+        <div class="w-full flex flex-row justify-between items-center mt-8">
+          <span class="text-lg font-medium">{{
+            $t("two-factor.recovery-codes.self")
+          }}</span>
+          <div v-if="!state.showRegenerateRecoveryCodesView" class="relative">
+            <heroicons-outline:ellipsis-horizontal
+              class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded"
+              @click.prevent="recoveryCodesMenu.toggle()"
+              @contextmenu.capture.prevent="recoveryCodesMenu.toggle()"
+            />
+            <BBContextMenu
+              ref="recoveryCodesMenu"
+              class="origin-top-left mt-1 w-32 shadow"
+            >
+              <div class="py-1">
+                <a
+                  class="menu-item"
+                  role="menuitem"
+                  @click="state.showRegenerateRecoveryCodesView = true"
+                >
+                  {{ $t("common.regenerate") }}
+                </a>
+              </div>
+            </BBContextMenu>
+          </div>
+        </div>
+        <p class="mt-4 text-sm text-gray-500">
+          {{ $t("two-factor.recovery-codes.description") }}
+        </p>
+        <RegenerateRecoveryCodesView
+          v-if="state.showRegenerateRecoveryCodesView"
+          :recovery-codes="authStore.currentUser.recoveryCodes"
+          @close="state.showRegenerateRecoveryCodesView = false"
+        />
+      </template>
     </div>
   </main>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.2fa"
+    @cancel="state.showFeatureModal = false"
+  />
+
+  <!-- Close modal confirm dialog -->
+  <ActionConfirmModal
+    v-if="state.showDisable2FAConfirmModal"
+    :title="$t('two-factor.disable.self')"
+    :description="$t('two-factor.disable.description')"
+    @close="state.showDisable2FAConfirmModal = false"
+    @confirm="handleDisable2FA"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -197,34 +253,48 @@ import { PrincipalPatch } from "../types";
 import { hasWorkspacePermission } from "../utils";
 import {
   featureToRef,
+  pushNotification,
   useAuthStore,
   useCurrentUser,
   usePrincipalStore,
+  useUserStore,
 } from "@/store";
 import { BBSwitch } from "@/bbkit";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { useRouter } from "vue-router";
+import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
+import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   editing: boolean;
   editingPrincipal?: PrincipalPatch;
   passwordConfirm?: string;
+  showFeatureModal: boolean;
+  showDisable2FAConfirmModal: boolean;
+  showRegenerateRecoveryCodesView: boolean;
 }
 
 const props = defineProps<{
   principalId?: string;
 }>();
 
+const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
 const currentUser = useCurrentUser();
+const userStore = useUserStore();
 const principalStore = usePrincipalStore();
 const state = reactive<LocalState>({
   editing: false,
+  showFeatureModal: false,
+  showDisable2FAConfirmModal: false,
+  showRegenerateRecoveryCodesView: false,
 });
 
 const editNameTextField = ref();
+const recoveryCodesMenu = ref();
 
 const keyboardHandler = (e: KeyboardEvent) => {
   if (state.editing) {
@@ -247,6 +317,7 @@ onUnmounted(() => {
 });
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
+const has2FAFeature = featureToRef("bb.feature.2fa");
 
 const isMFAEnabled = computed(() => {
   return authStore.currentUser.mfaEnabled;
@@ -317,10 +388,34 @@ const saveEdit = async () => {
 };
 
 const handle2FAEnableStatusChanged = (enabled: boolean) => {
+  if (!has2FAFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   if (enabled) {
     router.push({ name: "setting.profile.two-factor" });
   } else {
-    // TODO(steven): double confirm user to disable 2FA.
+    state.showDisable2FAConfirmModal = true;
   }
+};
+
+const handleDisable2FA = async () => {
+  const user = authStore.currentUser;
+  await userStore.updateUser(
+    UpdateUserRequest.fromPartial({
+      user: {
+        name: user.name,
+        mfaEnabled: false,
+      },
+      updateMask: ["user.mfa_enabled"],
+    })
+  );
+  await authStore.refreshUserIfNeeded(user.name);
+  state.showDisable2FAConfirmModal = false;
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("two-factor.messages.2fa-disabled"),
+  });
 };
 </script>
