@@ -72,8 +72,8 @@ message UpdateActivityRequest {
 message SearchActivitiesRequest {
   // The parent resource name.
   // Format:
-  // projects/{project}/activities
-  // workspaces/{workspace}/activities
+  // projects/{project}
+  // workspaces/{workspace}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // filter is the filter to apply on the search activities request,
