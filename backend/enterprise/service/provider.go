@@ -91,21 +91,21 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	return p.requestLicense(ctx, payload.Url, setting.Value, claims)
 }
 
-func (p *LicenseProvider) requestLicense(ctx context.Context, agentUrl, agentToken string, claims *internalTokenClaims) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, agentUrl, nil)
+func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string, claims *internalTokenClaims) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, agentURL, nil)
 	if err != nil {
-		return "", errors.Wrapf(err, "construct GET %s", agentUrl)
+		return "", errors.Wrapf(err, "construct GET %s", agentURL)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", agentToken))
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return "", errors.Wrapf(err, "GET %s", agentUrl)
+		return "", errors.Wrapf(err, "GET %s", agentURL)
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrapf(err, "read body of GET %s", agentUrl)
+		return "", errors.Wrapf(err, "read body of GET %s", agentURL)
 	}
 	defer resp.Body.Close()
 
@@ -115,7 +115,7 @@ func (p *LicenseProvider) requestLicense(ctx context.Context, agentUrl, agentTok
 
 	var response getLicenseResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return "", errors.Wrapf(err, "unmarshal body from GET %s", agentUrl)
+		return "", errors.Wrapf(err, "unmarshal body from GET %s", agentURL)
 	}
 
 	return response.License, nil

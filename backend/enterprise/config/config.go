@@ -41,7 +41,7 @@ const (
 	MaximumInstanceForFreePlan = 10
 )
 
-// getConfig will create a new enterprise config instance.
+// NewConfig will create a new enterprise config instance.
 func NewConfig(mode common.ReleaseMode) (*Config, error) {
 	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
 	if err != nil {
