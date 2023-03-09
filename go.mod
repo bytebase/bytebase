@@ -62,7 +62,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+require (
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+	github.com/sijms/go-ora/v2 v2.5.33 // indirect
+)
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
