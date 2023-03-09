@@ -8,7 +8,7 @@
       <p>{{ props.description }}</p>
     </div>
     <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-normal" @click="dismissModal">
+      <button type="button" class="btn-cancel" @click="dismissModal">
         {{ $t("common.cancel") }}
       </button>
       <button class="btn-primary" @click="handleConfirmButtonClick">
