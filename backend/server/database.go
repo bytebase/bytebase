@@ -544,6 +544,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			Database:               dataSourceCreate.Database,
 			SRV:                    dataSourceCreate.Options.SRV,
 			AuthenticationDatabase: dataSourceCreate.Options.AuthenticationDatabase,
+			SID:                    dataSourceCreate.Options.SID,
+			ServiceName:            dataSourceCreate.Options.ServiceName,
 		}
 		if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, creatorID, instance.EnvironmentID, instance.ResourceID, dataSourceMessage); err != nil {
 			return err
@@ -653,6 +655,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if dataSourcePatch.Options != nil {
 			updateMessage.SRV = &dataSourcePatch.Options.SRV
 			updateMessage.AuthenticationDatabase = &dataSourcePatch.Options.AuthenticationDatabase
+			updateMessage.SID = &dataSourcePatch.Options.SID
+			updateMessage.ServiceName = &dataSourcePatch.Options.ServiceName
 		}
 		if err := s.store.UpdateDataSourceV2(ctx, updateMessage); err != nil {
 			return err
