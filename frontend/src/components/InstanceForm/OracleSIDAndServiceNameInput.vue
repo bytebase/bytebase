@@ -7,10 +7,10 @@
           tabindex="-1"
           type="radio"
           class="text-accent disabled:text-accent-disabled focus:ring-accent"
-          value="SID"
+          value="ServiceName"
           :disabled="!allowEdit"
         />
-        <span class="label">SID</span>
+        <span class="label">ServiceName</span>
       </label>
       <label class="radio">
         <input
@@ -18,21 +18,13 @@
           tabindex="-1"
           type="radio"
           class="text-accent disabled:text-accent-disabled focus:ring-accent"
-          value="ServiceName"
+          value="SID"
           :disabled="!allowEdit"
         />
-        <span class="label">ServiceName</span>
+        <span class="label">SID</span>
       </label>
     </div>
     <div>
-      <input
-        v-if="state.mode === 'SID'"
-        :value="state.sid"
-        type="text"
-        class="textfield w-full mt-1"
-        placeholder="SID"
-        @input="update(($event.target as HTMLInputElement).value, 'SID')"
-      />
       <input
         v-if="state.mode === 'ServiceName'"
         :value="state.serviceName"
@@ -43,6 +35,14 @@
           update(($event.target as HTMLInputElement).value, 'ServiceName')
         "
       />
+      <input
+        v-if="state.mode === 'SID'"
+        :value="state.sid"
+        type="text"
+        class="textfield w-full mt-1"
+        placeholder="SID"
+        @input="update(($event.target as HTMLInputElement).value, 'SID')"
+      />
     </div>
   </div>
 </template>
@@ -50,7 +50,7 @@
 <script lang="ts" setup>
 import { reactive, watch } from "vue";
 
-type Mode = "SID" | "ServiceName";
+type Mode = "ServiceName" | "SID";
 
 type LocalState = {
   mode: Mode;
@@ -70,8 +70,8 @@ const emit = defineEmits<{
 }>();
 
 const guessModeFromProps = (): Mode => {
-  if (props.serviceName) return "ServiceName";
-  return "SID";
+  if (props.sid) return "SID";
+  return "ServiceName";
 };
 
 const state = reactive<LocalState>({

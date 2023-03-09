@@ -1,4 +1,4 @@
-package snowflake
+package oracle
 
 import (
 	"context"
@@ -10,11 +10,13 @@ import (
 // SyncInstance syncs the instance.
 func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMetadata, error) {
 	// TODO(d): implement it.
-	return nil, nil
+	return &db.InstanceMetadata{}, nil
 }
 
 // SyncDBSchema syncs a single database schema.
 func (*Driver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
 	// TODO(d): implement it.
-	return nil, nil
+	return &storepb.DatabaseMetadata{
+		Name: "orac",
+	}, nil
 }
