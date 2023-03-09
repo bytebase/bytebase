@@ -65,7 +65,7 @@ func (*Driver) GetType() db.Type {
 }
 
 // GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
+func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	return nil, errors.Errorf("GetDBConnection is unsupported for Oracle")
 }
 
