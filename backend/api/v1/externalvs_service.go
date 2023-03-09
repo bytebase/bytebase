@@ -178,7 +178,7 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 }
 
 // ListProjectGitOpsInfo lists GitOps info of a project.
-func (s *ExternalVersionControlService) ListProjectGitOpsInfo(context.Context, *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
+func (*ExternalVersionControlService) ListProjectGitOpsInfo(context.Context, *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
 }
 
