@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
@@ -37,16 +38,18 @@ type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
 	store          *store.Store
 	secret         string
+	licenseService enterpriseAPI.LicenseService
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
 	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
+		licenseService: licenseService,
 		metricReporter: metricReporter,
 		profile:        profile,
 		postCreateUser: postCreateUser,
@@ -305,9 +308,10 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			return nil, status.Errorf(codes.InvalidArgument, "invalid OTP code")
 		}
 	}
-	// This flag is mainly used for regenerating temp secret and recovery codes when user setup MFA.
+	// This flag will regenerate temp secret and temp recovery codes.
+	// It will be used when user setup MFA and regenerating recovery codes.
 	if request.RegenerateTempMfaSecret {
-		tempSecret, err := generateRandSecret(fmt.Sprintf("%s%d", userNamePrefix, user.ID))
+		tempSecret, err := generateRandSecret(user.Email)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA secret, error: %v", err)
 		}
@@ -322,18 +326,18 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			TempRecoveryCodes: tempRecoveryCodes,
 		}
 	}
-	// This flag is mainly used for regenerating recovery codes with MFA enabled.
+	// This flag will update user's recovery codes with temp recovery codes.
+	// It will be used when user regenerate recovery codes after two phase commit.
 	if request.RegenerateRecoveryCodes {
 		if user.MFAConfig.OtpSecret == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "MFA is not enabled")
 		}
-		recoveryCodes, err := generateRecoveryCodes(10)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
+		if len(user.MFAConfig.TempRecoveryCodes) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "No recovery codes to update")
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
 			OtpSecret:     user.MFAConfig.OtpSecret,
-			RecoveryCodes: recoveryCodes,
+			RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 		}
 	}
 
@@ -489,18 +493,21 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if loginUser.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
-	if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
-		if request.OtpCode != nil {
-			if err := challengeMFACode(loginUser, *request.OtpCode); err != nil {
-				return nil, err
+
+	if s.licenseService.IsFeatureEnabled(api.Feature2FA) {
+		if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
+			if request.OtpCode != nil {
+				if err := challengeMFACode(loginUser, *request.OtpCode); err != nil {
+					return nil, err
+				}
+			} else if request.RecoveryCode != nil {
+				if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
+					return nil, err
+				}
+			} else {
+				// Return FailedPrecondition error to indicate MFA is required.
+				return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
 			}
-		} else if request.RecoveryCode != nil {
-			if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
-				return nil, err
-			}
-		} else {
-			// Return FailedPrecondition error to indicate MFA is required.
-			return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
 		}
 	}
 
@@ -730,7 +737,7 @@ func validateEmail(email string) error {
 
 const (
 	// issuerName is the name of the issuer of the OTP token.
-	issuerName = "bytebase"
+	issuerName = "Bytebase"
 )
 
 // generateRandSecret generates a random secret for the given account name.
