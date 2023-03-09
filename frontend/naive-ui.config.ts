@@ -64,6 +64,9 @@ export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
       borderHoverInfo: callVar("--color-matrix-green-hover"),
       borderFocusInfo: callVar("--color-matrix-green"),
     },
+    Tabs: {
+      tabTextColorCard: callVar("--color-control-placeholder"),
+    },
   };
 });
 
