@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
@@ -247,5 +250,16 @@ func (s *Server) seatCountGuard(ctx context.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum seat count %d.", subscription.Seat))
 	}
 
+	return nil
+}
+
+func validateEmail(email string) error {
+	formatedEmail := strings.ToLower(email)
+	if email != formatedEmail {
+		return errors.New("email should be lowercase")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
 	return nil
 }
