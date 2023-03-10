@@ -50,8 +50,6 @@ const (
 	AccessTokenCookieName = "access-token"
 	// RefreshTokenCookieName is the cookie name of refresh token.
 	RefreshTokenCookieName = "refresh-token"
-	// MFATempTokenCookieName is the cookie name of MFA temp token.
-	MFATempTokenCookieName = "mfa-temp-token"
 	// UserIDCookieName is the cookie name of user ID.
 	UserIDCookieName = "user"
 
@@ -59,8 +57,6 @@ const (
 	GatewayMetadataAccessTokenKey = "bytebase-access-token"
 	// GatewayMetadataRefreshTokenKey is the gateway metadata key for refresh token.
 	GatewayMetadataRefreshTokenKey = "bytebase-refresh-token"
-	// GatewayMetadataMFATempTokenKey is the gateway metadata key for MFA temp token.
-	GatewayMetadataMFATempTokenKey = "bytebase-mfa-temp-token"
 	// GatewayMetadataUserIDKey is the gateway metadata key for user ID.
 	GatewayMetadataUserIDKey = "bytebase-user"
 )
@@ -265,24 +261,6 @@ func getTokenFromMetadata(md metadata.MD) (string, string, error) {
 		return accessToken, refreshToken, nil
 	}
 	return "", "", nil
-}
-
-// GetMFATempToken returns the MFA temp token from the context.
-func GetMFATempToken(ctx context.Context) (string, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return "", status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
-	}
-	var mfaTempToken string
-	for _, t := range append(md.Get("grpcgateway-cookie"), md.Get("cookie")...) {
-		header := http.Header{}
-		header.Add("Cookie", t)
-		request := http.Request{Header: header}
-		if v, _ := request.Cookie(MFATempTokenCookieName); v != nil {
-			mfaTempToken = v.Value
-		}
-	}
-	return mfaTempToken, nil
 }
 
 func audienceContains(audience jwt.ClaimStrings, token string) bool {

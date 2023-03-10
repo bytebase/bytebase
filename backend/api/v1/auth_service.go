@@ -480,11 +480,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	var loginUser *store.UserMessage
 	var mfaPassed bool
 
-	mfaTempToken, err := auth.GetMFATempToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if mfaTempToken == "" {
+	if request.MfaTempToken == nil {
+		var err error
 		if request.IdpName == "" {
 			loginUser, err = s.getAndVerifyUser(ctx, request)
 		} else {
@@ -494,7 +491,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, err
 		}
 	} else {
-		userID, err := auth.GetUserIDFromMFATempToken(mfaTempToken, s.profile.Mode, s.secret)
+		userID, err := auth.GetUserIDFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, err
 		}
@@ -544,7 +541,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 					return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 				}
 				return &v1pb.LoginResponse{
-					MfaRequired: true,
+					MfaTempToken: &mfaTempToken,
 				}, nil
 			}
 		}

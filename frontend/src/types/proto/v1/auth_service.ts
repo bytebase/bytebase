@@ -196,7 +196,11 @@ export interface LoginRequest {
     | string
     | undefined;
   /** The recovery_code is used to recovery the user's identity with MFA. */
-  recoveryCode?: string | undefined;
+  recoveryCode?:
+    | string
+    | undefined;
+  /** The mfa_temp_token is used to verify the user's identity by MFA. */
+  mfaTempToken?: string | undefined;
 }
 
 export interface IdentityProviderContext {
@@ -213,7 +217,7 @@ export interface OIDCIdentityProviderContext {
 
 export interface LoginResponse {
   token: string;
-  mfaRequired: boolean;
+  mfaTempToken?: string | undefined;
 }
 
 export interface LogoutRequest {
@@ -658,6 +662,7 @@ function createBaseLoginRequest(): LoginRequest {
     idpContext: undefined,
     otpCode: undefined,
     recoveryCode: undefined,
+    mfaTempToken: undefined,
   };
 }
 
@@ -683,6 +688,9 @@ export const LoginRequest = {
     }
     if (message.recoveryCode !== undefined) {
       writer.uint32(58).string(message.recoveryCode);
+    }
+    if (message.mfaTempToken !== undefined) {
+      writer.uint32(66).string(message.mfaTempToken);
     }
     return writer;
   },
@@ -715,6 +723,9 @@ export const LoginRequest = {
         case 7:
           message.recoveryCode = reader.string();
           break;
+        case 8:
+          message.mfaTempToken = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -732,6 +743,7 @@ export const LoginRequest = {
       idpContext: isSet(object.idpContext) ? IdentityProviderContext.fromJSON(object.idpContext) : undefined,
       otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
       recoveryCode: isSet(object.recoveryCode) ? String(object.recoveryCode) : undefined,
+      mfaTempToken: isSet(object.mfaTempToken) ? String(object.mfaTempToken) : undefined,
     };
   },
 
@@ -745,6 +757,7 @@ export const LoginRequest = {
       (obj.idpContext = message.idpContext ? IdentityProviderContext.toJSON(message.idpContext) : undefined);
     message.otpCode !== undefined && (obj.otpCode = message.otpCode);
     message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
+    message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
     return obj;
   },
 
@@ -759,6 +772,7 @@ export const LoginRequest = {
       : undefined;
     message.otpCode = object.otpCode ?? undefined;
     message.recoveryCode = object.recoveryCode ?? undefined;
+    message.mfaTempToken = object.mfaTempToken ?? undefined;
     return message;
   },
 };
@@ -917,7 +931,7 @@ export const OIDCIdentityProviderContext = {
 };
 
 function createBaseLoginResponse(): LoginResponse {
-  return { token: "", mfaRequired: false };
+  return { token: "", mfaTempToken: undefined };
 }
 
 export const LoginResponse = {
@@ -925,8 +939,8 @@ export const LoginResponse = {
     if (message.token !== "") {
       writer.uint32(10).string(message.token);
     }
-    if (message.mfaRequired === true) {
-      writer.uint32(16).bool(message.mfaRequired);
+    if (message.mfaTempToken !== undefined) {
+      writer.uint32(18).string(message.mfaTempToken);
     }
     return writer;
   },
@@ -942,7 +956,7 @@ export const LoginResponse = {
           message.token = reader.string();
           break;
         case 2:
-          message.mfaRequired = reader.bool();
+          message.mfaTempToken = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -955,21 +969,21 @@ export const LoginResponse = {
   fromJSON(object: any): LoginResponse {
     return {
       token: isSet(object.token) ? String(object.token) : "",
-      mfaRequired: isSet(object.mfaRequired) ? Boolean(object.mfaRequired) : false,
+      mfaTempToken: isSet(object.mfaTempToken) ? String(object.mfaTempToken) : undefined,
     };
   },
 
   toJSON(message: LoginResponse): unknown {
     const obj: any = {};
     message.token !== undefined && (obj.token = message.token);
-    message.mfaRequired !== undefined && (obj.mfaRequired = message.mfaRequired);
+    message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
     return obj;
   },
 
   fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
     const message = createBaseLoginResponse();
     message.token = object.token ?? "";
-    message.mfaRequired = object.mfaRequired ?? false;
+    message.mfaTempToken = object.mfaTempToken ?? undefined;
     return message;
   },
 };
