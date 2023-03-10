@@ -165,6 +165,9 @@ message LoginRequest {
 
   // The recovery_code is used to recovery the user's identity with MFA.
   optional string recovery_code = 7;
+
+  // The mfa_temp_token is used to verify the user's identity by MFA.
+  optional string mfa_temp_token = 8;
 }
 
 message IdentityProviderContext {
@@ -183,6 +186,8 @@ message OIDCIdentityProviderContext {
 
 message LoginResponse {
   string token = 1;
+
+  optional string mfa_temp_token = 2;
 }
 
 message LogoutRequest {

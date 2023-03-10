@@ -142,22 +142,13 @@
     </div>
   </div>
   <AuthFooter />
-
-  <MFAChallengeModal
-    v-if="state.showMFAChallengeModal"
-    :challenge-callback="state.mfaChallengeCallback"
-  />
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import {
-  MFAChallengeCallback,
-  MFAChallengeContext,
-  OAuthWindowEventPayload,
-} from "@/types";
+import { OAuthWindowEventPayload } from "@/types";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
   featureToRef,
@@ -170,16 +161,12 @@ import {
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
 import AuthFooter from "./AuthFooter.vue";
-import MFAChallengeModal from "@/components/MFAChallengeModal.vue";
-import { Status } from "nice-grpc-common";
 
 interface LocalState {
   email: string;
   password: string;
   showPassword: boolean;
   activeIdentityProvider?: IdentityProvider;
-  showMFAChallengeModal: boolean;
-  mfaChallengeCallback: MFAChallengeCallback;
 }
 
 const actuatorStore = useActuatorStore();
@@ -191,8 +178,6 @@ const state = reactive<LocalState>({
   email: "",
   password: "",
   showPassword: false,
-  showMFAChallengeModal: false,
-  mfaChallengeCallback: (_: MFAChallengeContext) => undefined,
 });
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
 const hasSSOFeature = featureToRef("bb.feature.sso");
@@ -263,7 +248,7 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       return;
     }
 
-    const signinContext = {
+    const mfaTempToken = await authStore.login({
       idpName: state.activeIdentityProvider.name,
       idpContext: {
         oauth2Context: {
@@ -271,23 +256,17 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
         },
       },
       web: true,
-    };
-    try {
-      await authStore.login({
-        ...signinContext,
+    });
+    if (mfaTempToken) {
+      router.push({
+        name: "auth.mfa",
+        query: {
+          mfaTempToken,
+          redirect: "",
+        },
       });
+    } else {
       router.push("/");
-    } catch (error: any) {
-      if (error.response.data.code === Status.FAILED_PRECONDITION) {
-        state.showMFAChallengeModal = true;
-        state.mfaChallengeCallback = async (mfaContext) => {
-          await authStore.login({
-            ...signinContext,
-            ...mfaContext,
-          });
-          router.push("/");
-        };
-      }
     }
   }
 };
@@ -297,27 +276,21 @@ const allowSignin = computed(() => {
 });
 
 const trySignin = async () => {
-  const signinContext = {
+  const mfaTempToken = await authStore.login({
     email: state.email,
     password: state.password,
     web: true,
-  };
-  try {
-    await authStore.login({
-      ...signinContext,
+  });
+  if (mfaTempToken) {
+    router.push({
+      name: "auth.mfa",
+      query: {
+        mfaTempToken,
+        redirect: "",
+      },
     });
+  } else {
     router.push("/");
-  } catch (error: any) {
-    if (error.response.data.code === Status.FAILED_PRECONDITION) {
-      state.showMFAChallengeModal = true;
-      state.mfaChallengeCallback = async (mfaContext) => {
-        await authStore.login({
-          ...signinContext,
-          ...mfaContext,
-        });
-        router.push("/");
-      };
-    }
   }
 };
 
