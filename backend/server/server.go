@@ -1063,6 +1063,15 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 			return err
 		}
 
+		issueList, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{})
+		if err != nil {
+			return err
+		}
+		hasIssueID := make(map[int]bool)
+		for _, issue := range issueList {
+			hasIssueID[issue.UID] = true
+		}
+
 		principalList, err := s.store.GetPrincipalList(ctx)
 		if err != nil {
 			return err
@@ -1118,7 +1127,11 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					if id, err := strconv.Atoi(h.IssueID); err != nil {
 						errList = multierr.Append(errList, err)
 					} else {
-						issueID = &id
+						// Has FK constraint on issue_id.
+						// Set to id if issue exists.
+						if hasIssueID[id] {
+							issueID = &id
+						}
 					}
 
 					creatorID := api.SystemBotID
