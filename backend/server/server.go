@@ -75,6 +75,7 @@ import (
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// Register postgres driver.
@@ -1142,6 +1143,12 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					if principal, ok := nameToPrincipal[h.Updater]; ok {
 						updaterID = principal.ID
 					}
+
+					storedVersion, err := util.ToStoredVersion(false, h.Version, "")
+					if err != nil {
+						return err
+					}
+
 					changeHistory := store.InstanceChangeHistoryMessage{
 						CreatorID:           creatorID,
 						CreatedTs:           h.CreatedTs,
@@ -1155,7 +1162,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						Source:              h.Source,
 						Type:                h.Type,
 						Status:              h.Status,
-						Version:             h.Version,
+						Version:             storedVersion,
 						Description:         h.Description,
 						Statement:           h.Statement,
 						Schema:              h.Schema,
