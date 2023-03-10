@@ -332,7 +332,7 @@ const principal = computed(() => {
 });
 
 const showMFAConfig = computed(() => {
-  // Only show MFA config for user herself.
+  // Only show MFA config for the user themselves.
   return principal.value.id === currentUser.value.id;
 });
 
