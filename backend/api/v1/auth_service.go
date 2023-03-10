@@ -534,12 +534,6 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
 				}
-				// Set the MFA temp token in the header and return MFA required flag to frontend.
-				if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-					auth.GatewayMetadataMFATempTokenKey: mfaTempToken,
-				})); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
-				}
 				return &v1pb.LoginResponse{
 					MfaTempToken: &mfaTempToken,
 				}, nil
@@ -580,7 +574,6 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 		auth.GatewayMetadataAccessTokenKey:  "",
 		auth.GatewayMetadataRefreshTokenKey: "",
-		auth.GatewayMetadataMFATempTokenKey: "",
 		auth.GatewayMetadataUserIDKey:       "",
 	})); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
