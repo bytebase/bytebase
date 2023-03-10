@@ -75,6 +75,8 @@ import (
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
+
 	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// Register postgres driver.
@@ -436,7 +438,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
-	s.registerAuthRoutes(apiGroup)
 	s.registerOAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
 	s.registerMemberRoutes(apiGroup)
@@ -1063,6 +1064,15 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 			return err
 		}
 
+		issueList, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{})
+		if err != nil {
+			return err
+		}
+		hasIssueID := make(map[int]bool)
+		for _, issue := range issueList {
+			hasIssueID[issue.UID] = true
+		}
+
 		principalList, err := s.store.GetPrincipalList(ctx)
 		if err != nil {
 			return err
@@ -1117,17 +1127,26 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					var issueID *int
 					if id, err := strconv.Atoi(h.IssueID); err != nil {
 						errList = multierr.Append(errList, err)
-					} else {
+					} else if hasIssueID[id] {
+						// Has FK constraint on issue_id.
+						// Set to id if issue exists.
 						issueID = &id
 					}
 
-					var creatorID, updaterID int
+					creatorID := api.SystemBotID
+					updaterID := api.SystemBotID
 					if principal, ok := nameToPrincipal[h.Creator]; ok {
 						creatorID = principal.ID
 					}
 					if principal, ok := nameToPrincipal[h.Updater]; ok {
 						updaterID = principal.ID
 					}
+
+					storedVersion, err := util.ToStoredVersion(h.UseSemanticVersion, h.Version, h.SemanticVersionSuffix)
+					if err != nil {
+						return err
+					}
+
 					changeHistory := store.InstanceChangeHistoryMessage{
 						CreatorID:           creatorID,
 						CreatedTs:           h.CreatedTs,
@@ -1141,7 +1160,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						Source:              h.Source,
 						Type:                h.Type,
 						Status:              h.Status,
-						Version:             h.Version,
+						Version:             storedVersion,
 						Description:         h.Description,
 						Statement:           h.Statement,
 						Schema:              h.Schema,

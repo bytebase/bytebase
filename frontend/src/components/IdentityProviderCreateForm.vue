@@ -976,9 +976,12 @@ watch(
       return;
     }
     if (state.type === IdentityProviderType.OAUTH2) {
-      if (!selectedTemplate.value && head(templateList.value)) {
+      if (!selectedTemplate.value) {
+        selectedTemplate.value = head(templateList.value);
+      }
+      if (selectedTemplate.value) {
         handleTemplateSelect(
-          head(templateList.value) as IdentityProviderTemplate
+          selectedTemplate.value as IdentityProviderTemplate
         );
       }
     } else if (state.type === IdentityProviderType.OIDC) {

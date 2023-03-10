@@ -16,8 +16,7 @@ option go_package = "generated-go/v1";
 service AnomalyService {
   rpc SearchAnomalies(SearchAnomaliesRequest) returns (SearchAnomaliesResponse) {
     option (google.api.http) = {
-      post: "/v1/anomalies/search"
-      body: "*"
+      get: "/v1/anomalies:search"
     };
   }
 }

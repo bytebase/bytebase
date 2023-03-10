@@ -151,9 +151,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 	for _, cmd := range cmds {
 		if cmd.Err() == redis.Nil {
 			data = append(data, []interface{}{"redis: nil"})
-		} else {
-			data = append(data, []interface{}{cmd.Val()})
+			continue
 		}
+
+		val := cmd.Val()
+		if _, ok := val.(map[interface{}]interface{}); ok {
+			// json.Marshal cannot handle map[interface{}]interface{}
+			val = cmd.String()
+		}
+
+		data = append(data, []interface{}{val})
 	}
 
 	return []interface{}{[]string{"result"}, []string{"TEXT"}, data}, nil
