@@ -1142,7 +1142,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						updaterID = principal.ID
 					}
 
-					storedVersion, err := util.ToStoredVersion(false, h.Version, "")
+					storedVersion, err := util.ToStoredVersion(h.UseSemanticVersion, h.Version, h.SemanticVersionSuffix)
 					if err != nil {
 						return err
 					}
