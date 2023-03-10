@@ -171,7 +171,13 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		mi.IssueID = strconv.Itoa(issue.UID)
 	}
 
-	migrationID, _, err := driver.ExecuteMigration(ctx, mi, statement)
+	// TODO(p0ny): migrate to instance change history
+	var migrationID string
+	if instance.Engine == db.Spanner {
+		migrationID, _, err = utils.ExecuteMigration(ctx, exec.store, driver, mi, statement)
+	} else {
+		migrationID, _, err = driver.ExecuteMigration(ctx, mi, statement)
+	}
 	if err != nil {
 		return true, nil, err
 	}

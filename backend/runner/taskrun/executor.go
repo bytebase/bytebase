@@ -187,7 +187,8 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		task = updatedTask
 	}
 
-	if instance.Engine == db.Redis || instance.Engine == db.Oracle {
+	// TODO(p0ny): migrate to instance change history
+	if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner {
 		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement)
 		if err != nil {
 			return "", "", err
