@@ -187,7 +187,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		task = updatedTask
 	}
 
-	if instance.Engine == db.Redis {
+	if instance.Engine == db.Redis || instance.Engine == db.Oracle {
 		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement)
 		if err != nil {
 			return "", "", err

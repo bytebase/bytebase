@@ -35,7 +35,7 @@ func GetLatestSchemaVersion(ctx context.Context, store *store.Store, driver db.D
 		Limit:      &limit,
 	}
 
-	if driver.GetType() == db.Redis {
+	if driver.GetType() == db.Redis || driver.GetType() == db.Oracle {
 		history, err := store.FindInstanceChangeHistoryList(ctx, find)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
