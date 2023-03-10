@@ -371,6 +371,8 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	if dbType == db.MySQL {
 		// MySQL 5.7 doesn't support WITH clause.
 		statement = getMySQLStatementWithResultLimit(statement, limit)
+	} else if dbType == db.Oracle {
+		statement = getOracleStatementWithResultLimit(statement, limit)
 	} else {
 		statement = getStatementWithResultLimit(statement, limit)
 	}
@@ -565,6 +567,18 @@ func getMySQLStatementWithResultLimit(stmt string, limit int) string {
 			limitPart = fmt.Sprintf(" LIMIT %d", limit)
 		}
 		return fmt.Sprintf("SELECT * FROM (%s) result%s;", stmt, limitPart)
+	}
+	return stmt
+}
+
+func getOracleStatementWithResultLimit(stmt string, limit int) string {
+	stmt = strings.TrimRight(stmt, " \n\t;")
+	if !strings.HasPrefix(stmt, "EXPLAIN") {
+		limitPart := ""
+		if limit > 0 {
+			limitPart = fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", limit)
+		}
+		return fmt.Sprintf("%s%s", stmt, limitPart)
 	}
 	return stmt
 }
