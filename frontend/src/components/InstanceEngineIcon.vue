@@ -1,5 +1,5 @@
 <template>
-  <NTooltip>
+  <NTooltip :disabled="!instance.engineVersion">
     <template #trigger>
       <div class="relative w-4" v-bind="$attrs">
         <img class="h-4 w-auto mx-auto" :src="SelectedEngineIconPath" />
@@ -16,10 +16,13 @@
 
 <script lang="ts">
 import { computed, PropType, defineComponent } from "vue";
+import { NTooltip } from "naive-ui";
+
 import { Instance } from "../types";
 
 export default defineComponent({
   name: "InstanceEngineIcon",
+  components: { NTooltip },
   props: {
     instance: {
       required: true,
