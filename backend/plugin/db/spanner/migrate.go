@@ -312,7 +312,10 @@ func (d *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Migratio
 		where = append(where, "version = @version")
 		params["version"] = storedVersion
 	}
-	query = fmt.Sprintf("%s WHERE %s ORDER BY namespace, sequence DESC", query, strings.Join(where, " AND "))
+	if len(where) != 0 {
+		query = fmt.Sprintf("%s WHERE %s", query, strings.Join(where, " AND "))
+	}
+	query = fmt.Sprintf("%s ORDER BY namespace, sequence DESC", query)
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
