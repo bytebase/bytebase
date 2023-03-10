@@ -21,6 +21,9 @@ export type ConnectionInfo = {
   sslKey?: string;
   srv: boolean;
   authenticationDatabase: string;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
 };
 
 export type QueryInfo = {
@@ -39,7 +42,6 @@ export type SingleSQLResult = {
 
 export type SQLResultSet = {
   error: string;
-  // resultList: SingleSQLResult[];
-  data: SingleSQLResult["data"];
+  resultList: SingleSQLResult[];
   adviceList: Advice[];
 };

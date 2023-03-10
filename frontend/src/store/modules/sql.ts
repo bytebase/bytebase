@@ -14,7 +14,6 @@ import {
 } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
-import { last } from "lodash-es";
 
 export function convertSingleSQLResult(
   attributes: Attributes
@@ -42,16 +41,9 @@ export function convert(resultSet: ResourceObject): SQLResultSet {
     });
   }
 
-  // Our UI doesn't support multiple results by now.
-  // So we use the last result as the final result.
-  const lastResult = last(resultList) ?? {
-    data: null as any,
-    error: "",
-  };
-
   return {
-    ...lastResult,
-    error: lastResult?.error || (resultSet.attributes.error as string) || "",
+    error: (resultSet.attributes.error as string) || "",
+    resultList,
     adviceList: resultSet.attributes.adviceList as Advice[],
   };
 }

@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { ActuatorState, ServerInfo, Release } from "@/types";
 import { useLocalStorage } from "@vueuse/core";
 import { semverCompare } from "@/utils";
+import { useSilentRequest } from "@/plugins/silent-request";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://www.bytebase.com/docs/get-started/install/external-url";
@@ -105,8 +106,8 @@ export const useActuatorStore = defineStore("actuator", {
     },
     async fetchLatestRelease(): Promise<Release | undefined> {
       try {
-        const { data: releaseList } = await axios.get<Release[]>(
-          `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
+        const { data: releaseList } = await useSilentRequest(() =>
+          axios.get<Release[]>(`${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`)
         );
         return releaseList[0];
       } catch {
