@@ -155,7 +155,7 @@ message LogEntry {
   // For ACTION_PIPELINE_*: pipelines/{pipeline}
   // For ACTION_PROJECT_*: projects/{project}
   // For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project}
-  string container = 6 [(google.api.field_behavior) = REQUIRED];
+  string resource_name = 6 [(google.api.field_behavior) = REQUIRED];
   
   // The payload of the log entry.
   google.protobuf.Struct json_payload = 7;
