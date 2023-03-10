@@ -1,11 +1,9 @@
 package spanner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/spanner"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
@@ -14,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -37,32 +34,13 @@ func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (boo
 }
 
 // NeedsSetupMigration checks if it needs to set up migration.
-func (d *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	notFound, err := d.notFoundDatabase(ctx, db.BytebaseDatabase)
-	if err != nil {
-		return false, err
-	}
-	return notFound, nil
+func (*Driver) NeedsSetupMigration(context.Context) (bool, error) {
+	return false, nil
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
-func (d *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
-	setup, err := d.NeedsSetupMigration(ctx)
-	if err != nil {
-		return err
-	}
-	if !setup {
-		return nil
-	}
-	log.Info("Bytebase migration schema not found, creating schema...",
-		zap.String("environment", d.connCtx.EnvironmentID),
-		zap.String("instance", d.connCtx.InstanceID),
-	)
-	statements, err := sanitizeSQL(migrationSchema)
-	if err != nil {
-		return err
-	}
-	return d.creataDatabase(ctx, createBytebaseDatabaseStatement, statements)
+func (*Driver) SetupMigrationIfNeeded(context.Context) error {
+	return nil
 }
 
 func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
@@ -82,177 +60,32 @@ func (d *Driver) creataDatabase(ctx context.Context, createStatement string, ext
 
 // ExecuteMigration executes a migration.
 // ExecuteMigration will execute the database migration.
-// Returns the created migration history id and the updated schema on success.
 func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
-	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
+	if statement == "" || m.Type == db.Baseline {
+		return "", "", nil
+	}
+
 	if !m.CreateDatabase {
-		// For baseline migration, we also record the live schema to detect the schema drift.
-		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if _, err := d.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+		if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
 			return "", "", util.FormatError(err)
 		}
-	}
-
-	// Switch to the database where the migration_history table resides.
-	if err := d.switchDatabase(ctx, db.BytebaseDatabase); err != nil {
-		return "", "", err
-	}
-
-	// Phase 1 - Pre-check before executing migration
-	// Phase 2 - Record migration history as PENDING
-	insertedID, err := d.beginMigration(ctx, m, prevSchemaBuf.String(), statement)
-	if err != nil {
-		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
-			return insertedID, prevSchemaBuf.String(), nil
-		}
-		return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
-	}
-
-	startedNs := time.Now().UnixNano()
-
-	defer func() {
-		if err := d.endMigration(ctx, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
-			log.Error("Failed to update migration history record",
-				zap.Error(err),
-				zap.String("migration_id", migrationHistoryID),
-			)
-		}
-	}()
-
-	// Phase 3 - Executing migration
-	// Branch migration type always has empty sql.
-	// Baseline migration type could has non-empty sql but will not execute.
-	// https://github.com/bytebase/bytebase/issues/394
-	doMigrate := true
-	if statement == "" {
-		doMigrate = false
-	}
-	if m.Type == db.Baseline {
-		doMigrate = false
-	}
-	if doMigrate {
-		// Switch back to the target database.
-		if !m.CreateDatabase {
-			if err := d.switchDatabase(ctx, m.Database); err != nil {
-				return "", "", errors.Wrap(err, "failed to switch database")
-			}
-			if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
-				return "", "", util.FormatError(err)
-			}
-		} else {
-			stmts, err := sanitizeSQL(statement)
-			if err != nil {
-				return "", "", errors.Wrapf(err, "failed to sanitize %v", statement)
-			}
-			if len(stmts) == 0 {
-				return "", "", errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
-			}
-			if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
-				return "", "", errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
-			}
-			if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
-				return "", "", errors.Wrap(err, "failed to create database")
-			}
-		}
-	}
-
-	// Phase 4 - Dump the schema after migration
-	var afterSchemaBuf bytes.Buffer
-	if _, err := d.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		return "", "", util.FormatError(err)
-	}
-
-	return insertedID, afterSchemaBuf.String(), nil
-}
-
-// BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func (d *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSchema string, statement string) (insertedID string, err error) {
-	// Convert version to stored version.
-	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to convert to stored version")
-	}
-	// Phase 1 - Pre-check before executing migration
-	// Check if the same migration version has already been applied.
-	if list, err := d.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-		Database: &m.Namespace,
-		Version:  &m.Version,
-	}); err != nil {
-		return "", errors.Wrap(err, "failed to check duplicate version")
-	} else if len(list) > 0 {
-		migrationHistory := list[0]
-		switch migrationHistory.Status {
-		case db.Done:
-			if migrationHistory.IssueID != m.IssueID {
-				return migrationHistory.ID, common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
-			}
-			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
-		case db.Pending:
-			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
-			log.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			if m.Force {
-				return migrationHistory.ID, nil
-			}
-			return "", common.Wrap(err, common.MigrationPending)
-		case db.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
-			log.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			if m.Force {
-				return migrationHistory.ID, nil
-			}
-			return "", common.Wrap(err, common.MigrationFailed)
-		}
-	}
-
-	// Get largestSequence, largestVersionSinceBaseline in a transaction.
-	tx := d.client.ReadOnlyTransaction()
-	defer tx.Close()
-
-	largestSequence, err := d.findLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
-	if err != nil {
-		return "", err
-	}
-
-	// Check if there is any higher version already been applied since the last baseline or branch.
-	if version, err := d.findLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
-		return "", err
-	} else if version != nil && len(*version) > 0 && *version >= m.Version {
-		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
-	}
-
-	// Phase 2 - Record migration history as PENDING.
-	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
-	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
-	// update the record to DONE together with the updated schema.
-	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	if insertedID, err = d.insertPendingHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
-		return "", err
-	}
-
-	return insertedID, nil
-}
-
-// EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func (d *Driver) endMigration(ctx context.Context, startedNs int64, migrationHistoryID string, updatedSchema string, databaseName string, isDone bool) (err error) {
-	migrationDurationNs := time.Now().UnixNano() - startedNs
-	if err := d.switchDatabase(ctx, databaseName); err != nil {
-		return err
-	}
-
-	if isDone {
-		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		err = d.updateHistoryAsDone(ctx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
-		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		err = d.updateHistoryAsFailed(ctx, migrationDurationNs, migrationHistoryID)
+		stmts, err := sanitizeSQL(statement)
+		if err != nil {
+			return "", "", errors.Wrapf(err, "failed to sanitize %v", statement)
+		}
+		if len(stmts) == 0 {
+			return "", "", errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
+		}
+		if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
+			return "", "", errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
+		}
+		if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
+			return "", "", errors.Wrap(err, "failed to create database")
+		}
 	}
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return "", "", nil
 }
 
 // FindMigrationHistoryList finds the migration history list.
