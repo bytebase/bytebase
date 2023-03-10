@@ -14,10 +14,11 @@ import (
 // InstanceChangeHistoryMessage records the change history of an instance.
 // it deprecates the old MigrationHistory.
 type InstanceChangeHistoryMessage struct {
-	CreatorID           int
-	CreatedTs           int64
-	UpdaterID           int
-	UpdatedTs           int64
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+	// nil means bytebase meta instance.
 	InstanceID          *int
 	DatabaseID          *int
 	IssueID             *int
