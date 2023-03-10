@@ -271,8 +271,8 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 
 	// Check schema drift
 	if s.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
-		// Redis is schemaless.
-		if instance.Engine == db.Redis {
+		// Redis and MongoDB are schemaless.
+		if instance.Engine == db.Redis || instance.Engine == db.MongoDB || instance.Engine == db.Oracle {
 			return
 		}
 		setup, err := driver.NeedsSetupMigration(ctx)
