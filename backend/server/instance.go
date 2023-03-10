@@ -379,7 +379,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		var entry *db.MigrationHistory
-		find := &db.MigrationHistoryFind{ID: &historyID, InstanceID: instanceID}
+		find := &db.MigrationHistoryFind{ID: &historyID, InstanceID: &instanceID}
 		if instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
 			if err != nil {
@@ -468,7 +468,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var migrationHistoryList []*db.MigrationHistory
 		find := &db.MigrationHistoryFind{
-			InstanceID: instance.UID,
+			InstanceID: &instance.UID,
 		}
 		if instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {

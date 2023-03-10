@@ -1084,7 +1084,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 
 		var errList error
 		for _, instance := range instanceList {
-			err := func() error {
+			err := func(instance *store.InstanceMessage) error {
 				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB {
 					return nil
 				}
@@ -1108,7 +1108,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				defer driver.Close(ctx)
 
 				history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-					InstanceID: instance.UID,
+					InstanceID: &instance.UID,
 				})
 				if err != nil {
 					return err
@@ -1152,7 +1152,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						CreatedTs:           h.CreatedTs,
 						UpdaterID:           updaterID,
 						UpdatedTs:           h.UpdatedTs,
-						InstanceID:          instance.UID,
+						InstanceID:          &instance.UID,
 						DatabaseID:          databaseID,
 						IssueID:             issueID,
 						ReleaseVersion:      h.ReleaseVersion,
@@ -1176,7 +1176,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					return err
 				}
 				return nil
-			}()
+			}(instance)
 			if err != nil {
 				errList = multierr.Append(errList, err)
 			}

@@ -14,11 +14,12 @@ import (
 // InstanceChangeHistoryMessage records the change history of an instance.
 // it deprecates the old MigrationHistory.
 type InstanceChangeHistoryMessage struct {
-	CreatorID           int
-	CreatedTs           int64
-	UpdaterID           int
-	UpdatedTs           int64
-	InstanceID          int
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+	// nil means bytebase meta instance.
+	InstanceID          *int
 	DatabaseID          *int
 	IssueID             *int
 	ReleaseVersion      string
@@ -42,7 +43,7 @@ type InstanceChangeHistoryMessage struct {
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
 	ID         *int64
-	InstanceID int
+	InstanceID *int
 	DatabaseID *int
 	Source     *db.MigrationSource
 	Version    *string
@@ -433,7 +434,7 @@ func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	return tx.Commit()
 }
 
-func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, tx *Tx, instanceID int, databaseID *int, baseline bool) (int64, error) {
+func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, tx *Tx, instanceID *int, databaseID *int, baseline bool) (int64, error) {
 	query := `
 	SELECT
 		MAX(sequence)
@@ -458,7 +459,7 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 }
 
 // GetLargestInstanceChangeHistorySequence will get the largest sequence number.
-func (s *Store) GetLargestInstanceChangeHistorySequence(ctx context.Context, instanceID int, databaseID *int, baseline bool) (int64, error) {
+func (s *Store) GetLargestInstanceChangeHistorySequence(ctx context.Context, instanceID *int, databaseID *int, baseline bool) (int64, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return -1, err
@@ -478,7 +479,7 @@ func (s *Store) GetLargestInstanceChangeHistorySequence(ctx context.Context, ins
 }
 
 // GetLargestInstanceChangeHistoryVersionSinceBaseline will get the largest version since last baseline or branch.
-func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.Context, instanceID int, databaseID *int) (*string, error) {
+func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.Context, instanceID *int, databaseID *int) (*string, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
