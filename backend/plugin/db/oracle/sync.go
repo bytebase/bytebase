@@ -39,9 +39,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
+func (*Driver) SyncDBSchema(_ context.Context, database string) (*storepb.DatabaseMetadata, error) {
 	// TODO(d): implement it.
 	return &storepb.DatabaseMetadata{
-		Name: "orac",
+		Name: database,
 	}, nil
 }
