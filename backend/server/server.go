@@ -76,6 +76,7 @@ import (
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+
 	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// Register postgres driver.
@@ -1127,12 +1128,10 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					var issueID *int
 					if id, err := strconv.Atoi(h.IssueID); err != nil {
 						errList = multierr.Append(errList, err)
-					} else {
+					} else if hasIssueID[id] {
 						// Has FK constraint on issue_id.
 						// Set to id if issue exists.
-						if hasIssueID[id] {
-							issueID = &id
-						}
+						issueID = &id
 					}
 
 					creatorID := api.SystemBotID
