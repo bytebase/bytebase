@@ -15,26 +15,26 @@ import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
-service ActivityService {
-  rpc SearchActivities(SearchActivitiesRequest) returns (SearchActivitiesResponse) {
+service LoggingService {
+  rpc SearchLogs(SearchLogsRequest) returns (SearchLogsResponse) {
   option (google.api.http) = {
-    post: "/v1/{parent=projects/*}/activities"
+    post: "/v1/{parent=projects/*}/logs"
     additional_bindings: {
-      post: "/v1/{parent=workspaces/*}/activities"
+      post: "/v1/{parent=workspaces/*}/logs"
     }
   };
   option (google.api.method_signature) = "parent";
   }
 }
 
-message SearchActivitiesRequest {
+message SearchLogsRequest {
   // The parent resource name.
   // Format:
   // projects/{project}
   // workspaces/{workspace}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // filter is the filter to apply on the search activities request,
+  // filter is the filter to apply on the search logs request,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // The field only support in filter:
   // - creator
@@ -42,32 +42,32 @@ message SearchActivitiesRequest {
   // - level
   // - action
   // For example:
-  // Search the activities of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", container="issue/123"'
+  // Search the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", container="issue/123"'
   string filter = 2;
 
-  // Not used. The maximum number of activities to return.
+  // Not used. The maximum number of logs to return.
   // The service may return fewer than this value.
-  // If unspecified, at most 100 activities will be returned.
+  // If unspecified, at most 100 log entries will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 3;
 
-  // Not used. A page token, received from a previous `ListActivities` call.
+  // Not used. A page token, received from a previous `SearchLogs` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 4;
 }
 
-message SearchActivitiesResponse {
-  // The list of activities.
-  repeated Activity activities= 1;
+message SearchLogsResponse {
+  // The list of log entries.
+  repeated LogEntry log_entries = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // A token to retrieve next page of activities.
-  // Pass this value in the page_token field in the subsequent call to `ListActivities` method
-  // to retrieve the next page of activities.
+  // A token to retrieve next page of log entries.
+  // Pass this value in the page_token field in the subsequent call to `SearchLogs` method
+  // to retrieve the next page of log entries.
   string next_page_token = 2;
 }
 
-message Activity {
-  // The creator of the activity.
+message LogEntry {
+  // The creator of the log entry.
   // Format: user:{emailid}
   string creator = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -148,7 +148,7 @@ message Activity {
   }
   Level level = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The container of the activity.
+  // The name of the resource associated with this log entry. For example, the resource user associated with log entry type of "ACTION_MEMBER_CREATE".
   // Format:
   // For ACTION_MEMBER_*: user:emailid
   // For ACTION_ISSUE_*: issues/{issue}
@@ -157,6 +157,6 @@ message Activity {
   // For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project}
   string container = 6 [(google.api.field_behavior) = REQUIRED];
   
-  // The payload of the activity.
+  // The payload of the log entry.
   google.protobuf.Struct json_payload = 7;
 }
