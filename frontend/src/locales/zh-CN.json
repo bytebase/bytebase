@@ -2008,7 +2008,10 @@
         "untitled": "未命名会话",
         "delete": "删除会话",
         "rename": "修改会话名称",
-        "select-or-create": "选择或{create}一个会话以开始。"
+        "select-or-create": "选择或{create}一个会话以开始。",
+        "exit-conversation-mode": "退出对话模式",
+        "view-history-conversations": "查看历史对话",
+        "new-conversation": "开启新对话"
       },
       "preset-suggestion": {
         "1": "哪个部门的员工最多？",

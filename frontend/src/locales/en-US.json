@@ -2009,7 +2009,12 @@
         "untitled": "Untitled conversation",
         "delete": "Delete conversation",
         "rename": "Rename conversation",
-        "select-or-create": "Select or {create} a conversation to start."
+        "select-or-create": "Select or {create} a conversation to start.",
+        "exit-conversation-mode": "Exit chat mode",
+        "history-conversations": "History conversations",
+        "view-history-conversations": "View history conversations",
+        "new-conversation": "Start new conversation",
+        "no-message": "No message in this conversation"
       },
       "preset-suggestion": {
         "1": "Which department has most employees?",

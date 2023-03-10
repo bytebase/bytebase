@@ -1,22 +1,17 @@
 <template>
   <div class="h-full overflow-hidden flex flex-col">
-    <div class="py-2 px-2">
-      <h3 class="font-bold">
-        {{ $t("plugin.ai.conversation.conversations") }}
-      </h3>
-    </div>
     <div class="flex-1 overflow-y-auto p-1 flex flex-col gap-y-2">
       <template v-if="ready">
         <div
-          v-for="conversation in conversationList"
+          v-for="conversation in list"
           :key="conversation.id"
           :data-conversation-id="conversation.id"
           class="flex items-start gap-x-0.5 border rounded-md py-2 pl-2 pr-0.5 hover:bg-indigo-50 hover:border-indigo-400 cursor-pointer"
           :class="[
-            selectedConversation?.id === conversation.id &&
+            selected?.id === conversation.id &&
               'bg-indigo-100 border-indigo-400',
           ]"
-          @click="store.selectConversation(conversation)"
+          @click="selected = conversation"
         >
           <div
             v-if="conversation.name"
@@ -55,10 +50,12 @@
 
         <div
           class="sticky bottom-0 btn-normal items-center justify-center gap-x-1"
-          @click="addConversation"
+          @click="events.emit('new-conversation')"
         >
           <heroicons-outline:plus class="w-4 h-4" />
-          <span class="pr-3">{{ $t("common.new") }}</span>
+          <span class="pr-2">{{
+            $t("plugin.ai.conversation.new-conversation")
+          }}</span>
         </div>
       </template>
       <template v-else>
@@ -76,43 +73,50 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, toRef, watch } from "vue";
+import { reactive, watch } from "vue";
 import { NPopconfirm } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { head } from "lodash-es";
 
+import { useCurrentTab } from "@/store";
 import ConversationRenameDialog from "./ConversationRenameDialog.vue";
-import type { Conversation } from "../types";
-import { useConversationList, useConversationStore } from "../store";
+import type { Conversation } from "../../types";
+import { useConversationStore } from "../../store";
+import { useAIContext, useCurrentChat } from "../../logic";
 
 type LocalState = {
   rename: Conversation | undefined;
 };
 
+const tab = useCurrentTab();
+const store = useConversationStore();
+const { events } = useAIContext();
+const { list, ready, selected } = useCurrentChat();
+
 const state = reactive<LocalState>({
   rename: undefined,
 });
-const store = useConversationStore();
-const { conversationList, ready } = useConversationList();
-const selectedConversation = toRef(store, "selectedConversation");
 
-const addConversation = async () => {
-  const c = await store.createConversation({
-    name: "", // Will display as "Untitled conversation"
-  });
-  store.selectConversation(c);
-};
+watch(
+  [
+    () => tab.value.connection.instanceId,
+    () => tab.value.connection.databaseId,
+  ],
+  () => {
+    state.rename = undefined;
+  },
+  { immediate: true }
+);
 
 const handleDeleteConversation = async (conversation: Conversation) => {
-  const index = conversationList.value.findIndex(
-    (c) => c.id === selectedConversation.value?.id
-  );
+  // try to keep the selected or a nearby item selected.
+  const index = list.value.findIndex((c) => c.id === selected.value?.id);
   await store.deleteConversation(conversation.id);
-  store.selectConversation(conversationList.value[index]);
+  selected.value = list.value[index];
 };
 
 watch(
-  [() => selectedConversation.value?.id, conversationList],
+  [() => selected.value?.id, list],
   ([id, list]) => {
     if (!id) return;
     if (list.length === 0) return;

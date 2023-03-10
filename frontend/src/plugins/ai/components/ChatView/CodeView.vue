@@ -2,12 +2,13 @@
   <div class="flex items-start w-full">
     <MonacoEditor
       ref="editorRef"
-      class="flex-1 border h-auto max-h-[240px]"
+      class="flex-1 border h-auto"
       language="sql"
-      :value="message.content"
-      :readonly="true"
+      :value="state.code"
+      :readonly="!state.editing"
       :auto-focus="false"
       :options="{
+        automaticLayout: true,
         fontSize: 12,
         lineHeight: 14,
         lineNumbers: 'off',
@@ -21,57 +22,136 @@
         },
       }"
       @ready="handleMonacoEditorReady"
+      @change="state.code = $event"
     />
     <div class="flex flex-col gap-y-2 ml-0.5 mt-1">
-      <button
-        class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
-        @click="handleExecute"
-      >
-        <heroicons-outline:play class="w-4 h-4" />
-      </button>
-      <button
-        class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
-        @click="handleCopy"
-      >
-        <heroicons-outline:clipboard-copy class="w-4 h-4" />
-      </button>
+      <NTooltip placement="right">
+        <template #trigger>
+          <button
+            class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+            @click="handleExecute"
+          >
+            <heroicons:play-circle class="w-4 h-4" />
+          </button>
+        </template>
+        <div class="whitespace-nowrap">
+          {{ $t("common.run") }}
+        </div>
+      </NTooltip>
+      <NTooltip placement="right">
+        <template #trigger>
+          <button
+            class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+            @click="handleCopy"
+          >
+            <heroicons:clipboard class="w-4 h-4" />
+          </button>
+        </template>
+        <div class="whitespace-nowrap">
+          {{ $t("common.copy") }}
+        </div>
+      </NTooltip>
+      <template v-if="!state.editing">
+        <NTooltip placement="right">
+          <template #trigger>
+            <button
+              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+              @click="state.editing = true"
+            >
+              <heroicons:pencil class="w-4 h-4" />
+            </button>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("common.edit") }}
+          </div>
+        </NTooltip>
+      </template>
+      <template v-if="state.editing">
+        <NTooltip placement="right">
+          <template #trigger>
+            <button
+              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+              @click="finishEditing(false)"
+            >
+              <heroicons:arrow-uturn-left class="w-4 h-4" />
+            </button>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("common.cancel") }}
+          </div>
+        </NTooltip>
+        <NTooltip placement="right">
+          <template #trigger>
+            <button
+              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+              @click="finishEditing(true)"
+            >
+              <heroicons:check class="w-4 h-4" />
+            </button>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("common.save") }}
+          </div>
+        </NTooltip>
+      </template>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { useI18n } from "vue-i18n";
+import { NTooltip } from "naive-ui";
 
 import type { Message } from "../../types";
 import MonacoEditor from "@/components/MonacoEditor";
+import { minmax } from "@/utils";
 import { useAIContext } from "../../logic";
 import { pushNotification } from "@/store";
-import { useI18n } from "vue-i18n";
+import { useConversationStore } from "../../store";
+
+type LocalState = {
+  code: string;
+  editing: boolean;
+};
 
 const props = defineProps<{
   message: Message;
 }>();
 
+const EDITOR_HEIGHT = {
+  min: 48,
+  max: 240,
+};
+
+const state = reactive<LocalState>({
+  code: props.message.content,
+  editing: false,
+});
 const { t } = useI18n();
-const context = useAIContext();
+const { events, showHistoryDialog } = useAIContext();
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
-const updateEditorHeight = () => {
+const updateEditorSize = () => {
   const contentHeight =
     editorRef.value?.editorInstance?.getContentHeight() as number;
-  editorRef.value?.setEditorContentHeight(contentHeight);
+  const paddings = 2;
+  editorRef.value?.setEditorContentHeight(
+    minmax(contentHeight + paddings, EDITOR_HEIGHT.min, EDITOR_HEIGHT.max)
+  );
 };
 
 const handleMonacoEditorReady = () => {
-  updateEditorHeight();
+  updateEditorSize();
 };
 
 const handleExecute = () => {
-  context.events.emit("apply-statement", {
+  events.emit("apply-statement", {
     statement: props.message.content,
     run: true,
   });
+  showHistoryDialog.value = false;
 };
 
 const handleCopy = () => {
@@ -83,4 +163,22 @@ const handleCopy = () => {
     });
   });
 };
+
+const finishEditing = async (update: boolean) => {
+  if (!update) {
+    state.code = props.message.content;
+  } else {
+    // eslint-disable-next-line vue/no-mutating-props
+    props.message.content = state.code;
+    await useConversationStore().updateMessage(props.message);
+  }
+};
+
+watch(
+  () => props.message.content,
+  (content) => {
+    state.code = content;
+    state.editing = false;
+  }
+);
 </script>
