@@ -24,6 +24,8 @@ export enum TabMode {
   Admin = 2,
 }
 
+export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
+
 export interface TabInfo {
   id: string;
   name: string;
@@ -33,6 +35,7 @@ export interface TabInfo {
   statement: string;
   selectedStatement: string;
   mode: TabMode;
+  editMode: EditMode;
   executeParams?: {
     query: string;
     config: ExecuteConfig;
