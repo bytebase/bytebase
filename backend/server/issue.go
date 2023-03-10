@@ -575,6 +575,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	if instance == nil {
 		return nil, errors.Errorf("instance ID not found %v", c.InstanceID)
 	}
+	if instance.Engine == db.Oracle {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Creating Oracle database is not supported")
+	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, err
