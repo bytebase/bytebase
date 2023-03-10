@@ -29,7 +29,7 @@ func GetLatestSchemaVersion(ctx context.Context, store *store.Store, driver db.D
 	// TODO(d): support semantic versioning.
 	limit := 1
 	find := &db.MigrationHistoryFind{
-		InstanceID: instanceID,
+		InstanceID: &instanceID,
 		Database:   &databaseName,
 		DatabaseID: &databaseID,
 		Limit:      &limit,
