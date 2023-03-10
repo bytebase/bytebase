@@ -41,6 +41,11 @@ type DatabaseCreateExecutor struct {
 	profile      config.Profile
 }
 
+var cannotCreateDatabase = map[db.Type]bool{
+	db.Redis:  true,
+	db.Oracle: true,
+}
+
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseCreatePayload{}
@@ -57,15 +62,18 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err != nil {
 		return true, nil, err
 	}
+
+	if cannotCreateDatabase[instance.Engine] {
+		return true, nil, errors.Errorf("Creating database is not supported")
+	}
+
 	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return true, nil, err
 	}
 
 	var driver db.Driver
-	if instance.Engine == db.Oracle {
-		return true, nil, errors.Errorf("Creating Oracle database is not supported")
-	} else if instance.Engine == db.MongoDB {
+	if instance.Engine == db.MongoDB {
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
 		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, payload.DatabaseName)
