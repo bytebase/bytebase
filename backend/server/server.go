@@ -1121,7 +1121,8 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						issueID = &id
 					}
 
-					var creatorID, updaterID int
+					creatorID := api.SystemBotID
+					updaterID := api.SystemBotID
 					if principal, ok := nameToPrincipal[h.Creator]; ok {
 						creatorID = principal.ID
 					}
