@@ -1,1 +1,0 @@
-ALTER TABLE instance_change_history ALTER COLUMN instance_id DROP NOT NULL;
