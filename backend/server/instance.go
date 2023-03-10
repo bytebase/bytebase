@@ -380,7 +380,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var entry *db.MigrationHistory
 		find := &db.MigrationHistoryFind{ID: &historyID, InstanceID: instanceID}
-		if instance.Engine == db.Redis {
+		if instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
@@ -470,7 +470,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		find := &db.MigrationHistoryFind{
 			InstanceID: instance.UID,
 		}
-		if instance.Engine == db.Redis {
+		if instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
 				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:   &instance.ResourceID,
