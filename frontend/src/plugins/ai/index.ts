@@ -1,5 +1,4 @@
-import AIDialog from "./components/AIDialog.vue";
-import AIPromptButton from "./components/AIPromptButton.vue";
+import AIChatToSQL from "./components/AIChatToSQL.vue";
 
 export * from "./types";
-export { AIDialog, AIPromptButton };
+export { AIChatToSQL };

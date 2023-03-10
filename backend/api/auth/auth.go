@@ -32,6 +32,8 @@ const (
 	AccessTokenAudienceFmt = "bb.user.access.%s"
 	// RefreshTokenAudienceFmt is the format of the refresh token audience.
 	RefreshTokenAudienceFmt = "bb.user.refresh.%s"
+	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
+	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
 	apiTokenDuration        = 2 * time.Hour
 	accessTokenDuration     = 24 * time.Hour
 	refreshTokenDuration    = 7 * 24 * time.Hour
@@ -206,6 +208,33 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 	return principalID, nil
 }
 
+// GetUserIDFromMFATempToken returns the user ID from the MFA temp token.
+func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret string) (int, error) {
+	claims := &claimsMessage{}
+	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
+			return nil, status.Errorf(codes.Unauthenticated, "unexpected MFA temp token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+		}
+		if kid, ok := t.Header["kid"].(string); ok {
+			if kid == "v1" {
+				return []byte(secret), nil
+			}
+		}
+		return nil, status.Errorf(codes.Unauthenticated, "unexpected MFA temp token kid=%v", t.Header["kid"])
+	})
+	if err != nil {
+		return 0, status.Errorf(codes.Unauthenticated, "failed to parse claim")
+	}
+	if !audienceContains(claims.Audience, fmt.Sprintf(MFATempTokenAudienceFmt, mode)) {
+		return 0, status.Errorf(codes.Unauthenticated, "invalid MFA temp token, audience mismatch")
+	}
+	userID, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		return 0, status.Errorf(codes.Unauthenticated, "malformed ID %q in the MFA temp token", claims.Subject)
+	}
+	return userID, nil
+}
+
 func getTokenFromMetadata(md metadata.MD) (string, string, error) {
 	authorizationHeaders := md.Get("Authorization")
 	if len(md.Get("Authorization")) > 0 {
@@ -286,6 +315,12 @@ func GenerateAccessToken(userName string, userID int, mode common.ReleaseMode, s
 func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
 	return generateToken(userName, userID, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
+}
+
+// GenerateMFATempToken generates a temporary token for MFA.
+func GenerateMFATempToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(accessTokenDuration)
+	return generateToken(userName, userID, fmt.Sprintf(MFATempTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.

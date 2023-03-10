@@ -3,6 +3,7 @@
     <BrandingSetting />
     <SecuritySetting />
     <NetworkSetting v-if="!isSaaSMode" />
+    <AIAugmentationSetting />
   </div>
 </template>
 
@@ -12,6 +13,7 @@ import {
   BrandingSetting,
   SecuritySetting,
   NetworkSetting,
+  AIAugmentationSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorStore } from "@/store";
 

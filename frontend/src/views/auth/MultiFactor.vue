@@ -1,7 +1,17 @@
 <template>
-  <BBModal :title="modalTitle" :show-close="false">
-    <div class="w-72">
-      <div class="w-full mt-4 h-auto flex flex-col justify-start items-center">
+  <div
+    class="mx-auto w-full h-full min-h-screen flex flex-col justify-center items-center bg-gray-100"
+  >
+    <img
+      class="h-12 w-auto mx-auto -mt-16 mb-4"
+      src="../../assets/logo-full.svg"
+      alt="Bytebase"
+    />
+    <div class="w-80 bg-white p-8 py-6 rounded-lg shadow">
+      <form
+        class="w-full mt-4 h-auto flex flex-col justify-start items-center"
+        @submit.prevent="challenge"
+      >
         <template v-if="state.selectedMFAType === 'OTP'">
           <heroicons-outline:device-phone-mobile class="w-8 h-auto" />
           <p class="my-2 mb-4">{{ $t("multi-factor.auth-code") }}</p>
@@ -22,13 +32,13 @@
             type="text"
           />
         </template>
-        <button class="btn-success w-full mt-4" @click="challenge">
+        <button type="submit" class="btn-success w-full mt-4">
           <span class="w-full text-center">{{ $t("common.verify") }}</span>
         </button>
         <p class="textinfolabel mt-2">
           {{ challengeDescription }}
         </p>
-      </div>
+      </form>
       <hr class="my-3" />
       <div class="text-sm mb-2">
         <p class="">{{ $t("multi-factor.other-methods.self") }}:</p>
@@ -49,12 +59,14 @@
         </ul>
       </div>
     </div>
-  </BBModal>
+  </div>
 </template>
 
 <script lang="ts" setup>
+import { useAuthStore } from "@/store";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
 
@@ -64,27 +76,23 @@ interface LocalState {
   recoveryCode: string;
 }
 
-const props = defineProps({
-  title: {
-    type: String,
-    default: "",
-  },
-  challengeCallback: {
-    type: Function,
-    required: true,
-  },
-});
-
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 const state = reactive<LocalState>({
   selectedMFAType: "OTP",
   otpCode: "",
   recoveryCode: "",
 });
 
-const modalTitle = computed(() => {
-  return props.title ? props.title : t("multi-factor.self");
+const mfaTempToken = computed(() => {
+  return String(route.query.mfaTempToken);
 });
+const redirectUrl = computed(() => {
+  return String(route.query.redirect) || "/";
+});
+
 const challengeDescription = computed(() => {
   if (state.selectedMFAType === "OTP") {
     return t("multi-factor.other-methods.use-auth-app.description");
@@ -96,14 +104,17 @@ const challengeDescription = computed(() => {
 });
 
 const challenge = async () => {
+  const mfaContext: any = {};
   if (state.selectedMFAType === "OTP") {
-    await props.challengeCallback({
-      otpCode: state.otpCode,
-    });
+    mfaContext.otpCode = state.otpCode;
   } else if (state.selectedMFAType === "RECOVERY_CODE") {
-    await props.challengeCallback({
-      recoveryCode: state.recoveryCode,
-    });
+    mfaContext.recoveryCode = state.recoveryCode;
   }
+  await authStore.login({
+    web: true,
+    mfaTempToken: mfaTempToken.value,
+    ...mfaContext,
+  });
+  router.replace(redirectUrl.value);
 };
 </script>

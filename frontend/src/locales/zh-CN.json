@@ -479,7 +479,17 @@
           "self": "外部链接",
           "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。{viewDoc}"
         },
-        "config-updated": "配置已更新"
+        "config-updated": "配置已更新",
+        "plugin": {
+          "openai": {
+            "ai-augmentation": "AI 增强",
+            "openai-key": {
+              "self": "OpenAI 密钥",
+              "description": "提供 OpenAI 密钥以在 SQL 编辑器中开启聊天转 SQL 的能力。{viewDoc}",
+              "placeholder": "OpenAI 密钥通常以 sk-***** 开头"
+            }
+          }
+        }
       }
     },
     "sensitive-data": {
@@ -1998,7 +2008,10 @@
         "untitled": "未命名会话",
         "delete": "删除会话",
         "rename": "修改会话名称",
-        "select-or-create": "选择或{create}一个会话以开始。"
+        "select-or-create": "选择或{create}一个会话以开始。",
+        "exit-conversation-mode": "退出对话模式",
+        "view-history-conversations": "查看历史对话",
+        "new-conversation": "开启新对话"
       },
       "preset-suggestion": {
         "1": "哪个部门的员工最多？",

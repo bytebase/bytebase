@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, toRef, watch } from "vue";
 import { pick } from "lodash-es";
 import { watchThrottled } from "@vueuse/core";
 import type { TabInfo, CoreTabInfo, AnyTabInfo } from "@/types";
@@ -265,3 +265,8 @@ export const useTabStore = defineStore("tab", () => {
     reset,
   };
 });
+
+export const useCurrentTab = () => {
+  const store = useTabStore();
+  return toRef(store, "currentTab");
+};

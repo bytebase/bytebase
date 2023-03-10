@@ -4,7 +4,7 @@
     v-model="state.text"
     type="text"
     autocomplete="off"
-    class="text-main rounded-md"
+    class="text-main rounded-md placeholder:text-control-placeholder"
     :class="
       state.hasError
         ? 'border-error focus:ring-error focus:border-error'
