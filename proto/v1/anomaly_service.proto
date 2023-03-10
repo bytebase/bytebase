@@ -17,7 +17,6 @@ service AnomalyService {
   rpc SearchAnomalies(SearchAnomaliesRequest) returns (SearchAnomaliesResponse) {
     option (google.api.http) = {
       get: "/v1/anomalies:search"
-      body: "*"
     };
   }
 }
