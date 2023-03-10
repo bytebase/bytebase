@@ -1085,7 +1085,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 		var errList error
 		for _, instance := range instanceList {
 			err := func() error {
-				if instance.Engine == db.Redis {
+				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB {
 					return nil
 				}
 				if instanceMigrated[instance.UID] {
