@@ -34,7 +34,9 @@ export type FeatureType =
   | "bb.feature.backup-policy"
   | "bb.feature.environment-tier-policy"
   | "bb.feature.sensitive-data"
-  | "bb.feature.access-control";
+  | "bb.feature.access-control"
+  // Plugins
+  | "bb.feature.plugin.openai";
 
 export enum PlanType {
   FREE = 0,

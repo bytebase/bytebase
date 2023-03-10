@@ -8,7 +8,7 @@
       <div class="w-full">
         <NInput
           v-model:value="state.name"
-          class="w-full"
+          class="bb-ai-conversation-rename-input w-full"
           @keypress.enter="handleRename"
         />
       </div>
@@ -33,14 +33,14 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NInput } from "naive-ui";
 import { head } from "lodash-es";
 
-import type { Conversation } from "../types";
+import type { Conversation } from "../../types";
 import { BBModal } from "@/bbkit";
-import { useConversationStore } from "../store";
+import { useConversationStore } from "../../store";
 
 type LocalState = {
   name: string;
@@ -75,4 +75,15 @@ const handleRename = async () => {
   await store.updateConversation(conversation);
   emit("updated");
 };
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    const input = document.querySelector(
+      ".bb-ai-conversation-rename-input input[type=text]"
+    ) as HTMLInputElement;
+    if (input) {
+      input.focus();
+    }
+  });
+});
 </script>

@@ -3,7 +3,7 @@
     class="border rounded shadow py-1 px-1 bg-gray-100 border-gray-400"
     :class="[
       message.status === 'DONE'
-        ? 'w-[60%]'
+        ? 'w-[80%]'
         : message.status === 'FAILED'
         ? 'max-w-[60%]'
         : 'w-auto',

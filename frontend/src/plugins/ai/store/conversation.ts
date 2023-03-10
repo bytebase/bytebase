@@ -1,11 +1,12 @@
-import { computed, onMounted, reactive, ref, toRef, watchEffect } from "vue";
-import { groupBy, last, omit } from "lodash-es";
+import { computed, reactive, ref, unref, watchEffect } from "vue";
+import { groupBy, omit } from "lodash-es";
 import { defineStore } from "pinia";
 import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { v1 as uuidv1 } from "uuid";
 
 import { Conversation, Message } from "../types";
+import { Connection, MaybeRef } from "@/types";
 
 type RowStatus = "NORMAL" | "ARCHIVED";
 
@@ -124,20 +125,18 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     getConversationById,
   } = useLocalCache();
 
-  const selectedConversationId = ref<string>();
   const conversationList = computed(() => {
     return [...conversationById.values()];
   });
-  const selectedConversation = computed(() => {
-    const id = selectedConversationId.value;
-    if (!id) return undefined;
-    return getConversationById(id);
-  });
 
-  const fetchConversationList = async () => {
+  const fetchConversationListByConnection = async (conn: Connection) => {
     const conversationEntityList = (
       await conversations.find({
-        selector: { row_status: { $eq: "NORMAL" } },
+        selector: {
+          row_status: { $eq: "NORMAL" },
+          instanceId: { $eq: conn.instanceId },
+          databaseId: { $eq: conn.databaseId },
+        },
       })
     ).docs;
     const flattenMessageMessageList = (
@@ -165,12 +164,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
       conversation.messageList.sort((a, b) => a.created_ts - b.created_ts);
       return conversation;
     });
-    if (conversationList.length === 0) {
-      const initialConversation = await createConversation({
-        name: "",
-      });
-      conversationList.push(initialConversation);
-    }
     await fixAbnormalMessages(conversationList.flatMap((c) => c.messageList));
     return conversationList;
   };
@@ -240,10 +233,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     return convertMessage(m, message.conversation);
   };
 
-  const selectConversation = (c: Conversation | undefined) => {
-    selectedConversationId.value = c?.id;
-  };
-
   const fixAbnormalMessages = async (messageList: Message[]) => {
     const requests = messageList
       .filter((message) => message.status === "LOADING")
@@ -256,37 +245,36 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   };
 
   const reset = () => {
-    console.log("reset conversation storage");
+    // console.debug("reset conversation storage");
     return Promise.all([conversations.destroy(), messages.destroy()]);
   };
-
-  watchEffect(() => {
-    if (!selectedConversationId.value) {
-      selectConversation(last(conversationList.value));
-    }
-  });
 
   return {
     conversationById,
     conversationList,
-    selectedConversation,
-    fetchConversationList,
+    fetchConversationListByConnection,
     createConversation,
     updateConversation,
     deleteConversation,
     createMessage,
     updateMessage,
-    selectConversation,
     reset,
   };
 });
 
-export const useConversationList = () => {
+export const useConversationListByConnection = (conn: MaybeRef<Connection>) => {
   const store = useConversationStore();
   const ready = ref(false);
-  onMounted(async () => {
-    await store.fetchConversationList();
+  watchEffect(async () => {
+    ready.value = false;
+    await store.fetchConversationListByConnection(unref(conn));
     ready.value = true;
   });
-  return { conversationList: toRef(store, "conversationList"), ready };
+  const list = computed(() => {
+    const { instanceId, databaseId } = unref(conn);
+    return store.conversationList.filter(
+      (c) => c.instanceId === instanceId && c.databaseId === databaseId
+    );
+  });
+  return { list, ready };
 };
