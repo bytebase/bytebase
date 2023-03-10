@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser"
@@ -249,6 +250,11 @@ func removeRedundantColumnOption(table *ast.CreateTableStmt, standard *ast.Creat
 					if standardCollate == nil {
 						continue
 					}
+				} else if option.Tp == ast.ColumnOptionDefaultValue {
+					standardDefault := extractColumnDefault(standardColumn.Options)
+					if standardDefault == nil && option.Expr.GetType().GetType() == mysql.TypeNull {
+						continue
+					}
 				}
 				newOptionList = append(newOptionList, option)
 			}
@@ -260,6 +266,15 @@ func removeRedundantColumnOption(table *ast.CreateTableStmt, standard *ast.Creat
 func extractColumnCollate(list []*ast.ColumnOption) *ast.ColumnOption {
 	for _, option := range list {
 		if option.Tp == ast.ColumnOptionCollate {
+			return option
+		}
+	}
+	return nil
+}
+
+func extractColumnDefault(list []*ast.ColumnOption) *ast.ColumnOption {
+	for _, option := range list {
+		if option.Tp == ast.ColumnOptionDefaultValue {
 			return option
 		}
 	}
