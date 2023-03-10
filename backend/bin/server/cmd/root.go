@@ -193,7 +193,6 @@ func start() {
 
 	var err error
 
-	flags.externalURL = "http://localhost:3000"
 	if flags.externalURL != "" {
 		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
 		if err != nil {
