@@ -155,7 +155,7 @@ const (
 	FeatureSensitiveData FeatureType = "bb.feature.sensitive-data"
 	// FeatureAccessControl allows user to config the access control.
 	FeatureAccessControl FeatureType = "bb.feature.access-control"
-	// FeaturePluginOpenAI enables AI features powered by OpenAI
+	// FeaturePluginOpenAI enables AI features powered by OpenAI.
 	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
 )
 
