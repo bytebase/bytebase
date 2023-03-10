@@ -233,7 +233,7 @@ func RegisterLoggingServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 // RegisterLoggingServiceHandlerFromEndpoint is same as RegisterLoggingServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterLoggingServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}
