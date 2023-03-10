@@ -1108,7 +1108,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				defer driver.Close(ctx)
 
 				history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-					InstanceID: instance.UID,
+					InstanceID: &instance.UID,
 				})
 				if err != nil {
 					return err
@@ -1152,7 +1152,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 						CreatedTs:           h.CreatedTs,
 						UpdaterID:           updaterID,
 						UpdatedTs:           h.UpdatedTs,
-						InstanceID:          instance.UID,
+						InstanceID:          &instance.UID,
 						DatabaseID:          databaseID,
 						IssueID:             issueID,
 						ReleaseVersion:      h.ReleaseVersion,
