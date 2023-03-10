@@ -172,6 +172,7 @@
 
     <!-- 2FA setting section -->
     <div
+      v-if="showMFAConfig"
       class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 border-t mt-16 pt-8 pb-4"
     >
       <div class="w-full flex flex-row justify-between items-center">
@@ -328,6 +329,11 @@ const principal = computed(() => {
     return principalStore.principalById(parseInt(props.principalId));
   }
   return currentUser.value;
+});
+
+const showMFAConfig = computed(() => {
+  // Only show MFA config for the user themselves.
+  return principal.value.id === currentUser.value.id;
 });
 
 const passwordMismatch = computed(() => {
