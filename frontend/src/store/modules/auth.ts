@@ -28,10 +28,10 @@ export const useAuthStore = defineStore("auth_v1", {
     },
     async login(request: Partial<LoginRequest>) {
       const {
-        data: { mfaRequired },
+        data: { mfaTempToken },
       } = await axios.post<LoginResponse>("/v1/auth/login", request);
-      if (mfaRequired) {
-        return mfaRequired;
+      if (mfaTempToken) {
+        return mfaTempToken;
       }
 
       const userId = getIntCookie("user");

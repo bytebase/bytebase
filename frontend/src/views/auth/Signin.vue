@@ -201,8 +201,6 @@ const identityProviderList = computed(
 );
 
 onMounted(async () => {
-  // trigger logout to clear any existing session.
-  await authStore.logout();
   // Navigate to signup if needs admin setup.
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
@@ -273,15 +271,16 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       },
       web: true,
     };
-    const mfaRequired = await authStore.login({
+    const mfaTempToken = await authStore.login({
       ...signinContext,
     });
-    if (mfaRequired) {
+    if (mfaTempToken) {
       state.showMFAChallengeModal = true;
       state.mfaChallengeCallback = async (mfaContext) => {
         await authStore.login({
           ...signinContext,
           ...mfaContext,
+          mfaTempToken,
         });
         router.push("/");
       };
@@ -300,15 +299,16 @@ const trySignin = async () => {
     password: state.password,
     web: true,
   };
-  const mfaRequired = await authStore.login({
+  const mfaTempToken = await authStore.login({
     ...signinContext,
   });
-  if (mfaRequired) {
+  if (mfaTempToken) {
     state.showMFAChallengeModal = true;
     state.mfaChallengeCallback = async (mfaContext) => {
       await authStore.login({
         ...signinContext,
         ...mfaContext,
+        mfaTempToken,
       });
       router.push("/");
     };
