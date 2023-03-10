@@ -63,7 +63,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}
 
 	var driver db.Driver
-	if instance.Engine == db.MongoDB {
+	if instance.Engine == db.Oracle {
+		return true, nil, errors.Errorf("Creating Oracle database is not supported")
+	} else if instance.Engine == db.MongoDB {
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
 		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, payload.DatabaseName)
