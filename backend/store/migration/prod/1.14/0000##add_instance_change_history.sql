@@ -6,7 +6,8 @@ CREATE TABLE instance_change_history (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    -- NULL means the migrations for Bytebase's own metadata database.
+    instance_id INTEGER REFERENCES instance (id),
     -- NULL means an instance-level change.
     database_id INTEGER REFERENCES db (id),
     -- issue_id is nullable because this field is backfilled and may not be present.

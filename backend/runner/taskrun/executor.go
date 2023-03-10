@@ -77,7 +77,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	}
 
 	mi := &db.MigrationInfo{
-		InstanceID:     instance.UID,
+		InstanceID:     &instance.UID,
 		DatabaseID:     &database.UID,
 		CreatorID:      api.SystemBotID,
 		ReleaseVersion: profile.Version,
@@ -93,7 +93,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
 	if issue != nil {
-		// Concate issue title and task name as the migration description so that user can see
+		// Concat issue title and task name as the migration description so that user can see
 		// more context of the migration.
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
 		mi.IssueID = strconv.Itoa(issue.UID)

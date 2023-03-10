@@ -143,7 +143,7 @@ type MigrationInfo struct {
 	ReleaseVersion string
 	Version        string
 	Namespace      string
-	InstanceID     int
+	InstanceID     *int
 	Database       string
 	DatabaseID     *int
 	Environment    string
@@ -350,7 +350,7 @@ type MigrationHistoryFind struct {
 
 	// Fields below should be set if fetching from metaDB instance_change_history table.
 	DatabaseID *int
-	InstanceID int
+	InstanceID *int
 }
 
 // ConnectionConfig is the configuration for connections.
