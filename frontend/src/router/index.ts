@@ -29,6 +29,7 @@ import {
 } from "../utils";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
+import MultiFactor from "../views/auth/MultiFactor.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
 import {
@@ -58,6 +59,7 @@ const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
 const SIGNIN_MODULE = "auth.signin";
 const SIGNUP_MODULE = "auth.signup";
+const MFA_MODULE = "auth.mfa";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
@@ -107,6 +109,13 @@ const routes: Array<RouteRecordRaw> = [
         props: true,
       },
     ],
+  },
+  {
+    path: "/auth/mfa",
+    name: MFA_MODULE,
+    meta: { title: () => t("multi-factor.self") },
+    component: MultiFactor,
+    props: true,
   },
   {
     path: "/oauth/callback",
@@ -1014,6 +1023,7 @@ router.beforeEach((to, from, next) => {
   if (
     to.name === SIGNIN_MODULE ||
     to.name === SIGNUP_MODULE ||
+    to.name === MFA_MODULE ||
     to.name === ACTIVATE_MODULE ||
     to.name === PASSWORD_RESET_MODULE ||
     to.name === PASSWORD_FORGOT_MODULE

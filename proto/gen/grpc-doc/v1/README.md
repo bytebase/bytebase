@@ -733,6 +733,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
+| mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
 
 
 
@@ -748,6 +749,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+| mfa_temp_token | [string](#string) | optional |  |
 
 
 
