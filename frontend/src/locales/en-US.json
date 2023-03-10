@@ -481,7 +481,17 @@
           "self": "External URL",
           "description": "The external URL where user visits Bytebase, must start with http:// or https://. {viewDoc}"
         },
-        "config-updated": "Configuration is updated"
+        "config-updated": "Configuration is updated",
+        "plugin": {
+          "openai": {
+            "ai-augmentation": "AI augmentation",
+            "openai-key": {
+              "self": "OpenAI key",
+              "description": "Supply OpenAI key to enable chat to SQL capability in SQL Editor. {viewDoc}",
+              "placeholder": "An OpenAI Key usually starts with sk-*****"
+            }
+          }
+        }
       }
     },
     "sensitive-data": {
@@ -1999,7 +2009,12 @@
         "untitled": "Untitled conversation",
         "delete": "Delete conversation",
         "rename": "Rename conversation",
-        "select-or-create": "Select or {create} a conversation to start."
+        "select-or-create": "Select or {create} a conversation to start.",
+        "exit-conversation-mode": "Exit chat mode",
+        "history-conversations": "History conversations",
+        "view-history-conversations": "View history conversations",
+        "new-conversation": "Start new conversation",
+        "no-message": "No message in this conversation"
       },
       "preset-suggestion": {
         "1": "Which department has most employees?",

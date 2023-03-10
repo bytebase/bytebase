@@ -3,7 +3,6 @@
     v-model:value="state.value"
     :disabled="disabled"
     :placeholder="$t('plugin.ai.text-to-sql-placeholder')"
-    class="bb-ai-prompt-input"
     @keypress.enter="handlePressEnter"
   >
     <template #prefix>
@@ -24,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive } from "vue";
+import { reactive } from "vue";
 import { NInput } from "naive-ui";
 
 type LocalState = {
@@ -56,17 +55,6 @@ const applyValue = (value: string) => {
 const handlePressEnter = () => {
   applyValue(state.value);
 };
-
-onMounted(() => {
-  requestAnimationFrame(() => {
-    const input = document.querySelector(
-      ".bb-ai-prompt-input input[type=text]"
-    ) as HTMLInputElement;
-    if (input) {
-      input.focus();
-    }
-  });
-});
 </script>
 
 <style lang="postcss">

@@ -25,6 +25,7 @@ export const getDefaultTab = (): TabInfo => {
     statement: "",
     selectedStatement: "",
     mode: TabMode.ReadOnly,
+    editMode: "SQL-EDITOR",
     isExecutingSQL: false,
   };
 };
