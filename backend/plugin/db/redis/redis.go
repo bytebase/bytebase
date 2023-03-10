@@ -155,9 +155,8 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 		}
 
 		val := cmd.Val()
-		switch val.(type) {
-		// json.Marshal cannot handle map[interface{}]interface{}
-		case map[interface{}]interface{}:
+		if _, ok := val.(map[interface{}]interface{}); ok {
+			// json.Marshal cannot handle map[interface{}]interface{}
 			val = cmd.String()
 		}
 
