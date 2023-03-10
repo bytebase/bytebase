@@ -91,7 +91,7 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT) DEFAULT CHARACTER SET = utf8;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` DEFAULT CHARACTER SET=UTF8MB4;\n\n",
+			want: "",
 		},
 		// DEFAULT COLLATE
 		{
@@ -102,7 +102,7 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT) DEFAULT COLLATE = latin1_swedish_ci;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
+			want: "",
 		},
 		// CHECKSUM
 		{

@@ -878,10 +878,18 @@ func isColumnTypesEqual(old, new *ast.ColumnDef) bool {
 }
 
 func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
-	oldNormalizeOptions := normalizeColumnOptions(old)
-	newNormalizeOptions := normalizeColumnOptions(new)
+	oldCollate, oldNormalizeOptions := normalizeColumnOptions(old)
+	newCollate, newNormalizeOptions := normalizeColumnOptions(new)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
 		return false
+	}
+	if newCollate != nil {
+		if oldCollate == nil {
+			return false
+		}
+		if oldCollate.StrValue != newCollate.StrValue {
+			return false
+		}
 	}
 	for idx, oldOption := range oldNormalizeOptions {
 		oldOptionStr, err := toString(oldOption)
@@ -904,10 +912,14 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 
 // normalizeColumnOptions normalizes the column options.
 // It skips the NULL option, NO option and then order the options by OptionType.
-func normalizeColumnOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
+func normalizeColumnOptions(options []*ast.ColumnOption) (*ast.ColumnOption, []*ast.ColumnOption) {
 	var retOptions []*ast.ColumnOption
+	var collateOption *ast.ColumnOption
 	for _, option := range options {
 		switch option.Tp {
+		case ast.ColumnOptionCollate:
+			collateOption = option
+			continue
 		case ast.ColumnOptionNull:
 			continue
 		case ast.ColumnOptionNoOption:
@@ -922,7 +934,7 @@ func normalizeColumnOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
 	sort.Slice(retOptions, func(i, j int) bool {
 		return retOptions[i].Tp < retOptions[j].Tp
 	})
-	return retOptions
+	return collateOption, retOptions
 }
 
 // isIndexEqual returns true if definitions of two indexes are the same.
@@ -1198,6 +1210,12 @@ func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *as
 	for oldTp, oldOption := range oldOptionsMap {
 		newOption, ok := newOptionsMap[oldTp]
 		if !ok {
+			switch oldOption.Tp {
+			// For table engine, table charset and table collation, if oldTable has but newTable doesn't,
+			// we skip drop them.
+			case ast.TableOptionEngine, ast.TableOptionCharset, ast.TableOptionCollate:
+				continue
+			}
 			// We should drop the table option if it doesn't exist in the new table options.
 			if astOption := dropTableOption(oldOption); astOption != nil {
 				options = append(options, astOption)
