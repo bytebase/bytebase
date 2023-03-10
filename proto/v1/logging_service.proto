@@ -17,13 +17,13 @@ option go_package = "generated-go/v1";
 
 service LoggingService {
   rpc SearchLogs(SearchLogsRequest) returns (SearchLogsResponse) {
-  option (google.api.http) = {
-    post: "/v1/{parent=projects/*}/logs"
-    additional_bindings: {
-      post: "/v1/{parent=workspaces/*}/logs"
-    }
-  };
-  option (google.api.method_signature) = "parent";
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/logs"
+      additional_bindings: {
+        post: "/v1/{parent=workspaces/*}/logs"
+      }
+    };
+    option (google.api.method_signature) = "parent";
   }
 }
 
