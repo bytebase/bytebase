@@ -11,6 +11,7 @@ import (
 	go_ora "github.com/sijms/go-ora/v2"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 var (
@@ -65,8 +66,8 @@ func (*Driver) GetType() db.Type {
 }
 
 // GetDBConnection gets a database connection.
-func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return nil, errors.Errorf("GetDBConnection is unsupported for Oracle")
+func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
+	return driver.db, nil
 }
 
 // Execute executes a SQL statement and returns the affected rows.
@@ -76,7 +77,7 @@ func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]interface{}, error) {
-	// TODO(d): implement it.
-	return nil, nil
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	// TODO(d): support multi-statement.
+	return util.Query(ctx, db.Oracle, conn, statement, queryContext)
 }

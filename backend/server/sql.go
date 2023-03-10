@@ -229,12 +229,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
-		composedInstance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment ID: %s", instance.EnvironmentID)).SetInternal(err)
 		}
-		if composedInstance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
+		if environment == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %s", instance.EnvironmentID))
 		}
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		role := c.Get(getRoleContextKey()).(api.Role)
@@ -351,7 +351,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				dbType,
 				dbSchema.Metadata.CharacterSet,
 				dbSchema.Metadata.Collation,
-				composedInstance.EnvironmentID,
+				environment.UID,
 				exec.Statement,
 				catalog,
 				connection,

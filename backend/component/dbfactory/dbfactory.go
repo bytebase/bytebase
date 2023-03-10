@@ -163,7 +163,11 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			},
-			ReadOnly: true,
+			SRV:                    dataSource.SRV,
+			AuthenticationDatabase: dataSource.AuthenticationDatabase,
+			SID:                    dataSource.SID,
+			ServiceName:            dataSource.ServiceName,
+			ReadOnly:               true,
 		},
 		db.ConnectionContext{
 			EnvironmentID: instance.EnvironmentID,
