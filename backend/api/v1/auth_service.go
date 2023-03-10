@@ -478,15 +478,49 @@ func convertUserRole(userRole v1pb.UserRole) api.Role {
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
 	var loginUser *store.UserMessage
-	var err error
-	if request.IdpName == "" {
-		loginUser, err = s.getAndVerifyUser(ctx, request)
-	} else {
-		loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
-	}
+	var mfaPassed bool
+
+	mfaTempToken, err := auth.GetMFATempToken(ctx)
 	if err != nil {
 		return nil, err
 	}
+	if mfaTempToken == "" {
+		if request.IdpName == "" {
+			loginUser, err = s.getAndVerifyUser(ctx, request)
+		} else {
+			loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
+		}
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		userID, err := auth.GetUserIDFromMFATempToken(mfaTempToken, s.profile.Mode, s.secret)
+		if err != nil {
+			return nil, err
+		}
+		user, err := s.store.GetUserByID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		if user == nil {
+			return nil, status.Errorf(codes.Unauthenticated, "user not found")
+		}
+
+		if request.OtpCode != nil {
+			if err := challengeMFACode(user, *request.OtpCode); err != nil {
+				return nil, err
+			}
+		} else if request.RecoveryCode != nil {
+			if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, status.Errorf(codes.Unauthenticated, "MFA is required")
+		}
+		loginUser = user
+		mfaPassed = true
+	}
+
 	if loginUser == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
 	}
@@ -494,25 +528,27 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
 
-	if s.licenseService.IsFeatureEnabled(api.Feature2FA) {
-		if loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
-			if request.OtpCode != nil {
-				if err := challengeMFACode(loginUser, *request.OtpCode); err != nil {
-					return nil, err
-				}
-			} else if request.RecoveryCode != nil {
-				if err := s.challengeRecoveryCode(ctx, loginUser, *request.RecoveryCode); err != nil {
-					return nil, err
-				}
-			} else {
-				// Return FailedPrecondition error to indicate MFA is required.
-				return nil, status.Errorf(codes.FailedPrecondition, "MFA is required")
-			}
-		}
-	}
-
 	var accessToken string
 	if request.Web {
+		// We only do MFA check in web login.
+		if s.licenseService.IsFeatureEnabled(api.Feature2FA) {
+			if !mfaPassed && loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != "" {
+				mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
+				}
+				// Set the MFA temp token in the header and return MFA required flag to frontend.
+				if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
+					auth.GatewayMetadataMFATempTokenKey: mfaTempToken,
+				})); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
+				}
+				return &v1pb.LoginResponse{
+					MfaRequired: true,
+				}, nil
+			}
+		}
+
 		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
@@ -547,6 +583,7 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 		auth.GatewayMetadataAccessTokenKey:  "",
 		auth.GatewayMetadataRefreshTokenKey: "",
+		auth.GatewayMetadataMFATempTokenKey: "",
 		auth.GatewayMetadataUserIDKey:       "",
 	})); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)

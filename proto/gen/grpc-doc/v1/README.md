@@ -748,6 +748,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+| mfa_required | [bool](#bool) |  |  |
 
 
 

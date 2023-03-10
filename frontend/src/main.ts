@@ -76,7 +76,11 @@ axios.interceptors.response.use(
       // in such case, we shouldn't logout.
       if (error.response.status == 401) {
         const origin = location.origin;
-        if (error.response.request.responseURL.startsWith(origin)) {
+        if (
+          error.response.request.responseURL.startsWith(origin) &&
+          // do not logout when the failed request is in /auth endpoint.
+          !location.pathname.startsWith("/auth")
+        ) {
           // If the request URL starts with the browser's location origin
           // e.g. http://localhost:3000/
           // we know this is a request to Bytebase API endpoint (not an external service).

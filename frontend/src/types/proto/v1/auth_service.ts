@@ -213,6 +213,7 @@ export interface OIDCIdentityProviderContext {
 
 export interface LoginResponse {
   token: string;
+  mfaRequired: boolean;
 }
 
 export interface LogoutRequest {
@@ -916,13 +917,16 @@ export const OIDCIdentityProviderContext = {
 };
 
 function createBaseLoginResponse(): LoginResponse {
-  return { token: "" };
+  return { token: "", mfaRequired: false };
 }
 
 export const LoginResponse = {
   encode(message: LoginResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.token !== "") {
       writer.uint32(10).string(message.token);
+    }
+    if (message.mfaRequired === true) {
+      writer.uint32(16).bool(message.mfaRequired);
     }
     return writer;
   },
@@ -937,6 +941,9 @@ export const LoginResponse = {
         case 1:
           message.token = reader.string();
           break;
+        case 2:
+          message.mfaRequired = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -946,18 +953,23 @@ export const LoginResponse = {
   },
 
   fromJSON(object: any): LoginResponse {
-    return { token: isSet(object.token) ? String(object.token) : "" };
+    return {
+      token: isSet(object.token) ? String(object.token) : "",
+      mfaRequired: isSet(object.mfaRequired) ? Boolean(object.mfaRequired) : false,
+    };
   },
 
   toJSON(message: LoginResponse): unknown {
     const obj: any = {};
     message.token !== undefined && (obj.token = message.token);
+    message.mfaRequired !== undefined && (obj.mfaRequired = message.mfaRequired);
     return obj;
   },
 
   fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
     const message = createBaseLoginResponse();
     message.token = object.token ?? "";
+    message.mfaRequired = object.mfaRequired ?? false;
     return message;
   },
 };

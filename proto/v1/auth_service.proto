@@ -183,6 +183,8 @@ message OIDCIdentityProviderContext {
 
 message LoginResponse {
   string token = 1;
+
+  bool mfa_required = 2;
 }
 
 message LogoutRequest {

@@ -18,6 +18,7 @@ func GatewayResponseModifier(ctx context.Context, response http.ResponseWriter, 
 	}
 	processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, response)
 	processMetadata(md, GatewayMetadataRefreshTokenKey, RefreshTokenCookieName, true /* httpOnly */, response)
+	processMetadata(md, GatewayMetadataMFATempTokenKey, MFATempTokenCookieName, true /* httpOnly */, response)
 	processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, response)
 	return nil
 }

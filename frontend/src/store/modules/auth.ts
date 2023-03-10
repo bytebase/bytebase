@@ -5,7 +5,12 @@ import { computed } from "vue";
 import { SignupInfo, ActivateInfo } from "@/types";
 import { getIntCookie } from "@/utils";
 import { authServiceClient } from "@/grpcweb";
-import { LoginRequest, User, UserType } from "@/types/proto/v1/auth_service";
+import {
+  LoginRequest,
+  LoginResponse,
+  User,
+  UserType,
+} from "@/types/proto/v1/auth_service";
 import { convertUserToPrincipal, useUserStore } from ".";
 import { unknown } from "@/utils/common";
 
@@ -22,14 +27,18 @@ export const useAuthStore = defineStore("auth_v1", {
       return getIntCookie("user") != undefined;
     },
     async login(request: Partial<LoginRequest>) {
-      await axios.post("/v1/auth/login", request);
+      const {
+        data: { mfaRequired },
+      } = await axios.post<LoginResponse>("/v1/auth/login", request);
+      if (mfaRequired) {
+        return mfaRequired;
+      }
+
       const userId = getIntCookie("user");
       if (userId) {
         const loggedInUser = await useUserStore().getOrFetchUserById(userId);
         this.currentUser = loggedInUser;
-        return loggedInUser;
       }
-      return unknown("USER");
     },
     async signup(signupInfo: SignupInfo) {
       await authServiceClient.createUser({
@@ -40,12 +49,11 @@ export const useAuthStore = defineStore("auth_v1", {
           userType: UserType.USER,
         },
       });
-      const user = await this.login({
+      await this.login({
         email: signupInfo.email,
         password: signupInfo.password,
         web: true,
       });
-      return user;
     },
     async logout() {
       const unknownUser = unknown("USER");
