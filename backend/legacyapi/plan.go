@@ -155,6 +155,8 @@ const (
 	FeatureSensitiveData FeatureType = "bb.feature.sensitive-data"
 	// FeatureAccessControl allows user to config the access control.
 	FeatureAccessControl FeatureType = "bb.feature.access-control"
+	// FeaturePluginOpenAI enables AI features powered by OpenAI
+	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
 )
 
 // Name returns a readable name of the feature.
@@ -218,6 +220,8 @@ func (e FeatureType) Name() string {
 		return "Sensitive data"
 	case FeatureAccessControl:
 		return "Access Control"
+	case FeaturePluginOpenAI:
+		return "OpenAI"
 	}
 	return ""
 }
@@ -274,6 +278,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
+	// Plugins
+	FeaturePluginOpenAI: {false, false, true},
 }
 
 // Plan is the API message for a plan.
