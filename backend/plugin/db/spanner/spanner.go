@@ -4,7 +4,6 @@ package spanner
 import (
 	"context"
 	"database/sql"
-	_ "embed"
 	"fmt"
 	"regexp"
 	"strings"
@@ -27,14 +26,9 @@ import (
 )
 
 var (
-	//go:embed spanner_migration_schema.sql
-	migrationSchema string
-
 	excludedDatabaseList = map[string]bool{
 		"bytebase": true,
 	}
-
-	createBytebaseDatabaseStatement = `CREATE DATABASE bytebase`
 
 	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+)")
 
