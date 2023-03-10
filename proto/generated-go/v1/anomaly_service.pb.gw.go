@@ -31,15 +31,18 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
+var (
+	filter_AnomalyService_SearchAnomalies_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
 func request_AnomalyService_SearchAnomalies_0(ctx context.Context, marshaler runtime.Marshaler, client AnomalyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq SearchAnomaliesRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AnomalyService_SearchAnomalies_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -52,11 +55,10 @@ func local_request_AnomalyService_SearchAnomalies_0(ctx context.Context, marshal
 	var protoReq SearchAnomaliesRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AnomalyService_SearchAnomalies_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -71,7 +73,7 @@ func local_request_AnomalyService_SearchAnomalies_0(ctx context.Context, marshal
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAnomalyServiceHandlerFromEndpoint instead.
 func RegisterAnomalyServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AnomalyServiceServer) error {
 
-	mux.Handle("POST", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -79,7 +81,7 @@ func RegisterAnomalyServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.AnomalyService/SearchAnomalies", runtime.WithHTTPPathPattern("/v1/anomalies/search"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.AnomalyService/SearchAnomalies", runtime.WithHTTPPathPattern("/v1/anomalies:search"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -137,13 +139,13 @@ func RegisterAnomalyServiceHandler(ctx context.Context, mux *runtime.ServeMux, c
 // "AnomalyServiceClient" to call the correct interceptors.
 func RegisterAnomalyServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AnomalyServiceClient) error {
 
-	mux.Handle("POST", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.AnomalyService/SearchAnomalies", runtime.WithHTTPPathPattern("/v1/anomalies/search"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.AnomalyService/SearchAnomalies", runtime.WithHTTPPathPattern("/v1/anomalies:search"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -163,7 +165,7 @@ func RegisterAnomalyServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 }
 
 var (
-	pattern_AnomalyService_SearchAnomalies_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "anomalies", "search"}, ""))
+	pattern_AnomalyService_SearchAnomalies_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "anomalies"}, "search"))
 )
 
 var (
