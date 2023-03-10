@@ -9,7 +9,9 @@ import (
 	// Import go-ora Oracle driver.
 	"github.com/pkg/errors"
 	go_ora "github.com/sijms/go-ora/v2"
+	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -71,9 +73,29 @@ func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, err
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
-	// TODO(d): implement it.
-	return 0, nil
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	sqlResult, err := tx.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	var totalRowsAffected int64
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		log.Debug("rowsAffected returns error", zap.Error(err))
+	} else {
+		totalRowsAffected = rowsAffected
+	}
+	return totalRowsAffected, nil
 }
 
 // QueryConn querys a SQL statement in a given connection.
