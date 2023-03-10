@@ -165,6 +165,7 @@ const handleCopy = () => {
 };
 
 const finishEditing = async (update: boolean) => {
+  state.editing = false;
   if (!update) {
     state.code = props.message.content;
   } else {
