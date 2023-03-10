@@ -141,6 +141,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 			if table, exists := tableSet[node.Table.Name.String()]; exists {
 				table.missing = false
 				removeRedundantTableOption(table.createTable, node)
+				removeRedundantColumnOption(table.createTable, node)
 			}
 		case *ast.CreateIndexStmt:
 			if table, exists := tableSet[node.Table.Name.String()]; exists {
@@ -231,6 +232,38 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 	}
 	remainingStatement = append([]string{orderedSDL}, remainingStatement...)
 	return strings.Join(remainingStatement, ""), nil
+}
+
+func removeRedundantColumnOption(table *ast.CreateTableStmt, standard *ast.CreateTableStmt) {
+	columnSet := make(map[string]*ast.ColumnDef)
+	for _, column := range standard.Cols {
+		columnSet[column.Name.Name.O] = column
+	}
+
+	for _, column := range table.Cols {
+		var newOptionList []*ast.ColumnOption
+		if standardColumn, exists := columnSet[column.Name.Name.O]; exists {
+			for _, option := range column.Options {
+				if option.Tp == ast.ColumnOptionCollate {
+					standardCollate := extractColumnCollate(standardColumn.Options)
+					if standardCollate == nil {
+						continue
+					}
+				}
+				newOptionList = append(newOptionList, option)
+			}
+		}
+		column.Options = newOptionList
+	}
+}
+
+func extractColumnCollate(list []*ast.ColumnOption) *ast.ColumnOption {
+	for _, option := range list {
+		if option.Tp == ast.ColumnOptionCollate {
+			return option
+		}
+	}
+	return nil
 }
 
 func removeRedundantTableOption(table *ast.CreateTableStmt, standard *ast.CreateTableStmt) {
