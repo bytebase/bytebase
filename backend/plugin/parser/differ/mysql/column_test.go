@@ -228,6 +228,11 @@ func TestColumnCollate(t *testing.T) {
 			new:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Holmes' NOT NULL);`,
 			want: "",
 		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Holmes' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
+			want: "",
+		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
