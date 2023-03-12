@@ -670,7 +670,8 @@ CREATE TABLE issue (
     -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
     assignee_need_attention BOOLEAN NOT NULL DEFAULT FALSE, 
-    payload JSONB NOT NULL DEFAULT '{}'
+    payload JSONB NOT NULL DEFAULT '{}',
+    external_context TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_issue_project_id ON issue(project_id);
