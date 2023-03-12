@@ -69,7 +69,7 @@ type TableKey struct {
 	Table  string
 }
 
-// TableKey is the map key for table metadata.
+// IndexKey is the map key for table metadata.
 type IndexKey struct {
 	Schema string
 	Table  string
