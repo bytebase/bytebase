@@ -111,7 +111,6 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 		return nil, errors.Wrapf(err, "failed to get indices")
 	}
 	// TODO(d): foreign keys.
-
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
@@ -134,7 +133,6 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
-		// table.ForeignKeys = foreignKeysMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
@@ -212,10 +210,6 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		if err := colRows.Scan(&schemaName, &tableName, &indexName, &columnName); err != nil {
 			return nil, err
 		}
-		if err != nil {
-			return nil, err
-		}
-
 		key := db.IndexKey{Schema: schemaName, Table: tableName, Index: indexName}
 		expressionsMap[key] = append(expressionsMap[key], columnName)
 	}
@@ -236,10 +230,6 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		if err := expRows.Scan(&schemaName, &tableName, &indexName, &columnExpression, &position); err != nil {
 			return nil, err
 		}
-		if err != nil {
-			return nil, err
-		}
-
 		key := db.IndexKey{Schema: schemaName, Table: tableName, Index: indexName}
 		// Position starts from 1.
 		expIndex := position - 1
