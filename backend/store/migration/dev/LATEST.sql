@@ -764,7 +764,7 @@ CREATE TABLE activity (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    container_id INTEGER NOT NULL CHECK (container_id > 0),
+    container_id INTEGER NOT NULL CONSTRAINT activity_container_id_check CHECK (container_id >= 0),
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
     comment TEXT NOT NULL DEFAULT '',

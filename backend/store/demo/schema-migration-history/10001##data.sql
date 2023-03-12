@@ -158,7 +158,7 @@ Let''s try some simple tasks:
 INSERT INTO "public"."activity" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "container_id", "type", "level", "comment", "payload") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'bb.issue.create', 'INFO', '', '{}'),
 (102, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'bb.issue.comment.create', 'INFO', 'Go fish!', '{}'),
-(103, 'NORMAL', 101, 1657272815, 101, 1657272815, 101, 'bb.member.create', 'INFO', '', '{"role": "OWNER", "principalId": 101, "memberStatus": "ACTIVE", "principalName": "Demo", "principalEmail": "demo@example.com"}'),
+(103, 'NORMAL', 101, 1657272815, 101, 1657272815, 0, 'bb.member.create', 'INFO', '', '{"role": "OWNER", "principalId": 101, "memberStatus": "ACTIVE", "principalName": "Demo", "principalEmail": "demo@example.com"}'),
 (104, 'NORMAL', 101, 1657272880, 101, 1657272880, 1, 'bb.project.database.transfer', 'INFO', 'Transferred out database "employee" to project "DEMO".', '{"databaseId": 103, "databaseName": "employee"}'),
 (105, 'NORMAL', 101, 1657272880, 101, 1657272880, 101, 'bb.project.database.transfer', 'INFO', 'Transferred in database "employee" from project "Default".', '{"databaseId": 103, "databaseName": "employee"}'),
 (106, 'NORMAL', 101, 1657272890, 101, 1657272890, 102, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}'),

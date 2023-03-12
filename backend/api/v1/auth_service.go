@@ -187,8 +187,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error: %v", err)
 	}
 	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		ContainerID: user.ID,
+		CreatorID: user.ID,
+		// The container id is 0 because the activity is related to workspace.
+		ContainerID: 0,
 		Type:        api.ActivityMemberCreate,
 		Level:       api.ActivityInfo,
 		Payload:     string(bytes),

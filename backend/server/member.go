@@ -41,8 +41,9 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: user.ID,
+				CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+				// The container id is 0 because the activity is related to workspace.
+				ContainerID: 0,
 				Type:        api.ActivityMemberCreate,
 				Level:       api.ActivityInfo,
 				Payload:     string(bytes),
@@ -172,8 +173,9 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 				}
 				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-					ContainerID: user.ID,
+					CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+					// The container id is 0 because the activity is related to workspace.
+					ContainerID: 0,
 					Type:        api.ActivityMemberRoleUpdate,
 					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
@@ -197,8 +199,9 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					theType = api.ActivityMemberDeactivate
 				}
 				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-					ContainerID: user.ID,
+					CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+					// The container id is 0 because the activity is related to workspace.
+					ContainerID: 0,
 					Type:        theType,
 					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
