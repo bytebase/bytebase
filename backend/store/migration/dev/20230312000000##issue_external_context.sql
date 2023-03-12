@@ -1,0 +1,1 @@
+ALTER TABLE issue ADD COLUMN external_context TEXT NOT NULL DEFAULT '';
