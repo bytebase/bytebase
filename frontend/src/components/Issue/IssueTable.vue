@@ -17,7 +17,7 @@
         v-for="(column, index) in columnList"
         :key="index"
         scope="col"
-        class="pl-2 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
+        class="pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
         :class="[column.center && 'text-center pr-2']"
       >
         <template v-if="index === 0">
@@ -43,7 +43,7 @@
         <!-- width: 1% means as narrow as possible -->
         <input
           type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
           :checked="isIssueSelected(issue)"
         />
       </BBTableCell>
@@ -121,7 +121,7 @@
 
   <div
     v-if="isTableInViewport && selectedIssueList.length > 0"
-    class="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-2 py-2 border border-t-0"
+    class="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-4 py-2 border border-t-0"
   >
     <BatchIssueActions :issue-list="selectedIssueList" />
   </div>
