@@ -69,6 +69,13 @@ type TableKey struct {
 	Table  string
 }
 
+// IndexKey is the map key for table metadata.
+type IndexKey struct {
+	Schema string
+	Table  string
+	Index  string
+}
+
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[Type]driverFunc)
