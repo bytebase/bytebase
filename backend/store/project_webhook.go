@@ -38,6 +38,7 @@ func (p *ProjectWebhookMessage) ToAPIProjectWebhook() *api.ProjectWebhook {
 		Type:         p.Type,
 		URL:          p.URL,
 		ActivityList: p.ActivityList,
+		Name:         p.Title,
 	}
 }
 
