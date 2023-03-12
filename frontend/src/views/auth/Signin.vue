@@ -297,7 +297,6 @@ const trySignin = async () => {
 const trySigninWithIdentityProvider = async (
   identityProvider: IdentityProvider
 ) => {
-  state.activeIdentityProvider = identityProvider;
-  await openWindowForSSO(identityProvider);
+  await openWindowForSSO(identityProvider, false);
 };
 </script>

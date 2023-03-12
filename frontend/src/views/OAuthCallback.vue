@@ -13,21 +13,26 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, reactive } from "vue";
+import { useAuthStore } from "@/store";
+import { SSOConfigSessionKey } from "@/utils/sso";
+import { onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { OAuthWindowEventPayload, OAuthStateSessionKey } from "../types";
 
 interface LocalState {
   message: string;
   hasError: boolean;
+  openAsPopup: boolean;
   payload: OAuthWindowEventPayload;
 }
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const state = reactive<LocalState>({
   message: "",
   hasError: false,
+  openAsPopup: true,
   payload: {
     error: "",
     code: "",
@@ -46,10 +51,10 @@ onMounted(() => {
       "Successfully authorized. Redirecting back to the application...";
     state.payload.code = router.currentRoute.value.query.code as string;
   }
-  closeWindow();
+  triggerAuthCallback();
 });
 
-const closeWindow = () => {
+const triggerAuthCallback = async () => {
   if (state.hasError) {
     window.opener.dispatchEvent(
       new CustomEvent("bb.oauth.unknown", {
@@ -60,11 +65,38 @@ const closeWindow = () => {
     const eventName = sessionStorage.getItem(OAuthStateSessionKey) || "";
     const eventType = eventName.slice(0, eventName.lastIndexOf("."));
     if (eventName.startsWith("bb.oauth.signin")) {
-      window.opener.dispatchEvent(
-        new CustomEvent(eventName, {
-          detail: state.payload,
-        })
+      const ssoConfig = JSON.parse(
+        sessionStorage.getItem(SSOConfigSessionKey) || "{}"
       );
+      if (ssoConfig.openAsPopup) {
+        window.opener.dispatchEvent(
+          new CustomEvent(eventName, {
+            detail: state.payload,
+          })
+        );
+        window.close();
+      } else {
+        const mfaTempToken = await authStore.login({
+          idpName: ssoConfig.identityProviderName,
+          idpContext: {
+            oauth2Context: {
+              code: state.payload.code,
+            },
+          },
+          web: true,
+        });
+        if (mfaTempToken) {
+          router.push({
+            name: "auth.mfa",
+            query: {
+              mfaTempToken,
+              redirect: "",
+            },
+          });
+        } else {
+          router.push("/");
+        }
+      }
     } else if (
       eventName.startsWith("bb.oauth.register-vcs") ||
       eventName.startsWith("bb.oauth.link-vcs-repository")
@@ -74,17 +106,15 @@ const closeWindow = () => {
           detail: state.payload,
         })
       );
+      window.close();
     } else {
       window.opener.dispatchEvent(
         new CustomEvent("bb.oauth.unknown", {
           detail: state.payload,
         })
       );
+      window.close();
     }
   }
-
-  nextTick(() => {
-    window.close();
-  });
 };
 </script>
