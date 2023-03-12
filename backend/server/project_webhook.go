@@ -65,7 +65,12 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %v", projectID))
 		}
 
-		webhook, err := s.store.CreateProjectWebhookV2(ctx, c.Get(getPrincipalIDContextKey()).(int), projectID, project.ResourceID, &store.ProjectWebhookMessage{})
+		webhook, err := s.store.CreateProjectWebhookV2(ctx, c.Get(getPrincipalIDContextKey()).(int), projectID, project.ResourceID, &store.ProjectWebhookMessage{
+			Type:         hookCreate.Type,
+			Title:        hookCreate.Name,
+			URL:          hookCreate.URL,
+			ActivityList: hookCreate.ActivityList,
+		})
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Webhook url already exists in the project: %s", hookCreate.URL))
