@@ -484,11 +484,11 @@
         "config-updated": "Configuration is updated",
         "plugin": {
           "openai": {
-            "ai-augmentation": "AI augmentation",
+            "ai-augmentation": "AI Augmentation",
             "openai-key": {
-              "self": "OpenAI key",
-              "description": "Supply OpenAI key to enable chat to SQL capability in SQL Editor. {viewDoc}",
-              "placeholder": "An OpenAI Key usually starts with sk-*****"
+              "self": "OpenAI API Key",
+              "description": "Supply OpenAI API Key to enable ChatSQL capability in SQL Editor. {viewDoc}",
+              "placeholder": "An OpenAI API Key usually starts with sk-*****"
             }
           }
         }
