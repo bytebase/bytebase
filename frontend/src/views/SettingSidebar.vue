@@ -1,7 +1,7 @@
 <template>
   <!-- Navigation -->
   <nav class="flex-1 flex flex-col px-2 overflow-y-auto">
-    <BytebaseLogo class="w-full px-1 mb-3" />
+    <BytebaseLogo class="w-full px-2 mb-3" />
     <div class="space-y-1">
       <button
         class="group flex items-center px-1 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
@@ -42,18 +42,6 @@
           >
             {{ $t("settings.sidebar.general") }}
           </router-link>
-          <!-- <router-link
-            to="/setting/agent"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >
-            Agents
-          </router-link>-->
-          <router-link
-            v-if="showProjectItem"
-            to="/setting/project"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("common.projects") }}</router-link
-          >
           <router-link
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
@@ -62,6 +50,38 @@
                 'router-link-active bg-link-hover',
             ]"
             >{{ $t("settings.sidebar.members") }}</router-link
+          >
+          <router-link
+            v-if="showProjectItem"
+            to="/setting/project"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("common.projects") }}</router-link
+          >
+          <router-link
+            to="/setting/subscription"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.subscription") }}</router-link
+          >
+          <router-link
+            v-if="showDebugLogItem"
+            to="/setting/debug-log"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.debug-log") }}</router-link
+          >
+        </div>
+      </div>
+      <div class="mt-8">
+        <div
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+        >
+          <heroicons-solid:shield-check class="mr-3 w-5 h-5" />
+          {{ $t("settings.sidebar.security-and-policy") }}
+        </div>
+        <div class="space-y-1">
+          <router-link
+            to="/setting/sql-review"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("sql-review.title") }}</router-link
           >
           <router-link
             v-if="showSensitiveDataItem"
@@ -83,22 +103,16 @@
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.audit-log") }}</router-link
           >
-          <router-link
-            v-if="showIMIntegrationItem"
-            to="/setting/im-integration"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.im-integration") }}
-            <BBBetaBadge class="ml-1" />
-          </router-link>
-          <router-link
-            v-if="showSSOItem"
-            to="/setting/sso"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.sso") }}
-            <BBBetaBadge class="ml-1" />
-          </router-link>
+        </div>
+      </div>
+      <div class="mt-8">
+        <div
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+        >
+          <heroicons-solid:link class="mr-3 w-5 h-5" />
+          {{ $t("settings.sidebar.integration") }}
+        </div>
+        <div class="space-y-1">
           <router-link
             v-if="showVCSItem"
             to="/setting/gitops"
@@ -106,30 +120,19 @@
             >{{ $t("settings.sidebar.gitops") }}</router-link
           >
           <router-link
-            to="/setting/sql-review"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("sql-review.title") }}</router-link
+            v-if="showSSOItem"
+            to="/setting/sso"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
+            {{ $t("settings.sidebar.sso") }}
+          </router-link>
           <router-link
-            to="/setting/subscription"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.subscription") }}</router-link
+            v-if="showIMIntegrationItem"
+            to="/setting/im-integration"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
-          <router-link
-            v-if="showDebugLogItem"
-            to="/setting/debug-log"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.debug-log") }}</router-link
-          >
-          <!-- <router-link
-            to="/setting/billing"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >
-            Billing
-          </router-link>-->
-          <!-- <div class="pl-9 mt-1">
-            <BBOutline :title="'Integrations'" :itemList="integrationList" />
-          </div>-->
+            {{ $t("settings.sidebar.im-integration") }}
+          </router-link>
         </div>
       </div>
     </div>
