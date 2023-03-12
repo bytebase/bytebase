@@ -484,9 +484,9 @@
           "openai": {
             "ai-augmentation": "AI 增强",
             "openai-key": {
-              "self": "OpenAI 密钥",
-              "description": "提供 OpenAI 密钥以在 SQL 编辑器中开启聊天转 SQL 的能力。{viewDoc}",
-              "placeholder": "OpenAI 密钥通常以 sk-***** 开头"
+              "self": "OpenAI API Key",
+              "description": "提供 OpenAI API Key 以在 SQL 编辑器中开启 ChatSQL 的能力。{viewDoc}",
+              "placeholder": "OpenAI API Key 通常以 sk-***** 开头"
             }
           }
         }
