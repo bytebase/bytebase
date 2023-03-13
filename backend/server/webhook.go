@@ -982,7 +982,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 			}
 		}
 		if len(filteredDatabases) == 0 {
-			return nil, errors.Errorf("project %d does not have database %q for environment %q", projectID, dbName, environmentResourceID)
+			return nil, errors.Errorf("project %d does not have database %q with environment id %q", projectID, dbName, environmentResourceID)
 		}
 	} else {
 		filteredDatabases = foundDatabases
