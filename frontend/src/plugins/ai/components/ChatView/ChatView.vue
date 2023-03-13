@@ -2,10 +2,6 @@
   <div ref="scrollerRef" class="flex-1 py-4 overflow-y-auto">
     <template v-if="conversation">
       <template v-if="conversation.messageList.length === 0">
-        <PresetSuggestions
-          v-if="mode === 'CHAT'"
-          @select="$emit('enter', $event)"
-        />
         <EmptyView v-if="mode === 'VIEW'" />
       </template>
       <div
@@ -58,7 +54,6 @@ import type { Conversation } from "../../types";
 import type { Mode } from "./types";
 import UserMessageView from "./UserMessageView.vue";
 import AIMessageView from "./AIMessageView.vue";
-import PresetSuggestions from "./PresetSuggestions.vue";
 import EmptyView from "./EmptyView.vue";
 import { useAIContext } from "../../logic";
 import { provideChatViewContext } from "./context";
