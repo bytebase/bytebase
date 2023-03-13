@@ -15,9 +15,9 @@ export async function openWindowForSSO(
   identityProvider: IdentityProvider,
   openAsPopup = true
 ) {
-  // we use type to determine oauth type when receiving the callback
   const stateQueryParameter = `bb.oauth.signin.${identityProvider.name}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
+  // Set SSO config in session storage so that we can use it in the callback page.
   sessionStorage.setItem(
     SSOConfigSessionKey,
     JSON.stringify({
@@ -74,17 +74,17 @@ export async function openWindowForSSO(
     );
   }
 
-  if (authUrl) {
-    if (openAsPopup) {
-      return window.open(
-        authUrl,
-        "oauth",
-        "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
-      );
-    } else {
-      location.href = authUrl;
-    }
-  } else {
+  if (!authUrl) {
     throw new Error("Invalid authentication URL");
+  }
+  if (openAsPopup) {
+    window.open(
+      authUrl,
+      "oauth",
+      "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
+    );
+  } else {
+    // Redirect to the auth URL.
+    window.location.href = authUrl;
   }
 }

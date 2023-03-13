@@ -242,6 +242,7 @@
     v-if="state.showDisable2FAConfirmModal"
     :title="$t('two-factor.disable.self')"
     :description="$t('two-factor.disable.description')"
+    :style="'danger'"
     @close="state.showDisable2FAConfirmModal = false"
     @confirm="handleDisable2FA"
   />

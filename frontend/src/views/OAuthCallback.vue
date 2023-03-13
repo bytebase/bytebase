@@ -1,14 +1,19 @@
 <template>
   <div class="p-4">
     <div>{{ state.message }}</div>
-    <button
-      v-if="state.hasError"
-      type="button"
-      class="btn-normal mt-2"
-      @click="window.close()"
-    >
-      Close
-    </button>
+    <div v-if="state.hasError" class="mt-2">
+      <button
+        v-if="state.openAsPopup"
+        type="button"
+        class="btn-normal"
+        @click="window.close()"
+      >
+        Close
+      </button>
+      <router-link v-else to="/auth" class="btn-normal"
+        >Back to Sign in</router-link
+      >
+    </div>
   </div>
 </template>
 
@@ -47,8 +52,7 @@ onMounted(() => {
       "Failed to authorize. Invalid state passed to the oauth callback.";
     state.payload.error = state.message;
   } else {
-    state.message =
-      "Successfully authorized. Redirecting back to the application...";
+    state.message = "Successfully authorized. Redirecting back to Bytebase...";
     state.payload.code = router.currentRoute.value.query.code as string;
   }
   triggerAuthCallback();
@@ -61,60 +65,62 @@ const triggerAuthCallback = async () => {
         detail: state.payload,
       })
     );
-  } else {
-    const eventName = sessionStorage.getItem(OAuthStateSessionKey) || "";
-    const eventType = eventName.slice(0, eventName.lastIndexOf("."));
-    if (eventName.startsWith("bb.oauth.signin")) {
-      const ssoConfig = JSON.parse(
-        sessionStorage.getItem(SSOConfigSessionKey) || "{}"
-      );
-      if (ssoConfig.openAsPopup) {
-        window.opener.dispatchEvent(
-          new CustomEvent(eventName, {
-            detail: state.payload,
-          })
-        );
-        window.close();
-      } else {
-        const mfaTempToken = await authStore.login({
-          idpName: ssoConfig.identityProviderName,
-          idpContext: {
-            oauth2Context: {
-              code: state.payload.code,
-            },
-          },
-          web: true,
-        });
-        if (mfaTempToken) {
-          router.push({
-            name: "auth.mfa",
-            query: {
-              mfaTempToken,
-              redirect: "",
-            },
-          });
-        } else {
-          router.push("/");
-        }
-      }
-    } else if (
-      eventName.startsWith("bb.oauth.register-vcs") ||
-      eventName.startsWith("bb.oauth.link-vcs-repository")
-    ) {
+    return;
+  }
+
+  const eventName = sessionStorage.getItem(OAuthStateSessionKey) || "";
+  const eventType = eventName.slice(0, eventName.lastIndexOf("."));
+  if (eventName.startsWith("bb.oauth.signin")) {
+    const ssoConfig = JSON.parse(
+      sessionStorage.getItem(SSOConfigSessionKey) || "{}"
+    );
+    if (ssoConfig.openAsPopup) {
       window.opener.dispatchEvent(
-        new CustomEvent(eventType, {
+        new CustomEvent(eventName, {
           detail: state.payload,
         })
       );
       window.close();
     } else {
-      window.opener.dispatchEvent(
-        new CustomEvent("bb.oauth.unknown", {
-          detail: state.payload,
-        })
-      );
-      window.close();
+      const mfaTempToken = await authStore.login({
+        idpName: ssoConfig.identityProviderName,
+        idpContext: {
+          oauth2Context: {
+            code: state.payload.code,
+          },
+        },
+        web: true,
+      });
+      state.openAsPopup = false;
+      if (mfaTempToken) {
+        router.push({
+          name: "auth.mfa",
+          query: {
+            mfaTempToken,
+            redirect: "",
+          },
+        });
+      } else {
+        router.push("/");
+      }
     }
+  } else if (
+    eventName.startsWith("bb.oauth.register-vcs") ||
+    eventName.startsWith("bb.oauth.link-vcs-repository")
+  ) {
+    window.opener.dispatchEvent(
+      new CustomEvent(eventType, {
+        detail: state.payload,
+      })
+    );
+    window.close();
+  } else {
+    window.opener.dispatchEvent(
+      new CustomEvent("bb.oauth.unknown", {
+        detail: state.payload,
+      })
+    );
+    window.close();
   }
 };
 </script>

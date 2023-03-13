@@ -11,7 +11,7 @@
       <button type="button" class="btn-cancel" @click="dismissModal">
         {{ $t("common.cancel") }}
       </button>
-      <button class="btn-primary" @click="handleConfirmButtonClick">
+      <button :class="`btn-${props.style}`" @click="handleConfirmButtonClick">
         {{ $t("common.confirm") }}
       </button>
     </div>
@@ -19,16 +19,18 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
-
 const props = defineProps({
   title: {
-    type: String as PropType<string>,
+    type: String,
     default: "",
   },
   description: {
-    type: String as PropType<string>,
+    type: String,
     default: "",
+  },
+  style: {
+    type: String,
+    default: "primary",
   },
 });
 
