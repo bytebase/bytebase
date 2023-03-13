@@ -12,9 +12,10 @@
       <ChatView :conversation="selectedConversation" @enter="requestAI" />
     </template>
 
-    <div :class="[isChatMode && 'px-4 py-2']">
-      <div v-if="isChatMode">
-        <label class="inline-flex items-center gap-x-1">
+    <div :class="[isChatMode && 'px-4 py-2 flex flex-col gap-2']">
+      <div v-if="isChatMode" class="flex items-center gap-2 w-full">
+        <DynamicSuggestions class="flex-1" @enter="requestAI" />
+        <label class="flex items-center justify-end gap-x-1 shrink-0">
           <BBCheckbox :value="autoRun" @toggle="autoRun = $event" />
           <span class="textinfolabel">
             {{ $t("plugin.ai.run-automatically") }}
@@ -40,6 +41,7 @@ import { useCurrentTab } from "@/store";
 import { useConversationStore } from "../store";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
+import DynamicSuggestions from "./DynamicSuggestions.vue";
 import PromptInput from "./PromptInput.vue";
 import HistoryPanel from "./HistoryPanel";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
