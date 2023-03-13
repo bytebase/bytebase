@@ -1405,7 +1405,8 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"SQL review policy not found\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: You can configure the SQL review policy on %s/setting/sql-review.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#2\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"%s#L1: SQL review policy not found\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: You can configure the SQL review policy on %s/setting/sql-review.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#2\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							filePath,
 							filePath,
 							filePath,
 							filePath,
