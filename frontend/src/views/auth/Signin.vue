@@ -145,10 +145,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { OAuthWindowEventPayload } from "@/types";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
   featureToRef,
@@ -156,17 +155,13 @@ import {
   useAuthStore,
   useIdentityProviderStore,
 } from "@/store";
-import {
-  IdentityProvider,
-  IdentityProviderType,
-} from "@/types/proto/v1/idp_service";
+import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
   email: string;
   password: string;
   showPassword: boolean;
-  activeIdentityProvider?: IdentityProvider;
 }
 
 const actuatorStore = useActuatorStore();
@@ -208,69 +203,6 @@ onMounted(async () => {
   await identityProviderStore.fetchIdentityProviderList();
 });
 
-onUnmounted(() => {
-  if (state.activeIdentityProvider) {
-    window.removeEventListener(
-      `bb.oauth.signin.${state.activeIdentityProvider.name}`,
-      loginWithIdentityProviderEventListener,
-      false
-    );
-  }
-});
-
-watch(
-  () => state.activeIdentityProvider?.name,
-  (newValue, oldValue) => {
-    window.removeEventListener(
-      `bb.oauth.signin.${oldValue}`,
-      loginWithIdentityProviderEventListener,
-      false
-    );
-    window.addEventListener(
-      `bb.oauth.signin.${newValue}`,
-      loginWithIdentityProviderEventListener,
-      false
-    );
-  }
-);
-
-const loginWithIdentityProviderEventListener = async (event: Event) => {
-  if (!state.activeIdentityProvider) {
-    return;
-  }
-
-  if (
-    state.activeIdentityProvider.type === IdentityProviderType.OAUTH2 ||
-    state.activeIdentityProvider.type === IdentityProviderType.OIDC
-  ) {
-    const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
-    if (payload.error) {
-      return;
-    }
-
-    const mfaTempToken = await authStore.login({
-      idpName: state.activeIdentityProvider.name,
-      idpContext: {
-        oauth2Context: {
-          code: payload.code,
-        },
-      },
-      web: true,
-    });
-    if (mfaTempToken) {
-      router.push({
-        name: "auth.mfa",
-        query: {
-          mfaTempToken,
-          redirect: "",
-        },
-      });
-    } else {
-      router.push("/");
-    }
-  }
-};
-
 const allowSignin = computed(() => {
   return isValidEmail(state.email) && state.password;
 });
@@ -297,7 +229,6 @@ const trySignin = async () => {
 const trySigninWithIdentityProvider = async (
   identityProvider: IdentityProvider
 ) => {
-  state.activeIdentityProvider = identityProvider;
-  await openWindowForSSO(identityProvider);
+  await openWindowForSSO(identityProvider, false);
 };
 </script>
