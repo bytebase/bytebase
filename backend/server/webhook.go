@@ -938,7 +938,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 }
 
 // findProjectDatabases finds the list of databases with given name in the
-// project. If the `envName` is not empty, it will be used as a filter condition
+// project. If the environmentResourceID is not empty, it will be used as a filter condition
 // for the result list.
 func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, environmentResourceID string) ([]*store.DatabaseMessage, error) {
 	// Retrieve the current schema from the database
