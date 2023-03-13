@@ -18,6 +18,11 @@
             $t("settings.general.workspace.plugin.openai.openai-key.self")
           }}</span>
 
+          <FeatureBadge
+            feature="bb.feature.plugin.openai"
+            class="text-accent"
+          />
+
           <span
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
@@ -62,22 +67,32 @@
         </div>
       </div>
     </div>
+
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.plugin.openai"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUser,
   useSettingByName,
   useSettingStore,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
-import { useI18n } from "vue-i18n";
+import FeatureBadge from "@/components/FeatureBadge.vue";
+import FeatureModal from "@/components/FeatureModal.vue";
 
 interface LocalState {
   openAIKey: string;
+  showFeatureModal: boolean;
 }
 
 const { t } = useI18n();
@@ -86,6 +101,7 @@ const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
   openAIKey: "",
+  showFeatureModal: false,
 });
 
 const openAIKeySetting = useSettingByName("bb.plugin.openai.key");
@@ -114,6 +130,11 @@ const handleOpenAIKeyChange = (event: InputEvent) => {
 };
 
 const updateOpenAIKey = async () => {
+  if (!hasFeature("bb.feature.plugin.openai")) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   if (!allowSave.value) {
     return;
   }
