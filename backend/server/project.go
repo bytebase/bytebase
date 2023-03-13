@@ -883,8 +883,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 
 			var databaseID *int
-			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
-			// and ENV_NAME and DB_NAME is either both present or neither present.
+			// In non-tenant mode, we can set a databaseId for sheet with ENV_ID and DB_NAME,
+			// and ENV_ID and DB_NAME is either both present or neither present.
 			if project.TenantMode != api.TenantModeDisabled {
 				if sheetInfo.EnvironmentID != "" && sheetInfo.DatabaseName != "" {
 					databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, DatabaseName: &sheetInfo.DatabaseName})
