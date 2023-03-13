@@ -73,9 +73,7 @@
           <div class="bb-grid-cell justify-center">
             <button
               class="btn-normal !px-3 !py-1"
-              :disabled="
-                !isRuleAvailable(rule) || rule.level === RuleLevel.DISABLED
-              "
+              :disabled="!isRuleAvailable(rule)"
               @click="setActiveRule(rule)"
             >
               {{ editable ? $t("common.edit") : $t("common.view") }}
