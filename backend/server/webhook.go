@@ -1254,7 +1254,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 // convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
 // GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
 // junit XML format: https://llg.cubic.org/docs/junit/
-// nolint:unused
 func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	testsuiteList := []string{}
 	status := advisor.Success
@@ -1268,6 +1267,9 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		testcaseList := []string{}
+		pathes := strings.Split(filePath, "/")
+		filename := pathes[len(pathes)-1]
+
 		for _, advice := range adviceList {
 			if advice.Code == 0 {
 				continue
@@ -1292,7 +1294,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 
 			testcase := fmt.Sprintf(
 				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>\n%s\n</failure>\n</testcase>",
-				advice.Title,
+				fmt.Sprintf("%s#L%d: %s", filename, line, advice.Title),
 				filePath,
 				filePath,
 				line,
@@ -1323,7 +1325,6 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 
 // convertSQLAdviceToGitHubActionResult will convert SQL advice map to GitHub action output format.
 // GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
-// nolint:unused
 func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	messageList := []string{}
 	status := advisor.Success
