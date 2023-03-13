@@ -450,66 +450,37 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
-		var migrationHistoryList []*db.MigrationHistory
 		find := &db.MigrationHistoryFind{
 			InstanceID: &instance.UID,
 		}
-		if instance.Engine == db.Redis || instance.Engine == db.Oracle {
-			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
-				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:   &instance.ResourceID,
-					DatabaseName: &databaseStr,
-				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database %q from instance ID %v", databaseStr, instance.ResourceID)).SetInternal(err)
-				}
-				if database == nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find database %q from instance ID %v", databaseStr, instance.ResourceID)).SetInternal(err)
-				}
-				find.Database = &databaseStr
-				find.DatabaseID = &database.UID
+		if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseStr,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database %q from instance ID %v", databaseStr, instance.ResourceID)).SetInternal(err)
 			}
-			if versionStr := c.QueryParams().Get("version"); versionStr != "" {
-				find.Version = &versionStr
+			if database == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find database %q from instance ID %v", databaseStr, instance.ResourceID)).SetInternal(err)
 			}
-			if limitStr := c.QueryParam("limit"); limitStr != "" {
-				limit, err := strconv.Atoi(limitStr)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
-				}
-				find.Limit = &limit
+			find.Database = &databaseStr
+			find.DatabaseID = &database.UID
+		}
+		if versionStr := c.QueryParams().Get("version"); versionStr != "" {
+			find.Version = &versionStr
+		}
+		if limitStr := c.QueryParam("limit"); limitStr != "" {
+			limit, err := strconv.Atoi(limitStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
 			}
+			find.Limit = &limit
+		}
 
-			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-			}
-			migrationHistoryList = list
-		} else {
-			if databaseStr := c.QueryParams().Get("database"); databaseStr != "" {
-				find.Database = &databaseStr
-			}
-			if versionStr := c.QueryParams().Get("version"); versionStr != "" {
-				find.Version = &versionStr
-			}
-			if limitStr := c.QueryParam("limit"); limitStr != "" {
-				limit, err := strconv.Atoi(limitStr)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
-				}
-				find.Limit = &limit
-			}
-
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Title)).SetInternal(err)
-			}
-			defer driver.Close(ctx)
-			list, err := driver.FindMigrationHistoryList(ctx, find)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-			}
-			migrationHistoryList = list
+		migrationHistoryList, err := s.store.FindInstanceChangeHistoryList(ctx, find)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 		}
 
 		historyList := []*api.MigrationHistory{}
