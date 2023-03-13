@@ -189,7 +189,7 @@ const placeholderRegexp = `[^\\/?%*:|"<>]+`
 // It returns (nil, nil) if it doesn't look like a migration file path.
 func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName bool) (*MigrationInfo, error) {
 	placeholderList := []string{
-		"ENV_NAME",
+		"ENV_ID",
 		"VERSION",
 		"DB_NAME",
 		"TYPE",
@@ -223,7 +223,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 		index := myRegex.SubexpIndex(placeholder)
 		if index >= 0 {
 			switch placeholder {
-			case "ENV_NAME":
+			case "ENV_ID":
 				mi.Environment = matchList[index]
 			case "VERSION":
 				mi.Version = matchList[index]
@@ -287,7 +287,7 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 	schemaFilePathRegex := strings.ReplaceAll(schemaPathTemplate, ".", `\.`)
 
 	placeholders := []string{
-		"ENV_NAME",
+		"ENV_ID",
 		"DB_NAME",
 	}
 	for _, placeholder := range placeholders {
@@ -313,7 +313,7 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 	return &MigrationInfo{
 		Source:      VCS,
 		Type:        Migrate,
-		Environment: info["ENV_NAME"],
+		Environment: info["ENV_ID"],
 		Database:    info["DB_NAME"],
 	}, nil
 }
