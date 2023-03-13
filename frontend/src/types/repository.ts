@@ -84,7 +84,7 @@ type WebUrlReplaceParams = {
   DB_NAME?: string;
   VERSION?: string;
   TYPE?: "ddl" | "dml";
-  ENV_NAME?: string;
+  ENV_ID?: string;
 };
 
 export function baseDirectoryWebUrl(
@@ -115,18 +115,18 @@ export function baseDirectoryWebUrl(
     // Once we meet a "dynamic" segment which has a pattern that cannot be replaced
     // we won't push it, either the segments behind it.
     // E.g., the filePathTemplate is
-    // configure/{{ENV_NAME}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}.sql
+    // configure/{{ENV_ID}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}.sql
     /**
       The segments are
         - configure
-        - {{ENV_NAME}}
+        - {{ENV_ID}}
         - 20220707-wechat
         - {{TYPE}}
         - **
         - **
         - **
       When
-        - ENV_NAME=dev
+        - ENV_ID=dev
         - TYPE=migrate
       we are confident enough that the path will be started with
       "/configure/dev/20220707-wechat/migrate"
