@@ -147,7 +147,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 			return "", "", errors.Errorf("cutover poller cancelled")
 		}
 
-		insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
+		insertedID, err := utils.BeginMigration(ctx, stores, mi, prevSchemaBuf.String(), statement)
 		if err != nil {
 			if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 				return insertedID, prevSchemaBuf.String(), nil
@@ -157,7 +157,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		startedNs := time.Now().UnixNano()
 
 		defer func() {
-			if err := util.EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
+			if err := utils.EndMigration(ctx, stores, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
 				log.Error("failed to update migration history record",
 					zap.Error(err),
 					zap.String("migration_id", migrationHistoryID),

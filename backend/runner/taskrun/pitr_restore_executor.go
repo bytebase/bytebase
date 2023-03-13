@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewPITRRestoreExecutor creates a PITR restore task executor.
@@ -549,7 +550,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	}
 	defer targetDriver.Close(ctx)
 	// TODO(p0ny): migrate to instance change history
-	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
+	migrationID, _, err := utils.ExecuteMigration(ctx, stores, targetDriver, m, "")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create migration history")
 	}

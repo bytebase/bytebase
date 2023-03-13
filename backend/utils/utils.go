@@ -35,19 +35,7 @@ func GetLatestSchemaVersion(ctx context.Context, store *store.Store, driver db.D
 		Limit:      &limit,
 	}
 
-	if driver.GetType() == db.Redis || driver.GetType() == db.Oracle {
-		history, err := store.FindInstanceChangeHistoryList(ctx, find)
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-		}
-		var schemaVersion string
-		if len(history) == 1 {
-			schemaVersion = history[0].Version
-		}
-		return schemaVersion, nil
-	}
-
-	history, err := driver.FindMigrationHistoryList(ctx, find)
+	history, err := store.FindInstanceChangeHistoryList(ctx, find)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
 	}
@@ -56,6 +44,7 @@ func GetLatestSchemaVersion(ctx context.Context, store *store.Store, driver db.D
 		schemaVersion = history[0].Version
 	}
 	return schemaVersion, nil
+
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
@@ -501,7 +490,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 		}
 	}
 
-	insertedID, err := beginMigration(ctx, store, m, prevSchemaBuf.String(), statement)
+	insertedID, err := BeginMigration(ctx, store, m, prevSchemaBuf.String(), statement)
 	if err != nil {
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
@@ -512,7 +501,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := endMigration(ctx, store, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
+		if err := EndMigration(ctx, store, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.String("migration_id", migrationHistoryID),
@@ -551,8 +540,8 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-// beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema string, statement string) (string, error) {
+// BeginMigration checks before executing migration and inserts a migration history record with pending status.
+func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema string, statement string) (string, error) {
 	// Convert version to stored version.
 	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -618,7 +607,8 @@ func beginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 	return insertedID, nil
 }
 
-func endMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, _ string, isDone bool) error {
+// EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
+func EndMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, _ string, isDone bool) error {
 	var err error
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
