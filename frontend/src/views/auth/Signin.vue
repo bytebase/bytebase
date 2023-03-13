@@ -123,12 +123,7 @@
         <button
           type="button"
           class="btn-normal flex justify-center w-full h-10 mb-2 tooltip-wrapper"
-          :disabled="!hasSSOFeature"
-          @click.prevent="
-            () => {
-              trySigninWithIdentityProvider(identityProvider);
-            }
-          "
+          @click.prevent="trySigninWithIdentityProvider(identityProvider)"
         >
           <span class="text-center align-middle">
             {{
@@ -150,7 +145,6 @@ import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
-  featureToRef,
   useActuatorStore,
   useAuthStore,
   useIdentityProviderStore,
@@ -175,7 +169,6 @@ const state = reactive<LocalState>({
   showPassword: false,
 });
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
-const hasSSOFeature = featureToRef("bb.feature.sso");
 
 const identityProviderList = computed(
   () => identityProviderStore.identityProviderList
