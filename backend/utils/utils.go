@@ -25,7 +25,7 @@ import (
 )
 
 // GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, store *store.Store, driver db.Driver, instanceID int, databaseID int, databaseName string) (string, error) {
+func GetLatestSchemaVersion(ctx context.Context, store *store.Store, instanceID int, databaseID int, databaseName string) (string, error) {
 	// TODO(d): support semantic versioning.
 	limit := 1
 	find := &db.MigrationHistoryFind{

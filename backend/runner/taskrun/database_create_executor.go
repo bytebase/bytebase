@@ -295,7 +295,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 		return "", "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, stores, driver, instance.UID, similarDB.UID, similarDB.DatabaseName)
+	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, stores, instance.UID, similarDB.UID, similarDB.DatabaseName)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
