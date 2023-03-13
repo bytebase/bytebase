@@ -202,7 +202,6 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
-
 	}
 
 	return list, nil
