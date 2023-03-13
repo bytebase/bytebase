@@ -17,7 +17,7 @@
           <NEllipsis
             v-for="(sug, i) in suggestions"
             :key="i"
-            style="max-width: 12rem"
+            style="max-width: 20rem"
             class="border shrink-0 py-0.5 px-1 rounded-md cursor-pointer hover:bg-indigo-100 hover:border-indigo-500"
             @click.capture="consume(sug)"
           >
