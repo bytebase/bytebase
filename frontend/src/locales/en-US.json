@@ -2020,7 +2020,12 @@
         "history-conversations": "History conversations",
         "view-history-conversations": "View history conversations",
         "new-conversation": "Start new conversation",
-        "no-message": "No message in this conversation"
+        "no-message": "No message in this conversation",
+        "tips": {
+          "try": "Try:",
+          "more": "More",
+          "no-more": "no more"
+        }
       },
       "preset-suggestion": {
         "1": "Which department has most employees?",
