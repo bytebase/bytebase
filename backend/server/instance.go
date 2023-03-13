@@ -380,30 +380,14 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var entry *db.MigrationHistory
 		find := &db.MigrationHistoryFind{ID: &historyID, InstanceID: &instanceID}
-		if instance.Engine == db.Redis || instance.Engine == db.Oracle {
-			list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-			}
-			if len(list) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
-			}
-			entry = list[0]
-		} else {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %v for instance %q", historyID, instance.Title)).SetInternal(err)
-			}
-			defer driver.Close(ctx)
-			list, err := driver.FindMigrationHistoryList(ctx, find)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-			}
-			if len(list) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
-			}
-			entry = list[0]
+		list, err := s.store.FindInstanceChangeHistoryList(ctx, find)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 		}
+		if len(list) == 0 {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
+		}
+		entry = list[0]
 
 		if isSDL {
 			var engineType parser.EngineType
