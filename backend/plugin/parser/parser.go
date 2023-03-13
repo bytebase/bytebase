@@ -20,6 +20,8 @@ const (
 	Postgres EngineType = "POSTGRES"
 	// TiDB is the engine type for TiDB.
 	TiDB EngineType = "TIDB"
+	// Oracle is the engine type for Oracle.
+	Oracle EngineType = "ORACLE"
 
 	// DeparseIndentString is the string for each indent level.
 	DeparseIndentString = "    "
