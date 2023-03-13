@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1401,12 +1402,14 @@ func TestVCS_SQL_Review(t *testing.T) {
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
+				pathes := strings.Split(filePath, "/")
 				return &api.VCSSQLReviewResult{
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"SQL review policy not found\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: You can configure the SQL review policy on %s/setting/sql-review.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#2\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"%s#L1: SQL review policy not found\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: You can configure the SQL review policy on %s/setting/sql-review.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#2\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
 							filePath,
+							pathes[len(pathes)-1],
 							filePath,
 							filePath,
 							rootURL,
@@ -1415,14 +1418,18 @@ func TestVCS_SQL_Review(t *testing.T) {
 				}
 			},
 			getSQLReviewResult: func(repo *api.Repository, filePath string) *api.VCSSQLReviewResult {
+				pathes := strings.Split(filePath, "/")
+				filename := pathes[len(pathes)-1]
 				return &api.VCSSQLReviewResult{
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"%s#L1: column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"%s#L1: column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							filePath,
+							filename,
 							filePath,
 							filePath,
-							filePath,
+							filename,
 							filePath,
 							filePath,
 						),
