@@ -247,7 +247,7 @@
         <span class="text-red-600">*</span>
         {{ $t("common.required-placeholder") }}: {{ "\{\{NAME\}\}" }};
         <template v-if="schemaOptionalTagPlaceholder.length > 0">
-          {{ $t("common.optional-placeholder") }}: {{ "\{\{ENV_NAME\}\}" }},
+          {{ $t("common.optional-placeholder") }}: {{ "\{\{ENV_ID\}\}" }},
           {{ "\{\{DB_NAME\}\}" }}
         </template>
       </div>
@@ -399,7 +399,7 @@ export default defineComponent({
           sampleText: type,
         },
         {
-          placeholder: "{{ENV_NAME}}",
+          placeholder: "{{ENV_ID}}",
           sampleText: "env1",
         },
         {
@@ -442,8 +442,8 @@ export default defineComponent({
 
     const fileOptionalPlaceholder = computed(() => {
       const tags = [] as string[];
-      // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
+      // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push("{{ENV_ID}}");
       tags.push("{{DESCRIPTION}}");
       return tags;
     });
@@ -457,8 +457,8 @@ export default defineComponent({
 
     const schemaOptionalTagPlaceholder = computed(() => {
       const tags = [] as string[];
-      // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
+      // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push("{{ENV_ID}}");
       return tags;
     });
 

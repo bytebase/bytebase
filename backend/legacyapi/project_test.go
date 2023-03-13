@@ -54,7 +54,7 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 			"",
 		}, {
 			"OK with optional tokens",
-			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{DESCRIPTION}}.sql",
+			"{{ENV_ID}}/{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{DESCRIPTION}}.sql",
 			TenantModeDisabled,
 			"",
 		}, {
@@ -74,8 +74,8 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 			"unknown token {{UNKNOWN}}",
 		},
 		{
-			"Tenant mode {{ENV_NAME}}",
-			"{{ENV_NAME}}/{{VERSION}}_{{TYPE}}.sql",
+			"Tenant mode {{ENV_ID}}",
+			"{{ENV_ID}}/{{VERSION}}_{{TYPE}}.sql",
 			TenantModeTenant,
 			"in file path template",
 		},
@@ -120,7 +120,7 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 			"",
 		}, {
 			"OK with optional tokens",
-			"{{ENV_NAME}}/{{DB_NAME}}.sql",
+			"{{ENV_ID}}/{{DB_NAME}}.sql",
 			TenantModeDisabled,
 			"",
 		}, {
@@ -129,8 +129,8 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 			TenantModeDisabled,
 			"unknown token {{TYPE}}",
 		}, {
-			"Tenant mode {{ENV_NAME}}",
-			"{{ENV_NAME}}/LATEST.sql",
+			"Tenant mode {{ENV_ID}}",
+			"{{ENV_ID}}/LATEST.sql",
 			TenantModeTenant,
 			"in schema path template",
 		}, {
