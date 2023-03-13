@@ -489,7 +489,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 	return patchVersions[len(patchVersions)-1].version, nil
 }
 
-func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
+func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
 	devMigrations, err := getDevMigrations()
 	if err != nil {
 		return err
