@@ -1770,6 +1770,10 @@
       "bb-feature-2fa": {
         "title": "双重认证",
         "desc": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。"
+      },
+      "bb-feature-plugin-openai": {
+        "title": "AI 增强",
+        "desc": "AI 增强的 SQL 编辑器功能，基于 OpenAI 技术驱动。"
       }
     }
   },
