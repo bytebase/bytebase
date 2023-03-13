@@ -9,5 +9,5 @@ import (
 // DefaultAPIRequestSkipper is echo skipper for api requests.
 func DefaultAPIRequestSkipper(c echo.Context) bool {
 	path := c.Path()
-	return common.HasPrefixes(path, "/api", "/v1")
+	return common.HasPrefixes(path, "/api", "/v1", "/hook")
 }
