@@ -139,14 +139,14 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
 			count++
 		}
-		if create.CreatedTs != 0 {
+		if create.CreatedTs == 0 {
 			valueStr = append(valueStr, "DEFAULT")
 		} else {
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
 			values = append(values, create.CreatedTs)
 			count++
 		}
-		if create.UpdatedTs != 0 {
+		if create.UpdatedTs == 0 {
 			valueStr = append(valueStr, "DEFAULT")
 		} else {
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
@@ -199,6 +199,10 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			UpdatedTs: createdTs,
 		})
 		i++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+
 	}
 
 	return list, nil
@@ -362,6 +366,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 
 		changeHistory.Deleted = convertRowStatusToDeleted(rowStatus)
 		list = append(list, &changeHistory)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -571,6 +578,9 @@ func (s *Store) ListInstanceHavingInstanceChangeHistory(ctx context.Context) ([]
 			return nil, err
 		}
 		list = append(list, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return list, nil
