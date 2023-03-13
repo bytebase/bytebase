@@ -693,17 +693,38 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	// initial workspace profile setting
-	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
-		ExternalUrl:    s.profile.ExternalURL,
-		DisallowSignup: false,
+	settingName := api.SettingWorkspaceProfile
+	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+		Name:    &settingName,
+		Enforce: true,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceProfile,
-		Value:       string(bytes),
-		Description: "Workspace general settings",
+
+	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
+		ExternalUrl:    s.profile.ExternalURL,
+		DisallowSignup: false,
+	}
+	if workspaceProfileSetting != nil {
+		payload := new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), payload); err != nil {
+			return nil, err
+		}
+		workspaceProfilePayload.DisallowSignup = payload.DisallowSignup
+		if s.profile.ExternalURL == "" {
+			workspaceProfilePayload.ExternalUrl = payload.ExternalUrl
+		}
+	}
+
+	bytes, err := protojson.Marshal(workspaceProfilePayload)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := datastore.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:  api.SettingWorkspaceProfile,
+		Value: string(bytes),
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
