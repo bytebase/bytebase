@@ -649,7 +649,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			var singleSQLResults []api.SingleSQLResult
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
-			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB {
+			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB || instance.Engine == db.Oracle {
 				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to split statements")
