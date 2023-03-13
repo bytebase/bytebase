@@ -1,7 +1,9 @@
 <template>
   <p class="text-sm text-gray-500 mb-4">
     {{ $t("two-factor.description") }}
-    <LearnMoreLink url="" />
+    <LearnMoreLink
+      url="https://www.bytebase.com/docs/administration/2fa?source=console"
+    />
   </p>
   <BBStepTab
     class="mb-8"

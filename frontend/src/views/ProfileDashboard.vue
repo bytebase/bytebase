@@ -189,8 +189,10 @@
       </div>
       <p class="mt-4 text-sm text-gray-500">
         {{ $t("two-factor.description") }}
-        <!-- TODO(steven): update the docs link -->
-        <LearnMoreLink class="ml-1" url="" />
+        <LearnMoreLink
+          class="ml-1"
+          url="https://www.bytebase.com/docs/administration/2fa?source=console"
+        />
       </p>
       <template v-if="isMFAEnabled">
         <div class="w-full flex flex-row justify-between items-center mt-8">
