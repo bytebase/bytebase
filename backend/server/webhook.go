@@ -938,9 +938,9 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 }
 
 // findProjectDatabases finds the list of databases with given name in the
-// project. If the `envName` is not empty, it will be used as a filter condition
+// project. If the environmentResourceID is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*store.DatabaseMessage, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, environmentResourceID string) ([]*store.DatabaseMessage, error) {
 	// Retrieve the current schema from the database
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 	if err != nil {
@@ -974,15 +974,15 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 
 	// Further filter by environment name if applicable.
 	var filteredDatabases []*store.DatabaseMessage
-	if envName != "" {
+	if environmentResourceID != "" {
 		for _, database := range foundDatabases {
-			// Environment resource ID comparison is case insensitive
-			if strings.EqualFold(database.EnvironmentID, envName) {
+			// Environment resource ID comparison is case-sensitive.
+			if database.EnvironmentID == environmentResourceID {
 				filteredDatabases = append(filteredDatabases, database)
 			}
 		}
 		if len(filteredDatabases) == 0 {
-			return nil, errors.Errorf("project %d does not have database %q for environment %q", projectID, dbName, envName)
+			return nil, errors.Errorf("project %d does not have database %q for environment %q", projectID, dbName, environmentResourceID)
 		}
 	} else {
 		filteredDatabases = foundDatabases
@@ -992,7 +992,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	marked := make(map[string]bool)
 	for _, database := range filteredDatabases {
 		if _, ok := marked[database.EnvironmentID]; ok {
-			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
+			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, environmentResourceID)
 		}
 		marked[database.EnvironmentID] = true
 	}
@@ -1083,8 +1083,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return migrationDetailList, nil
 	}
 
-	envName := schemaInfo.Environment
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, envName)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, schemaInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
