@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 )
 
@@ -160,7 +161,7 @@ func TestMigrationCompatibility(t *testing.T) {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", pgPort),
 	}
-	d, err := dbdriver.Open(
+	driver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
@@ -168,7 +169,8 @@ func TestMigrationCompatibility(t *testing.T) {
 		dbdriver.ConnectionContext{},
 	)
 	require.NoError(t, err)
-	defer d.Close(ctx)
+	defer driver.Close(ctx)
+	d := driver.(*pg.Driver)
 
 	err = d.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)

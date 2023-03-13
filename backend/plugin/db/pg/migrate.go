@@ -247,6 +247,14 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	return "", "", err
 }
 
+// ExecuteMigrationUsingMigrationHistory will execute the migration and stores the record to migration history.
+func (driver *Driver) ExecuteMigrationUsingMigrationHistory(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
+	if driver.strictUseDb() {
+		return util.ExecuteMigration(ctx, driver, m, statement, driver.strictDatabase)
+	}
+	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
+}
+
 // FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `

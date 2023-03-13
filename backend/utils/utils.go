@@ -44,7 +44,6 @@ func GetLatestSchemaVersion(ctx context.Context, store *store.Store, instanceID 
 		schemaVersion = history[0].Version
 	}
 	return schemaVersion, nil
-
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
