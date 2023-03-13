@@ -94,6 +94,21 @@
           </template>
         </i18n-t>
       </template>
+      <template v-else-if="props.engineType === 'REDIS'">
+        <i18n-t
+          tag="p"
+          keypath="instance.sentence.create-user-example.redis.template"
+        >
+          <template #user>{{
+            $t("instance.sentence.create-user-example.redis.user")
+          }}</template>
+          <template #password>
+            <span class="text-red-600">
+              {{ $t("instance.sentence.create-user-example.redis.password") }}
+            </span>
+          </template>
+        </i18n-t>
+      </template>
       <div class="mt-2 flex flex-row">
         <span
           class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
