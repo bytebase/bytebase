@@ -563,7 +563,8 @@ func beginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 	if list, err := store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
 		InstanceID: m.InstanceID,
 		DatabaseID: m.DatabaseID,
-		Version:    &m.Version,
+		// TODO(d): support semantic versioning.
+		Version: &storedVersion,
 	}); err != nil {
 		return "", errors.Wrap(err, "failed to check duplicate version")
 	} else if len(list) > 0 {
