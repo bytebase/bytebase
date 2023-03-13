@@ -453,19 +453,19 @@ func TestVCS(t *testing.T) {
 
 			// Simulate Git commits for schema update.
 			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
-			gitFile3 := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
+			gitFile3 := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement3})
 			a.NoError(err)
-			gitFile2 := "bbtest/Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
+			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
 			a.NoError(err)
-			gitFile1 := "bbtest/Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
+			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
 			a.NoError(err)
 			// This file is merged from other branch and included in this push event's commits.
 			// But it is already merged into the main branch and the commits diff does not contain it.
 			// So this file should be excluded when generating the issue.
-			gitFileMergeFromOtherBranch := "bbtest/Prod/testVCSSchemaUpdate##ver0##migrate##merge_from_other_branch.sql"
+			gitFileMergeFromOtherBranch := "bbtest/prod/testVCSSchemaUpdate##ver0##migrate##merge_from_other_branch.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFileMergeFromOtherBranch: "SELECT 1;"})
 			a.NoError(err)
 			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
@@ -494,7 +494,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(3, len(issue.Pipeline.StageList[0].TaskList))
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nProd/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nProd/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
+			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -509,7 +509,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(bookSchemaSQLResult, result)
 
 			// Simulate Git commits for failed data update.
-			gitFile4 := "bbtest/Prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
+			gitFile4 := "bbtest/prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile4: dataUpdateStatementWrong})
 			a.NoError(err)
 			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
@@ -567,7 +567,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
-			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
+			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -880,7 +880,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
-			schemaFile := fmt.Sprintf("bbtest/Prod/.%s##LATEST.sql", databaseName)
+			schemaFile := fmt.Sprintf("bbtest/prod/.%s##LATEST.sql", databaseName)
 			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				schemaFile: schemaFileContent,
@@ -906,7 +906,7 @@ func TestVCS_SDL(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			a.Equal("Apply schema diff by file Prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
+			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -916,7 +916,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
-			const dataFile = "bbtest/Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
+			const dataFile = "bbtest/prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				dataFile: `INSERT INTO users (id) VALUES (1);`,
 			})
@@ -941,7 +941,7 @@ func TestVCS_SDL(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
-			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
+			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -1234,9 +1234,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			filePathTemplate:   "{{ENV_ID}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
-				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
-				fmt.Sprintf("%s/%s/%s/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "ZO", dbName, dbName),
-				fmt.Sprintf("%s/%s/%s/sql/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "zo", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "zo", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/sql/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "zo", dbName, dbName),
 			},
 			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",
@@ -1603,7 +1603,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Simulate Git commits and pull request for SQL review.
 			prID := rand.Int()
-			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
+			gitFile := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
 			fileContent := "CREATE TABLE book (id serial PRIMARY KEY, name TEXT);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: fileContent})
 			a.NoError(err)
@@ -2415,7 +2415,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
-			schemaFile := fmt.Sprintf("bbtest/Prod/.%s##LATEST.sql", databaseName)
+			schemaFile := fmt.Sprintf("bbtest/prod/.%s##LATEST.sql", databaseName)
 			schemaFileContent += "\nCREATE TABLE users (id int, PRIMARY KEY (id));"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				schemaFile: schemaFileContent,
@@ -2441,7 +2441,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
-			a.Equal(fmt.Sprintf("Apply schema diff by file Prod/.%s##LATEST.sql", databaseName), issue.Description)
+			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -2451,7 +2451,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
-			dataFile := fmt.Sprintf("bbtest/Prod/%s##ver2##data##insert_data.sql", databaseName)
+			dataFile := fmt.Sprintf("bbtest/prod/%s##ver2##data##insert_data.sql", databaseName)
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				dataFile: `INSERT INTO users (id) VALUES (1);`,
 			})
@@ -2476,7 +2476,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Change data", databaseName), issue.Name)
-			a.Equal(fmt.Sprintf("By VCS files:\n\nProd/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
+			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
