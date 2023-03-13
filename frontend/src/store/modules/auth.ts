@@ -87,7 +87,7 @@ export const useAuthStore = defineStore("auth_v1", {
     },
     async refreshUserIfNeeded(name: string) {
       if (name === this.currentUser.name) {
-        const refreshedUser = await useUserStore().getOrFetchUserByName(name);
+        const refreshedUser = await useUserStore().fetchUser(name);
         if (!isEqual(refreshedUser, this.currentUser)) {
           this.currentUser = refreshedUser;
         }
