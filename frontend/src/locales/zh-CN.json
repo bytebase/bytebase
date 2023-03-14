@@ -2005,6 +2005,11 @@
       "self": "禁用双重认证",
       "description": "您即将禁用您账户的双重认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。"
     },
+    "your-two-factor-secret": {
+      "self": "双重认证密钥",
+      "description": "复制密钥并在您的应用程序中手动输入。",
+      "copy-succeed": "复制成功。请输入到您的应用程序中。"
+    },
     "messages": {
       "2fa-enabled": "双重认证开启成功",
       "2fa-disabled": "双重认证禁用成功",
