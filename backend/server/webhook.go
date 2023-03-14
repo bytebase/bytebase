@@ -278,12 +278,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					defer wg.Done()
 					adviceList, err := s.sqlAdviceForFile(ctx, file, setting.ExternalUrl)
 					if err != nil {
-						log.Debug(
+						log.Error(
 							"Failed to take SQL review for file",
 							zap.String("file", file.item.FileName),
 							zap.String("external_id", file.repository.ExternalID),
 							zap.Error(err),
 						)
+						sqlCheckAdvice[file.item.FileName] = []advisor.Advice{
+							{
+								Status:  advisor.Warn,
+								Code:    advisor.Internal,
+								Title:   "Failed to take SQL review",
+								Content: fmt.Sprintf("Failed to take SQL review for file %s with error %v", file.item.FileName, err),
+								Line:    1,
+							},
+						}
 					} else if adviceList != nil {
 						sqlCheckAdvice[file.item.FileName] = adviceList
 					}
