@@ -57,7 +57,6 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Status              *db.MigrationStatus
 	ExecutionDurationNs *int64
 	Schema              *string
-	DatabaseID          *int
 }
 
 // CreateInstanceChangeHistory creates instance change history in batch.
@@ -428,9 +427,6 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	}
 	if v := update.Schema; v != nil {
 		set, args = append(set, fmt.Sprintf("schema = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := update.DatabaseID; v != nil {
-		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if len(set) == 0 {
 		return nil
