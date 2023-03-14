@@ -27,6 +27,7 @@
           type="datetimerange"
           size="large"
           :on-confirm="confirmDatePicker"
+          :on-clear="clearDatePicker"
           clearable
         >
         </NDatePicker>
@@ -215,6 +216,17 @@ const confirmDatePicker = (value: [number, number]) => {
       ...route.query,
       createdTsAfter: value[0],
       createdTsBefore: value[1],
+    },
+  });
+};
+
+const clearDatePicker = () => {
+  router.replace({
+    name: "setting.workspace.audit-log",
+    query: {
+      ...route.query,
+      createdTsAfter: 0,
+      createdTsBefore: Date.now(),
     },
   });
 };
