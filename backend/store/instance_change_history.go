@@ -277,6 +277,16 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 			}
 			migrationHistory.Namespace = database.DatabaseName
 		}
+		creator, err := s.GetPrincipalByID(ctx, change.CreatorID)
+		if err != nil {
+			return nil, err
+		}
+		migrationHistory.Creator = creator.Name
+		updater, err := s.GetPrincipalByID(ctx, change.UpdaterID)
+		if err != nil {
+			return nil, err
+		}
+		migrationHistory.Updater = updater.Name
 		migrationHistoryList = append(migrationHistoryList, migrationHistory)
 	}
 
