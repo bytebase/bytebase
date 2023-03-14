@@ -155,6 +155,10 @@ const (
 	FeatureSensitiveData FeatureType = "bb.feature.sensitive-data"
 	// FeatureAccessControl allows user to config the access control.
 	FeatureAccessControl FeatureType = "bb.feature.access-control"
+	// FeatureCustomApproval enables custom risk level definition and custom
+	// approval chain definition.
+	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
+
 	// FeaturePluginOpenAI enables AI features powered by OpenAI.
 	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
 )
@@ -220,6 +224,9 @@ func (e FeatureType) Name() string {
 		return "Sensitive data"
 	case FeatureAccessControl:
 		return "Access Control"
+	case FeatureCustomApproval:
+		return "Custom Approval"
+	// Plugins
 	case FeaturePluginOpenAI:
 		return "OpenAI"
 	}
@@ -278,6 +285,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
+	FeatureCustomApproval:        {false, false, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
 }
