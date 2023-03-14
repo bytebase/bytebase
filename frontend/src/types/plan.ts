@@ -35,6 +35,7 @@ export type FeatureType =
   | "bb.feature.environment-tier-policy"
   | "bb.feature.sensitive-data"
   | "bb.feature.access-control"
+  | "bb.feature.custom-approval"
   // Plugins
   | "bb.feature.plugin.openai";
 
