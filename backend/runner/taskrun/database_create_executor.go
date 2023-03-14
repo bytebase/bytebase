@@ -209,9 +209,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 
 	syncStatus := api.OK
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   instance.ResourceID,
-		DatabaseName: payload.DatabaseName,
-		SyncState:    &syncStatus,
+		EnvironmentID: environment.ResourceID,
+		InstanceID:    instance.ResourceID,
+		DatabaseName:  payload.DatabaseName,
+		SyncState:     &syncStatus,
 	}, api.SystemBotID); err != nil {
 		return true, nil, err
 	}
