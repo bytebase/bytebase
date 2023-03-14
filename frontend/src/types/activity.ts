@@ -272,4 +272,6 @@ export type ActivityFind = {
   limit?: number;
   level?: string | string[];
   token?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
 };

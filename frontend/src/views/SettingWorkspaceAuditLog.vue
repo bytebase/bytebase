@@ -21,6 +21,17 @@
           @update-selected-type-list="selectAuditType"
         />
       </div>
+      <div class="w-112 ml-2">
+        <NDatePicker
+          v-model:value="selectedTimeRange"
+          type="datetimerange"
+          size="large"
+          :on-confirm="confirmDatePicker"
+          :on-clear="clearDatePicker"
+          clearable
+        >
+        </NDatePicker>
+      </div>
     </div>
     <PagedAuditLogTable
       v-if="hasAuditLogFeature"
@@ -31,6 +42,8 @@
             : typePrefixList,
         user: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
         order: 'DESC',
+        createdTsAfter: selectedTimeRange ? selectedTimeRange[0] : undefined,
+        createdTsBefore: selectedTimeRange ? selectedTimeRange[1] : undefined,
       }"
       session-key="settings-audit-log-table"
       :page-size="10"
@@ -92,7 +105,7 @@
 <script lang="ts" setup>
 import { reactive, ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NGrid, NGi } from "naive-ui";
+import { NGrid, NGi, NDatePicker } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { BBDialog } from "@/bbkit";
 import { AuditActivityType, PrincipalId, EMPTY_ID } from "@/types";
@@ -143,6 +156,19 @@ const selectedAuditTypeList = computed((): AuditActivityType[] => {
   return [];
 });
 
+const selectedTimeRange = computed((): [number, number] => {
+  const defaultTimeRange = [0, Date.now()] as [number, number];
+  const createdTsAfter = route.query.createdTsAfter as string;
+  if (createdTsAfter) {
+    defaultTimeRange[0] = parseInt(createdTsAfter, 10);
+  }
+  const createdTsBefore = route.query.createdTsBefore as string;
+  if (createdTsBefore) {
+    defaultTimeRange[1] = parseInt(createdTsBefore, 10);
+  }
+  return defaultTimeRange;
+});
+
 const handleViewDetail = (log: any) => {
   // Display detail fields in the same order as logKeyMap.
   state.modalContent = Object.fromEntries(
@@ -181,5 +207,27 @@ const selectAuditType = (typeList: AuditActivityType[]) => {
       },
     });
   }
+};
+
+const confirmDatePicker = (value: [number, number]) => {
+  router.replace({
+    name: "setting.workspace.audit-log",
+    query: {
+      ...route.query,
+      createdTsAfter: value[0],
+      createdTsBefore: value[1],
+    },
+  });
+};
+
+const clearDatePicker = () => {
+  router.replace({
+    name: "setting.workspace.audit-log",
+    query: {
+      ...route.query,
+      createdTsAfter: 0,
+      createdTsBefore: Date.now(),
+    },
+  });
 };
 </script>
