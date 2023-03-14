@@ -3,6 +3,17 @@
 
 ## Table of Contents
 
+- [store/approval.proto](#store_approval-proto)
+    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
+    - [ApprovalNode](#bytebase-store-ApprovalNode)
+    - [ApprovalNode.RolePayload](#bytebase-store-ApprovalNode-RolePayload)
+    - [ApprovalStep](#bytebase-store-ApprovalStep)
+  
+    - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
+    - [ApprovalNode.Status](#bytebase-store-ApprovalNode-Status)
+    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
+    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
+  
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -34,6 +45,139 @@
     - [MFAConfig](#bytebase-store-MFAConfig)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="store_approval-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/approval.proto
+
+
+
+<a name="bytebase-store-ApprovalFlow"></a>
+
+### ApprovalFlow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalNode"></a>
+
+### ApprovalNode
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is a unique identifier of a node in a flow. |
+| status | [ApprovalNode.Status](#bytebase-store-ApprovalNode-Status) |  | stauts of the node. |
+| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  | type determines who should approve this node. |
+| role_payload | [ApprovalNode.RolePayload](#bytebase-store-ApprovalNode-RolePayload) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalNode-RolePayload"></a>
+
+### ApprovalNode.RolePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalStep"></a>
+
+### ApprovalStep
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type) |  |  |
+| nodes | [ApprovalNode](#bytebase-store-ApprovalNode) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ApprovalNode-RoleValue"></a>
+
+### ApprovalNode.RoleValue
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_VALUE_UNSPECIFILED | 0 |  |
+| ROLE_VALUE_WORKSPACE_OWNER | 1 |  |
+| ROLE_VALUE_DBA | 2 |  |
+| ROLE_VALUE_PROJECT_OWNER | 3 |  |
+| ROLE_VALUE_PROJECT_MEMBER | 4 |  |
+
+
+
+<a name="bytebase-store-ApprovalNode-Status"></a>
+
+### ApprovalNode.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| STATUS_PENDING | 1 |  |
+| STATUS_APPROVED | 2 |  |
+
+
+
+<a name="bytebase-store-ApprovalNode-Type"></a>
+
+### ApprovalNode.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_ROLE | 1 |  |
+
+
+
+<a name="bytebase-store-ApprovalStep-Type"></a>
+
+### ApprovalStep.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_AND | 1 |  |
+| TYPE_OR | 2 |  |
+
+
+ 
+
+ 
+
+ 
 
 
 
