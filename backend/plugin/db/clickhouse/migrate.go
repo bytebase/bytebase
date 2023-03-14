@@ -217,7 +217,8 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
-	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
+	_, err := driver.Execute(ctx, statement, m.CreateDatabase)
+	return "", "", err
 }
 
 // FindMigrationHistoryList finds the migration history.
