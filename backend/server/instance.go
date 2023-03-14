@@ -91,18 +91,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
-		// Try creating the "bytebase" db in the added instance if needed.
-		// Since we allow user to add new instance upfront even providing the incorrect username/password,
-		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
+
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err == nil {
 			defer driver.Close(ctx)
-			if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-				log.Warn("Failed to setup migration schema on instance creation",
-					zap.String("instance", instance.ResourceID),
-					zap.String("engine", string(instance.Engine)),
-					zap.Error(err))
-			}
 			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 				log.Warn("Failed to sync instance",
 					zap.String("instance", instance.ResourceID),
@@ -288,6 +280,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.POST("/instance/:instanceID/migration", func(c echo.Context) error {
+		// TODO(p0ny): remove this endpoint because we no longer create migration history table on user instances.
 		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -303,15 +296,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err != nil {
-			resultSet.Error = err.Error()
-		} else {
-			defer db.Close(ctx)
-			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-				resultSet.Error = err.Error()
-			}
-		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
@@ -321,6 +305,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/status", func(c echo.Context) error {
+		// TODO(p0ny): remove this endpoint because we no longer create migration history table on user instances.
 		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -335,22 +320,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
-		instanceMigration := &api.InstanceMigration{}
-		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err != nil {
-			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
-			instanceMigration.Error = err.Error()
-		} else {
-			defer db.Close(ctx)
-			setup, err := db.NeedsSetupMigration(ctx)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check migration setup status for instance %q", instance.Title)).SetInternal(err)
-			}
-			if setup {
-				instanceMigration.Status = api.InstanceMigrationSchemaNotExist
-			} else {
-				instanceMigration.Status = api.InstanceMigrationSchemaOK
-			}
+		instanceMigration := &api.InstanceMigration{
+			Status: api.InstanceMigrationSchemaOK,
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

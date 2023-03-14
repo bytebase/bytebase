@@ -125,13 +125,6 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 			return "", "", err
 		}
 		defer driver.Close(ctx)
-		needsSetup, err := driver.NeedsSetupMigration(ctx)
-		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", instance.ResourceID)
-		}
-		if needsSetup {
-			return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", instance.ResourceID)
-		}
 
 		executor := driver.(util.MigrationExecutor)
 

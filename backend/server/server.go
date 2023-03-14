@@ -892,16 +892,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create onboarding instance")
 	}
 
-	// Try creating the migration history database.
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, postgres.SampleDatabase)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect onboarding instance")
-	}
-	defer driver.Close(ctx)
-	if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-		return errors.Wrapf(err, "failed to set up migration schema on onboarding instance")
-	}
-
 	// Sync the instance schema so we can transfer the sample database later.
 	if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 		return errors.Wrapf(err, "failed to sync onboarding instance")

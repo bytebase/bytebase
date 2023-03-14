@@ -170,14 +170,6 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		zap.String("statement", statementRecord),
 	)
 
-	setup, err := driver.NeedsSetupMigration(ctx)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", instance.ResourceID)
-	}
-	if setup {
-		return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", instance.ResourceID)
-	}
-
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
 		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
 		if err != nil {
