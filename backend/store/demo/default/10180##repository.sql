@@ -35,8 +35,8 @@ VALUES
         'http://gitlab.bytebase.com/bytebase-demo/blog',
         'master',
         'bytebase',
-        '{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
-        '{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql',
+        '{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
+        '{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql',
         'script/{{NAME}}.sql',
         -- Refers to the bytebase-demo/blog
         '13',
@@ -86,9 +86,9 @@ VALUES
         'http://gitlab.bytebase.com/bytebase-demo/shop',
         'master',
         'bytebase',
-        '{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
-        '{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql',
-        'script/{{ENV_NAME}}##{{DB_NAME}}##{{NAME}}.sql',
+        '{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
+        '{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql',
+        'script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql',
         -- Refers to the bytebase-demo/shop
         '14',
         -- Refers to the webhook in bytebase-demo/shop

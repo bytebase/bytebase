@@ -147,7 +147,7 @@ var (
 	// DBNameToken is the token for database name.
 	DBNameToken = "{{DB_NAME}}"
 	// EnvironmentToken is the token for environment.
-	EnvironmentToken = "{{ENV_NAME}}"
+	EnvironmentToken = "{{ENV_ID}}"
 	// LocationToken is the token for location.
 	LocationToken = "{{LOCATION}}"
 	// TenantToken is the token for tenant.

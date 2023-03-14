@@ -788,7 +788,9 @@
         "snowflake": "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
       },
       "create-admin-user": "这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。",
-      "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作。",
+      "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
+      "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
+      "create-readonly-user-non-sql": "这是 Bytebase 用于连接数据库，执行只读操作的用户。",
       "create-user-example": {
         "snowflake": {
           "user": "bytebase{'@'}%",
@@ -807,6 +809,11 @@
         "postgresql": {
           "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
           "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
+        },
+        "redis": {
+          "user": "bytebase",
+          "password": "YOUR_DB_PWD",
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         }
       }
     },
@@ -1998,6 +2005,11 @@
       "self": "禁用双重认证",
       "description": "您即将禁用您账户的双重认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。"
     },
+    "your-two-factor-secret": {
+      "self": "双重认证密钥",
+      "description": "复制密钥并在您的应用程序中手动输入。",
+      "copy-succeed": "复制成功。请输入到您的应用程序中。"
+    },
     "messages": {
       "2fa-enabled": "双重认证开启成功",
       "2fa-disabled": "双重认证禁用成功",
@@ -2017,7 +2029,12 @@
         "select-or-create": "选择或{create}一个会话以开始。",
         "exit-conversation-mode": "退出对话模式",
         "view-history-conversations": "查看历史对话",
-        "new-conversation": "开启新对话"
+        "new-conversation": "开启新对话",
+        "tips": {
+          "try": "试一试：",
+          "more": "更多",
+          "no-more": "没有了"
+        }
       },
       "preset-suggestion": {
         "1": "哪个部门的员工最多？",

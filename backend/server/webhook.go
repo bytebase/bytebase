@@ -278,12 +278,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					defer wg.Done()
 					adviceList, err := s.sqlAdviceForFile(ctx, file, setting.ExternalUrl)
 					if err != nil {
-						log.Debug(
+						log.Error(
 							"Failed to take SQL review for file",
 							zap.String("file", file.item.FileName),
 							zap.String("external_id", file.repository.ExternalID),
 							zap.Error(err),
 						)
+						sqlCheckAdvice[file.item.FileName] = []advisor.Advice{
+							{
+								Status:  advisor.Warn,
+								Code:    advisor.Internal,
+								Title:   "Failed to take SQL review",
+								Content: fmt.Sprintf("Failed to take SQL review for file %s with error %v", file.item.FileName, err),
+								Line:    1,
+							},
+						}
 					} else if adviceList != nil {
 						sqlCheckAdvice[file.item.FileName] = adviceList
 					}
@@ -938,9 +947,9 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 }
 
 // findProjectDatabases finds the list of databases with given name in the
-// project. If the `envName` is not empty, it will be used as a filter condition
+// project. If the environmentResourceID is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*store.DatabaseMessage, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, environmentResourceID string) ([]*store.DatabaseMessage, error) {
 	// Retrieve the current schema from the database
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 	if err != nil {
@@ -974,15 +983,15 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 
 	// Further filter by environment name if applicable.
 	var filteredDatabases []*store.DatabaseMessage
-	if envName != "" {
+	if environmentResourceID != "" {
 		for _, database := range foundDatabases {
-			// Environment resource ID comparison is case insensitive
-			if strings.EqualFold(database.EnvironmentID, envName) {
+			// Environment resource ID comparison is case-sensitive.
+			if database.EnvironmentID == environmentResourceID {
 				filteredDatabases = append(filteredDatabases, database)
 			}
 		}
 		if len(filteredDatabases) == 0 {
-			return nil, errors.Errorf("project %d does not have database %q for environment %q", projectID, dbName, envName)
+			return nil, errors.Errorf("project %d does not have database %q with environment id %q", projectID, dbName, environmentResourceID)
 		}
 	} else {
 		filteredDatabases = foundDatabases
@@ -992,7 +1001,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	marked := make(map[string]bool)
 	for _, database := range filteredDatabases {
 		if _, ok := marked[database.EnvironmentID]; ok {
-			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
+			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, environmentResourceID)
 		}
 		marked[database.EnvironmentID] = true
 	}
@@ -1083,8 +1092,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return migrationDetailList, nil
 	}
 
-	envName := schemaInfo.Environment
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, envName)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, schemaInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -1254,7 +1262,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 // convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
 // GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
 // junit XML format: https://llg.cubic.org/docs/junit/
-// nolint:unused
 func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	testsuiteList := []string{}
 	status := advisor.Success
@@ -1268,6 +1275,9 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		testcaseList := []string{}
+		pathes := strings.Split(filePath, "/")
+		filename := pathes[len(pathes)-1]
+
 		for _, advice := range adviceList {
 			if advice.Code == 0 {
 				continue
@@ -1292,7 +1302,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 
 			testcase := fmt.Sprintf(
 				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>\n%s\n</failure>\n</testcase>",
-				advice.Title,
+				fmt.Sprintf("%s#L%d: %s", filename, line, advice.Title),
 				filePath,
 				filePath,
 				line,
@@ -1323,7 +1333,6 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 
 // convertSQLAdviceToGitHubActionResult will convert SQL advice map to GitHub action output format.
 // GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
-// nolint:unused
 func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	messageList := []string{}
 	status := advisor.Success

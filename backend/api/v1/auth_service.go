@@ -705,6 +705,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	var user *store.UserMessage
 	if len(users) == 0 {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureSSO) {
+			return nil, status.Errorf(codes.PermissionDenied, "SSO is not available in your license")
+		}
 		// Create new user from identity provider.
 		password, err := common.RandomString(20)
 		if err != nil {

@@ -65,7 +65,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		},
 		{
 			filePath:         "bytebase/dev/db1##001foo",
-			filePathTemplate: "bytebase/{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}",
+			filePathTemplate: "bytebase/{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}",
 			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -276,9 +276,9 @@ func TestParseSchemaFileInfo(t *testing.T) {
 			},
 		},
 		{
-			name:               "has both ENV_NAME and DB_NAME",
+			name:               "has both ENV_ID and DB_NAME",
 			baseDirectory:      "",
-			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}##LATEST.sql",
+			schemaPathTemplate: "{{ENV_ID}}/{{DB_NAME}}##LATEST.sql",
 			file:               "Test/testdb##LATEST.sql",
 			schemaInfo: &MigrationInfo{
 				Source:      VCS,
@@ -291,14 +291,14 @@ func TestParseSchemaFileInfo(t *testing.T) {
 		{
 			name:               "baseDirectory does not match",
 			baseDirectory:      "bytebase",
-			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}##LATEST.sql",
+			schemaPathTemplate: "{{ENV_ID}}/{{DB_NAME}}##LATEST.sql",
 			file:               "Test/testdb##LATEST.sql",
 			schemaInfo:         nil,
 		},
 		{
-			name:               "baseDirectory with both ENV_NAME and DB_NAME",
+			name:               "baseDirectory with both ENV_ID and DB_NAME",
 			baseDirectory:      "bytebase",
-			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}##LATEST.sql",
+			schemaPathTemplate: "{{ENV_ID}}/{{DB_NAME}}##LATEST.sql",
 			file:               "bytebase/Test/testdb##LATEST.sql",
 			schemaInfo: &MigrationInfo{
 				Source:      VCS,

@@ -2,18 +2,20 @@
   <div
     class="mx-auto w-full h-full min-h-screen flex flex-col justify-center items-center bg-gray-100"
   >
-    <img
-      class="h-12 w-auto mx-auto -mt-16 mb-4"
-      src="../../assets/logo-full.svg"
-      alt="Bytebase"
-    />
     <div class="w-80 bg-white p-8 py-6 rounded-lg shadow">
+      <img
+        class="h-12 w-auto mx-auto mb-8"
+        src="../../assets/logo-full.svg"
+        alt="Bytebase"
+      />
       <form
         class="w-full mt-4 h-auto flex flex-col justify-start items-center"
         @submit.prevent="challenge"
       >
         <template v-if="state.selectedMFAType === 'OTP'">
-          <heroicons-outline:device-phone-mobile class="w-8 h-auto" />
+          <heroicons-outline:device-phone-mobile
+            class="w-8 h-auto opacity-60"
+          />
           <p class="my-2 mb-4">{{ $t("multi-factor.auth-code") }}</p>
           <input
             v-model="state.otpCode"
@@ -23,7 +25,7 @@
           />
         </template>
         <template v-else-if="state.selectedMFAType === 'RECOVERY_CODE'">
-          <heroicons-outline:key class="w-8 h-auto" />
+          <heroicons-outline:key class="w-8 h-auto opacity-60" />
           <p class="my-2 mb-4">{{ $t("multi-factor.recovery-code") }}</p>
           <input
             v-model="state.recoveryCode"

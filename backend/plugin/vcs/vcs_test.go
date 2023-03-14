@@ -16,24 +16,24 @@ func TestIsDoubleTimesAsteriskInTemplateValid(t *testing.T) {
 			err:      true,
 		},
 		{
-			template: "bytebase/{{ENV_NAME}}/**",
+			template: "bytebase/{{ENV_ID}}/**",
 			err:      true,
 		},
 		{
-			template: "**/{{ENV_NAME}}/{{DB_NAME}}.sql",
+			template: "**/{{ENV_ID}}/{{DB_NAME}}.sql",
 			err:      true,
 		},
 		{
-			template: "bytebase/**/{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+			template: "bytebase/**/{{ENV_ID}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			err:      false,
 		},
 		{
-			template: "/**/{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+			template: "/**/{{ENV_ID}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			err:      false,
 		},
 		// Credit to Linear Issue BYT-1267
 		{
-			template: "/configure/configure/{{ENV_NAME}}/**/**/{{DESCRIPTION}}.sql",
+			template: "/configure/configure/{{ENV_ID}}/**/**/{{DESCRIPTION}}.sql",
 			err:      false,
 		},
 	}

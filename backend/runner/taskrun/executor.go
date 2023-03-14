@@ -354,7 +354,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		}
 
 		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
-		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_ID}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
 		vcs, err := stores.GetVCSByID(ctx, repo.VCSID)

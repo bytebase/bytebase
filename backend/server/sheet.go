@@ -250,7 +250,7 @@ type SheetInfo struct {
 // Both sheetPath and sheetPathTemplate are the full file path(including the base directory) of the repository.
 func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, error) {
 	placeholderList := []string{
-		"ENV_NAME",
+		"ENV_ID",
 		"DB_NAME",
 		"NAME",
 	}
@@ -272,7 +272,7 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 		index := sheetRegex.SubexpIndex(placeholder)
 		if index >= 0 {
 			switch placeholder {
-			case "ENV_NAME":
+			case "ENV_ID":
 				sheetInfo.EnvironmentID = matchList[index]
 			case "DB_NAME":
 				sheetInfo.DatabaseName = matchList[index]

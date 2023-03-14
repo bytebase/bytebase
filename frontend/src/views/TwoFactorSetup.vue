@@ -1,7 +1,9 @@
 <template>
   <p class="text-sm text-gray-500 mb-4">
     {{ $t("two-factor.description") }}
-    <LearnMoreLink url="" />
+    <LearnMoreLink
+      url="https://www.bytebase.com/docs/administration/2fa?source=console"
+    />
   </p>
   <BBStepTab
     class="mb-8"
@@ -29,18 +31,15 @@
           >
             <template #action>
               <span
-                :class="!state.showSecretText && 'cursor-pointer text-blue-600'"
-                @click="state.showSecretText = true"
+                :class="
+                  !state.showSecretModal && 'cursor-pointer text-blue-600'
+                "
+                @click="state.showSecretModal = true"
                 >{{
                   $t(
                     "two-factor.setup-steps.setup-auth-app.scan-qr-code.enter-the-text"
                   )
                 }}</span
-              >
-              <code
-                v-if="state.showSecretText"
-                class="ml-1 bg-gray-100 px-1 rounded font-mono"
-                >{{ currentUser.mfaSecret }}</code
               >
             </template>
           </i18n-t>
@@ -70,6 +69,12 @@
       />
     </template>
   </BBStepTab>
+
+  <TwoFactorSecretModal
+    v-if="state.showSecretModal"
+    :secret="currentUser.mfaSecret"
+    @close="state.showSecretModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -81,6 +86,7 @@ import * as QRCode from "qrcode";
 import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
 import { useRouter } from "vue-router";
+import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
 
 const issuerName = "Bytebase";
 
@@ -91,7 +97,7 @@ type Step = typeof SETUP_AUTH_APP_STEP | typeof DOWNLOAD_RECOVERY_CODES_STEP;
 
 interface LocalState {
   currentStep: Step;
-  showSecretText: boolean;
+  showSecretModal: boolean;
   qrcodeDataUrl: string;
   otpCode: string;
   recoveryCodesDownloaded: boolean;
@@ -103,7 +109,7 @@ const authStore = useAuthStore();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   currentStep: SETUP_AUTH_APP_STEP,
-  showSecretText: false,
+  showSecretModal: false,
   qrcodeDataUrl: "",
   otpCode: "",
   recoveryCodesDownloaded: false,
