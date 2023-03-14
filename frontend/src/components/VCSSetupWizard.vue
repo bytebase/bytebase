@@ -5,7 +5,7 @@
     :description="attentionText"
   />
   <BBStepTab
-    class="mt-4"
+    class="mt-4 mb-8"
     :step-item-list="stepList"
     :allow-next="allowNext"
     :finish-title="$t('common.confirm-and-add')"
