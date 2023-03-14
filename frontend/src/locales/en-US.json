@@ -2034,7 +2034,7 @@
         "new-conversation": "Start new conversation",
         "no-message": "No message in this conversation",
         "tips": {
-          "try": "Try:",
+          "suggest-prompt": "Suggesting prompts...",
           "more": "More",
           "no-more": "no more"
         }
