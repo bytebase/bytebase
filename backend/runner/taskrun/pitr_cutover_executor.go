@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewPITRCutoverExecutor creates a PITR cutover task executor.
@@ -138,21 +139,23 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	// database's migration history, and append a new BRANCH migration.
 	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
+		InstanceID:     &task.InstanceID,
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      database.DatabaseName,
 		Database:       database.DatabaseName,
+		DatabaseID:     &database.UID,
 		Environment:    environment.ResourceID,
 		Source:         db.MigrationSource(project.Workflow),
 		Type:           db.Branch,
 		Status:         db.Done,
 		Description:    fmt.Sprintf("PITR: restoring database %s", database.DatabaseName),
 		Creator:        creator.Name,
+		CreatorID:      creator.ID,
 		IssueID:        strconv.Itoa(issue.UID),
 	}
 
-	// TODO(p0ny): migrate to instance change history
-	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
+	if _, _, err := utils.ExecuteMigration(ctx, exec.store, driver, m, "/* pitr cutover */"); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
