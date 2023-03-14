@@ -280,11 +280,13 @@ type ActivityFind struct {
 	ID *int
 
 	// Domain specific fields
-	CreatorID      *int
-	TypePrefixList []string
-	LevelList      []ActivityLevel
-	ContainerID    *int
-	Limit          *int
+	CreatorID       *int
+	TypePrefixList  []string
+	LevelList       []ActivityLevel
+	ContainerID     *int
+	Limit           *int
+	CreatedTsAfter  *int64
+	CreatedTsBefore *int64
 	// If specified, only find activities whose ID is smaller than SinceID.
 	SinceID *int
 	// If specified, sorts the returned list by created_ts in <<ORDER>>
