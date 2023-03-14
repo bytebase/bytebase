@@ -320,6 +320,7 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 	}, nil
 }
 
+// TODO(p0ny): migrate to instance change history.
 // MigrationHistory is the API message for migration history.
 type MigrationHistory struct {
 	ID string

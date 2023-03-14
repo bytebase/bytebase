@@ -268,6 +268,13 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 		if err != nil {
 			return nil, err
 		}
+		if change.DatabaseID != nil {
+			database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: change.DatabaseID})
+			if err != nil {
+				return nil, err
+			}
+			migrationHistory.Namespace = database.DatabaseName
+		}
 		migrationHistoryList = append(migrationHistoryList, migrationHistory)
 	}
 
