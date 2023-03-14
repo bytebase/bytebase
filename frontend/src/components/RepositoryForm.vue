@@ -403,6 +403,10 @@ export default defineComponent({
           sampleText: "env1",
         },
         {
+          placeholder: "{{ENV_NAME}}", // for legacy support
+          sampleText: "env1",
+        },
+        {
           placeholder: "{{DESCRIPTION}}",
           sampleText: "create_tablefoo_for_bar",
         },
@@ -430,6 +434,14 @@ export default defineComponent({
         {
           placeholder: "{{DB_NAME}}",
           sampleText: "db1",
+        },
+        {
+          placeholder: "{{ENV_ID}}",
+          sampleText: "env1",
+        },
+        {
+          placeholder: "{{ENV_NAME}}", // for legacy support
+          sampleText: "env1",
         },
       ];
       let result = `${baseDirectory}/${schemaPathTemplate}`;
