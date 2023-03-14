@@ -47,7 +47,7 @@
           :checked="isIssueSelected(issue)"
         />
       </BBTableCell>
-      <BBTableCell :left-padding="4" class="table-cell w-12">
+      <BBTableCell class="table-cell w-12">
         <IssueStatusIcon
           :issue-status="issue.status"
           :task-status="activeTask(issue.pipeline).status"
