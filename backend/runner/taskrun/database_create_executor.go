@@ -130,6 +130,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	// Create a migrate migration history upon creating the database.
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
+		InstanceID:     &task.InstanceID,
 		CreatorID:      task.CreatorID,
 		ReleaseVersion: exec.profile.Version,
 		Version:        schemaVersion,

@@ -360,6 +360,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 		if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
 			ctx,
 			&dbdriver.MigrationInfo{
+				InstanceID:            nil,
 				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
 				Version:               cutoffSchemaVersion.String(),
@@ -424,6 +425,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 				if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
 					ctx,
 					&dbdriver.MigrationInfo{
+						InstanceID:            nil,
 						ReleaseVersion:        serverVersion,
 						UseSemanticVersion:    true,
 						Version:               pv.version.String(),
@@ -516,6 +518,7 @@ func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName s
 		if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
 			ctx,
 			&dbdriver.MigrationInfo{
+				InstanceID:            nil,
 				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
 				Version:               cutoffSchemaVersion.String(),

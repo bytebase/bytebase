@@ -139,6 +139,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	// database's migration history, and append a new BRANCH migration.
 	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
+		InstanceID:     &task.InstanceID,
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      database.DatabaseName,
