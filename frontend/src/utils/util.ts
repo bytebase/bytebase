@@ -102,12 +102,22 @@ export function arraySwap(arr: any[], old_index: number, new_index: number) {
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
 }
 
-export function sizeToFit(el: HTMLTextAreaElement | undefined) {
+export function sizeToFit(
+  el: HTMLTextAreaElement | undefined,
+  padding = 2,
+  max = -1,
+  min = -1
+) {
   if (!el) return;
 
   el.style.height = "auto";
-  // Extra 2px is to prevent jiggling upon entering the text
-  el.style.height = `${el.scrollHeight + 2}px`;
+  requestAnimationFrame(() => {
+    // Extra several pixels are to prevent jiggling upon entering the text
+    let height = el.scrollHeight + padding;
+    if (max >= 0 && height > max) height = max;
+    if (min >= 0 && height < min) height = min;
+    el.style.height = `${height}px`;
+  });
 }
 
 export function isValidEmail(email: string) {
