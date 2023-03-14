@@ -2024,7 +2024,7 @@
         "view-history-conversations": "查看历史对话",
         "new-conversation": "开启新对话",
         "tips": {
-          "try": "试一试：",
+          "suggest-prompt": "生成提示词...",
           "more": "更多",
           "no-more": "没有了"
         }
