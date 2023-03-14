@@ -144,6 +144,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      database.DatabaseName,
 		Database:       database.DatabaseName,
+		DatabaseID:     &database.UID,
 		Environment:    environment.ResourceID,
 		Source:         db.MigrationSource(project.Workflow),
 		Type:           db.Branch,

@@ -86,6 +86,8 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		Version:     schemaVersion,
 		Description: task.Name,
 		Environment: environment.ResourceID,
+		Database:    database.DatabaseName,
+		Namespace:   database.DatabaseName,
 	}
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -126,9 +128,6 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		}
 		mi.Payload = string(bytes)
 	}
-
-	mi.Database = database.DatabaseName
-	mi.Namespace = database.DatabaseName
 
 	statement = strings.TrimSpace(statement)
 	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.

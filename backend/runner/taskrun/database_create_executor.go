@@ -171,6 +171,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		)
 	} else {
 		mi.IssueID = strconv.Itoa(issue.UID)
+		mi.IssueIDInt = &issue.UID
 	}
 
 	migrationID, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, statement)
