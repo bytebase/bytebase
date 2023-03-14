@@ -26,6 +26,7 @@ type MigrationSchemaExecutor struct {
 
 // Run will run the task check migration schema executor once.
 func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
+	// TODO(p0ny): remove this task check because we no longer create migration history table on user instances.
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return []api.TaskCheckResult{}, err
@@ -36,23 +37,6 @@ func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *store.TaskCheckRun
 		return []api.TaskCheckResult{}, err
 	}
 	defer driver.Close(ctx)
-
-	setup, err := driver.NeedsSetupMigration(ctx)
-	if err != nil {
-		return []api.TaskCheckResult{}, err
-	}
-
-	if setup {
-		return []api.TaskCheckResult{
-			{
-				Status:    api.TaskCheckStatusError,
-				Namespace: api.BBNamespace,
-				Code:      common.MigrationSchemaMissing.Int(),
-				Title:     "Error",
-				Content:   fmt.Sprintf("Missing migration schema for instance %q", instance.Title),
-			},
-		}, nil
-	}
 
 	return []api.TaskCheckResult{
 		{

@@ -189,40 +189,6 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 			zap.String("type", string(api.AnomalyInstanceConnection)),
 			zap.Error(err))
 	}
-
-	// Check migration schema
-	{
-		setup, err := driver.NeedsSetupMigration(ctx)
-		if err != nil {
-			log.Error("Failed to check migration schema",
-				zap.String("instance", instance.ResourceID),
-				zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
-				zap.Error(err))
-		} else {
-			if setup {
-				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-					InstanceUID: instance.UID,
-					Type:        api.AnomalyInstanceMigrationSchema,
-				}); err != nil {
-					log.Error("Failed to create anomaly",
-						zap.String("instance", instance.ResourceID),
-						zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
-						zap.Error(err))
-				}
-			} else {
-				err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
-					InstanceUID: &instance.UID,
-					Type:        api.AnomalyInstanceMigrationSchema,
-				})
-				if err != nil && common.ErrorCode(err) != common.NotFound {
-					log.Error("Failed to close anomaly",
-						zap.String("instance", instance.ResourceID),
-						zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
-						zap.Error(err))
-				}
-			}
-		}
-	}
 }
 
 func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) {
@@ -272,20 +238,8 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 	// Check schema drift
 	if s.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
 		// Redis and MongoDB are schemaless.
+		// TODO(zp): remove oracle.
 		if instance.Engine == db.Redis || instance.Engine == db.MongoDB || instance.Engine == db.Oracle {
-			return
-		}
-		setup, err := driver.NeedsSetupMigration(ctx)
-		if err != nil {
-			log.Debug("Failed to check anomaly",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-				zap.Error(err))
-			return
-		}
-		// Skip drift check if migration schema is not ready (we have instance anomaly to cover that)
-		if setup {
 			return
 		}
 		var schemaBuf bytes.Buffer
@@ -306,9 +260,11 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 			return
 		}
 		limit := 1
-		list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-			Database: &database.DatabaseName,
-			Limit:    &limit,
+		list, err := s.store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
+			InstanceID: &instance.UID,
+			DatabaseID: &database.UID,
+			Database:   &database.DatabaseName,
+			Limit:      &limit,
 		})
 		if err != nil {
 			log.Error("Failed to check anomaly",
