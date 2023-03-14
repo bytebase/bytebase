@@ -174,11 +174,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		mi.IssueIDInt = &issue.UID
 	}
 
-	migrationID, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, statement)
-	if err != nil {
-		return true, nil, err
-	}
-
+	// Upsert first because we need database id in instance change history.
+	// The sync status is NOT_FOUND, which will be updated to OK if succeeds.
 	labels := make(map[string]string)
 	if payload.Labels != "" {
 		var databaseLabels []*api.DatabaseLabel
@@ -194,12 +191,28 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		EnvironmentID:        environment.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
-		SyncState:            api.OK,
+		SyncState:            api.NotFound,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
 		SchemaVersion:        schemaVersion,
 		Labels:               labels,
 	})
 	if err != nil {
+		return true, nil, err
+	}
+
+	mi.DatabaseID = &database.UID
+
+	migrationID, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, statement)
+	if err != nil {
+		return true, nil, err
+	}
+
+	syncStatus := api.OK
+	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   instance.ResourceID,
+		DatabaseName: payload.DatabaseName,
+		SyncState:    &syncStatus,
+	}, api.SystemBotID); err != nil {
 		return true, nil, err
 	}
 
@@ -217,19 +230,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}
 	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
-	}
-
-	// Update the database id in the instance change history.
-	migrationIDInt, err := strconv.ParseInt(migrationID, 10, 64)
-	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to convert migrationID %s to int", migrationID)
-	}
-
-	if err := exec.store.UpdateInstanceChangeHistory(ctx, &store.UpdateInstanceChangeHistoryMessage{
-		ID:         migrationIDInt,
-		DatabaseID: &database.UID,
-	}); err != nil {
-		return true, nil, errors.Wrap(err, "failed to update databaseID in instance change history")
 	}
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
