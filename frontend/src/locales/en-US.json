@@ -792,6 +792,8 @@
       },
       "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
       "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
+      "create-admin-user-non-sql": "This is the connection user used by Bytebase to perform write and admin operations.",
+      "create-readonly-user-non-sql": "This is the connection used by Bytebase to perform read-only operations.",
       "create-user-example": {
         "snowflake": {
           "user": "bytebase{'@'}%",
