@@ -140,14 +140,14 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
 			count++
 		}
-		if create.CreatedTs != 0 {
+		if create.CreatedTs == 0 {
 			valueStr = append(valueStr, "DEFAULT")
 		} else {
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
 			values = append(values, create.CreatedTs)
 			count++
 		}
-		if create.UpdatedTs != 0 {
+		if create.UpdatedTs == 0 {
 			valueStr = append(valueStr, "DEFAULT")
 		} else {
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
