@@ -270,6 +270,23 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 		if err != nil {
 			return nil, err
 		}
+		if change.DatabaseID != nil {
+			database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: change.DatabaseID})
+			if err != nil {
+				return nil, err
+			}
+			migrationHistory.Namespace = database.DatabaseName
+		}
+		creator, err := s.GetPrincipalByID(ctx, change.CreatorID)
+		if err != nil {
+			return nil, err
+		}
+		migrationHistory.Creator = creator.Name
+		updater, err := s.GetPrincipalByID(ctx, change.UpdaterID)
+		if err != nil {
+			return nil, err
+		}
+		migrationHistory.Updater = updater.Name
 		migrationHistoryList = append(migrationHistoryList, migrationHistory)
 	}
 
@@ -390,7 +407,7 @@ func (s *Store) UpdateInstanceChangeHistoryAsDone(ctx context.Context, migration
 		Status:              &status,
 		Schema:              &updatedSchema,
 	}
-	return s.updateInstanceChangeHistory(ctx, update)
+	return s.UpdateInstanceChangeHistory(ctx, update)
 }
 
 // UpdateInstanceChangeHistoryAsFailed updates a change history to failed.
@@ -405,12 +422,12 @@ func (s *Store) UpdateInstanceChangeHistoryAsFailed(ctx context.Context, migrati
 		ExecutionDurationNs: &migrationDurationNs,
 		Status:              &status,
 	}
-	return s.updateInstanceChangeHistory(ctx, update)
+	return s.UpdateInstanceChangeHistory(ctx, update)
 }
 
 // UpdateInstanceChangeHistory updates an instance change history.
 // it deprecates the old UpdateHistoryAsDone and UpdateHistoryAsFailed.
-func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateInstanceChangeHistoryMessage) error {
+func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateInstanceChangeHistoryMessage) error {
 	set, args := []string{}, []interface{}{}
 	if v := update.Status; v != nil {
 		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
@@ -420,6 +437,9 @@ func (s *Store) updateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	}
 	if v := update.Schema; v != nil {
 		set, args = append(set, fmt.Sprintf("schema = $%d", len(args)+1)), append(args, *v)
+	}
+	if len(set) == 0 {
+		return nil
 	}
 	query := `
 	UPDATE instance_change_history
