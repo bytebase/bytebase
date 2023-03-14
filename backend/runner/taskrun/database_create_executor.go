@@ -217,6 +217,19 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		return true, nil, err
 	}
 
+	// Update the database id in the instance change history.
+	migrationIDInt, err := strconv.ParseInt(migrationID, 10, 64)
+	if err != nil {
+		return true, nil, errors.Wrapf(err, "failed to convert migrationID %s to int", migrationID)
+	}
+
+	if err := exec.store.UpdateInstanceChangeHistory(ctx, &store.UpdateInstanceChangeHistoryMessage{
+		ID:         migrationIDInt,
+		DatabaseID: &database.UID,
+	}); err != nil {
+		return true, nil, errors.Wrap(err, "failed to update databaseID in instance change history")
+	}
+
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.ResourceID),
