@@ -17,7 +17,7 @@
         v-for="(column, index) in columnList"
         :key="index"
         scope="col"
-        class="pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
+        class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
         :class="[column.center && 'text-center pr-2']"
       >
         <template v-if="index === 0">
@@ -47,7 +47,7 @@
           :checked="isIssueSelected(issue)"
         />
       </BBTableCell>
-      <BBTableCell :left-padding="4" class="table-cell w-12">
+      <BBTableCell class="table-cell w-12">
         <IssueStatusIcon
           :issue-status="issue.status"
           :task-status="activeTask(issue.pipeline).status"
