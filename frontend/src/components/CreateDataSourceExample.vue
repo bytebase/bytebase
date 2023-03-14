@@ -1,14 +1,23 @@
 <template>
   <div class="w-full flex flex-col justify-start" :class="props.className">
     <p class="w-full mt-1 text-sm text-gray-500">
-      {{
-        props.dataSourceType === "ADMIN"
-          ? $t("instance.sentence.create-admin-user")
-          : $t("instance.sentence.create-readonly-user")
-      }}
+      <template v-if="isEngineUsingSQL">
+        {{
+          props.dataSourceType === "ADMIN"
+            ? $t("instance.sentence.create-admin-user")
+            : $t("instance.sentence.create-readonly-user")
+        }}
+      </template>
+      <template v-else>
+        {{
+          props.dataSourceType === "ADMIN"
+            ? $t("instance.sentence.create-admin-user-non-sql")
+            : $t("instance.sentence.create-readonly-user-non-sql")
+        }}
+      </template>
       <span
         v-if="!props.createInstanceFlag"
-        class="normal-link select-none"
+        class="normal-link select-none ml-1"
         @click="toggleCreateUserExample"
       >
         {{ $t("instance.show-how-to-create") }}
@@ -94,6 +103,22 @@
           </template>
         </i18n-t>
       </template>
+      <template v-else-if="props.engineType === 'REDIS'">
+        <i18n-t
+          tag="p"
+          keypath="instance.sentence.create-user-example.redis.template"
+        >
+          <template #user>{{
+            $t("instance.sentence.create-user-example.redis.user")
+          }}</template>
+          <template #password>
+            <span class="text-red-600">
+              {{ $t("instance.sentence.create-user-example.redis.password") }}
+            </span>
+          </template>
+        </i18n-t>
+        <!-- TODO(xz): add a "detailed guide" link to docs here -->
+      </template>
       <div class="mt-2 flex flex-row">
         <span
           class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
@@ -113,10 +138,15 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType } from "vue";
+import { reactive, PropType, computed } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
-import { DataSourceType, EngineType, engineName } from "../types";
+import {
+  DataSourceType,
+  EngineType,
+  engineName,
+  languageOfEngine,
+} from "../types";
 import { pushNotification } from "@/store";
 
 interface LocalState {
@@ -146,6 +176,10 @@ const { t } = useI18n();
 
 const state = reactive<LocalState>({
   showCreateUserExample: props.createInstanceFlag,
+});
+
+const isEngineUsingSQL = computed(() => {
+  return languageOfEngine(props.engineType) === "sql";
 });
 
 const grantStatement = (
@@ -192,10 +226,10 @@ const grantStatement = (
       case "SPANNER":
         return "";
       case "REDIS":
-        // TODO(xz)
-        return "";
+        return "ACL SETUSER bytebase on >YOUR_DB_PWD +@read &*";
     }
   }
+  return ""; // fallback
 };
 
 const toggleCreateUserExample = () => {
