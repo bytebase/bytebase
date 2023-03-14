@@ -79,7 +79,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	mi := &db.MigrationInfo{
 		InstanceID:     &instance.UID,
 		DatabaseID:     &database.UID,
-		CreatorID:      api.SystemBotID,
+		CreatorID:      task.CreatorID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
 		// TODO(d): support semantic versioning.

@@ -149,6 +149,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		Status:         db.Done,
 		Description:    fmt.Sprintf("PITR: restoring database %s", database.DatabaseName),
 		Creator:        creator.Name,
+		CreatorID:      creator.ID,
 		IssueID:        strconv.Itoa(issue.UID),
 	}
 

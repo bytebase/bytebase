@@ -542,6 +542,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		Type:           db.Branch,
 		Description:    description,
 		Creator:        creator.Name,
+		CreatorID:      creator.ID,
 		IssueID:        issueID,
 	}
 	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase.DatabaseName)
