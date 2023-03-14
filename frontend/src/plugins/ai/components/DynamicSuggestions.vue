@@ -1,16 +1,16 @@
 <template>
   <div class="flex items-center overflow-hidden h-[22px]">
     <template v-if="dynamicSuggestions && !ready">
-      <BBSpin class="w-4 h-4" />
+      <BBSpin class="w-4 h-4 mr-2" />
+      <span class="text-sm">{{
+        $t("plugin.ai.conversation.tips.suggest-prompt")
+      }}</span>
     </template>
 
     <template v-if="ready && suggestions.length > 0">
       <div
         class="relative flex items-center gap-x-2 overflow-hidden text-xs leading-4"
       >
-        <div class="shrink-0 text-sm font-medium">
-          {{ $t("plugin.ai.conversation.tips.try") }}
-        </div>
         <div
           class="flex items-stretch gap-x-2 whitespace-nowrap overflow-x-auto hide-scrollbar"
         >
@@ -18,7 +18,7 @@
             v-for="(sug, i) in suggestions"
             :key="i"
             style="max-width: 20rem"
-            class="border shrink-0 py-0.5 px-1 rounded-md cursor-pointer hover:bg-indigo-100 hover:border-indigo-500"
+            class="border shrink-0 py-0.5 px-2 cursor-pointer hover:bg-indigo-100 hover:border-indigo-500"
             @click.capture="consume(sug)"
           >
             {{ sug }}
