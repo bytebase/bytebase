@@ -147,21 +147,23 @@ type MigrationInfoPayload struct {
 
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
+	// fields for instance change history
+	InstanceID *int
+	DatabaseID *int
+	IssueIDInt *int
+	CreatorID  int
+
 	ReleaseVersion string
 	Version        string
 	Namespace      string
-	InstanceID     *int
 	Database       string
-	DatabaseID     *int
 	Environment    string
 	Source         MigrationSource
 	Type           MigrationType
 	Status         MigrationStatus
 	Description    string
 	Creator        string
-	CreatorID      int
 	IssueID        string
-	IssueIDInt     *int
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload        string
 	CreateDatabase bool
