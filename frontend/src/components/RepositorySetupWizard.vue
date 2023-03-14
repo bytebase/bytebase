@@ -14,7 +14,7 @@
       </i18n-t>
     </div>
     <BBStepTab
-      class="pt-4"
+      class="mt-4 mb-8"
       :step-item-list="stepList"
       :allow-next="allowNext"
       @try-change-step="tryChangeStep"
