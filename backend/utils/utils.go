@@ -520,7 +520,6 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 		doMigrate = false
 	}
 	if doMigrate {
-		// TODO(p0ny): migrate to instance change history
 		if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
 			return "", "", err
 		}
