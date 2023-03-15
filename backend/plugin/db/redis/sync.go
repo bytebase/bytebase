@@ -97,6 +97,11 @@ func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
 func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
 	val, err := d.rdb.ConfigGet(ctx, "databases").Result()
 	if err != nil {
+		// Cloud vendors may have disabled this command.
+		// In that case, we return 1.
+		if strings.Contains(err.Error(), "unknown command") {
+			return 1, nil
+		}
 		return 0, err
 	}
 	if _, ok := val["databases"]; !ok {
