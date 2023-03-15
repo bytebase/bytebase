@@ -47,13 +47,22 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	}
 
 	// connect to 0 by default
+	db := 0
+	if config.Database != "" {
+		database, err := strconv.Atoi(config.Database)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
+		}
+		db = database
+	}
+
 	d.rdb = redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:     []string{addr},
 		Username:  config.Username,
 		Password:  config.Password,
 		TLSConfig: tlsConfig,
 		ReadOnly:  config.ReadOnly,
-		DB:        0,
+		DB:        db,
 	})
 
 	clusterEnabled, err := d.getClusterEnabled(ctx)
@@ -63,6 +72,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 
 	// switch to cluster if cluster is enabled.
 	if clusterEnabled {
+		log.Debug("switching to cluster mode client")
 		if err := d.rdb.Close(); err != nil {
 			log.Warn("failed to close redis driver when switching to redis cluster driver", zap.Error(err))
 		}
@@ -73,28 +83,6 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 			TLSConfig: tlsConfig,
 			ReadOnly:  config.ReadOnly,
 		})
-	} else {
-		db := 0
-		if config.Database != "" {
-			database, err := strconv.Atoi(config.Database)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
-			}
-			db = database
-		}
-		if db != 0 {
-			if err := d.rdb.Close(); err != nil {
-				log.Warn("failed to close redis driver when switching to redis cluster driver", zap.Error(err))
-			}
-			d.rdb = redis.NewUniversalClient(&redis.UniversalOptions{
-				Addrs:     []string{addr},
-				Username:  config.Username,
-				Password:  config.Password,
-				TLSConfig: tlsConfig,
-				ReadOnly:  config.ReadOnly,
-				DB:        db,
-			})
-		}
 	}
 
 	return d, nil
