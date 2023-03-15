@@ -83,7 +83,7 @@ func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
 	var enabled string
 	for _, line := range strings.Split(val, "\n") {
 		if strings.HasPrefix(line, "cluster_enabled:") {
-			enabled = strings.TrimPrefix(line, "cluter_enabled:")
+			enabled = strings.TrimPrefix(line, "cluster_enabled:")
 			enabled = strings.Trim(enabled, " \n\t")
 			break
 		}
@@ -97,6 +97,11 @@ func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
 func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
 	val, err := d.rdb.ConfigGet(ctx, "databases").Result()
 	if err != nil {
+		// Cloud vendors may have disabled this command.
+		// In that case, we return 1.
+		if strings.Contains(err.Error(), "unknown command") {
+			return 1, nil
+		}
 		return 0, err
 	}
 	if _, ok := val["databases"]; !ok {
