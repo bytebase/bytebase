@@ -1,5 +1,6 @@
 <template>
   <ChatPanel v-if="openAIKey" />
+  <MockInputPlaceholder v-else />
 </template>
 
 <script lang="ts" setup>
@@ -16,6 +17,7 @@ import {
   useSettingByName,
 } from "@/store";
 import ChatPanel from "./ChatPanel.vue";
+import MockInputPlaceholder from "./MockInputPlaceholder.vue";
 import { Connection } from "@/types";
 
 type LocalState = {
