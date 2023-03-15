@@ -65,7 +65,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	for _, line := range strings.Split(val, "\n") {
 		if strings.HasPrefix(line, "redis_version:") {
 			version = strings.TrimPrefix(line, "redis_version:")
-			version = strings.Trim(version, " \n\t")
+			version = strings.Trim(version, " \n\t\r")
 			break
 		}
 	}
@@ -84,7 +84,7 @@ func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
 	for _, line := range strings.Split(val, "\n") {
 		if strings.HasPrefix(line, "cluster_enabled:") {
 			enabled = strings.TrimPrefix(line, "cluster_enabled:")
-			enabled = strings.Trim(enabled, " \n\t")
+			enabled = strings.Trim(enabled, " \n\t\r")
 			break
 		}
 	}
