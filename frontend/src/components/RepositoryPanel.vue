@@ -7,40 +7,73 @@
     </i18n-t>
   </div>
   <div class="mt-2 textinfolabel">
-    <i18n-t keypath="repository.gitops-description-file-path">
-      <template #fullPath>
-        <a class="normal-link" :href="repository.webUrl" target="_blank">{{
-          repository.fullPath
-        }}</a>
-      </template>
-      <template #fullPathTemplate>
-        <span class="font-medium text-main"
-          >{{ state.repositoryConfig.baseDirectory }}/{{
-            state.repositoryConfig.filePathTemplate
-          }}</span
-        >
-      </template>
-    </i18n-t>
-    <span>&nbsp;</span>
-    <i18n-t keypath="repository.gitops-description-branch">
-      <template #branch>
-        <span class="font-medium text-main">
-          <template v-if="state.repositoryConfig.branchFilter">
-            {{ state.repositoryConfig.branchFilter }}
-          </template>
-          <template v-else>
-            {{ $t("common.default") }}
-          </template>
-        </span>
-      </template>
-    </i18n-t>
-    <template v-if="state.repositoryConfig.schemaPathTemplate">
+    <template v-if="isProjectSchemaChangeTypeDDL">
+      <i18n-t keypath="repository.gitops-description-file-path">
+        <template #fullPath>
+          <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+            repository.fullPath
+          }}</a>
+        </template>
+        <template #fullPathTemplate>
+          <span class="font-medium text-main"
+            >{{ state.repositoryConfig.baseDirectory }}/{{
+              state.repositoryConfig.filePathTemplate
+            }}</span
+          >
+        </template>
+      </i18n-t>
       <span>&nbsp;</span>
-      <i18n-t keypath="repository.gitops-description-description-schema-path">
+      <i18n-t keypath="repository.gitops-description-branch">
+        <template #branch>
+          <span class="font-medium text-main">
+            <template v-if="state.repositoryConfig.branchFilter">
+              {{ state.repositoryConfig.branchFilter }}
+            </template>
+            <template v-else>
+              {{ $t("common.default") }}
+            </template>
+          </span>
+        </template>
+      </i18n-t>
+      <template v-if="state.repositoryConfig.schemaPathTemplate">
+        <span>&nbsp;</span>
+        <i18n-t keypath="repository.gitops-description-description-schema-path">
+          <template #schemaPathTemplate>
+            <span class="font-medium text-main">{{
+              state.repositoryConfig.schemaPathTemplate
+            }}</span>
+          </template>
+        </i18n-t>
+      </template>
+    </template>
+    <template v-if="isProjectSchemaChangeTypeSDL">
+      <i18n-t keypath="repository.gitops-description-sdl">
+        <template #fullPath>
+          <a class="normal-link" :href="repository.webUrl" target="_blank">
+            {{ repository.fullPath }}
+          </a>
+        </template>
+        <template #branch>
+          <span class="font-medium text-main">
+            <template v-if="state.repositoryConfig.branchFilter">
+              {{ state.repositoryConfig.branchFilter }}
+            </template>
+            <template v-else>
+              {{ $t("common.default") }}
+            </template>
+          </span>
+        </template>
+        <template #filePathTemplate>
+          <span class="font-medium text-main">
+            {{ state.repositoryConfig.baseDirectory }}/{{
+              state.repositoryConfig.filePathTemplate
+            }}
+          </span>
+        </template>
         <template #schemaPathTemplate>
-          <span class="font-medium text-main">{{
-            state.repositoryConfig.schemaPathTemplate
-          }}</span>
+          <span class="font-medium text-main">
+            {{ state.repositoryConfig.schemaPathTemplate }}
+          </span>
         </template>
       </i18n-t>
     </template>
@@ -324,6 +357,14 @@ export default defineComponent({
       };
     });
 
+    const isProjectSchemaChangeTypeDDL = computed(() => {
+      return state.schemaChangeType === "DDL";
+    });
+
+    const isProjectSchemaChangeTypeSDL = computed(() => {
+      return state.schemaChangeType === "SDL";
+    });
+
     const allowUpdate = computed(() => {
       return (
         !isEmpty(state.repositoryConfig.branchFilter) &&
@@ -490,6 +531,8 @@ export default defineComponent({
       state,
       repositoryInfo,
       allowUpdate,
+      isProjectSchemaChangeTypeDDL,
+      isProjectSchemaChangeTypeSDL,
       restoreToUIWorkflowType,
       onSQLReviewCIModalClose,
       doUpdate,
