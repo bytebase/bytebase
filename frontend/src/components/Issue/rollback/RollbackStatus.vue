@@ -28,20 +28,34 @@
             <IssueStatusIcon :issue-status="rollbackByIssue.status" />
           </router-link>
         </template>
-        <BBTooltipButton
-          v-else
-          :disabled="!allowPreviewRollback"
-          tooltip-mode="DISABLED-ONLY"
-          class="btn-normal !px-3 !py-1"
-          @click="tryRollbackTask"
-        >
-          {{ $t("task.rollback.preview-rollback-issue") }}
-          <template v-if="!payload?.rollbackStatement" #tooltip>
-            <div class="whitespace-pre-line">
+        <template v-else>
+          <button
+            v-if="allowPreviewRollback"
+            type="button"
+            class="btn-normal !px-3 !py-1"
+            @click.prevent="tryRollbackTask"
+          >
+            {{ $t("task.rollback.preview-rollback-issue") }}
+          </button>
+          <NTooltip v-else :disabled="!!payload?.rollbackStatement">
+            <template #trigger>
+              <div
+                class="select-none inline-flex border border-control-border rounded-md bg-control-bg opacity-50 cursor-not-allowed px-3 py-1 text-sm leading-5 font-medium"
+              >
+                {{ $t("task.rollback.preview-rollback-issue") }}
+              </div>
+            </template>
+
+            <div v-if="!payload?.rollbackStatement" class="whitespace-pre-line">
               {{ $t("task.rollback.empty-rollback-statement") }}
+              <LearnMoreLink
+                url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console#why-i-get-the-rollback-statement-is-empty"
+                color="light"
+                class="ml-1"
+              />
             </div>
-          </template>
-        </BBTooltipButton>
+          </NTooltip>
+        </template>
       </template>
       <template v-else>
         <LoggingButton />
@@ -62,13 +76,13 @@ import {
   TaskRollbackBy,
   UNKNOWN_ID,
 } from "@/types";
-import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
 import { useRollbackLogic } from "./common";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
 import { useActivityStore, useIssueById } from "@/store";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 
 type LocalState = {
   loading: boolean;
