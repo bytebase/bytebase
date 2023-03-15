@@ -11,7 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -54,7 +56,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		db = database
 	}
 
-	rdb := redis.NewUniversalClient(&redis.UniversalOptions{
+	d.rdb = redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:     []string{addr},
 		Username:  config.Username,
 		Password:  config.Password,
@@ -62,11 +64,26 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		ReadOnly:  config.ReadOnly,
 		DB:        db,
 	})
-	if err := rdb.Ping(ctx).Err(); err != nil {
+
+	clusterEnabled, err := d.getClusterEnabled(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	d.rdb = rdb
+	// switch to cluster if cluster is enabled.
+	if clusterEnabled {
+		if err := d.rdb.Close(); err != nil {
+			log.Warn("failed to close redis driver when switching to redis cluster driver", zap.Error(err))
+		}
+		d.rdb = redis.NewClusterClient(&redis.ClusterOptions{
+			Addrs:     []string{addr},
+			Username:  config.Username,
+			Password:  config.Password,
+			TLSConfig: tlsConfig,
+			ReadOnly:  config.ReadOnly,
+		})
+	}
+
 	return d, nil
 }
 
