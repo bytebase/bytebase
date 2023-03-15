@@ -144,6 +144,7 @@ const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
     switch (taskRun.type) {
       case "bb.task.database.schema.baseline":
       case "bb.task.database.schema.update":
+      case "bb.task.database.schema.update-sdl":
       case "bb.task.database.data.update": {
         return {
           title: t("task.view-change"),
