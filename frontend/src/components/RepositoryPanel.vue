@@ -53,6 +53,16 @@
             {{ repository.fullPath }}
           </a>
         </template>
+        <template #branch>
+          <span class="font-medium text-main">
+            <template v-if="state.repositoryConfig.branchFilter">
+              {{ state.repositoryConfig.branchFilter }}
+            </template>
+            <template v-else>
+              {{ $t("common.default") }}
+            </template>
+          </span>
+        </template>
         <template #filePathTemplate>
           <span class="font-medium text-main">
             {{ state.repositoryConfig.baseDirectory }}/{{
