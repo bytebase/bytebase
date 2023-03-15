@@ -91,12 +91,14 @@
         "
       >
         <template #menuItem="{ item }">
-          {{
-            $t(
-              `project.settings.select-schema-change-type-${item.toLowerCase()}`
-            )
-          }}
-          <BBBetaBadge v-if="item === 'SDL'" />
+          <div class="flex items-center gap-x-2">
+            {{
+              $t(
+                `project.settings.select-schema-change-type-${item.toLowerCase()}`
+              )
+            }}
+            <BBBetaBadge v-if="item === 'SDL'" class="!leading-3" />
+          </div>
         </template>
       </BBSelect>
     </div>
