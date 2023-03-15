@@ -16,6 +16,7 @@ import (
 // SyncInstance syncs the instance metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var instance db.InstanceMetadata
+	var databaseCount int
 
 	version, err := d.getVersion(ctx)
 	if err != nil {
@@ -28,14 +29,15 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to check if cluster is enabled")
 	}
 
-	databaseCount, err := d.getDatabaseCount(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get databases")
-	}
-
 	// Redis cluster can only use database zero.
 	if clusterEnabled {
 		databaseCount = 1
+	} else {
+		count, err := d.getDatabaseCount(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get databases")
+		}
+		databaseCount = count
 	}
 
 	var databases []*storepb.DatabaseMetadata
