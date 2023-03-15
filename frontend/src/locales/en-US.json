@@ -1297,7 +1297,7 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
       "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
-      "schema-path-template-sdl-description": "The schema file that describes the database's full schema."
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
     },
     "mode": {
       "standard": "Standard",
