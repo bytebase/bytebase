@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-6 lg:flex">
+  <div ref="containerRef" class="px-4 py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
         {{ $t("settings.general.workspace.plugin.openai.ai-augmentation") }}
@@ -77,7 +77,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
@@ -89,6 +89,7 @@ import {
 import { hasWorkspacePermission } from "@/utils";
 import FeatureBadge from "@/components/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureModal.vue";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 interface LocalState {
   openAIKey: string;
@@ -98,6 +99,7 @@ interface LocalState {
 const { t } = useI18n();
 const settingStore = useSettingStore();
 const currentUser = useCurrentUser();
+const containerRef = ref<HTMLDivElement>();
 
 const state = reactive<LocalState>({
   openAIKey: "",
@@ -118,11 +120,7 @@ const allowEdit = computed((): boolean => {
 });
 
 const allowSave = computed((): boolean => {
-  return (
-    allowEdit.value &&
-    state.openAIKey !== "" &&
-    state.openAIKey !== openAIKeySetting.value?.value
-  );
+  return allowEdit.value && state.openAIKey !== openAIKeySetting.value?.value;
 });
 
 const handleOpenAIKeyChange = (event: InputEvent) => {
@@ -149,4 +147,14 @@ const updateOpenAIKey = async () => {
     title: t("settings.general.workspace.config-updated"),
   });
 };
+
+onMounted(() => {
+  if (location.hash === "#ai-augmentation") {
+    const container = containerRef.value;
+    if (!container) return;
+    scrollIntoView(container, {
+      scrollMode: "if-needed",
+    });
+  }
+});
 </script>
