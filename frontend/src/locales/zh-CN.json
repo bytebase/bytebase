@@ -2020,6 +2020,7 @@
     "ai": {
       "examples": "例子",
       "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会马上转换成 SQL 语句",
+      "text-to-sql-disabled-placeholder": "提供 OpenAI API 密钥以开启 ChatSQL 能力。",
       "run-automatically": "自动运行",
       "conversation": {
         "conversations": "会话",
@@ -2041,7 +2042,8 @@
         "2": "哪个部门经理的下属最多？",
         "3": "各个部门的性别比例如何？"
       },
-      "statement-copied": "语句已复制到剪贴板"
+      "statement-copied": "语句已复制到剪贴板",
+      "dont-show-again": "不再显示"
     }
   }
 }
