@@ -1986,14 +1986,14 @@
         "tips": "Keep your recovery codes as safe as your password. We recommend saving them with a password manager such as Lastpass, 1Password, or Keeper.",
         "keep-safe": {
           "self": "Keep your recovery codes in a safe spot.",
-          "description": "These codes are the last resort for accessing your account in case you lose your password and second factors. If you cannot find these codes, you will lose access to your account."
+          "description": "These codes are the last resort for accessing your account in case you lose your two-factors authentication code. If you cannot find these codes, you will lose access to your account."
         }
       },
       "recovery-codes-saved": "I have saved my recovery codes"
     },
     "recovery-codes": {
       "self": "Recovery codes",
-      "description": "Recovery codes can be used to access your account in the event you lose access to your device and cannot receive two-factor authentication codes."
+      "description": "Recovery codes can be used to access your account in the event you cannot receive two-factor authentication codes."
     },
     "disable": {
       "self": "Disable Two-factor authentication",
