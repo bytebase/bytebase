@@ -2021,6 +2021,7 @@
     "ai": {
       "examples": "Examples",
       "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL",
+      "text-to-sql-disabled-placeholder": "Enable ChatSQL capability by supplying an OpenAI API Key.",
       "run-automatically": "Run automatically",
       "conversation": {
         "conversations": "Conversations",
@@ -2044,7 +2045,8 @@
         "2": "Which manager has most direct reports in each department?",
         "3": "What's the gender ratio in each department?"
       },
-      "statement-copied": "Statement copied to clipboard"
+      "statement-copied": "Statement copied to clipboard",
+      "dont-show-again": "Don't show again"
     }
   }
 }
