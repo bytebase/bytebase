@@ -91,12 +91,14 @@
         "
       >
         <template #menuItem="{ item }">
-          {{
-            $t(
-              `project.settings.select-schema-change-type-${item.toLowerCase()}`
-            )
-          }}
-          <BBBetaBadge v-if="item === 'SDL'" />
+          <div class="flex items-center gap-x-2">
+            {{
+              $t(
+                `project.settings.select-schema-change-type-${item.toLowerCase()}`
+              )
+            }}
+            <BBBetaBadge v-if="item === 'SDL'" class="!leading-3" />
+          </div>
         </template>
       </BBSelect>
     </div>
@@ -200,7 +202,9 @@
       />
       <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
         <span class="text-red-600">*</span>
-        <span class="ml-1">{{ $t("repository.if-specified") }},</span>
+        <span v-if="isProjectSchemaChangeTypeDDL" class="ml-1">
+          {{ $t("repository.if-specified") }},
+        </span>
         <span class="ml-1">{{ schemaTagPlaceholder }}</span>
       </div>
       <div
