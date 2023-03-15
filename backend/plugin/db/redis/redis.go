@@ -72,6 +72,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 
 	// switch to cluster if cluster is enabled.
 	if clusterEnabled {
+		log.Debug("switching to cluster mode client")
 		if err := d.rdb.Close(); err != nil {
 			log.Warn("failed to close redis driver when switching to redis cluster driver", zap.Error(err))
 		}
