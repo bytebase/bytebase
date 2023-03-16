@@ -15,12 +15,6 @@
     <div :class="[isChatMode && 'px-4 py-2 flex flex-col gap-2']">
       <div v-if="isChatMode" class="flex items-center gap-2 w-full">
         <DynamicSuggestions class="flex-1" @enter="requestAI" />
-        <label class="flex items-center justify-end gap-x-1 shrink-0">
-          <BBCheckbox :value="autoRun" @toggle="autoRun = $event" />
-          <span class="textinfolabel">
-            {{ $t("plugin.ai.run-automatically") }}
-          </span>
-        </label>
       </div>
       <PromptInput @focus="tab.editMode = 'CHAT-TO-SQL'" @enter="requestAI" />
     </div>
@@ -36,7 +30,6 @@ import { computed, reactive, watch } from "vue";
 import { head } from "lodash-es";
 import { Axios, AxiosResponse } from "axios";
 
-import { BBCheckbox } from "@/bbkit";
 import { useCurrentTab } from "@/store";
 import { useConversationStore } from "../store";
 import ActionBar from "./ActionBar.vue";
@@ -125,14 +118,13 @@ const requestAI = async (query: string) => {
 
   const answer = await store.createMessage({
     author: "AI",
-    prompt: "SELECT",
+    prompt: "",
     content: "",
     error: "",
     conversation_id: conversation.id,
     status: "LOADING",
   });
   const url = "https://api.openai.com/v1/chat/completions";
-  const FINAL_PROMPT = "SELECT";
   const messages: OpenAIMessage[] = [];
 
   conversation.messageList.forEach((message) => {
@@ -176,14 +168,8 @@ const requestAI = async (query: string) => {
 
     const text = head(data?.choices)?.message.content?.trim();
     if (text) {
-      const parts = [text];
-      if (!text.startsWith(FINAL_PROMPT)) {
-        parts.unshift(FINAL_PROMPT);
-      }
-      const statement = parts.join(" ").trim();
-
-      answer.content = statement;
-      answer.prompt = statement;
+      answer.content = text;
+      answer.prompt = text;
     }
 
     answer.status = "DONE";
