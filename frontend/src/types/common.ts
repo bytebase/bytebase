@@ -820,7 +820,7 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_AUDIT_LOG: AuditLog = {
     createdTs: 0,
     creator: EMPTY_PRINCIPAL.email,
-    type: AuditActivityType.MemberCreate,
+    type: AuditActivityType.WorkspaceMemberCreate,
     level: AuditActivityLevel.INFO,
     comment: "",
     payload: "",
