@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 )
 
 func TestExtractUnsupportObjNameAndType(t *testing.T) {
@@ -89,7 +91,7 @@ func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range testCases {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		out, err := mysqlDiffer.SchemaDiff(differ.SchemaDiffContext{DeleteRemainingTable: true}, test.old, test.new)
 		a.NoError(err)
 		if len(out) > 0 {
 			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])

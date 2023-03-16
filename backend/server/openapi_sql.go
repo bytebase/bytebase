@@ -228,7 +228,7 @@ func schemaDiff(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))
 	}
 
-	diff, err := differ.SchemaDiff(engine, request.SourceSchema, request.TargetSchema)
+	diff, err := differ.SchemaDiff(differ.SchemaDiffContext{DeleteRemainingTable: true}, engine, request.SourceSchema, request.TargetSchema)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compute diff between source and target schemas").SetInternal(err)
 	}

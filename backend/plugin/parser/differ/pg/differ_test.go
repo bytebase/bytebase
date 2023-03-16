@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	// Register PostgreSQL parser engine.
+	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"
 )
 
@@ -34,7 +35,7 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, test := range tests {
-		diff, err := pgDiffer.SchemaDiff(test.OldSchema, test.NewSchema)
+		diff, err := pgDiffer.SchemaDiff(differ.SchemaDiffContext{DeleteRemainingTable: true}, test.OldSchema, test.NewSchema)
 		require.NoError(t, err)
 		if record {
 			tests[i].Diff = diff

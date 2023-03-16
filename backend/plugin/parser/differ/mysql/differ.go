@@ -554,7 +554,7 @@ type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
-func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
+func (*SchemaDiffer) SchemaDiff(ctx differ.SchemaDiffContext, oldStmt, newStmt string) (string, error) {
 	// 1. Preprocessing Stage.
 	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
 	oldUnsupportedStmtList, oldSupportedStmt, err := classifyStatement(oldStmt)
