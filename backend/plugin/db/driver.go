@@ -356,7 +356,8 @@ type MigrationHistoryFind struct {
 	Source   *MigrationSource
 	Version  *string
 	// If specified, then it will only fetch "Limit" most recent migration histories
-	Limit *int
+	Limit  *int
+	Offset *int
 
 	// Fields below should be set if fetching from metaDB instance_change_history table.
 	DatabaseID *int
