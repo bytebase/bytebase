@@ -384,9 +384,6 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 				return stmt.LastLine, errors.Errorf("The SDL does not support partition table currently")
 			}
 		case *ast.CreateIndexStmt:
-			if node.IndexName == "" {
-				return stmt.LastLine, errors.Errorf("The index name is required for SDL format")
-			}
 		default:
 			return stmt.LastLine, errors.Errorf("%T is invalid SDL statement", node)
 		}
