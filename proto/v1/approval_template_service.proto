@@ -14,25 +14,88 @@ option go_package = "generated-go/v1";
 
 service ApprovalTemplateService {
   rpc GetApprovalTemplate(GetApprovalTemplateRequest) returns (ApprovalTemplate) {
-
+    option (google.api.http) = {
+      get: "/v1/{name=approvalTemplates/*}"
+    };
+    option (google.api.method_signature) = "name";
   }
 
   rpc ListApprovalTemplates(ListApprovalTemplatesRequest) returns (ListApprovalTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/v1/approvalTemplates"
+    };
+    option (google.api.method_signature) = "";
+  }
 
+  rpc CreateApprovalTemplate(CreateApprovalTemplateRequest) returns (ApprovalTemplate) {
+    option (google.api.http) = {
+      post: "/v1/approvalTemplates"
+      body: "approvalTemplate"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateApprovalTemplate(UpdateApprovalTemplateRequest) returns (ApprovalTemplate) {
+    option (google.api.http) = {
+      patch: "/v1/{approvalTemplate.name=approvalTemplates/*}"
+      body: "approvalTemplate"
+    };
+    option (google.api.method_signature) = "approval_template,update_mask";
+  }
+
+  rpc DeleteApprovalTemplate(DeleteApprovalTemplateRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=approvalTemplates/*}"
+    };
+    option (google.api.method_signature) = "name";
   }
 
 }
 
 message GetApprovalTemplateRequest {
+  // The name of the instance to retrieve.
+  // Format: approvalTemplates/{approvalTemplate}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
 
+message CreateApprovalTemplateRequest {
+  // the approval template to be created
+  ApprovalTemplate approval_template = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListApprovalTemplatesRequest {
+  // The maximum number of approval templates to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 projects will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
 
+  // A page token, received from a previous `ListApprovalTemplates` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListApprovalTemplates` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted projects if specified.
+  bool show_deleted = 3;
 }
 
 message ListApprovalTemplatesResponse {
 
+}
+
+message UpdateApprovalTemplateRequest {
+  ApprovalTemplate approval_template = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteApprovalTemplateRequest {
+  // The name of the instance to delete.
+  // Format: approvalTemplates/{approvalTemplate}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ApprovalTemplate {
