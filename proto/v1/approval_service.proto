@@ -18,7 +18,7 @@ service ApprovalService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListApprovals(ListApprovalRequest) returns (ListApprovalsResponse) {
+  rpc ListApprovals(ListApprovalsRequest) returns (ListApprovalsResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=stages/*/tasks/*}/approvals"
     };
@@ -31,6 +31,37 @@ message GetApprovalRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message ListApprovalsRequest {
+  // The parent, which owns this collection of instances.
+  // Format: stages/{stage}/tasks/{task}
+  // Use "stages/-/tasks/-" to list all instances from all stages.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of instances to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 instances will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListInstances` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListInstances` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Show deleted instances if specified.
+  bool show_deleted = 4;
+}
+
+message ListApprovalsResponse {
+  repeated Approval approvals = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
 
 message Approval {
   // Format: stages/{stage}/tasks/{task}/approvals/{approval}
@@ -39,7 +70,6 @@ message Approval {
   string uid = 2;
   ApprovalFlow flow = 3;
 }
-
 
 message ApprovalFlow {
   repeated ApprovalStep steps = 1;
@@ -55,7 +85,7 @@ message ApprovalStep {
     OR = 2;
   }
   Type type = 1;
-  
+
   repeated ApprovalNode nodes = 2;
 }
 
