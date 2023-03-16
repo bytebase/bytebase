@@ -69,3 +69,26 @@ func TestNormalize(t *testing.T) {
 	a.NoError(err)
 	a.Equal(want, got)
 }
+
+func TestCheck(t *testing.T) {
+	type testData struct {
+		input string
+		err   string
+	}
+	tests := []testData{
+		{
+			input: `create table t(a int, FOREIGN KEY (a) references t1(a));`,
+			err:   "The constraint name is required for SDL format",
+		},
+		{
+			input: `create table t(a int, CHECK (a > 0));`,
+			err:   "The constraint name is required for SDL format",
+		},
+	}
+	a := require.New(t)
+	mysqlTransformer := &SchemaTransformer{}
+	for _, test := range tests {
+		_, err := mysqlTransformer.Check(test.input)
+		a.Equal(test.err, err.Error())
+	}
+}
