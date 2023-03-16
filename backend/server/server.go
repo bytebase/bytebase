@@ -1096,7 +1096,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 		var errList error
 		for _, instance := range instanceList {
 			err := func(instance *store.InstanceMessage) error {
-				limit := 100
+				limit := 10
 				offset := 0
 
 				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB || instance.Engine == db.SQLite {
