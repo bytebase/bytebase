@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
-	_ "github.com/bytebase/bytebase/backend/plugin/vcs/github" // Import to call the init until it is imported from somewhere else
 )
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {
@@ -55,7 +54,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		} else {
 			vcsType = req.Type
-			if vcsType != vcsPlugin.GitLab && vcsType != vcsPlugin.GitHub {
+			if vcsType != vcsPlugin.GitLab && vcsType != vcsPlugin.GitHub && vcsType != vcsPlugin.Bitbucket {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unexpected VCS type: %s", vcsType))
 			}
 

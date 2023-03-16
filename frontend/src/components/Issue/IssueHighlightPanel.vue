@@ -151,6 +151,8 @@ const vcsBranchUrl = computed((): string => {
       return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
     } else if (pushEvent.value.vcsType == "GITHUB") {
       return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
+    } else if (pushEvent.value.vcsType == "BITBUCKET") {
+      return `${pushEvent.value.repositoryUrl}/src/${vcsBranch.value}`;
     }
   }
   return "";

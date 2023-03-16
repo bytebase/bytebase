@@ -117,6 +117,8 @@ const attentionText = computed((): string => {
     return "repository.select-repository-attention-gitlab";
   } else if (props.config.vcs.type == "GITHUB") {
     return "repository.select-repository-attention-github";
+  } else if (props.config.vcs.type == "BITBUCKET") {
+    return "repository.select-repository-attention-bitbucket";
   }
   return "";
 });

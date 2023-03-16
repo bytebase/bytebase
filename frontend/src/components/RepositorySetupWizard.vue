@@ -307,7 +307,10 @@ export default defineComponent({
 
       const createFunc = async () => {
         let externalId = state.config.repositoryInfo.externalId;
-        if (state.config.vcs.type == "GITHUB") {
+        if (
+          state.config.vcs.type == "GITHUB" ||
+          state.config.vcs.type == "BITBUCKET"
+        ) {
           externalId = state.config.repositoryInfo.fullPath;
         }
 

@@ -366,10 +366,11 @@ export default defineComponent({
 
     const vcsBranch = computed((): string => {
       if (pushEvent.value) {
-        if (pushEvent.value.vcsType == "GITLAB") {
-          const parts = pushEvent.value.ref.split("/");
-          return parts[parts.length - 1];
-        } else if (pushEvent.value.vcsType == "GITHUB") {
+        if (
+          pushEvent.value.vcsType == "GITLAB" ||
+          pushEvent.value.vcsType == "GITHUB" ||
+          pushEvent.value.vcsType == "BITBUCKET"
+        ) {
           const parts = pushEvent.value.ref.split("/");
           return parts[parts.length - 1];
         }
@@ -383,6 +384,8 @@ export default defineComponent({
           return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
         } else if (pushEvent.value.vcsType == "GITHUB") {
           return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
+        } else if (pushEvent.value.vcsType == "BITBUCKET") {
+          return `${pushEvent.value.repositoryUrl}/src/${vcsBranch.value}`;
         }
       }
       return "";

@@ -236,7 +236,11 @@ export default defineComponent({
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        if (vcs.value.type == "GITLAB" || vcs.value.type == "GITHUB") {
+        if (
+          vcs.value.type == "GITLAB" ||
+          vcs.value.type == "GITHUB" ||
+          vcs.value.type == "BITBUCKET"
+        ) {
           useOAuthStore()
             .exchangeVCSTokenWithID({
               code: payload.code,
@@ -291,6 +295,8 @@ export default defineComponent({
         let authorizeUrl = `${vcs.value.instanceUrl}/oauth/authorize`;
         if (vcs.value.type == "GITHUB") {
           authorizeUrl = `https://github.com/login/oauth/authorize`;
+        } else if (vcs.value.type == "BITBUCKET") {
+          authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
         }
         const newWindow = openWindowForOAuth(
           authorizeUrl,
@@ -334,6 +340,9 @@ export default defineComponent({
               } else if (vcs.value.type == "GITHUB") {
                 description =
                   "Please make sure Client secret matches the one from your GitHub.com Application.";
+              } else if (vcs.value.type == "BITBUCKET") {
+                description =
+                  "Please make sure Secret matches the one from your Bitbucket.org consumer.";
               }
               pushNotification({
                 module: "bytebase",
