@@ -568,7 +568,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	p.Use(e)
 
 	// TODO: remove this on May 2023
-	s.backfillInstanceChangeHistory(ctx)
+	go s.backfillInstanceChangeHistory(ctx)
 
 	serverStarted = true
 	return s, nil
