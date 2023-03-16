@@ -55,7 +55,8 @@ events.on("apply-statement", ({ statement, run }) => {
   emit("apply-statement", statement, tab.value.connection, run);
 });
 
-const autoRun = useLocalStorage("bb.plugin.ai.auto-run", true);
+const autoRun = useLocalStorage("bb.plugin.ai.auto-run", false);
+autoRun.value = false;
 
 const chat = useChatByTab();
 
