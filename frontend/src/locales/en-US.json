@@ -1901,11 +1901,16 @@
       "select-type": "Select Type"
     },
     "type": {
-      "member-create": "Create Member",
-      "member-role-update": "Update Member Role",
-      "member-activate": "Activate Member",
-      "member-deactivate": "Deactivate Member",
-      "database-transfer": "Transfer Database",
+      "workspace": {
+        "member-create": "Create Workspace Member",
+        "member-role-update": "Update Workspace Member Role",
+        "member-activate": "Activate Workspace Member",
+        "member-deactivate": "Deactivate Workspace Member"
+      },
+      "project": {
+        "member-role-update": "Update Project Member Role",
+        "database-transfer": "Transfer Database"
+      },
       "sql-editor-query": "SQL Editor Query"
     }
   },

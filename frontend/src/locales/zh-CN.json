@@ -1900,11 +1900,16 @@
       "select-type": "选择类型"
     },
     "type": {
-      "member-create": "增加成员",
-      "member-role-update": "更新角色",
-      "member-activate": "激活成员",
-      "member-deactivate": "禁用成员",
-      "database-transfer": "转移数据库",
+      "workspace": {
+        "member-create": "增加工作空间成员",
+        "member-role-update": "更新工作空间成员角色",
+        "member-activate": "激活工作空间成员",
+        "member-deactivate": "禁用工作空间成员"
+      },
+      "project": {
+        "member-role-update": "更新项目成员角色",
+        "database-transfer": "转移数据库"
+      },
       "sql-editor-query": "SQL 编辑器查询"
     }
   },
