@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/approval_service.proto";
+
+option go_package = "generated-go/v1";
+
+service ApprovalTemplateService {
+  rpc GetApprovalTemplate(GetApprovalTemplateRequest) returns (ApprovalTemplate) {
+
+  }
+
+  rpc ListApprovalTemplates(ListApprovalTemplatesRequest) returns (ListApprovalTemplatesResponse) {
+
+  }
+
+}
+
+message GetApprovalTemplateRequest {
+
+}
+
+message ListApprovalTemplatesRequest {
+
+}
+
+message ListApprovalTemplatesResponse {
+
+}
+
+message ApprovalTemplate {
+  // Format: approvalTemplates/{approvalTemplate}
+  string name = 1;
+  // system-generated unique identifier
+  string uid = 2;
+  ApprovalFlow flow = 3;
+}
