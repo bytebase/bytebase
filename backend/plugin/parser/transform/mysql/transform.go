@@ -375,12 +375,18 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 				case ast.ConstraintFulltext:
 					return stmt.LastLine, errors.Errorf("The fulltext constraint in CREATE TABLE statements is invalid SDL format. Please use CREATE FULLTEXT INDEX statements, such as \"CREATE UNIQUE INDEX fdx_t_id ON t(id);\"")
 				case ast.ConstraintCheck, ast.ConstraintForeignKey:
+					if constraint.Name == "" {
+						return stmt.LastLine, errors.Errorf("The constraint name is required for SDL format")
+					}
 				}
 			}
 			if node.Partition != nil {
 				return stmt.LastLine, errors.Errorf("The SDL does not support partition table currently")
 			}
 		case *ast.CreateIndexStmt:
+			if node.IndexName == "" {
+				return stmt.LastLine, errors.Errorf("The index name is required for SDL format")
+			}
 		default:
 			return stmt.LastLine, errors.Errorf("%T is invalid SDL statement", node)
 		}
