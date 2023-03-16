@@ -2,77 +2,99 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
 option go_package = "generated-go/v1";
 
 service ApprovalService {
+  rpc GetApproval(GetApprovalRequest) returns (Approval) {
+    option (google.api.http) = {
+      get: "/v1/{name=stages/*/tasks/*/approvals/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListApprovals(ListApprovalRequest) returns (ListApprovalsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=stages/*/tasks/*}/approvals"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+}
+
+message GetApprovalRequest {
+  // Format: stages/{stage}/tasks/{task}/approvals/{approval}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 
 message Approval {
-
+  // Format: stages/{stage}/tasks/{task}/approvals/{approval}
+  string name = 1;
+  // system-generated unique identifier
+  string uid = 2;
+  ApprovalFlow flow = 3;
 }
 
 
 message ApprovalFlow {
-    repeated ApprovalStep steps = 1;
+  repeated ApprovalStep steps = 1;
 }
 
 message ApprovalStep {
-    // Type of the ApprovalStep
-    // AND means every node must be approved to proceed.
-    // OR means approving any node will proceed.
-    enum Type {
-        TYPE_UNSPECIFIED = 0;
-        AND = 1;
-        OR = 2;
-    }
-    Type type = 1;
-    repeated ApprovalNode nodes = 2;
+  // Type of the ApprovalStep
+  // AND means every node must be approved to proceed.
+  // OR means approving any node will proceed.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    AND = 1;
+    OR = 2;
+  }
+  Type type = 1;
+  
+  repeated ApprovalNode nodes = 2;
 }
 
 message ApprovalNode {
-    // Status of the ApprovalNode.
-    enum Status {
-        STATUS_UNSPECIFIED = 0;
-        PENDING = 1;
-        APPROVED = 2;
-    }
-    // Type of the ApprovalNode.
-    // ROLE means the ApprovalNode can be approved by an user from our predefined user group.
-    // See RoleValue below for the predefined user groups.
-    enum Type {
-        TYPE_UNSPECIFIED = 0;
-        ROLE = 1;
-    }
-    // RoleValue is used if ApprovalNode Type is ROLE
-    // The predefined user groups are:
-    // - WORKSPACE_OWNER
-    // - DBA
-    // - PROJECT_OWNER
-    // - PROJECT_MEMBER
-    enum RoleValue {
-        ROLE_VALUE_UNSPECIFILED = 0;
-        WORKSPACE_OWNER = 1;
-        DBA = 2;
-        PROJECT_OWNER = 3;
-        PROJECT_MEMBER = 4;
-    }
-    message RolePayload {
-        RoleValue role_value = 1;
-    }
+  // uid uniquely identifies a node in a flow.
+  string uid = 1;
 
-    // id is a unique identifier of a node in a flow.
-    string id = 1;
-    // stauts of the node.
-    Status status = 2;
-    // type determines who should approve this node.
-    Type type = 3;
-    oneof payload {
-        RolePayload role_payload = 4;
-    }
-}
+  // Status of the ApprovalNode.
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    APPROVED = 2;
+  }
+  Status status = 2;
 
+  // Type of the ApprovalNode.
+  // type determines who should approve this node.
+  // ROLE means the ApprovalNode can be approved by an user from our predefined user group.
+  // See RoleValue below for the predefined user groups.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    ROLE = 1;
+  }
+  Type type = 3;
 
-message ApprovalTemplate {
-
+  // RoleValue is used if ApprovalNode Type is ROLE
+  // The predefined user groups are:
+  // - WORKSPACE_OWNER
+  // - DBA
+  // - PROJECT_OWNER
+  // - PROJECT_MEMBER
+  enum RoleValue {
+    ROLE_VALUE_UNSPECIFILED = 0;
+    WORKSPACE_OWNER = 1;
+    DBA = 2;
+    PROJECT_OWNER = 3;
+    PROJECT_MEMBER = 4;
+  }
+  oneof payload {
+    RoleValue role_value = 4;
+  }
 }
