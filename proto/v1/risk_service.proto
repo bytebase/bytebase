@@ -36,7 +36,7 @@ service RiskService {
 
     rpc RemoveRiskCondition(RemoveRiskConditionRequest) returns (Risk) {
         option (google.api.http) = {
-            post: "v1/{risk=risks/*}:removeRiskCondition"
+            post: "/v1/{risk=risks/*}:removeRiskCondition"
             body: "*"
         };
     }
