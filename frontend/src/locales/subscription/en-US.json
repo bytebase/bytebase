@@ -130,6 +130,7 @@
         "rbac": "RBAC (Owner, DBA, Developer role)",
         "watermark": "Watermark",
         "sso": "Single Sign-On (SSO)",
+        "2fa": "Two-Factor Authentication (2FA)",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
@@ -183,6 +184,7 @@
     "database-access-control": "Database access control",
     "roadmap": "Roadmap prioritization",
     "custom-contract": "Custom MSA and BAA",
-    "sso": "Single Sign-On (SSO)"
+    "sso": "Single Sign-On (SSO)",
+    "2fa": "Two-Factor Authentication (2FA)"
   }
 }
