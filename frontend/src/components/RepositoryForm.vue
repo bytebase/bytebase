@@ -114,7 +114,7 @@
       <div class="mt-1 textinfolabel">
         {{ $t("repository.file-path-template-description") }}
         <LearnMoreLink
-          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#file-path-template"
           class="ml-1"
         />
       </div>
@@ -178,7 +178,7 @@
           }}</span>
         </template>
         <LearnMoreLink
-          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#schema-path-template"
           class="ml-1"
         />
       </div>
