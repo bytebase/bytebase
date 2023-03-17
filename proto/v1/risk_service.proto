@@ -29,27 +29,6 @@ service RiskService {
     };
     option (google.api.method_signature) = "risk,update_mask";
   }
-
-  rpc AddRiskRule(AddRiskRuleRequest) returns (Risk) {
-    option (google.api.http) = {
-      post: "/v1/{risk=risks/*}:addRiskRule"
-      body: "*"
-    };
-  }
-
-  rpc RemoveRiskRule(RemoveRiskRuleRequest) returns (Risk) {
-    option (google.api.http) = {
-      post: "/v1/{risk=risks/*}:removeRiskRule"
-      body: "*"
-    };
-  }
-
-  rpc UpdateRiskRule(UpdateRiskRuleRequest) returns (Risk) {
-    option (google.api.http) = {
-      patch: "/v1/{risk=risks/*}:updateRiskRule"
-      body: "*"
-    };
-  }
 }
 
 message GetRiskRequest {
@@ -93,37 +72,6 @@ message UpdateRiskRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
-}
-
-message AddRiskRuleRequest {
-  // The name of the risk to add the risk rule to.
-  // Format: risks/{risk}
-  string risk = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The risk rule to add.
-  RiskRule risk_rule = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-message RemoveRiskRuleRequest {
-  // The name of the risk to remove the risk rule from.
-  // Format: risks/{risk}
-  string risk = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The risk rule to remove. Identified by its name.
-  RiskRule risk_rule = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateRiskRuleRequest {
-  // The name of the risk which owns the risk rule to be updated.
-  // Format: risks/{risk}
-  string risk = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The risk rule to modify.
-  // Identified by its name.
-  RiskRule risk_rule = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 3;
 }
 
 message Risk {
