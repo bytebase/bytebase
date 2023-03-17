@@ -34,8 +34,11 @@ service RiskService {
         };
     }
 
-    rpc RemoveRiskCondition() returns (Risk) {
-
+    rpc RemoveRiskCondition(RemoveRiskConditionRequest) returns (Risk) {
+        option (google.api.http) = {
+            post: "v1/{risk=risks/*}:removeRiskCondition"
+            body: "*"
+        };
     }
 
     rpc UpdateRiskCondition() returns (Risk) {
@@ -82,6 +85,15 @@ message AddRiskConditionRequest {
     string risk = 1 [(google.api.field_behavior) = REQUIRED];
 
     // The risk condition to add.
+    RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RemoveRiskConditionRequest {
+    // The name of the risk to remove the risk condition from.
+    // Format: risks/{risk}
+    string risk = 1 [(google.api.field_behavior) = REQUIRED];
+
+    // The risk condition to remove. Identified by its name.
     RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
