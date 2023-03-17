@@ -6,7 +6,6 @@
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
-    - [ApprovalNode.RolePayload](#bytebase-store-ApprovalNode-RolePayload)
     - [ApprovalStep](#bytebase-store-ApprovalStep)
   
     - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
@@ -78,24 +77,9 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is a unique identifier of a node in a flow. |
-| status | [ApprovalNode.Status](#bytebase-store-ApprovalNode-Status) |  | stauts of the node. |
-| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  | type determines who should approve this node. |
-| role_payload | [ApprovalNode.RolePayload](#bytebase-store-ApprovalNode-RolePayload) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalNode-RolePayload"></a>
-
-### ApprovalNode.RolePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
+| status | [ApprovalNode.Status](#bytebase-store-ApprovalNode-Status) |  |  |
+| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
 
 
@@ -124,53 +108,63 @@
 <a name="bytebase-store-ApprovalNode-RoleValue"></a>
 
 ### ApprovalNode.RoleValue
-
+RoleValue is used if ApprovalNode Type is ROLE
+The predefined user groups are:
+- WORKSPACE_OWNER
+- DBA
+- PROJECT_OWNER
+- PROJECT_MEMBER
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ROLE_VALUE_UNSPECIFILED | 0 |  |
-| ROLE_VALUE_WORKSPACE_OWNER | 1 |  |
-| ROLE_VALUE_DBA | 2 |  |
-| ROLE_VALUE_PROJECT_OWNER | 3 |  |
-| ROLE_VALUE_PROJECT_MEMBER | 4 |  |
+| WORKSPACE_OWNER | 1 |  |
+| DBA | 2 |  |
+| PROJECT_OWNER | 3 |  |
+| PROJECT_MEMBER | 4 |  |
 
 
 
 <a name="bytebase-store-ApprovalNode-Status"></a>
 
 ### ApprovalNode.Status
-
+Status of the ApprovalNode.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| STATUS_PENDING | 1 |  |
-| STATUS_APPROVED | 2 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
 
 
 
 <a name="bytebase-store-ApprovalNode-Type"></a>
 
 ### ApprovalNode.Type
-
+Type of the ApprovalNode.
+type determines who should approve this node.
+ROLE means the ApprovalNode can be approved by an user from our predefined user group.
+See RoleValue below for the predefined user groups.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_ROLE | 1 |  |
+| ROLE | 1 |  |
 
 
 
 <a name="bytebase-store-ApprovalStep-Type"></a>
 
 ### ApprovalStep.Type
-
+Type of the ApprovalStep
+AND means every node must be approved to proceed.
+OR means approving any node will proceed.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_AND | 1 |  |
-| TYPE_OR | 2 |  |
+| AND | 1 |  |
+| OR | 2 |  |
 
 
  

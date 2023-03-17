@@ -29,6 +29,33 @@
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
   
+- [v1/approval_service.proto](#v1_approval_service-proto)
+    - [Approval](#bytebase-v1-Approval)
+    - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
+    - [ApprovalNode](#bytebase-v1-ApprovalNode)
+    - [ApprovalStep](#bytebase-v1-ApprovalStep)
+    - [GetApprovalRequest](#bytebase-v1-GetApprovalRequest)
+    - [ListApprovalsRequest](#bytebase-v1-ListApprovalsRequest)
+    - [ListApprovalsResponse](#bytebase-v1-ListApprovalsResponse)
+  
+    - [ApprovalNode.RoleValue](#bytebase-v1-ApprovalNode-RoleValue)
+    - [ApprovalNode.Status](#bytebase-v1-ApprovalNode-Status)
+    - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
+    - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
+  
+    - [ApprovalService](#bytebase-v1-ApprovalService)
+  
+- [v1/approval_template_service.proto](#v1_approval_template_service-proto)
+    - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
+    - [CreateApprovalTemplateRequest](#bytebase-v1-CreateApprovalTemplateRequest)
+    - [DeleteApprovalTemplateRequest](#bytebase-v1-DeleteApprovalTemplateRequest)
+    - [GetApprovalTemplateRequest](#bytebase-v1-GetApprovalTemplateRequest)
+    - [ListApprovalTemplatesRequest](#bytebase-v1-ListApprovalTemplatesRequest)
+    - [ListApprovalTemplatesResponse](#bytebase-v1-ListApprovalTemplatesResponse)
+    - [UpdateApprovalTemplateRequest](#bytebase-v1-UpdateApprovalTemplateRequest)
+  
+    - [ApprovalTemplateService](#bytebase-v1-ApprovalTemplateService)
+  
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
@@ -610,6 +637,356 @@ BackupPlanSchedule is the backup plan schedule.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | SearchAnomalies | [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest) | [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse) |  |
+
+ 
+
+
+
+<a name="v1_approval_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/approval_service.proto
+
+
+
+<a name="bytebase-v1-Approval"></a>
+
+### Approval
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: stages/{stage}/tasks/{task}/approvals/{approval} |
+| uid | [string](#string) |  | system-generated unique identifier |
+| flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalFlow"></a>
+
+### ApprovalFlow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-v1-ApprovalStep) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalNode"></a>
+
+### ApprovalNode
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
+| status | [ApprovalNode.Status](#bytebase-v1-ApprovalNode-Status) |  |  |
+| type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
+| role_value | [ApprovalNode.RoleValue](#bytebase-v1-ApprovalNode-RoleValue) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalStep"></a>
+
+### ApprovalStep
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type) |  |  |
+| nodes | [ApprovalNode](#bytebase-v1-ApprovalNode) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetApprovalRequest"></a>
+
+### GetApprovalRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: stages/{stage}/tasks/{task}/approvals/{approval} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListApprovalsRequest"></a>
+
+### ListApprovalsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of instances. Format: stages/{stage}/tasks/{task} Use &#34;stages/-/tasks/-&#34; to list all instances from all stages. |
+| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListApprovalsResponse"></a>
+
+### ListApprovalsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approvals | [Approval](#bytebase-v1-Approval) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ApprovalNode-RoleValue"></a>
+
+### ApprovalNode.RoleValue
+RoleValue is used if ApprovalNode Type is ROLE
+The predefined user groups are:
+- WORKSPACE_OWNER
+- DBA
+- PROJECT_OWNER
+- PROJECT_MEMBER
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_VALUE_UNSPECIFILED | 0 |  |
+| WORKSPACE_OWNER | 1 |  |
+| DBA | 2 |  |
+| PROJECT_OWNER | 3 |  |
+| PROJECT_MEMBER | 4 |  |
+
+
+
+<a name="bytebase-v1-ApprovalNode-Status"></a>
+
+### ApprovalNode.Status
+Status of the ApprovalNode.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+
+
+
+<a name="bytebase-v1-ApprovalNode-Type"></a>
+
+### ApprovalNode.Type
+Type of the ApprovalNode.
+type determines who should approve this node.
+ROLE means the ApprovalNode can be approved by an user from our predefined user group.
+See RoleValue below for the predefined user groups.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| ROLE | 1 |  |
+
+
+
+<a name="bytebase-v1-ApprovalStep-Type"></a>
+
+### ApprovalStep.Type
+Type of the ApprovalStep
+AND means every node must be approved to proceed.
+OR means approving any node will proceed.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| AND | 1 |  |
+| OR | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ApprovalService"></a>
+
+### ApprovalService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetApproval | [GetApprovalRequest](#bytebase-v1-GetApprovalRequest) | [Approval](#bytebase-v1-Approval) |  |
+| ListApprovals | [ListApprovalsRequest](#bytebase-v1-ListApprovalsRequest) | [ListApprovalsResponse](#bytebase-v1-ListApprovalsResponse) |  |
+
+ 
+
+
+
+<a name="v1_approval_template_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/approval_template_service.proto
+
+
+
+<a name="bytebase-v1-ApprovalTemplate"></a>
+
+### ApprovalTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
+| uid | [string](#string) |  | system-generated unique identifier |
+| flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateApprovalTemplateRequest"></a>
+
+### CreateApprovalTemplateRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  | the approval template to be created |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteApprovalTemplateRequest"></a>
+
+### DeleteApprovalTemplateRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to delete. Format: approvalTemplates/{approvalTemplate} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetApprovalTemplateRequest"></a>
+
+### GetApprovalTemplateRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to retrieve. Format: approvalTemplates/{approvalTemplate} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListApprovalTemplatesRequest"></a>
+
+### ListApprovalTemplatesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of approval templates to return. The service may return fewer than this value. If unspecified, at most 50 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListApprovalTemplates` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListApprovalTemplates` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListApprovalTemplatesResponse"></a>
+
+### ListApprovalTemplatesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated | The approval templates from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateApprovalTemplateRequest"></a>
+
+### UpdateApprovalTemplateRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ApprovalTemplateService"></a>
+
+### ApprovalTemplateService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetApprovalTemplate | [GetApprovalTemplateRequest](#bytebase-v1-GetApprovalTemplateRequest) | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |
+| ListApprovalTemplates | [ListApprovalTemplatesRequest](#bytebase-v1-ListApprovalTemplatesRequest) | [ListApprovalTemplatesResponse](#bytebase-v1-ListApprovalTemplatesResponse) |  |
+| CreateApprovalTemplate | [CreateApprovalTemplateRequest](#bytebase-v1-CreateApprovalTemplateRequest) | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |
+| UpdateApprovalTemplate | [UpdateApprovalTemplateRequest](#bytebase-v1-UpdateApprovalTemplateRequest) | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |
+| DeleteApprovalTemplate | [DeleteApprovalTemplateRequest](#bytebase-v1-DeleteApprovalTemplateRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
