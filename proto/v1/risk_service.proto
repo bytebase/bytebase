@@ -120,7 +120,7 @@ message Risk {
     string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
     string title = 3;
     string description = 4;
-    int32 level = 5;
+    int64 level = 5;
     repeated RiskAction actions = 6;
     repeated RiskCondition conditions = 7;
 }
