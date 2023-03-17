@@ -25,23 +25,23 @@ service RiskService {
         option (google.api.method_signature) = "";
     }
 
-    rpc AddRiskCondition(AddRiskConditionRequest) returns (Risk) {
+    rpc AddRiskRule(AddRiskRuleRequest) returns (Risk) {
         option (google.api.http) = {
-            post: "/v1/{risk=risks/*}:addRiskCondition"
+            post: "/v1/{risk=risks/*}:addRiskRule"
             body: "*"
         };
     }
 
-    rpc RemoveRiskCondition(RemoveRiskConditionRequest) returns (Risk) {
+    rpc RemoveRiskRule(RemoveRiskRuleRequest) returns (Risk) {
         option (google.api.http) = {
-            post: "/v1/{risk=risks/*}:removeRiskCondition"
+            post: "/v1/{risk=risks/*}:removeRiskRule"
             body: "*"
         };
     }
 
-    rpc UpdateRiskCondition(UpdateRiskConditionRequest) returns (Risk) {
+    rpc UpdateRiskRule(UpdateRiskRuleRequest) returns (Risk) {
         option (google.api.http) = {
-            patch: "/v1/{risk=risks/*}:updateRiskCondition"
+            patch: "/v1/{risk=risks/*}:updateRiskRule"
             body: "*"
         };
     }
@@ -80,32 +80,32 @@ message ListRisksResponse {
     string next_page_token = 2;
 }
 
-message AddRiskConditionRequest {
-    // The name of the risk to add the risk condition to.
+message AddRiskRuleRequest {
+    // The name of the risk to add the risk rule to.
     // Format: risks/{risk}
     string risk = 1 [(google.api.field_behavior) = REQUIRED];
 
-    // The risk condition to add.
-    RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
+    // The risk rule to add.
+    RiskRule risk_rule = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message RemoveRiskConditionRequest {
-    // The name of the risk to remove the risk condition from.
+message RemoveRiskRuleRequest {
+    // The name of the risk to remove the risk rule from.
     // Format: risks/{risk}
     string risk = 1 [(google.api.field_behavior) = REQUIRED];
 
-    // The risk condition to remove. Identified by its name.
-    RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
+    // The risk rule to remove. Identified by its name.
+    RiskRule risk_rule = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UpdateRiskConditionRequest {
-    // The name of the risk which owns the risk condition to be updated.
+message UpdateRiskRuleRequest {
+    // The name of the risk which owns the risk rule to be updated.
     // Format: risks/{risk}
     string risk = 1 [(google.api.field_behavior) = REQUIRED];
 
-    // The risk condition to modify.
+    // The risk rule to modify.
     // Identified by its name.
-    RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
+    RiskRule risk_rule = 2 [(google.api.field_behavior) = REQUIRED];
 
     // The list of fields to update.
     google.protobuf.FieldMask update_mask = 3;
@@ -124,11 +124,11 @@ message Risk {
         DML = 2;
     }
     Namespace namespace = 3;
-    
+
     string title = 4;
     int64 level = 5;
     repeated RiskAction actions = 6;
-    repeated RiskCondition conditions = 7;
+    repeated RiskRule rules = 7;
 }
 
 message RiskAction {
@@ -143,8 +143,8 @@ message RiskAction {
     }
 }
 
-message RiskCondition {
-    // Format: risks/{risk}/riskConditions/{riskCondition}
+message RiskRule {
+    // Format: risks/{risk}/riskRules/{riskRule}
     string name = 1;
     string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
     string title = 3;
