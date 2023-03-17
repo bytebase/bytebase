@@ -428,7 +428,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 					return &http.Response{
 						StatusCode: http.StatusBadRequest,
 						Body: io.NopCloser(strings.NewReader(`
-					{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
+					{"error":"invalid_token","error_description":"The access token is invalid","state":"unauthorized"}
 					`)),
 					}, nil
 				}
