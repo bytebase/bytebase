@@ -268,6 +268,21 @@
   
     - [ProjectService](#bytebase-v1-ProjectService)
   
+- [v1/risk_service.proto](#v1_risk_service-proto)
+    - [AddRiskConditionRequest](#bytebase-v1-AddRiskConditionRequest)
+    - [GetRiskRequest](#bytebase-v1-GetRiskRequest)
+    - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
+    - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
+    - [RemoveRiskConditionRequest](#bytebase-v1-RemoveRiskConditionRequest)
+    - [Risk](#bytebase-v1-Risk)
+    - [RiskAction](#bytebase-v1-RiskAction)
+    - [RiskCondition](#bytebase-v1-RiskCondition)
+    - [UpdateRiskConditionRequest](#bytebase-v1-UpdateRiskConditionRequest)
+  
+    - [RiskAction.Type](#bytebase-v1-RiskAction-Type)
+  
+    - [RiskService](#bytebase-v1-RiskService)
+  
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
@@ -4079,6 +4094,203 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 | SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | GetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+
+ 
+
+
+
+<a name="v1_risk_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/risk_service.proto
+
+
+
+<a name="bytebase-v1-AddRiskConditionRequest"></a>
+
+### AddRiskConditionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risk | [string](#string) |  | The name of the risk to add the risk condition to. Format: risks/{risk} |
+| risk_condition | [RiskCondition](#bytebase-v1-RiskCondition) |  | The risk condition to add. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetRiskRequest"></a>
+
+### GetRiskRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the risk to retrieve. Format: risks/{risk} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRisksRequest"></a>
+
+### ListRisksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of risks to return. The service may return fewer than this value. If unspecified, at most 50 risks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRisks` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `LiskRisks` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted risks if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRisksResponse"></a>
+
+### ListRisksResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risks | [Risk](#bytebase-v1-Risk) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RemoveRiskConditionRequest"></a>
+
+### RemoveRiskConditionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risk | [string](#string) |  | The name of the risk to remove the risk condition from. Format: risks/{risk} |
+| risk_condition | [RiskCondition](#bytebase-v1-RiskCondition) |  | The risk condition to remove. Identified by its name. |
+
+
+
+
+
+
+<a name="bytebase-v1-Risk"></a>
+
+### Risk
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: risks/{risk} |
+| uid | [string](#string) |  | system-generated unique identifier. |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| level | [int64](#int64) |  |  |
+| actions | [RiskAction](#bytebase-v1-RiskAction) | repeated |  |
+| conditions | [RiskCondition](#bytebase-v1-RiskCondition) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RiskAction"></a>
+
+### RiskAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [RiskAction.Type](#bytebase-v1-RiskAction-Type) |  |  |
+| approval_template | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
+
+
+
+
+
+
+<a name="bytebase-v1-RiskCondition"></a>
+
+### RiskCondition
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: risks/{risk}/riskConditions/{riskCondition} |
+| uid | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateRiskConditionRequest"></a>
+
+### UpdateRiskConditionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risk | [string](#string) |  | The name of the risk which owns the risk condition to be updated. Format: risks/{risk} |
+| risk_condition | [RiskCondition](#bytebase-v1-RiskCondition) |  | The risk condition to modify. Identified by its name. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-RiskAction-Type"></a>
+
+### RiskAction.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| CHOOSE_APPROVAL_TEMPLATE | 1 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-RiskService"></a>
+
+### RiskService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
+| ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
+| AddRiskCondition | [AddRiskConditionRequest](#bytebase-v1-AddRiskConditionRequest) | [Risk](#bytebase-v1-Risk) |  |
+| RemoveRiskCondition | [RemoveRiskConditionRequest](#bytebase-v1-RemoveRiskConditionRequest) | [Risk](#bytebase-v1-Risk) |  |
+| UpdateRiskCondition | [UpdateRiskConditionRequest](#bytebase-v1-UpdateRiskConditionRequest) | [Risk](#bytebase-v1-Risk) |  |
 
  
 

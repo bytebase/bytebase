@@ -26,9 +26,6 @@
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
-- [store/risk.proto](#store_risk-proto)
-    - [RiskExpression](#bytebase-store-RiskExpression)
-  
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -385,37 +382,6 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_risk-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/risk.proto
-
-
-
-<a name="bytebase-store-RiskExpression"></a>
-
-### RiskExpression
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
-
-
-
-
-
- 
 
  
 
