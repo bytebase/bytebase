@@ -481,6 +481,9 @@ func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
 
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(ctx differ.SchemaDiffContext, oldStmt, newStmt string) (string, error) {
+	if !ctx.DeleteRemainingTable {
+		return "", errors.Errorf("delete remaining table is not supported for PostgreSQL differ")
+	}
 	oldNodes, err := parseAndPreprocessStatment(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse and preprocess old statements %q", oldStmt)
