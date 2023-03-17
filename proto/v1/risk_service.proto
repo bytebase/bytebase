@@ -132,13 +132,13 @@ message RiskAction {
     }
     Type type = 1;
     oneof payload {
-        // Format: approvalTemplates/{approval_template}
+        // Format: approvalTemplates/{approvalTemplate}
         string approval_template = 2;
     }
 }
 
 message RiskCondition {
-    // Format: risks/{risk}/riskConditions/{risk_condition}
+    // Format: risks/{risk}/riskConditions/{riskCondition}
     string name = 1;
     string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
     string title = 3;
