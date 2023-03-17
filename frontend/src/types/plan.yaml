@@ -35,6 +35,7 @@ categoryList:
       - rbac
       - approval-and-backup-policy
       - sso
+      - 2fa
       - dba-workflow
       - environment-tier
       - sensitive-data
@@ -251,6 +252,7 @@ planList:
       - type: rbac
       - type: approval-and-backup-policy
       - type: sso
+      - type: 2fa
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
