@@ -8,11 +8,9 @@ import "google/api/field_behavior.proto";
 
 option go_package = "generated-go/v1";
 
-service SettingService{
+service SettingService {
   rpc GetSetting(GetSettingRequest) returns (Setting) {
-    option (google.api.http) = {
-      get: "/v1/{name=settings/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
   }
 
@@ -40,7 +38,6 @@ message SetSettingRequest {
   // The setting to update.
   Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
 }
-
 
 // The schema of setting.
 message Setting {
