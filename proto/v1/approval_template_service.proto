@@ -58,11 +58,6 @@ message GetApprovalTemplateRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message CreateApprovalTemplateRequest {
-  // the approval template to be created
-  ApprovalTemplate approval_template = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
 message ListApprovalTemplatesRequest {
   // The maximum number of approval templates to return. The service may return fewer than
   // this value.
@@ -82,7 +77,17 @@ message ListApprovalTemplatesRequest {
 }
 
 message ListApprovalTemplatesResponse {
+  // The approval templates from the specified request.
+  repeated ApprovalTemplate approval_templates = 1;
 
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateApprovalTemplateRequest {
+  // the approval template to be created
+  ApprovalTemplate approval_template = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdateApprovalTemplateRequest {
