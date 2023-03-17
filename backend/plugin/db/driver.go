@@ -42,6 +42,8 @@ const (
 	Redis Type = "REDIS"
 	// Oracle is the database type for Oracle.
 	Oracle Type = "ORACLE"
+	// MSSQL is the database type for MS SQL Server.
+	MSSQL Type = "MSSQL"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
