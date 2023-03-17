@@ -9,6 +9,8 @@ import (
 	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 )
 
 func TestIsKeyPartEqual(t *testing.T) {
@@ -253,7 +255,7 @@ func TestIndexType(t *testing.T) {
 		},
 	}
 
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestIndexOption(t *testing.T) {
@@ -324,7 +326,7 @@ func TestIndexOption(t *testing.T) {
 		},
 	}
 
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestKeyPart(t *testing.T) {
@@ -387,7 +389,7 @@ func TestKeyPart(t *testing.T) {
 		},
 	}
 
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestForeignKeyDefination(t *testing.T) {
@@ -466,7 +468,7 @@ func TestForeignKeyDefination(t *testing.T) {
 		},
 	}
 
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestCheckConstraint(t *testing.T) {
@@ -496,7 +498,7 @@ func TestCheckConstraint(t *testing.T) {
 				"ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK(`price`>0) NOT ENFORCED;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestConstraint(t *testing.T) {
@@ -526,5 +528,5 @@ func TestConstraint(t *testing.T) {
 				"CREATE INDEX `idx` ON `book` (`id`, `address`);\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }

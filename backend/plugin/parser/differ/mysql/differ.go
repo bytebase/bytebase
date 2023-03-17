@@ -109,7 +109,7 @@ func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupp
 	return nil
 }
 
-func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) error {
+func (diff *diffNode) diffSupportedStatement(ctx differ.SchemaDiffContext, oldStatement, newStatement string) error {
 	oldNodeList, _, err := parser.New().Parse(oldStatement, "", "")
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse old statement %q", oldStatement)
@@ -143,11 +143,13 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 		delete(oldSchemaInfo.tableMap, tableName)
 	}
 
-	for _, oldTable := range oldSchemaInfo.tableMap {
-		diff.dropTableList = append(diff.dropTableList, &ast.DropTableStmt{
-			IfExists: true,
-			Tables:   []*ast.TableName{oldTable.createTable.Table},
-		})
+	if ctx.DeleteRemainingTable {
+		for _, oldTable := range oldSchemaInfo.tableMap {
+			diff.dropTableList = append(diff.dropTableList, &ast.DropTableStmt{
+				IfExists: true,
+				Tables:   []*ast.TableName{oldTable.createTable.Table},
+			})
+		}
 	}
 
 	var newViewList []*ast.CreateViewStmt
@@ -567,7 +569,7 @@ func (*SchemaDiffer) SchemaDiff(ctx differ.SchemaDiffContext, oldStmt, newStmt s
 	}
 
 	diff := &diffNode{}
-	if err := diff.diffSupportedStatement(oldSupportedStmt, newSupportedStmt); err != nil {
+	if err := diff.diffSupportedStatement(ctx, oldSupportedStmt, newSupportedStmt); err != nil {
 		return "", err
 	}
 	if err := diff.diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupportedStmtList); err != nil {

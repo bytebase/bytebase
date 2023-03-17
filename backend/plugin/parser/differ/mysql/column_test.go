@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 )
 
 func TestColumnExist(t *testing.T) {
@@ -43,7 +45,7 @@ func TestColumnExist(t *testing.T) {
 				"ALTER TABLE `book` DROP COLUMN `id`;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestColumnType(t *testing.T) {
@@ -66,7 +68,7 @@ func TestColumnType(t *testing.T) {
 			want: "",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestColumnOption(t *testing.T) {
@@ -113,7 +115,7 @@ func TestColumnOption(t *testing.T) {
 			want: "",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestColumnComment(t *testing.T) {
@@ -149,7 +151,7 @@ func TestColumnComment(t *testing.T) {
 			want: "",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestColumnDefaultValue(t *testing.T) {
@@ -203,7 +205,7 @@ func TestColumnDefaultValue(t *testing.T) {
 			want: "ALTER TABLE `action` MODIFY COLUMN `last_update` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(1);\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestColumnCollate(t *testing.T) {
@@ -234,7 +236,7 @@ func TestColumnCollate(t *testing.T) {
 			want: "",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestColumnOrder(t *testing.T) {
@@ -291,5 +293,5 @@ func TestColumnOrder(t *testing.T) {
 				"ALTER TABLE `t` DROP COLUMN `a`;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }

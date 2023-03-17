@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 )
 
 func TestTrigger(t *testing.T) {
@@ -16,7 +18,7 @@ func TestTrigger(t *testing.T) {
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestFunction(t *testing.T) {
@@ -35,7 +37,7 @@ func TestFunction(t *testing.T) {
 				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END ;;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestProcedure(t *testing.T) {
@@ -63,7 +65,7 @@ func TestProcedure(t *testing.T) {
 				"END ;;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestEvent(t *testing.T) {
@@ -90,5 +92,5 @@ func TestEvent(t *testing.T) {
 				"END ;;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }

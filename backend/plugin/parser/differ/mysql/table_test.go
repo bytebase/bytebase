@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/differ"
 )
 
 func TestTable(t *testing.T) {
@@ -55,7 +57,7 @@ func TestTable(t *testing.T) {
 				"ALTER TABLE `book` DROP COLUMN `price_id`;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestTableOption(t *testing.T) {
@@ -270,7 +272,7 @@ func TestTableOption(t *testing.T) {
 			want: "ALTER TABLE `book` UNION=(`book2`,`book3`);\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
 }
 
 func TestView(t *testing.T) {
@@ -339,5 +341,23 @@ func TestView(t *testing.T) {
 				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `a_id` AS `b_id` FROM `a`;\n\n",
 		},
 	}
-	testDiffWithoutDisableForeignKeyCheck(t, tests)
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: true})
+}
+
+func TestTableLevelDiff(t *testing.T) {
+	tests := []testCase{
+		{
+			// This test case is for DeleteRemainingTable = false.
+			// In this case, we don't delete remaining tables, so we don't need to drop table t2.
+			old: `CREATE TABLE t(a int, c int); CREATE TABLE t2(a int);`,
+			new: `CREATE TABLE t(a int, b int, primary key (a)); CREATE TABLE t1(a int);`,
+			want: "CREATE TABLE IF NOT EXISTS `t1` (\n" +
+				"  `a` INT\n" +
+				");\n\n" +
+				"ALTER TABLE `t` ADD COLUMN `b` INT AFTER `a`;\n\n" +
+				"ALTER TABLE `t` DROP COLUMN `c`;\n\n" +
+				"ALTER TABLE `t` ADD PRIMARY KEY (`a`);\n\n",
+		},
+	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests, differ.SchemaDiffContext{DeleteRemainingTable: false})
 }

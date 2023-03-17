@@ -87,11 +87,11 @@ type testCase struct {
 	want string
 }
 
-func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
+func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase, ctx differ.SchemaDiffContext) {
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range testCases {
-		out, err := mysqlDiffer.SchemaDiff(differ.SchemaDiffContext{DeleteRemainingTable: true}, test.old, test.new)
+		out, err := mysqlDiffer.SchemaDiff(ctx, test.old, test.new)
 		a.NoError(err)
 		if len(out) > 0 {
 			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])
