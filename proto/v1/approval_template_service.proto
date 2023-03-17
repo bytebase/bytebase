@@ -25,15 +25,15 @@ service ApprovalTemplateService {
   rpc CreateApprovalTemplate(CreateApprovalTemplateRequest) returns (ApprovalTemplate) {
     option (google.api.http) = {
       post: "/v1/approvalTemplates"
-      body: "approvalTemplate"
+      body: "approval_template"
     };
     option (google.api.method_signature) = "";
   }
 
   rpc UpdateApprovalTemplate(UpdateApprovalTemplateRequest) returns (ApprovalTemplate) {
     option (google.api.http) = {
-      patch: "/v1/{approvalTemplate.name=approvalTemplates/*}"
-      body: "approvalTemplate"
+      patch: "/v1/{approval_template.name=approvalTemplates/*}"
+      body: "approval_template"
     };
     option (google.api.method_signature) = "approval_template,update_mask";
   }
