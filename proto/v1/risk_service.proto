@@ -142,4 +142,5 @@ message RiskCondition {
     string title = 3;
     string description = 4;
     google.api.expr.v1alpha1.ParsedExpr expression = 5;
+    bool active = 6;
 }
