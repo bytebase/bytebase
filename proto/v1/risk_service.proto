@@ -41,8 +41,11 @@ service RiskService {
         };
     }
 
-    rpc UpdateRiskCondition() returns (Risk) {
-
+    rpc UpdateRiskCondition(UpdateRiskConditionRequest) returns (Risk) {
+        option (google.api.http) = {
+            patch: "/v1/{risk=risks/*}:updateRiskCondition"
+            body: "*"
+        };
     }
 
 }
@@ -95,6 +98,19 @@ message RemoveRiskConditionRequest {
 
     // The risk condition to remove. Identified by its name.
     RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateRiskConditionRequest {
+    // The name of the risk which owns the risk condition to be updated.
+    // Format: risks/{risk}
+    string risk = 1 [(google.api.field_behavior) = REQUIRED];
+
+    // The risk condition to modify.
+    // Identified by its name.
+    RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
+
+    // The list of fields to update.
+    google.protobuf.FieldMask update_mask = 3;
 }
 
 message Risk {
