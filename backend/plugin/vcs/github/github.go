@@ -265,11 +265,11 @@ type Commit struct {
 
 // FileCommit represents a GitHub API request for committing a file.
 type FileCommit struct {
-	Message string       `json:"message"`
-	Content string       `json:"content"`
-	SHA     string       `json:"sha,omitempty"`
-	Branch  string       `json:"branch,omitempty"`
-	Author  CommitAuthor `json:"author,omitempty"`
+	Message string        `json:"message"`
+	Content string        `json:"content"`
+	SHA     string        `json:"sha,omitempty"`
+	Branch  string        `json:"branch,omitempty"`
+	Author  *CommitAuthor `json:"author,omitempty"`
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -595,7 +595,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		SHA:     fileCommitCreate.SHA,
 	}
 	if fileCommitCreate.AuthorName != "" && fileCommitCreate.AuthorEmail != "" {
-		fileCommit.Author = CommitAuthor{
+		fileCommit.Author = &CommitAuthor{
 			Name:  fileCommitCreate.AuthorName,
 			Email: fileCommitCreate.AuthorEmail,
 		}
