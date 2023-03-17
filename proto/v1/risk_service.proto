@@ -39,7 +39,7 @@ service RiskService {
     }
 
     rpc UpdateRiskCondition() returns (Risk) {
-        
+
     }
 
 }
@@ -77,7 +77,12 @@ message ListRisksResponse {
 }
 
 message AddRiskConditionRequest {
+    // The name of the risk to add the risk condition to.
+    // Format: risks/{risk}
+    string risk = 1 [(google.api.field_behavior) = REQUIRED];
 
+    // The risk condition to add.
+    RiskCondition risk_condition = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Risk {
