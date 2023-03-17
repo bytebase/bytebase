@@ -18,11 +18,20 @@ service RiskService {
         };
         option (google.api.method_signature) = "name";
     }
+
     rpc ListRisks(ListRisksRequest) returns (ListRisksResponse) {
         option (google.api.http) = {
             get: "/v1/risks"
         };
         option (google.api.method_signature) = "";
+    }
+    
+    rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
+        option (google.api.http) = {
+            patch: "/v1/{risk.name=risks/*}"
+            body: "risk"  
+        };
+        option (google.api.method_signature) = "risk,update_mask";
     }
 
     rpc AddRiskRule(AddRiskRuleRequest) returns (Risk) {
@@ -78,6 +87,17 @@ message ListRisksResponse {
     // A token, which can be sent as `page_token` to retrieve the next page.
     // If this field is omitted, there are no subsequent pages.
     string next_page_token = 2;
+}
+
+message UpdateRiskRequest {
+    // The risk to update.
+    //
+    // The risk's `name` field is used to identify the risk to update.
+    // Format: risks/{risk}
+    Risk risk = 1 [(google.api.field_behavior) = REQUIRED];
+
+    // The list of fields to update.
+    google.protobuf.FieldMask update_mask = 2;
 }
 
 message AddRiskRuleRequest {
