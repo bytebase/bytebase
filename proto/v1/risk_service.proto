@@ -114,10 +114,18 @@ message UpdateRiskConditionRequest {
 message Risk {
     // Format: risks/{risk}
     string name = 1;
+
     // system-generated unique identifier.
     string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-    string title = 3;
-    string description = 4;
+
+    enum Namespace {
+        NAMESPACE_UNSPECIFIED = 0;
+        DDL = 1;
+        DML = 2;
+    }
+    Namespace namespace = 3;
+    
+    string title = 4;
     int64 level = 5;
     repeated RiskAction actions = 6;
     repeated RiskCondition conditions = 7;
