@@ -3,13 +3,16 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // activityRaw is the store model for an Activity.
@@ -279,8 +282,13 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 		return nil, err
 	}
 	for i, create := range creates {
+		payload := create.Payload
 		if create.Payload == "" {
 			create.Payload = "{}"
+		}
+		payload, err := convertAPIPayloadToProtoPayload(create.Type, create.Payload)
+		if err != nil {
+			return nil, err
 		}
 		values = append(values,
 			create.CreatorID,
@@ -289,7 +297,7 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 			create.Type,
 			create.Level,
 			create.Comment,
-			create.Payload,
+			payload,
 		)
 		const count = 7
 		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
@@ -309,6 +317,7 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 	defer rows.Close()
 	for rows.Next() {
 		var activityRaw activityRaw
+		var protoPayload string
 		if err := rows.Scan(
 			&activityRaw.ID,
 			&activityRaw.CreatorID,
@@ -319,9 +328,12 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 			&activityRaw.Type,
 			&activityRaw.Level,
 			&activityRaw.Comment,
-			&activityRaw.Payload,
+			&protoPayload,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
+			return nil, err
 		}
 		activityRawList = append(activityRawList, &activityRaw)
 	}
@@ -399,6 +411,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 	var activityRawList []*activityRaw
 	for rows.Next() {
 		var activity activityRaw
+		var protoPayload string
 		if err := rows.Scan(
 			&activity.ID,
 			&activity.CreatorID,
@@ -409,11 +422,13 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 			&activity.Type,
 			&activity.Level,
 			&activity.Comment,
-			&activity.Payload,
+			&protoPayload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
+		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+			return nil, err
+		}
 		activityRawList = append(activityRawList, &activity)
 	}
 	if err := rows.Err(); err != nil {
@@ -437,6 +452,7 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 	args = append(args, patch.ID)
 
 	var activityRaw activityRaw
+	var protoPayload string
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE activity
@@ -455,12 +471,162 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 		&activityRaw.Type,
 		&activityRaw.Level,
 		&activityRaw.Comment,
-		&activityRaw.Payload,
+		&protoPayload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("activity ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}
+	var err error
+	if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
+		return nil, err
+	}
+
 	return &activityRaw, nil
+}
+
+func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload string) (string, error) {
+	// TODO(zp): remove here when we migrate all payloads.
+	switch activityType {
+	case api.ActivityIssueCreate:
+		// Unmarshal the payload to get the issue name.
+		var originalPayload api.ActivityIssueCreatePayload
+		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
+			return "", err
+		}
+		protoPayload := &storepb.ActivityIssueCreatePayload{
+			IssueName: originalPayload.IssueName,
+		}
+		newPayload, err := protojson.Marshal(protoPayload)
+		if err != nil {
+			return "", err
+		}
+		payload = string(newPayload)
+	case api.ActivityIssueCommentCreate:
+		var originalPayload api.ActivityIssueCommentCreatePayload
+		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
+			return "", err
+		}
+		protoPayload := &storepb.ActivityIssueCommentCreatePayload{
+			IssueName: originalPayload.IssueName,
+		}
+		if originalPayload.ExternalApprovalEvent != nil {
+			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
+				ExternalApprovalEvent: &storepb.ExternalApprovalEvent{
+					Type:      convertAPIExternalApprovalEventTypeToStorePBType(originalPayload.ExternalApprovalEvent.Type),
+					Action:    convertAPIExternalApprovalEventActionToStorePBAction(originalPayload.ExternalApprovalEvent.Action),
+					StageName: originalPayload.ExternalApprovalEvent.StageName,
+				},
+			}
+		} else if originalPayload.TaskRollbackBy != nil {
+			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy{
+				TaskRollbackBy: &storepb.TaskRollbackBy{
+					IssueId:           int64(originalPayload.TaskRollbackBy.IssueID),
+					TaskId:            int64(originalPayload.TaskRollbackBy.TaskID),
+					RollbackByIssueId: int64(originalPayload.TaskRollbackBy.RollbackByIssueID),
+					RollbackByTaskId:  int64(originalPayload.TaskRollbackBy.RollbackByTaskID),
+				},
+			}
+		}
+		newPayload, err := protojson.Marshal(protoPayload)
+		if err != nil {
+			return "", err
+		}
+		payload = string(newPayload)
+	}
+	return payload, nil
+}
+
+func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload string) (string, error) {
+	// TODO(zp): remove here when we migrate all payloads.
+	switch activityType {
+	case api.ActivityIssueCreate:
+		var protoPayload storepb.ActivityIssueCreatePayload
+		if err := protojson.Unmarshal([]byte(payload), &protoPayload); err != nil {
+			return "", err
+		}
+		originalPayload := &api.ActivityIssueCreatePayload{
+			IssueName: protoPayload.IssueName,
+		}
+		newPayload, err := json.Marshal(originalPayload)
+		if err != nil {
+			return "", err
+		}
+		payload = string(newPayload)
+	case api.ActivityIssueCommentCreate:
+		var protoPayload storepb.ActivityIssueCommentCreatePayload
+		if err := protojson.Unmarshal([]byte(payload), &protoPayload); err != nil {
+			return "", err
+		}
+		originalPayload := &api.ActivityIssueCommentCreatePayload{
+			IssueName: protoPayload.IssueName,
+		}
+		if protoPayload.Event != nil {
+			switch event := protoPayload.Event.(type) {
+			case *storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent:
+				apiTp, err := convertStorePBTypeToAPIExternalApprovalEventType(event.ExternalApprovalEvent.Type)
+				if err != nil {
+					return "", err
+				}
+				apiAction, err := convertStorePBActionToAPIExternalApprovalEventAction(event.ExternalApprovalEvent.Action)
+				if err != nil {
+					return "", err
+				}
+				originalPayload.ExternalApprovalEvent = &api.ExternalApprovalEvent{
+					Type:      apiTp,
+					Action:    apiAction,
+					StageName: event.ExternalApprovalEvent.StageName,
+				}
+			case *storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy:
+				originalPayload.TaskRollbackBy = &api.TaskRollbackBy{
+					IssueID:           int(event.TaskRollbackBy.IssueId),
+					TaskID:            int(event.TaskRollbackBy.TaskId),
+					RollbackByIssueID: int(event.TaskRollbackBy.RollbackByIssueId),
+					RollbackByTaskID:  int(event.TaskRollbackBy.RollbackByTaskId),
+				}
+			}
+		}
+	}
+	return payload, nil
+}
+
+func convertAPIExternalApprovalEventActionToStorePBAction(action api.ExternalApprovalEventActionType) storepb.ExternalApprovalEvent_Action {
+	switch action {
+	case api.ExternalApprovalEventActionApprove:
+		return storepb.ExternalApprovalEvent_ACTION_APPROVE
+	case api.ExternalApprovalEventActionReject:
+		return storepb.ExternalApprovalEvent_ACTION_REJECT
+	default:
+		return storepb.ExternalApprovalEvent_ACTION_UNSPECIFIED
+	}
+}
+
+func convertAPIExternalApprovalEventTypeToStorePBType(eventType api.ExternalApprovalType) storepb.ExternalApprovalEvent_Type {
+	switch eventType {
+	case api.ExternalApprovalTypeFeishu:
+		return storepb.ExternalApprovalEvent_TYPE_FEISHU
+	default:
+		return storepb.ExternalApprovalEvent_TYPE_UNSPECIFIED
+	}
+}
+
+func convertStorePBActionToAPIExternalApprovalEventAction(action storepb.ExternalApprovalEvent_Action) (api.ExternalApprovalEventActionType, error) {
+	switch action {
+	case storepb.ExternalApprovalEvent_ACTION_APPROVE:
+		return api.ExternalApprovalEventActionApprove, nil
+	case storepb.ExternalApprovalEvent_ACTION_REJECT:
+		return api.ExternalApprovalEventActionReject, nil
+	default:
+		return api.ExternalApprovalEventActionType(""), nil
+	}
+}
+
+func convertStorePBTypeToAPIExternalApprovalEventType(eventType storepb.ExternalApprovalEvent_Type) (api.ExternalApprovalType, error) {
+	switch eventType {
+	case storepb.ExternalApprovalEvent_TYPE_FEISHU:
+		return api.ExternalApprovalTypeFeishu, nil
+	default:
+		return api.ExternalApprovalType(""), nil
+	}
 }
