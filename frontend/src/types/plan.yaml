@@ -3,7 +3,8 @@ categoryList:
     featureList:
       - instance-count
       - environment-count
-      - schema-change
+      - state-based-change
+      - migration-based-change
       - sql-check
       - disaster-recovery
       - batch-change
@@ -66,9 +67,8 @@ planList:
         content: instance-maximum-10
       - type: environment-count
         content: environment-unlimited
-      - type: schema-change
-        content: schema-change-basic
-        tooltip: schema-change-basic-tooltip
+      - type: state-based-change
+      - type: migration-based-change
       - type: sql-check
         content: sql-check-basic
         tooltip: sql-check-basic-tooltip
@@ -135,9 +135,8 @@ planList:
         tooltip: instance-maximum-10-tooltip
       - type: environment-count
         content: environment-unlimited
-      - type: schema-change
-        content: schema-change-advanced
-        tooltip: schema-change-advanced-tooltip
+      - type: state-based-change
+      - type: migration-based-change
       - type: sql-check
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
@@ -206,9 +205,8 @@ planList:
         content: instance-customized
       - type: environment-count
         content: environment-unlimited
-      - type: schema-change
-        content: schema-change-advanced
-        tooltip: schema-change-advanced-tooltip
+      - type: state-based-change
+      - type: migration-based-change
       - type: sql-check
         content: sql-check-advanced
         tooltip: sql-check-advanced-tooltip
