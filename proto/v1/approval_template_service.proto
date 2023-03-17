@@ -7,23 +7,18 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-
 import "v1/approval_service.proto";
 
 option go_package = "generated-go/v1";
 
 service ApprovalTemplateService {
   rpc GetApprovalTemplate(GetApprovalTemplateRequest) returns (ApprovalTemplate) {
-    option (google.api.http) = {
-      get: "/v1/{name=approvalTemplates/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=approvalTemplates/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListApprovalTemplates(ListApprovalTemplatesRequest) returns (ListApprovalTemplatesResponse) {
-    option (google.api.http) = {
-      get: "/v1/approvalTemplates"
-    };
+    option (google.api.http) = {get: "/v1/approvalTemplates"};
     option (google.api.method_signature) = "";
   }
 
@@ -44,12 +39,9 @@ service ApprovalTemplateService {
   }
 
   rpc DeleteApprovalTemplate(DeleteApprovalTemplateRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=approvalTemplates/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=approvalTemplates/*}"};
     option (google.api.method_signature) = "name";
   }
-
 }
 
 message GetApprovalTemplateRequest {

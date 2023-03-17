@@ -12,16 +12,12 @@ option go_package = "generated-go/v1";
 
 service ApprovalService {
   rpc GetApproval(GetApprovalRequest) returns (Approval) {
-    option (google.api.http) = {
-      get: "/v1/{name=stages/*/tasks/*/approvals/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=stages/*/tasks/*/approvals/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListApprovals(ListApprovalsRequest) returns (ListApprovalsResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=stages/*/tasks/*}/approvals"
-    };
+    option (google.api.http) = {get: "/v1/{parent=stages/*/tasks/*}/approvals"};
     option (google.api.method_signature) = "parent";
   }
 }
@@ -61,7 +57,6 @@ message ListApprovalsResponse {
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
-
 
 message Approval {
   // Format: stages/{stage}/tasks/{task}/approvals/{approval}

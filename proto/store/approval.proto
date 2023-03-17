@@ -1,63 +1,64 @@
 syntax = "proto3";
 
 package bytebase.store;
+
 option go_package = "generated-go/store";
 
 message ApprovalFlow {
-    repeated ApprovalStep steps = 1;
+  repeated ApprovalStep steps = 1;
 }
 
 message ApprovalStep {
-    // Type of the ApprovalStep
-    // AND means every node must be approved to proceed.
-    // OR means approving any node will proceed.
-    enum Type {
-        TYPE_UNSPECIFIED = 0;
-        TYPE_AND = 1;
-        TYPE_OR = 2;
-    }
-    Type type = 1;
-    repeated ApprovalNode nodes = 2;
+  // Type of the ApprovalStep
+  // AND means every node must be approved to proceed.
+  // OR means approving any node will proceed.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_AND = 1;
+    TYPE_OR = 2;
+  }
+  Type type = 1;
+  repeated ApprovalNode nodes = 2;
 }
 
 message ApprovalNode {
-    // Status of the ApprovalNode.
-    enum Status {
-        STATUS_UNSPECIFIED = 0;
-        STATUS_PENDING = 1;
-        STATUS_APPROVED = 2;
-    }
-    // Type of the ApprovalNode.
-    // ROLE means the ApprovalNode can be approved by an user from our predefined user group.
-    // See RoleValue below for the predefined user groups.
-    enum Type {
-        TYPE_UNSPECIFIED = 0;
-        TYPE_ROLE = 1;
-    }
-    // RoleValue is used if ApprovalNode Type is ROLE
-    // The predefined user groups are:
-    // - WORKSPACE_OWNER
-    // - DBA
-    // - PROJECT_OWNER
-    // - PROJECT_MEMBER
-    enum RoleValue {
-        ROLE_VALUE_UNSPECIFILED = 0;
-        ROLE_VALUE_WORKSPACE_OWNER = 1;
-        ROLE_VALUE_DBA = 2;
-        ROLE_VALUE_PROJECT_OWNER = 3;
-        ROLE_VALUE_PROJECT_MEMBER = 4;
-    }
-    message RolePayload {
-        RoleValue role_value = 1;
-    }
+  // Status of the ApprovalNode.
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_PENDING = 1;
+    STATUS_APPROVED = 2;
+  }
+  // Type of the ApprovalNode.
+  // ROLE means the ApprovalNode can be approved by an user from our predefined user group.
+  // See RoleValue below for the predefined user groups.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_ROLE = 1;
+  }
+  // RoleValue is used if ApprovalNode Type is ROLE
+  // The predefined user groups are:
+  // - WORKSPACE_OWNER
+  // - DBA
+  // - PROJECT_OWNER
+  // - PROJECT_MEMBER
+  enum RoleValue {
+    ROLE_VALUE_UNSPECIFILED = 0;
+    ROLE_VALUE_WORKSPACE_OWNER = 1;
+    ROLE_VALUE_DBA = 2;
+    ROLE_VALUE_PROJECT_OWNER = 3;
+    ROLE_VALUE_PROJECT_MEMBER = 4;
+  }
+  message RolePayload {
+    RoleValue role_value = 1;
+  }
 
-    // id is a unique identifier of a node in a flow.
-    string id = 1;
-    // stauts of the node.
-    Status status = 2;
-    // type determines who should approve this node.
-    Type type = 3;
-    oneof payload {
-        RolePayload role_payload = 4;
-    }
+  // id is a unique identifier of a node in a flow.
+  string id = 1;
+  // stauts of the node.
+  Status status = 2;
+  // type determines who should approve this node.
+  Type type = 3;
+  oneof payload {
+    RolePayload role_payload = 4;
+  }
 }
