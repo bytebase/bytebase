@@ -14,7 +14,9 @@ type SchemaDiffer interface {
 	SchemaDiff(ctx SchemaDiffContext, holdStmt, newStmt string) (string, error)
 }
 
+// SchemaDiffContext is the context for schema diff.
 type SchemaDiffContext struct {
+	// DeleteRemainingTable indicates whether to delete the remaining table.
 	DeleteRemainingTable bool
 }
 
