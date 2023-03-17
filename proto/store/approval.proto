@@ -14,27 +14,36 @@ message ApprovalStep {
   // OR means approving any node will proceed.
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_AND = 1;
-    TYPE_OR = 2;
+    AND = 1;
+    OR = 2;
   }
   Type type = 1;
+
   repeated ApprovalNode nodes = 2;
 }
 
 message ApprovalNode {
+  // uid uniquely identifies a node in a flow.
+  string uid = 1;
+
   // Status of the ApprovalNode.
   enum Status {
     STATUS_UNSPECIFIED = 0;
-    STATUS_PENDING = 1;
-    STATUS_APPROVED = 2;
+    PENDING = 1;
+    APPROVED = 2;
   }
+  Status status = 2;
+
   // Type of the ApprovalNode.
+  // type determines who should approve this node.
   // ROLE means the ApprovalNode can be approved by an user from our predefined user group.
   // See RoleValue below for the predefined user groups.
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_ROLE = 1;
+    ROLE = 1;
   }
+  Type type = 3;
+
   // RoleValue is used if ApprovalNode Type is ROLE
   // The predefined user groups are:
   // - WORKSPACE_OWNER
@@ -43,22 +52,12 @@ message ApprovalNode {
   // - PROJECT_MEMBER
   enum RoleValue {
     ROLE_VALUE_UNSPECIFILED = 0;
-    ROLE_VALUE_WORKSPACE_OWNER = 1;
-    ROLE_VALUE_DBA = 2;
-    ROLE_VALUE_PROJECT_OWNER = 3;
-    ROLE_VALUE_PROJECT_MEMBER = 4;
+    WORKSPACE_OWNER = 1;
+    DBA = 2;
+    PROJECT_OWNER = 3;
+    PROJECT_MEMBER = 4;
   }
-  message RolePayload {
-    RoleValue role_value = 1;
-  }
-
-  // id is a unique identifier of a node in a flow.
-  string id = 1;
-  // stauts of the node.
-  Status status = 2;
-  // type determines who should approve this node.
-  Type type = 3;
   oneof payload {
-    RolePayload role_payload = 4;
+    RoleValue role_value = 4;
   }
 }
