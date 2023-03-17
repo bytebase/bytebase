@@ -103,18 +103,15 @@
           {{ $t("common.description") }}
         </h3>
         <div class="flex flex-col gap-x-2">
-          <input
-            v-model="state.comment"
-            type="text"
+          <AutoHeightTextarea
+            v-model:value="state.comment"
             :disabled="disabled"
-            :class="[
-              'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
-              disabled && 'cursor-not-allowed',
-            ]"
             :placeholder="
               getRuleLocalization(rule.type).description ||
               $t('common.description')
             "
+            rows="1"
+            :max-height="120"
           />
         </div>
       </div>
@@ -149,6 +146,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { computed, nextTick, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 import {
   getRuleLocalization,
@@ -157,6 +155,7 @@ import {
   RuleLevel,
   RuleTemplate,
 } from "@/types/sqlReview";
+import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import RuleEngineIcons from "./RuleEngineIcons.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import {
@@ -167,7 +166,6 @@ import {
   TemplateComponent,
   PayloadValueType,
 } from "./RuleConfigComponents";
-import { useI18n } from "vue-i18n";
 
 type LocalState = {
   payload: PayloadValueType[];

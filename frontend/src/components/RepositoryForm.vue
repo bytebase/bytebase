@@ -77,6 +77,10 @@
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/change-database/state-based-migration/overview?source=console"
+          class="ml-1"
+        />
       </div>
       <BBSelect
         id="schemamigrationtype"
@@ -91,12 +95,14 @@
         "
       >
         <template #menuItem="{ item }">
-          {{
-            $t(
-              `project.settings.select-schema-change-type-${item.toLowerCase()}`
-            )
-          }}
-          <BBBetaBadge v-if="item === 'SDL'" />
+          <div class="flex items-center gap-x-2">
+            {{
+              $t(
+                `project.settings.select-schema-change-type-${item.toLowerCase()}`
+              )
+            }}
+            <BBBetaBadge v-if="item === 'SDL'" class="!leading-3" />
+          </div>
         </template>
       </BBSelect>
     </div>
@@ -107,13 +113,10 @@
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.file-path-template-description") }}
-        <a
-          href="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
-          target="_BLANK"
-          class="font-normal normal-link ml-1"
-        >
-          {{ $t("common.learn-more") }}</a
-        >
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#file-path-template"
+          class="ml-1"
+        />
       </div>
       <input
         id="filepathtemplate"
@@ -174,13 +177,10 @@
             $t("repository.schema-writeback-protected-branch")
           }}</span>
         </template>
-        <a
-          href="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
-          target="_BLANK"
-          class="font-normal normal-link ml-1"
-        >
-          {{ $t("common.learn-more") }}</a
-        >
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#schema-path-template"
+          class="ml-1"
+        />
       </div>
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
@@ -200,7 +200,9 @@
       />
       <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
         <span class="text-red-600">*</span>
-        <span class="ml-1">{{ $t("repository.if-specified") }},</span>
+        <span v-if="isProjectSchemaChangeTypeDDL" class="ml-1">
+          {{ $t("repository.if-specified") }},
+        </span>
         <span class="ml-1">{{ schemaTagPlaceholder }}</span>
       </div>
       <div
@@ -302,6 +304,7 @@ import {
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import { hasFeature, useSubscriptionStore } from "@/store";
+import LearnMoreLink from "./LearnMoreLink.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -316,7 +319,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "RepositoryForm",
-  components: { BBBetaBadge },
+  components: { BBBetaBadge, LearnMoreLink },
   props: {
     allowEdit: {
       default: true,
@@ -403,6 +406,10 @@ export default defineComponent({
           sampleText: "env1",
         },
         {
+          placeholder: "{{ENV_NAME}}", // for legacy support
+          sampleText: "env1",
+        },
+        {
           placeholder: "{{DESCRIPTION}}",
           sampleText: "create_tablefoo_for_bar",
         },
@@ -430,6 +437,14 @@ export default defineComponent({
         {
           placeholder: "{{DB_NAME}}",
           sampleText: "db1",
+        },
+        {
+          placeholder: "{{ENV_ID}}",
+          sampleText: "env1",
+        },
+        {
+          placeholder: "{{ENV_NAME}}", // for legacy support
+          sampleText: "env1",
         },
       ];
       let result = `${baseDirectory}/${schemaPathTemplate}`;

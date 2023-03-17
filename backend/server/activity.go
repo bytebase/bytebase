@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -113,6 +114,24 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter order is invalid").SetInternal(err)
 			}
 			activityFind.Order = &order
+		}
+		if createdTsAfterStr := c.QueryParam("createdTsAfter"); createdTsAfterStr != "" {
+			createdTsAfter, err := strconv.ParseInt(createdTsAfterStr, 10, 64)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter createdTsAfter is invalid").SetInternal(err)
+			}
+			// Frontend pass it in milliseconds but we store it in seconds.
+			createdTsAfter = time.UnixMilli(createdTsAfter).Unix()
+			activityFind.CreatedTsAfter = &createdTsAfter
+		}
+		if createdTsBeforeStr := c.QueryParam("createdTsBefore"); createdTsBeforeStr != "" {
+			createdTsBefore, err := strconv.ParseInt(createdTsBeforeStr, 10, 64)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter createdTsBefore is invalid").SetInternal(err)
+			}
+			// Frontend pass it in milliseconds but we store it in seconds.
+			createdTsBefore = time.UnixMilli(createdTsBefore).Unix()
+			activityFind.CreatedTsBefore = &createdTsBefore
 		}
 		activityList, err := s.store.FindActivity(ctx, activityFind)
 		if err != nil {

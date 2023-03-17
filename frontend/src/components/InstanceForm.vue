@@ -737,10 +737,8 @@ const engineList = computed(() => {
     "MONGODB",
     "SPANNER",
     "REDIS",
+    "ORACLE",
   ];
-  if (isDev()) {
-    engines.push("ORACLE");
-  }
   return engines;
 });
 
