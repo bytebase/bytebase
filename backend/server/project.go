@@ -287,7 +287,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(repositoryCreate.BranchFilter, "*") {
-			notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter)
+			notFound, err := isBranchNotFound(
+				ctx,
+				vcs,
+				s.store,
+				repositoryCreate.WebURL,
+				repositoryCreate.AccessToken,
+				repositoryCreate.RefreshToken,
+				repositoryCreate.ExternalID,
+				repositoryCreate.BranchFilter,
+			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", repositoryCreate.BranchFilter)).SetInternal(err)
 			}
@@ -516,7 +525,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(newBranchFilter, "*") {
-			notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter)
+			notFound, err := isBranchNotFound(
+				ctx,
+				vcs,
+				s.store,
+				repo.WebURL,
+				repo.AccessToken,
+				repo.RefreshToken,
+				repo.ExternalID,
+				newBranchFilter,
+			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", newBranchFilter)).SetInternal(err)
 			}
@@ -1306,14 +1324,14 @@ func refreshTokenNoop() common.TokenRefresher {
 	}
 }
 
-func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshToken, externalID, branch string) (bool, error) {
+func isBranchNotFound(ctx context.Context, vcs *api.VCS, store *store.Store, webURL, accessToken, refreshToken, externalID, branch string) (bool, error) {
 	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
 			ClientSecret: vcs.Secret,
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
-			Refresher:    nil,
+			Refresher:    utils.RefreshToken(ctx, store, webURL),
 		},
 		vcs.InstanceURL, externalID, branch)
 
