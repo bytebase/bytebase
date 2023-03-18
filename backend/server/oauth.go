@@ -72,7 +72,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
-		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", oauthRedirectURL(setting.ExternalUrl))
+		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).
 			ExchangeOAuthToken(
 				c.Request().Context(),
@@ -80,7 +80,10 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				oauthExchange,
 			)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, oauthErrorMessage(setting.ExternalUrl)).SetInternal(err)
+			return echo.NewHTTPError(
+				http.StatusInternalServerError,
+				fmt.Sprintf("Failed to exchange OAuth token. Make sure %q matches your browser host. Note that if you are not using port 80 or 443, you should also specify the port such as --external-url=http://host:port", setting.ExternalUrl),
+			).SetInternal(err)
 		}
 
 		resp := &api.OAuthToken{

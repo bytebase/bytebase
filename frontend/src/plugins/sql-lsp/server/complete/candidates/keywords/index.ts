@@ -17,7 +17,7 @@ export const keywordGroupsOfDialect = async (dialect: SQLDialect) => {
     // See more tech detail and principles of
     // [Dynamic Import](https://vitejs.dev/guide/features.html#dynamic-import)
     const additional: KeywordGroups = await import(
-      `./${dialect.toLowerCase()}.ts`
+      `./dialects/${dialect.toLowerCase()}.ts`
     );
     Object.assign(dialectOnly, additional);
   } catch (ex) {

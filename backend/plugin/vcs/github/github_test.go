@@ -371,7 +371,7 @@ func TestProvider_CreateFile(t *testing.T) {
 
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master","author":{"date":"0001-01-01T00:00:00Z","name":"","email":""}}`
+		wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master"}`
 		assert.Equal(t, wantBody, string(body))
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -456,7 +456,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master","author":{"date":"0001-01-01T00:00:00Z","name":"","email":""}}`
+		wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master"}`
 		assert.Equal(t, wantBody, string(body))
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -732,7 +732,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 					return &http.Response{
 						StatusCode: http.StatusBadRequest,
 						Body: io.NopCloser(strings.NewReader(`
-					{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
+					{"error":"invalid_grant","error_description":"The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."}
 					`)),
 					}, nil
 				}
