@@ -284,7 +284,7 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 	for i, create := range creates {
 		payload := create.Payload
 		if create.Payload == "" {
-			create.Payload = "{}"
+			payload = "{}"
 		}
 		payload, err := convertAPIPayloadToProtoPayload(create.Type, create.Payload)
 		if err != nil {
