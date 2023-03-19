@@ -29,8 +29,8 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Postgres, Oracle:
-		// TODO(zp): use an Oracle compatible splitter, such as not found delimiter "$".
+	case Postgres, Oracle, MSSQL:
+		// TODO(zp): use an Oracle, MSSQL compatible splitter, such as not found delimiter "$".
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, TiDB:
@@ -63,8 +63,8 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Postgres, Oracle:
-		// TODO(zp): use an Oracle compatible splitter, such as not found delimiter "$".
+	case Postgres, Oracle, MSSQL:
+		// TODO(zp): use an Oracle, MSSQL compatible splitter, such as not found delimiter "$".
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, TiDB:

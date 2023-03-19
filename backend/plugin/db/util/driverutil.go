@@ -373,6 +373,8 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		statement = getMySQLStatementWithResultLimit(statement, limit)
 	} else if dbType == db.Oracle {
 		statement = getOracleStatementWithResultLimit(statement, limit)
+	} else if dbType == db.MSSQL {
+		statement = getMSSQLStatementWithResultLimit(statement, limit)
 	} else {
 		statement = getStatementWithResultLimit(statement, limit)
 	}
@@ -382,7 +384,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
 	// Snowflake doesn't support READ ONLY transactions.
 	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
-	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake || dbType == db.Spanner || dbType == db.Redis || dbType == db.Oracle {
+	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake || dbType == db.Spanner || dbType == db.Redis || dbType == db.Oracle || dbType == db.MSSQL {
 		readOnly = false
 	}
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
@@ -579,6 +581,19 @@ func getOracleStatementWithResultLimit(stmt string, limit int) string {
 			limitPart = fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", limit)
 		}
 		return fmt.Sprintf("%s%s", stmt, limitPart)
+	}
+	return stmt
+}
+
+func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
+	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
+	stmt = strings.TrimRight(stmt, " \n\t;")
+	if !strings.HasPrefix(stmt, "EXPLAIN") {
+		limitPart := ""
+		if limit > 0 {
+			limitPart = fmt.Sprintf(" TOP %d", limit)
+		}
+		return fmt.Sprintf("WITH result AS (%s) SELECT%s * FROM result;", stmt, limitPart)
 	}
 	return stmt
 }
