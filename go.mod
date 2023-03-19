@@ -31,6 +31,7 @@ require (
 	github.com/lestrrat-go/jwx/v2 v2.0.8
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/microsoft/go-mssqldb v0.20.0
 	github.com/paulmach/orb v0.8.0
 	github.com/pganalyze/pg_query_go/v2 v2.1.2
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
@@ -74,7 +75,6 @@ require (
 	github.com/jcmturner/goidentity/v6 v6.0.1 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	github.com/microsoft/go-mssqldb v0.20.0 // indirect
 )
 
 require (
