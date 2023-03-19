@@ -49,7 +49,7 @@ message OIDCIdentityProviderConfig {
 // As we save all raw json string of user info response data into `principal.idp_user_info`,
 // we can extract the relevant data based with `FieldMapping`.
 //
-// e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+// e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
 // Then the identifier of FieldMapping will be `login`, display_name will be `name`,
 // and email will be `email`.
 // reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
