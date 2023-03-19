@@ -1236,6 +1236,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 	switch dbType {
 	case db.MySQL, db.TiDB:
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
+	case db.MSSQL:
+		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil
 	case db.Postgres:
 		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
 		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
@@ -1359,7 +1361,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if owner == "" {
 			return errors.Errorf("database owner is required for PostgreSQL")
 		}
-	case db.SQLite, db.MongoDB:
+	case db.SQLite, db.MongoDB, db.MSSQL:
 		// no-op.
 	default:
 		if characterSet == "" {
