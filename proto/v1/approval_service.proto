@@ -13,7 +13,7 @@ option go_package = "generated-go/v1";
 
 service ApprovalService {
   rpc ListApprovals(ListApprovalsRequest) returns (ListApprovalsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=stages/*/tasks/*}/approvals"};
+    option (google.api.http) = {get: "/v1/{parent=pipelines/*}/approvals"};
     option (google.api.method_signature) = "parent";
   }
 
@@ -27,8 +27,8 @@ service ApprovalService {
 
 message ListApprovalsRequest {
   // The parent, which owns this collection of instances.
-  // Format: stages/{stage}/tasks/{task}
-  // Use "stages/-/tasks/-" to list all instances from all stages.
+  // Format: pipelines/{pipeline}
+  // Use "pipelines/-" to list all instances from all pipelines.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of instances to return. The service may return fewer than
