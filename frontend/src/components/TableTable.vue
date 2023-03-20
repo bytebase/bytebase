@@ -96,7 +96,10 @@ export default defineComponent({
     const isPostgres = props.database.instance.engine === "POSTGRES";
 
     const hasSchemaProperty =
-      isPostgres || props.database.instance.engine === "SNOWFLAKE";
+      isPostgres ||
+      props.database.instance.engine === "SNOWFLAKE" ||
+      props.database.instance.engine === "ORACLE" ||
+      props.database.instance.engine === "MSSQL";
 
     const columnList = computed(() => {
       if (hasSchemaProperty) {
