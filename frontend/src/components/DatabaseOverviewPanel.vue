@@ -271,7 +271,10 @@ const databaseEngine = computed(() => {
 
 const hasSchemaProperty = computed(() => {
   return (
-    databaseEngine.value === "POSTGRES" || databaseEngine.value === "SNOWFLAKE"
+    databaseEngine.value === "POSTGRES" ||
+    databaseEngine.value === "SNOWFLAKE" ||
+    databaseEngine.value === "ORACLE" ||
+    databaseEngine.value === "MSSQL"
   );
 });
 
