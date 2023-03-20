@@ -774,7 +774,6 @@ BackupPlanSchedule is the backup plan schedule.
 | page_token | [string](#string) |  | A page token, received from a previous `ListApprovalTemplates` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListApprovalTemplates` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
 
 
 

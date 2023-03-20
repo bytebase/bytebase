@@ -30,8 +30,6 @@ export interface ListApprovalTemplatesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
-  /** Show deleted projects if specified. */
-  showDeleted: boolean;
 }
 
 export interface ListApprovalTemplatesResponse {
@@ -277,7 +275,7 @@ export const GetApprovalTemplateRequest = {
 };
 
 function createBaseListApprovalTemplatesRequest(): ListApprovalTemplatesRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "" };
 }
 
 export const ListApprovalTemplatesRequest = {
@@ -287,9 +285,6 @@ export const ListApprovalTemplatesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(18).string(message.pageToken);
-    }
-    if (message.showDeleted === true) {
-      writer.uint32(24).bool(message.showDeleted);
     }
     return writer;
   },
@@ -307,9 +302,6 @@ export const ListApprovalTemplatesRequest = {
         case 2:
           message.pageToken = reader.string();
           break;
-        case 3:
-          message.showDeleted = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -322,7 +314,6 @@ export const ListApprovalTemplatesRequest = {
     return {
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -330,7 +321,6 @@ export const ListApprovalTemplatesRequest = {
     const obj: any = {};
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -338,7 +328,6 @@ export const ListApprovalTemplatesRequest = {
     const message = createBaseListApprovalTemplatesRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
-    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
