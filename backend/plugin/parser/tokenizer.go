@@ -469,7 +469,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 	}
 }
 
-// splitOracleMultiSQL splits the statement to a string slice.
+// splitStandardMultiSQL splits the statement to a string slice.
 // We mainly considered:
 //
 //	comments
@@ -482,7 +482,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 //
 // The difference between PostgreSQL and Oracle is that PostgreSQL supports
 // dollar-quoted string, but Oracle does not.
-func (t *tokenizer) splitOracleMultiSQL() ([]SingleSQL, error) {
+func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
 	var res []SingleSQL
 
 	t.skipBlank()
