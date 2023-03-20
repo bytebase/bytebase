@@ -67,10 +67,14 @@ message ApproveApprovalRequest {
 message Approval {
   // Format: pipelines/{pipeline}/approvals/{approval}
   string name = 1;
+
   // system-generated unique identifier
-  string uid = 2;
-  string stage_id = 3;
-  optional string task_id = 4;
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string stage_id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  optional string task_id = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  
   ApprovalFlow flow = 5;
   repeated ApprovalHistory history = 6;
 }
