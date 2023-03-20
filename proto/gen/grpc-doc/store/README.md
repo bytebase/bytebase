@@ -3,13 +3,12 @@
 
 ## Table of Contents
 
-- [store/approval.proto](#store_approval-proto)
+- [store/approval_template.proto](#store_approval_template-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
     - [ApprovalStep](#bytebase-store-ApprovalStep)
   
     - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
-    - [ApprovalNode.Status](#bytebase-store-ApprovalNode-Status)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
   
@@ -47,10 +46,10 @@
 
 
 
-<a name="store_approval-proto"></a>
+<a name="store_approval_template-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## store/approval.proto
+## store/approval_template.proto
 
 
 
@@ -78,7 +77,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
-| status | [ApprovalNode.Status](#bytebase-store-ApprovalNode-Status) |  |  |
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
 
@@ -122,19 +120,6 @@ The predefined user groups are:
 | DBA | 2 |  |
 | PROJECT_OWNER | 3 |  |
 | PROJECT_MEMBER | 4 |  |
-
-
-
-<a name="bytebase-store-ApprovalNode-Status"></a>
-
-### ApprovalNode.Status
-Status of the ApprovalNode.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
 
 
 
