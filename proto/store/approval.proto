@@ -7,7 +7,10 @@ import "store/approval_template.proto";
 option go_package = "generated-go/store";
 
 message ApprovalPayload {
-  repeated ApprovalHistory history = 1;
+  int32 pipeline_id = 1;
+  int32 stage_id = 2;
+  optional int32 task_id = 3;
+  repeated ApprovalHistory history = 4;
 }
 
 enum ApprovalNodeStatus {
@@ -22,5 +25,5 @@ message ApprovalHistory {
   // The new status.
   ApprovalNodeStatus status = 2;
   // The principal id of the approver.
-  int64 principal_id = 3;
+  int32 principal_id = 3;
 }
