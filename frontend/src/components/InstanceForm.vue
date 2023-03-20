@@ -138,7 +138,7 @@
               name="port"
               class="textfield mt-1 w-full"
               :placeholder="defaultPort"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !allowEditPort"
               :value="adminDataSource.port"
               @wheel="handleInstancePortWheelScroll"
               @input="handleInstancePortInput"
@@ -795,6 +795,14 @@ const allowEdit = computed(() => {
   );
 });
 
+const allowEditPort = computed(() => {
+  // MongoDB doesn't support specify port if using srv record.
+  return !(
+    basicInformation.value.engine === "MONGODB" &&
+    currentDataSource.value.options.srv
+  );
+});
+
 const allowUsingEmptyPassword = computed(() => {
   return basicInformation.value.engine !== "SPANNER";
 });
@@ -834,6 +842,10 @@ const defaultPort = computed(() => {
   } else if (basicInformation.value.engine == "TIDB") {
     return "4000";
   } else if (basicInformation.value.engine == "MONGODB") {
+    // MongoDB doesn't support specify port if using srv record.
+    if (currentDataSource.value.options.srv) {
+      return "";
+    }
     return "27017";
   }
   return "3306";
@@ -991,6 +1003,8 @@ const handleMongodbConnectionStringSchemaChange = (event: Event) => {
       currentDataSource.value.options.srv = false;
       break;
     case mongodbConnectionStringSchemaList[1]:
+      // MongoDB doesn't support specify port if using srv record.
+      currentDataSource.value.port = "";
       currentDataSource.value.options.srv = true;
       break;
     default:
