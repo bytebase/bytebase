@@ -491,6 +491,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 		); err != nil {
 			return nil, FormatError(err)
 		}
+		projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		projectMessages = append(projectMessages, &projectMessage)
 	}
 
