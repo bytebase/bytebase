@@ -24,13 +24,6 @@ service RiskService {
     };
     option (google.api.method_signature) = "risk,update_mask";
   }
-
-  rpc BatchUpdateRisks(BatchUpdateRisksRequest) returns (BatchUpdateRisksResponse) {
-    option (google.api.http) = {
-      post: "/v1/risks:batchUpdate"
-      body: "*"
-    };
-  }
 }
 
 message ListRisksRequest {
@@ -68,17 +61,6 @@ message UpdateRiskRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
-}
-
-message BatchUpdateRisksRequest {
-  // The request message specifying the resources to update.
-  // A maximum of 1000 risks can be modified in a batch.
-  repeated UpdateRiskRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message BatchUpdateRisksResponse {
-  // Risks updated.
-  repeated Risk risks = 1;
 }
 
 message Risk {
