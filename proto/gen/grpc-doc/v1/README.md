@@ -268,6 +268,19 @@
   
     - [ProjectService](#bytebase-v1-ProjectService)
   
+- [v1/risk_service.proto](#v1_risk_service-proto)
+    - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
+    - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
+    - [Risk](#bytebase-v1-Risk)
+    - [RiskAction](#bytebase-v1-RiskAction)
+    - [RiskRule](#bytebase-v1-RiskRule)
+    - [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest)
+  
+    - [Risk.Namespace](#bytebase-v1-Risk-Namespace)
+    - [RiskAction.Type](#bytebase-v1-RiskAction-Type)
+  
+    - [RiskService](#bytebase-v1-RiskService)
+  
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
@@ -523,7 +536,7 @@ InstanceConnectionDetail is the detail for instance connection anomaly.
 | ----- | ---- | ----- | ----------- |
 | filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;environments/{environemnt}/instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34; | &#34;MIGRATION_SCHEMA&#34;.&#39; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchAnomalies` must match the call that provided the page token. |
 
@@ -972,7 +985,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the bookmark. Format: users/{user}, user is a server-generated unique ID. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of bookmarks to return. The service may return fewer than this value. If unspecified, at most 50 bookmarks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBookmarks` must match the call that provided the page token. |
 
@@ -1336,7 +1349,7 @@ ListBackupRequest is the request message for ListBackup.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource where this backup will be created. Format: environments/{environment}/instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of backups to return. The service may return fewer than this value. If unspecified, at most 50 backups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBackup` must match the call that provided the page token. |
 
@@ -2071,7 +2084,7 @@ FieldMapping saves the field names from user info API of identity provider.
 As we save all raw json string of user info response data into `principal.idp_user_info`,
 we can extract the relevant data based with `FieldMapping`.
 
-e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
 Then the identifier of FieldMapping will be `login`, display_name will be `name`,
 and email will be `email`.
 reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
@@ -4080,6 +4093,165 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 | SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | GetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+
+ 
+
+
+
+<a name="v1_risk_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/risk_service.proto
+
+
+
+<a name="bytebase-v1-ListRisksRequest"></a>
+
+### ListRisksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of risks to return. The service may return fewer than this value. If unspecified, at most 50 risks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRisks` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `LiskRisks` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRisksResponse"></a>
+
+### ListRisksResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risks | [Risk](#bytebase-v1-Risk) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Risk"></a>
+
+### Risk
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: risks/{risk} |
+| uid | [string](#string) |  | system-generated unique identifier. |
+| namespace | [Risk.Namespace](#bytebase-v1-Risk-Namespace) |  |  |
+| title | [string](#string) |  |  |
+| level | [int64](#int64) |  |  |
+| actions | [RiskAction](#bytebase-v1-RiskAction) | repeated |  |
+| rules | [RiskRule](#bytebase-v1-RiskRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RiskAction"></a>
+
+### RiskAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [RiskAction.Type](#bytebase-v1-RiskAction-Type) |  |  |
+| approval_template | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
+
+
+
+
+
+
+<a name="bytebase-v1-RiskRule"></a>
+
+### RiskRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateRiskRequest"></a>
+
+### UpdateRiskRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risk | [Risk](#bytebase-v1-Risk) |  | The risk to update.
+
+The risk&#39;s `name` field is used to identify the risk to update. Format: risks/{risk} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Risk-Namespace"></a>
+
+### Risk.Namespace
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NAMESPACE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| CREATE_DATABASE | 3 |  |
+
+
+
+<a name="bytebase-v1-RiskAction-Type"></a>
+
+### RiskAction.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| CHOOSE_APPROVAL_TEMPLATE | 1 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-RiskService"></a>
+
+### RiskService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
+| UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 
  
 
