@@ -94,6 +94,11 @@ func TestIsTiDBUnsupportStmt(t *testing.T) {
 			want: true,
 		},
 		{
+			stmt: "CREATE DEFINER=root@%% FUNCTION `hello`(s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC\n" +
+				"RETURN CONCAT('Hello, ',s,'!');",
+			want: true,
+		},
+		{
 			stmt: "create function `hello` (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC\n" +
 				"RETURN CONCAT('Hello, ',s,'!');",
 			want: true,
@@ -104,7 +109,8 @@ func TestIsTiDBUnsupportStmt(t *testing.T) {
 				"	INSERT INTO message(message, created_at)\n" +
 				"	VALUES('test event', NOW());",
 			want: true,
-		}, {
+		},
+		{
 			stmt: "create event `test_event_01` ON SCHEDULE AT CURRENT_TIMESTAMP \n" +
 				"DO\n" +
 				"	INSERT INTO message(message, created_at)\n" +
