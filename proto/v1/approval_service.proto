@@ -64,7 +64,7 @@ message PatchApprovalNodeStatusRequest {
   string node = 2;
 
   // The new status of the approval node.
-  ApprovalNode.Status status = 3;
+  ApprovalNodeStatus status = 3;
 }
 
 message Approval {
@@ -75,4 +75,18 @@ message Approval {
   string stage_id = 3;
   optional string task_id = 4;
   ApprovalFlow flow = 5;
+  repeated ApprovalHistory history = 6;
+}
+
+enum ApprovalNodeStatus {
+  APPROVAL_NODE_STATUS_UNSPECIFIED = 0;
+  PENDING = 1;
+  APPROVED = 2;
+}
+
+message ApprovalHistory {
+  // The `uid` of the approval node.
+  string node_uid = 1;
+  // The new status.
+  ApprovalNodeStatus status = 2;
 }
