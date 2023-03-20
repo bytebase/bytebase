@@ -27,8 +27,9 @@ func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
 		function,
 		procedure,
 	}
-	regexFmt := "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)*\\("
-	namingRegex := "`[^\\\\/?%*:|\\\"`<>]+`"
+	regexFmt := "(?mUi)^CREATE\\s+(DEFINER=(`(.)+`|(.)+)@(`(.)+`|(.)+)(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)*\\("
+	// We should support the naming likes "`abc`" or "abc".
+	namingRegex := fmt.Sprintf("(`%s`)|(%s)", "[^\\\\/?%*:|\\\"`<>]+", "[^\\\\/?%*:|\\\"`<>]+")
 	for _, obj := range fs {
 		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
 		re := regexp.MustCompile(regex)
@@ -43,7 +44,7 @@ func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
 		trigger,
 		event,
 	}
-	regexFmt = "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)+"
+	regexFmt = "(?mUi)^CREATE\\s+(DEFINER=(`(.)+`|(.)+)@(`(.)+`|(.)+)(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)+"
 	for _, obj := range objects {
 		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
 		re := regexp.MustCompile(regex)
