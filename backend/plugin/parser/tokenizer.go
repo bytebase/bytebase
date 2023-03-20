@@ -469,6 +469,98 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 	}
 }
 
+// splitStandardMultiSQL splits the statement to a string slice.
+// We mainly considered:
+//
+//	comments
+//	- style /* comments */
+//	- style -- comments
+//	string
+//	- style 'string'
+//	identifier
+//	- style "identifier"
+//
+// The difference between PostgreSQL and Oracle is that PostgreSQL supports
+// dollar-quoted string, but Oracle does not.
+func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
+	var res []SingleSQL
+
+	t.skipBlank()
+	t.emptyStatement = true
+	startPos := t.cursor
+	for {
+		switch {
+		case t.char(0) == '/' && t.char(1) == '*':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '-' && t.char(1) == '-':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '\'':
+			if err := t.scanString('\''); err != nil {
+				return nil, err
+			}
+			t.emptyStatement = false
+		case t.char(0) == '"':
+			if err := t.scanIdentifier('"'); err != nil {
+				return nil, err
+			}
+			t.emptyStatement = false
+		case t.char(0) == ';':
+			t.skip(1)
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
+				res = append(res, SingleSQL{
+					Text:     text,
+					LastLine: t.line,
+					Empty:    t.emptyStatement,
+				})
+			}
+			t.skipBlank()
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
+			startPos = t.pos()
+			t.emptyStatement = true
+		case t.char(0) == eofRune:
+			s := t.getString(startPos, t.pos())
+			if !emptyString(s) {
+				if t.f == nil {
+					res = append(res, SingleSQL{
+						Text: s,
+						// Consider this text:
+						// CREATE TABLE t(
+						//   a int
+						// )
+						//
+						// EOF line
+						//
+						// Our current location is the EOF line.
+						// The line t.line is the line of ')',
+						// but we want to get the line of last line of the SQL
+						// which means the line of ')'.
+						// So we need minus the aboveNonBlankLineDistance.
+						LastLine: t.line - t.aboveNonBlankLineDistance(),
+						Empty:    t.emptyStatement,
+					})
+				}
+				if err := t.processStreaming(s); err != nil {
+					return nil, err
+				}
+			}
+			return res, t.readErr
+		case t.char(0) == '\n':
+			t.line++
+			t.skip(1)
+		default:
+			t.skip(1)
+			t.emptyStatement = false
+		}
+	}
+}
+
 // splitPostgreSQLMultiSQL splits the statement to a string slice.
 // We mainly considered:
 //
