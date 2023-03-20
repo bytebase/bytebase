@@ -959,7 +959,6 @@ OR means approving any node will proceed.
 | page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
 
 
 

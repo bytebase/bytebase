@@ -66,8 +66,6 @@ export interface ListApprovalsRequest {
    * the call that provided the page token.
    */
   pageToken: string;
-  /** Show deleted instances if specified. */
-  showDeleted: boolean;
 }
 
 export interface ListApprovalsResponse {
@@ -107,7 +105,7 @@ export interface ApprovalHistory {
 }
 
 function createBaseListApprovalsRequest(): ListApprovalsRequest {
-  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
+  return { parent: "", pageSize: 0, pageToken: "" };
 }
 
 export const ListApprovalsRequest = {
@@ -120,9 +118,6 @@ export const ListApprovalsRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
-    }
-    if (message.showDeleted === true) {
-      writer.uint32(32).bool(message.showDeleted);
     }
     return writer;
   },
@@ -143,9 +138,6 @@ export const ListApprovalsRequest = {
         case 3:
           message.pageToken = reader.string();
           break;
-        case 4:
-          message.showDeleted = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -159,7 +151,6 @@ export const ListApprovalsRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -168,7 +159,6 @@ export const ListApprovalsRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -177,7 +167,6 @@ export const ListApprovalsRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
-    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
