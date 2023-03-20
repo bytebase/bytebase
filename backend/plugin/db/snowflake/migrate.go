@@ -227,7 +227,8 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return "", "", err
 	}
-	return util.ExecuteMigration(ctx, driver, m, statement, bytebaseDatabase)
+	_, err := driver.Execute(ctx, statement, m.CreateDatabase)
+	return "", "", err
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -277,6 +278,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase)
 }

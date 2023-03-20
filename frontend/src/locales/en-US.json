@@ -321,7 +321,8 @@
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
-    "deploy": "Deploy yours in 5 seconds",
+    "deploy": "Self Host",
+    "cloud": "Sign Up for Cloud",
     "request-demo": "Book a 30 min product walkthrough with our product expert",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
@@ -1142,6 +1143,7 @@
     "gitops-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
     "gitops-description-branch": "After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.",
     "gitops-description-description-schema-path": "After applying the schema change, Bytebase will also write the latest schema to the specified schema path location {schemaPathTemplate}.",
+    "gitops-description-sdl": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would modify the full schema script matching file path pattern {schemaPathTemplate}. To make data changes, a developer would create a migration script matching file path pattern {filePathTemplate}. Once the script is merged into the {branch} branch, Bytebase will automatically kick off the pipeline to apply the new database change.",
     "restore-to-ui-workflow": "Restore to UI workflow",
     "restore-ui-workflow-description": "When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase console and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.",
     "restore-ui-workflow-success": "Successfully restored to UI workflow",
@@ -1294,9 +1296,9 @@
         "btn-text": "Restore this @.lower:{'common.project'}"
       },
       "schema-change-type": "Schema change type",
-      "select-schema-change-type-ddl": "Migration-based",
-      "select-schema-change-type-sdl": "State-based",
-      "schema-path-template-sdl-description": "The schema file that contains the desired state of the database schema. Bytebase creates new migrations for any discrepancy found between the desired state and the actual database schema."
+      "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
+      "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
     },
     "mode": {
       "standard": "Standard",
@@ -1900,11 +1902,16 @@
       "select-type": "Select Type"
     },
     "type": {
-      "member-create": "Create Member",
-      "member-role-update": "Update Member Role",
-      "member-activate": "Activate Member",
-      "member-deactivate": "Deactivate Member",
-      "database-transfer": "Transfer Database",
+      "workspace": {
+        "member-create": "Create Workspace Member",
+        "member-role-update": "Update Workspace Member Role",
+        "member-activate": "Activate Workspace Member",
+        "member-deactivate": "Deactivate Workspace Member"
+      },
+      "project": {
+        "member-role-update": "Update Project Member Role",
+        "database-transfer": "Transfer Database"
+      },
       "sql-editor-query": "SQL Editor Query"
     }
   },
@@ -1993,14 +2000,14 @@
         "tips": "Keep your recovery codes as safe as your password. We recommend saving them with a password manager such as Lastpass, 1Password, or Keeper.",
         "keep-safe": {
           "self": "Keep your recovery codes in a safe spot.",
-          "description": "These codes are the last resort for accessing your account in case you lose your password and second factors. If you cannot find these codes, you will lose access to your account."
+          "description": "These codes are the last resort for accessing your account in case you lose your two-factor authentication code. If you cannot find these codes, you will lose access to your account."
         }
       },
       "recovery-codes-saved": "I have saved my recovery codes"
     },
     "recovery-codes": {
       "self": "Recovery codes",
-      "description": "Recovery codes can be used to access your account in the event you lose access to your device and cannot receive two-factor authentication codes."
+      "description": "Recovery codes can be used to access your account in the event you cannot receive two-factor authentication codes."
     },
     "disable": {
       "self": "Disable Two-factor authentication",
@@ -2021,6 +2028,7 @@
     "ai": {
       "examples": "Examples",
       "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL",
+      "text-to-sql-disabled-placeholder": "Enable ChatSQL capability by supplying an OpenAI API Key.",
       "run-automatically": "Run automatically",
       "conversation": {
         "conversations": "Conversations",
@@ -2034,7 +2042,7 @@
         "new-conversation": "Start new conversation",
         "no-message": "No message in this conversation",
         "tips": {
-          "try": "Try:",
+          "suggest-prompt": "Suggesting prompts...",
           "more": "More",
           "no-more": "no more"
         }
@@ -2044,7 +2052,8 @@
         "2": "Which manager has most direct reports in each department?",
         "3": "What's the gender ratio in each department?"
       },
-      "statement-copied": "Statement copied to clipboard"
+      "statement-copied": "Statement copied to clipboard",
+      "dont-show-again": "Don't show again"
     }
   }
 }

@@ -79,13 +79,15 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	mi := &db.MigrationInfo{
 		InstanceID:     &instance.UID,
 		DatabaseID:     &database.UID,
-		CreatorID:      api.SystemBotID,
+		CreatorID:      task.CreatorID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
 		// TODO(d): support semantic versioning.
 		Version:     schemaVersion,
 		Description: task.Name,
 		Environment: environment.ResourceID,
+		Database:    database.DatabaseName,
+		Namespace:   database.DatabaseName,
 	}
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -126,9 +128,6 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 		}
 		mi.Payload = string(bytes)
 	}
-
-	mi.Database = database.DatabaseName
-	mi.Namespace = database.DatabaseName
 
 	statement = strings.TrimSpace(statement)
 	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.
@@ -171,14 +170,6 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		zap.String("statement", statementRecord),
 	)
 
-	setup, err := driver.NeedsSetupMigration(ctx)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", instance.ResourceID)
-	}
-	if setup {
-		return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", instance.ResourceID)
-	}
-
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
 		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
 		if err != nil {
@@ -187,17 +178,9 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		task = updatedTask
 	}
 
-	// TODO(p0ny): migrate to instance change history
-	if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner {
-		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement)
-		if err != nil {
-			return "", "", err
-		}
-	} else {
-		migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
-		if err != nil {
-			return "", "", err
-		}
+	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement)
+	if err != nil {
+		return "", "", err
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {

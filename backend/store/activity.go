@@ -361,6 +361,12 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 	if v := find.SinceID; v != nil {
 		where, args = append(where, fmt.Sprintf("id <= $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("created_ts >= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("created_ts <= $%d", len(args)+1)), append(args, *v)
+	}
 
 	var query = `
 		SELECT

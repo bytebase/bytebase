@@ -1,5 +1,6 @@
 <template>
   <ChatPanel v-if="openAIKey" />
+  <MockInputPlaceholder v-else />
 </template>
 
 <script lang="ts" setup>
@@ -16,6 +17,7 @@ import {
   useSettingByName,
 } from "@/store";
 import ChatPanel from "./ChatPanel.vue";
+import MockInputPlaceholder from "./MockInputPlaceholder.vue";
 import { Connection } from "@/types";
 
 type LocalState = {
@@ -53,7 +55,8 @@ events.on("apply-statement", ({ statement, run }) => {
   emit("apply-statement", statement, tab.value.connection, run);
 });
 
-const autoRun = useLocalStorage("bb.plugin.ai.auto-run", true);
+const autoRun = useLocalStorage("bb.plugin.ai.auto-run", false);
+autoRun.value = false;
 
 const chat = useChatByTab();
 

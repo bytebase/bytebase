@@ -987,10 +987,10 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 // oauthContext is the request context for refreshing OAuth token.
 type oauthContext struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	RefreshToken string `json:"refresh_token"`
-	GrantType    string `json:"grant_type"`
+	ClientID     string
+	ClientSecret string
+	RefreshToken string
+	GrantType    string
 }
 
 type refreshOAuthResponse struct {
@@ -1002,11 +1002,12 @@ type refreshOAuthResponse struct {
 
 func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
-		form := &url.Values{}
-		form.Set("grant_type", "refresh_token")
-		form.Set("refresh_token", oauthCtx.RefreshToken)
+		params := &url.Values{}
+		params.Set("grant_type", "refresh_token")
+		params.Set("refresh_token", oauthCtx.RefreshToken)
+
 		url := fmt.Sprintf("%s/site/oauth2/access_token", instanceURL)
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(params.Encode()))
 		if err != nil {
 			return errors.Wrapf(err, "construct POST %s", url)
 		}

@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewPITRRestoreExecutor creates a PITR restore task executor.
@@ -532,15 +533,18 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
+		InstanceID:     &task.InstanceID,
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.DatabaseName,
 		Database:       targetDatabase.DatabaseName,
+		DatabaseID:     &targetDatabase.UID,
 		Environment:    targetInstanceEnvironment.ResourceID,
 		Source:         db.MigrationSource(targetDatabaseProject.Workflow),
 		Type:           db.Branch,
 		Description:    description,
 		Creator:        creator.Name,
+		CreatorID:      creator.ID,
 		IssueID:        issueID,
 	}
 	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase.DatabaseName)
@@ -548,8 +552,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		return "", "", err
 	}
 	defer targetDriver.Close(ctx)
-	// TODO(p0ny): migrate to instance change history
-	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
+	migrationID, _, err := utils.ExecuteMigration(ctx, stores, targetDriver, m, "")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create migration history")
 	}

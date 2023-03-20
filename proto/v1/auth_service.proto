@@ -8,23 +8,18 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/wrappers.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service AuthService {
   rpc GetUser(GetUserRequest) returns (User) {
-    option (google.api.http) = {
-      get: "/v1/{name=users/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
-    option (google.api.http) = {
-      get: "/v1/users"
-    };
+    option (google.api.http) = {get: "/v1/users"};
     option (google.api.method_signature) = "parent";
   }
 
@@ -45,9 +40,7 @@ service AuthService {
   }
 
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=users/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
   }
 
@@ -110,7 +103,6 @@ message CreateUserRequest {
   // The user to create.
   User user = 1 [(google.api.field_behavior) = REQUIRED];
 }
-
 
 message UpdateUserRequest {
   // The user to update.
@@ -181,8 +173,7 @@ message OAuth2IdentityProviderContext {
   string code = 1;
 }
 
-message OIDCIdentityProviderContext {
-}
+message OIDCIdentityProviderContext {}
 
 message LoginResponse {
   string token = 1;
@@ -190,8 +181,7 @@ message LoginResponse {
   optional string mfa_temp_token = 2;
 }
 
-message LogoutRequest {
-}
+message LogoutRequest {}
 
 message User {
   // The name of the user.

@@ -16,6 +16,7 @@ import (
 // SyncInstance syncs the instance metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var instance db.InstanceMetadata
+	var databaseCount int
 
 	version, err := d.getVersion(ctx)
 	if err != nil {
@@ -28,14 +29,15 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to check if cluster is enabled")
 	}
 
-	databaseCount, err := d.getDatabaseCount(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get databases")
-	}
-
 	// Redis cluster can only use database zero.
 	if clusterEnabled {
 		databaseCount = 1
+	} else {
+		count, err := d.getDatabaseCount(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get databases")
+		}
+		databaseCount = count
 	}
 
 	var databases []*storepb.DatabaseMetadata
@@ -63,7 +65,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	for _, line := range strings.Split(val, "\n") {
 		if strings.HasPrefix(line, "redis_version:") {
 			version = strings.TrimPrefix(line, "redis_version:")
-			version = strings.Trim(version, " \n\t")
+			version = strings.Trim(version, " \n\t\r")
 			break
 		}
 	}
@@ -81,8 +83,8 @@ func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
 	var enabled string
 	for _, line := range strings.Split(val, "\n") {
 		if strings.HasPrefix(line, "cluster_enabled:") {
-			enabled = strings.TrimPrefix(line, "cluter_enabled:")
-			enabled = strings.Trim(enabled, " \n\t")
+			enabled = strings.TrimPrefix(line, "cluster_enabled:")
+			enabled = strings.Trim(enabled, " \n\t\r")
 			break
 		}
 	}
@@ -95,6 +97,11 @@ func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
 func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
 	val, err := d.rdb.ConfigGet(ctx, "databases").Result()
 	if err != nil {
+		// Cloud vendors may have disabled this command.
+		// In that case, we return 1.
+		if strings.Contains(err.Error(), "unknown command") {
+			return 1, nil
+		}
 		return 0, err
 	}
 	if _, ok := val["databases"]; !ok {

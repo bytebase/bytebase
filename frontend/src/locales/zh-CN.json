@@ -319,7 +319,8 @@
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
-    "deploy": "5 秒部署到本地",
+    "deploy": "部署到本地",
+    "cloud": "注册云服务",
     "request-demo": "和我们的产品专家预约 30 分钟产品演示",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
@@ -1140,6 +1141,7 @@
     "gitops-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
     "gitops-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
     "gitops-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
+    "gitops-description-sdl": "数据库变更脚本存放在 {fullPath}。如果要变更据库 schema，开发者需要修改脚本文件 {schemaPathTemplate}。如果要修改数据库数据，开发者需要按照 {filePathTemplate} 创建一个变更脚本。当脚本合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的数据库变更。",
     "restore-to-ui-workflow": "恢复到 UI 工作流",
     "restore-ui-workflow-description": "当使用 UI 工作流时，开发者会通过 Bytebase\n\n控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。",
     "restore-ui-workflow-success": "成功恢复到 UI 工作流",
@@ -1292,9 +1294,9 @@
         "btn-text": "恢复这个@:common.project"
       },
       "schema-change-type": "Schema 变更类型",
-      "select-schema-change-type-ddl": "通过指定过程 DDL 变更到期望的 Schema",
-      "select-schema-change-type-sdl": "直接指定期望达到的 Schema",
-      "schema-path-template-sdl-description": "Schema 定义文件应该包括了数据库 Schema 所在的状态。Bytebase 将会为在 Schema 状态和实际数据库之间发现的任何差异创建新的迁移。"
+      "select-schema-change-type-ddl": "命令式 - 面向过程的 DDL 命令，如 ALTER TABLE",
+      "select-schema-change-type-sdl": "声明式 - 面向终态的 Schema 描述，如 CREATE TABLE",
+      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
     },
     "mode": {
       "standard": "标准",
@@ -1899,11 +1901,16 @@
       "select-type": "选择类型"
     },
     "type": {
-      "member-create": "增加成员",
-      "member-role-update": "更新角色",
-      "member-activate": "激活成员",
-      "member-deactivate": "禁用成员",
-      "database-transfer": "转移数据库",
+      "workspace": {
+        "member-create": "增加工作空间成员",
+        "member-role-update": "更新工作空间成员角色",
+        "member-activate": "激活工作空间成员",
+        "member-deactivate": "禁用工作空间成员"
+      },
+      "project": {
+        "member-role-update": "更新项目成员角色",
+        "database-transfer": "转移数据库"
+      },
       "sql-editor-query": "SQL 编辑器查询"
     }
   },
@@ -1992,14 +1999,14 @@
         "tips": "保持您的恢复码和您的密码一样安全。建议将它们保存在一个密码管理器中，如 Lastpass、1Password 或 Keeper。",
         "keep-safe": {
           "self": "把您的恢复码放在一个安全的地方。",
-          "description": "这些代码是在您丢失密码和第二要素的情况下访问您的账户的最后手段。如果您找不到这些代码，您将失去对您账户的访问。"
+          "description": "这些代码是在您无法收到双重认证代码的情况下访问您的账户。如果您找不到这些代码，您将失去对您账户的访问。"
         }
       },
       "recovery-codes-saved": "确定已经保存了我的恢复码"
     },
     "recovery-codes": {
       "self": "恢复码",
-      "description": "恢复码可以在您失去对设备的访问权和无法收到双因素认证代码的情况下用于访问您的账户。"
+      "description": "恢复码可以在您无法收到双重认证代码的情况下用于访问您的账户。"
     },
     "disable": {
       "self": "禁用双重认证",
@@ -2020,6 +2027,7 @@
     "ai": {
       "examples": "例子",
       "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会马上转换成 SQL 语句",
+      "text-to-sql-disabled-placeholder": "提供 OpenAI API 密钥以开启 ChatSQL 能力。",
       "run-automatically": "自动运行",
       "conversation": {
         "conversations": "会话",
@@ -2031,7 +2039,7 @@
         "view-history-conversations": "查看历史对话",
         "new-conversation": "开启新对话",
         "tips": {
-          "try": "试一试：",
+          "suggest-prompt": "生成提示词...",
           "more": "更多",
           "no-more": "没有了"
         }
@@ -2041,7 +2049,8 @@
         "2": "哪个部门经理的下属最多？",
         "3": "各个部门的性别比例如何？"
       },
-      "statement-copied": "语句已复制到剪贴板"
+      "statement-copied": "语句已复制到剪贴板",
+      "dont-show-again": "不再显示"
     }
   }
 }

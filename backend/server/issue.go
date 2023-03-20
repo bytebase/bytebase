@@ -599,7 +599,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
-	taskCreateList, err := s.createDatabaseCreateTaskList(c, instance, project)
+	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, instance, project)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create task list of creating database")
 	}
@@ -1057,7 +1057,7 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 }
 
 // createDatabaseCreateTaskList returns the task list for create database.
-func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, instance *store.InstanceMessage, project *store.ProjectMessage) ([]api.TaskCreate, error) {
+func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance *store.InstanceMessage, project *store.ProjectMessage) ([]api.TaskCreate, error) {
 	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
 		return nil, err
 	}
@@ -1088,11 +1088,37 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	if adminDataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 	}
-	// Snowflake needs to use upper case of DatabaseName.
 	databaseName := c.DatabaseName
-	if instance.Engine == db.Snowflake {
+	switch instance.Engine {
+	case db.Snowflake:
+		// Snowflake needs to use upper case of DatabaseName.
 		databaseName = strings.ToUpper(databaseName)
+	case db.MySQL:
+		// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
+		// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
+		// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		if err != nil {
+			log.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", zap.Error(err), zap.String("instance", instance.Title))
+			break
+		}
+		defer driver.Close(ctx)
+		var lowerCaseTableNames int
+		var unused interface{}
+		db, err := driver.GetDBConnection(ctx, "" /* databaseName */)
+		if err != nil {
+			log.Warn("failed to get db connection for instance %q", zap.Error(err), zap.String("instance", instance.Title))
+			break
+		}
+		if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
+			log.Warn("failed to get lower_case_table_names for instance %q", zap.Error(err), zap.String("instance", instance.Title))
+			break
+		}
+		if lowerCaseTableNames == 1 {
+			databaseName = strings.ToLower(databaseName)
+		}
 	}
+
 	statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Username)
 	if err != nil {
 		return nil, err
@@ -1140,7 +1166,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.D
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the project with ID %d", projectID)
 		}
-		taskList, err := s.createDatabaseCreateTaskList(*c.CreateDatabaseCtx, targetInstance, project)
+		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, targetInstance, project)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
@@ -1210,6 +1236,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 	switch dbType {
 	case db.MySQL, db.TiDB:
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
+	case db.MSSQL:
+		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil
 	case db.Postgres:
 		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
 		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
@@ -1333,7 +1361,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if owner == "" {
 			return errors.Errorf("database owner is required for PostgreSQL")
 		}
-	case db.SQLite, db.MongoDB:
+	case db.SQLite, db.MongoDB, db.MSSQL:
 		// no-op.
 	default:
 		if characterSet == "" {
