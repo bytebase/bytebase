@@ -12,11 +12,6 @@ import "google/protobuf/field_mask.proto";
 option go_package = "generated-go/v1";
 
 service RiskService {
-  rpc GetRisk(GetRiskRequest) returns (Risk) {
-    option (google.api.http) = {get: "/v1/{name=risks/*}"};
-    option (google.api.method_signature) = "name";
-  }
-
   rpc ListRisks(ListRisksRequest) returns (ListRisksResponse) {
     option (google.api.http) = {get: "/v1/risks"};
     option (google.api.method_signature) = "";
@@ -36,12 +31,6 @@ service RiskService {
       body: "*"
     };
   }
-}
-
-message GetRiskRequest {
-  // The name of the risk to retrieve.
-  // Format: risks/{risk}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListRisksRequest {
