@@ -13,6 +13,11 @@ func TestExtractUnsupportObjNameAndType(t *testing.T) {
 		wantName string
 	}{
 		{
+			stmt:     "CREATE DEFINER=`root`@`%` TRIGGER xcytestT \t\nBEFORE \n INSERT ON xcytest FOR EACH ROW\n BEGIN\n\tSET new.code=REPLACE(UUID(), '-', ''); \nEND ;;",
+			wantTp:   trigger,
+			wantName: "xcytestT",
+		},
+		{
 			stmt:     "CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON `account` FOR EACH SET @sum=@sum + NEW.price;;",
 			wantTp:   trigger,
 			wantName: "ins_sum",
