@@ -247,7 +247,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
         return updateMessage(message);
       });
     await Promise.all(requests);
-    console.log("5");
   };
 
   const reset = async () => {
