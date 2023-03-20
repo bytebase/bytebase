@@ -20,229 +20,68 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Type of the ApprovalStep
-// AND means every node must be approved to proceed.
-// OR means approving any node will proceed.
-type ApprovalStep_Type int32
+type ApprovalNodeStatus int32
 
 const (
-	ApprovalStep_TYPE_UNSPECIFIED ApprovalStep_Type = 0
-	ApprovalStep_AND              ApprovalStep_Type = 1
-	ApprovalStep_OR               ApprovalStep_Type = 2
+	ApprovalNodeStatus_APPROVAL_NODE_STATUS_UNSPECIFIED ApprovalNodeStatus = 0
+	ApprovalNodeStatus_PENDING                          ApprovalNodeStatus = 1
+	ApprovalNodeStatus_APPROVED                         ApprovalNodeStatus = 2
 )
 
-// Enum value maps for ApprovalStep_Type.
+// Enum value maps for ApprovalNodeStatus.
 var (
-	ApprovalStep_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "AND",
-		2: "OR",
-	}
-	ApprovalStep_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"AND":              1,
-		"OR":               2,
-	}
-)
-
-func (x ApprovalStep_Type) Enum() *ApprovalStep_Type {
-	p := new(ApprovalStep_Type)
-	*p = x
-	return p
-}
-
-func (x ApprovalStep_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ApprovalStep_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[0].Descriptor()
-}
-
-func (ApprovalStep_Type) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[0]
-}
-
-func (x ApprovalStep_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ApprovalStep_Type.Descriptor instead.
-func (ApprovalStep_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{1, 0}
-}
-
-// Status of the ApprovalNode.
-type ApprovalNode_Status int32
-
-const (
-	ApprovalNode_STATUS_UNSPECIFIED ApprovalNode_Status = 0
-	ApprovalNode_PENDING            ApprovalNode_Status = 1
-	ApprovalNode_APPROVED           ApprovalNode_Status = 2
-)
-
-// Enum value maps for ApprovalNode_Status.
-var (
-	ApprovalNode_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
+	ApprovalNodeStatus_name = map[int32]string{
+		0: "APPROVAL_NODE_STATUS_UNSPECIFIED",
 		1: "PENDING",
 		2: "APPROVED",
 	}
-	ApprovalNode_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"PENDING":            1,
-		"APPROVED":           2,
+	ApprovalNodeStatus_value = map[string]int32{
+		"APPROVAL_NODE_STATUS_UNSPECIFIED": 0,
+		"PENDING":                          1,
+		"APPROVED":                         2,
 	}
 )
 
-func (x ApprovalNode_Status) Enum() *ApprovalNode_Status {
-	p := new(ApprovalNode_Status)
+func (x ApprovalNodeStatus) Enum() *ApprovalNodeStatus {
+	p := new(ApprovalNodeStatus)
 	*p = x
 	return p
 }
 
-func (x ApprovalNode_Status) String() string {
+func (x ApprovalNodeStatus) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ApprovalNode_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[1].Descriptor()
+func (ApprovalNodeStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_approval_proto_enumTypes[0].Descriptor()
 }
 
-func (ApprovalNode_Status) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[1]
+func (ApprovalNodeStatus) Type() protoreflect.EnumType {
+	return &file_store_approval_proto_enumTypes[0]
 }
 
-func (x ApprovalNode_Status) Number() protoreflect.EnumNumber {
+func (x ApprovalNodeStatus) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ApprovalNode_Status.Descriptor instead.
-func (ApprovalNode_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{2, 0}
+// Deprecated: Use ApprovalNodeStatus.Descriptor instead.
+func (ApprovalNodeStatus) EnumDescriptor() ([]byte, []int) {
+	return file_store_approval_proto_rawDescGZIP(), []int{0}
 }
 
-// Type of the ApprovalNode.
-// type determines who should approve this node.
-// ROLE means the ApprovalNode can be approved by an user from our predefined user group.
-// See RoleValue below for the predefined user groups.
-type ApprovalNode_Type int32
-
-const (
-	ApprovalNode_TYPE_UNSPECIFIED ApprovalNode_Type = 0
-	ApprovalNode_ROLE             ApprovalNode_Type = 1
-)
-
-// Enum value maps for ApprovalNode_Type.
-var (
-	ApprovalNode_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "ROLE",
-	}
-	ApprovalNode_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"ROLE":             1,
-	}
-)
-
-func (x ApprovalNode_Type) Enum() *ApprovalNode_Type {
-	p := new(ApprovalNode_Type)
-	*p = x
-	return p
-}
-
-func (x ApprovalNode_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ApprovalNode_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[2].Descriptor()
-}
-
-func (ApprovalNode_Type) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[2]
-}
-
-func (x ApprovalNode_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ApprovalNode_Type.Descriptor instead.
-func (ApprovalNode_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{2, 1}
-}
-
-// RoleValue is used if ApprovalNode Type is ROLE
-// The predefined user groups are:
-// - WORKSPACE_OWNER
-// - DBA
-// - PROJECT_OWNER
-// - PROJECT_MEMBER
-type ApprovalNode_RoleValue int32
-
-const (
-	ApprovalNode_ROLE_VALUE_UNSPECIFILED ApprovalNode_RoleValue = 0
-	ApprovalNode_WORKSPACE_OWNER         ApprovalNode_RoleValue = 1
-	ApprovalNode_DBA                     ApprovalNode_RoleValue = 2
-	ApprovalNode_PROJECT_OWNER           ApprovalNode_RoleValue = 3
-	ApprovalNode_PROJECT_MEMBER          ApprovalNode_RoleValue = 4
-)
-
-// Enum value maps for ApprovalNode_RoleValue.
-var (
-	ApprovalNode_RoleValue_name = map[int32]string{
-		0: "ROLE_VALUE_UNSPECIFILED",
-		1: "WORKSPACE_OWNER",
-		2: "DBA",
-		3: "PROJECT_OWNER",
-		4: "PROJECT_MEMBER",
-	}
-	ApprovalNode_RoleValue_value = map[string]int32{
-		"ROLE_VALUE_UNSPECIFILED": 0,
-		"WORKSPACE_OWNER":         1,
-		"DBA":                     2,
-		"PROJECT_OWNER":           3,
-		"PROJECT_MEMBER":          4,
-	}
-)
-
-func (x ApprovalNode_RoleValue) Enum() *ApprovalNode_RoleValue {
-	p := new(ApprovalNode_RoleValue)
-	*p = x
-	return p
-}
-
-func (x ApprovalNode_RoleValue) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ApprovalNode_RoleValue) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[3].Descriptor()
-}
-
-func (ApprovalNode_RoleValue) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[3]
-}
-
-func (x ApprovalNode_RoleValue) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ApprovalNode_RoleValue.Descriptor instead.
-func (ApprovalNode_RoleValue) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{2, 2}
-}
-
-type ApprovalFlow struct {
+type ApprovalPayload struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Steps []*ApprovalStep `protobuf:"bytes,1,rep,name=steps,proto3" json:"steps,omitempty"`
+	PipelineId int32              `protobuf:"varint,1,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
+	StageId    int32              `protobuf:"varint,2,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	TaskId     *int32             `protobuf:"varint,3,opt,name=task_id,json=taskId,proto3,oneof" json:"task_id,omitempty"`
+	History    []*ApprovalHistory `protobuf:"bytes,4,rep,name=history,proto3" json:"history,omitempty"`
 }
 
-func (x *ApprovalFlow) Reset() {
-	*x = ApprovalFlow{}
+func (x *ApprovalPayload) Reset() {
+	*x = ApprovalPayload{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_store_approval_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -250,13 +89,13 @@ func (x *ApprovalFlow) Reset() {
 	}
 }
 
-func (x *ApprovalFlow) String() string {
+func (x *ApprovalPayload) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ApprovalFlow) ProtoMessage() {}
+func (*ApprovalPayload) ProtoMessage() {}
 
-func (x *ApprovalFlow) ProtoReflect() protoreflect.Message {
+func (x *ApprovalPayload) ProtoReflect() protoreflect.Message {
 	mi := &file_store_approval_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -268,29 +107,54 @@ func (x *ApprovalFlow) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ApprovalFlow.ProtoReflect.Descriptor instead.
-func (*ApprovalFlow) Descriptor() ([]byte, []int) {
+// Deprecated: Use ApprovalPayload.ProtoReflect.Descriptor instead.
+func (*ApprovalPayload) Descriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ApprovalFlow) GetSteps() []*ApprovalStep {
+func (x *ApprovalPayload) GetPipelineId() int32 {
 	if x != nil {
-		return x.Steps
+		return x.PipelineId
+	}
+	return 0
+}
+
+func (x *ApprovalPayload) GetStageId() int32 {
+	if x != nil {
+		return x.StageId
+	}
+	return 0
+}
+
+func (x *ApprovalPayload) GetTaskId() int32 {
+	if x != nil && x.TaskId != nil {
+		return *x.TaskId
+	}
+	return 0
+}
+
+func (x *ApprovalPayload) GetHistory() []*ApprovalHistory {
+	if x != nil {
+		return x.History
 	}
 	return nil
 }
 
-type ApprovalStep struct {
+type ApprovalHistory struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Type  ApprovalStep_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ApprovalStep_Type" json:"type,omitempty"`
-	Nodes []*ApprovalNode   `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	// The `uid` of the approval node.
+	NodeUid string `protobuf:"bytes,1,opt,name=node_uid,json=nodeUid,proto3" json:"node_uid,omitempty"`
+	// The new status.
+	Status ApprovalNodeStatus `protobuf:"varint,2,opt,name=status,proto3,enum=bytebase.store.ApprovalNodeStatus" json:"status,omitempty"`
+	// The principal id of the approver.
+	PrincipalId int32 `protobuf:"varint,3,opt,name=principal_id,json=principalId,proto3" json:"principal_id,omitempty"`
 }
 
-func (x *ApprovalStep) Reset() {
-	*x = ApprovalStep{}
+func (x *ApprovalHistory) Reset() {
+	*x = ApprovalHistory{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_store_approval_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -298,13 +162,13 @@ func (x *ApprovalStep) Reset() {
 	}
 }
 
-func (x *ApprovalStep) String() string {
+func (x *ApprovalHistory) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ApprovalStep) ProtoMessage() {}
+func (*ApprovalHistory) ProtoMessage() {}
 
-func (x *ApprovalStep) ProtoReflect() protoreflect.Message {
+func (x *ApprovalHistory) ProtoReflect() protoreflect.Message {
 	mi := &file_store_approval_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -316,168 +180,67 @@ func (x *ApprovalStep) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ApprovalStep.ProtoReflect.Descriptor instead.
-func (*ApprovalStep) Descriptor() ([]byte, []int) {
+// Deprecated: Use ApprovalHistory.ProtoReflect.Descriptor instead.
+func (*ApprovalHistory) Descriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ApprovalStep) GetType() ApprovalStep_Type {
+func (x *ApprovalHistory) GetNodeUid() string {
 	if x != nil {
-		return x.Type
-	}
-	return ApprovalStep_TYPE_UNSPECIFIED
-}
-
-func (x *ApprovalStep) GetNodes() []*ApprovalNode {
-	if x != nil {
-		return x.Nodes
-	}
-	return nil
-}
-
-type ApprovalNode struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// uid uniquely identifies a node in a flow.
-	Uid    string              `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
-	Status ApprovalNode_Status `protobuf:"varint,2,opt,name=status,proto3,enum=bytebase.store.ApprovalNode_Status" json:"status,omitempty"`
-	Type   ApprovalNode_Type   `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.ApprovalNode_Type" json:"type,omitempty"`
-	// Types that are assignable to Payload:
-	//
-	//	*ApprovalNode_RoleValue_
-	Payload isApprovalNode_Payload `protobuf_oneof:"payload"`
-}
-
-func (x *ApprovalNode) Reset() {
-	*x = ApprovalNode{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_approval_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ApprovalNode) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ApprovalNode) ProtoMessage() {}
-
-func (x *ApprovalNode) ProtoReflect() protoreflect.Message {
-	mi := &file_store_approval_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ApprovalNode.ProtoReflect.Descriptor instead.
-func (*ApprovalNode) Descriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *ApprovalNode) GetUid() string {
-	if x != nil {
-		return x.Uid
+		return x.NodeUid
 	}
 	return ""
 }
 
-func (x *ApprovalNode) GetStatus() ApprovalNode_Status {
+func (x *ApprovalHistory) GetStatus() ApprovalNodeStatus {
 	if x != nil {
 		return x.Status
 	}
-	return ApprovalNode_STATUS_UNSPECIFIED
+	return ApprovalNodeStatus_APPROVAL_NODE_STATUS_UNSPECIFIED
 }
 
-func (x *ApprovalNode) GetType() ApprovalNode_Type {
+func (x *ApprovalHistory) GetPrincipalId() int32 {
 	if x != nil {
-		return x.Type
+		return x.PrincipalId
 	}
-	return ApprovalNode_TYPE_UNSPECIFIED
+	return 0
 }
-
-func (m *ApprovalNode) GetPayload() isApprovalNode_Payload {
-	if m != nil {
-		return m.Payload
-	}
-	return nil
-}
-
-func (x *ApprovalNode) GetRoleValue() ApprovalNode_RoleValue {
-	if x, ok := x.GetPayload().(*ApprovalNode_RoleValue_); ok {
-		return x.RoleValue
-	}
-	return ApprovalNode_ROLE_VALUE_UNSPECIFILED
-}
-
-type isApprovalNode_Payload interface {
-	isApprovalNode_Payload()
-}
-
-type ApprovalNode_RoleValue_ struct {
-	RoleValue ApprovalNode_RoleValue `protobuf:"varint,4,opt,name=role_value,json=roleValue,proto3,enum=bytebase.store.ApprovalNode_RoleValue,oneof"`
-}
-
-func (*ApprovalNode_RoleValue_) isApprovalNode_Payload() {}
 
 var File_store_approval_proto protoreflect.FileDescriptor
 
 var file_store_approval_proto_rawDesc = []byte{
 	0x0a, 0x14, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x22, 0x42, 0x0a, 0x0c, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76,
-	0x61, 0x6c, 0x46, 0x6c, 0x6f, 0x77, 0x12, 0x32, 0x0a, 0x05, 0x73, 0x74, 0x65, 0x70, 0x73, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53,
-	0x74, 0x65, 0x70, 0x52, 0x05, 0x73, 0x74, 0x65, 0x70, 0x73, 0x22, 0xa8, 0x01, 0x0a, 0x0c, 0x41,
-	0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53, 0x74, 0x65, 0x70, 0x12, 0x35, 0x0a, 0x04, 0x74,
-	0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x1a, 0x1d, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x61, 0x70,
+	0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x5f, 0x74, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xb2, 0x01, 0x0a, 0x0f, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76,
+	0x61, 0x6c, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x69, 0x70,
+	0x65, 0x6c, 0x69, 0x6e, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a,
+	0x70, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x49, 0x64, 0x12, 0x19, 0x0a, 0x08, 0x73, 0x74,
+	0x61, 0x67, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x73, 0x74,
+	0x61, 0x67, 0x65, 0x49, 0x64, 0x12, 0x1c, 0x0a, 0x07, 0x74, 0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x48, 0x00, 0x52, 0x06, 0x74, 0x61, 0x73, 0x6b, 0x49, 0x64,
+	0x88, 0x01, 0x01, 0x12, 0x39, 0x0a, 0x07, 0x68, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x18, 0x04,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x48, 0x69,
+	0x73, 0x74, 0x6f, 0x72, 0x79, 0x52, 0x07, 0x68, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x42, 0x0a,
+	0x0a, 0x08, 0x5f, 0x74, 0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64, 0x22, 0x8b, 0x01, 0x0a, 0x0f, 0x41,
+	0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x12, 0x19,
+	0x0a, 0x08, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x75, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x07, 0x6e, 0x6f, 0x64, 0x65, 0x55, 0x69, 0x64, 0x12, 0x3a, 0x0a, 0x06, 0x73, 0x74, 0x61,
+	0x74, 0x75, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65,
 	0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f,
-	0x76, 0x61, 0x6c, 0x53, 0x74, 0x65, 0x70, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79,
-	0x70, 0x65, 0x12, 0x32, 0x0a, 0x05, 0x6e, 0x6f, 0x64, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f,
-	0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x4e, 0x6f, 0x64, 0x65, 0x52,
-	0x05, 0x6e, 0x6f, 0x64, 0x65, 0x73, 0x22, 0x2d, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x14,
-	0x0a, 0x10, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
-	0x45, 0x44, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x41, 0x4e, 0x44, 0x10, 0x01, 0x12, 0x06, 0x0a,
-	0x02, 0x4f, 0x52, 0x10, 0x02, 0x22, 0xbc, 0x03, 0x0a, 0x0c, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76,
-	0x61, 0x6c, 0x4e, 0x6f, 0x64, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x03, 0x75, 0x69, 0x64, 0x12, 0x3b, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74,
-	0x75, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76,
-	0x61, 0x6c, 0x4e, 0x6f, 0x64, 0x65, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73,
-	0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x35, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x0e, 0x32, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73,
-	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x4e, 0x6f, 0x64,
-	0x65, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x47, 0x0a, 0x0a,
-	0x72, 0x6f, 0x6c, 0x65, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0e,
-	0x32, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
-	0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x4e, 0x6f, 0x64, 0x65, 0x2e, 0x52,
-	0x6f, 0x6c, 0x65, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x48, 0x00, 0x52, 0x09, 0x72, 0x6f, 0x6c, 0x65,
-	0x56, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x3b, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12,
-	0x16, 0x0a, 0x12, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43,
-	0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x50, 0x45, 0x4e, 0x44, 0x49,
-	0x4e, 0x47, 0x10, 0x01, 0x12, 0x0c, 0x0a, 0x08, 0x41, 0x50, 0x50, 0x52, 0x4f, 0x56, 0x45, 0x44,
-	0x10, 0x02, 0x22, 0x26, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x14, 0x0a, 0x10, 0x54, 0x59,
-	0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00,
-	0x12, 0x08, 0x0a, 0x04, 0x52, 0x4f, 0x4c, 0x45, 0x10, 0x01, 0x22, 0x6d, 0x0a, 0x09, 0x52, 0x6f,
-	0x6c, 0x65, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x1b, 0x0a, 0x17, 0x52, 0x4f, 0x4c, 0x45, 0x5f,
-	0x56, 0x41, 0x4c, 0x55, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x4c,
-	0x45, 0x44, 0x10, 0x00, 0x12, 0x13, 0x0a, 0x0f, 0x57, 0x4f, 0x52, 0x4b, 0x53, 0x50, 0x41, 0x43,
-	0x45, 0x5f, 0x4f, 0x57, 0x4e, 0x45, 0x52, 0x10, 0x01, 0x12, 0x07, 0x0a, 0x03, 0x44, 0x42, 0x41,
-	0x10, 0x02, 0x12, 0x11, 0x0a, 0x0d, 0x50, 0x52, 0x4f, 0x4a, 0x45, 0x43, 0x54, 0x5f, 0x4f, 0x57,
-	0x4e, 0x45, 0x52, 0x10, 0x03, 0x12, 0x12, 0x0a, 0x0e, 0x50, 0x52, 0x4f, 0x4a, 0x45, 0x43, 0x54,
-	0x5f, 0x4d, 0x45, 0x4d, 0x42, 0x45, 0x52, 0x10, 0x04, 0x42, 0x09, 0x0a, 0x07, 0x70, 0x61, 0x79,
-	0x6c, 0x6f, 0x61, 0x64, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65,
-	0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x76, 0x61, 0x6c, 0x4e, 0x6f, 0x64, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73,
+	0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x21, 0x0a, 0x0c, 0x70, 0x72, 0x69, 0x6e, 0x63, 0x69, 0x70,
+	0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x70, 0x72, 0x69,
+	0x6e, 0x63, 0x69, 0x70, 0x61, 0x6c, 0x49, 0x64, 0x2a, 0x55, 0x0a, 0x12, 0x41, 0x70, 0x70, 0x72,
+	0x6f, 0x76, 0x61, 0x6c, 0x4e, 0x6f, 0x64, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x24,
+	0x0a, 0x20, 0x41, 0x50, 0x50, 0x52, 0x4f, 0x56, 0x41, 0x4c, 0x5f, 0x4e, 0x4f, 0x44, 0x45, 0x5f,
+	0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
+	0x45, 0x44, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10,
+	0x01, 0x12, 0x0c, 0x0a, 0x08, 0x41, 0x50, 0x50, 0x52, 0x4f, 0x56, 0x45, 0x44, 0x10, 0x02, 0x42,
+	0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -492,29 +255,21 @@ func file_store_approval_proto_rawDescGZIP() []byte {
 	return file_store_approval_proto_rawDescData
 }
 
-var file_store_approval_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_approval_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_store_approval_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_approval_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_approval_proto_goTypes = []interface{}{
-	(ApprovalStep_Type)(0),      // 0: bytebase.store.ApprovalStep.Type
-	(ApprovalNode_Status)(0),    // 1: bytebase.store.ApprovalNode.Status
-	(ApprovalNode_Type)(0),      // 2: bytebase.store.ApprovalNode.Type
-	(ApprovalNode_RoleValue)(0), // 3: bytebase.store.ApprovalNode.RoleValue
-	(*ApprovalFlow)(nil),        // 4: bytebase.store.ApprovalFlow
-	(*ApprovalStep)(nil),        // 5: bytebase.store.ApprovalStep
-	(*ApprovalNode)(nil),        // 6: bytebase.store.ApprovalNode
+	(ApprovalNodeStatus)(0), // 0: bytebase.store.ApprovalNodeStatus
+	(*ApprovalPayload)(nil), // 1: bytebase.store.ApprovalPayload
+	(*ApprovalHistory)(nil), // 2: bytebase.store.ApprovalHistory
 }
 var file_store_approval_proto_depIdxs = []int32{
-	5, // 0: bytebase.store.ApprovalFlow.steps:type_name -> bytebase.store.ApprovalStep
-	0, // 1: bytebase.store.ApprovalStep.type:type_name -> bytebase.store.ApprovalStep.Type
-	6, // 2: bytebase.store.ApprovalStep.nodes:type_name -> bytebase.store.ApprovalNode
-	1, // 3: bytebase.store.ApprovalNode.status:type_name -> bytebase.store.ApprovalNode.Status
-	2, // 4: bytebase.store.ApprovalNode.type:type_name -> bytebase.store.ApprovalNode.Type
-	3, // 5: bytebase.store.ApprovalNode.role_value:type_name -> bytebase.store.ApprovalNode.RoleValue
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2, // 0: bytebase.store.ApprovalPayload.history:type_name -> bytebase.store.ApprovalHistory
+	0, // 1: bytebase.store.ApprovalHistory.status:type_name -> bytebase.store.ApprovalNodeStatus
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_store_approval_proto_init() }
@@ -522,9 +277,10 @@ func file_store_approval_proto_init() {
 	if File_store_approval_proto != nil {
 		return
 	}
+	file_store_approval_template_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_store_approval_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ApprovalFlow); i {
+			switch v := v.(*ApprovalPayload); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -536,19 +292,7 @@ func file_store_approval_proto_init() {
 			}
 		}
 		file_store_approval_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ApprovalStep); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_approval_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ApprovalNode); i {
+			switch v := v.(*ApprovalHistory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -560,16 +304,14 @@ func file_store_approval_proto_init() {
 			}
 		}
 	}
-	file_store_approval_proto_msgTypes[2].OneofWrappers = []interface{}{
-		(*ApprovalNode_RoleValue_)(nil),
-	}
+	file_store_approval_proto_msgTypes[0].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_approval_proto_rawDesc,
-			NumEnums:      4,
-			NumMessages:   3,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
