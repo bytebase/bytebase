@@ -39,9 +39,6 @@ message ListRisksRequest {
   // When paginating, all other parameters provided to `LiskRisks` must match
   // the call that provided the page token.
   string page_token = 2;
-
-  // Show deleted risks if specified.
-  bool show_deleted = 3;
 }
 
 message ListRisksResponse {
