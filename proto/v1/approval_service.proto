@@ -68,9 +68,11 @@ message PatchApprovalNodeStatusRequest {
 }
 
 message Approval {
-  // Format: stages/{stage}/tasks/{task}/approvals/{approval}
+  // Format: pipelines/{pipeline}/approvals/{approval}
   string name = 1;
   // system-generated unique identifier
   string uid = 2;
-  ApprovalFlow flow = 3;
+  string stage_id = 3;
+  optional string task_id = 4;
+  ApprovalFlow flow = 5;
 }
