@@ -144,7 +144,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
         },
       })
     ).docs;
-    console.log("2");
     const flattenMessageMessageList = (
       await messages.find({
         selector: {
