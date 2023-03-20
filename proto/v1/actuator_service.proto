@@ -12,15 +12,12 @@ option go_package = "generated-go/v1";
 
 service ActuatorService {
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
-    option (google.api.http) = {
-      get: "/v1/actuator/info"
-    };
+    option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
   }
 }
 
-message GetActuatorInfoRequest {
-}
+message GetActuatorInfoRequest {}
 
 // ServerInfo is the API message for server info.
 // Actuator concept is similar to the Spring Boot Actuator.

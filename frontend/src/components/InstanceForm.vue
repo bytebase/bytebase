@@ -138,7 +138,7 @@
               name="port"
               class="textfield mt-1 w-full"
               :placeholder="defaultPort"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !allowEditPort"
               :value="adminDataSource.port"
               @wheel="handleInstancePortWheelScroll"
               @input="handleInstancePortInput"
@@ -699,6 +699,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "6379";
   } else if (engine === "ORACLE") {
     return "1521";
+  } else if (engine === "MSSQL") {
+    return "1433";
   }
   return "3306";
 };
@@ -739,6 +741,9 @@ const engineList = computed(() => {
     "REDIS",
     "ORACLE",
   ];
+  if (isDev()) {
+    engines.push("MSSQL");
+  }
   return engines;
 });
 
@@ -752,6 +757,7 @@ const EngineIconPath = {
   SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
   REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
   ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
+  MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
@@ -786,6 +792,14 @@ const allowEdit = computed(() => {
       "bb.permission.workspace.manage-instance",
       currentUser.value.role
     )
+  );
+});
+
+const allowEditPort = computed(() => {
+  // MongoDB doesn't support specify port if using srv record.
+  return !(
+    basicInformation.value.engine === "MONGODB" &&
+    currentDataSource.value.options.srv
   );
 });
 
@@ -828,6 +842,10 @@ const defaultPort = computed(() => {
   } else if (basicInformation.value.engine == "TIDB") {
     return "4000";
   } else if (basicInformation.value.engine == "MONGODB") {
+    // MongoDB doesn't support specify port if using srv record.
+    if (currentDataSource.value.options.srv) {
+      return "";
+    }
     return "27017";
   }
   return "3306";
@@ -985,6 +1003,8 @@ const handleMongodbConnectionStringSchemaChange = (event: Event) => {
       currentDataSource.value.options.srv = false;
       break;
     case mongodbConnectionStringSchemaList[1]:
+      // MongoDB doesn't support specify port if using srv record.
+      currentDataSource.value.port = "";
       currentDataSource.value.options.srv = true;
       break;
     default:

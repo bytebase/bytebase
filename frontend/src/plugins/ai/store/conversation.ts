@@ -109,14 +109,19 @@ const useLocalCache = () => {
   };
 };
 
+const FK_MESSAGE_CONVERSATION_ID = "fk_message_conversation_id";
+
 export const useConversationStore = defineStore("ai-conversation", () => {
   const conversations = new PouchDB<ConversationEntity>(
     "bb.plugin.ai.conversations"
   );
   const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
-  messages.createIndex({
-    index: { name: "idx_conversation_id", fields: ["conversation_id"] },
-  });
+  const ready: Promise<any>[] = [];
+  ready.push(
+    messages.createIndex({
+      index: { name: FK_MESSAGE_CONVERSATION_ID, fields: ["conversation_id"] },
+    })
+  );
 
   const {
     conversationById,
@@ -244,9 +249,13 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     await Promise.all(requests);
   };
 
-  const reset = () => {
-    // console.debug("reset conversation storage");
-    return Promise.all([conversations.destroy(), messages.destroy()]);
+  const reset = async () => {
+    try {
+      await Promise.all(ready);
+      await Promise.all([conversations.destroy(), messages.destroy()]);
+    } catch (ex) {
+      // nothing todo
+    }
   };
 
   return {

@@ -7,23 +7,18 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service InstanceRoleService {
   rpc GetRole(GetRoleRequest) returns (InstanceRole) {
-    option (google.api.http) = {
-      get: "/v1/{name=environments/*/instances/*/roles/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/roles/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=environments/*/instances/*}/roles"
-    };
+    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*}/roles"};
     option (google.api.method_signature) = "parent";
   }
 
@@ -44,9 +39,7 @@ service InstanceRoleService {
   }
 
   rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=environments/*/instances/*/roles/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*/roles/*}"};
     option (google.api.method_signature) = "name";
   }
 
