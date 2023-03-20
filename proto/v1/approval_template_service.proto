@@ -62,9 +62,6 @@ message ListApprovalTemplatesRequest {
   // When paginating, all other parameters provided to `ListApprovalTemplates` must match
   // the call that provided the page token.
   string page_token = 2;
-
-  // Show deleted projects if specified.
-  bool show_deleted = 3;
 }
 
 message ListApprovalTemplatesResponse {
