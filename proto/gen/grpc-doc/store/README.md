@@ -26,6 +26,14 @@
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
+- [store/risk.proto](#store_risk-proto)
+    - [RiskAction](#bytebase-store-RiskAction)
+    - [RiskAction.Action](#bytebase-store-RiskAction-Action)
+    - [RiskRule](#bytebase-store-RiskRule)
+    - [RiskRule.Rule](#bytebase-store-RiskRule-Rule)
+  
+    - [RiskAction.Action.Type](#bytebase-store-RiskAction-Action-Type)
+  
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -381,6 +389,97 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_risk-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/risk.proto
+
+
+
+<a name="bytebase-store-RiskAction"></a>
+
+### RiskAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| actions | [RiskAction.Action](#bytebase-store-RiskAction-Action) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-RiskAction-Action"></a>
+
+### RiskAction.Action
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [RiskAction.Action.Type](#bytebase-store-RiskAction-Action-Type) |  |  |
+| approval_template | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
+
+
+
+
+
+
+<a name="bytebase-store-RiskRule"></a>
+
+### RiskRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [RiskRule.Rule](#bytebase-store-RiskRule-Rule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-RiskRule-Rule"></a>
+
+### RiskRule.Rule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-RiskAction-Action-Type"></a>
+
+### RiskAction.Action.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| CHOOSE_APPROVAL_TEMPLATE | 1 |  |
 
 
  
