@@ -74,7 +74,7 @@ message Approval {
   string stage_id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   optional string task_id = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-  
+
   ApprovalFlow flow = 5;
   repeated ApprovalHistory history = 6;
 }
