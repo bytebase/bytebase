@@ -7,14 +7,6 @@ import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
 
-export interface GetRiskRequest {
-  /**
-   * The name of the risk to retrieve.
-   * Format: risks/{risk}
-   */
-  name: string;
-}
-
 export interface ListRisksRequest {
   /**
    * The maximum number of risks to return. The service may return fewer than
@@ -160,61 +152,10 @@ export function riskAction_TypeToJSON(object: RiskAction_Type): string {
 }
 
 export interface RiskRule {
-  /** Format: risks/{risk}/riskRules/{riskRule} */
-  name: string;
-  uid: string;
   title: string;
-  description: string;
   expression?: ParsedExpr;
   active: boolean;
 }
-
-function createBaseGetRiskRequest(): GetRiskRequest {
-  return { name: "" };
-}
-
-export const GetRiskRequest = {
-  encode(message: GetRiskRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetRiskRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetRiskRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetRiskRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetRiskRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<GetRiskRequest>): GetRiskRequest {
-    const message = createBaseGetRiskRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
 
 function createBaseListRisksRequest(): ListRisksRequest {
   return { pageSize: 0, pageToken: "", showDeleted: false };
@@ -677,28 +618,19 @@ export const RiskAction = {
 };
 
 function createBaseRiskRule(): RiskRule {
-  return { name: "", uid: "", title: "", description: "", expression: undefined, active: false };
+  return { title: "", expression: undefined, active: false };
 }
 
 export const RiskRule = {
   encode(message: RiskRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
-    }
     if (message.title !== "") {
-      writer.uint32(26).string(message.title);
-    }
-    if (message.description !== "") {
-      writer.uint32(34).string(message.description);
+      writer.uint32(10).string(message.title);
     }
     if (message.expression !== undefined) {
-      ParsedExpr.encode(message.expression, writer.uint32(42).fork()).ldelim();
+      ParsedExpr.encode(message.expression, writer.uint32(18).fork()).ldelim();
     }
     if (message.active === true) {
-      writer.uint32(48).bool(message.active);
+      writer.uint32(24).bool(message.active);
     }
     return writer;
   },
@@ -711,21 +643,12 @@ export const RiskRule = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.name = reader.string();
-          break;
-        case 2:
-          message.uid = reader.string();
-          break;
-        case 3:
           message.title = reader.string();
           break;
-        case 4:
-          message.description = reader.string();
-          break;
-        case 5:
+        case 2:
           message.expression = ParsedExpr.decode(reader, reader.uint32());
           break;
-        case 6:
+        case 3:
           message.active = reader.bool();
           break;
         default:
@@ -738,10 +661,7 @@ export const RiskRule = {
 
   fromJSON(object: any): RiskRule {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      uid: isSet(object.uid) ? String(object.uid) : "",
       title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
       expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
       active: isSet(object.active) ? Boolean(object.active) : false,
     };
@@ -749,10 +669,7 @@ export const RiskRule = {
 
   toJSON(message: RiskRule): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
     message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
     message.expression !== undefined &&
       (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     message.active !== undefined && (obj.active = message.active);
@@ -761,10 +678,7 @@ export const RiskRule = {
 
   fromPartial(object: DeepPartial<RiskRule>): RiskRule {
     const message = createBaseRiskRule();
-    message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.title = object.title ?? "";
-    message.description = object.description ?? "";
     message.expression = (object.expression !== undefined && object.expression !== null)
       ? ParsedExpr.fromPartial(object.expression)
       : undefined;
@@ -778,14 +692,6 @@ export const RiskServiceDefinition = {
   name: "RiskService",
   fullName: "bytebase.v1.RiskService",
   methods: {
-    getRisk: {
-      name: "GetRisk",
-      requestType: GetRiskRequest,
-      requestStream: false,
-      responseType: Risk,
-      responseStream: false,
-      options: {},
-    },
     listRisks: {
       name: "ListRisks",
       requestType: ListRisksRequest,
@@ -814,7 +720,6 @@ export const RiskServiceDefinition = {
 } as const;
 
 export interface RiskServiceImplementation<CallContextExt = {}> {
-  getRisk(request: GetRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
   listRisks(request: ListRisksRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRisksResponse>>;
   updateRisk(request: UpdateRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
   batchUpdateRisks(
@@ -824,7 +729,6 @@ export interface RiskServiceImplementation<CallContextExt = {}> {
 }
 
 export interface RiskServiceClient<CallOptionsExt = {}> {
-  getRisk(request: DeepPartial<GetRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
   listRisks(request: DeepPartial<ListRisksRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRisksResponse>;
   updateRisk(request: DeepPartial<UpdateRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
   batchUpdateRisks(

@@ -271,7 +271,6 @@
 - [v1/risk_service.proto](#v1_risk_service-proto)
     - [BatchUpdateRisksRequest](#bytebase-v1-BatchUpdateRisksRequest)
     - [BatchUpdateRisksResponse](#bytebase-v1-BatchUpdateRisksResponse)
-    - [GetRiskRequest](#bytebase-v1-GetRiskRequest)
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
     - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
     - [Risk](#bytebase-v1-Risk)
@@ -4138,21 +4137,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-GetRiskRequest"></a>
-
-### GetRiskRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the risk to retrieve. Format: risks/{risk} |
-
-
-
-
-
-
 <a name="bytebase-v1-ListRisksRequest"></a>
 
 ### ListRisksRequest
@@ -4233,10 +4217,7 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: risks/{risk}/riskRules/{riskRule} |
-| uid | [string](#string) |  |  |
 | title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | active | [bool](#bool) |  |  |
 
@@ -4301,7 +4282,6 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
 | UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | BatchUpdateRisks | [BatchUpdateRisksRequest](#bytebase-v1-BatchUpdateRisksRequest) | [BatchUpdateRisksResponse](#bytebase-v1-BatchUpdateRisksResponse) |  |

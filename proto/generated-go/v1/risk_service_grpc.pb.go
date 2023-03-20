@@ -19,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RiskService_GetRisk_FullMethodName          = "/bytebase.v1.RiskService/GetRisk"
 	RiskService_ListRisks_FullMethodName        = "/bytebase.v1.RiskService/ListRisks"
 	RiskService_UpdateRisk_FullMethodName       = "/bytebase.v1.RiskService/UpdateRisk"
 	RiskService_BatchUpdateRisks_FullMethodName = "/bytebase.v1.RiskService/BatchUpdateRisks"
@@ -29,7 +28,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RiskServiceClient interface {
-	GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error)
 	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	BatchUpdateRisks(ctx context.Context, in *BatchUpdateRisksRequest, opts ...grpc.CallOption) (*BatchUpdateRisksResponse, error)
@@ -41,15 +39,6 @@ type riskServiceClient struct {
 
 func NewRiskServiceClient(cc grpc.ClientConnInterface) RiskServiceClient {
 	return &riskServiceClient{cc}
-}
-
-func (c *riskServiceClient) GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error) {
-	out := new(Risk)
-	err := c.cc.Invoke(ctx, RiskService_GetRisk_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *riskServiceClient) ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error) {
@@ -83,7 +72,6 @@ func (c *riskServiceClient) BatchUpdateRisks(ctx context.Context, in *BatchUpdat
 // All implementations must embed UnimplementedRiskServiceServer
 // for forward compatibility
 type RiskServiceServer interface {
-	GetRisk(context.Context, *GetRiskRequest) (*Risk, error)
 	ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error)
 	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
 	BatchUpdateRisks(context.Context, *BatchUpdateRisksRequest) (*BatchUpdateRisksResponse, error)
@@ -94,9 +82,6 @@ type RiskServiceServer interface {
 type UnimplementedRiskServiceServer struct {
 }
 
-func (UnimplementedRiskServiceServer) GetRisk(context.Context, *GetRiskRequest) (*Risk, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRisk not implemented")
-}
 func (UnimplementedRiskServiceServer) ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRisks not implemented")
 }
@@ -117,24 +102,6 @@ type UnsafeRiskServiceServer interface {
 
 func RegisterRiskServiceServer(s grpc.ServiceRegistrar, srv RiskServiceServer) {
 	s.RegisterService(&RiskService_ServiceDesc, srv)
-}
-
-func _RiskService_GetRisk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRiskRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RiskServiceServer).GetRisk(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RiskService_GetRisk_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RiskServiceServer).GetRisk(ctx, req.(*GetRiskRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _RiskService_ListRisks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -198,10 +165,6 @@ var RiskService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.RiskService",
 	HandlerType: (*RiskServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetRisk",
-			Handler:    _RiskService_GetRisk_Handler,
-		},
 		{
 			MethodName: "ListRisks",
 			Handler:    _RiskService_ListRisks_Handler,
