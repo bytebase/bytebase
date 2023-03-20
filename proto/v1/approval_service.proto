@@ -17,9 +17,9 @@ service ApprovalService {
     option (google.api.method_signature) = "parent";
   }
 
-  rpc PatchApprovalNodeStatus(PatchApprovalNodeStatusRequest) returns (Approval) {
+  rpc ApproveApproval(ApproveApprovalRequest) returns (Approval) {
     option (google.api.http) = {
-      patch: "/v1/{parent=pipelines/*/approvals/*}/nodes:patchApprovalNodeStatus"
+      post: "/v1/{name=pipelines/*/approvals/*}:approve"
       body: "*"
     };
   }
@@ -56,9 +56,9 @@ message ListApprovalsResponse {
   string next_page_token = 2;
 }
 
-message PatchApprovalNodeStatusRequest {
+message ApproveApprovalRequest {
   // Format: pipelines/{pipeline}/approvals/{approval}
-  string parent = 1;
+  string name = 1;
 
   // The `uid` of the approval node.
   string node = 2;
