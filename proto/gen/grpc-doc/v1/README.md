@@ -269,8 +269,6 @@
     - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/risk_service.proto](#v1_risk_service-proto)
-    - [BatchUpdateRisksRequest](#bytebase-v1-BatchUpdateRisksRequest)
-    - [BatchUpdateRisksResponse](#bytebase-v1-BatchUpdateRisksResponse)
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
     - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
     - [Risk](#bytebase-v1-Risk)
@@ -4107,36 +4105,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-BatchUpdateRisksRequest"></a>
-
-### BatchUpdateRisksRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| requests | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 risks can be modified in a batch. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateRisksResponse"></a>
-
-### BatchUpdateRisksResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| risks | [Risk](#bytebase-v1-Risk) | repeated | Risks updated. |
-
-
-
-
-
-
 <a name="bytebase-v1-ListRisksRequest"></a>
 
 ### ListRisksRequest
@@ -4284,7 +4252,6 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | ----------- | ------------ | ------------- | ------------|
 | ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
 | UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
-| BatchUpdateRisks | [BatchUpdateRisksRequest](#bytebase-v1-BatchUpdateRisksRequest) | [BatchUpdateRisksResponse](#bytebase-v1-BatchUpdateRisksResponse) |  |
 
  
 

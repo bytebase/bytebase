@@ -48,19 +48,6 @@ export interface UpdateRiskRequest {
   updateMask?: string[];
 }
 
-export interface BatchUpdateRisksRequest {
-  /**
-   * The request message specifying the resources to update.
-   * A maximum of 1000 risks can be modified in a batch.
-   */
-  requests: UpdateRiskRequest[];
-}
-
-export interface BatchUpdateRisksResponse {
-  /** Risks updated. */
-  risks: Risk[];
-}
-
 export interface Risk {
   /** Format: risks/{risk} */
   name: string;
@@ -344,110 +331,6 @@ export const UpdateRiskRequest = {
   },
 };
 
-function createBaseBatchUpdateRisksRequest(): BatchUpdateRisksRequest {
-  return { requests: [] };
-}
-
-export const BatchUpdateRisksRequest = {
-  encode(message: BatchUpdateRisksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.requests) {
-      UpdateRiskRequest.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateRisksRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateRisksRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.requests.push(UpdateRiskRequest.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BatchUpdateRisksRequest {
-    return {
-      requests: Array.isArray(object?.requests) ? object.requests.map((e: any) => UpdateRiskRequest.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: BatchUpdateRisksRequest): unknown {
-    const obj: any = {};
-    if (message.requests) {
-      obj.requests = message.requests.map((e) => e ? UpdateRiskRequest.toJSON(e) : undefined);
-    } else {
-      obj.requests = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<BatchUpdateRisksRequest>): BatchUpdateRisksRequest {
-    const message = createBaseBatchUpdateRisksRequest();
-    message.requests = object.requests?.map((e) => UpdateRiskRequest.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseBatchUpdateRisksResponse(): BatchUpdateRisksResponse {
-  return { risks: [] };
-}
-
-export const BatchUpdateRisksResponse = {
-  encode(message: BatchUpdateRisksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.risks) {
-      Risk.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateRisksResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateRisksResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.risks.push(Risk.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BatchUpdateRisksResponse {
-    return { risks: Array.isArray(object?.risks) ? object.risks.map((e: any) => Risk.fromJSON(e)) : [] };
-  },
-
-  toJSON(message: BatchUpdateRisksResponse): unknown {
-    const obj: any = {};
-    if (message.risks) {
-      obj.risks = message.risks.map((e) => e ? Risk.toJSON(e) : undefined);
-    } else {
-      obj.risks = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<BatchUpdateRisksResponse>): BatchUpdateRisksResponse {
-    const message = createBaseBatchUpdateRisksResponse();
-    message.risks = object.risks?.map((e) => Risk.fromPartial(e)) || [];
-    return message;
-  },
-};
-
 function createBaseRisk(): Risk {
   return { name: "", uid: "", namespace: 0, title: "", level: 0, actions: [], rules: [] };
 }
@@ -708,33 +591,17 @@ export const RiskServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    batchUpdateRisks: {
-      name: "BatchUpdateRisks",
-      requestType: BatchUpdateRisksRequest,
-      requestStream: false,
-      responseType: BatchUpdateRisksResponse,
-      responseStream: false,
-      options: {},
-    },
   },
 } as const;
 
 export interface RiskServiceImplementation<CallContextExt = {}> {
   listRisks(request: ListRisksRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRisksResponse>>;
   updateRisk(request: UpdateRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
-  batchUpdateRisks(
-    request: BatchUpdateRisksRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateRisksResponse>>;
 }
 
 export interface RiskServiceClient<CallOptionsExt = {}> {
   listRisks(request: DeepPartial<ListRisksRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRisksResponse>;
   updateRisk(request: DeepPartial<UpdateRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
-  batchUpdateRisks(
-    request: DeepPartial<BatchUpdateRisksRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateRisksResponse>;
 }
 
 declare var self: any | undefined;

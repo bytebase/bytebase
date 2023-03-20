@@ -19,9 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RiskService_ListRisks_FullMethodName        = "/bytebase.v1.RiskService/ListRisks"
-	RiskService_UpdateRisk_FullMethodName       = "/bytebase.v1.RiskService/UpdateRisk"
-	RiskService_BatchUpdateRisks_FullMethodName = "/bytebase.v1.RiskService/BatchUpdateRisks"
+	RiskService_ListRisks_FullMethodName  = "/bytebase.v1.RiskService/ListRisks"
+	RiskService_UpdateRisk_FullMethodName = "/bytebase.v1.RiskService/UpdateRisk"
 )
 
 // RiskServiceClient is the client API for RiskService service.
@@ -30,7 +29,6 @@ const (
 type RiskServiceClient interface {
 	ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error)
 	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
-	BatchUpdateRisks(ctx context.Context, in *BatchUpdateRisksRequest, opts ...grpc.CallOption) (*BatchUpdateRisksResponse, error)
 }
 
 type riskServiceClient struct {
@@ -59,22 +57,12 @@ func (c *riskServiceClient) UpdateRisk(ctx context.Context, in *UpdateRiskReques
 	return out, nil
 }
 
-func (c *riskServiceClient) BatchUpdateRisks(ctx context.Context, in *BatchUpdateRisksRequest, opts ...grpc.CallOption) (*BatchUpdateRisksResponse, error) {
-	out := new(BatchUpdateRisksResponse)
-	err := c.cc.Invoke(ctx, RiskService_BatchUpdateRisks_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // RiskServiceServer is the server API for RiskService service.
 // All implementations must embed UnimplementedRiskServiceServer
 // for forward compatibility
 type RiskServiceServer interface {
 	ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error)
 	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
-	BatchUpdateRisks(context.Context, *BatchUpdateRisksRequest) (*BatchUpdateRisksResponse, error)
 	mustEmbedUnimplementedRiskServiceServer()
 }
 
@@ -87,9 +75,6 @@ func (UnimplementedRiskServiceServer) ListRisks(context.Context, *ListRisksReque
 }
 func (UnimplementedRiskServiceServer) UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRisk not implemented")
-}
-func (UnimplementedRiskServiceServer) BatchUpdateRisks(context.Context, *BatchUpdateRisksRequest) (*BatchUpdateRisksResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateRisks not implemented")
 }
 func (UnimplementedRiskServiceServer) mustEmbedUnimplementedRiskServiceServer() {}
 
@@ -140,24 +125,6 @@ func _RiskService_UpdateRisk_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RiskService_BatchUpdateRisks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchUpdateRisksRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RiskServiceServer).BatchUpdateRisks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RiskService_BatchUpdateRisks_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RiskServiceServer).BatchUpdateRisks(ctx, req.(*BatchUpdateRisksRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // RiskService_ServiceDesc is the grpc.ServiceDesc for RiskService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -172,10 +139,6 @@ var RiskService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRisk",
 			Handler:    _RiskService_UpdateRisk_Handler,
-		},
-		{
-			MethodName: "BatchUpdateRisks",
-			Handler:    _RiskService_BatchUpdateRisks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
