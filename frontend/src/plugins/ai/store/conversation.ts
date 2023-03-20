@@ -169,7 +169,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
       conversation.messageList.sort((a, b) => a.created_ts - b.created_ts);
       return conversation;
     });
-    console.log("3");
     await fixAbnormalMessages(conversationList.flatMap((c) => c.messageList));
     return conversationList;
   };
