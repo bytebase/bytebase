@@ -44,6 +44,15 @@ export interface ListApprovalsResponse {
   nextPageToken: string;
 }
 
+export interface PatchApprovalNodeStatusRequest {
+  /** Format: stages/{stage}/tasks/{task}/approvals/{approval} */
+  parent: string;
+  /** The `uid` of the approval node. */
+  node: string;
+  /** The new status of the approval node. */
+  status: ApprovalNode_Status;
+}
+
 export interface Approval {
   /** Format: stages/{stage}/tasks/{task}/approvals/{approval} */
   name: string;
@@ -436,6 +445,73 @@ export const ListApprovalsResponse = {
   },
 };
 
+function createBasePatchApprovalNodeStatusRequest(): PatchApprovalNodeStatusRequest {
+  return { parent: "", node: "", status: 0 };
+}
+
+export const PatchApprovalNodeStatusRequest = {
+  encode(message: PatchApprovalNodeStatusRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.node !== "") {
+      writer.uint32(18).string(message.node);
+    }
+    if (message.status !== 0) {
+      writer.uint32(24).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PatchApprovalNodeStatusRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePatchApprovalNodeStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
+          message.node = reader.string();
+          break;
+        case 3:
+          message.status = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PatchApprovalNodeStatusRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      node: isSet(object.node) ? String(object.node) : "",
+      status: isSet(object.status) ? approvalNode_StatusFromJSON(object.status) : 0,
+    };
+  },
+
+  toJSON(message: PatchApprovalNodeStatusRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.node !== undefined && (obj.node = message.node);
+    message.status !== undefined && (obj.status = approvalNode_StatusToJSON(message.status));
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<PatchApprovalNodeStatusRequest>): PatchApprovalNodeStatusRequest {
+    const message = createBasePatchApprovalNodeStatusRequest();
+    message.parent = object.parent ?? "";
+    message.node = object.node ?? "";
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
 function createBaseApproval(): Approval {
   return { name: "", uid: "", flow: undefined };
 }
@@ -716,6 +792,14 @@ export const ApprovalServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    patchApprovalNodeStatus: {
+      name: "PatchApprovalNodeStatus",
+      requestType: PatchApprovalNodeStatusRequest,
+      requestStream: false,
+      responseType: Approval,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -725,6 +809,10 @@ export interface ApprovalServiceImplementation<CallContextExt = {}> {
     request: ListApprovalsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListApprovalsResponse>>;
+  patchApprovalNodeStatus(
+    request: PatchApprovalNodeStatusRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Approval>>;
 }
 
 export interface ApprovalServiceClient<CallOptionsExt = {}> {
@@ -733,6 +821,10 @@ export interface ApprovalServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListApprovalsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListApprovalsResponse>;
+  patchApprovalNodeStatus(
+    request: DeepPartial<PatchApprovalNodeStatusRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Approval>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

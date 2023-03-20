@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ApprovalService_GetApproval_FullMethodName   = "/bytebase.v1.ApprovalService/GetApproval"
-	ApprovalService_ListApprovals_FullMethodName = "/bytebase.v1.ApprovalService/ListApprovals"
+	ApprovalService_GetApproval_FullMethodName             = "/bytebase.v1.ApprovalService/GetApproval"
+	ApprovalService_ListApprovals_FullMethodName           = "/bytebase.v1.ApprovalService/ListApprovals"
+	ApprovalService_PatchApprovalNodeStatus_FullMethodName = "/bytebase.v1.ApprovalService/PatchApprovalNodeStatus"
 )
 
 // ApprovalServiceClient is the client API for ApprovalService service.
@@ -29,6 +30,7 @@ const (
 type ApprovalServiceClient interface {
 	GetApproval(ctx context.Context, in *GetApprovalRequest, opts ...grpc.CallOption) (*Approval, error)
 	ListApprovals(ctx context.Context, in *ListApprovalsRequest, opts ...grpc.CallOption) (*ListApprovalsResponse, error)
+	PatchApprovalNodeStatus(ctx context.Context, in *PatchApprovalNodeStatusRequest, opts ...grpc.CallOption) (*Approval, error)
 }
 
 type approvalServiceClient struct {
@@ -57,12 +59,22 @@ func (c *approvalServiceClient) ListApprovals(ctx context.Context, in *ListAppro
 	return out, nil
 }
 
+func (c *approvalServiceClient) PatchApprovalNodeStatus(ctx context.Context, in *PatchApprovalNodeStatusRequest, opts ...grpc.CallOption) (*Approval, error) {
+	out := new(Approval)
+	err := c.cc.Invoke(ctx, ApprovalService_PatchApprovalNodeStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApprovalServiceServer is the server API for ApprovalService service.
 // All implementations must embed UnimplementedApprovalServiceServer
 // for forward compatibility
 type ApprovalServiceServer interface {
 	GetApproval(context.Context, *GetApprovalRequest) (*Approval, error)
 	ListApprovals(context.Context, *ListApprovalsRequest) (*ListApprovalsResponse, error)
+	PatchApprovalNodeStatus(context.Context, *PatchApprovalNodeStatusRequest) (*Approval, error)
 	mustEmbedUnimplementedApprovalServiceServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedApprovalServiceServer) GetApproval(context.Context, *GetAppro
 }
 func (UnimplementedApprovalServiceServer) ListApprovals(context.Context, *ListApprovalsRequest) (*ListApprovalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListApprovals not implemented")
+}
+func (UnimplementedApprovalServiceServer) PatchApprovalNodeStatus(context.Context, *PatchApprovalNodeStatusRequest) (*Approval, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchApprovalNodeStatus not implemented")
 }
 func (UnimplementedApprovalServiceServer) mustEmbedUnimplementedApprovalServiceServer() {}
 
@@ -125,6 +140,24 @@ func _ApprovalService_ListApprovals_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApprovalService_PatchApprovalNodeStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchApprovalNodeStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApprovalServiceServer).PatchApprovalNodeStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ApprovalService_PatchApprovalNodeStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApprovalServiceServer).PatchApprovalNodeStatus(ctx, req.(*PatchApprovalNodeStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ApprovalService_ServiceDesc is the grpc.ServiceDesc for ApprovalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var ApprovalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListApprovals",
 			Handler:    _ApprovalService_ListApprovals_Handler,
+		},
+		{
+			MethodName: "PatchApprovalNodeStatus",
+			Handler:    _ApprovalService_PatchApprovalNodeStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

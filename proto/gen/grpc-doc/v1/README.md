@@ -37,6 +37,7 @@
     - [GetApprovalRequest](#bytebase-v1-GetApprovalRequest)
     - [ListApprovalsRequest](#bytebase-v1-ListApprovalsRequest)
     - [ListApprovalsResponse](#bytebase-v1-ListApprovalsResponse)
+    - [PatchApprovalNodeStatusRequest](#bytebase-v1-PatchApprovalNodeStatusRequest)
   
     - [ApprovalNode.RoleValue](#bytebase-v1-ApprovalNode-RoleValue)
     - [ApprovalNode.Status](#bytebase-v1-ApprovalNode-Status)
@@ -550,7 +551,7 @@ InstanceConnectionDetail is the detail for instance connection anomaly.
 | ----- | ---- | ----- | ----------- |
 | filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;environments/{environemnt}/instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34; | &#34;MIGRATION_SCHEMA&#34;.&#39; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchAnomalies` must match the call that provided the page token. |
 
@@ -766,6 +767,23 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
+
+<a name="bytebase-v1-PatchApprovalNodeStatusRequest"></a>
+
+### PatchApprovalNodeStatusRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: stages/{stage}/tasks/{task}/approvals/{approval} |
+| node | [string](#string) |  | The `uid` of the approval node. |
+| status | [ApprovalNode.Status](#bytebase-v1-ApprovalNode-Status) |  | The new status of the approval node. |
+
+
+
+
+
  
 
 
@@ -845,6 +863,7 @@ OR means approving any node will proceed.
 | ----------- | ------------ | ------------- | ------------|
 | GetApproval | [GetApprovalRequest](#bytebase-v1-GetApprovalRequest) | [Approval](#bytebase-v1-Approval) |  |
 | ListApprovals | [ListApprovalsRequest](#bytebase-v1-ListApprovalsRequest) | [ListApprovalsResponse](#bytebase-v1-ListApprovalsResponse) |  |
+| PatchApprovalNodeStatus | [PatchApprovalNodeStatusRequest](#bytebase-v1-PatchApprovalNodeStatusRequest) | [Approval](#bytebase-v1-Approval) |  |
 
  
 
@@ -1349,7 +1368,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the bookmark. Format: users/{user}, user is a server-generated unique ID. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of bookmarks to return. The service may return fewer than this value. If unspecified, at most 50 bookmarks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBookmarks` must match the call that provided the page token. |
 
@@ -1713,7 +1732,7 @@ ListBackupRequest is the request message for ListBackup.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource where this backup will be created. Format: environments/{environment}/instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of backups to return. The service may return fewer than this value. If unspecified, at most 50 backups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBackup` must match the call that provided the page token. |
 
@@ -2448,7 +2467,7 @@ FieldMapping saves the field names from user info API of identity provider.
 As we save all raw json string of user info response data into `principal.idp_user_info`,
 we can extract the relevant data based with `FieldMapping`.
 
-e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
 Then the identifier of FieldMapping will be `login`, display_name will be `name`,
 and email will be `email`.
 reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
