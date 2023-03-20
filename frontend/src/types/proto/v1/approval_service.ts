@@ -1,19 +1,54 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { ApprovalFlow } from "./approval_template_service";
 
 export const protobufPackage = "bytebase.v1";
 
-export interface GetApprovalRequest {
-  /** Format: stages/{stage}/tasks/{task}/approvals/{approval} */
-  name: string;
+export enum ApprovalNodeStatus {
+  APPROVAL_NODE_STATUS_UNSPECIFIED = 0,
+  PENDING = 1,
+  APPROVED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function approvalNodeStatusFromJSON(object: any): ApprovalNodeStatus {
+  switch (object) {
+    case 0:
+    case "APPROVAL_NODE_STATUS_UNSPECIFIED":
+      return ApprovalNodeStatus.APPROVAL_NODE_STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return ApprovalNodeStatus.PENDING;
+    case 2:
+    case "APPROVED":
+      return ApprovalNodeStatus.APPROVED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ApprovalNodeStatus.UNRECOGNIZED;
+  }
+}
+
+export function approvalNodeStatusToJSON(object: ApprovalNodeStatus): string {
+  switch (object) {
+    case ApprovalNodeStatus.APPROVAL_NODE_STATUS_UNSPECIFIED:
+      return "APPROVAL_NODE_STATUS_UNSPECIFIED";
+    case ApprovalNodeStatus.PENDING:
+      return "PENDING";
+    case ApprovalNodeStatus.APPROVED:
+      return "APPROVED";
+    case ApprovalNodeStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface ListApprovalsRequest {
   /**
    * The parent, which owns this collection of instances.
-   * Format: stages/{stage}/tasks/{task}
-   * Use "stages/-/tasks/-" to list all instances from all stages.
+   * Format: pipelines/{pipeline}
+   * Use "pipelines/-" to list all instances from all pipelines.
    */
   parent: string;
   /**
@@ -44,268 +79,32 @@ export interface ListApprovalsResponse {
   nextPageToken: string;
 }
 
-export interface PatchApprovalNodeStatusRequest {
-  /** Format: stages/{stage}/tasks/{task}/approvals/{approval} */
-  parent: string;
+export interface ApproveApprovalRequest {
+  /** Format: pipelines/{pipeline}/approvals/{approval} */
+  name: string;
   /** The `uid` of the approval node. */
   node: string;
   /** The new status of the approval node. */
-  status: ApprovalNode_Status;
+  status: ApprovalNodeStatus;
 }
 
 export interface Approval {
-  /** Format: stages/{stage}/tasks/{task}/approvals/{approval} */
+  /** Format: pipelines/{pipeline}/approvals/{approval} */
   name: string;
   /** system-generated unique identifier */
   uid: string;
+  stageId: string;
+  taskId?: string | undefined;
   flow?: ApprovalFlow;
+  history: ApprovalHistory[];
 }
 
-export interface ApprovalFlow {
-  steps: ApprovalStep[];
+export interface ApprovalHistory {
+  /** The `uid` of the approval node. */
+  nodeUid: string;
+  /** The new status. */
+  status: ApprovalNodeStatus;
 }
-
-export interface ApprovalStep {
-  type: ApprovalStep_Type;
-  nodes: ApprovalNode[];
-}
-
-/**
- * Type of the ApprovalStep
- * AND means every node must be approved to proceed.
- * OR means approving any node will proceed.
- */
-export enum ApprovalStep_Type {
-  TYPE_UNSPECIFIED = 0,
-  AND = 1,
-  OR = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalStep_TypeFromJSON(object: any): ApprovalStep_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return ApprovalStep_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "AND":
-      return ApprovalStep_Type.AND;
-    case 2:
-    case "OR":
-      return ApprovalStep_Type.OR;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalStep_Type.UNRECOGNIZED;
-  }
-}
-
-export function approvalStep_TypeToJSON(object: ApprovalStep_Type): string {
-  switch (object) {
-    case ApprovalStep_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case ApprovalStep_Type.AND:
-      return "AND";
-    case ApprovalStep_Type.OR:
-      return "OR";
-    case ApprovalStep_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface ApprovalNode {
-  /** uid uniquely identifies a node in a flow. */
-  uid: string;
-  status: ApprovalNode_Status;
-  type: ApprovalNode_Type;
-  roleValue?: ApprovalNode_RoleValue | undefined;
-}
-
-/** Status of the ApprovalNode. */
-export enum ApprovalNode_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalNode_StatusFromJSON(object: any): ApprovalNode_Status {
-  switch (object) {
-    case 0:
-    case "STATUS_UNSPECIFIED":
-      return ApprovalNode_Status.STATUS_UNSPECIFIED;
-    case 1:
-    case "PENDING":
-      return ApprovalNode_Status.PENDING;
-    case 2:
-    case "APPROVED":
-      return ApprovalNode_Status.APPROVED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalNode_Status.UNRECOGNIZED;
-  }
-}
-
-export function approvalNode_StatusToJSON(object: ApprovalNode_Status): string {
-  switch (object) {
-    case ApprovalNode_Status.STATUS_UNSPECIFIED:
-      return "STATUS_UNSPECIFIED";
-    case ApprovalNode_Status.PENDING:
-      return "PENDING";
-    case ApprovalNode_Status.APPROVED:
-      return "APPROVED";
-    case ApprovalNode_Status.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-/**
- * Type of the ApprovalNode.
- * type determines who should approve this node.
- * ROLE means the ApprovalNode can be approved by an user from our predefined user group.
- * See RoleValue below for the predefined user groups.
- */
-export enum ApprovalNode_Type {
-  TYPE_UNSPECIFIED = 0,
-  ROLE = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalNode_TypeFromJSON(object: any): ApprovalNode_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return ApprovalNode_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "ROLE":
-      return ApprovalNode_Type.ROLE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalNode_Type.UNRECOGNIZED;
-  }
-}
-
-export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
-  switch (object) {
-    case ApprovalNode_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case ApprovalNode_Type.ROLE:
-      return "ROLE";
-    case ApprovalNode_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-/**
- * RoleValue is used if ApprovalNode Type is ROLE
- * The predefined user groups are:
- * - WORKSPACE_OWNER
- * - DBA
- * - PROJECT_OWNER
- * - PROJECT_MEMBER
- */
-export enum ApprovalNode_RoleValue {
-  ROLE_VALUE_UNSPECIFILED = 0,
-  WORKSPACE_OWNER = 1,
-  DBA = 2,
-  PROJECT_OWNER = 3,
-  PROJECT_MEMBER = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalNode_RoleValueFromJSON(object: any): ApprovalNode_RoleValue {
-  switch (object) {
-    case 0:
-    case "ROLE_VALUE_UNSPECIFILED":
-      return ApprovalNode_RoleValue.ROLE_VALUE_UNSPECIFILED;
-    case 1:
-    case "WORKSPACE_OWNER":
-      return ApprovalNode_RoleValue.WORKSPACE_OWNER;
-    case 2:
-    case "DBA":
-      return ApprovalNode_RoleValue.DBA;
-    case 3:
-    case "PROJECT_OWNER":
-      return ApprovalNode_RoleValue.PROJECT_OWNER;
-    case 4:
-    case "PROJECT_MEMBER":
-      return ApprovalNode_RoleValue.PROJECT_MEMBER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalNode_RoleValue.UNRECOGNIZED;
-  }
-}
-
-export function approvalNode_RoleValueToJSON(object: ApprovalNode_RoleValue): string {
-  switch (object) {
-    case ApprovalNode_RoleValue.ROLE_VALUE_UNSPECIFILED:
-      return "ROLE_VALUE_UNSPECIFILED";
-    case ApprovalNode_RoleValue.WORKSPACE_OWNER:
-      return "WORKSPACE_OWNER";
-    case ApprovalNode_RoleValue.DBA:
-      return "DBA";
-    case ApprovalNode_RoleValue.PROJECT_OWNER:
-      return "PROJECT_OWNER";
-    case ApprovalNode_RoleValue.PROJECT_MEMBER:
-      return "PROJECT_MEMBER";
-    case ApprovalNode_RoleValue.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-function createBaseGetApprovalRequest(): GetApprovalRequest {
-  return { name: "" };
-}
-
-export const GetApprovalRequest = {
-  encode(message: GetApprovalRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetApprovalRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetApprovalRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetApprovalRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetApprovalRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<GetApprovalRequest>): GetApprovalRequest {
-    const message = createBaseGetApprovalRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
 
 function createBaseListApprovalsRequest(): ListApprovalsRequest {
   return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
@@ -445,14 +244,14 @@ export const ListApprovalsResponse = {
   },
 };
 
-function createBasePatchApprovalNodeStatusRequest(): PatchApprovalNodeStatusRequest {
-  return { parent: "", node: "", status: 0 };
+function createBaseApproveApprovalRequest(): ApproveApprovalRequest {
+  return { name: "", node: "", status: 0 };
 }
 
-export const PatchApprovalNodeStatusRequest = {
-  encode(message: PatchApprovalNodeStatusRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
+export const ApproveApprovalRequest = {
+  encode(message: ApproveApprovalRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.node !== "") {
       writer.uint32(18).string(message.node);
@@ -463,15 +262,15 @@ export const PatchApprovalNodeStatusRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PatchApprovalNodeStatusRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ApproveApprovalRequest {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePatchApprovalNodeStatusRequest();
+    const message = createBaseApproveApprovalRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.parent = reader.string();
+          message.name = reader.string();
           break;
         case 2:
           message.node = reader.string();
@@ -487,25 +286,25 @@ export const PatchApprovalNodeStatusRequest = {
     return message;
   },
 
-  fromJSON(object: any): PatchApprovalNodeStatusRequest {
+  fromJSON(object: any): ApproveApprovalRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       node: isSet(object.node) ? String(object.node) : "",
-      status: isSet(object.status) ? approvalNode_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? approvalNodeStatusFromJSON(object.status) : 0,
     };
   },
 
-  toJSON(message: PatchApprovalNodeStatusRequest): unknown {
+  toJSON(message: ApproveApprovalRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
+    message.name !== undefined && (obj.name = message.name);
     message.node !== undefined && (obj.node = message.node);
-    message.status !== undefined && (obj.status = approvalNode_StatusToJSON(message.status));
+    message.status !== undefined && (obj.status = approvalNodeStatusToJSON(message.status));
     return obj;
   },
 
-  fromPartial(object: DeepPartial<PatchApprovalNodeStatusRequest>): PatchApprovalNodeStatusRequest {
-    const message = createBasePatchApprovalNodeStatusRequest();
-    message.parent = object.parent ?? "";
+  fromPartial(object: DeepPartial<ApproveApprovalRequest>): ApproveApprovalRequest {
+    const message = createBaseApproveApprovalRequest();
+    message.name = object.name ?? "";
     message.node = object.node ?? "";
     message.status = object.status ?? 0;
     return message;
@@ -513,7 +312,7 @@ export const PatchApprovalNodeStatusRequest = {
 };
 
 function createBaseApproval(): Approval {
-  return { name: "", uid: "", flow: undefined };
+  return { name: "", uid: "", stageId: "", taskId: undefined, flow: undefined, history: [] };
 }
 
 export const Approval = {
@@ -524,8 +323,17 @@ export const Approval = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
+    if (message.stageId !== "") {
+      writer.uint32(26).string(message.stageId);
+    }
+    if (message.taskId !== undefined) {
+      writer.uint32(34).string(message.taskId);
+    }
     if (message.flow !== undefined) {
-      ApprovalFlow.encode(message.flow, writer.uint32(26).fork()).ldelim();
+      ApprovalFlow.encode(message.flow, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.history) {
+      ApprovalHistory.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -544,7 +352,16 @@ export const Approval = {
           message.uid = reader.string();
           break;
         case 3:
+          message.stageId = reader.string();
+          break;
+        case 4:
+          message.taskId = reader.string();
+          break;
+        case 5:
           message.flow = ApprovalFlow.decode(reader, reader.uint32());
+          break;
+        case 6:
+          message.history.push(ApprovalHistory.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -558,7 +375,10 @@ export const Approval = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
+      stageId: isSet(object.stageId) ? String(object.stageId) : "",
+      taskId: isSet(object.taskId) ? String(object.taskId) : undefined,
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
+      history: Array.isArray(object?.history) ? object.history.map((e: any) => ApprovalHistory.fromJSON(e)) : [],
     };
   },
 
@@ -566,7 +386,14 @@ export const Approval = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
+    message.stageId !== undefined && (obj.stageId = message.stageId);
+    message.taskId !== undefined && (obj.taskId = message.taskId);
     message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
+    if (message.history) {
+      obj.history = message.history.map((e) => e ? ApprovalHistory.toJSON(e) : undefined);
+    } else {
+      obj.history = [];
+    }
     return obj;
   },
 
@@ -574,165 +401,43 @@ export const Approval = {
     const message = createBaseApproval();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
+    message.stageId = object.stageId ?? "";
+    message.taskId = object.taskId ?? undefined;
     message.flow = (object.flow !== undefined && object.flow !== null)
       ? ApprovalFlow.fromPartial(object.flow)
       : undefined;
+    message.history = object.history?.map((e) => ApprovalHistory.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseApprovalFlow(): ApprovalFlow {
-  return { steps: [] };
+function createBaseApprovalHistory(): ApprovalHistory {
+  return { nodeUid: "", status: 0 };
 }
 
-export const ApprovalFlow = {
-  encode(message: ApprovalFlow, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.steps) {
-      ApprovalStep.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalFlow {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseApprovalFlow();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.steps.push(ApprovalStep.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ApprovalFlow {
-    return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => ApprovalStep.fromJSON(e)) : [] };
-  },
-
-  toJSON(message: ApprovalFlow): unknown {
-    const obj: any = {};
-    if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
-    } else {
-      obj.steps = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<ApprovalFlow>): ApprovalFlow {
-    const message = createBaseApprovalFlow();
-    message.steps = object.steps?.map((e) => ApprovalStep.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseApprovalStep(): ApprovalStep {
-  return { type: 0, nodes: [] };
-}
-
-export const ApprovalStep = {
-  encode(message: ApprovalStep, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
-    for (const v of message.nodes) {
-      ApprovalNode.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalStep {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseApprovalStep();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.type = reader.int32() as any;
-          break;
-        case 2:
-          message.nodes.push(ApprovalNode.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ApprovalStep {
-    return {
-      type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : 0,
-      nodes: Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ApprovalNode.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: ApprovalStep): unknown {
-    const obj: any = {};
-    message.type !== undefined && (obj.type = approvalStep_TypeToJSON(message.type));
-    if (message.nodes) {
-      obj.nodes = message.nodes.map((e) => e ? ApprovalNode.toJSON(e) : undefined);
-    } else {
-      obj.nodes = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
-    const message = createBaseApprovalStep();
-    message.type = object.type ?? 0;
-    message.nodes = object.nodes?.map((e) => ApprovalNode.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseApprovalNode(): ApprovalNode {
-  return { uid: "", status: 0, type: 0, roleValue: undefined };
-}
-
-export const ApprovalNode = {
-  encode(message: ApprovalNode, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.uid !== "") {
-      writer.uint32(10).string(message.uid);
+export const ApprovalHistory = {
+  encode(message: ApprovalHistory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.nodeUid !== "") {
+      writer.uint32(10).string(message.nodeUid);
     }
     if (message.status !== 0) {
       writer.uint32(16).int32(message.status);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
-    }
-    if (message.roleValue !== undefined) {
-      writer.uint32(32).int32(message.roleValue);
-    }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalNode {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalHistory {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseApprovalNode();
+    const message = createBaseApprovalHistory();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.uid = reader.string();
+          message.nodeUid = reader.string();
           break;
         case 2:
           message.status = reader.int32() as any;
-          break;
-        case 3:
-          message.type = reader.int32() as any;
-          break;
-        case 4:
-          message.roleValue = reader.int32() as any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -742,31 +447,24 @@ export const ApprovalNode = {
     return message;
   },
 
-  fromJSON(object: any): ApprovalNode {
+  fromJSON(object: any): ApprovalHistory {
     return {
-      uid: isSet(object.uid) ? String(object.uid) : "",
-      status: isSet(object.status) ? approvalNode_StatusFromJSON(object.status) : 0,
-      type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
-      roleValue: isSet(object.roleValue) ? approvalNode_RoleValueFromJSON(object.roleValue) : undefined,
+      nodeUid: isSet(object.nodeUid) ? String(object.nodeUid) : "",
+      status: isSet(object.status) ? approvalNodeStatusFromJSON(object.status) : 0,
     };
   },
 
-  toJSON(message: ApprovalNode): unknown {
+  toJSON(message: ApprovalHistory): unknown {
     const obj: any = {};
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.status !== undefined && (obj.status = approvalNode_StatusToJSON(message.status));
-    message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
-    message.roleValue !== undefined &&
-      (obj.roleValue = message.roleValue !== undefined ? approvalNode_RoleValueToJSON(message.roleValue) : undefined);
+    message.nodeUid !== undefined && (obj.nodeUid = message.nodeUid);
+    message.status !== undefined && (obj.status = approvalNodeStatusToJSON(message.status));
     return obj;
   },
 
-  fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
-    const message = createBaseApprovalNode();
-    message.uid = object.uid ?? "";
+  fromPartial(object: DeepPartial<ApprovalHistory>): ApprovalHistory {
+    const message = createBaseApprovalHistory();
+    message.nodeUid = object.nodeUid ?? "";
     message.status = object.status ?? 0;
-    message.type = object.type ?? 0;
-    message.roleValue = object.roleValue ?? undefined;
     return message;
   },
 };
@@ -776,14 +474,6 @@ export const ApprovalServiceDefinition = {
   name: "ApprovalService",
   fullName: "bytebase.v1.ApprovalService",
   methods: {
-    getApproval: {
-      name: "GetApproval",
-      requestType: GetApprovalRequest,
-      requestStream: false,
-      responseType: Approval,
-      responseStream: false,
-      options: {},
-    },
     listApprovals: {
       name: "ListApprovals",
       requestType: ListApprovalsRequest,
@@ -792,9 +482,9 @@ export const ApprovalServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    patchApprovalNodeStatus: {
-      name: "PatchApprovalNodeStatus",
-      requestType: PatchApprovalNodeStatusRequest,
+    approveApproval: {
+      name: "ApproveApproval",
+      requestType: ApproveApprovalRequest,
       requestStream: false,
       responseType: Approval,
       responseStream: false,
@@ -804,25 +494,23 @@ export const ApprovalServiceDefinition = {
 } as const;
 
 export interface ApprovalServiceImplementation<CallContextExt = {}> {
-  getApproval(request: GetApprovalRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Approval>>;
   listApprovals(
     request: ListApprovalsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListApprovalsResponse>>;
-  patchApprovalNodeStatus(
-    request: PatchApprovalNodeStatusRequest,
+  approveApproval(
+    request: ApproveApprovalRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Approval>>;
 }
 
 export interface ApprovalServiceClient<CallOptionsExt = {}> {
-  getApproval(request: DeepPartial<GetApprovalRequest>, options?: CallOptions & CallOptionsExt): Promise<Approval>;
   listApprovals(
     request: DeepPartial<ListApprovalsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListApprovalsResponse>;
-  patchApprovalNodeStatus(
-    request: DeepPartial<PatchApprovalNodeStatusRequest>,
+  approveApproval(
+    request: DeepPartial<ApproveApprovalRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Approval>;
 }

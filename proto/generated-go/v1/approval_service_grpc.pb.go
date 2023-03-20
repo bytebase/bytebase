@@ -19,18 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ApprovalService_GetApproval_FullMethodName             = "/bytebase.v1.ApprovalService/GetApproval"
-	ApprovalService_ListApprovals_FullMethodName           = "/bytebase.v1.ApprovalService/ListApprovals"
-	ApprovalService_PatchApprovalNodeStatus_FullMethodName = "/bytebase.v1.ApprovalService/PatchApprovalNodeStatus"
+	ApprovalService_ListApprovals_FullMethodName   = "/bytebase.v1.ApprovalService/ListApprovals"
+	ApprovalService_ApproveApproval_FullMethodName = "/bytebase.v1.ApprovalService/ApproveApproval"
 )
 
 // ApprovalServiceClient is the client API for ApprovalService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApprovalServiceClient interface {
-	GetApproval(ctx context.Context, in *GetApprovalRequest, opts ...grpc.CallOption) (*Approval, error)
 	ListApprovals(ctx context.Context, in *ListApprovalsRequest, opts ...grpc.CallOption) (*ListApprovalsResponse, error)
-	PatchApprovalNodeStatus(ctx context.Context, in *PatchApprovalNodeStatusRequest, opts ...grpc.CallOption) (*Approval, error)
+	ApproveApproval(ctx context.Context, in *ApproveApprovalRequest, opts ...grpc.CallOption) (*Approval, error)
 }
 
 type approvalServiceClient struct {
@@ -39,15 +37,6 @@ type approvalServiceClient struct {
 
 func NewApprovalServiceClient(cc grpc.ClientConnInterface) ApprovalServiceClient {
 	return &approvalServiceClient{cc}
-}
-
-func (c *approvalServiceClient) GetApproval(ctx context.Context, in *GetApprovalRequest, opts ...grpc.CallOption) (*Approval, error) {
-	out := new(Approval)
-	err := c.cc.Invoke(ctx, ApprovalService_GetApproval_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *approvalServiceClient) ListApprovals(ctx context.Context, in *ListApprovalsRequest, opts ...grpc.CallOption) (*ListApprovalsResponse, error) {
@@ -59,9 +48,9 @@ func (c *approvalServiceClient) ListApprovals(ctx context.Context, in *ListAppro
 	return out, nil
 }
 
-func (c *approvalServiceClient) PatchApprovalNodeStatus(ctx context.Context, in *PatchApprovalNodeStatusRequest, opts ...grpc.CallOption) (*Approval, error) {
+func (c *approvalServiceClient) ApproveApproval(ctx context.Context, in *ApproveApprovalRequest, opts ...grpc.CallOption) (*Approval, error) {
 	out := new(Approval)
-	err := c.cc.Invoke(ctx, ApprovalService_PatchApprovalNodeStatus_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ApprovalService_ApproveApproval_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +61,8 @@ func (c *approvalServiceClient) PatchApprovalNodeStatus(ctx context.Context, in 
 // All implementations must embed UnimplementedApprovalServiceServer
 // for forward compatibility
 type ApprovalServiceServer interface {
-	GetApproval(context.Context, *GetApprovalRequest) (*Approval, error)
 	ListApprovals(context.Context, *ListApprovalsRequest) (*ListApprovalsResponse, error)
-	PatchApprovalNodeStatus(context.Context, *PatchApprovalNodeStatusRequest) (*Approval, error)
+	ApproveApproval(context.Context, *ApproveApprovalRequest) (*Approval, error)
 	mustEmbedUnimplementedApprovalServiceServer()
 }
 
@@ -82,14 +70,11 @@ type ApprovalServiceServer interface {
 type UnimplementedApprovalServiceServer struct {
 }
 
-func (UnimplementedApprovalServiceServer) GetApproval(context.Context, *GetApprovalRequest) (*Approval, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetApproval not implemented")
-}
 func (UnimplementedApprovalServiceServer) ListApprovals(context.Context, *ListApprovalsRequest) (*ListApprovalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListApprovals not implemented")
 }
-func (UnimplementedApprovalServiceServer) PatchApprovalNodeStatus(context.Context, *PatchApprovalNodeStatusRequest) (*Approval, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PatchApprovalNodeStatus not implemented")
+func (UnimplementedApprovalServiceServer) ApproveApproval(context.Context, *ApproveApprovalRequest) (*Approval, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApproveApproval not implemented")
 }
 func (UnimplementedApprovalServiceServer) mustEmbedUnimplementedApprovalServiceServer() {}
 
@@ -102,24 +87,6 @@ type UnsafeApprovalServiceServer interface {
 
 func RegisterApprovalServiceServer(s grpc.ServiceRegistrar, srv ApprovalServiceServer) {
 	s.RegisterService(&ApprovalService_ServiceDesc, srv)
-}
-
-func _ApprovalService_GetApproval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetApprovalRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApprovalServiceServer).GetApproval(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ApprovalService_GetApproval_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApprovalServiceServer).GetApproval(ctx, req.(*GetApprovalRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ApprovalService_ListApprovals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -140,20 +107,20 @@ func _ApprovalService_ListApprovals_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApprovalService_PatchApprovalNodeStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PatchApprovalNodeStatusRequest)
+func _ApprovalService_ApproveApproval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApproveApprovalRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApprovalServiceServer).PatchApprovalNodeStatus(ctx, in)
+		return srv.(ApprovalServiceServer).ApproveApproval(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ApprovalService_PatchApprovalNodeStatus_FullMethodName,
+		FullMethod: ApprovalService_ApproveApproval_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApprovalServiceServer).PatchApprovalNodeStatus(ctx, req.(*PatchApprovalNodeStatusRequest))
+		return srv.(ApprovalServiceServer).ApproveApproval(ctx, req.(*ApproveApprovalRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -166,16 +133,12 @@ var ApprovalService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ApprovalServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetApproval",
-			Handler:    _ApprovalService_GetApproval_Handler,
-		},
-		{
 			MethodName: "ListApprovals",
 			Handler:    _ApprovalService_ListApprovals_Handler,
 		},
 		{
-			MethodName: "PatchApprovalNodeStatus",
-			Handler:    _ApprovalService_PatchApprovalNodeStatus_Handler,
+			MethodName: "ApproveApproval",
+			Handler:    _ApprovalService_ApproveApproval_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
