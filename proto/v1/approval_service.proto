@@ -22,10 +22,10 @@ service ApprovalService {
   }
 
   rpc PatchApprovalNodeStatus(PatchApprovalNodeStatusRequest) returns (Approval) {
-  option (google.api.http) = {
-    patch: "/v1/{parent=stages/*/tasks/*/approvals/*}/nodes:patchApprovalNodeStatus"
-    body: "*"
-  };
+    option (google.api.http) = {
+      patch: "/v1/{parent=stages/*/tasks/*/approvals/*}/nodes:patchApprovalNodeStatus"
+      body: "*"
+    };
   }
 }
 
