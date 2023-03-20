@@ -243,6 +243,12 @@ func (*Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationD
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
+	_, err := driver.Execute(ctx, statement, m.CreateDatabase)
+	return "", "", err
+}
+
+// ExecuteMigrationUsingMigrationHistory will execute the migration and stores the record to migration history.
+func (driver *Driver) ExecuteMigrationUsingMigrationHistory(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
 	if driver.strictUseDb() {
 		return util.ExecuteMigration(ctx, driver, m, statement, driver.strictDatabase)
 	}
@@ -296,6 +302,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	database := db.BytebaseDatabase

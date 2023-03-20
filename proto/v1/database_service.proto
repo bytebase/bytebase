@@ -10,23 +10,18 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service DatabaseService {
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
-    option (google.api.http) = {
-      get: "/v1/{name=environments/*/instances/*/databases/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=environments/*/instances/*}/databases"
-    };
+    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*}/databases"};
     option (google.api.method_signature) = "";
   }
 
@@ -46,21 +41,15 @@ service DatabaseService {
   }
 
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
-    option (google.api.http) = {
-      get: "/v1/{name=environments/*/instances/*/databases/*/metadata}"
-    };
+    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/metadata}"};
   }
 
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
-    option (google.api.http) = {
-      get: "/v1/{name=environments/*/instances/*/databases/*/schema}"
-    };
+    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/schema}"};
   }
 
   rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
-    option (google.api.http) = {
-      get: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"
-    };
+    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"};
   }
 
   rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
@@ -78,9 +67,7 @@ service DatabaseService {
   }
 
   rpc ListBackup(ListBackupRequest) returns (ListBackupResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
-    };
+    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/backups"};
     option (google.api.method_signature) = "parent";
   }
 }
@@ -144,8 +131,7 @@ message BatchUpdateDatabasesRequest {
 
   // The request message specifying the resources to update.
   // A maximum of 1000 databases can be modified in a batch.
-  repeated UpdateDatabaseRequest requests = 2
-    [(google.api.field_behavior) = REQUIRED];
+  repeated UpdateDatabaseRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message BatchUpdateDatabasesResponse {
@@ -198,7 +184,7 @@ message ListBackupRequest {
   int32 page_size = 2;
 
   // Not used. A page token, received from a previous `ListBackup` call.
-  // Provide this to retrieve the subsequent page.  
+  // Provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `ListBackup` must match
   // the call that provided the page token.
@@ -305,7 +291,7 @@ message TableMetadata {
 
   // The comment is the comment of a table.
   string comment = 11;
-  
+
   // The foreign_keys is the list of foreign keys in a table.
   repeated ForeignKeyMetadata foreign_keys = 12;
 }
@@ -374,7 +360,6 @@ message IndexMetadata {
   string comment = 7;
 }
 
-
 // ExtensionMetadata is the metadata for extensions.
 message ExtensionMetadata {
   // The name is the name of an extension.
@@ -394,26 +379,26 @@ message ExtensionMetadata {
 message ForeignKeyMetadata {
   // The name is the name of a foreign key.
   string name = 1;
-  
+
   // The columns are the ordered referencing columns of a foreign key.
   repeated string columns = 2;
-  
+
   // The referenced_schema is the referenced schema name of a foreign key.
   // It is an empty string for databases without such concept such as MySQL.
   string referenced_schema = 3;
-  
+
   // The referenced_table is the referenced table name of a foreign key.
   string referenced_table = 4;
-  
+
   // The referenced_columns are the ordered referenced columns of a foreign key.
   repeated string referenced_columns = 5;
-  
+
   // The on_delete is the on delete action of a foreign key.
   string on_delete = 6;
 
   // The on_update is the on update action of a foreign key.
   string on_update = 7;
-  
+
   // The match_type is the match type of a foreign key.
   // The match_type is the PostgreSQL specific field.
   // It's empty string for other databases.
@@ -440,7 +425,7 @@ message BackupSetting {
 
   // Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
   // Support hour of day, day of week. (UTC time)
-  // 
+  //
   // Default (empty): Disable automatic backup.
   string cron_schedule = 3;
 
@@ -492,7 +477,7 @@ message Backup {
 
   // The state of the backup.
   BackupState state = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-  
+
   // The type of the backup.
   BackupType backup_type = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 

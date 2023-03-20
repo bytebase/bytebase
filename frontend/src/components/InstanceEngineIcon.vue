@@ -44,6 +44,7 @@ export default defineComponent({
       SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
       REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
       ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
+      MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
     };
     const SelectedEngineIconPath = computed(() => {
       return EngineIconPath[props.instance.engine];

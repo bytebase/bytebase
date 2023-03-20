@@ -403,6 +403,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | REDIS | 8 |  |
 | ORACLE | 9 |  |
 | SPANNER | 10 |  |
+| MSSQL | 11 |  |
 
 
 

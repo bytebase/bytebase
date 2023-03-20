@@ -699,6 +699,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "6379";
   } else if (engine === "ORACLE") {
     return "1521";
+  } else if (engine === "MSSQL") {
+    return "1433";
   }
   return "3306";
 };
@@ -737,9 +739,10 @@ const engineList = computed(() => {
     "MONGODB",
     "SPANNER",
     "REDIS",
+    "ORACLE",
   ];
   if (isDev()) {
-    engines.push("ORACLE");
+    engines.push("MSSQL");
   }
   return engines;
 });
@@ -754,6 +757,7 @@ const EngineIconPath = {
   SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
   REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
   ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
+  MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];

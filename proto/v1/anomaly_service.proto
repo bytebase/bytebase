@@ -4,20 +4,17 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/client.proto";
-import "google/api/http.proto";
 import "google/api/field_behavior.proto";
+import "google/api/http.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service AnomalyService {
   rpc SearchAnomalies(SearchAnomaliesRequest) returns (SearchAnomaliesResponse) {
-    option (google.api.http) = {
-      get: "/v1/anomalies:search"
-    };
+    option (google.api.http) = {get: "/v1/anomalies:search"};
   }
 }
 
@@ -37,7 +34,7 @@ message SearchAnomaliesRequest {
   int32 page_size = 2;
 
   // Not used. A page token, received from a previous `SearchAnomalies` call.
-  // Provide this to retrieve the subsequent page.  
+  // Provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `SearchAnomalies` must match
   // the call that provided the page token.
@@ -59,12 +56,12 @@ message Anomaly {
     // Unspecified anomaly type.
     ANOMALY_TYPE_UNSPECIFIED = 0;
     // Instance level anomaly.
-    // 
+    //
     // INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.
     INSTANCE_CONNECTION = 1;
     // MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing.
     MIGRATION_SCHEMA = 2;
-    
+
     // Database level anomaly.
     //
     // DATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy violation,
