@@ -62,6 +62,12 @@
             <template v-if="pushEvent?.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
             </template>
+            <template v-if="pushEvent?.vcsType.startsWith('GITHUB')">
+              <img class="h-4 w-auto" src="../assets/github-logo.svg" />
+            </template>
+            <template v-if="pushEvent?.vcsType.startsWith('BITBUCKET')">
+              <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
+            </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
@@ -366,10 +372,11 @@ export default defineComponent({
 
     const vcsBranch = computed((): string => {
       if (pushEvent.value) {
-        if (pushEvent.value.vcsType == "GITLAB") {
-          const parts = pushEvent.value.ref.split("/");
-          return parts[parts.length - 1];
-        } else if (pushEvent.value.vcsType == "GITHUB") {
+        if (
+          pushEvent.value.vcsType == "GITLAB" ||
+          pushEvent.value.vcsType == "GITHUB" ||
+          pushEvent.value.vcsType == "BITBUCKET"
+        ) {
           const parts = pushEvent.value.ref.split("/");
           return parts[parts.length - 1];
         }
@@ -383,6 +390,8 @@ export default defineComponent({
           return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
         } else if (pushEvent.value.vcsType == "GITHUB") {
           return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
+        } else if (pushEvent.value.vcsType == "BITBUCKET") {
+          return `${pushEvent.value.repositoryUrl}/src/${vcsBranch.value}`;
         }
       }
       return "";
