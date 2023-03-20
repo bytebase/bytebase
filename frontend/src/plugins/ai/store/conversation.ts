@@ -135,7 +135,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   });
 
   const fetchConversationListByConnection = async (conn: Connection) => {
-    console.log("1");
     const conversationEntityList = (
       await conversations.find({
         selector: {
