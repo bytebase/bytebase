@@ -23,8 +23,6 @@ export interface ListRisksRequest {
    * the call that provided the page token.
    */
   pageToken: string;
-  /** Show deleted risks if specified. */
-  showDeleted: boolean;
 }
 
 export interface ListRisksResponse {
@@ -64,6 +62,7 @@ export enum Risk_Namespace {
   NAMESPACE_UNSPECIFIED = 0,
   DDL = 1,
   DML = 2,
+  CREATE_DATABASE = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -78,6 +77,9 @@ export function risk_NamespaceFromJSON(object: any): Risk_Namespace {
     case 2:
     case "DML":
       return Risk_Namespace.DML;
+    case 3:
+    case "CREATE_DATABASE":
+      return Risk_Namespace.CREATE_DATABASE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -93,6 +95,8 @@ export function risk_NamespaceToJSON(object: Risk_Namespace): string {
       return "DDL";
     case Risk_Namespace.DML:
       return "DML";
+    case Risk_Namespace.CREATE_DATABASE:
+      return "CREATE_DATABASE";
     case Risk_Namespace.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -145,7 +149,7 @@ export interface RiskRule {
 }
 
 function createBaseListRisksRequest(): ListRisksRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "" };
 }
 
 export const ListRisksRequest = {
@@ -155,9 +159,6 @@ export const ListRisksRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(18).string(message.pageToken);
-    }
-    if (message.showDeleted === true) {
-      writer.uint32(24).bool(message.showDeleted);
     }
     return writer;
   },
@@ -175,9 +176,6 @@ export const ListRisksRequest = {
         case 2:
           message.pageToken = reader.string();
           break;
-        case 3:
-          message.showDeleted = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -190,7 +188,6 @@ export const ListRisksRequest = {
     return {
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -198,7 +195,6 @@ export const ListRisksRequest = {
     const obj: any = {};
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -206,7 +202,6 @@ export const ListRisksRequest = {
     const message = createBaseListRisksRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
-    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };

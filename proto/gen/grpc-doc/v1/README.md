@@ -4117,7 +4117,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | page_token | [string](#string) |  | A page token, received from a previous `ListRisks` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `LiskRisks` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted risks if specified. |
 
 
 
@@ -4224,6 +4223,7 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | NAMESPACE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | DML | 2 |  |
+| CREATE_DATABASE | 3 |  |
 
 
 
