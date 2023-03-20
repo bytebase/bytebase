@@ -52,6 +52,9 @@
             <template v-else-if="pushEvent.vcsType.startsWith('GITHUB')">
               <img class="h-4 w-auto" src="../../assets/github-logo.svg" />
             </template>
+            <template v-else-if="pushEvent.vcsType.startsWith('BITBUCKET')">
+              <img class="h-4 w-auto" src="../../assets/bitbucket-logo.svg" />
+            </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">{{
               `${vcsBranch}@${pushEvent.repositoryFullPath}`
             }}</a>
