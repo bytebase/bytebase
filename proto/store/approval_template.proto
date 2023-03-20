@@ -26,14 +26,6 @@ message ApprovalNode {
   // uid uniquely identifies a node in a flow.
   string uid = 1;
 
-  // Status of the ApprovalNode.
-  enum Status {
-    STATUS_UNSPECIFIED = 0;
-    PENDING = 1;
-    APPROVED = 2;
-  }
-  Status status = 2;
-
   // Type of the ApprovalNode.
   // type determines who should approve this node.
   // ROLE means the ApprovalNode can be approved by an user from our predefined user group.
@@ -42,7 +34,7 @@ message ApprovalNode {
     TYPE_UNSPECIFIED = 0;
     ROLE = 1;
   }
-  Type type = 3;
+  Type type = 2;
 
   // RoleValue is used if ApprovalNode Type is ROLE
   // The predefined user groups are:
@@ -58,6 +50,6 @@ message ApprovalNode {
     PROJECT_MEMBER = 4;
   }
   oneof payload {
-    RoleValue role_value = 4;
+    RoleValue role_value = 3;
   }
 }
