@@ -19,11 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RiskService_GetRisk_FullMethodName             = "/bytebase.v1.RiskService/GetRisk"
-	RiskService_ListRisks_FullMethodName           = "/bytebase.v1.RiskService/ListRisks"
-	RiskService_AddRiskCondition_FullMethodName    = "/bytebase.v1.RiskService/AddRiskCondition"
-	RiskService_RemoveRiskCondition_FullMethodName = "/bytebase.v1.RiskService/RemoveRiskCondition"
-	RiskService_UpdateRiskCondition_FullMethodName = "/bytebase.v1.RiskService/UpdateRiskCondition"
+	RiskService_GetRisk_FullMethodName          = "/bytebase.v1.RiskService/GetRisk"
+	RiskService_ListRisks_FullMethodName        = "/bytebase.v1.RiskService/ListRisks"
+	RiskService_UpdateRisk_FullMethodName       = "/bytebase.v1.RiskService/UpdateRisk"
+	RiskService_BatchUpdateRisks_FullMethodName = "/bytebase.v1.RiskService/BatchUpdateRisks"
 )
 
 // RiskServiceClient is the client API for RiskService service.
@@ -32,9 +31,8 @@ const (
 type RiskServiceClient interface {
 	GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error)
-	AddRiskCondition(ctx context.Context, in *AddRiskConditionRequest, opts ...grpc.CallOption) (*Risk, error)
-	RemoveRiskCondition(ctx context.Context, in *RemoveRiskConditionRequest, opts ...grpc.CallOption) (*Risk, error)
-	UpdateRiskCondition(ctx context.Context, in *UpdateRiskConditionRequest, opts ...grpc.CallOption) (*Risk, error)
+	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	BatchUpdateRisks(ctx context.Context, in *BatchUpdateRisksRequest, opts ...grpc.CallOption) (*BatchUpdateRisksResponse, error)
 }
 
 type riskServiceClient struct {
@@ -63,27 +61,18 @@ func (c *riskServiceClient) ListRisks(ctx context.Context, in *ListRisksRequest,
 	return out, nil
 }
 
-func (c *riskServiceClient) AddRiskCondition(ctx context.Context, in *AddRiskConditionRequest, opts ...grpc.CallOption) (*Risk, error) {
+func (c *riskServiceClient) UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error) {
 	out := new(Risk)
-	err := c.cc.Invoke(ctx, RiskService_AddRiskCondition_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, RiskService_UpdateRisk_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *riskServiceClient) RemoveRiskCondition(ctx context.Context, in *RemoveRiskConditionRequest, opts ...grpc.CallOption) (*Risk, error) {
-	out := new(Risk)
-	err := c.cc.Invoke(ctx, RiskService_RemoveRiskCondition_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *riskServiceClient) UpdateRiskCondition(ctx context.Context, in *UpdateRiskConditionRequest, opts ...grpc.CallOption) (*Risk, error) {
-	out := new(Risk)
-	err := c.cc.Invoke(ctx, RiskService_UpdateRiskCondition_FullMethodName, in, out, opts...)
+func (c *riskServiceClient) BatchUpdateRisks(ctx context.Context, in *BatchUpdateRisksRequest, opts ...grpc.CallOption) (*BatchUpdateRisksResponse, error) {
+	out := new(BatchUpdateRisksResponse)
+	err := c.cc.Invoke(ctx, RiskService_BatchUpdateRisks_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +85,8 @@ func (c *riskServiceClient) UpdateRiskCondition(ctx context.Context, in *UpdateR
 type RiskServiceServer interface {
 	GetRisk(context.Context, *GetRiskRequest) (*Risk, error)
 	ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error)
-	AddRiskCondition(context.Context, *AddRiskConditionRequest) (*Risk, error)
-	RemoveRiskCondition(context.Context, *RemoveRiskConditionRequest) (*Risk, error)
-	UpdateRiskCondition(context.Context, *UpdateRiskConditionRequest) (*Risk, error)
+	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
+	BatchUpdateRisks(context.Context, *BatchUpdateRisksRequest) (*BatchUpdateRisksResponse, error)
 	mustEmbedUnimplementedRiskServiceServer()
 }
 
@@ -112,14 +100,11 @@ func (UnimplementedRiskServiceServer) GetRisk(context.Context, *GetRiskRequest) 
 func (UnimplementedRiskServiceServer) ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRisks not implemented")
 }
-func (UnimplementedRiskServiceServer) AddRiskCondition(context.Context, *AddRiskConditionRequest) (*Risk, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddRiskCondition not implemented")
+func (UnimplementedRiskServiceServer) UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateRisk not implemented")
 }
-func (UnimplementedRiskServiceServer) RemoveRiskCondition(context.Context, *RemoveRiskConditionRequest) (*Risk, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveRiskCondition not implemented")
-}
-func (UnimplementedRiskServiceServer) UpdateRiskCondition(context.Context, *UpdateRiskConditionRequest) (*Risk, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateRiskCondition not implemented")
+func (UnimplementedRiskServiceServer) BatchUpdateRisks(context.Context, *BatchUpdateRisksRequest) (*BatchUpdateRisksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateRisks not implemented")
 }
 func (UnimplementedRiskServiceServer) mustEmbedUnimplementedRiskServiceServer() {}
 
@@ -170,56 +155,38 @@ func _RiskService_ListRisks_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RiskService_AddRiskCondition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddRiskConditionRequest)
+func _RiskService_UpdateRisk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRiskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RiskServiceServer).AddRiskCondition(ctx, in)
+		return srv.(RiskServiceServer).UpdateRisk(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RiskService_AddRiskCondition_FullMethodName,
+		FullMethod: RiskService_UpdateRisk_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RiskServiceServer).AddRiskCondition(ctx, req.(*AddRiskConditionRequest))
+		return srv.(RiskServiceServer).UpdateRisk(ctx, req.(*UpdateRiskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RiskService_RemoveRiskCondition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveRiskConditionRequest)
+func _RiskService_BatchUpdateRisks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpdateRisksRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RiskServiceServer).RemoveRiskCondition(ctx, in)
+		return srv.(RiskServiceServer).BatchUpdateRisks(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RiskService_RemoveRiskCondition_FullMethodName,
+		FullMethod: RiskService_BatchUpdateRisks_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RiskServiceServer).RemoveRiskCondition(ctx, req.(*RemoveRiskConditionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RiskService_UpdateRiskCondition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateRiskConditionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RiskServiceServer).UpdateRiskCondition(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RiskService_UpdateRiskCondition_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RiskServiceServer).UpdateRiskCondition(ctx, req.(*UpdateRiskConditionRequest))
+		return srv.(RiskServiceServer).BatchUpdateRisks(ctx, req.(*BatchUpdateRisksRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -240,16 +207,12 @@ var RiskService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RiskService_ListRisks_Handler,
 		},
 		{
-			MethodName: "AddRiskCondition",
-			Handler:    _RiskService_AddRiskCondition_Handler,
+			MethodName: "UpdateRisk",
+			Handler:    _RiskService_UpdateRisk_Handler,
 		},
 		{
-			MethodName: "RemoveRiskCondition",
-			Handler:    _RiskService_RemoveRiskCondition_Handler,
-		},
-		{
-			MethodName: "UpdateRiskCondition",
-			Handler:    _RiskService_UpdateRiskCondition_Handler,
+			MethodName: "BatchUpdateRisks",
+			Handler:    _RiskService_BatchUpdateRisks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

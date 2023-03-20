@@ -269,16 +269,17 @@
     - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/risk_service.proto](#v1_risk_service-proto)
-    - [AddRiskConditionRequest](#bytebase-v1-AddRiskConditionRequest)
+    - [BatchUpdateRisksRequest](#bytebase-v1-BatchUpdateRisksRequest)
+    - [BatchUpdateRisksResponse](#bytebase-v1-BatchUpdateRisksResponse)
     - [GetRiskRequest](#bytebase-v1-GetRiskRequest)
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
     - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
-    - [RemoveRiskConditionRequest](#bytebase-v1-RemoveRiskConditionRequest)
     - [Risk](#bytebase-v1-Risk)
     - [RiskAction](#bytebase-v1-RiskAction)
-    - [RiskCondition](#bytebase-v1-RiskCondition)
-    - [UpdateRiskConditionRequest](#bytebase-v1-UpdateRiskConditionRequest)
+    - [RiskRule](#bytebase-v1-RiskRule)
+    - [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest)
   
+    - [Risk.Namespace](#bytebase-v1-Risk-Namespace)
     - [RiskAction.Type](#bytebase-v1-RiskAction-Type)
   
     - [RiskService](#bytebase-v1-RiskService)
@@ -538,7 +539,7 @@ InstanceConnectionDetail is the detail for instance connection anomaly.
 | ----- | ---- | ----- | ----------- |
 | filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;environments/{environemnt}/instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34; | &#34;MIGRATION_SCHEMA&#34;.&#39; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchAnomalies` must match the call that provided the page token. |
 
@@ -987,7 +988,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the bookmark. Format: users/{user}, user is a server-generated unique ID. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of bookmarks to return. The service may return fewer than this value. If unspecified, at most 50 bookmarks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBookmarks` must match the call that provided the page token. |
 
@@ -1351,7 +1352,7 @@ ListBackupRequest is the request message for ListBackup.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource where this backup will be created. Format: environments/{environment}/instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of backups to return. The service may return fewer than this value. If unspecified, at most 50 backups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page. 
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBackup` must match the call that provided the page token. |
 
@@ -2086,7 +2087,7 @@ FieldMapping saves the field names from user info API of identity provider.
 As we save all raw json string of user info response data into `principal.idp_user_info`,
 we can extract the relevant data based with `FieldMapping`.
 
-e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
 Then the identifier of FieldMapping will be `login`, display_name will be `name`,
 and email will be `email`.
 reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
@@ -4107,16 +4108,30 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-AddRiskConditionRequest"></a>
+<a name="bytebase-v1-BatchUpdateRisksRequest"></a>
 
-### AddRiskConditionRequest
+### BatchUpdateRisksRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| risk | [string](#string) |  | The name of the risk to add the risk condition to. Format: risks/{risk} |
-| risk_condition | [RiskCondition](#bytebase-v1-RiskCondition) |  | The risk condition to add. |
+| requests | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 risks can be modified in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateRisksResponse"></a>
+
+### BatchUpdateRisksResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risks | [Risk](#bytebase-v1-Risk) | repeated | Risks updated. |
 
 
 
@@ -4173,22 +4188,6 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 
 
 
-<a name="bytebase-v1-RemoveRiskConditionRequest"></a>
-
-### RemoveRiskConditionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| risk | [string](#string) |  | The name of the risk to remove the risk condition from. Format: risks/{risk} |
-| risk_condition | [RiskCondition](#bytebase-v1-RiskCondition) |  | The risk condition to remove. Identified by its name. |
-
-
-
-
-
-
 <a name="bytebase-v1-Risk"></a>
 
 ### Risk
@@ -4199,11 +4198,11 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: risks/{risk} |
 | uid | [string](#string) |  | system-generated unique identifier. |
+| namespace | [Risk.Namespace](#bytebase-v1-Risk-Namespace) |  |  |
 | title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
 | level | [int64](#int64) |  |  |
 | actions | [RiskAction](#bytebase-v1-RiskAction) | repeated |  |
-| conditions | [RiskCondition](#bytebase-v1-RiskCondition) | repeated |  |
+| rules | [RiskRule](#bytebase-v1-RiskRule) | repeated |  |
 
 
 
@@ -4226,35 +4225,37 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 
 
 
-<a name="bytebase-v1-RiskCondition"></a>
+<a name="bytebase-v1-RiskRule"></a>
 
-### RiskCondition
+### RiskRule
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: risks/{risk}/riskConditions/{riskCondition} |
+| name | [string](#string) |  | Format: risks/{risk}/riskRules/{riskRule} |
 | uid | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+| active | [bool](#bool) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-UpdateRiskConditionRequest"></a>
+<a name="bytebase-v1-UpdateRiskRequest"></a>
 
-### UpdateRiskConditionRequest
+### UpdateRiskRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| risk | [string](#string) |  | The name of the risk which owns the risk condition to be updated. Format: risks/{risk} |
-| risk_condition | [RiskCondition](#bytebase-v1-RiskCondition) |  | The risk condition to modify. Identified by its name. |
+| risk | [Risk](#bytebase-v1-Risk) |  | The risk to update.
+
+The risk&#39;s `name` field is used to identify the risk to update. Format: risks/{risk} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -4262,6 +4263,19 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 
 
  
+
+
+<a name="bytebase-v1-Risk-Namespace"></a>
+
+### Risk.Namespace
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NAMESPACE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+
 
 
 <a name="bytebase-v1-RiskAction-Type"></a>
@@ -4289,9 +4303,8 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | ----------- | ------------ | ------------- | ------------|
 | GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
-| AddRiskCondition | [AddRiskConditionRequest](#bytebase-v1-AddRiskConditionRequest) | [Risk](#bytebase-v1-Risk) |  |
-| RemoveRiskCondition | [RemoveRiskConditionRequest](#bytebase-v1-RemoveRiskConditionRequest) | [Risk](#bytebase-v1-Risk) |  |
-| UpdateRiskCondition | [UpdateRiskConditionRequest](#bytebase-v1-UpdateRiskConditionRequest) | [Risk](#bytebase-v1-Risk) |  |
+| UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
+| BatchUpdateRisks | [BatchUpdateRisksRequest](#bytebase-v1-BatchUpdateRisksRequest) | [BatchUpdateRisksResponse](#bytebase-v1-BatchUpdateRisksResponse) |  |
 
  
 
