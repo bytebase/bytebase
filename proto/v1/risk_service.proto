@@ -71,6 +71,7 @@ message Risk {
     NAMESPACE_UNSPECIFIED = 0;
     DDL = 1;
     DML = 2;
+    CREATE_DATABASE = 3;
   }
   Namespace namespace = 3;
 
