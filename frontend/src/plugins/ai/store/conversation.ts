@@ -109,14 +109,19 @@ const useLocalCache = () => {
   };
 };
 
+const FK_MESSAGE_CONVERSATION_ID = "fk_message_conversation_id";
+
 export const useConversationStore = defineStore("ai-conversation", () => {
   const conversations = new PouchDB<ConversationEntity>(
     "bb.plugin.ai.conversations"
   );
   const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
-  messages.createIndex({
-    index: { name: "idx_conversation_id", fields: ["conversation_id"] },
-  });
+  const ready: Promise<any>[] = [];
+  ready.push(
+    messages.createIndex({
+      index: { name: FK_MESSAGE_CONVERSATION_ID, fields: ["conversation_id"] },
+    })
+  );
 
   const {
     conversationById,
@@ -130,6 +135,7 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   });
 
   const fetchConversationListByConnection = async (conn: Connection) => {
+    console.log("1");
     const conversationEntityList = (
       await conversations.find({
         selector: {
@@ -139,6 +145,7 @@ export const useConversationStore = defineStore("ai-conversation", () => {
         },
       })
     ).docs;
+    console.log("2");
     const flattenMessageMessageList = (
       await messages.find({
         selector: {
@@ -164,6 +171,7 @@ export const useConversationStore = defineStore("ai-conversation", () => {
       conversation.messageList.sort((a, b) => a.created_ts - b.created_ts);
       return conversation;
     });
+    console.log("3");
     await fixAbnormalMessages(conversationList.flatMap((c) => c.messageList));
     return conversationList;
   };
@@ -234,6 +242,7 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   };
 
   const fixAbnormalMessages = async (messageList: Message[]) => {
+    console.log("4");
     const requests = messageList
       .filter((message) => message.status === "LOADING")
       .map((message) => {
@@ -242,11 +251,16 @@ export const useConversationStore = defineStore("ai-conversation", () => {
         return updateMessage(message);
       });
     await Promise.all(requests);
+    console.log("5");
   };
 
-  const reset = () => {
-    // console.debug("reset conversation storage");
-    return Promise.all([conversations.destroy(), messages.destroy()]);
+  const reset = async () => {
+    try {
+      await Promise.all(ready);
+      await Promise.all([conversations.destroy(), messages.destroy()]);
+    } catch (ex) {
+      // nothing todo
+    }
   };
 
   return {
