@@ -240,7 +240,6 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   };
 
   const fixAbnormalMessages = async (messageList: Message[]) => {
-    console.log("4");
     const requests = messageList
       .filter((message) => message.status === "LOADING")
       .map((message) => {
