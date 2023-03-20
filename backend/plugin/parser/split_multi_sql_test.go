@@ -30,6 +30,45 @@ func generateOneMBInsert() string {
 	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
 }
 
+func TestOracleSplitMultiSQL(t *testing.T) {
+	tests := []testData{
+		{
+			statement: `
+				select * from t;
+				create table table$1 (id int);
+			`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t`,
+						LastLine: 2,
+					},
+					{
+						Text:     `create table table$1 (id int)`,
+						LastLine: 3,
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := SplitMultiSQL(Oracle, test.statement)
+		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+
+		res, err = SplitMultiSQLStream(Oracle, strings.NewReader(test.statement), nil)
+		errStr = ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+	}
+}
+
 func TestPGSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
