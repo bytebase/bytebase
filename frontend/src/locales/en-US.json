@@ -1158,6 +1158,7 @@
     "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
+    "select-repository-attention-bitbucket": "Bytebase only lists Bitbucket repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-search": "Search repository",
     "linked": "Linked repositories"
   },
@@ -1329,6 +1330,7 @@
         "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "gitlab-com-admin-requirement": "Your account needs to have Admin access to any of the repositories to be linked. Usually this account corresponds to a dedicated service user instead of a human user.",
         "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "bitbucket-admin-requirement": "You need to be an admin of your chosen Bitbucket workspace to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a GitHub workspace-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "oauth-info-correct": "Verified OAuth info is correct",
         "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
         "add-success": "Successfully added Git provider {vcs}",
@@ -1339,6 +1341,7 @@
           "gitlab-instance-url": "GitLab instance URL",
           "gitlab-instance-url-label": "The VCS instance URL. Make sure this instance and Bytebase are network reachable from each other.",
           "github-instance-url": "GitHub instance URL",
+          "bitbucket-instance-url": "Bitbucket instance URL",
           "instance-url-error": "Instance URL must begin with https:// or http://",
           "display-name": "Display name",
           "display-name-label": "An optional display name to help identifying among different configs using the same Git provider."
@@ -1356,6 +1359,10 @@
           "github-login-as-admin": "Log in as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
+          "bitbucket-register-oauth-application": "Register Bytebase as a Bitbucket workspace-wide OAuth consumer.",
+          "bitbucket-login-as-admin": "Log in as an workspace admin user to the Bitbucket.org. The account must be an workspace admin of the Bitbucket workspace (able to access the workspace Settings page).",
+          "bitbucket-visit-admin-page": "Go to the Settings page, then navigate to \"APPS AND FEATURES > OAuth consumers\" section and click \"Add a consumer\" button.",
+          "bitbucket-paste-oauth-info": "Paste the Key and Secret from that just created consumer into fields below.",
           "copy-homepage-url": "Homepage URL copied to clipboard. Paste to the corresponding field on the OAuth application form.",
           "copy-redirect-uri": "Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.",
           "direct-link": "Direct link",
@@ -1363,7 +1370,9 @@
           "gitlab-application-id-error": "Application ID must be a 64-character alphanumeric string",
           "gitlab-secret-error": "Secret must be a 64-character alphanumeric string",
           "github-application-id-error": "Application ID must be a 20-character alphanumeric string",
-          "github-secret-error": "Secret must be a 40-character alphanumeric string"
+          "github-secret-error": "Secret must be a 40-character alphanumeric string",
+          "bitbucket-application-id-error": "Application ID must be a 18-character alphanumeric string",
+          "bitbucket-secret-error": "Secret must be a 32-character alphanumeric string"
         },
         "confirm": {
           "confirm-info": "Confirm the info",

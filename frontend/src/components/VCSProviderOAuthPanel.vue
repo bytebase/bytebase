@@ -22,6 +22,13 @@
           )
         }}
       </template>
+      <template v-else-if="config.uiType == 'BITBUCKET_ORG'">
+        {{
+          $t(
+            "gitops.setting.add-git-provider.oauth-info.bitbucket-register-oauth-application"
+          )
+        }}
+      </template>
     </div>
     <ol class="textinfolabel space-y-2">
       <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
@@ -262,6 +269,65 @@
           }}
         </li>
       </template>
+      <template v-else-if="config.uiType == 'BITBUCKET_ORG'">
+        <li>
+          1.
+          {{
+            $t(
+              "gitops.setting.add-git-provider.oauth-info.bitbucket-login-as-admin"
+            )
+          }}
+        </li>
+        <li>
+          2.
+          {{
+            $t(
+              "gitops.setting.add-git-provider.oauth-info.bitbucket-visit-admin-page"
+            )
+          }}
+        </li>
+        <li>
+          3.
+          {{
+            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
+          }}
+          <div class="m-4 flex justify-center">
+            <dl
+              class="divide-y divide-block-border border border-block-border shadow rounded-lg"
+            >
+              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Name
+                </dt>
+                <dd class="text-sm text-main">Bytebase</dd>
+              </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Callback URL
+                </dt>
+                <dd class="text-sm text-main items-center flex">
+                  {{ redirectUrl() }}
+                  <button
+                    tabindex="-1"
+                    class="ml-1 text-sm font-medium text-control-light hover:bg-gray-100"
+                    @click.prevent="copyRedirectURI"
+                  >
+                    <heroicons-outline:clipboard class="w-6 h-6" />
+                  </button>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </li>
+        <li>
+          4.
+          {{
+            $t(
+              "gitops.setting.add-git-provider.oauth-info.bitbucket-paste-oauth-info"
+            )
+          }}
+        </li>
+      </template>
     </ol>
     <div>
       <div class="textlabel">
@@ -470,6 +536,10 @@ export default defineComponent({
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
         );
+      } else if (props.config.type == "BITBUCKET") {
+        return t(
+          "gitops.setting.add-git-provider.oauth-info.bitbucket-application-id-error"
+        );
       }
       return "";
     });
@@ -482,6 +552,10 @@ export default defineComponent({
       } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-secret-error"
+        );
+      } else if (props.config.type == "BITBUCKET") {
+        return t(
+          "gitops.setting.add-git-provider.oauth-info.bitbucket-secret-error"
         );
       }
       return "";

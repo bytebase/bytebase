@@ -106,6 +106,11 @@ export function baseDirectoryWebUrl(
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
     }
+  } else if (repository.vcs.type == "BITBUCKET") {
+    url = `${repository.webUrl}/src/${repository.branchFilter}`;
+    if (!isEmpty(repository.baseDirectory)) {
+      url += `/${repository.baseDirectory}`;
+    }
   }
   if (url) {
     // Replace the patterns in the filePathTemplate if possible.

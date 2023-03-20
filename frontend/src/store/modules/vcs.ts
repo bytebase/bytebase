@@ -21,6 +21,8 @@ function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
     }
   } else if (vcs.attributes.type == "GITHUB") {
     uiType = "GITHUB_COM";
+  } else if (vcs.attributes.type == "BITBUCKET") {
+    uiType = "BITBUCKET_ORG";
   }
   return {
     ...(vcs.attributes as Omit<VCS, "id">),

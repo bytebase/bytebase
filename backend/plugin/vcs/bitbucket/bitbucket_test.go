@@ -18,7 +18,7 @@ import (
 func TestProvider_ExchangeOAuthToken(t *testing.T) {
 	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
 		assert.Equal(t, "/site/oauth2/access_token", r.URL.Path)
-		assert.Equal(t, "dGVzdF9jbGllbnRfaWQ6dGVzdF9jbGllbnRfc2VjcmV0", r.Header.Get("Authorization"))
+		assert.Equal(t, "Basic dGVzdF9jbGllbnRfaWQ6dGVzdF9jbGllbnRfc2VjcmV0", r.Header.Get("Authorization"))
 
 		require.NoError(t, r.ParseForm())
 		assert.Equal(t, "authorization_code", r.PostForm.Get("grant_type"))
