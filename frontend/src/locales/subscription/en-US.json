@@ -62,11 +62,8 @@
         "instance-unlimited": "Unlimited",
         "environment-count": "Environment count",
         "environment-unlimited": "Unlimited",
-        "schema-change": "Schema and data change",
-        "schema-change-basic": "Basic",
-        "schema-change-basic-tooltip": "Normal change",
-        "schema-change-advanced": "Advanced",
-        "schema-change-advanced-tooltip": "Normal change + Online change (gh-ost)",
+        "state-based-change": "State-based change",
+        "migration-based-change": "Migration-based change",
         "batch-change": "Batch change",
         "batch-change-basic": "Basic",
         "batch-change-basic-tooltip": "Multi-environment change",
@@ -130,6 +127,7 @@
         "rbac": "RBAC (Owner, DBA, Developer role)",
         "watermark": "Watermark",
         "sso": "Single Sign-On (SSO)",
+        "2fa": "Two-Factor Authentication (2FA)",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
@@ -183,6 +181,7 @@
     "database-access-control": "Database access control",
     "roadmap": "Roadmap prioritization",
     "custom-contract": "Custom MSA and BAA",
-    "sso": "Single Sign-On (SSO)"
+    "sso": "Single Sign-On (SSO)",
+    "2fa": "Two-Factor Authentication (2FA)"
   }
 }

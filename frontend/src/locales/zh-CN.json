@@ -319,7 +319,8 @@
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
-    "deploy": "5 秒部署到本地",
+    "deploy": "部署到本地",
+    "cloud": "注册云服务",
     "request-demo": "和我们的产品专家预约 30 分钟产品演示",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
@@ -1900,11 +1901,16 @@
       "select-type": "选择类型"
     },
     "type": {
-      "member-create": "增加成员",
-      "member-role-update": "更新角色",
-      "member-activate": "激活成员",
-      "member-deactivate": "禁用成员",
-      "database-transfer": "转移数据库",
+      "workspace": {
+        "member-create": "增加工作空间成员",
+        "member-role-update": "更新工作空间成员角色",
+        "member-activate": "激活工作空间成员",
+        "member-deactivate": "禁用工作空间成员"
+      },
+      "project": {
+        "member-role-update": "更新项目成员角色",
+        "database-transfer": "转移数据库"
+      },
       "sql-editor-query": "SQL 编辑器查询"
     }
   },

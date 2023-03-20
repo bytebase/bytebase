@@ -321,7 +321,8 @@
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
-    "deploy": "Deploy yours in 5 seconds",
+    "deploy": "Self Host",
+    "cloud": "Sign Up for Cloud",
     "request-demo": "Book a 30 min product walkthrough with our product expert",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
@@ -1901,11 +1902,16 @@
       "select-type": "Select Type"
     },
     "type": {
-      "member-create": "Create Member",
-      "member-role-update": "Update Member Role",
-      "member-activate": "Activate Member",
-      "member-deactivate": "Deactivate Member",
-      "database-transfer": "Transfer Database",
+      "workspace": {
+        "member-create": "Create Workspace Member",
+        "member-role-update": "Update Workspace Member Role",
+        "member-activate": "Activate Workspace Member",
+        "member-deactivate": "Deactivate Workspace Member"
+      },
+      "project": {
+        "member-role-update": "Update Project Member Role",
+        "database-transfer": "Transfer Database"
+      },
       "sql-editor-query": "SQL Editor Query"
     }
   },

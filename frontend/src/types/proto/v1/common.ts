@@ -53,6 +53,7 @@ export enum Engine {
   REDIS = 8,
   ORACLE = 9,
   SPANNER = 10,
+  MSSQL = 11,
   UNRECOGNIZED = -1,
 }
 
@@ -91,6 +92,9 @@ export function engineFromJSON(object: any): Engine {
     case 10:
     case "SPANNER":
       return Engine.SPANNER;
+    case 11:
+    case "MSSQL":
+      return Engine.MSSQL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -122,6 +126,8 @@ export function engineToJSON(object: Engine): string {
       return "ORACLE";
     case Engine.SPANNER:
       return "SPANNER";
+    case Engine.MSSQL:
+      return "MSSQL";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

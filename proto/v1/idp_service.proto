@@ -7,23 +7,18 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service IdentityProviderService {
   rpc GetIdentityProvider(GetIdentityProviderRequest) returns (IdentityProvider) {
-    option (google.api.http) = {
-      get: "/v1/{name=idps/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
-    option (google.api.http) = {
-      get: "/v1/idps"
-    };
+    option (google.api.http) = {get: "/v1/idps"};
     option (google.api.method_signature) = "";
   }
 
@@ -44,9 +39,7 @@ service IdentityProviderService {
   }
 
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=idps/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
   }
 
@@ -213,7 +206,7 @@ message OIDCIdentityProviderConfig {
 // As we save all raw json string of user info response data into `principal.idp_user_info`,
 // we can extract the relevant data based with `FieldMapping`.
 //
-// e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+// e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
 // Then the identifier of FieldMapping will be `login`, display_name will be `name`,
 // and email will be `email`.
 // reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user

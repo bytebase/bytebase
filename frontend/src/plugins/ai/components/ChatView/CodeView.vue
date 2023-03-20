@@ -19,6 +19,7 @@
           useShadows: false,
           verticalScrollbarSize: 0,
           horizontalScrollbarSize: 0,
+          alwaysConsumeMouseWheel: false,
         },
       }"
       @ready="handleMonacoEditorReady"

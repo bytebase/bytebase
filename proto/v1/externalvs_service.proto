@@ -7,23 +7,18 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service ExternalVersionControlService {
   rpc GetExternalVersionControl(GetExternalVersionControlRequest) returns (ExternalVersionControl) {
-    option (google.api.http) = {
-      get: "/v1/{name=externalVersionControls/*}"
-    };
+    option (google.api.http) = {get: "/v1/{name=externalVersionControls/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListExternalVersionControls(ListExternalVersionControlsRequest) returns (ListExternalVersionControlsResponse) {
-    option (google.api.http) = {
-      get: "/v1/externalVersionControls"
-    };
+    option (google.api.http) = {get: "/v1/externalVersionControls"};
     option (google.api.method_signature) = "";
   }
 
@@ -44,9 +39,7 @@ service ExternalVersionControlService {
   }
 
   rpc DeleteExternalVersionControl(DeleteExternalVersionControlRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=externalVersionControls/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=externalVersionControls/*}"};
   }
 
   rpc SearchExternalVersionControlProjects(SearchExternalVersionControlProjectsRequest) returns (SearchExternalVersionControlProjectsResponse) {
@@ -57,9 +50,7 @@ service ExternalVersionControlService {
   }
 
   rpc ListProjectGitOpsInfo(ListProjectGitOpsInfoRequest) returns (ListProjectGitOpsInfoResponse) {
-    option (google.api.http) = {
-      get: "/v1/{name=externalVersionControls/*}/projects"
-    };
+    option (google.api.http) = {get: "/v1/{name=externalVersionControls/*}/projects"};
   }
 }
 
@@ -68,9 +59,9 @@ message CreateExternalVersionControlRequest {
 }
 
 message GetExternalVersionControlRequest {
-    // The name of the external version control to retrieve.
-    // Format: externalVersionControls/{externalVersionControl}
-    string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the external version control to retrieve.
+  // Format: externalVersionControls/{externalVersionControl}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListExternalVersionControlsRequest {
@@ -78,7 +69,7 @@ message ListExternalVersionControlsRequest {
   // If unspecified, at most 100 external version control will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
-    
+
   // Not used. A page token, received from a previous `ListExternalVersionControls` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 2;
@@ -87,7 +78,7 @@ message ListExternalVersionControlsRequest {
 message ListExternalVersionControlsResponse {
   // The list of external version control.
   repeated ExternalVersionControl external_version_controls = 1;
-    
+
   // Not used. A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
@@ -95,7 +86,7 @@ message ListExternalVersionControlsResponse {
 
 message UpdateExternalVersionControlRequest {
   ExternalVersionControl external_version_control = 1 [(google.api.field_behavior) = REQUIRED];
-    
+
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
@@ -112,7 +103,7 @@ message SearchExternalVersionControlProjectsRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   string access_token = 2 [(google.api.field_behavior) = REQUIRED];
-  
+
   string refresh_token = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -134,7 +125,7 @@ message SearchExternalVersionControlProjectsResponse {
 message ListProjectGitOpsInfoRequest {
   // The name of the external version control to retrieve the linked projects.
   // Format: externalVersionControls/{externalVersionControl}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];  
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListProjectGitOpsInfoResponse {

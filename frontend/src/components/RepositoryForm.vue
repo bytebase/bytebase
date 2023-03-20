@@ -77,6 +77,10 @@
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/change-database/state-based-migration/overview?source=console"
+          class="ml-1"
+        />
       </div>
       <BBSelect
         id="schemamigrationtype"
@@ -109,13 +113,10 @@
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.file-path-template-description") }}
-        <a
-          href="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
-          target="_BLANK"
-          class="font-normal normal-link ml-1"
-        >
-          {{ $t("common.learn-more") }}</a
-        >
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#file-path-template"
+          class="ml-1"
+        />
       </div>
       <input
         id="filepathtemplate"
@@ -176,13 +177,10 @@
             $t("repository.schema-writeback-protected-branch")
           }}</span>
         </template>
-        <a
-          href="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
-          target="_BLANK"
-          class="font-normal normal-link ml-1"
-        >
-          {{ $t("common.learn-more") }}</a
-        >
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#schema-path-template"
+          class="ml-1"
+        />
       </div>
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
@@ -306,6 +304,7 @@ import {
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import { hasFeature, useSubscriptionStore } from "@/store";
+import LearnMoreLink from "./LearnMoreLink.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -320,7 +319,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "RepositoryForm",
-  components: { BBBetaBadge },
+  components: { BBBetaBadge, LearnMoreLink },
   props: {
     allowEdit: {
       default: true,
