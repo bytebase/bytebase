@@ -125,11 +125,7 @@ message RiskAction {
 }
 
 message RiskRule {
-  // Format: risks/{risk}/riskRules/{riskRule}
-  string name = 1;
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string title = 3;
-  string description = 4;
-  google.api.expr.v1alpha1.ParsedExpr expression = 5;
-  bool active = 6;
+  string title = 1;
+  google.api.expr.v1alpha1.ParsedExpr expression = 2;
+  bool active = 3;
 }
