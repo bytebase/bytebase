@@ -24,11 +24,11 @@ func NewRiskService(store *store.Store) *RiskService {
 }
 
 // ListRisks lists risks.
-func (s *RiskService) ListRisks(context.Context, *v1pb.ListRisksRequest) (*v1pb.ListRisksResponse, error) {
+func (*RiskService) ListRisks(context.Context, *v1pb.ListRisksRequest) (*v1pb.ListRisksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRisks not implemented")
 }
 
 // UpdateRisk updates a risk.
-func (s *RiskService) UpdateRisk(context.Context, *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
+func (*RiskService) UpdateRisk(context.Context, *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRisk not implemented")
 }
