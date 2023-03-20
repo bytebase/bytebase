@@ -23,9 +23,9 @@ export interface ActivityIssueCreatePayload {
 
 /** ActivityIssueCommentCreatePayload is the payloads for creating issue comments. */
 export interface ActivityIssueCommentCreatePayload {
-  externalApprovalEvent?: ExternalApprovalEvent | undefined;
+  externalApprovalEvent?: ActivityIssueCommentCreatePayload_ExternalApprovalEvent | undefined;
   taskRollbackBy?:
-    | TaskRollbackBy
+    | ActivityIssueCommentCreatePayload_TaskRollbackBy
     | undefined;
   /** Used by inbox to display info without paying the join cost */
   issueName: string;
@@ -35,86 +35,94 @@ export interface ActivityIssueCommentCreatePayload {
  * TaskRollbackBy records an issue rollback activity.
  * The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
  */
-export interface TaskRollbackBy {
+export interface ActivityIssueCommentCreatePayload_TaskRollbackBy {
   issueId: number;
   taskId: number;
   rollbackByIssueId: number;
   rollbackByTaskId: number;
 }
 
-export interface ExternalApprovalEvent {
-  type: ExternalApprovalEvent_Type;
-  action: ExternalApprovalEvent_Action;
+export interface ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
+  type: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type;
+  action: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action;
   stageName: string;
 }
 
-export enum ExternalApprovalEvent_Type {
+export enum ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type {
   TYPE_UNSPECIFIED = 0,
   TYPE_FEISHU = 1,
   UNRECOGNIZED = -1,
 }
 
-export function externalApprovalEvent_TypeFromJSON(object: any): ExternalApprovalEvent_Type {
+export function activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeFromJSON(
+  object: any,
+): ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type {
   switch (object) {
     case 0:
     case "TYPE_UNSPECIFIED":
-      return ExternalApprovalEvent_Type.TYPE_UNSPECIFIED;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED;
     case 1:
     case "TYPE_FEISHU":
-      return ExternalApprovalEvent_Type.TYPE_FEISHU;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_FEISHU;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return ExternalApprovalEvent_Type.UNRECOGNIZED;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.UNRECOGNIZED;
   }
 }
 
-export function externalApprovalEvent_TypeToJSON(object: ExternalApprovalEvent_Type): string {
+export function activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToJSON(
+  object: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type,
+): string {
   switch (object) {
-    case ExternalApprovalEvent_Type.TYPE_UNSPECIFIED:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case ExternalApprovalEvent_Type.TYPE_FEISHU:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_FEISHU:
       return "TYPE_FEISHU";
-    case ExternalApprovalEvent_Type.UNRECOGNIZED:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export enum ExternalApprovalEvent_Action {
+export enum ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action {
   ACTION_UNSPECIFIED = 0,
   ACTION_APPROVE = 1,
   ACTION_REJECT = 2,
   UNRECOGNIZED = -1,
 }
 
-export function externalApprovalEvent_ActionFromJSON(object: any): ExternalApprovalEvent_Action {
+export function activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionFromJSON(
+  object: any,
+): ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action {
   switch (object) {
     case 0:
     case "ACTION_UNSPECIFIED":
-      return ExternalApprovalEvent_Action.ACTION_UNSPECIFIED;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED;
     case 1:
     case "ACTION_APPROVE":
-      return ExternalApprovalEvent_Action.ACTION_APPROVE;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_APPROVE;
     case 2:
     case "ACTION_REJECT":
-      return ExternalApprovalEvent_Action.ACTION_REJECT;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_REJECT;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return ExternalApprovalEvent_Action.UNRECOGNIZED;
+      return ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.UNRECOGNIZED;
   }
 }
 
-export function externalApprovalEvent_ActionToJSON(object: ExternalApprovalEvent_Action): string {
+export function activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToJSON(
+  object: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action,
+): string {
   switch (object) {
-    case ExternalApprovalEvent_Action.ACTION_UNSPECIFIED:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED:
       return "ACTION_UNSPECIFIED";
-    case ExternalApprovalEvent_Action.ACTION_APPROVE:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_APPROVE:
       return "ACTION_APPROVE";
-    case ExternalApprovalEvent_Action.ACTION_REJECT:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_REJECT:
       return "ACTION_REJECT";
-    case ExternalApprovalEvent_Action.UNRECOGNIZED:
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -246,10 +254,14 @@ function createBaseActivityIssueCommentCreatePayload(): ActivityIssueCommentCrea
 export const ActivityIssueCommentCreatePayload = {
   encode(message: ActivityIssueCommentCreatePayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.externalApprovalEvent !== undefined) {
-      ExternalApprovalEvent.encode(message.externalApprovalEvent, writer.uint32(10).fork()).ldelim();
+      ActivityIssueCommentCreatePayload_ExternalApprovalEvent.encode(
+        message.externalApprovalEvent,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     if (message.taskRollbackBy !== undefined) {
-      TaskRollbackBy.encode(message.taskRollbackBy, writer.uint32(18).fork()).ldelim();
+      ActivityIssueCommentCreatePayload_TaskRollbackBy.encode(message.taskRollbackBy, writer.uint32(18).fork())
+        .ldelim();
     }
     if (message.issueName !== "") {
       writer.uint32(26).string(message.issueName);
@@ -265,10 +277,13 @@ export const ActivityIssueCommentCreatePayload = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.externalApprovalEvent = ExternalApprovalEvent.decode(reader, reader.uint32());
+          message.externalApprovalEvent = ActivityIssueCommentCreatePayload_ExternalApprovalEvent.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         case 2:
-          message.taskRollbackBy = TaskRollbackBy.decode(reader, reader.uint32());
+          message.taskRollbackBy = ActivityIssueCommentCreatePayload_TaskRollbackBy.decode(reader, reader.uint32());
           break;
         case 3:
           message.issueName = reader.string();
@@ -284,9 +299,11 @@ export const ActivityIssueCommentCreatePayload = {
   fromJSON(object: any): ActivityIssueCommentCreatePayload {
     return {
       externalApprovalEvent: isSet(object.externalApprovalEvent)
-        ? ExternalApprovalEvent.fromJSON(object.externalApprovalEvent)
+        ? ActivityIssueCommentCreatePayload_ExternalApprovalEvent.fromJSON(object.externalApprovalEvent)
         : undefined,
-      taskRollbackBy: isSet(object.taskRollbackBy) ? TaskRollbackBy.fromJSON(object.taskRollbackBy) : undefined,
+      taskRollbackBy: isSet(object.taskRollbackBy)
+        ? ActivityIssueCommentCreatePayload_TaskRollbackBy.fromJSON(object.taskRollbackBy)
+        : undefined,
       issueName: isSet(object.issueName) ? String(object.issueName) : "",
     };
   },
@@ -294,10 +311,11 @@ export const ActivityIssueCommentCreatePayload = {
   toJSON(message: ActivityIssueCommentCreatePayload): unknown {
     const obj: any = {};
     message.externalApprovalEvent !== undefined && (obj.externalApprovalEvent = message.externalApprovalEvent
-      ? ExternalApprovalEvent.toJSON(message.externalApprovalEvent)
+      ? ActivityIssueCommentCreatePayload_ExternalApprovalEvent.toJSON(message.externalApprovalEvent)
       : undefined);
-    message.taskRollbackBy !== undefined &&
-      (obj.taskRollbackBy = message.taskRollbackBy ? TaskRollbackBy.toJSON(message.taskRollbackBy) : undefined);
+    message.taskRollbackBy !== undefined && (obj.taskRollbackBy = message.taskRollbackBy
+      ? ActivityIssueCommentCreatePayload_TaskRollbackBy.toJSON(message.taskRollbackBy)
+      : undefined);
     message.issueName !== undefined && (obj.issueName = message.issueName);
     return obj;
   },
@@ -306,22 +324,25 @@ export const ActivityIssueCommentCreatePayload = {
     const message = createBaseActivityIssueCommentCreatePayload();
     message.externalApprovalEvent =
       (object.externalApprovalEvent !== undefined && object.externalApprovalEvent !== null)
-        ? ExternalApprovalEvent.fromPartial(object.externalApprovalEvent)
+        ? ActivityIssueCommentCreatePayload_ExternalApprovalEvent.fromPartial(object.externalApprovalEvent)
         : undefined;
     message.taskRollbackBy = (object.taskRollbackBy !== undefined && object.taskRollbackBy !== null)
-      ? TaskRollbackBy.fromPartial(object.taskRollbackBy)
+      ? ActivityIssueCommentCreatePayload_TaskRollbackBy.fromPartial(object.taskRollbackBy)
       : undefined;
     message.issueName = object.issueName ?? "";
     return message;
   },
 };
 
-function createBaseTaskRollbackBy(): TaskRollbackBy {
+function createBaseActivityIssueCommentCreatePayload_TaskRollbackBy(): ActivityIssueCommentCreatePayload_TaskRollbackBy {
   return { issueId: 0, taskId: 0, rollbackByIssueId: 0, rollbackByTaskId: 0 };
 }
 
-export const TaskRollbackBy = {
-  encode(message: TaskRollbackBy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
+  encode(
+    message: ActivityIssueCommentCreatePayload_TaskRollbackBy,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
     if (message.issueId !== 0) {
       writer.uint32(8).int64(message.issueId);
     }
@@ -337,10 +358,10 @@ export const TaskRollbackBy = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRollbackBy {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueCommentCreatePayload_TaskRollbackBy {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskRollbackBy();
+    const message = createBaseActivityIssueCommentCreatePayload_TaskRollbackBy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -364,7 +385,7 @@ export const TaskRollbackBy = {
     return message;
   },
 
-  fromJSON(object: any): TaskRollbackBy {
+  fromJSON(object: any): ActivityIssueCommentCreatePayload_TaskRollbackBy {
     return {
       issueId: isSet(object.issueId) ? Number(object.issueId) : 0,
       taskId: isSet(object.taskId) ? Number(object.taskId) : 0,
@@ -373,7 +394,7 @@ export const TaskRollbackBy = {
     };
   },
 
-  toJSON(message: TaskRollbackBy): unknown {
+  toJSON(message: ActivityIssueCommentCreatePayload_TaskRollbackBy): unknown {
     const obj: any = {};
     message.issueId !== undefined && (obj.issueId = Math.round(message.issueId));
     message.taskId !== undefined && (obj.taskId = Math.round(message.taskId));
@@ -382,8 +403,10 @@ export const TaskRollbackBy = {
     return obj;
   },
 
-  fromPartial(object: DeepPartial<TaskRollbackBy>): TaskRollbackBy {
-    const message = createBaseTaskRollbackBy();
+  fromPartial(
+    object: DeepPartial<ActivityIssueCommentCreatePayload_TaskRollbackBy>,
+  ): ActivityIssueCommentCreatePayload_TaskRollbackBy {
+    const message = createBaseActivityIssueCommentCreatePayload_TaskRollbackBy();
     message.issueId = object.issueId ?? 0;
     message.taskId = object.taskId ?? 0;
     message.rollbackByIssueId = object.rollbackByIssueId ?? 0;
@@ -392,12 +415,15 @@ export const TaskRollbackBy = {
   },
 };
 
-function createBaseExternalApprovalEvent(): ExternalApprovalEvent {
+function createBaseActivityIssueCommentCreatePayload_ExternalApprovalEvent(): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
   return { type: 0, action: 0, stageName: "" };
 }
 
-export const ExternalApprovalEvent = {
-  encode(message: ExternalApprovalEvent, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
+  encode(
+    message: ActivityIssueCommentCreatePayload_ExternalApprovalEvent,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
     if (message.type !== 0) {
       writer.uint32(8).int32(message.type);
     }
@@ -410,10 +436,10 @@ export const ExternalApprovalEvent = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ExternalApprovalEvent {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExternalApprovalEvent();
+    const message = createBaseActivityIssueCommentCreatePayload_ExternalApprovalEvent();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -434,24 +460,30 @@ export const ExternalApprovalEvent = {
     return message;
   },
 
-  fromJSON(object: any): ExternalApprovalEvent {
+  fromJSON(object: any): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
     return {
-      type: isSet(object.type) ? externalApprovalEvent_TypeFromJSON(object.type) : 0,
-      action: isSet(object.action) ? externalApprovalEvent_ActionFromJSON(object.action) : 0,
+      type: isSet(object.type) ? activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeFromJSON(object.type) : 0,
+      action: isSet(object.action)
+        ? activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionFromJSON(object.action)
+        : 0,
       stageName: isSet(object.stageName) ? String(object.stageName) : "",
     };
   },
 
-  toJSON(message: ExternalApprovalEvent): unknown {
+  toJSON(message: ActivityIssueCommentCreatePayload_ExternalApprovalEvent): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = externalApprovalEvent_TypeToJSON(message.type));
-    message.action !== undefined && (obj.action = externalApprovalEvent_ActionToJSON(message.action));
+    message.type !== undefined &&
+      (obj.type = activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToJSON(message.type));
+    message.action !== undefined &&
+      (obj.action = activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToJSON(message.action));
     message.stageName !== undefined && (obj.stageName = message.stageName);
     return obj;
   },
 
-  fromPartial(object: DeepPartial<ExternalApprovalEvent>): ExternalApprovalEvent {
-    const message = createBaseExternalApprovalEvent();
+  fromPartial(
+    object: DeepPartial<ActivityIssueCommentCreatePayload_ExternalApprovalEvent>,
+  ): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
+    const message = createBaseActivityIssueCommentCreatePayload_ExternalApprovalEvent();
     message.type = object.type ?? 0;
     message.action = object.action ?? 0;
     message.stageName = object.stageName ?? "";

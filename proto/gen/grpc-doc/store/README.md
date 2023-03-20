@@ -5,13 +5,13 @@
 
 - [store/activity.proto](#store_activity-proto)
     - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
+    - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
     - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
     - [ActivityPayload](#bytebase-store-ActivityPayload)
-    - [ExternalApprovalEvent](#bytebase-store-ExternalApprovalEvent)
-    - [TaskRollbackBy](#bytebase-store-TaskRollbackBy)
   
-    - [ExternalApprovalEvent.Action](#bytebase-store-ExternalApprovalEvent-Action)
-    - [ExternalApprovalEvent.Type](#bytebase-store-ExternalApprovalEvent-Type)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -62,9 +62,45 @@ ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| external_approval_event | [ExternalApprovalEvent](#bytebase-store-ExternalApprovalEvent) |  |  |
-| task_rollback_by | [TaskRollbackBy](#bytebase-store-TaskRollbackBy) |  |  |
+| external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
+| task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
 | issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type) |  |  |
+| action | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action) |  |  |
+| stage_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy"></a>
+
+### ActivityIssueCommentCreatePayload.TaskRollbackBy
+TaskRollbackBy records an issue rollback activity.
+The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  |  |
+| task_id | [int64](#int64) |  |  |
+| rollback_by_issue_id | [int64](#int64) |  |  |
+| rollback_by_task_id | [int64](#int64) |  |  |
 
 
 
@@ -105,48 +141,12 @@ convert to the expected struct there.
 
 
 
-
-<a name="bytebase-store-ExternalApprovalEvent"></a>
-
-### ExternalApprovalEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ExternalApprovalEvent.Type](#bytebase-store-ExternalApprovalEvent-Type) |  |  |
-| action | [ExternalApprovalEvent.Action](#bytebase-store-ExternalApprovalEvent-Action) |  |  |
-| stage_name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskRollbackBy"></a>
-
-### TaskRollbackBy
-TaskRollbackBy records an issue rollback activity.
-The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_id | [int64](#int64) |  |  |
-| task_id | [int64](#int64) |  |  |
-| rollback_by_issue_id | [int64](#int64) |  |  |
-| rollback_by_task_id | [int64](#int64) |  |  |
-
-
-
-
-
  
 
 
-<a name="bytebase-store-ExternalApprovalEvent-Action"></a>
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
 
-### ExternalApprovalEvent.Action
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
 
 
 | Name | Number | Description |
@@ -157,9 +157,9 @@ The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID 
 
 
 
-<a name="bytebase-store-ExternalApprovalEvent-Type"></a>
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type"></a>
 
-### ExternalApprovalEvent.Type
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
 
 
 | Name | Number | Description |
@@ -419,7 +419,7 @@ FieldMapping saves the field names from user info API of identity provider.
 As we save all raw json string of user info response data into `principal.idp_user_info`,
 we can extract the relevant data based with `FieldMapping`.
 
-e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
 Then the identifier of FieldMapping will be `login`, display_name will be `name`,
 and email will be `email`.
 reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user

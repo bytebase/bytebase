@@ -282,7 +282,6 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 		return nil, err
 	}
 	for i, create := range creates {
-		payload := create.Payload
 		if create.Payload == "" {
 			create.Payload = "{}"
 		}
@@ -512,16 +511,16 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 			IssueName: originalPayload.IssueName,
 		}
 		if originalPayload.ExternalApprovalEvent != nil {
-			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
-				ExternalApprovalEvent: &storepb.ExternalApprovalEvent{
+			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_{
+				ExternalApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
 					Type:      convertAPIExternalApprovalEventTypeToStorePBType(originalPayload.ExternalApprovalEvent.Type),
 					Action:    convertAPIExternalApprovalEventActionToStorePBAction(originalPayload.ExternalApprovalEvent.Action),
 					StageName: originalPayload.ExternalApprovalEvent.StageName,
 				},
 			}
 		} else if originalPayload.TaskRollbackBy != nil {
-			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy{
-				TaskRollbackBy: &storepb.TaskRollbackBy{
+			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy_{
+				TaskRollbackBy: &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy{
 					IssueId:           int64(originalPayload.TaskRollbackBy.IssueID),
 					TaskId:            int64(originalPayload.TaskRollbackBy.TaskID),
 					RollbackByIssueId: int64(originalPayload.TaskRollbackBy.RollbackByIssueID),
@@ -564,7 +563,7 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 		}
 		if protoPayload.Event != nil {
 			switch event := protoPayload.Event.(type) {
-			case *storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent:
+			case *storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_:
 				apiTp, err := convertStorePBTypeToAPIExternalApprovalEventType(event.ExternalApprovalEvent.Type)
 				if err != nil {
 					return "", err
@@ -578,7 +577,7 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 					Action:    apiAction,
 					StageName: event.ExternalApprovalEvent.StageName,
 				}
-			case *storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy:
+			case *storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy_:
 				originalPayload.TaskRollbackBy = &api.TaskRollbackBy{
 					IssueID:           int(event.TaskRollbackBy.IssueId),
 					TaskID:            int(event.TaskRollbackBy.TaskId),
@@ -591,40 +590,40 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 	return payload, nil
 }
 
-func convertAPIExternalApprovalEventActionToStorePBAction(action api.ExternalApprovalEventActionType) storepb.ExternalApprovalEvent_Action {
+func convertAPIExternalApprovalEventActionToStorePBAction(action api.ExternalApprovalEventActionType) storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action {
 	switch action {
 	case api.ExternalApprovalEventActionApprove:
-		return storepb.ExternalApprovalEvent_ACTION_APPROVE
+		return storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_APPROVE
 	case api.ExternalApprovalEventActionReject:
-		return storepb.ExternalApprovalEvent_ACTION_REJECT
+		return storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_REJECT
 	default:
-		return storepb.ExternalApprovalEvent_ACTION_UNSPECIFIED
+		return storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_UNSPECIFIED
 	}
 }
 
-func convertAPIExternalApprovalEventTypeToStorePBType(eventType api.ExternalApprovalType) storepb.ExternalApprovalEvent_Type {
+func convertAPIExternalApprovalEventTypeToStorePBType(eventType api.ExternalApprovalType) storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type {
 	switch eventType {
 	case api.ExternalApprovalTypeFeishu:
-		return storepb.ExternalApprovalEvent_TYPE_FEISHU
+		return storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_TYPE_FEISHU
 	default:
-		return storepb.ExternalApprovalEvent_TYPE_UNSPECIFIED
+		return storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_TYPE_UNSPECIFIED
 	}
 }
 
-func convertStorePBActionToAPIExternalApprovalEventAction(action storepb.ExternalApprovalEvent_Action) (api.ExternalApprovalEventActionType, error) {
+func convertStorePBActionToAPIExternalApprovalEventAction(action storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action) (api.ExternalApprovalEventActionType, error) {
 	switch action {
-	case storepb.ExternalApprovalEvent_ACTION_APPROVE:
+	case storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_APPROVE:
 		return api.ExternalApprovalEventActionApprove, nil
-	case storepb.ExternalApprovalEvent_ACTION_REJECT:
+	case storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_REJECT:
 		return api.ExternalApprovalEventActionReject, nil
 	default:
 		return api.ExternalApprovalEventActionType(""), nil
 	}
 }
 
-func convertStorePBTypeToAPIExternalApprovalEventType(eventType storepb.ExternalApprovalEvent_Type) (api.ExternalApprovalType, error) {
+func convertStorePBTypeToAPIExternalApprovalEventType(eventType storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type) (api.ExternalApprovalType, error) {
 	switch eventType {
-	case storepb.ExternalApprovalEvent_TYPE_FEISHU:
+	case storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_TYPE_FEISHU:
 		return api.ExternalApprovalTypeFeishu, nil
 	default:
 		return api.ExternalApprovalType(""), nil

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -87,10 +88,10 @@ func TestMigrateActivityIssueCommentCreatePayload(t *testing.T) {
 				Payload: &storepb.ActivityPayload_IssueCommentCreatePayload{
 					IssueCommentCreatePayload: &storepb.ActivityIssueCommentCreatePayload{
 						IssueName: "issue1",
-						Event: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
-							ExternalApprovalEvent: &storepb.ExternalApprovalEvent{
-								Type:      storepb.ExternalApprovalEvent_TYPE_FEISHU,
-								Action:    storepb.ExternalApprovalEvent_ACTION_APPROVE,
+						Event: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_{
+							ExternalApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
+								Type:      storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_TYPE_FEISHU,
+								Action:    storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_APPROVE,
 								StageName: "stage1",
 							},
 						},
@@ -111,10 +112,10 @@ func TestMigrateActivityIssueCommentCreatePayload(t *testing.T) {
 				Payload: &storepb.ActivityPayload_IssueCommentCreatePayload{
 					IssueCommentCreatePayload: &storepb.ActivityIssueCommentCreatePayload{
 						IssueName: "issue1",
-						Event: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
-							ExternalApprovalEvent: &storepb.ExternalApprovalEvent{
-								Type:      storepb.ExternalApprovalEvent_TYPE_FEISHU,
-								Action:    storepb.ExternalApprovalEvent_ACTION_REJECT,
+						Event: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_{
+							ExternalApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent{
+								Type:      storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_TYPE_FEISHU,
+								Action:    storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_ACTION_REJECT,
 								StageName: "stage1",
 							},
 						},
@@ -136,8 +137,8 @@ func TestMigrateActivityIssueCommentCreatePayload(t *testing.T) {
 				Payload: &storepb.ActivityPayload_IssueCommentCreatePayload{
 					IssueCommentCreatePayload: &storepb.ActivityIssueCommentCreatePayload{
 						IssueName: "issue1",
-						Event: &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy{
-							TaskRollbackBy: &storepb.TaskRollbackBy{
+						Event: &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy_{
+							TaskRollbackBy: &storepb.ActivityIssueCommentCreatePayload_TaskRollbackBy{
 								IssueId:           1,
 								TaskId:            2,
 								RollbackByIssueId: 3,
@@ -171,8 +172,8 @@ func TestMigrateActivityIssueCommentCreatePayload(t *testing.T) {
 	a.NoError(err)
 
 	for _, tc := range testCases {
-		// Apply migrate SQL to legacy table and unmarshal to compare with proto payload.
-		if false {
+		{
+			// Apply migrate SQL to legacy table and unmarshal to compare with proto payload.
 			payload, err := json.Marshal(tc.legacyPayload)
 			a.NoError(err)
 			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s(payload) VALUES($1);", legacyTableName), payload)
@@ -182,42 +183,43 @@ func TestMigrateActivityIssueCommentCreatePayload(t *testing.T) {
 			var storePayload string
 			err = metaDB.QueryRowContext(ctx, fmt.Sprintf("SELECT payload FROM %s;", legacyTableName)).Scan(&storePayload)
 			a.NoError(err)
-			if false {
-				var protoPayload storepb.ActivityPayload
-				err = protojson.Unmarshal([]byte(storePayload), tc.protoPayload)
-				a.NoError(err)
-				a.Equal(tc.protoPayload, &protoPayload)
-			}
+			var protoPayload storepb.ActivityPayload
+			err = protojson.Unmarshal([]byte(storePayload), &protoPayload)
+			a.NoError(err)
+			a.True(proto.Equal(tc.protoPayload, &protoPayload))
+
+			// Remove data
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", legacyTableName))
+			a.NoError(err)
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", protoTableName))
+			a.NoError(err)
 		}
-		// Remove data
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", legacyTableName))
-		a.NoError(err)
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", protoTableName))
-		a.NoError(err)
 
-		// Seed data to proto table and legacy table, and execute migrate SQL to legacy table and unmarshal to compare with proto payload.
-		payload, err := json.Marshal(tc.legacyPayload)
-		a.NoError(err)
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s(payload) VALUES($1);", legacyTableName), payload)
-		a.NoError(err)
-		payload, err = protojson.Marshal(tc.protoPayload)
-		a.NoError(err)
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s(payload) VALUES($1);", protoTableName), payload)
-		a.NoError(err)
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf(MigrateActivityIssueCommentCreatePayloadStatementFmt, legacyTableName))
-		a.NoError(err)
-		var legacyPayload string
-		err = metaDB.QueryRowContext(ctx, fmt.Sprintf("SELECT payload FROM %s;", legacyTableName)).Scan(&legacyPayload)
-		a.NoError(err)
-		var protoPayload string
-		err = metaDB.QueryRowContext(ctx, fmt.Sprintf("SELECT payload FROM %s;", protoTableName)).Scan(&protoPayload)
-		a.NoError(err)
-		a.Equal(protoPayload, legacyPayload)
+		{
+			// Seed data to proto table and legacy table, and execute migrate SQL to legacy table and unmarshal to compare with proto payload.
+			payload, err := json.Marshal(tc.legacyPayload)
+			a.NoError(err)
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s(payload) VALUES($1);", legacyTableName), payload)
+			a.NoError(err)
+			payload, err = protojson.Marshal(tc.protoPayload)
+			a.NoError(err)
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s(payload) VALUES($1);", protoTableName), payload)
+			a.NoError(err)
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf(MigrateActivityIssueCommentCreatePayloadStatementFmt, legacyTableName))
+			a.NoError(err)
+			var legacyPayload string
+			err = metaDB.QueryRowContext(ctx, fmt.Sprintf("SELECT payload FROM %s;", legacyTableName)).Scan(&legacyPayload)
+			a.NoError(err)
+			var protoPayload string
+			err = metaDB.QueryRowContext(ctx, fmt.Sprintf("SELECT payload FROM %s;", protoTableName)).Scan(&protoPayload)
+			a.NoError(err)
+			a.Equal(protoPayload, legacyPayload)
 
-		// Remove data
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", legacyTableName))
-		a.NoError(err)
-		_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", protoTableName))
-		a.NoError(err)
+			// Remove data
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", legacyTableName))
+			a.NoError(err)
+			_, err = metaDB.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s;", protoTableName))
+			a.NoError(err)
+		}
 	}
 }
