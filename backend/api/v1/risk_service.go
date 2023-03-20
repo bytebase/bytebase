@@ -24,7 +24,7 @@ func NewRiskService(store *store.Store) *RiskService {
 }
 
 // ListRisks lists risks.
-func (s *RiskService) ListRisks(ctx context.Context, request *v1pb.ListRisksRequest) (*v1pb.ListRisksResponse, error) {
+func (s *RiskService) ListRisks(context.Context, *v1pb.ListRisksRequest) (*v1pb.ListRisksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRisks not implemented")
 }
 
