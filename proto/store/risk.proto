@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/api/expr/v1alpha1/syntax.proto";
+
+option go_package = "generated-go/store";
+
+message RiskRule {
+  message Rule {
+    string title = 1;
+    google.api.expr.v1alpha1.ParsedExpr expression = 2;
+    bool active = 3;
+  }
+  repeated Rule rules = 1;
+}
+
+message RiskAction {
+  message Action {
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      CHOOSE_APPROVAL_TEMPLATE = 1;
+    }
+    Type type = 1;
+    oneof payload {
+      // Format: approvalTemplates/{approvalTemplate}
+      string approval_template = 2;
+    }
+  }
+  repeated Action actions = 1;
+}
