@@ -22,6 +22,8 @@ const (
 	TiDB EngineType = "TIDB"
 	// Oracle is the engine type for Oracle.
 	Oracle EngineType = "ORACLE"
+	// MSSQL is the engine type for MSSQL.
+	MSSQL EngineType = "MSSQL"
 
 	// DeparseIndentString is the string for each indent level.
 	DeparseIndentString = "    "

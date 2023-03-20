@@ -29,7 +29,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Oracle:
+	case Oracle, MSSQL:
 		t := newTokenizer(statement)
 		list, err = t.splitOracleMultiSQL()
 	case Postgres:
@@ -65,7 +65,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Oracle:
+	case Oracle, MSSQL:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitOracleMultiSQL()
 	case Postgres:

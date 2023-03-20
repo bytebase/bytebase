@@ -93,6 +93,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
 	// Register oracle driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
+	// Register mssql driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -1099,7 +1101,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				limit := 10
 				offset := 0
 
-				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB || instance.Engine == db.SQLite {
+				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB || instance.Engine == db.SQLite || instance.Engine == db.MSSQL {
 					return nil
 				}
 				if instanceMigrated[instance.UID] {

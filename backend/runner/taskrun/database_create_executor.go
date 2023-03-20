@@ -252,6 +252,8 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 	switch dbType {
 	case db.MySQL, db.TiDB:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
+	case db.MSSQL:
+		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
 	case db.Postgres:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
 	case db.ClickHouse:

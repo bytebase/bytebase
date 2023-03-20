@@ -19,7 +19,8 @@ export type EngineType =
   | "MONGODB"
   | "SPANNER"
   | "REDIS"
-  | "ORACLE";
+  | "ORACLE"
+  | "MSSQL";
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {
@@ -41,6 +42,8 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.REDIS;
     case "ORACLE":
       return Engine.ORACLE;
+    case "MSSQL":
+      return Engine.MSSQL;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -63,6 +66,8 @@ export function defaultCharset(type: EngineType): string {
       return "";
     case "ORACLE":
       return "UTF8";
+    case "MSSQL":
+      return "";
   }
 }
 
@@ -86,6 +91,8 @@ export function engineName(type: EngineType): string {
       return "Redis";
     case "ORACLE":
       return "Oracle";
+    case "MSSQL":
+      return "MSSQL";
   }
 }
 
@@ -110,6 +117,8 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "ORACLE":
       return "BINARY_CI";
+    case "MSSQL":
+      return "";
   }
 }
 

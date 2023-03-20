@@ -8,7 +8,6 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/wrappers.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -22,20 +21,16 @@ service BookmarkService {
     };
     option (google.api.method_signature) = "parent,bookmark";
   }
-  
+
   // DeleteBookmark deletes a bookmark.
   rpc DeleteBookmark(DeleteBookmarkRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=users/*/bookmarks/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=users/*/bookmarks/*}"};
     option (google.api.method_signature) = "name";
   }
 
   // ListBookmark lists bookmarks.
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=users/*}/bookmarks"
-    };
+    option (google.api.http) = {get: "/v1/{parent=users/*}/bookmarks"};
     option (google.api.method_signature) = "parent";
   }
 }
@@ -67,7 +62,7 @@ message ListBookmarksRequest {
   int32 page_size = 2;
 
   // Not used. A page token, received from a previous `ListBookmarks` call.
-  // Provide this to retrieve the subsequent page.  
+  // Provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `ListBookmarks` must match
   // the call that provided the page token.
@@ -90,7 +85,7 @@ message Bookmark {
 
   // The title of the bookmark.
   string title = 2 [(google.api.field_behavior) = REQUIRED];
-  
+
   // The resource link of the bookmark. Only support issue link for now.
   // Format:
   // Issue: /issue/slug(issue_name)-{issue_uid}

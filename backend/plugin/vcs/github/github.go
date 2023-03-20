@@ -265,11 +265,11 @@ type Commit struct {
 
 // FileCommit represents a GitHub API request for committing a file.
 type FileCommit struct {
-	Message string       `json:"message"`
-	Content string       `json:"content"`
-	SHA     string       `json:"sha,omitempty"`
-	Branch  string       `json:"branch,omitempty"`
-	Author  CommitAuthor `json:"author,omitempty"`
+	Message string        `json:"message"`
+	Content string        `json:"content"`
+	SHA     string        `json:"sha,omitempty"`
+	Branch  string        `json:"branch,omitempty"`
+	Author  *CommitAuthor `json:"author,omitempty"`
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -595,7 +595,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		SHA:     fileCommitCreate.SHA,
 	}
 	if fileCommitCreate.AuthorName != "" && fileCommitCreate.AuthorEmail != "" {
-		fileCommit.Author = CommitAuthor{
+		fileCommit.Author = &CommitAuthor{
 			Name:  fileCommitCreate.AuthorName,
 			Email: fileCommitCreate.AuthorEmail,
 		}
@@ -1333,10 +1333,10 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 // oauthContext is the request context for refreshing oauth token.
 type oauthContext struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	RefreshToken string `json:"refresh_token"`
-	GrantType    string `json:"grant_type"`
+	ClientID     string
+	ClientSecret string
+	RefreshToken string
+	GrantType    string
 }
 
 type refreshOAuthResponse struct {
@@ -1349,25 +1349,25 @@ type refreshOAuthResponse struct {
 
 func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
-		url := fmt.Sprintf("%s/login/oauth/access_token", instanceURL)
-		oauthCtx.GrantType = "refresh_token"
-		body, err := json.Marshal(oauthCtx)
-		if err != nil {
-			return err
-		}
+		params := &url.Values{}
+		params.Set("client_id", oauthCtx.ClientID)
+		params.Set("client_secret", oauthCtx.ClientSecret)
+		params.Set("refresh_token", oauthCtx.RefreshToken)
+		params.Set("grant_type", "refresh_token")
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		url := fmt.Sprintf("%s/login/oauth/access_token", instanceURL)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(params.Encode()))
 		if err != nil {
 			return errors.Wrapf(err, "construct POST %s", url)
 		}
 
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		resp, err := client.Do(req)
 		if err != nil {
 			return errors.Wrapf(err, "POST %s", url)
 		}
 
-		body, err = io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrapf(err, "read body of POST %s", url)
 		}
