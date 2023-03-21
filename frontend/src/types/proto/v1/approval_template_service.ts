@@ -47,6 +47,8 @@ export interface ApprovalTemplate {
   /** system-generated unique identifier */
   uid: string;
   flow?: ApprovalFlow;
+  title: string;
+  description: string;
   /**
    * Format: `user:{email_id}`
    * example: `user:hello@world.com`
@@ -445,7 +447,7 @@ export const SetApprovalTemplatesResponse = {
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { name: "", uid: "", flow: undefined, creator: "" };
+  return { name: "", uid: "", flow: undefined, title: "", description: "", creator: "" };
 }
 
 export const ApprovalTemplate = {
@@ -459,8 +461,14 @@ export const ApprovalTemplate = {
     if (message.flow !== undefined) {
       ApprovalFlow.encode(message.flow, writer.uint32(26).fork()).ldelim();
     }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(42).string(message.description);
+    }
     if (message.creator !== "") {
-      writer.uint32(34).string(message.creator);
+      writer.uint32(50).string(message.creator);
     }
     return writer;
   },
@@ -482,6 +490,12 @@ export const ApprovalTemplate = {
           message.flow = ApprovalFlow.decode(reader, reader.uint32());
           break;
         case 4:
+          message.title = reader.string();
+          break;
+        case 5:
+          message.description = reader.string();
+          break;
+        case 6:
           message.creator = reader.string();
           break;
         default:
@@ -497,6 +511,8 @@ export const ApprovalTemplate = {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
     };
   },
@@ -506,6 +522,8 @@ export const ApprovalTemplate = {
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
     message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
     message.creator !== undefined && (obj.creator = message.creator);
     return obj;
   },
@@ -517,6 +535,8 @@ export const ApprovalTemplate = {
     message.flow = (object.flow !== undefined && object.flow !== null)
       ? ApprovalFlow.fromPartial(object.flow)
       : undefined;
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
     message.creator = object.creator ?? "";
     return message;
   },

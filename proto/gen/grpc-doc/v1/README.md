@@ -698,6 +698,8 @@ BackupPlanSchedule is the backup plan schedule.
 | name | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
 | uid | [string](#string) |  | system-generated unique identifier |
 | flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
 | creator | [string](#string) |  | Format: `user:{email_id}` example: `user:hello@world.com` |
 
 
