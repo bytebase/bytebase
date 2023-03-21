@@ -3,20 +3,17 @@
 
 ## Table of Contents
 
-- [store/approval_template.proto](#store_approval_template-proto)
+- [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
+    - [ApprovalHistory](#bytebase-store-ApprovalHistory)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
+    - [ApprovalPayload](#bytebase-store-ApprovalPayload)
     - [ApprovalStep](#bytebase-store-ApprovalStep)
   
     - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
-    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
-  
-- [store/approval.proto](#store_approval-proto)
-    - [ApprovalHistory](#bytebase-store-ApprovalHistory)
-    - [ApprovalPayload](#bytebase-store-ApprovalPayload)
-  
     - [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus)
+    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -52,10 +49,10 @@
 
 
 
-<a name="store_approval_template-proto"></a>
+<a name="store_approval-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## store/approval_template.proto
+## store/approval.proto
 
 
 
@@ -74,6 +71,23 @@
 
 
 
+<a name="bytebase-store-ApprovalHistory"></a>
+
+### ApprovalHistory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_uid | [string](#string) |  | The `uid` of the approval node. |
+| status | [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus) |  | The new status. |
+| principal_id | [int32](#int32) |  | The principal id of the approver. |
+
+
+
+
+
+
 <a name="bytebase-store-ApprovalNode"></a>
 
 ### ApprovalNode
@@ -85,6 +99,22 @@
 | uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalPayload"></a>
+
+### ApprovalPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_template | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
+| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
 
 
 
@@ -144,6 +174,19 @@ See RoleValue below for the predefined user groups.
 
 
 
+<a name="bytebase-store-ApprovalNodeStatus"></a>
+
+### ApprovalNodeStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_NODE_STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+
+
+
 <a name="bytebase-store-ApprovalStep-Type"></a>
 
 ### ApprovalStep.Type
@@ -156,70 +199,6 @@ OR means approving any node will proceed.
 | TYPE_UNSPECIFIED | 0 |  |
 | AND | 1 |  |
 | OR | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_approval-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/approval.proto
-
-
-
-<a name="bytebase-store-ApprovalHistory"></a>
-
-### ApprovalHistory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| node_uid | [string](#string) |  | The `uid` of the approval node. |
-| status | [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus) |  | The new status. |
-| principal_id | [int32](#int32) |  | The principal id of the approver. |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalPayload"></a>
-
-### ApprovalPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| pipeline_id | [int32](#int32) |  |  |
-| stage_id | [int32](#int32) |  |  |
-| task_id | [int32](#int32) | optional |  |
-| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ApprovalNodeStatus"></a>
-
-### ApprovalNodeStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_NODE_STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
 
 
  
