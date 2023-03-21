@@ -133,6 +133,11 @@ func getOAuthErrorDetails(code int, body []byte) error {
 		return nil
 	}
 
+	// Special case for Bitbucket OAuth error.
+	if bytes.Contains(body, []byte("OAuth2 access token expired.")) {
+		return &oauthError{}
+	}
+
 	var oe oauthError
 	if err := json.Unmarshal(body, &oe); err != nil {
 		// If we failed to unmarshal body with oauth error, it's not oauthError and we should return nil.

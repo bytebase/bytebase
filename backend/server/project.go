@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
@@ -1294,6 +1295,17 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
 			},
 			Events: []string{"push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.Bitbucket:
+		webhookPost := bitbucket.WebhookCreateOrUpdate{
+			Description: "Bytebase GitOps",
+			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", externalURL, webhookEndpointID),
+			Active:      true,
+			Events:      []string{"repo:push"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
