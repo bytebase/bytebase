@@ -62,6 +62,9 @@ message ApprovalTemplate {
   // system-generated unique identifier
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   ApprovalFlow flow = 3;
+  // Format: `user:{email_id}`
+  // example: `user:hello@world.com`
+  string creator = 4;
 }
 
 message ApprovalFlow {
