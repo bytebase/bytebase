@@ -31,7 +31,7 @@ func NewRunner(store *store.Store, activityManager *activity.Manager, feishuProv
 	}
 }
 
-// Runner is a runner which periodically checks external approval status and approve the correspoding stages.
+// Runner is a runner which periodically checks external approval status and approve the corresponding stages.
 type Runner struct {
 	store           *store.Store
 	activityManager *activity.Manager
@@ -122,7 +122,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						issue, ok := issueByID[externalApproval.IssueUID]
 						if !ok {
 							// issueByID is fetched before externalApprovalList and is not fresh,
-							// so it's ok not to find the correspoding issue of an externalApproval as
+							// so it's ok not to find the corresponding issue of an externalApproval as
 							// it will be handled next round anyway.
 							continue
 						}
