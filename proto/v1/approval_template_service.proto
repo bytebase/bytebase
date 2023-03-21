@@ -15,6 +15,12 @@ service ApprovalTemplateService {
     option (google.api.http) = {get: "/v1/approvalTemplates"};
     option (google.api.method_signature) = "";
   }
+  rpc SetApprovalTemplates(SetApprovalTemplatesRequest) returns (SetApprovalTemplatesResponse) {
+    option (google.api.http) = {
+      post: "/v1/approvalTemplates:set"
+      body: "*"
+    };
+  }
 }
 
 message ListApprovalTemplatesRequest {
@@ -39,6 +45,15 @@ message ListApprovalTemplatesResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message SetApprovalTemplatesRequest {
+  // The approval templates to set.
+  repeated ApprovalTemplate approval_templates = 1;
+}
+
+message SetApprovalTemplatesResponse {
+  repeated ApprovalTemplate approval_templates = 1;
 }
 
 message ApprovalTemplate {
