@@ -11,42 +11,10 @@ import "google/protobuf/field_mask.proto";
 option go_package = "generated-go/v1";
 
 service ApprovalTemplateService {
-  rpc GetApprovalTemplate(GetApprovalTemplateRequest) returns (ApprovalTemplate) {
-    option (google.api.http) = {get: "/v1/{name=approvalTemplates/*}"};
-    option (google.api.method_signature) = "name";
-  }
-
   rpc ListApprovalTemplates(ListApprovalTemplatesRequest) returns (ListApprovalTemplatesResponse) {
     option (google.api.http) = {get: "/v1/approvalTemplates"};
     option (google.api.method_signature) = "";
   }
-
-  rpc CreateApprovalTemplate(CreateApprovalTemplateRequest) returns (ApprovalTemplate) {
-    option (google.api.http) = {
-      post: "/v1/approvalTemplates"
-      body: "approval_template"
-    };
-    option (google.api.method_signature) = "";
-  }
-
-  rpc UpdateApprovalTemplate(UpdateApprovalTemplateRequest) returns (ApprovalTemplate) {
-    option (google.api.http) = {
-      patch: "/v1/{approval_template.name=approvalTemplates/*}"
-      body: "approval_template"
-    };
-    option (google.api.method_signature) = "approval_template,update_mask";
-  }
-
-  rpc DeleteApprovalTemplate(DeleteApprovalTemplateRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=approvalTemplates/*}"};
-    option (google.api.method_signature) = "name";
-  }
-}
-
-message GetApprovalTemplateRequest {
-  // The name of the instance to retrieve.
-  // Format: approvalTemplates/{approvalTemplate}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListApprovalTemplatesRequest {
@@ -71,24 +39,6 @@ message ListApprovalTemplatesResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
-}
-
-message CreateApprovalTemplateRequest {
-  // the approval template to be created
-  ApprovalTemplate approval_template = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateApprovalTemplateRequest {
-  ApprovalTemplate approval_template = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
-}
-
-message DeleteApprovalTemplateRequest {
-  // The name of the instance to delete.
-  // Format: approvalTemplates/{approvalTemplate}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ApprovalTemplate {
