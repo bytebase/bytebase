@@ -1,18 +1,8 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { Empty } from "../google/protobuf/empty";
-import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
-
-export interface GetApprovalTemplateRequest {
-  /**
-   * The name of the instance to retrieve.
-   * Format: approvalTemplates/{approvalTemplate}
-   */
-  name: string;
-}
 
 export interface ListApprovalTemplatesRequest {
   /**
@@ -42,23 +32,13 @@ export interface ListApprovalTemplatesResponse {
   nextPageToken: string;
 }
 
-export interface CreateApprovalTemplateRequest {
-  /** the approval template to be created */
-  approvalTemplate?: ApprovalTemplate;
+export interface SetApprovalTemplatesRequest {
+  /** The approval templates to set. */
+  approvalTemplates: ApprovalTemplate[];
 }
 
-export interface UpdateApprovalTemplateRequest {
-  approvalTemplate?: ApprovalTemplate;
-  /** The list of fields to update. */
-  updateMask?: string[];
-}
-
-export interface DeleteApprovalTemplateRequest {
-  /**
-   * The name of the instance to delete.
-   * Format: approvalTemplates/{approvalTemplate}
-   */
-  name: string;
+export interface SetApprovalTemplatesResponse {
+  approvalTemplates: ApprovalTemplate[];
 }
 
 export interface ApprovalTemplate {
@@ -67,6 +47,11 @@ export interface ApprovalTemplate {
   /** system-generated unique identifier */
   uid: string;
   flow?: ApprovalFlow;
+  /**
+   * Format: `user:{email_id}`
+   * example: `user:hello@world.com`
+   */
+  creator: string;
 }
 
 export interface ApprovalFlow {
@@ -227,53 +212,6 @@ export function approvalNode_RoleValueToJSON(object: ApprovalNode_RoleValue): st
   }
 }
 
-function createBaseGetApprovalTemplateRequest(): GetApprovalTemplateRequest {
-  return { name: "" };
-}
-
-export const GetApprovalTemplateRequest = {
-  encode(message: GetApprovalTemplateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetApprovalTemplateRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetApprovalTemplateRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetApprovalTemplateRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetApprovalTemplateRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<GetApprovalTemplateRequest>): GetApprovalTemplateRequest {
-    const message = createBaseGetApprovalTemplateRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
 function createBaseListApprovalTemplatesRequest(): ListApprovalTemplatesRequest {
   return { pageSize: 0, pageToken: "" };
 }
@@ -396,27 +334,27 @@ export const ListApprovalTemplatesResponse = {
   },
 };
 
-function createBaseCreateApprovalTemplateRequest(): CreateApprovalTemplateRequest {
-  return { approvalTemplate: undefined };
+function createBaseSetApprovalTemplatesRequest(): SetApprovalTemplatesRequest {
+  return { approvalTemplates: [] };
 }
 
-export const CreateApprovalTemplateRequest = {
-  encode(message: CreateApprovalTemplateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.approvalTemplate !== undefined) {
-      ApprovalTemplate.encode(message.approvalTemplate, writer.uint32(10).fork()).ldelim();
+export const SetApprovalTemplatesRequest = {
+  encode(message: SetApprovalTemplatesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.approvalTemplates) {
+      ApprovalTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateApprovalTemplateRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetApprovalTemplatesRequest {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateApprovalTemplateRequest();
+    const message = createBaseSetApprovalTemplatesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.approvalTemplate = ApprovalTemplate.decode(reader, reader.uint32());
+          message.approvalTemplates.push(ApprovalTemplate.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -426,55 +364,52 @@ export const CreateApprovalTemplateRequest = {
     return message;
   },
 
-  fromJSON(object: any): CreateApprovalTemplateRequest {
+  fromJSON(object: any): SetApprovalTemplatesRequest {
     return {
-      approvalTemplate: isSet(object.approvalTemplate) ? ApprovalTemplate.fromJSON(object.approvalTemplate) : undefined,
+      approvalTemplates: Array.isArray(object?.approvalTemplates)
+        ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
+        : [],
     };
   },
 
-  toJSON(message: CreateApprovalTemplateRequest): unknown {
+  toJSON(message: SetApprovalTemplatesRequest): unknown {
     const obj: any = {};
-    message.approvalTemplate !== undefined &&
-      (obj.approvalTemplate = message.approvalTemplate ? ApprovalTemplate.toJSON(message.approvalTemplate) : undefined);
+    if (message.approvalTemplates) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    } else {
+      obj.approvalTemplates = [];
+    }
     return obj;
   },
 
-  fromPartial(object: DeepPartial<CreateApprovalTemplateRequest>): CreateApprovalTemplateRequest {
-    const message = createBaseCreateApprovalTemplateRequest();
-    message.approvalTemplate = (object.approvalTemplate !== undefined && object.approvalTemplate !== null)
-      ? ApprovalTemplate.fromPartial(object.approvalTemplate)
-      : undefined;
+  fromPartial(object: DeepPartial<SetApprovalTemplatesRequest>): SetApprovalTemplatesRequest {
+    const message = createBaseSetApprovalTemplatesRequest();
+    message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseUpdateApprovalTemplateRequest(): UpdateApprovalTemplateRequest {
-  return { approvalTemplate: undefined, updateMask: undefined };
+function createBaseSetApprovalTemplatesResponse(): SetApprovalTemplatesResponse {
+  return { approvalTemplates: [] };
 }
 
-export const UpdateApprovalTemplateRequest = {
-  encode(message: UpdateApprovalTemplateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.approvalTemplate !== undefined) {
-      ApprovalTemplate.encode(message.approvalTemplate, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+export const SetApprovalTemplatesResponse = {
+  encode(message: SetApprovalTemplatesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.approvalTemplates) {
+      ApprovalTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateApprovalTemplateRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetApprovalTemplatesResponse {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateApprovalTemplateRequest();
+    const message = createBaseSetApprovalTemplatesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.approvalTemplate = ApprovalTemplate.decode(reader, reader.uint32());
-          break;
-        case 2:
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          message.approvalTemplates.push(ApprovalTemplate.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -484,80 +419,33 @@ export const UpdateApprovalTemplateRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateApprovalTemplateRequest {
+  fromJSON(object: any): SetApprovalTemplatesResponse {
     return {
-      approvalTemplate: isSet(object.approvalTemplate) ? ApprovalTemplate.fromJSON(object.approvalTemplate) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      approvalTemplates: Array.isArray(object?.approvalTemplates)
+        ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
+        : [],
     };
   },
 
-  toJSON(message: UpdateApprovalTemplateRequest): unknown {
+  toJSON(message: SetApprovalTemplatesResponse): unknown {
     const obj: any = {};
-    message.approvalTemplate !== undefined &&
-      (obj.approvalTemplate = message.approvalTemplate ? ApprovalTemplate.toJSON(message.approvalTemplate) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.approvalTemplates) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    } else {
+      obj.approvalTemplates = [];
+    }
     return obj;
   },
 
-  fromPartial(object: DeepPartial<UpdateApprovalTemplateRequest>): UpdateApprovalTemplateRequest {
-    const message = createBaseUpdateApprovalTemplateRequest();
-    message.approvalTemplate = (object.approvalTemplate !== undefined && object.approvalTemplate !== null)
-      ? ApprovalTemplate.fromPartial(object.approvalTemplate)
-      : undefined;
-    message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBaseDeleteApprovalTemplateRequest(): DeleteApprovalTemplateRequest {
-  return { name: "" };
-}
-
-export const DeleteApprovalTemplateRequest = {
-  encode(message: DeleteApprovalTemplateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteApprovalTemplateRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteApprovalTemplateRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeleteApprovalTemplateRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: DeleteApprovalTemplateRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<DeleteApprovalTemplateRequest>): DeleteApprovalTemplateRequest {
-    const message = createBaseDeleteApprovalTemplateRequest();
-    message.name = object.name ?? "";
+  fromPartial(object: DeepPartial<SetApprovalTemplatesResponse>): SetApprovalTemplatesResponse {
+    const message = createBaseSetApprovalTemplatesResponse();
+    message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { name: "", uid: "", flow: undefined };
+  return { name: "", uid: "", flow: undefined, creator: "" };
 }
 
 export const ApprovalTemplate = {
@@ -570,6 +458,9 @@ export const ApprovalTemplate = {
     }
     if (message.flow !== undefined) {
       ApprovalFlow.encode(message.flow, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.creator !== "") {
+      writer.uint32(34).string(message.creator);
     }
     return writer;
   },
@@ -590,6 +481,9 @@ export const ApprovalTemplate = {
         case 3:
           message.flow = ApprovalFlow.decode(reader, reader.uint32());
           break;
+        case 4:
+          message.creator = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -603,6 +497,7 @@ export const ApprovalTemplate = {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
+      creator: isSet(object.creator) ? String(object.creator) : "",
     };
   },
 
@@ -611,6 +506,7 @@ export const ApprovalTemplate = {
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
     message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
+    message.creator !== undefined && (obj.creator = message.creator);
     return obj;
   },
 
@@ -621,6 +517,7 @@ export const ApprovalTemplate = {
     message.flow = (object.flow !== undefined && object.flow !== null)
       ? ApprovalFlow.fromPartial(object.flow)
       : undefined;
+    message.creator = object.creator ?? "";
     return message;
   },
 };
@@ -811,14 +708,6 @@ export const ApprovalTemplateServiceDefinition = {
   name: "ApprovalTemplateService",
   fullName: "bytebase.v1.ApprovalTemplateService",
   methods: {
-    getApprovalTemplate: {
-      name: "GetApprovalTemplate",
-      requestType: GetApprovalTemplateRequest,
-      requestStream: false,
-      responseType: ApprovalTemplate,
-      responseStream: false,
-      options: {},
-    },
     listApprovalTemplates: {
       name: "ListApprovalTemplates",
       requestType: ListApprovalTemplatesRequest,
@@ -827,27 +716,11 @@ export const ApprovalTemplateServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    createApprovalTemplate: {
-      name: "CreateApprovalTemplate",
-      requestType: CreateApprovalTemplateRequest,
+    setApprovalTemplates: {
+      name: "SetApprovalTemplates",
+      requestType: SetApprovalTemplatesRequest,
       requestStream: false,
-      responseType: ApprovalTemplate,
-      responseStream: false,
-      options: {},
-    },
-    updateApprovalTemplate: {
-      name: "UpdateApprovalTemplate",
-      requestType: UpdateApprovalTemplateRequest,
-      requestStream: false,
-      responseType: ApprovalTemplate,
-      responseStream: false,
-      options: {},
-    },
-    deleteApprovalTemplate: {
-      name: "DeleteApprovalTemplate",
-      requestType: DeleteApprovalTemplateRequest,
-      requestStream: false,
-      responseType: Empty,
+      responseType: SetApprovalTemplatesResponse,
       responseStream: false,
       options: {},
     },
@@ -855,49 +728,25 @@ export const ApprovalTemplateServiceDefinition = {
 } as const;
 
 export interface ApprovalTemplateServiceImplementation<CallContextExt = {}> {
-  getApprovalTemplate(
-    request: GetApprovalTemplateRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ApprovalTemplate>>;
   listApprovalTemplates(
     request: ListApprovalTemplatesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListApprovalTemplatesResponse>>;
-  createApprovalTemplate(
-    request: CreateApprovalTemplateRequest,
+  setApprovalTemplates(
+    request: SetApprovalTemplatesRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ApprovalTemplate>>;
-  updateApprovalTemplate(
-    request: UpdateApprovalTemplateRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ApprovalTemplate>>;
-  deleteApprovalTemplate(
-    request: DeleteApprovalTemplateRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
+  ): Promise<DeepPartial<SetApprovalTemplatesResponse>>;
 }
 
 export interface ApprovalTemplateServiceClient<CallOptionsExt = {}> {
-  getApprovalTemplate(
-    request: DeepPartial<GetApprovalTemplateRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ApprovalTemplate>;
   listApprovalTemplates(
     request: DeepPartial<ListApprovalTemplatesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListApprovalTemplatesResponse>;
-  createApprovalTemplate(
-    request: DeepPartial<CreateApprovalTemplateRequest>,
+  setApprovalTemplates(
+    request: DeepPartial<SetApprovalTemplatesRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ApprovalTemplate>;
-  updateApprovalTemplate(
-    request: DeepPartial<UpdateApprovalTemplateRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ApprovalTemplate>;
-  deleteApprovalTemplate(
-    request: DeepPartial<DeleteApprovalTemplateRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
+  ): Promise<SetApprovalTemplatesResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

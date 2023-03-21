@@ -34,12 +34,10 @@
     - [ApprovalNode](#bytebase-v1-ApprovalNode)
     - [ApprovalStep](#bytebase-v1-ApprovalStep)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
-    - [CreateApprovalTemplateRequest](#bytebase-v1-CreateApprovalTemplateRequest)
-    - [DeleteApprovalTemplateRequest](#bytebase-v1-DeleteApprovalTemplateRequest)
-    - [GetApprovalTemplateRequest](#bytebase-v1-GetApprovalTemplateRequest)
     - [ListApprovalTemplatesRequest](#bytebase-v1-ListApprovalTemplatesRequest)
     - [ListApprovalTemplatesResponse](#bytebase-v1-ListApprovalTemplatesResponse)
-    - [UpdateApprovalTemplateRequest](#bytebase-v1-UpdateApprovalTemplateRequest)
+    - [SetApprovalTemplatesRequest](#bytebase-v1-SetApprovalTemplatesRequest)
+    - [SetApprovalTemplatesResponse](#bytebase-v1-SetApprovalTemplatesResponse)
   
     - [ApprovalNode.RoleValue](#bytebase-v1-ApprovalNode-RoleValue)
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
@@ -711,51 +709,7 @@ BackupPlanSchedule is the backup plan schedule.
 | name | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
 | uid | [string](#string) |  | system-generated unique identifier |
 | flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateApprovalTemplateRequest"></a>
-
-### CreateApprovalTemplateRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  | the approval template to be created |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteApprovalTemplateRequest"></a>
-
-### DeleteApprovalTemplateRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to delete. Format: approvalTemplates/{approvalTemplate} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetApprovalTemplateRequest"></a>
-
-### GetApprovalTemplateRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to retrieve. Format: approvalTemplates/{approvalTemplate} |
+| creator | [string](#string) |  | Format: `user:{email_id}` example: `user:hello@world.com` |
 
 
 
@@ -796,16 +750,30 @@ When paginating, all other parameters provided to `ListApprovalTemplates` must m
 
 
 
-<a name="bytebase-v1-UpdateApprovalTemplateRequest"></a>
+<a name="bytebase-v1-SetApprovalTemplatesRequest"></a>
 
-### UpdateApprovalTemplateRequest
+### SetApprovalTemplatesRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated | The approval templates to set. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetApprovalTemplatesResponse"></a>
+
+### SetApprovalTemplatesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 
 
 
@@ -875,11 +843,8 @@ OR means approving any node will proceed.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetApprovalTemplate | [GetApprovalTemplateRequest](#bytebase-v1-GetApprovalTemplateRequest) | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |
 | ListApprovalTemplates | [ListApprovalTemplatesRequest](#bytebase-v1-ListApprovalTemplatesRequest) | [ListApprovalTemplatesResponse](#bytebase-v1-ListApprovalTemplatesResponse) |  |
-| CreateApprovalTemplate | [CreateApprovalTemplateRequest](#bytebase-v1-CreateApprovalTemplateRequest) | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |
-| UpdateApprovalTemplate | [UpdateApprovalTemplateRequest](#bytebase-v1-UpdateApprovalTemplateRequest) | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |
-| DeleteApprovalTemplate | [DeleteApprovalTemplateRequest](#bytebase-v1-DeleteApprovalTemplateRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| SetApprovalTemplates | [SetApprovalTemplatesRequest](#bytebase-v1-SetApprovalTemplatesRequest) | [SetApprovalTemplatesResponse](#bytebase-v1-SetApprovalTemplatesResponse) |  |
 
  
 

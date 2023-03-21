@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,22 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ApprovalTemplateService_GetApprovalTemplate_FullMethodName    = "/bytebase.v1.ApprovalTemplateService/GetApprovalTemplate"
-	ApprovalTemplateService_ListApprovalTemplates_FullMethodName  = "/bytebase.v1.ApprovalTemplateService/ListApprovalTemplates"
-	ApprovalTemplateService_CreateApprovalTemplate_FullMethodName = "/bytebase.v1.ApprovalTemplateService/CreateApprovalTemplate"
-	ApprovalTemplateService_UpdateApprovalTemplate_FullMethodName = "/bytebase.v1.ApprovalTemplateService/UpdateApprovalTemplate"
-	ApprovalTemplateService_DeleteApprovalTemplate_FullMethodName = "/bytebase.v1.ApprovalTemplateService/DeleteApprovalTemplate"
+	ApprovalTemplateService_ListApprovalTemplates_FullMethodName = "/bytebase.v1.ApprovalTemplateService/ListApprovalTemplates"
+	ApprovalTemplateService_SetApprovalTemplates_FullMethodName  = "/bytebase.v1.ApprovalTemplateService/SetApprovalTemplates"
 )
 
 // ApprovalTemplateServiceClient is the client API for ApprovalTemplateService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApprovalTemplateServiceClient interface {
-	GetApprovalTemplate(ctx context.Context, in *GetApprovalTemplateRequest, opts ...grpc.CallOption) (*ApprovalTemplate, error)
 	ListApprovalTemplates(ctx context.Context, in *ListApprovalTemplatesRequest, opts ...grpc.CallOption) (*ListApprovalTemplatesResponse, error)
-	CreateApprovalTemplate(ctx context.Context, in *CreateApprovalTemplateRequest, opts ...grpc.CallOption) (*ApprovalTemplate, error)
-	UpdateApprovalTemplate(ctx context.Context, in *UpdateApprovalTemplateRequest, opts ...grpc.CallOption) (*ApprovalTemplate, error)
-	DeleteApprovalTemplate(ctx context.Context, in *DeleteApprovalTemplateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	SetApprovalTemplates(ctx context.Context, in *SetApprovalTemplatesRequest, opts ...grpc.CallOption) (*SetApprovalTemplatesResponse, error)
 }
 
 type approvalTemplateServiceClient struct {
@@ -44,15 +37,6 @@ type approvalTemplateServiceClient struct {
 
 func NewApprovalTemplateServiceClient(cc grpc.ClientConnInterface) ApprovalTemplateServiceClient {
 	return &approvalTemplateServiceClient{cc}
-}
-
-func (c *approvalTemplateServiceClient) GetApprovalTemplate(ctx context.Context, in *GetApprovalTemplateRequest, opts ...grpc.CallOption) (*ApprovalTemplate, error) {
-	out := new(ApprovalTemplate)
-	err := c.cc.Invoke(ctx, ApprovalTemplateService_GetApprovalTemplate_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *approvalTemplateServiceClient) ListApprovalTemplates(ctx context.Context, in *ListApprovalTemplatesRequest, opts ...grpc.CallOption) (*ListApprovalTemplatesResponse, error) {
@@ -64,27 +48,9 @@ func (c *approvalTemplateServiceClient) ListApprovalTemplates(ctx context.Contex
 	return out, nil
 }
 
-func (c *approvalTemplateServiceClient) CreateApprovalTemplate(ctx context.Context, in *CreateApprovalTemplateRequest, opts ...grpc.CallOption) (*ApprovalTemplate, error) {
-	out := new(ApprovalTemplate)
-	err := c.cc.Invoke(ctx, ApprovalTemplateService_CreateApprovalTemplate_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *approvalTemplateServiceClient) UpdateApprovalTemplate(ctx context.Context, in *UpdateApprovalTemplateRequest, opts ...grpc.CallOption) (*ApprovalTemplate, error) {
-	out := new(ApprovalTemplate)
-	err := c.cc.Invoke(ctx, ApprovalTemplateService_UpdateApprovalTemplate_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *approvalTemplateServiceClient) DeleteApprovalTemplate(ctx context.Context, in *DeleteApprovalTemplateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, ApprovalTemplateService_DeleteApprovalTemplate_FullMethodName, in, out, opts...)
+func (c *approvalTemplateServiceClient) SetApprovalTemplates(ctx context.Context, in *SetApprovalTemplatesRequest, opts ...grpc.CallOption) (*SetApprovalTemplatesResponse, error) {
+	out := new(SetApprovalTemplatesResponse)
+	err := c.cc.Invoke(ctx, ApprovalTemplateService_SetApprovalTemplates_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +61,8 @@ func (c *approvalTemplateServiceClient) DeleteApprovalTemplate(ctx context.Conte
 // All implementations must embed UnimplementedApprovalTemplateServiceServer
 // for forward compatibility
 type ApprovalTemplateServiceServer interface {
-	GetApprovalTemplate(context.Context, *GetApprovalTemplateRequest) (*ApprovalTemplate, error)
 	ListApprovalTemplates(context.Context, *ListApprovalTemplatesRequest) (*ListApprovalTemplatesResponse, error)
-	CreateApprovalTemplate(context.Context, *CreateApprovalTemplateRequest) (*ApprovalTemplate, error)
-	UpdateApprovalTemplate(context.Context, *UpdateApprovalTemplateRequest) (*ApprovalTemplate, error)
-	DeleteApprovalTemplate(context.Context, *DeleteApprovalTemplateRequest) (*emptypb.Empty, error)
+	SetApprovalTemplates(context.Context, *SetApprovalTemplatesRequest) (*SetApprovalTemplatesResponse, error)
 	mustEmbedUnimplementedApprovalTemplateServiceServer()
 }
 
@@ -107,20 +70,11 @@ type ApprovalTemplateServiceServer interface {
 type UnimplementedApprovalTemplateServiceServer struct {
 }
 
-func (UnimplementedApprovalTemplateServiceServer) GetApprovalTemplate(context.Context, *GetApprovalTemplateRequest) (*ApprovalTemplate, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetApprovalTemplate not implemented")
-}
 func (UnimplementedApprovalTemplateServiceServer) ListApprovalTemplates(context.Context, *ListApprovalTemplatesRequest) (*ListApprovalTemplatesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListApprovalTemplates not implemented")
 }
-func (UnimplementedApprovalTemplateServiceServer) CreateApprovalTemplate(context.Context, *CreateApprovalTemplateRequest) (*ApprovalTemplate, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateApprovalTemplate not implemented")
-}
-func (UnimplementedApprovalTemplateServiceServer) UpdateApprovalTemplate(context.Context, *UpdateApprovalTemplateRequest) (*ApprovalTemplate, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateApprovalTemplate not implemented")
-}
-func (UnimplementedApprovalTemplateServiceServer) DeleteApprovalTemplate(context.Context, *DeleteApprovalTemplateRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteApprovalTemplate not implemented")
+func (UnimplementedApprovalTemplateServiceServer) SetApprovalTemplates(context.Context, *SetApprovalTemplatesRequest) (*SetApprovalTemplatesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetApprovalTemplates not implemented")
 }
 func (UnimplementedApprovalTemplateServiceServer) mustEmbedUnimplementedApprovalTemplateServiceServer() {
 }
@@ -134,24 +88,6 @@ type UnsafeApprovalTemplateServiceServer interface {
 
 func RegisterApprovalTemplateServiceServer(s grpc.ServiceRegistrar, srv ApprovalTemplateServiceServer) {
 	s.RegisterService(&ApprovalTemplateService_ServiceDesc, srv)
-}
-
-func _ApprovalTemplateService_GetApprovalTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetApprovalTemplateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApprovalTemplateServiceServer).GetApprovalTemplate(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ApprovalTemplateService_GetApprovalTemplate_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApprovalTemplateServiceServer).GetApprovalTemplate(ctx, req.(*GetApprovalTemplateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ApprovalTemplateService_ListApprovalTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -172,56 +108,20 @@ func _ApprovalTemplateService_ListApprovalTemplates_Handler(srv interface{}, ctx
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApprovalTemplateService_CreateApprovalTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateApprovalTemplateRequest)
+func _ApprovalTemplateService_SetApprovalTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetApprovalTemplatesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApprovalTemplateServiceServer).CreateApprovalTemplate(ctx, in)
+		return srv.(ApprovalTemplateServiceServer).SetApprovalTemplates(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ApprovalTemplateService_CreateApprovalTemplate_FullMethodName,
+		FullMethod: ApprovalTemplateService_SetApprovalTemplates_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApprovalTemplateServiceServer).CreateApprovalTemplate(ctx, req.(*CreateApprovalTemplateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ApprovalTemplateService_UpdateApprovalTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateApprovalTemplateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApprovalTemplateServiceServer).UpdateApprovalTemplate(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ApprovalTemplateService_UpdateApprovalTemplate_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApprovalTemplateServiceServer).UpdateApprovalTemplate(ctx, req.(*UpdateApprovalTemplateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ApprovalTemplateService_DeleteApprovalTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteApprovalTemplateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApprovalTemplateServiceServer).DeleteApprovalTemplate(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ApprovalTemplateService_DeleteApprovalTemplate_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApprovalTemplateServiceServer).DeleteApprovalTemplate(ctx, req.(*DeleteApprovalTemplateRequest))
+		return srv.(ApprovalTemplateServiceServer).SetApprovalTemplates(ctx, req.(*SetApprovalTemplatesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -234,24 +134,12 @@ var ApprovalTemplateService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ApprovalTemplateServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetApprovalTemplate",
-			Handler:    _ApprovalTemplateService_GetApprovalTemplate_Handler,
-		},
-		{
 			MethodName: "ListApprovalTemplates",
 			Handler:    _ApprovalTemplateService_ListApprovalTemplates_Handler,
 		},
 		{
-			MethodName: "CreateApprovalTemplate",
-			Handler:    _ApprovalTemplateService_CreateApprovalTemplate_Handler,
-		},
-		{
-			MethodName: "UpdateApprovalTemplate",
-			Handler:    _ApprovalTemplateService_UpdateApprovalTemplate_Handler,
-		},
-		{
-			MethodName: "DeleteApprovalTemplate",
-			Handler:    _ApprovalTemplateService_DeleteApprovalTemplate_Handler,
+			MethodName: "SetApprovalTemplates",
+			Handler:    _ApprovalTemplateService_SetApprovalTemplates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
