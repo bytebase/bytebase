@@ -5,6 +5,7 @@ package bytebase.store;
 option go_package = "generated-go/store";
 
 import "store/approval.proto";
+import "google/api/expr/v1alpha1/syntax.proto";
 
 message WorkspaceProfileSetting {
   // The URL user visits Bytebase.
@@ -27,10 +28,13 @@ message AgentPluginSetting {
 }
 
 message ApprovalConfigSetting {
-  repeated ApprovalTemplate templates = 1;
+  message Rule {
+    google.api.expr.v1alpha1.ParsedExpr expression = 1;
+    ApprovalTemplate template = 2;
+  }
+  repeated Rule rules = 1;
 }
 
 message ApprovalTemplate {
-  string uid = 1;
   repeated ApprovalStep steps = 2;
 }
