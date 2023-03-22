@@ -15,6 +15,9 @@
         <template v-if="vcs.type.startsWith('GITHUB')">
           <img class="h-6 w-auto" src="../assets/github-logo.svg" />
         </template>
+        <template v-if="vcs.type.startsWith('BITBUCKET')">
+          <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+        </template>
         <span>{{ vcs.name }}</span>
       </button>
     </template>
@@ -107,6 +110,8 @@ const selectVCS = (vcs: VCS) => {
   let authorizeUrl = `${vcs.instanceUrl}/oauth/authorize`;
   if (vcs.type == "GITHUB") {
     authorizeUrl = `https://github.com/login/oauth/authorize`;
+  } else if (vcs.type == "BITBUCKET") {
+    authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
   }
   openWindowForOAuth(
     authorizeUrl,

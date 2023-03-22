@@ -317,22 +317,22 @@ func convertIdentityProviderType(identityProviderType string) storepb.IdentityPr
 func convertIdentityProviderConfigString(identityProviderType storepb.IdentityProviderType, config string) *storepb.IdentityProviderConfig {
 	identityProviderConfig := &storepb.IdentityProviderConfig{}
 	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
-		var formatedConfig storepb.OAuth2IdentityProviderConfig
+		var formattedConfig storepb.OAuth2IdentityProviderConfig
 		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal([]byte(config), &formatedConfig); err != nil {
+		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_Oauth2Config{
-			Oauth2Config: &formatedConfig,
+			Oauth2Config: &formattedConfig,
 		}
 	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
-		var formatedConfig storepb.OIDCIdentityProviderConfig
+		var formattedConfig storepb.OIDCIdentityProviderConfig
 		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal([]byte(config), &formatedConfig); err != nil {
+		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_OidcConfig{
-			OidcConfig: &formatedConfig,
+			OidcConfig: &formattedConfig,
 		}
 	}
 	return identityProviderConfig

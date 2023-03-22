@@ -3,6 +3,16 @@
 
 ## Table of Contents
 
+- [store/activity.proto](#store_activity-proto)
+    - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
+    - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
+    - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
+    - [ActivityPayload](#bytebase-store-ActivityPayload)
+  
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
+  
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -42,6 +52,135 @@
     - [MFAConfig](#bytebase-store-MFAConfig)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="store_activity-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/activity.proto
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload"></a>
+
+### ActivityIssueCommentCreatePayload
+ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
+| task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
+| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type) |  |  |
+| action | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action) |  |  |
+| stage_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy"></a>
+
+### ActivityIssueCommentCreatePayload.TaskRollbackBy
+TaskRollbackBy records an issue rollback activity.
+The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  |  |
+| task_id | [int64](#int64) |  |  |
+| rollback_by_issue_id | [int64](#int64) |  |  |
+| rollback_by_task_id | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCreatePayload"></a>
+
+### ActivityIssueCreatePayload
+ActivityIssueCreatePayload is the payloads for creating issues.
+These payload types are only used when marshalling to the json format for saving into the database.
+So we annotate with json tag using camelCase naming which is consistent with normal
+json naming convention. More importantly, frontend code can simply use JSON.parse to
+convert to the expected struct there.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityPayload"></a>
+
+### ActivityPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_create_payload | [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload) |  |  |
+| issue_comment_create_payload | [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| ACTION_APPROVE | 1 |  |
+| ACTION_REJECT | 2 |  |
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_FEISHU | 1 |  |
+
+
+ 
+
+ 
+
+ 
 
 
 

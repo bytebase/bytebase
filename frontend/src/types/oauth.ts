@@ -53,6 +53,15 @@ export function openWindowForOAuth(
       "oauth",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
     );
+  } else if (vcsType == "BITBUCKET") {
+    // Bitbucket OAuth App scopes: https://developer.atlassian.com/cloud/bitbucket/rest/intro/#authentication
+    return window.open(
+      `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
+        redirectUrl()
+      )}&state=${stateQueryParameter}&response_type=code&scope=repository:write`,
+      "oauth",
+      "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes"
+    );
   }
   // GITLAB
   // GitLab OAuth App scopes: https://docs.gitlab.com/ee/integration/oauth_provider.html#authorized-applications

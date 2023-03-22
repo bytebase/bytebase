@@ -164,7 +164,7 @@ func IsTiDBUnsupportDDLStmt(stmt string) bool {
 		"FUNCTION",
 		"PROCEDURE",
 	}
-	createRegexFmt := "(?i)^\\s*CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+"
+	createRegexFmt := "(?i)^\\s*CREATE\\s+(DEFINER=(`(.)+`|(.)+)@(`(.)+`|(.)+)(\\s)+)?%s\\s+"
 	dropRegexFmt := "(?i)^\\s*DROP\\s+%s\\s+"
 	for _, obj := range objects {
 		createRegexp := fmt.Sprintf(createRegexFmt, obj)
