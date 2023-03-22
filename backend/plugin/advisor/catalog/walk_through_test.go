@@ -57,6 +57,41 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "test",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "varchar(20)",
+								Nullable: true,
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "v1",
+						Definition: "SELECT id, name FROM test",
+						DependentColumns: []*storepb.DependentColumn{
+							{
+								Schema: "public",
+								Table:  "test",
+								Column: "id",
+							},
+							{
+								Schema: "public",
+								Table:  "test",
+								Column: "name",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -92,7 +127,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 		}
 
 		err := state.WalkThrough(test.Statement)
-		if test.Err != nil {
+		if err != nil {
 			if record {
 				walkThroughError, ok := err.(*WalkThroughError)
 				require.True(t, ok)
@@ -101,8 +136,9 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 				require.Equal(t, err, test.Err)
 			}
 			continue
+		} else {
+			require.NoError(t, err, test.Statement)
 		}
-		require.NoError(t, err, test.Statement)
 
 		if record {
 			tests[i].Want = state.convertToDatabaseMetadata()

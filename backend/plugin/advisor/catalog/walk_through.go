@@ -56,6 +56,8 @@ const (
 	ErrorTypeTableNotExists = 302
 	// ErrorTypeUseCreateTableAs is the error that using CREATE TABLE AS statements.
 	ErrorTypeUseCreateTableAs = 303
+	// ErrorTypeTableIsReferencedByView is the error that table is referenced by view.
+	ErrorTypeTableIsReferencedByView = 304
 
 	// 401 ~ 499 column error type.
 
@@ -73,6 +75,8 @@ const (
 	ErrorTypeSetNullDefaultForNotNullColumn = 406
 	// ErrorTypeInvalidColumnTypeForDefaultValue is the error that invalid column type for default value.
 	ErrorTypeInvalidColumnTypeForDefaultValue = 407
+	// ErrorTypeColumnIsReferencedByView is the error that column is referenced by view.
+	ErrorTypeColumnIsReferencedByView = 408
 
 	// 501 ~ 599 index error type.
 

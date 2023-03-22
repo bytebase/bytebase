@@ -2,7 +2,10 @@ package catalog
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
@@ -108,6 +111,43 @@ func (d *DatabaseState) pgDropTableList(node *ast.DropTableStmt) *WalkThroughErr
 	return nil
 }
 
+func parseViewName(viewName string) (string, string, error) {
+	pattern := `^"(.+?)"\."(.+?)"$`
+
+	re := regexp.MustCompile(pattern)
+
+	match := re.FindStringSubmatch(viewName)
+
+	if len(match) != 3 {
+		return "", "", errors.Errorf("invalid view name: %s", viewName)
+	}
+
+	return match[1], match[2], nil
+}
+
+func (d *DatabaseState) existedViewList(viewMap map[string]bool) ([]string, *WalkThroughError) {
+	var result []string
+	for viewName := range viewMap {
+		schemaName, viewName, err := parseViewName(viewName)
+		if err != nil {
+			return nil, &WalkThroughError{
+				Type:    ErrorTypeInternal,
+				Content: fmt.Sprintf("failed to check view dependency: %s", err.Error()),
+			}
+		}
+		schemaMeta, exists := d.schemaSet[schemaName]
+		if !exists {
+			continue
+		}
+		if _, exists := schemaMeta.viewSet[viewName]; !exists {
+			continue
+		}
+
+		result = append(result, fmt.Sprintf("%q.%q", schemaName, viewName))
+	}
+	return result, nil
+}
+
 func (d *DatabaseState) pgDropTable(tableDef *ast.TableDef, ifExists bool, _ ast.DropBehavior) *WalkThroughError {
 	schema, err := d.getSchema(tableDef.Schema)
 	if err != nil {
@@ -123,6 +163,17 @@ func (d *DatabaseState) pgDropTable(tableDef *ast.TableDef, ifExists bool, _ ast
 			return nil
 		}
 		return err
+	}
+
+	viewList, err := d.existedViewList(table.dependentView)
+	if err != nil {
+		return err
+	}
+	if len(viewList) > 0 {
+		return &WalkThroughError{
+			Type:    ErrorTypeTableIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", ")),
+		}
 	}
 
 	for indexName := range table.indexSet {
@@ -235,11 +286,11 @@ func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError
 				return err
 			}
 		case *ast.DropColumnStmt:
-			if err := schema.pgDropColumn(table, itemNode); err != nil {
+			if err := d.pgDropColumn(schema, table, itemNode); err != nil {
 				return err
 			}
 		case *ast.AlterColumnTypeStmt:
-			if err := schema.pgAlterColumnType(table, itemNode); err != nil {
+			if err := d.pgAlterColumnType(schema, table, itemNode); err != nil {
 				return err
 			}
 		case *ast.SetDefaultStmt:
@@ -325,10 +376,21 @@ func (t *TableState) pgSetDefault(node *ast.SetDefaultStmt) *WalkThroughError {
 	return nil
 }
 
-func (*SchemaState) pgAlterColumnType(t *TableState, node *ast.AlterColumnTypeStmt) *WalkThroughError {
+func (d *DatabaseState) pgAlterColumnType(schema *SchemaState, t *TableState, node *ast.AlterColumnTypeStmt) *WalkThroughError {
 	column, err := t.getColumn(node.ColumnName)
 	if err != nil {
 		return err
+	}
+
+	viewList, err := d.existedViewList(column.dependentView)
+	if err != nil {
+		return err
+	}
+	if len(viewList) > 0 {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, t.name, strings.Join(viewList, ", ")),
+		}
 	}
 
 	typeString, deparseErr := parser.Deparse(parser.Postgres, parser.DeparseContext{}, node.Type)
@@ -344,12 +406,24 @@ func (*SchemaState) pgAlterColumnType(t *TableState, node *ast.AlterColumnTypeSt
 	return nil
 }
 
-func (*SchemaState) pgDropColumn(t *TableState, node *ast.DropColumnStmt) *WalkThroughError {
-	if _, exists := t.columnSet[node.ColumnName]; !exists {
+func (d *DatabaseState) pgDropColumn(schema *SchemaState, t *TableState, node *ast.DropColumnStmt) *WalkThroughError {
+	column, exists := t.columnSet[node.ColumnName]
+	if !exists {
 		if node.IfExists {
 			return nil
 		}
 		return NewColumnNotExistsError(t.name, node.ColumnName)
+	}
+
+	viewList, err := d.existedViewList(column.dependentView)
+	if err != nil {
+		return err
+	}
+	if len(viewList) > 0 {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, t.name, strings.Join(viewList, ", ")),
+		}
 	}
 
 	// Drop the constraints and indexes involving the column.
