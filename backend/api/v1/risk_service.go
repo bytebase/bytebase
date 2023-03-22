@@ -52,8 +52,19 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (
 }
 
 // CreateRisk creates a risk.
-func (*RiskService) CreateRisk(context.Context, *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateRisk not implemented")
+func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
+		Source:     convertSource(request.Risk.Source),
+		Level:      request.Risk.Level,
+		Name:       request.Risk.Title,
+		Active:     request.Risk.Active,
+		Expression: request.Risk.Expression,
+	}, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToRisk(risk), nil
 }
 
 // UpdateRisk updates a risk.
