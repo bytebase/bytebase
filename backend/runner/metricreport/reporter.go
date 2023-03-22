@@ -86,7 +86,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				ctx := context.Background()
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
-				m.Identify(ctx)
+				m.identify(ctx)
 				for name, collector := range m.collectors {
 					log.Debug("Run metric collector", zap.String("collector", name))
 
@@ -125,11 +125,7 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 }
 
 // Identify will identify the workspace and update the subscription plan.
-func (m *Reporter) Identify(ctx context.Context) {
-	if !m.enabled {
-		return
-	}
-
+func (m *Reporter) identify(ctx context.Context) {
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
 	orgID := subscription.OrgID
