@@ -14,11 +14,11 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
 - [store/approval.proto](#store_approval-proto)
-    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalHistory](#bytebase-store-ApprovalHistory)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
     - [ApprovalPayload](#bytebase-store-ApprovalPayload)
     - [ApprovalStep](#bytebase-store-ApprovalStep)
+    - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
   
     - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
@@ -52,7 +52,6 @@
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [ApprovalConfigSetting](#bytebase-store-ApprovalConfigSetting)
     - [ApprovalConfigSetting.Rule](#bytebase-store-ApprovalConfigSetting-Rule)
-    - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
 - [store/user.proto](#store_user-proto)
@@ -198,21 +197,6 @@ convert to the expected struct there.
 
 
 
-<a name="bytebase-store-ApprovalFlow"></a>
-
-### ApprovalFlow
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-store-ApprovalHistory"></a>
 
 ### ApprovalHistory
@@ -250,12 +234,13 @@ convert to the expected struct there.
 <a name="bytebase-store-ApprovalPayload"></a>
 
 ### ApprovalPayload
-
+ApprovalPayload is a part of the payload of an issue.
+ApprovalPayload records the approval template used and the approval history.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
+| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
 | history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
 
 
@@ -273,6 +258,21 @@ convert to the expected struct there.
 | ----- | ---- | ----- | ----------- |
 | type | [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type) |  |  |
 | nodes | [ApprovalNode](#bytebase-store-ApprovalNode) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalTemplate"></a>
+
+### ApprovalTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
 
 
 
@@ -753,21 +753,6 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalTemplate"></a>
-
-### ApprovalTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
 
 
 

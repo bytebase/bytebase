@@ -186,53 +186,6 @@ func (x *ApprovalConfigSetting) GetRules() []*ApprovalConfigSetting_Rule {
 	return nil
 }
 
-type ApprovalTemplate struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Steps []*ApprovalStep `protobuf:"bytes,2,rep,name=steps,proto3" json:"steps,omitempty"`
-}
-
-func (x *ApprovalTemplate) Reset() {
-	*x = ApprovalTemplate{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ApprovalTemplate) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ApprovalTemplate) ProtoMessage() {}
-
-func (x *ApprovalTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ApprovalTemplate.ProtoReflect.Descriptor instead.
-func (*ApprovalTemplate) Descriptor() ([]byte, []int) {
-	return file_store_setting_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *ApprovalTemplate) GetSteps() []*ApprovalStep {
-	if x != nil {
-		return x.Steps
-	}
-	return nil
-}
-
 type ApprovalConfigSetting_Rule struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -245,7 +198,7 @@ type ApprovalConfigSetting_Rule struct {
 func (x *ApprovalConfigSetting_Rule) Reset() {
 	*x = ApprovalConfigSetting_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[4]
+		mi := &file_store_setting_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -258,7 +211,7 @@ func (x *ApprovalConfigSetting_Rule) String() string {
 func (*ApprovalConfigSetting_Rule) ProtoMessage() {}
 
 func (x *ApprovalConfigSetting_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[4]
+	mi := &file_store_setting_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,13 +275,8 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x54, 0x65,
 	0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x52, 0x08, 0x74, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65,
-	0x22, 0x46, 0x0a, 0x10, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x54, 0x65, 0x6d, 0x70,
-	0x6c, 0x61, 0x74, 0x65, 0x12, 0x32, 0x0a, 0x05, 0x73, 0x74, 0x65, 0x70, 0x73, 0x18, 0x02, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73,
-	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53, 0x74, 0x65,
-	0x70, 0x52, 0x05, 0x73, 0x74, 0x65, 0x70, 0x73, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65,
-	0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f,
+	0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -343,26 +291,24 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 	return file_store_setting_proto_rawDescData
 }
 
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_setting_proto_goTypes = []interface{}{
 	(*WorkspaceProfileSetting)(nil),    // 0: bytebase.store.WorkspaceProfileSetting
 	(*AgentPluginSetting)(nil),         // 1: bytebase.store.AgentPluginSetting
 	(*ApprovalConfigSetting)(nil),      // 2: bytebase.store.ApprovalConfigSetting
-	(*ApprovalTemplate)(nil),           // 3: bytebase.store.ApprovalTemplate
-	(*ApprovalConfigSetting_Rule)(nil), // 4: bytebase.store.ApprovalConfigSetting.Rule
-	(*ApprovalStep)(nil),               // 5: bytebase.store.ApprovalStep
-	(*v1alpha1.ParsedExpr)(nil),        // 6: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalConfigSetting_Rule)(nil), // 3: bytebase.store.ApprovalConfigSetting.Rule
+	(*v1alpha1.ParsedExpr)(nil),        // 4: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalTemplate)(nil),           // 5: bytebase.store.ApprovalTemplate
 }
 var file_store_setting_proto_depIdxs = []int32{
-	4, // 0: bytebase.store.ApprovalConfigSetting.rules:type_name -> bytebase.store.ApprovalConfigSetting.Rule
-	5, // 1: bytebase.store.ApprovalTemplate.steps:type_name -> bytebase.store.ApprovalStep
-	6, // 2: bytebase.store.ApprovalConfigSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	3, // 3: bytebase.store.ApprovalConfigSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 0: bytebase.store.ApprovalConfigSetting.rules:type_name -> bytebase.store.ApprovalConfigSetting.Rule
+	4, // 1: bytebase.store.ApprovalConfigSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	5, // 2: bytebase.store.ApprovalConfigSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }
@@ -409,18 +355,6 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ApprovalTemplate); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_setting_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ApprovalConfigSetting_Rule); i {
 			case 0:
 				return &v.state
@@ -439,7 +373,7 @@ func file_store_setting_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_setting_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

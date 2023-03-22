@@ -1,7 +1,7 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
-import { ApprovalStep } from "./approval";
+import { ApprovalTemplate } from "./approval";
 
 export const protobufPackage = "bytebase.store";
 
@@ -32,10 +32,6 @@ export interface ApprovalConfigSetting {
 export interface ApprovalConfigSetting_Rule {
   expression?: ParsedExpr;
   template?: ApprovalTemplate;
-}
-
-export interface ApprovalTemplate {
-  steps: ApprovalStep[];
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -264,57 +260,6 @@ export const ApprovalConfigSetting_Rule = {
     message.template = (object.template !== undefined && object.template !== null)
       ? ApprovalTemplate.fromPartial(object.template)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { steps: [] };
-}
-
-export const ApprovalTemplate = {
-  encode(message: ApprovalTemplate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.steps) {
-      ApprovalStep.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalTemplate {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseApprovalTemplate();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 2:
-          message.steps.push(ApprovalStep.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ApprovalTemplate {
-    return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => ApprovalStep.fromJSON(e)) : [] };
-  },
-
-  toJSON(message: ApprovalTemplate): unknown {
-    const obj: any = {};
-    if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
-    } else {
-      obj.steps = [];
-    }
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
-    const message = createBaseApprovalTemplate();
-    message.steps = object.steps?.map((e) => ApprovalStep.fromPartial(e)) || [];
     return message;
   },
 };
