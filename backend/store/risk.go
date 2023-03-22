@@ -51,16 +51,16 @@ type UpdateRiskMessage struct {
 // GetRisk gets a risk.
 func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 	query := `
-	SELECT
-		id,
-		source,
-		level,
-		name,
-		active,
-		expression,
-		row_status
-	FROM risk
-	WHERE id = $1`
+		SELECT
+			id,
+			source,
+			level,
+			name,
+			active,
+			expression,
+			row_status
+		FROM risk
+		WHERE id = $1`
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
