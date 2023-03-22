@@ -61,13 +61,13 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 
 // Run will run the metric reporter.
 func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
-	if !m.enabled {
-		return
-	}
-
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
+
+	if !m.enabled {
+		return
+	}
 
 	log.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
