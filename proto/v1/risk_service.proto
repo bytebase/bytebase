@@ -32,6 +32,12 @@ service RiskService {
     };
     option (google.api.method_signature) = "risk,update_mask";
   }
+
+  rpc DeleteRisk(DeleteRiskRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=risks/*}"
+    };
+  }
 }
 
 message ListRisksRequest {
@@ -71,6 +77,12 @@ message UpdateRiskRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteRiskRequest {
+  // The name of the risk to delete.
+  // Format: risks/{risk}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Risk {
