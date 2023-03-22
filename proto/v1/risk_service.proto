@@ -17,6 +17,14 @@ service RiskService {
     option (google.api.method_signature) = "";
   }
 
+  rpc CreateRisk(CreateRiskRequest) returns (Risk) {
+    option (google.api.http) = {
+      post: "/v1/risks"
+      body: "risk"
+    };
+    option (google.api.method_signature) = "risk";
+  }
+
   rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
     option (google.api.http) = {
       patch: "/v1/{risk.name=risks/*}"
@@ -47,6 +55,11 @@ message ListRisksResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message CreateRiskRequest {
+  // The risk to create.
+  Risk risk = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdateRiskRequest {
