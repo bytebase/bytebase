@@ -466,9 +466,9 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	var result []*storepb.DependentColumn
 
 	query := fmt.Sprintf(`
-		SELECT source_ns.nspname as source_schema
-	  		, source_table.relname as source_table
-	  		, pg_attribute.attname as column_name
+		SELECT source_ns.nspname as source_schema,
+	  		source_table.relname as source_table,
+	  		pg_attribute.attname as column_name
 	  	FROM pg_depend 
 	  		JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
 	  		JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
@@ -481,7 +481,7 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	  		dependent_ns.nspname = '%s'
 	  		AND dependent_view.relname = '%s'
 	  		AND pg_attribute.attnum > 0 
-	  	ORDER BY 1,2;
+	  	ORDER BY 1,2,3;
 	`, schemaName, viewName)
 
 	rows, err := txn.Query(query)
