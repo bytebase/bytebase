@@ -342,16 +342,14 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									}
 								}
 
-								if s.metricReporter != nil {
-									s.metricReporter.Report(&metric.Metric{
-										Name:  metricAPI.TaskStatusMetricName,
-										Value: 1,
-										Labels: map[string]interface{}{
-											"type":  task.Type,
-											"value": taskStatusPatch.Status,
-										},
-									})
-								}
+								s.metricReporter.Report(&metric.Metric{
+									Name:  metricAPI.TaskStatusMetricName,
+									Value: 1,
+									Labels: map[string]interface{}{
+										"type":  task.Type,
+										"value": taskStatusPatch.Status,
+									},
+								})
 							}
 							return
 						}

@@ -36,6 +36,7 @@ const (
 type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
 	// Version is the bytebase's version
+	enabled     bool
 	version     string
 	workspaceID string
 	reporter    metric.Reporter
@@ -44,7 +45,7 @@ type Reporter struct {
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string) *Reporter {
+func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string, enabled bool) *Reporter {
 	r := segment.NewReporter(profile.MetricConnectionKey, workspaceID)
 
 	return &Reporter{
@@ -54,11 +55,16 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 		reporter:       r,
 		collectors:     make(map[string]metric.Collector),
 		store:          store,
+		enabled:        enabled,
 	}
 }
 
 // Run will run the metric reporter.
 func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
+	if !m.enabled {
+		return
+	}
+
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -108,6 +114,9 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // Close will close the metric reporter.
 func (m *Reporter) Close() {
+	if !m.enabled {
+		return
+	}
 	m.reporter.Close()
 }
 
@@ -118,6 +127,10 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 
 // Identify will identify the workspace and update the subscription plan.
 func (m *Reporter) Identify(ctx context.Context) {
+	if !m.enabled {
+		return
+	}
+
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
 	orgID := subscription.OrgID
@@ -151,6 +164,10 @@ func (m *Reporter) Identify(ctx context.Context) {
 
 // Report will report a metric.
 func (m *Reporter) Report(metric *metric.Metric) {
+	if !m.enabled {
+		return
+	}
+
 	if err := m.reporter.Report(metric); err != nil {
 		log.Error(
 			"Failed to report metric",

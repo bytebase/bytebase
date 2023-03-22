@@ -162,20 +162,18 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, err
 	}
 
-	if s.metricReporter != nil {
-		isFirstUser := user.ID == api.PrincipalIDForFirstUser
-		s.metricReporter.Report(&metric.Metric{
-			Name:  metricAPI.PrincipalRegistrationMetricName,
-			Value: 1,
-			Labels: map[string]interface{}{
-				"email": user.Email,
-				"name":  user.Name,
-				// We only send lark notification for the first principal registration.
-				// false means do not notify upfront. Later the notification will be triggered by the scheduler.
-				"lark_notified": !isFirstUser,
-			},
-		})
-	}
+	isFirstUser := user.ID == api.PrincipalIDForFirstUser
+	s.metricReporter.Report(&metric.Metric{
+		Name:  metricAPI.PrincipalRegistrationMetricName,
+		Value: 1,
+		Labels: map[string]interface{}{
+			"email": user.Email,
+			"name":  user.Name,
+			// We only send lark notification for the first principal registration.
+			// false means do not notify upfront. Later the notification will be triggered by the scheduler.
+			"lark_notified": !isFirstUser,
+		},
+	})
 	bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
 		PrincipalID:    user.ID,
 		PrincipalName:  user.Name,

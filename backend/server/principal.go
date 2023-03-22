@@ -83,22 +83,20 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			principal.ServiceKey = password
 		}
 
-		if s.MetricReporter != nil {
-			count, err := s.store.CountUsers(ctx, api.EndUser)
-			if err != nil {
-				// it's okay to ignore the error to avoid workflow broken.
-				log.Debug("failed to count end users", zap.Error(err))
-			}
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.PrincipalCreateMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"type": principal.Type,
-					"role": principal.Role,
-					"rank": count,
-				},
-			})
+		count, err := s.store.CountUsers(ctx, api.EndUser)
+		if err != nil {
+			// it's okay to ignore the error to avoid workflow broken.
+			log.Debug("failed to count end users", zap.Error(err))
 		}
+		s.MetricReporter.Report(&metric.Metric{
+			Name:  metricAPI.PrincipalCreateMetricName,
+			Value: 1,
+			Labels: map[string]interface{}{
+				"type": principal.Type,
+				"role": principal.Role,
+				"rank": count,
+			},
+		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, principal); err != nil {
