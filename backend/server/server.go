@@ -514,6 +514,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
+	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
