@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/expr/v1alpha1/syntax.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "generated-go/v1";
+
+service RiskService {
+  rpc ListRisks(ListRisksRequest) returns (ListRisksResponse) {
+    option (google.api.http) = {get: "/v1/risks"};
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
+    option (google.api.http) = {
+      patch: "/v1/{risk.name=risks/*}"
+      body: "risk"
+    };
+    option (google.api.method_signature) = "risk,update_mask";
+  }
+}
+
+message ListRisksRequest {
+  // The maximum number of risks to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 risks will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListRisks` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `LiskRisks` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListRisksResponse {
+  repeated Risk risks = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateRiskRequest {
+  // The risk to update.
+  //
+  // The risk's `name` field is used to identify the risk to update.
+  // Format: risks/{risk}
+  Risk risk = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message Risk {
+  // Format: risks/{risk}
+  string name = 1;
+
+  // system-generated unique identifier.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum Namespace {
+    NAMESPACE_UNSPECIFIED = 0;
+    DDL = 1;
+    DML = 2;
+    CREATE_DATABASE = 3;
+  }
+  Namespace namespace = 3;
+
+  string title = 4;
+  int64 level = 5;
+  repeated RiskAction actions = 6;
+  repeated RiskRule rules = 7;
+}
+
+message RiskAction {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    CHOOSE_APPROVAL_TEMPLATE = 1;
+  }
+  Type type = 1;
+  oneof payload {
+    // Format: approvalTemplates/{approvalTemplate}
+    string approval_template = 2;
+  }
+}
+
+message RiskRule {
+  string title = 1;
+  google.api.expr.v1alpha1.ParsedExpr expression = 2;
+  bool active = 3;
+}

@@ -78,17 +78,18 @@ func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
 
 // ExchangeOAuthToken exchanges OAuth content with the provided authorization code.
 func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
-	form := &url.Values{}
-	form.Set("grant_type", "authorization_code")
-	form.Set("code", oauthExchange.Code)
+	params := &url.Values{}
+	params.Set("code", oauthExchange.Code)
+	params.Set("redirect_uri", oauthExchange.RedirectURL)
+	params.Set("grant_type", "authorization_code")
 	url := fmt.Sprintf("%s/site/oauth2/access_token", instanceURL)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, errors.Wrapf(err, "construct POST %s", url)
 	}
 
 	digested := base64.StdEncoding.EncodeToString([]byte(oauthExchange.ClientID + ":" + oauthExchange.ClientSecret))
-	req.Header.Set("Authorization", digested)
+	req.Header.Set("Authorization", "Basic "+digested)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := p.client.Do(req)
@@ -1012,7 +1013,7 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 			return errors.Wrapf(err, "construct POST %s", url)
 		}
 		digested := base64.StdEncoding.EncodeToString([]byte(oauthCtx.ClientID + ":" + oauthCtx.ClientSecret))
-		req.Header.Set("Authorization", digested)
+		req.Header.Set("Authorization", "Basic "+digested)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, err := client.Do(req)

@@ -3,17 +3,15 @@
 
 ## Table of Contents
 
-- [store/approval.proto](#store_approval-proto)
-    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
-    - [ApprovalHistory](#bytebase-store-ApprovalHistory)
-    - [ApprovalNode](#bytebase-store-ApprovalNode)
-    - [ApprovalPayload](#bytebase-store-ApprovalPayload)
-    - [ApprovalStep](#bytebase-store-ApprovalStep)
+- [store/activity.proto](#store_activity-proto)
+    - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
+    - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
+    - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
+    - [ActivityPayload](#bytebase-store-ActivityPayload)
   
-    - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
-    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
-    - [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus)
-    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -49,88 +47,95 @@
 
 
 
-<a name="store_approval-proto"></a>
+<a name="store_activity-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## store/approval.proto
+## store/activity.proto
 
 
 
-<a name="bytebase-store-ApprovalFlow"></a>
+<a name="bytebase-store-ActivityIssueCommentCreatePayload"></a>
 
-### ApprovalFlow
+### ActivityIssueCommentCreatePayload
+ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
+| task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
+| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
+| type | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type) |  |  |
+| action | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action) |  |  |
+| stage_name | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="bytebase-store-ApprovalHistory"></a>
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy"></a>
 
-### ApprovalHistory
+### ActivityIssueCommentCreatePayload.TaskRollbackBy
+TaskRollbackBy records an issue rollback activity.
+The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  |  |
+| task_id | [int64](#int64) |  |  |
+| rollback_by_issue_id | [int64](#int64) |  |  |
+| rollback_by_task_id | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCreatePayload"></a>
+
+### ActivityIssueCreatePayload
+ActivityIssueCreatePayload is the payloads for creating issues.
+These payload types are only used when marshalling to the json format for saving into the database.
+So we annotate with json tag using camelCase naming which is consistent with normal
+json naming convention. More importantly, frontend code can simply use JSON.parse to
+convert to the expected struct there.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityPayload"></a>
+
+### ActivityPayload
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_uid | [string](#string) |  | The `uid` of the approval node. |
-| status | [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus) |  | The new status. |
-| principal_id | [int32](#int32) |  | The principal id of the approver. |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalNode"></a>
-
-### ApprovalNode
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
-| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
-| role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalPayload"></a>
-
-### ApprovalPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
-| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalStep"></a>
-
-### ApprovalStep
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type) |  |  |
-| nodes | [ApprovalNode](#bytebase-store-ApprovalNode) | repeated |  |
+| issue_create_payload | [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload) |  |  |
+| issue_comment_create_payload | [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload) |  |  |
 
 
 
@@ -139,66 +144,28 @@
  
 
 
-<a name="bytebase-store-ApprovalNode-RoleValue"></a>
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
 
-### ApprovalNode.RoleValue
-RoleValue is used if ApprovalNode Type is ROLE
-The predefined user groups are:
-- WORKSPACE_OWNER
-- DBA
-- PROJECT_OWNER
-- PROJECT_MEMBER
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
+
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ROLE_VALUE_UNSPECIFILED | 0 |  |
-| WORKSPACE_OWNER | 1 |  |
-| DBA | 2 |  |
-| PROJECT_OWNER | 3 |  |
-| PROJECT_MEMBER | 4 |  |
+| ACTION_UNSPECIFIED | 0 |  |
+| ACTION_APPROVE | 1 |  |
+| ACTION_REJECT | 2 |  |
 
 
 
-<a name="bytebase-store-ApprovalNode-Type"></a>
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type"></a>
 
-### ApprovalNode.Type
-Type of the ApprovalNode.
-type determines who should approve this node.
-ROLE means the ApprovalNode can be approved by an user from our predefined user group.
-See RoleValue below for the predefined user groups.
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
+
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| ROLE | 1 |  |
-
-
-
-<a name="bytebase-store-ApprovalNodeStatus"></a>
-
-### ApprovalNodeStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_NODE_STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-
-
-
-<a name="bytebase-store-ApprovalStep-Type"></a>
-
-### ApprovalStep.Type
-Type of the ApprovalStep
-AND means every node must be approved to proceed.
-OR means approving any node will proceed.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| AND | 1 |  |
-| OR | 2 |  |
+| TYPE_FEISHU | 1 |  |
 
 
  

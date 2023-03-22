@@ -4,7 +4,7 @@ package api
 type ExternalApprovalType string
 
 // ExternalApprovalTypeFeishu is the ExternalApproval from feishu.
-const ExternalApprovalTypeFeishu = "bb.plugin.app.feishu"
+const ExternalApprovalTypeFeishu ExternalApprovalType = "bb.plugin.app.feishu"
 
 // ExternalApprovalPayloadFeishu is the payload for feishu type ExternalApproval.
 type ExternalApprovalPayloadFeishu struct {

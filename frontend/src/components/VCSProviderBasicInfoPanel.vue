@@ -46,6 +46,19 @@
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
       <span class="whitespace-nowrap">GitHub.com</span>
     </label>
+    <label v-if="isDev" class="radio space-x-2">
+      <input
+        v-model="config.uiType"
+        name="Bitbucket.org"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="BITBUCKET_ORG"
+        @change="changeUIType()"
+      />
+      <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+      <span class="whitespace-nowrap">Bitbucket.org</span>
+    </label>
   </div>
   <div class="mt-4 relative">
     <div class="relative flex justify-start">
@@ -59,7 +72,7 @@
       <div class="h-5 w-5">
         <img src="../assets/github-logo.svg" />
       </div>
-      <label class="whitespace-nowrap">GitHub Enterprise </label>
+      <label class="whitespace-nowrap">GitHub Enterprise</label>
     </div>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">
@@ -142,6 +155,8 @@ export default defineComponent({
         }
       } else if (props.config.type == "GITHUB") {
         return "GitHub.com";
+      } else if (props.config.type == "BITBUCKET") {
+        return "Bitbucket.org";
       }
       return "";
     });
@@ -154,6 +169,10 @@ export default defineComponent({
       } else if (props.config.type == "GITHUB") {
         return t(
           "gitops.setting.add-git-provider.basic-info.github-instance-url"
+        );
+      } else if (props.config.type == "BITBUCKET") {
+        return t(
+          "gitops.setting.add-git-provider.basic-info.bitbucket-instance-url"
         );
       }
       return "";
@@ -168,6 +187,8 @@ export default defineComponent({
         }
       } else if (props.config.type == "GITHUB") {
         return "https://github.com";
+      } else if (props.config.type == "BITBUCKET") {
+        return "https://bitbucket.org";
       }
       return "";
     });
@@ -176,6 +197,7 @@ export default defineComponent({
     const instanceUrlDisabled = computed((): boolean => {
       return (
         props.config.type == "GITHUB" ||
+        props.config.type == "BITBUCKET" ||
         (props.config.type == "GITLAB" && props.config.uiType == "GITLAB_COM")
       );
     });
@@ -231,6 +253,13 @@ export default defineComponent({
         props.config.instanceUrl = "https://github.com";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = "GitHub.com";
+      } else if (props.config.uiType == "BITBUCKET_ORG") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "BITBUCKET";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.instanceUrl = "https://bitbucket.org";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.name = "Bitbucket.org";
       }
     };
 
