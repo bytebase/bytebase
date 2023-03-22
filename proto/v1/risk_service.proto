@@ -77,20 +77,7 @@ message Risk {
 
   string title = 4;
   int64 level = 5;
-  repeated RiskAction actions = 6;
   repeated RiskRule rules = 7;
-}
-
-message RiskAction {
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    CHOOSE_APPROVAL_TEMPLATE = 1;
-  }
-  Type type = 1;
-  oneof payload {
-    // Format: approvalTemplates/{approvalTemplate}
-    string approval_template = 2;
-  }
 }
 
 message RiskRule {
