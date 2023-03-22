@@ -3,6 +3,7 @@ import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
@@ -34,6 +35,11 @@ export interface ListRisksResponse {
   nextPageToken: string;
 }
 
+export interface CreateRiskRequest {
+  /** The risk to create. */
+  risk?: Risk;
+}
+
 export interface UpdateRiskRequest {
   /**
    * The risk to update.
@@ -46,106 +52,69 @@ export interface UpdateRiskRequest {
   updateMask?: string[];
 }
 
+export interface DeleteRiskRequest {
+  /**
+   * The name of the risk to delete.
+   * Format: risks/{risk}
+   */
+  name: string;
+}
+
 export interface Risk {
   /** Format: risks/{risk} */
   name: string;
   /** system-generated unique identifier. */
   uid: string;
-  namespace: Risk_Namespace;
+  source: Risk_Source;
   title: string;
   level: number;
-  actions: RiskAction[];
-  rules: RiskRule[];
+  expression?: ParsedExpr;
+  active: boolean;
 }
 
-export enum Risk_Namespace {
-  NAMESPACE_UNSPECIFIED = 0,
+export enum Risk_Source {
+  SOURCE_UNSPECIFIED = 0,
   DDL = 1,
   DML = 2,
   CREATE_DATABASE = 3,
   UNRECOGNIZED = -1,
 }
 
-export function risk_NamespaceFromJSON(object: any): Risk_Namespace {
+export function risk_SourceFromJSON(object: any): Risk_Source {
   switch (object) {
     case 0:
-    case "NAMESPACE_UNSPECIFIED":
-      return Risk_Namespace.NAMESPACE_UNSPECIFIED;
+    case "SOURCE_UNSPECIFIED":
+      return Risk_Source.SOURCE_UNSPECIFIED;
     case 1:
     case "DDL":
-      return Risk_Namespace.DDL;
+      return Risk_Source.DDL;
     case 2:
     case "DML":
-      return Risk_Namespace.DML;
+      return Risk_Source.DML;
     case 3:
     case "CREATE_DATABASE":
-      return Risk_Namespace.CREATE_DATABASE;
+      return Risk_Source.CREATE_DATABASE;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return Risk_Namespace.UNRECOGNIZED;
+      return Risk_Source.UNRECOGNIZED;
   }
 }
 
-export function risk_NamespaceToJSON(object: Risk_Namespace): string {
+export function risk_SourceToJSON(object: Risk_Source): string {
   switch (object) {
-    case Risk_Namespace.NAMESPACE_UNSPECIFIED:
-      return "NAMESPACE_UNSPECIFIED";
-    case Risk_Namespace.DDL:
+    case Risk_Source.SOURCE_UNSPECIFIED:
+      return "SOURCE_UNSPECIFIED";
+    case Risk_Source.DDL:
       return "DDL";
-    case Risk_Namespace.DML:
+    case Risk_Source.DML:
       return "DML";
-    case Risk_Namespace.CREATE_DATABASE:
+    case Risk_Source.CREATE_DATABASE:
       return "CREATE_DATABASE";
-    case Risk_Namespace.UNRECOGNIZED:
+    case Risk_Source.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
-}
-
-export interface RiskAction {
-  type: RiskAction_Type;
-  /** Format: approvalTemplates/{approvalTemplate} */
-  approvalTemplate?: string | undefined;
-}
-
-export enum RiskAction_Type {
-  TYPE_UNSPECIFIED = 0,
-  CHOOSE_APPROVAL_TEMPLATE = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function riskAction_TypeFromJSON(object: any): RiskAction_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return RiskAction_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "CHOOSE_APPROVAL_TEMPLATE":
-      return RiskAction_Type.CHOOSE_APPROVAL_TEMPLATE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return RiskAction_Type.UNRECOGNIZED;
-  }
-}
-
-export function riskAction_TypeToJSON(object: RiskAction_Type): string {
-  switch (object) {
-    case RiskAction_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case RiskAction_Type.CHOOSE_APPROVAL_TEMPLATE:
-      return "CHOOSE_APPROVAL_TEMPLATE";
-    case RiskAction_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface RiskRule {
-  title: string;
-  expression?: ParsedExpr;
-  active: boolean;
 }
 
 function createBaseListRisksRequest(): ListRisksRequest {
@@ -268,6 +237,53 @@ export const ListRisksResponse = {
   },
 };
 
+function createBaseCreateRiskRequest(): CreateRiskRequest {
+  return { risk: undefined };
+}
+
+export const CreateRiskRequest = {
+  encode(message: CreateRiskRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.risk !== undefined) {
+      Risk.encode(message.risk, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateRiskRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateRiskRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.risk = Risk.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateRiskRequest {
+    return { risk: isSet(object.risk) ? Risk.fromJSON(object.risk) : undefined };
+  },
+
+  toJSON(message: CreateRiskRequest): unknown {
+    const obj: any = {};
+    message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
+    const message = createBaseCreateRiskRequest();
+    message.risk = (object.risk !== undefined && object.risk !== null) ? Risk.fromPartial(object.risk) : undefined;
+    return message;
+  },
+};
+
 function createBaseUpdateRiskRequest(): UpdateRiskRequest {
   return { risk: undefined, updateMask: undefined };
 }
@@ -326,8 +342,55 @@ export const UpdateRiskRequest = {
   },
 };
 
+function createBaseDeleteRiskRequest(): DeleteRiskRequest {
+  return { name: "" };
+}
+
+export const DeleteRiskRequest = {
+  encode(message: DeleteRiskRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteRiskRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteRiskRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteRiskRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteRiskRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
+    const message = createBaseDeleteRiskRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseRisk(): Risk {
-  return { name: "", uid: "", namespace: 0, title: "", level: 0, actions: [], rules: [] };
+  return { name: "", uid: "", source: 0, title: "", level: 0, expression: undefined, active: false };
 }
 
 export const Risk = {
@@ -338,8 +401,8 @@ export const Risk = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
-    if (message.namespace !== 0) {
-      writer.uint32(24).int32(message.namespace);
+    if (message.source !== 0) {
+      writer.uint32(24).int32(message.source);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -347,11 +410,11 @@ export const Risk = {
     if (message.level !== 0) {
       writer.uint32(40).int64(message.level);
     }
-    for (const v of message.actions) {
-      RiskAction.encode(v!, writer.uint32(50).fork()).ldelim();
+    if (message.expression !== undefined) {
+      ParsedExpr.encode(message.expression, writer.uint32(50).fork()).ldelim();
     }
-    for (const v of message.rules) {
-      RiskRule.encode(v!, writer.uint32(58).fork()).ldelim();
+    if (message.active === true) {
+      writer.uint32(56).bool(message.active);
     }
     return writer;
   },
@@ -370,7 +433,7 @@ export const Risk = {
           message.uid = reader.string();
           break;
         case 3:
-          message.namespace = reader.int32() as any;
+          message.source = reader.int32() as any;
           break;
         case 4:
           message.title = reader.string();
@@ -379,10 +442,10 @@ export const Risk = {
           message.level = longToNumber(reader.int64() as Long);
           break;
         case 6:
-          message.actions.push(RiskAction.decode(reader, reader.uint32()));
+          message.expression = ParsedExpr.decode(reader, reader.uint32());
           break;
         case 7:
-          message.rules.push(RiskRule.decode(reader, reader.uint32()));
+          message.active = reader.bool();
           break;
         default:
           reader.skipType(tag & 7);
@@ -396,11 +459,11 @@ export const Risk = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
-      namespace: isSet(object.namespace) ? risk_NamespaceFromJSON(object.namespace) : 0,
+      source: isSet(object.source) ? risk_SourceFromJSON(object.source) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       level: isSet(object.level) ? Number(object.level) : 0,
-      actions: Array.isArray(object?.actions) ? object.actions.map((e: any) => RiskAction.fromJSON(e)) : [],
-      rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => RiskRule.fromJSON(e)) : [],
+      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
+      active: isSet(object.active) ? Boolean(object.active) : false,
     };
   },
 
@@ -408,19 +471,12 @@ export const Risk = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
-    message.namespace !== undefined && (obj.namespace = risk_NamespaceToJSON(message.namespace));
+    message.source !== undefined && (obj.source = risk_SourceToJSON(message.source));
     message.title !== undefined && (obj.title = message.title);
     message.level !== undefined && (obj.level = Math.round(message.level));
-    if (message.actions) {
-      obj.actions = message.actions.map((e) => e ? RiskAction.toJSON(e) : undefined);
-    } else {
-      obj.actions = [];
-    }
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? RiskRule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
-    }
+    message.expression !== undefined &&
+      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
+    message.active !== undefined && (obj.active = message.active);
     return obj;
   },
 
@@ -428,135 +484,9 @@ export const Risk = {
     const message = createBaseRisk();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.namespace = object.namespace ?? 0;
+    message.source = object.source ?? 0;
     message.title = object.title ?? "";
     message.level = object.level ?? 0;
-    message.actions = object.actions?.map((e) => RiskAction.fromPartial(e)) || [];
-    message.rules = object.rules?.map((e) => RiskRule.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseRiskAction(): RiskAction {
-  return { type: 0, approvalTemplate: undefined };
-}
-
-export const RiskAction = {
-  encode(message: RiskAction, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
-    if (message.approvalTemplate !== undefined) {
-      writer.uint32(18).string(message.approvalTemplate);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RiskAction {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRiskAction();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.type = reader.int32() as any;
-          break;
-        case 2:
-          message.approvalTemplate = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RiskAction {
-    return {
-      type: isSet(object.type) ? riskAction_TypeFromJSON(object.type) : 0,
-      approvalTemplate: isSet(object.approvalTemplate) ? String(object.approvalTemplate) : undefined,
-    };
-  },
-
-  toJSON(message: RiskAction): unknown {
-    const obj: any = {};
-    message.type !== undefined && (obj.type = riskAction_TypeToJSON(message.type));
-    message.approvalTemplate !== undefined && (obj.approvalTemplate = message.approvalTemplate);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<RiskAction>): RiskAction {
-    const message = createBaseRiskAction();
-    message.type = object.type ?? 0;
-    message.approvalTemplate = object.approvalTemplate ?? undefined;
-    return message;
-  },
-};
-
-function createBaseRiskRule(): RiskRule {
-  return { title: "", expression: undefined, active: false };
-}
-
-export const RiskRule = {
-  encode(message: RiskRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.expression !== undefined) {
-      ParsedExpr.encode(message.expression, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.active === true) {
-      writer.uint32(24).bool(message.active);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RiskRule {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRiskRule();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.title = reader.string();
-          break;
-        case 2:
-          message.expression = ParsedExpr.decode(reader, reader.uint32());
-          break;
-        case 3:
-          message.active = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RiskRule {
-    return {
-      title: isSet(object.title) ? String(object.title) : "",
-      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
-      active: isSet(object.active) ? Boolean(object.active) : false,
-    };
-  },
-
-  toJSON(message: RiskRule): unknown {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
-    message.active !== undefined && (obj.active = message.active);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<RiskRule>): RiskRule {
-    const message = createBaseRiskRule();
-    message.title = object.title ?? "";
     message.expression = (object.expression !== undefined && object.expression !== null)
       ? ParsedExpr.fromPartial(object.expression)
       : undefined;
@@ -578,6 +508,14 @@ export const RiskServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    createRisk: {
+      name: "CreateRisk",
+      requestType: CreateRiskRequest,
+      requestStream: false,
+      responseType: Risk,
+      responseStream: false,
+      options: {},
+    },
     updateRisk: {
       name: "UpdateRisk",
       requestType: UpdateRiskRequest,
@@ -586,17 +524,29 @@ export const RiskServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    deleteRisk: {
+      name: "DeleteRisk",
+      requestType: DeleteRiskRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
 export interface RiskServiceImplementation<CallContextExt = {}> {
   listRisks(request: ListRisksRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRisksResponse>>;
+  createRisk(request: CreateRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
   updateRisk(request: UpdateRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
+  deleteRisk(request: DeleteRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
 export interface RiskServiceClient<CallOptionsExt = {}> {
   listRisks(request: DeepPartial<ListRisksRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRisksResponse>;
+  createRisk(request: DeepPartial<CreateRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
   updateRisk(request: DeepPartial<UpdateRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
+  deleteRisk(request: DeepPartial<DeleteRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 declare var self: any | undefined;

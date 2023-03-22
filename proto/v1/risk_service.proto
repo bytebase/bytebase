@@ -17,12 +17,24 @@ service RiskService {
     option (google.api.method_signature) = "";
   }
 
+  rpc CreateRisk(CreateRiskRequest) returns (Risk) {
+    option (google.api.http) = {
+      post: "/v1/risks"
+      body: "risk"
+    };
+    option (google.api.method_signature) = "risk";
+  }
+
   rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
     option (google.api.http) = {
       patch: "/v1/{risk.name=risks/*}"
       body: "risk"
     };
     option (google.api.method_signature) = "risk,update_mask";
+  }
+
+  rpc DeleteRisk(DeleteRiskRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=risks/*}"};
   }
 }
 
@@ -49,6 +61,11 @@ message ListRisksResponse {
   string next_page_token = 2;
 }
 
+message CreateRiskRequest {
+  // The risk to create.
+  Risk risk = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message UpdateRiskRequest {
   // The risk to update.
   //
@@ -57,7 +74,13 @@ message UpdateRiskRequest {
   Risk risk = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteRiskRequest {
+  // The name of the risk to delete.
+  // Format: risks/{risk}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Risk {
@@ -67,34 +90,16 @@ message Risk {
   // system-generated unique identifier.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  enum Namespace {
-    NAMESPACE_UNSPECIFIED = 0;
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
     DDL = 1;
     DML = 2;
     CREATE_DATABASE = 3;
   }
-  Namespace namespace = 3;
+  Source source = 3;
 
   string title = 4;
   int64 level = 5;
-  repeated RiskAction actions = 6;
-  repeated RiskRule rules = 7;
-}
-
-message RiskAction {
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    CHOOSE_APPROVAL_TEMPLATE = 1;
-  }
-  Type type = 1;
-  oneof payload {
-    // Format: approvalTemplates/{approvalTemplate}
-    string approval_template = 2;
-  }
-}
-
-message RiskRule {
-  string title = 1;
-  google.api.expr.v1alpha1.ParsedExpr expression = 2;
-  bool active = 3;
+  google.api.expr.v1alpha1.ParsedExpr expression = 6;
+  bool active = 7;
 }
