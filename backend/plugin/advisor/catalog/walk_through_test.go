@@ -136,9 +136,8 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 				require.Equal(t, err, test.Err)
 			}
 			continue
-		} else {
-			require.NoError(t, err, test.Statement)
 		}
+		require.NoError(t, err, test.Statement)
 
 		if record {
 			tests[i].Want = state.convertToDatabaseMetadata()
