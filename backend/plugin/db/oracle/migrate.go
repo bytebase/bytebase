@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -24,10 +25,17 @@ func (*Driver) SetupMigrationIfNeeded(context.Context) error {
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
 func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
+	return d.ExecuteMigrationWithBeforeCommitTxFunc(ctx, m, statement, nil)
+}
+
+// ExecuteMigration executes a migration.
+// ExecuteMigration will execute the database migration.
+// Returns the created migration history id and the updated schema on success.
+func (d *Driver) ExecuteMigrationWithBeforeCommitTxFunc(ctx context.Context, m *db.MigrationInfo, statement string, beforeCommitTxFunc func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	if m.CreateDatabase {
 		return "", "", errors.New("creating databases is not supported")
 	}
-	if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
+	if _, err := d.executeWithBeforeCommitTxFunc(ctx, statement, m.CreateDatabase, beforeCommitTxFunc); err != nil {
 		return "", "", util.FormatError(err)
 	}
 	return "", "", nil

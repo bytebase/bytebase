@@ -58,12 +58,20 @@ export const useRollbackLogic = () => {
     }
     const database = databaseOfTask(task.value);
     const { engine, engineVersion } = database.instance;
-    if (engine !== "MYSQL") {
-      return "NONE";
+    switch (engine) {
+      case "MYSQL":
+        if (
+          !semverCompare(engineVersion, MIN_ROLLBACK_SQL_MYSQL_VERSION, "gte")
+        ) {
+          return "NONE";
+        }
+        break;
+      case "ORACLE":
+        break;
+      default:
+        return "NONE";
     }
-    if (!semverCompare(engineVersion, MIN_ROLLBACK_SQL_MYSQL_VERSION, "gte")) {
-      return "NONE";
-    }
+
     if (create.value) {
       return "SWITCH";
     }
