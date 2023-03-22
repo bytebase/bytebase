@@ -4,6 +4,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -20,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -478,7 +480,7 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 }
 
 // ExecuteMigration executes migration.
-func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
 	if !m.CreateDatabase {
@@ -520,8 +522,18 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 		doMigrate = false
 	}
 	if doMigrate {
-		if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
-			return "", "", err
+		if driver.GetType() == db.Oracle && executeBeforeCommitTx != nil {
+			oracleDriver, ok := driver.(*oracle.Driver)
+			if !ok {
+				return "", "", errors.New("failed to cast driver to oracle driver")
+			}
+			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, m, statement, executeBeforeCommitTx); err != nil {
+				return "", "", err
+			}
+		} else {
+			if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
+				return "", "", err
+			}
 		}
 	}
 
