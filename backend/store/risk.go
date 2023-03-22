@@ -231,7 +231,7 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE risk
-		SET`+strings.Join(set, ", ")+`
+		SET `+strings.Join(set, ", ")+`
 		WHERE id = `+fmt.Sprintf("$%d", len(args)),
 		args...,
 	); err != nil {
