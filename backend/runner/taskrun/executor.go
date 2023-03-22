@@ -194,6 +194,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 			// The runner will periodically scan the map to generate rollback SQL asynchronously.
 			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
 		}
+		return migrationID, schema, nil
 	}
 
 	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, nil /* executeBeforeCommitTx */)

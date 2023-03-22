@@ -29,8 +29,6 @@ func init() {
 // Driver is the Oracle driver.
 type Driver struct {
 	db *sql.DB
-	// If executeBeforeCommitTxFunc is not nil, it will be called before transaction commit in Execute().
-	executeBeforeCommitTxFunc func(tx *sql.Tx) error
 }
 
 func newDriver(db.DriverConfig) db.Driver {
