@@ -36,7 +36,6 @@ const (
 type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
 	// Version is the bytebase's version
-	enabled     bool
 	version     string
 	workspaceID string
 	reporter    metric.Reporter
@@ -46,7 +45,12 @@ type Reporter struct {
 
 // NewReporter creates a new metric scheduler.
 func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string, enabled bool) *Reporter {
-	r := segment.NewReporter(profile.MetricConnectionKey, workspaceID)
+	var r metric.Reporter
+	if enabled {
+		r = segment.NewReporter(profile.MetricConnectionKey, workspaceID)
+	} else {
+		r = segment.NewMockReporter()
+	}
 
 	return &Reporter{
 		licenseService: licenseService,
@@ -55,7 +59,6 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 		reporter:       r,
 		collectors:     make(map[string]metric.Collector),
 		store:          store,
-		enabled:        enabled,
 	}
 }
 
@@ -81,9 +84,6 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 				}()
 
-				if !m.enabled {
-					return
-				}
 				ctx := context.Background()
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
 				m.identify(ctx)
@@ -113,9 +113,6 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // Close will close the metric reporter.
 func (m *Reporter) Close() {
-	if !m.enabled {
-		return
-	}
 	m.reporter.Close()
 }
 
@@ -159,10 +156,6 @@ func (m *Reporter) identify(ctx context.Context) {
 
 // Report will report a metric.
 func (m *Reporter) Report(metric *metric.Metric) {
-	if !m.enabled {
-		return
-	}
-
 	if err := m.reporter.Report(metric); err != nil {
 		log.Error(
 			"Failed to report metric",
