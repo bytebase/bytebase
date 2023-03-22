@@ -20,18 +20,16 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 			requestPath := c.Path()
 			responseCode := c.Response().Status
 
-			if s.MetricReporter != nil {
-				s.MetricReporter.Report(&metric.Metric{
-					Name:  metricAPI.OpenAPIMetricName,
-					Value: 1,
-					Labels: map[string]interface{}{
-						"latency_ns":     strconv.FormatInt(duration.Nanoseconds(), 10),
-						"request_method": requestMethod,
-						"request_path":   requestPath,
-						"response_code":  strconv.Itoa(responseCode),
-					},
-				})
-			}
+			s.MetricReporter.Report(&metric.Metric{
+				Name:  metricAPI.OpenAPIMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"latency_ns":     strconv.FormatInt(duration.Nanoseconds(), 10),
+					"request_method": requestMethod,
+					"request_path":   requestPath,
+					"response_code":  strconv.Itoa(responseCode),
+				},
+			})
 		}()
 
 		if err := next(c); err != nil {

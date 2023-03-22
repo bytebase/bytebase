@@ -145,17 +145,15 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		s.licenseService.RefreshCache(ctx)
 		subscription = s.licenseService.LoadSubscription(ctx)
 		currentPlan := subscription.Plan
-		if s.MetricReporter != nil {
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.SubscriptionTrialMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"trial_plan":    currentPlan.String(),
-					"from_plan":     basePlan.String(),
-					"lark_notified": false,
-				},
-			})
-		}
+		s.MetricReporter.Report(&metric.Metric{
+			Name:  metricAPI.SubscriptionTrialMetricName,
+			Value: 1,
+			Labels: map[string]interface{}{
+				"trial_plan":    currentPlan.String(),
+				"from_plan":     basePlan.String(),
+				"lark_notified": false,
+			},
+		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &subscription); err != nil {

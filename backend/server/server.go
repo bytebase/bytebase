@@ -57,6 +57,7 @@ import (
 	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	metricPlugin "github.com/bytebase/bytebase/backend/plugin/metric"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -329,9 +330,20 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			defer func() {
-				if !common.HasPrefixes(c.Request().URL.Path, "/healthz", "/v1/actuator") {
-					s.profile.LastActiveTs = time.Now().Unix()
+				// only update for authorized request
+				id, ok := c.Get(getPrincipalIDContextKey()).(int)
+				if !ok || id <= 0 {
+					return
 				}
+				s.profile.LastActiveTs = time.Now().Unix()
+				s.MetricReporter.Report(&metricPlugin.Metric{
+					Name:  metric.APIRequestMetricName,
+					Value: 1,
+					Labels: map[string]interface{}{
+						"path":   c.Request().URL.Path,
+						"method": c.Request().Method,
+					},
+				})
 			}()
 			return next(c)
 		}
@@ -352,6 +364,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
+	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, s.GetWorkspaceID(), false)
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
@@ -595,18 +608,16 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && s.profile.DemoName != "" && !s.profile.DisableMetric
-	if enabled {
-		metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID)
-		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
-		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
-		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
-		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(s.store))
-		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
-		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
-		metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
-		metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
-		s.MetricReporter = metricReporter
-	}
+	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID, enabled)
+	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
+	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
+	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
+	metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(s.store))
+	metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
+	metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
+	metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
+	metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
+	s.MetricReporter = metricReporter
 }
 
 // retrieved via the SettingService upon startup.
@@ -758,10 +769,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		s.runnerWG.Add(1)
 		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
-		if s.MetricReporter != nil {
-			s.runnerWG.Add(1)
-			go s.MetricReporter.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.MetricReporter.Run(ctx, &s.runnerWG)
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))

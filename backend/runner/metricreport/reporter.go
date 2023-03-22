@@ -44,8 +44,13 @@ type Reporter struct {
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string) *Reporter {
-	r := segment.NewReporter(profile.MetricConnectionKey, workspaceID)
+func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string, enabled bool) *Reporter {
+	var r metric.Reporter
+	if enabled {
+		r = segment.NewReporter(profile.MetricConnectionKey, workspaceID)
+	} else {
+		r = segment.NewMockReporter()
+	}
 
 	return &Reporter{
 		licenseService: licenseService,
@@ -81,7 +86,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
-				m.Identify(ctx)
+				m.identify(ctx)
 				for name, collector := range m.collectors {
 					log.Debug("Run metric collector", zap.String("collector", name))
 
@@ -117,7 +122,7 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 }
 
 // Identify will identify the workspace and update the subscription plan.
-func (m *Reporter) Identify(ctx context.Context) {
+func (m *Reporter) identify(ctx context.Context) {
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
 	orgID := subscription.OrgID
