@@ -34,7 +34,3 @@ message ApprovalConfigSetting {
   }
   repeated Rule rules = 1;
 }
-
-message ApprovalTemplate {
-  repeated ApprovalStep steps = 2;
-}
