@@ -557,17 +557,15 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
-		if s.MetricReporter != nil {
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.SQLEditorExecutionMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"engine":     instance.Engine,
-					"readonly":   exec.Readonly,
-					"admin_mode": false,
-				},
-			})
-		}
+		s.MetricReporter.Report(&metric.Metric{
+			Name:  metricAPI.SQLEditorExecutionMetricName,
+			Value: 1,
+			Labels: map[string]interface{}{
+				"engine":     instance.Engine,
+				"readonly":   exec.Readonly,
+				"admin_mode": false,
+			},
+		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
@@ -761,17 +759,15 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
-		if s.MetricReporter != nil {
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.SQLEditorExecutionMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"engine":     instance.Engine,
-					"readonly":   exec.Readonly,
-					"admin_mode": true,
-				},
-			})
-		}
+		s.MetricReporter.Report(&metric.Metric{
+			Name:  metricAPI.SQLEditorExecutionMetricName,
+			Value: 1,
+			Labels: map[string]interface{}{
+				"engine":     instance.Engine,
+				"readonly":   exec.Readonly,
+				"admin_mode": true,
+			},
+		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
