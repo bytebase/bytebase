@@ -101,3 +101,27 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 func (*RiskService) DeleteRisk(context.Context, *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRisk not implemented")
 }
+
+func convertToSource(source store.RiskSource) v1pb.Risk_Source {
+	switch source {
+	case store.RiskSourceDatabaseCreate:
+		return v1pb.Risk_CREATE_DATABASE
+	case store.RiskSourceDatabaseSchemaUpdate:
+		return v1pb.Risk_DDL
+	case store.RiskSourceDatabaseDataUpdate:
+		return v1pb.Risk_DML
+	}
+	return v1pb.Risk_SOURCE_UNSPECIFIED
+}
+
+func convertSource(source v1pb.Risk_Source) store.RiskSource {
+	switch source {
+	case v1pb.Risk_CREATE_DATABASE:
+		return store.RiskSourceDatabaseCreate
+	case v1pb.Risk_DDL:
+		return store.RiskSourceDatabaseSchemaUpdate
+	case v1pb.Risk_DML:
+		return store.RiskSourceDatabaseDataUpdate
+	}
+	return store.RiskSourceUnknown
+}
