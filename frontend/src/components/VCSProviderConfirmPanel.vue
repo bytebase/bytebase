@@ -41,6 +41,13 @@
             <img class="h-6 w-auto" src="../assets/github-logo.svg" />
             <div class="whitespace-nowrap">GitHub.com</div>
           </div>
+          <div
+            v-else-if="config.uiType == 'BITBUCKET_ORG'"
+            class="flex flex-row items-center space-x-2"
+          >
+            <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+            <div class="whitespace-nowrap">Bitbucket.org</div>
+          </div>
         </dd>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">

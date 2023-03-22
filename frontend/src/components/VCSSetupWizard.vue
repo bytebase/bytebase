@@ -103,7 +103,11 @@ export default defineComponent({
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        if (state.config.type == "GITLAB" || state.config.type == "GITHUB") {
+        if (
+          state.config.type == "GITLAB" ||
+          state.config.type == "GITHUB" ||
+          state.config.type == "BITBUCKET"
+        ) {
           useOAuthStore()
             .exchangeVCSToken({
               vcsType: state.config.type,
@@ -156,6 +160,8 @@ export default defineComponent({
         return t(
           "gitops.setting.add-git-provider.github-com-admin-requirement"
         );
+      } else if (state.config.type == "BITBUCKET") {
+        return t("gitops.setting.add-git-provider.bitbucket-admin-requirement");
       }
       return "";
     });
@@ -177,6 +183,8 @@ export default defineComponent({
         let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
         if (state.config.type == "GITHUB") {
           authorizeUrl = `https://github.com/login/oauth/authorize`;
+        } else if (state.config.type == "BITBUCKET") {
+          authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
         }
         const newWindow = openWindowForOAuth(
           authorizeUrl,

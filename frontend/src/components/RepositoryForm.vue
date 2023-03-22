@@ -9,6 +9,12 @@
         <template v-if="vcsType.startsWith('GITLAB')">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
+        <template v-if="vcsType.startsWith('GITHUB')">
+          <img class="h-4 w-auto" src="../assets/github-logo.svg" />
+        </template>
+        <template v-if="vcsType.startsWith('BITBUCKET')">
+          <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
+        </template>
       </div>
       <input
         id="gitprovider"
