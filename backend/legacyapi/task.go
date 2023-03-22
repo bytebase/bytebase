@@ -193,6 +193,9 @@ type TaskDatabaseDataUpdatePayload struct {
 	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
 	// RollbackSQLStatus is the status of the rollback generation.
 	RollbackSQLStatus RollbackSQLStatus `json:"rollbackSqlStatus,omitempty"`
+	// TransactionID is the ID of the transaction executing the migration.
+	// It is only use for Oracle to find Rollback SQL statement now.
+	TransactionID string `json:"transactionId,omitempty"`
 	// ThreadID is the ID of the connection executing the migration.
 	// We use it to filter the binlog events of the migration transaction.
 	ThreadID string `json:"threadId,omitempty"`
