@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -108,7 +109,10 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table columns")
 	}
-	// TODO(d): support indexes.
+	indexMap, err := getIndexes(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indices")
+	}
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	// TODO(d): add table row count.
@@ -131,6 +135,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 		}
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
+		table.Indexes = indexMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
@@ -194,4 +199,74 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	}
 
 	return columnsMap, nil
+}
+
+// getIndexes gets all indices of a database.
+func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	// MSSQL doesn't support function-based indexes.
+	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+
+	query := `
+		SELECT
+			s.name,
+			t.name,
+			ind.name,
+			col.name,
+			ind.type_desc,
+			ind.is_primary_key,
+			ind.is_unique
+		FROM
+			sys.indexes ind
+		INNER JOIN
+			sys.index_columns ic ON  ind.object_id = ic.object_id and ind.index_id = ic.index_id
+		INNER JOIN
+			sys.columns col ON ic.object_id = col.object_id and ic.column_id = col.column_id
+		INNER JOIN
+			sys.tables t ON ind.object_id = t.object_id
+		INNER JOIN
+			sys.schemas s ON s.schema_id = t.schema_id
+		WHERE
+			t.is_ms_shipped = 0
+		ORDER BY 
+			s.name, t.name, ind.name, ic.key_ordinal;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var schemaName, tableName, indexName, indexType, colName string
+		var primary, unique bool
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &colName, &indexType, &primary, &unique); err != nil {
+			return nil, err
+		}
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		if _, ok := indexMap[key]; !ok {
+			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+		}
+		if _, ok := indexMap[key][indexName]; !ok {
+			indexMap[key][indexName] = &storepb.IndexMetadata{
+				Name:    indexName,
+				Type:    indexType,
+				Unique:  unique,
+				Primary: primary,
+			}
+		}
+		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, colName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	tableIndexes := make(map[db.TableKey][]*storepb.IndexMetadata)
+	for k, m := range indexMap {
+		for _, v := range m {
+			tableIndexes[k] = append(tableIndexes[k], v)
+		}
+		sort.Slice(tableIndexes[k], func(i, j int) bool {
+			return tableIndexes[k][i].Name < tableIndexes[k][j].Name
+		})
+	}
+	return tableIndexes, nil
 }
