@@ -274,7 +274,6 @@
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
     - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
     - [Risk](#bytebase-v1-Risk)
-    - [RiskRule](#bytebase-v1-RiskRule)
     - [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest)
   
     - [Risk.Source](#bytebase-v1-Risk-Source)
@@ -4182,22 +4181,6 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
 | title | [string](#string) |  |  |
 | level | [int64](#int64) |  |  |
-| rule | [RiskRule](#bytebase-v1-RiskRule) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-RiskRule"></a>
-
-### RiskRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | active | [bool](#bool) |  |  |
 
