@@ -4,6 +4,8 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+// ApprovalPayload is a part of the payload of an issue.
+// ApprovalPayload records the approval template used and the approval history.
 message ApprovalPayload {
   ApprovalFlow approval_template = 1;
   repeated ApprovalHistory history = 2;
