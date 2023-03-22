@@ -61,6 +61,13 @@ export interface ApprovalHistory {
 }
 
 export interface ApprovalTemplate {
+  flow?: ApprovalFlow;
+  title: string;
+  description: string;
+  creatorId: number;
+}
+
+export interface ApprovalFlow {
   steps: ApprovalStep[];
 }
 
@@ -351,13 +358,22 @@ export const ApprovalHistory = {
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { steps: [] };
+  return { flow: undefined, title: "", description: "", creatorId: 0 };
 }
 
 export const ApprovalTemplate = {
   encode(message: ApprovalTemplate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.steps) {
-      ApprovalStep.encode(v!, writer.uint32(18).fork()).ldelim();
+    if (message.flow !== undefined) {
+      ApprovalFlow.encode(message.flow, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.creatorId !== 0) {
+      writer.uint32(32).int32(message.creatorId);
     }
     return writer;
   },
@@ -366,6 +382,75 @@ export const ApprovalTemplate = {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalTemplate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.flow = ApprovalFlow.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.title = reader.string();
+          break;
+        case 3:
+          message.description = reader.string();
+          break;
+        case 4:
+          message.creatorId = reader.int32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ApprovalTemplate {
+    return {
+      flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      creatorId: isSet(object.creatorId) ? Number(object.creatorId) : 0,
+    };
+  },
+
+  toJSON(message: ApprovalTemplate): unknown {
+    const obj: any = {};
+    message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
+    const message = createBaseApprovalTemplate();
+    message.flow = (object.flow !== undefined && object.flow !== null)
+      ? ApprovalFlow.fromPartial(object.flow)
+      : undefined;
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.creatorId = object.creatorId ?? 0;
+    return message;
+  },
+};
+
+function createBaseApprovalFlow(): ApprovalFlow {
+  return { steps: [] };
+}
+
+export const ApprovalFlow = {
+  encode(message: ApprovalFlow, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.steps) {
+      ApprovalStep.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalFlow {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseApprovalFlow();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -380,11 +465,11 @@ export const ApprovalTemplate = {
     return message;
   },
 
-  fromJSON(object: any): ApprovalTemplate {
+  fromJSON(object: any): ApprovalFlow {
     return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => ApprovalStep.fromJSON(e)) : [] };
   },
 
-  toJSON(message: ApprovalTemplate): unknown {
+  toJSON(message: ApprovalFlow): unknown {
     const obj: any = {};
     if (message.steps) {
       obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
@@ -394,8 +479,8 @@ export const ApprovalTemplate = {
     return obj;
   },
 
-  fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
-    const message = createBaseApprovalTemplate();
+  fromPartial(object: DeepPartial<ApprovalFlow>): ApprovalFlow {
+    const message = createBaseApprovalFlow();
     message.steps = object.steps?.map((e) => ApprovalStep.fromPartial(e)) || [];
     return message;
   },

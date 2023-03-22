@@ -14,6 +14,7 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
 - [store/approval.proto](#store_approval-proto)
+    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalHistory](#bytebase-store-ApprovalHistory)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
     - [ApprovalPayload](#bytebase-store-ApprovalPayload)
@@ -197,6 +198,21 @@ convert to the expected struct there.
 
 
 
+<a name="bytebase-store-ApprovalFlow"></a>
+
+### ApprovalFlow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-store-ApprovalHistory"></a>
 
 ### ApprovalHistory
@@ -272,7 +288,10 @@ ApprovalPayload records the approval template used and the approval history.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
+| flow | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| creator_id | [int32](#int32) |  |  |
 
 
 
