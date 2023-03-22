@@ -40,6 +40,8 @@ const (
 	SQLEditorExecutionMetricName metric.Name = "bb.sql-editor.execute"
 	// PrincipalCreateMetricName is the metric name for principal creation event.
 	PrincipalCreateMetricName metric.Name = "bb.principal.create"
+	// APIRequestMetricName is the metric name for api request.
+	APIRequestMetricName metric.Name = "bb.api.request"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count.

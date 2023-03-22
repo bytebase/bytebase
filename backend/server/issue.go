@@ -42,15 +42,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
 
-		if s.MetricReporter != nil {
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.IssueCreateMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"type": issue.Type,
-				},
-			})
-		}
+		s.MetricReporter.Report(&metric.Metric{
+			Name:  metricAPI.IssueCreateMetricName,
+			Value: 1,
+			Labels: map[string]interface{}{
+				"type": issue.Type,
+			},
+		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
