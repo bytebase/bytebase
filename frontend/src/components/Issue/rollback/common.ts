@@ -67,6 +67,7 @@ export const useRollbackLogic = () => {
         }
         break;
       case "ORACLE":
+        // We don't have a check for oracle similar to the MySQL version check.
         break;
       default:
         return "NONE";
