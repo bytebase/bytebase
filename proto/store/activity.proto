@@ -5,10 +5,10 @@ package bytebase.store;
 option go_package = "github.com/bytebase/bytebase/api/proto/store";
 
 message ActivityPayload {
-    oneof payload {
-        ActivityIssueCreatePayload issue_create_payload = 1;
-        ActivityIssueCommentCreatePayload issue_comment_create_payload = 2;
-    }
+  oneof payload {
+    ActivityIssueCreatePayload issue_create_payload = 1;
+    ActivityIssueCommentCreatePayload issue_comment_create_payload = 2;
+  }
 }
 
 // ActivityIssueCreatePayload is the payloads for creating issues.
@@ -38,7 +38,7 @@ message ActivityIssueCommentCreatePayload {
       TYPE_FEISHU = 1;
     }
     Type type = 1;
-    
+
     enum Action {
       ACTION_UNSPECIFIED = 0;
       ACTION_APPROVE = 1;

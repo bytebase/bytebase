@@ -34,9 +34,7 @@ service RiskService {
   }
 
   rpc DeleteRisk(DeleteRiskRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=risks/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=risks/*}"};
   }
 }
 
