@@ -67,13 +67,13 @@ message Risk {
   // system-generated unique identifier.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  enum Namespace {
-    NAMESPACE_UNSPECIFIED = 0;
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
     DDL = 1;
     DML = 2;
     CREATE_DATABASE = 3;
   }
-  Namespace namespace = 3;
+  Source source = 3;
 
   string title = 4;
   int64 level = 5;
