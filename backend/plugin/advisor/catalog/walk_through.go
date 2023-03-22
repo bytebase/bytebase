@@ -58,6 +58,8 @@ const (
 	ErrorTypeUseCreateTableAs = 303
 	// ErrorTypeTableIsReferencedByView is the error that table is referenced by view.
 	ErrorTypeTableIsReferencedByView = 304
+	// ErrorTypeViewNotExists is the error that view not exists.
+	ErrorTypeViewNotExists = 305
 
 	// 401 ~ 499 column error type.
 
