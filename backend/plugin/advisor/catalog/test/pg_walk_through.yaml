@@ -32,6 +32,34 @@
               createoptions: ""
               comment: ""
               foreignkeys: []
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
           views: []
     characterset: ""
     collation: ""
@@ -83,6 +111,34 @@
                   primary: false
                   visible: false
                   comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
               engine: ""
               collation: ""
               rowcount: 0
@@ -173,6 +229,34 @@
                   primary: false
                   visible: false
                   comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
               engine: ""
               collation: ""
               rowcount: 0
@@ -292,6 +376,34 @@
               createoptions: ""
               comment: ""
               foreignkeys: []
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
           views: []
     characterset: ""
     collation: ""
@@ -383,6 +495,34 @@
               createoptions: ""
               comment: ""
               foreignkeys: []
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
           views: []
     characterset: ""
     collation: ""
@@ -465,6 +605,34 @@
               createoptions: ""
               comment: ""
               foreignkeys: []
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
           views: []
     characterset: ""
     collation: ""
@@ -483,7 +651,35 @@
     name: postgres
     schemas:
         - name: public
-          tables: []
+          tables:
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
           views: []
     characterset: ""
     collation: ""
@@ -501,6 +697,57 @@
   want:
     name: postgres
     schemas: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: null
+- statement: ALTER TABLE test DROP COLUMN id;
+  want: null
+  err:
+    type: 408
+    content: 'Cannot drop column "id" in table "public"."test", it''s referenced by view: "public"."v1"'
+    line: 1
+- statement: ALTER TABLE test ALTER COLUMN id TYPE varchar(20);
+  want: null
+  err:
+    type: 408
+    content: 'Cannot alter type of column "id" in table "public"."test", it''s referenced by view: "public"."v1"'
+    line: 1
+- statement: DROP TABLE test;
+  want: null
+  err:
+    type: 304
+    content: 'Cannot drop table "public"."test", it''s referenced by view: "public"."v1"'
+    line: 1
+- statement: |-
+    DROP VIEW v1;
+    ALTER TABLE test DROP COLUMN id;
+  want:
+    name: postgres
+    schemas:
+        - name: public
+          tables:
+            - name: test
+              columns:
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
     characterset: ""
     collation: ""
     extensions: []
