@@ -17,9 +17,9 @@
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalHistory](#bytebase-store-ApprovalHistory)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
-    - [ApprovalPayload](#bytebase-store-ApprovalPayload)
     - [ApprovalStep](#bytebase-store-ApprovalStep)
     - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
+    - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
   
     - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
@@ -48,6 +48,9 @@
     - [OIDCIdentityProviderConfig](#bytebase-store-OIDCIdentityProviderConfig)
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
+  
+- [store/issue.proto](#store_issue-proto)
+    - [IssuePayload](#bytebase-store-IssuePayload)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -247,23 +250,6 @@ convert to the expected struct there.
 
 
 
-<a name="bytebase-store-ApprovalPayload"></a>
-
-### ApprovalPayload
-ApprovalPayload is a part of the payload of an issue.
-ApprovalPayload records the approval template used and the approval history.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
-| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-store-ApprovalStep"></a>
 
 ### ApprovalStep
@@ -292,6 +278,23 @@ ApprovalPayload records the approval template used and the approval history.
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | creator_id | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssuePayloadApproval"></a>
+
+### IssuePayloadApproval
+IssuePayloadApproval is a part of the payload of an issue.
+IssuePayloadApproval records the approval template used and the approval history.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
+| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
 
 
 
@@ -715,6 +718,37 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_issue-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/issue.proto
+
+
+
+<a name="bytebase-store-IssuePayload"></a>
+
+### IssuePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  |  |
+
+
+
+
+
+ 
 
  
 

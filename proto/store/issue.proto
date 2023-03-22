@@ -7,5 +7,5 @@ import "store/approval.proto";
 option go_package = "generated-go/store";
 
 message IssuePayload {
-    IssuePayloadApproval approval = 1;
+  IssuePayloadApproval approval = 1;
 }
