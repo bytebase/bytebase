@@ -596,10 +596,20 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 			s.Tables = append(s.Tables, t)
 		}
 		for _, view := range schema.Views {
+			var dependentColumnList []*v1pb.DependentColumn
+			for _, dependentColumn := range view.DependentColumns {
+				dependentColumnList = append(dependentColumnList, &v1pb.DependentColumn{
+					Schema: dependentColumn.Schema,
+					Table:  dependentColumn.Table,
+					Column: dependentColumn.Column,
+				})
+			}
+
 			s.Views = append(s.Views, &v1pb.ViewMetadata{
-				Name:       view.Name,
-				Definition: view.Definition,
-				Comment:    view.Comment,
+				Name:             view.Name,
+				Definition:       view.Definition,
+				Comment:          view.Comment,
+				DependentColumns: dependentColumnList,
 			})
 		}
 		m.Schemas = append(m.Schemas, s)
