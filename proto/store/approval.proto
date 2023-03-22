@@ -23,7 +23,7 @@ message ApprovalHistory {
   // The new status.
   ApprovalNodeStatus status = 2;
   // The principal id of the approver.
-  int32 principal_id = 3;
+  int32 creator_id = 3;
 }
 
 message ApprovalTemplate {

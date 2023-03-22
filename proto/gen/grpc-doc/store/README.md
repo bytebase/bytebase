@@ -223,7 +223,7 @@ convert to the expected struct there.
 | ----- | ---- | ----- | ----------- |
 | node_uid | [string](#string) |  | The `uid` of the approval node. |
 | status | [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus) |  | The new status. |
-| principal_id | [int32](#int32) |  | The principal id of the approver. |
+| creator_id | [int32](#int32) |  | The principal id of the approver. |
 
 
 

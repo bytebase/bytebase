@@ -57,7 +57,7 @@ export interface ApprovalHistory {
   /** The new status. */
   status: ApprovalNodeStatus;
   /** The principal id of the approver. */
-  principalId: number;
+  creatorId: number;
 }
 
 export interface ApprovalTemplate {
@@ -291,7 +291,7 @@ export const ApprovalPayload = {
 };
 
 function createBaseApprovalHistory(): ApprovalHistory {
-  return { nodeUid: "", status: 0, principalId: 0 };
+  return { nodeUid: "", status: 0, creatorId: 0 };
 }
 
 export const ApprovalHistory = {
@@ -302,8 +302,8 @@ export const ApprovalHistory = {
     if (message.status !== 0) {
       writer.uint32(16).int32(message.status);
     }
-    if (message.principalId !== 0) {
-      writer.uint32(24).int32(message.principalId);
+    if (message.creatorId !== 0) {
+      writer.uint32(24).int32(message.creatorId);
     }
     return writer;
   },
@@ -322,7 +322,7 @@ export const ApprovalHistory = {
           message.status = reader.int32() as any;
           break;
         case 3:
-          message.principalId = reader.int32();
+          message.creatorId = reader.int32();
           break;
         default:
           reader.skipType(tag & 7);
@@ -336,7 +336,7 @@ export const ApprovalHistory = {
     return {
       nodeUid: isSet(object.nodeUid) ? String(object.nodeUid) : "",
       status: isSet(object.status) ? approvalNodeStatusFromJSON(object.status) : 0,
-      principalId: isSet(object.principalId) ? Number(object.principalId) : 0,
+      creatorId: isSet(object.creatorId) ? Number(object.creatorId) : 0,
     };
   },
 
@@ -344,7 +344,7 @@ export const ApprovalHistory = {
     const obj: any = {};
     message.nodeUid !== undefined && (obj.nodeUid = message.nodeUid);
     message.status !== undefined && (obj.status = approvalNodeStatusToJSON(message.status));
-    message.principalId !== undefined && (obj.principalId = Math.round(message.principalId));
+    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
     return obj;
   },
 
@@ -352,7 +352,7 @@ export const ApprovalHistory = {
     const message = createBaseApprovalHistory();
     message.nodeUid = object.nodeUid ?? "";
     message.status = object.status ?? 0;
-    message.principalId = object.principalId ?? 0;
+    message.creatorId = object.creatorId ?? 0;
     return message;
   },
 };
