@@ -70,6 +70,7 @@
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
+    - [DependentColumn](#bytebase-v1-DependentColumn)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
@@ -1217,6 +1218,23 @@ DatabaseMetadata is the metadata for databases.
 
 
 
+<a name="bytebase-v1-DependentColumn"></a>
+
+### DependentColumn
+DependentColumn is the metadata for dependent columns.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference column. |
+| table | [string](#string) |  | The table is the table of a reference column. |
+| column | [string](#string) |  | The column is the name of a reference column. |
+
+
+
+
+
+
 <a name="bytebase-v1-ExtensionMetadata"></a>
 
 ### ExtensionMetadata
@@ -1497,6 +1515,7 @@ ViewMetadata is the metadata for views.
 | name | [string](#string) |  | The name is the name of a view. |
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
+| dependent_columns | [DependentColumn](#bytebase-v1-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
 
 
 

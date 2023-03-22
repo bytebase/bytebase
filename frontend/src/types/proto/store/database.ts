@@ -90,6 +90,18 @@ export interface ViewMetadata {
   definition: string;
   /** The comment is the comment of a view. */
   comment: string;
+  /** The dependent_columns is the list of dependent columns of a view. */
+  dependentColumns: DependentColumn[];
+}
+
+/** DependentColumn is the metadata for dependent columns. */
+export interface DependentColumn {
+  /** The schema is the schema of a reference column. */
+  schema: string;
+  /** The table is the table of a reference column. */
+  table: string;
+  /** The column is the name of a reference column. */
+  column: string;
 }
 
 /** IndexMetadata is the metadata for indexes. */
@@ -627,7 +639,7 @@ export const ColumnMetadata = {
 };
 
 function createBaseViewMetadata(): ViewMetadata {
-  return { name: "", definition: "", comment: "" };
+  return { name: "", definition: "", comment: "", dependentColumns: [] };
 }
 
 export const ViewMetadata = {
@@ -640,6 +652,9 @@ export const ViewMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(26).string(message.comment);
+    }
+    for (const v of message.dependentColumns) {
+      DependentColumn.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -660,6 +675,9 @@ export const ViewMetadata = {
         case 3:
           message.comment = reader.string();
           break;
+        case 4:
+          message.dependentColumns.push(DependentColumn.decode(reader, reader.uint32()));
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -673,6 +691,9 @@ export const ViewMetadata = {
       name: isSet(object.name) ? String(object.name) : "",
       definition: isSet(object.definition) ? String(object.definition) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      dependentColumns: Array.isArray(object?.dependentColumns)
+        ? object.dependentColumns.map((e: any) => DependentColumn.fromJSON(e))
+        : [],
     };
   },
 
@@ -681,6 +702,11 @@ export const ViewMetadata = {
     message.name !== undefined && (obj.name = message.name);
     message.definition !== undefined && (obj.definition = message.definition);
     message.comment !== undefined && (obj.comment = message.comment);
+    if (message.dependentColumns) {
+      obj.dependentColumns = message.dependentColumns.map((e) => e ? DependentColumn.toJSON(e) : undefined);
+    } else {
+      obj.dependentColumns = [];
+    }
     return obj;
   },
 
@@ -689,6 +715,74 @@ export const ViewMetadata = {
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     message.comment = object.comment ?? "";
+    message.dependentColumns = object.dependentColumns?.map((e) => DependentColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDependentColumn(): DependentColumn {
+  return { schema: "", table: "", column: "" };
+}
+
+export const DependentColumn = {
+  encode(message: DependentColumn, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(18).string(message.table);
+    }
+    if (message.column !== "") {
+      writer.uint32(26).string(message.column);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DependentColumn {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDependentColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.schema = reader.string();
+          break;
+        case 2:
+          message.table = reader.string();
+          break;
+        case 3:
+          message.column = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DependentColumn {
+    return {
+      schema: isSet(object.schema) ? String(object.schema) : "",
+      table: isSet(object.table) ? String(object.table) : "",
+      column: isSet(object.column) ? String(object.column) : "",
+    };
+  },
+
+  toJSON(message: DependentColumn): unknown {
+    const obj: any = {};
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.table !== undefined && (obj.table = message.table);
+    message.column !== undefined && (obj.column = message.column);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<DependentColumn>): DependentColumn {
+    const message = createBaseDependentColumn();
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
+    message.column = object.column ?? "";
     return message;
   },
 };

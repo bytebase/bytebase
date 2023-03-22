@@ -19,6 +19,7 @@
 - [store/database.proto](#store_database-proto)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
+    - [DependentColumn](#bytebase-store-DependentColumn)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
@@ -258,6 +259,23 @@ DatabaseMetadata is the metadata for databases.
 
 
 
+<a name="bytebase-store-DependentColumn"></a>
+
+### DependentColumn
+DependentColumn is the metadata for dependent columns.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference column. |
+| table | [string](#string) |  | The table is the table of a reference column. |
+| column | [string](#string) |  | The column is the name of a reference column. |
+
+
+
+
+
+
 <a name="bytebase-store-ExtensionMetadata"></a>
 
 ### ExtensionMetadata
@@ -390,6 +408,7 @@ ViewMetadata is the metadata for views.
 | name | [string](#string) |  | The name is the name of a view. |
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
+| dependent_columns | [DependentColumn](#bytebase-store-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
 
 
 
