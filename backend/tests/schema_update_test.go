@@ -1140,6 +1140,32 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			newWebhookPushEvent: defaultNewWebhookPushEvent,
 		},
 		{
+			name:               "continuousSingleAsterisk",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLab,
+			baseDirectory:      "bbtest",
+			envName:            "wildcard",
+			filePathTemplate:   "{{ENV_ID}}/*/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+			commitNewFileNames: []string{
+				// The second single asterisk represents empty folder.
+				fmt.Sprintf("%s/%s/foo/bar/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "wildcard", dbName),
+				// Any singleAsterisk cannot match zero directory.
+				fmt.Sprintf("%s/%s/foo/%s##ver2##data##insert_data.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "wildcard", dbName),
+			},
+			commitNewFileContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"INSERT INTO t1 VALUES (1);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				false,
+				false,
+			},
+			newWebhookPushEvent: defaultNewWebhookPushEvent,
+		},
+		{
 			name:               "doubleAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
 			vcsType:            vcs.GitLab,
