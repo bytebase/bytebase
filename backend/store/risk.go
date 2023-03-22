@@ -13,9 +13,21 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
+// RiskSource is the source of the risk.
+type RiskSource string
+
+const (
+	// RiskDatabaseSchemaUpdate is for DDL.
+	RiskDatabaseSchemaUpdate RiskSource = "bb.risk.database.schema.update"
+	// RiskDatabaseDataUpdate is for DML.
+	RiskDatabaseDataUpdate RiskSource = "bb.risk.database.data.update"
+	// RiskDatabaseCreate is for creating databases.
+	RiskDatabaseCreate RiskSource = "bb.risk.database.create"
+)
+
 // RiskMessage is the message for risks.
 type RiskMessage struct {
-	Source     string
+	Source     RiskSource
 	Level      int64
 	Name       string
 	Active     bool
