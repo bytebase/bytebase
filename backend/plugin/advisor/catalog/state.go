@@ -5,6 +5,7 @@ package catalog
 //   2. the underlying implementation of Finder
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -24,6 +25,21 @@ func newDatabaseState(d *storepb.DatabaseMetadata, context *FinderContext) *Data
 
 	for _, schema := range d.Schemas {
 		database.schemaSet[schema.Name] = newSchemaState(schema, database.ctx)
+	}
+
+	for _, schema := range d.Schemas {
+		for _, view := range schema.Views {
+			for _, dependentColumn := range view.DependentColumns {
+				if schemaState, exist := database.schemaSet[dependentColumn.Schema]; exist {
+					if tableState, exist := schemaState.tableSet[dependentColumn.Table]; exist {
+						tableState.dependentView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
+						if columnState, exist := tableState.columnSet[dependentColumn.Column]; exist {
+							columnState.dependentView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return database
@@ -67,12 +83,13 @@ func newViewState(v *storepb.ViewMetadata) *ViewState {
 
 func newTableState(t *storepb.TableMetadata) *TableState {
 	table := &TableState{
-		name:      t.Name,
-		engine:    newStringPointer(t.Engine),
-		collation: newStringPointer(t.Collation),
-		comment:   newStringPointer(t.Comment),
-		columnSet: make(columnStateMap),
-		indexSet:  make(indexStateMap),
+		name:          t.Name,
+		engine:        newStringPointer(t.Engine),
+		collation:     newStringPointer(t.Collation),
+		comment:       newStringPointer(t.Comment),
+		columnSet:     make(columnStateMap),
+		indexSet:      make(indexStateMap),
+		dependentView: make(map[string]bool),
 	}
 
 	for i, column := range t.Columns {
@@ -92,14 +109,15 @@ func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
 		defaultValue = copyStringPointer(&c.Default.Value)
 	}
 	return &ColumnState{
-		name:         c.Name,
-		position:     newIntPointer(position),
-		defaultValue: defaultValue,
-		nullable:     newBoolPointer(c.Nullable),
-		columnType:   newStringPointer(c.Type),
-		characterSet: newStringPointer(c.CharacterSet),
-		collation:    newStringPointer(c.Collation),
-		comment:      newStringPointer(c.Comment),
+		name:          c.Name,
+		position:      newIntPointer(position),
+		defaultValue:  defaultValue,
+		nullable:      newBoolPointer(c.Nullable),
+		columnType:    newStringPointer(c.Type),
+		characterSet:  newStringPointer(c.CharacterSet),
+		collation:     newStringPointer(c.Collation),
+		comment:       newStringPointer(c.Comment),
+		dependentView: make(map[string]bool),
 	}
 }
 
@@ -321,6 +339,10 @@ type TableState struct {
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
+
+	// dependentView is used to record the dependent view for the table.
+	// Used to check if the table is used by any view.
+	dependentView map[string]bool
 }
 
 // CountIndex return the index total number.
@@ -419,6 +441,10 @@ type ColumnState struct {
 	collation *string
 	// comment isn't supported for SQLite.
 	comment *string
+
+	// dependentView is used to record the dependent view for the column.
+	// Used to check if the column is used by any view.
+	dependentView map[string]bool
 }
 
 func (col *ColumnState) copy() *ColumnState {
