@@ -269,15 +269,14 @@
     - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/risk_service.proto](#v1_risk_service-proto)
+    - [CreateRiskRequest](#bytebase-v1-CreateRiskRequest)
+    - [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest)
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
     - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
     - [Risk](#bytebase-v1-Risk)
-    - [RiskAction](#bytebase-v1-RiskAction)
-    - [RiskRule](#bytebase-v1-RiskRule)
     - [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest)
   
-    - [Risk.Namespace](#bytebase-v1-Risk-Namespace)
-    - [RiskAction.Type](#bytebase-v1-RiskAction-Type)
+    - [Risk.Source](#bytebase-v1-Risk-Source)
   
     - [RiskService](#bytebase-v1-RiskService)
   
@@ -4105,6 +4104,36 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-CreateRiskRequest"></a>
+
+### CreateRiskRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| risk | [Risk](#bytebase-v1-Risk) |  | The risk to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteRiskRequest"></a>
+
+### DeleteRiskRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the risk to delete. Format: risks/{risk} |
+
+
+
+
+
+
 <a name="bytebase-v1-ListRisksRequest"></a>
 
 ### ListRisksRequest
@@ -4149,42 +4178,9 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: risks/{risk} |
 | uid | [string](#string) |  | system-generated unique identifier. |
-| namespace | [Risk.Namespace](#bytebase-v1-Risk-Namespace) |  |  |
+| source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
 | title | [string](#string) |  |  |
 | level | [int64](#int64) |  |  |
-| actions | [RiskAction](#bytebase-v1-RiskAction) | repeated |  |
-| rules | [RiskRule](#bytebase-v1-RiskRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-RiskAction"></a>
-
-### RiskAction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [RiskAction.Type](#bytebase-v1-RiskAction-Type) |  |  |
-| approval_template | [string](#string) |  | Format: approvalTemplates/{approvalTemplate} |
-
-
-
-
-
-
-<a name="bytebase-v1-RiskRule"></a>
-
-### RiskRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | active | [bool](#bool) |  |  |
 
@@ -4213,29 +4209,17 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
  
 
 
-<a name="bytebase-v1-Risk-Namespace"></a>
+<a name="bytebase-v1-Risk-Source"></a>
 
-### Risk.Namespace
+### Risk.Source
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| NAMESPACE_UNSPECIFIED | 0 |  |
+| SOURCE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | DML | 2 |  |
 | CREATE_DATABASE | 3 |  |
-
-
-
-<a name="bytebase-v1-RiskAction-Type"></a>
-
-### RiskAction.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| CHOOSE_APPROVAL_TEMPLATE | 1 |  |
 
 
  
@@ -4251,7 +4235,9 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
+| CreateRisk | [CreateRiskRequest](#bytebase-v1-CreateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
+| DeleteRisk | [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

@@ -202,7 +202,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 
 	mi.DatabaseID = &database.UID
 
-	migrationID, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, statement)
+	migrationID, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, statement, nil /* executeBeforeCommitTx */)
 	if err != nil {
 		return true, nil, err
 	}
