@@ -68,7 +68,8 @@ export interface Risk {
   source: Risk_Source;
   title: string;
   level: number;
-  rule?: RiskRule;
+  expression?: ParsedExpr;
+  active: boolean;
 }
 
 export enum Risk_Source {
@@ -114,12 +115,6 @@ export function risk_SourceToJSON(object: Risk_Source): string {
     default:
       return "UNRECOGNIZED";
   }
-}
-
-export interface RiskRule {
-  title: string;
-  expression?: ParsedExpr;
-  active: boolean;
 }
 
 function createBaseListRisksRequest(): ListRisksRequest {
@@ -395,7 +390,7 @@ export const DeleteRiskRequest = {
 };
 
 function createBaseRisk(): Risk {
-  return { name: "", uid: "", source: 0, title: "", level: 0, rule: undefined };
+  return { name: "", uid: "", source: 0, title: "", level: 0, expression: undefined, active: false };
 }
 
 export const Risk = {
@@ -415,8 +410,11 @@ export const Risk = {
     if (message.level !== 0) {
       writer.uint32(40).int64(message.level);
     }
-    if (message.rule !== undefined) {
-      RiskRule.encode(message.rule, writer.uint32(58).fork()).ldelim();
+    if (message.expression !== undefined) {
+      ParsedExpr.encode(message.expression, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.active === true) {
+      writer.uint32(56).bool(message.active);
     }
     return writer;
   },
@@ -443,8 +441,11 @@ export const Risk = {
         case 5:
           message.level = longToNumber(reader.int64() as Long);
           break;
+        case 6:
+          message.expression = ParsedExpr.decode(reader, reader.uint32());
+          break;
         case 7:
-          message.rule = RiskRule.decode(reader, reader.uint32());
+          message.active = reader.bool();
           break;
         default:
           reader.skipType(tag & 7);
@@ -461,7 +462,8 @@ export const Risk = {
       source: isSet(object.source) ? risk_SourceFromJSON(object.source) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       level: isSet(object.level) ? Number(object.level) : 0,
-      rule: isSet(object.rule) ? RiskRule.fromJSON(object.rule) : undefined,
+      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
+      active: isSet(object.active) ? Boolean(object.active) : false,
     };
   },
 
@@ -472,7 +474,9 @@ export const Risk = {
     message.source !== undefined && (obj.source = risk_SourceToJSON(message.source));
     message.title !== undefined && (obj.title = message.title);
     message.level !== undefined && (obj.level = Math.round(message.level));
-    message.rule !== undefined && (obj.rule = message.rule ? RiskRule.toJSON(message.rule) : undefined);
+    message.expression !== undefined &&
+      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
+    message.active !== undefined && (obj.active = message.active);
     return obj;
   },
 
@@ -483,73 +487,6 @@ export const Risk = {
     message.source = object.source ?? 0;
     message.title = object.title ?? "";
     message.level = object.level ?? 0;
-    message.rule = (object.rule !== undefined && object.rule !== null) ? RiskRule.fromPartial(object.rule) : undefined;
-    return message;
-  },
-};
-
-function createBaseRiskRule(): RiskRule {
-  return { title: "", expression: undefined, active: false };
-}
-
-export const RiskRule = {
-  encode(message: RiskRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.expression !== undefined) {
-      ParsedExpr.encode(message.expression, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.active === true) {
-      writer.uint32(24).bool(message.active);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RiskRule {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRiskRule();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.title = reader.string();
-          break;
-        case 2:
-          message.expression = ParsedExpr.decode(reader, reader.uint32());
-          break;
-        case 3:
-          message.active = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RiskRule {
-    return {
-      title: isSet(object.title) ? String(object.title) : "",
-      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
-      active: isSet(object.active) ? Boolean(object.active) : false,
-    };
-  },
-
-  toJSON(message: RiskRule): unknown {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
-    message.active !== undefined && (obj.active = message.active);
-    return obj;
-  },
-
-  fromPartial(object: DeepPartial<RiskRule>): RiskRule {
-    const message = createBaseRiskRule();
-    message.title = object.title ?? "";
     message.expression = (object.expression !== undefined && object.expression !== null)
       ? ParsedExpr.fromPartial(object.expression)
       : undefined;
