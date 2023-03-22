@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -38,6 +39,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			c int DEFAULT NULL,
 			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES schema1.trd ("A", "B", c)
 		  );
+		CREATE VIEW "VW" AS SELECT * FROM "TFK";
 		`
 	)
 	wantDatabaseMetadata := &storepb.DatabaseMetadata{
@@ -80,6 +82,34 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 								OnDelete:          "NO ACTION",
 								OnUpdate:          "NO ACTION",
 								MatchType:         "SIMPLE",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name: "VW",
+						Definition: strings.Join([]string{
+							` SELECT "TFK".a,`,
+							`    "TFK".b,`,
+							`    "TFK".c`,
+							`   FROM "TFK";`},
+							"\n"),
+						DependentColumns: []*storepb.DependentColumn{
+							{
+								Schema: "public",
+								Table:  "TFK",
+								Column: "a",
+							},
+							{
+								Schema: "public",
+								Table:  "TFK",
+								Column: "b",
+							},
+							{
+								Schema: "public",
+								Table:  "TFK",
+								Column: "c",
 							},
 						},
 					},
