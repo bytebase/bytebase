@@ -2,6 +2,7 @@ package taskrun
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -177,8 +178,26 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		}
 		task = updatedTask
 	}
+	// If the migration is a data migration, enable the rollback SQL generation and the type of the driver is Oracle, we need to get the rollback SQL before the transaction is committed.
+	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
+		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, getSetOracleTransactionIDFunc(ctx, task, stores))
+		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
+		updatedTask, err := stores.GetTaskV2ByID(ctx, task.ID)
+		if err != nil {
+			return "", "", errors.Wrapf(err, "cannot get task by id %d", task.ID)
+		}
+		payload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
+			return "", "", errors.Wrap(err, "invalid database data update payload")
+		}
+		if payload.RollbackEnabled {
+			// The runner will periodically scan the map to generate rollback SQL asynchronously.
+			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
+		}
+		return migrationID, schema, nil
+	}
 
-	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement)
+	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, nil /* executeBeforeCommitTx */)
 	if err != nil {
 		return "", "", err
 	}
@@ -200,6 +219,48 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 	}
 
 	return migrationID, schema, nil
+}
+
+func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage, store *store.Store) func(tx *sql.Tx) error {
+	return func(tx *sql.Tx) error {
+		payload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+			log.Error("failed to unmarshal task payload", zap.Int("TaskId", task.ID), zap.Error(err))
+			return nil
+		}
+		// Get oracle current transaction id;
+		transactionID, err := tx.QueryContext(ctx, "SELECT RAWTOHEX(tx.xid) FROM v$transaction tx JOIN v$session s ON tx.ses_addr = s.saddr")
+		if err != nil {
+			log.Error("failed to transaction id in task", zap.Int("TaskId", task.ID), zap.Error(err))
+			return nil
+		}
+		defer transactionID.Close()
+		var txID string
+		for transactionID.Next() {
+			err := transactionID.Scan(&txID)
+			if err != nil {
+				log.Error("failed to the Oracle transaction id in task", zap.Int("TaskId", task.ID), zap.Error(err))
+				return nil
+			}
+		}
+		payload.TransactionID = txID
+		updatedPayload, err := json.Marshal(payload)
+		if err != nil {
+			log.Error("failed to unmarshal task payload", zap.Int("TaskId", task.ID), zap.Error(err), zap.Any("payload", updatedPayload))
+			return nil
+		}
+		updatedPayloadString := string(updatedPayload)
+		patch := &api.TaskPatch{
+			ID:        task.ID,
+			UpdaterID: api.SystemBotID,
+			Payload:   &updatedPayloadString,
+		}
+		if _, err = store.UpdateTaskV2(ctx, patch); err != nil {
+			log.Error("failed to update task with new payload", zap.Any("TaskPatch", patch), zap.Error(err))
+			return nil
+		}
+		return nil
+	}
 }
 
 func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
