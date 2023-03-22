@@ -13,6 +13,18 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
+- [store/approval.proto](#store_approval-proto)
+    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
+    - [ApprovalHistory](#bytebase-store-ApprovalHistory)
+    - [ApprovalNode](#bytebase-store-ApprovalNode)
+    - [ApprovalPayload](#bytebase-store-ApprovalPayload)
+    - [ApprovalStep](#bytebase-store-ApprovalStep)
+  
+    - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
+    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
+    - [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus)
+    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
+  
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -38,6 +50,9 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
+    - [ApprovalConfigSetting](#bytebase-store-ApprovalConfigSetting)
+    - [ApprovalConfigSetting.Rule](#bytebase-store-ApprovalConfigSetting-Rule)
+    - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
 - [store/user.proto](#store_user-proto)
@@ -166,6 +181,166 @@ convert to the expected struct there.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_FEISHU | 1 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_approval-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/approval.proto
+
+
+
+<a name="bytebase-store-ApprovalFlow"></a>
+
+### ApprovalFlow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalHistory"></a>
+
+### ApprovalHistory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_uid | [string](#string) |  | The `uid` of the approval node. |
+| status | [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus) |  | The new status. |
+| principal_id | [int32](#int32) |  | The principal id of the approver. |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalNode"></a>
+
+### ApprovalNode
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
+| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
+| role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalPayload"></a>
+
+### ApprovalPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_template | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
+| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalStep"></a>
+
+### ApprovalStep
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type) |  |  |
+| nodes | [ApprovalNode](#bytebase-store-ApprovalNode) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ApprovalNode-RoleValue"></a>
+
+### ApprovalNode.RoleValue
+RoleValue is used if ApprovalNode Type is ROLE
+The predefined user groups are:
+- WORKSPACE_OWNER
+- DBA
+- PROJECT_OWNER
+- PROJECT_MEMBER
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_VALUE_UNSPECIFILED | 0 |  |
+| WORKSPACE_OWNER | 1 |  |
+| DBA | 2 |  |
+| PROJECT_OWNER | 3 |  |
+| PROJECT_MEMBER | 4 |  |
+
+
+
+<a name="bytebase-store-ApprovalNode-Type"></a>
+
+### ApprovalNode.Type
+Type of the ApprovalNode.
+type determines who should approve this node.
+ROLE means the ApprovalNode can be approved by an user from our predefined user group.
+See RoleValue below for the predefined user groups.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| ROLE | 1 |  |
+
+
+
+<a name="bytebase-store-ApprovalNodeStatus"></a>
+
+### ApprovalNodeStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_NODE_STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+
+
+
+<a name="bytebase-store-ApprovalStep-Type"></a>
+
+### ApprovalStep.Type
+Type of the ApprovalStep
+AND means every node must be approved to proceed.
+OR means approving any node will proceed.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| AND | 1 |  |
+| OR | 2 |  |
 
 
  
@@ -547,6 +722,52 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | url | [string](#string) |  | The URL for the agent API. |
 | token | [string](#string) |  | The token for the agent. |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalConfigSetting"></a>
+
+### ApprovalConfigSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [ApprovalConfigSetting.Rule](#bytebase-store-ApprovalConfigSetting-Rule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalConfigSetting-Rule"></a>
+
+### ApprovalConfigSetting.Rule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+| template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ApprovalTemplate"></a>
+
+### ApprovalTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
 
 
 
