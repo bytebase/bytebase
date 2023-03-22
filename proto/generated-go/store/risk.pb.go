@@ -21,58 +21,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type RiskAction_Action_Type int32
-
-const (
-	RiskAction_Action_TYPE_UNSPECIFIED         RiskAction_Action_Type = 0
-	RiskAction_Action_CHOOSE_APPROVAL_TEMPLATE RiskAction_Action_Type = 1
-)
-
-// Enum value maps for RiskAction_Action_Type.
-var (
-	RiskAction_Action_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "CHOOSE_APPROVAL_TEMPLATE",
-	}
-	RiskAction_Action_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":         0,
-		"CHOOSE_APPROVAL_TEMPLATE": 1,
-	}
-)
-
-func (x RiskAction_Action_Type) Enum() *RiskAction_Action_Type {
-	p := new(RiskAction_Action_Type)
-	*p = x
-	return p
-}
-
-func (x RiskAction_Action_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (RiskAction_Action_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_risk_proto_enumTypes[0].Descriptor()
-}
-
-func (RiskAction_Action_Type) Type() protoreflect.EnumType {
-	return &file_store_risk_proto_enumTypes[0]
-}
-
-func (x RiskAction_Action_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use RiskAction_Action_Type.Descriptor instead.
-func (RiskAction_Action_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_risk_proto_rawDescGZIP(), []int{1, 0, 0}
-}
-
 type RiskRule struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Rules []*RiskRule_Rule `protobuf:"bytes,1,rep,name=rules,proto3" json:"rules,omitempty"`
+	Title      string               `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Expression *v1alpha1.ParsedExpr `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
+	Active     bool                 `protobuf:"varint,3,opt,name=active,proto3" json:"active,omitempty"`
 }
 
 func (x *RiskRule) Reset() {
@@ -107,198 +63,26 @@ func (*RiskRule) Descriptor() ([]byte, []int) {
 	return file_store_risk_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RiskRule) GetRules() []*RiskRule_Rule {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-type RiskAction struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Actions []*RiskAction_Action `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
-}
-
-func (x *RiskAction) Reset() {
-	*x = RiskAction{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_risk_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RiskAction) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RiskAction) ProtoMessage() {}
-
-func (x *RiskAction) ProtoReflect() protoreflect.Message {
-	mi := &file_store_risk_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RiskAction.ProtoReflect.Descriptor instead.
-func (*RiskAction) Descriptor() ([]byte, []int) {
-	return file_store_risk_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *RiskAction) GetActions() []*RiskAction_Action {
-	if x != nil {
-		return x.Actions
-	}
-	return nil
-}
-
-type RiskRule_Rule struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Title      string               `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Expression *v1alpha1.ParsedExpr `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
-	Active     bool                 `protobuf:"varint,3,opt,name=active,proto3" json:"active,omitempty"`
-}
-
-func (x *RiskRule_Rule) Reset() {
-	*x = RiskRule_Rule{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_risk_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RiskRule_Rule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RiskRule_Rule) ProtoMessage() {}
-
-func (x *RiskRule_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_risk_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RiskRule_Rule.ProtoReflect.Descriptor instead.
-func (*RiskRule_Rule) Descriptor() ([]byte, []int) {
-	return file_store_risk_proto_rawDescGZIP(), []int{0, 0}
-}
-
-func (x *RiskRule_Rule) GetTitle() string {
+func (x *RiskRule) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *RiskRule_Rule) GetExpression() *v1alpha1.ParsedExpr {
+func (x *RiskRule) GetExpression() *v1alpha1.ParsedExpr {
 	if x != nil {
 		return x.Expression
 	}
 	return nil
 }
 
-func (x *RiskRule_Rule) GetActive() bool {
+func (x *RiskRule) GetActive() bool {
 	if x != nil {
 		return x.Active
 	}
 	return false
 }
-
-type RiskAction_Action struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Type RiskAction_Action_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.RiskAction_Action_Type" json:"type,omitempty"`
-	// Types that are assignable to Payload:
-	//
-	//	*RiskAction_Action_ApprovalTemplate
-	Payload isRiskAction_Action_Payload `protobuf_oneof:"payload"`
-}
-
-func (x *RiskAction_Action) Reset() {
-	*x = RiskAction_Action{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_risk_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RiskAction_Action) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RiskAction_Action) ProtoMessage() {}
-
-func (x *RiskAction_Action) ProtoReflect() protoreflect.Message {
-	mi := &file_store_risk_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RiskAction_Action.ProtoReflect.Descriptor instead.
-func (*RiskAction_Action) Descriptor() ([]byte, []int) {
-	return file_store_risk_proto_rawDescGZIP(), []int{1, 0}
-}
-
-func (x *RiskAction_Action) GetType() RiskAction_Action_Type {
-	if x != nil {
-		return x.Type
-	}
-	return RiskAction_Action_TYPE_UNSPECIFIED
-}
-
-func (m *RiskAction_Action) GetPayload() isRiskAction_Action_Payload {
-	if m != nil {
-		return m.Payload
-	}
-	return nil
-}
-
-func (x *RiskAction_Action) GetApprovalTemplate() string {
-	if x, ok := x.GetPayload().(*RiskAction_Action_ApprovalTemplate); ok {
-		return x.ApprovalTemplate
-	}
-	return ""
-}
-
-type isRiskAction_Action_Payload interface {
-	isRiskAction_Action_Payload()
-}
-
-type RiskAction_Action_ApprovalTemplate struct {
-	// Format: approvalTemplates/{approvalTemplate}
-	ApprovalTemplate string `protobuf:"bytes,2,opt,name=approval_template,json=approvalTemplate,proto3,oneof"`
-}
-
-func (*RiskAction_Action_ApprovalTemplate) isRiskAction_Action_Payload() {}
 
 var File_store_risk_proto protoreflect.FileDescriptor
 
@@ -307,37 +91,17 @@ var file_store_risk_proto_rawDesc = []byte{
 	0x74, 0x6f, 0x12, 0x0e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f,
 	0x72, 0x65, 0x1a, 0x25, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65,
 	0x78, 0x70, 0x72, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x73, 0x79, 0x6e,
-	0x74, 0x61, 0x78, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xbb, 0x01, 0x0a, 0x08, 0x52, 0x69,
-	0x73, 0x6b, 0x52, 0x75, 0x6c, 0x65, 0x12, 0x33, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x52, 0x69, 0x73, 0x6b, 0x52, 0x75, 0x6c, 0x65, 0x2e,
-	0x52, 0x75, 0x6c, 0x65, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x1a, 0x7a, 0x0a, 0x04, 0x52,
-	0x75, 0x6c, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x44, 0x0a, 0x0a, 0x65, 0x78, 0x70,
-	0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e,
-	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x65, 0x78, 0x70, 0x72, 0x2e,
-	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x72, 0x73, 0x65, 0x64, 0x45,
-	0x78, 0x70, 0x72, 0x52, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12,
-	0x16, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x69, 0x76, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52,
-	0x06, 0x61, 0x63, 0x74, 0x69, 0x76, 0x65, 0x22, 0x86, 0x02, 0x0a, 0x0a, 0x52, 0x69, 0x73, 0x6b,
-	0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x3b, 0x0a, 0x07, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
-	0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x52, 0x69, 0x73, 0x6b, 0x41, 0x63, 0x74,
-	0x69, 0x6f, 0x6e, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x1a, 0xba, 0x01, 0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x3a,
-	0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x26, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x52, 0x69,
-	0x73, 0x6b, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e,
-	0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x2d, 0x0a, 0x11, 0x61, 0x70,
-	0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x5f, 0x74, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x10, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61,
-	0x6c, 0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x22, 0x3a, 0x0a, 0x04, 0x54, 0x79, 0x70,
-	0x65, 0x12, 0x14, 0x0a, 0x10, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43,
-	0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x1c, 0x0a, 0x18, 0x43, 0x48, 0x4f, 0x4f, 0x53,
-	0x45, 0x5f, 0x41, 0x50, 0x50, 0x52, 0x4f, 0x56, 0x41, 0x4c, 0x5f, 0x54, 0x45, 0x4d, 0x50, 0x4c,
-	0x41, 0x54, 0x45, 0x10, 0x01, 0x42, 0x09, 0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64,
-	0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f,
-	0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x61, 0x78, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x7e, 0x0a, 0x08, 0x52, 0x69, 0x73,
+	0x6b, 0x52, 0x75, 0x6c, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x44, 0x0a, 0x0a, 0x65,
+	0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x24, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x65, 0x78, 0x70,
+	0x72, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x72, 0x73, 0x65,
+	0x64, 0x45, 0x78, 0x70, 0x72, 0x52, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x69, 0x76, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69, 0x76, 0x65, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e,
+	0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -352,26 +116,18 @@ func file_store_risk_proto_rawDescGZIP() []byte {
 	return file_store_risk_proto_rawDescData
 }
 
-var file_store_risk_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_risk_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_store_risk_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_risk_proto_goTypes = []interface{}{
-	(RiskAction_Action_Type)(0), // 0: bytebase.store.RiskAction.Action.Type
-	(*RiskRule)(nil),            // 1: bytebase.store.RiskRule
-	(*RiskAction)(nil),          // 2: bytebase.store.RiskAction
-	(*RiskRule_Rule)(nil),       // 3: bytebase.store.RiskRule.Rule
-	(*RiskAction_Action)(nil),   // 4: bytebase.store.RiskAction.Action
-	(*v1alpha1.ParsedExpr)(nil), // 5: google.api.expr.v1alpha1.ParsedExpr
+	(*RiskRule)(nil),            // 0: bytebase.store.RiskRule
+	(*v1alpha1.ParsedExpr)(nil), // 1: google.api.expr.v1alpha1.ParsedExpr
 }
 var file_store_risk_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.RiskRule.rules:type_name -> bytebase.store.RiskRule.Rule
-	4, // 1: bytebase.store.RiskAction.actions:type_name -> bytebase.store.RiskAction.Action
-	5, // 2: bytebase.store.RiskRule.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	0, // 3: bytebase.store.RiskAction.Action.type:type_name -> bytebase.store.RiskAction.Action.Type
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1, // 0: bytebase.store.RiskRule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_risk_proto_init() }
@@ -392,59 +148,19 @@ func file_store_risk_proto_init() {
 				return nil
 			}
 		}
-		file_store_risk_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RiskAction); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_risk_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RiskRule_Rule); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_risk_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RiskAction_Action); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-	}
-	file_store_risk_proto_msgTypes[3].OneofWrappers = []interface{}{
-		(*RiskAction_Action_ApprovalTemplate)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_risk_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   4,
+			NumEnums:      0,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_risk_proto_goTypes,
 		DependencyIndexes: file_store_risk_proto_depIdxs,
-		EnumInfos:         file_store_risk_proto_enumTypes,
 		MessageInfos:      file_store_risk_proto_msgTypes,
 	}.Build()
 	File_store_risk_proto = out.File
