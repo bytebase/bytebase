@@ -26,6 +26,7 @@ const (
 	backupPrefix                 = "backups/"
 	bookmarkPrefix               = "bookmarks/"
 	externalVersionControlPrefix = "externalVersionControls/"
+	riskPrefix                   = "risks/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -160,6 +161,18 @@ func getExternalVersionControlID(name string) (int, error) {
 		return 0, errors.Errorf("invalid external version control ID %q", tokens[1])
 	}
 	return externalVersionControlID, nil
+}
+
+func getRiskID(name string) (int64, error) {
+	tokens, err := getNameParentTokens(name, riskPrefix)
+	if err != nil {
+		return 0, err
+	}
+	riskID, err := strconv.ParseInt(tokens[0], 10, 64)
+	if err != nil {
+		return 0, errors.Errorf("invalid risk ID %q", tokens[0])
+	}
+	return riskID, nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {
