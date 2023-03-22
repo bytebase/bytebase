@@ -100,11 +100,6 @@ message Risk {
 
   string title = 4;
   int64 level = 5;
-  RiskRule rule = 7;
-}
-
-message RiskRule {
-  string title = 1;
-  google.api.expr.v1alpha1.ParsedExpr expression = 2;
-  bool active = 3;
+  google.api.expr.v1alpha1.ParsedExpr expression = 6;
+  bool active = 7;
 }
