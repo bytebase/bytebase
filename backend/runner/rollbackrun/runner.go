@@ -110,7 +110,6 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	case db.Oracle:
 		r.generateOracleRollbackSQL(ctx, task, payload, instance)
 	}
-
 }
 
 func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
@@ -158,13 +157,15 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 
 	// Get the undo SQL from the undo log.
 	var statements bytes.Buffer
-	undoSQLs, err := db.QueryContext(ctx, "SELECT undo_sql FROM flashback_transaction_query WHERE xid=HEXTORAW(:1)", payload.TransactionID)
+	rows, err := db.QueryContext(ctx, "SELECT undo_sql FROM flashback_transaction_query WHERE xid=HEXTORAW(:1)", payload.TransactionID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query undo SQL")
 	}
+	defer rows.Close()
+
 	var undoSQL sql.NullString
-	for undoSQLs.Next() {
-		err := undoSQLs.Scan(&undoSQL)
+	for rows.Next() {
+		err := rows.Scan(&undoSQL)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to scan undo SQL")
 		}
@@ -175,7 +176,7 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 			return nil, errors.Wrapf(err, "failed to write undo SQL to buffer")
 		}
 	}
-	if err := undoSQLs.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to iterate undo SQL")
 	}
 	return &statements, nil

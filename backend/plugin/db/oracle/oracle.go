@@ -79,7 +79,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	return driver.executeWithBeforeCommitTxFunc(ctx, statement, createDatabase, nil)
 }
 
-// ExecuteWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
+// executeWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 //
