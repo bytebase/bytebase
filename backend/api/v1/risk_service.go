@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -109,8 +110,34 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 }
 
 // DeleteRisk deletes a risk.
-func (*RiskService) DeleteRisk(context.Context, *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteRisk not implemented")
+func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	riskID, err := getRiskID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	risk, err := s.store.GetRisk(ctx, riskID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get risk, error: %v", err)
+	}
+	if risk == nil {
+		return nil, status.Errorf(codes.NotFound, "risk %v not found", request.Name)
+	}
+	if risk.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "risk %v has been deleted", request.Name)
+	}
+
+	rowStatusArchived := api.Archived
+	if _, err := s.store.UpdateRisk(ctx,
+		&store.UpdateRiskMessage{
+			RowStatus: &rowStatusArchived,
+		},
+		riskID,
+		principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func convertToSource(source store.RiskSource) v1pb.Risk_Source {
