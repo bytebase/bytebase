@@ -115,7 +115,6 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	}
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	// TODO(d): add table row count.
 	query := `
 		SELECT s.name, t.name, dbps.row_count
 		FROM sys.tables t
