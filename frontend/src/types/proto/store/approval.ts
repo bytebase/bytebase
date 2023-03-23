@@ -237,22 +237,31 @@ export const IssuePayloadApproval = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IssuePayloadApproval {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIssuePayloadApproval();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.approvalTemplates.push(ApprovalTemplate.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.approvers.push(IssuePayloadApproval_Approver.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -283,6 +292,10 @@ export const IssuePayloadApproval = {
     return obj;
   },
 
+  create(base?: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
+    return IssuePayloadApproval.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     const message = createBaseIssuePayloadApproval();
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
@@ -307,22 +320,31 @@ export const IssuePayloadApproval_Approver = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IssuePayloadApproval_Approver {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIssuePayloadApproval_Approver();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.status = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.principalId = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -339,6 +361,10 @@ export const IssuePayloadApproval_Approver = {
     message.status !== undefined && (obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status));
     message.principalId !== undefined && (obj.principalId = Math.round(message.principalId));
     return obj;
+  },
+
+  create(base?: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
+    return IssuePayloadApproval_Approver.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
@@ -371,28 +397,45 @@ export const ApprovalTemplate = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalTemplate {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalTemplate();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.flow = ApprovalFlow.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.description = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.creatorId = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -413,6 +456,10 @@ export const ApprovalTemplate = {
     message.description !== undefined && (obj.description = message.description);
     message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
     return obj;
+  },
+
+  create(base?: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
+    return ApprovalTemplate.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
@@ -440,19 +487,24 @@ export const ApprovalFlow = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalFlow {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalFlow();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.steps.push(ApprovalStep.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -469,6 +521,10 @@ export const ApprovalFlow = {
       obj.steps = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<ApprovalFlow>): ApprovalFlow {
+    return ApprovalFlow.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ApprovalFlow>): ApprovalFlow {
@@ -494,22 +550,31 @@ export const ApprovalStep = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalStep {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalStep();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nodes.push(ApprovalNode.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -530,6 +595,10 @@ export const ApprovalStep = {
       obj.nodes = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<ApprovalStep>): ApprovalStep {
+    return ApprovalStep.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
@@ -556,22 +625,31 @@ export const ApprovalNode = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalNode {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalNode();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.groupValue = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -591,6 +669,10 @@ export const ApprovalNode = {
         ? approvalNode_GroupValueToJSON(message.groupValue)
         : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<ApprovalNode>): ApprovalNode {
+    return ApprovalNode.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {

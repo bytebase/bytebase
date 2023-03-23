@@ -314,25 +314,38 @@ export const SearchAnomaliesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SearchAnomaliesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchAnomaliesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.filter = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -351,6 +364,10 @@ export const SearchAnomaliesRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<SearchAnomaliesRequest>): SearchAnomaliesRequest {
+    return SearchAnomaliesRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<SearchAnomaliesRequest>): SearchAnomaliesRequest {
@@ -378,22 +395,31 @@ export const SearchAnomaliesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SearchAnomaliesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchAnomaliesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.anomalies.push(Anomaly.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -414,6 +440,10 @@ export const SearchAnomaliesResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<SearchAnomaliesResponse>): SearchAnomaliesResponse {
+    return SearchAnomaliesResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<SearchAnomaliesResponse>): SearchAnomaliesResponse {
@@ -471,43 +501,76 @@ export const Anomaly = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnomaly();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.resource = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.severity = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.instanceConnectionDetail = Anomaly_InstanceConnectionDetail.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.databaseConnectionDetail = Anomaly_DatabaseConnectionDetail.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.databaseBackupPolicyViolationDetail = Anomaly_DatabaseBackupPolicyViolationDetail.decode(
             reader,
             reader.uint32(),
           );
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.databaseBackupMissingDetail = Anomaly_DatabaseBackupMissingDetail.decode(reader, reader.uint32());
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.databaseSchemaDriftDetail = Anomaly_DatabaseSchemaDriftDetail.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -561,6 +624,10 @@ export const Anomaly = {
     return obj;
   },
 
+  create(base?: DeepPartial<Anomaly>): Anomaly {
+    return Anomaly.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Anomaly>): Anomaly {
     const message = createBaseAnomaly();
     message.resource = object.resource ?? "";
@@ -603,19 +670,24 @@ export const Anomaly_InstanceConnectionDetail = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_InstanceConnectionDetail {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnomaly_InstanceConnectionDetail();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.detail = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -628,6 +700,10 @@ export const Anomaly_InstanceConnectionDetail = {
     const obj: any = {};
     message.detail !== undefined && (obj.detail = message.detail);
     return obj;
+  },
+
+  create(base?: DeepPartial<Anomaly_InstanceConnectionDetail>): Anomaly_InstanceConnectionDetail {
+    return Anomaly_InstanceConnectionDetail.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Anomaly_InstanceConnectionDetail>): Anomaly_InstanceConnectionDetail {
@@ -650,19 +726,24 @@ export const Anomaly_DatabaseConnectionDetail = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_DatabaseConnectionDetail {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnomaly_DatabaseConnectionDetail();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.detail = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -675,6 +756,10 @@ export const Anomaly_DatabaseConnectionDetail = {
     const obj: any = {};
     message.detail !== undefined && (obj.detail = message.detail);
     return obj;
+  },
+
+  create(base?: DeepPartial<Anomaly_DatabaseConnectionDetail>): Anomaly_DatabaseConnectionDetail {
+    return Anomaly_DatabaseConnectionDetail.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Anomaly_DatabaseConnectionDetail>): Anomaly_DatabaseConnectionDetail {
@@ -703,25 +788,38 @@ export const Anomaly_DatabaseBackupPolicyViolationDetail = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_DatabaseBackupPolicyViolationDetail {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnomaly_DatabaseBackupPolicyViolationDetail();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.expectedSchedule = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.actualSchedule = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -744,6 +842,10 @@ export const Anomaly_DatabaseBackupPolicyViolationDetail = {
     message.actualSchedule !== undefined &&
       (obj.actualSchedule = anomaly_BackupPlanScheduleToJSON(message.actualSchedule));
     return obj;
+  },
+
+  create(base?: DeepPartial<Anomaly_DatabaseBackupPolicyViolationDetail>): Anomaly_DatabaseBackupPolicyViolationDetail {
+    return Anomaly_DatabaseBackupPolicyViolationDetail.fromPartial(base ?? {});
   },
 
   fromPartial(
@@ -773,22 +875,31 @@ export const Anomaly_DatabaseBackupMissingDetail = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_DatabaseBackupMissingDetail {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnomaly_DatabaseBackupMissingDetail();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.expectedSchedule = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.latestBackupTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -808,6 +919,10 @@ export const Anomaly_DatabaseBackupMissingDetail = {
       (obj.expectedSchedule = anomaly_BackupPlanScheduleToJSON(message.expectedSchedule));
     message.latestBackupTime !== undefined && (obj.latestBackupTime = message.latestBackupTime.toISOString());
     return obj;
+  },
+
+  create(base?: DeepPartial<Anomaly_DatabaseBackupMissingDetail>): Anomaly_DatabaseBackupMissingDetail {
+    return Anomaly_DatabaseBackupMissingDetail.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Anomaly_DatabaseBackupMissingDetail>): Anomaly_DatabaseBackupMissingDetail {
@@ -837,25 +952,38 @@ export const Anomaly_DatabaseSchemaDriftDetail = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_DatabaseSchemaDriftDetail {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnomaly_DatabaseSchemaDriftDetail();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.recordVersion = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.expectedSchema = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.actualSchema = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -874,6 +1002,10 @@ export const Anomaly_DatabaseSchemaDriftDetail = {
     message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
     message.actualSchema !== undefined && (obj.actualSchema = message.actualSchema);
     return obj;
+  },
+
+  create(base?: DeepPartial<Anomaly_DatabaseSchemaDriftDetail>): Anomaly_DatabaseSchemaDriftDetail {
+    return Anomaly_DatabaseSchemaDriftDetail.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Anomaly_DatabaseSchemaDriftDetail>): Anomaly_DatabaseSchemaDriftDetail {
@@ -896,7 +1028,37 @@ export const AnomalyServiceDefinition = {
       requestStream: false,
       responseType: SearchAnomaliesResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              22,
+              18,
+              20,
+              47,
+              118,
+              49,
+              47,
+              97,
+              110,
+              111,
+              109,
+              97,
+              108,
+              105,
+              101,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;
