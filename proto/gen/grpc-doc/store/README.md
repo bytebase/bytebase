@@ -15,16 +15,16 @@
   
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
-    - [ApprovalHistory](#bytebase-store-ApprovalHistory)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
     - [ApprovalStep](#bytebase-store-ApprovalStep)
     - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
     - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
+    - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
   
-    - [ApprovalHistory.NodeStatus](#bytebase-store-ApprovalHistory-NodeStatus)
     - [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
+    - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -216,23 +216,6 @@ convert to the expected struct there.
 
 
 
-<a name="bytebase-store-ApprovalHistory"></a>
-
-### ApprovalHistory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| node_uid | [string](#string) |  | The `uid` of the approval node. |
-| status | [ApprovalHistory.NodeStatus](#bytebase-store-ApprovalHistory-NodeStatus) |  | The new status. |
-| creator_id | [int32](#int32) |  | The principal id of the approver. |
-
-
-
-
-
-
 <a name="bytebase-store-ApprovalNode"></a>
 
 ### ApprovalNode
@@ -294,7 +277,24 @@ IssuePayloadApproval records the approval template used and the approval history
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) | repeated |  |
-| history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
+| approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssuePayloadApproval-Approver"></a>
+
+### IssuePayloadApproval.Approver
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_uid | [string](#string) |  | The `uid` of the approval node. |
+| status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  | The new status. |
+| creator_id | [int32](#int32) |  | The principal id of the approver. |
 
 
 
@@ -303,26 +303,13 @@ IssuePayloadApproval records the approval template used and the approval history
  
 
 
-<a name="bytebase-store-ApprovalHistory-NodeStatus"></a>
-
-### ApprovalHistory.NodeStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| NODE_STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-
-
-
 <a name="bytebase-store-ApprovalNode-GroupValue"></a>
 
 ### ApprovalNode.GroupValue
 GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
 The predefined user groups are:
 - WORKSPACE_OWNER
-- DBA
+- WORKSPACE_DBA
 - PROJECT_OWNER
 - PROJECT_MEMBER
 
@@ -330,7 +317,7 @@ The predefined user groups are:
 | ---- | ------ | ----------- |
 | GROUP_VALUE_UNSPECIFILED | 0 |  |
 | WORKSPACE_OWNER | 1 |  |
-| DBA | 2 |  |
+| WORKSPACE_DBA | 2 |  |
 | PROJECT_OWNER | 3 |  |
 | PROJECT_MEMBER | 4 |  |
 
@@ -363,6 +350,19 @@ ANY means approving any node will proceed.
 | TYPE_UNSPECIFIED | 0 |  |
 | ALL | 1 |  |
 | ANY | 2 |  |
+
+
+
+<a name="bytebase-store-IssuePayloadApproval-Approver-Status"></a>
+
+### IssuePayloadApproval.Approver.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
 
 
  
