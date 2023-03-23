@@ -10,17 +10,20 @@ import {
 import { Engine } from "./proto/v1/common";
 import { VCSPushEvent } from "./vcs";
 
-export type EngineType =
-  | "CLICKHOUSE"
-  | "MYSQL"
-  | "POSTGRES"
-  | "SNOWFLAKE"
-  | "TIDB"
-  | "MONGODB"
-  | "SPANNER"
-  | "REDIS"
-  | "ORACLE"
-  | "MSSQL";
+export const EngineTypeList = [
+  "CLICKHOUSE",
+  "MYSQL",
+  "POSTGRES",
+  "SNOWFLAKE",
+  "TIDB",
+  "MONGODB",
+  "SPANNER",
+  "REDIS",
+  "ORACLE",
+  "MSSQL",
+] as const;
+
+export type EngineType = typeof EngineTypeList[number];
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {

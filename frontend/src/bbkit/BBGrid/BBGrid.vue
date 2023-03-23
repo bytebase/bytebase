@@ -32,6 +32,17 @@
     >
       <slot name="item" :item="item" :row="row" />
     </div>
+    <slot name="placeholder">
+      <div
+        v-if="dataSource.length === 0 && showPlaceholder"
+        class="flex flex-col items-center justify-center py-8 text-control-placeholder border-t"
+        :style="{
+          'grid-column': `auto / span ${columnList.length}`,
+        }"
+      >
+        <p>{{ $t("common.no-data") }}</p>
+      </div>
+    </slot>
   </div>
 
   <slot name="footer" />
@@ -72,7 +83,7 @@ const props = withDefaults(
     customHeader: false,
     headerClass: undefined,
     rowClickable: true,
-    showPlaceholder: true,
+    showPlaceholder: false,
   }
 );
 

@@ -29,22 +29,13 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
       warningColorHover: callVar("--color-warning-hover"),
       warningColorPressed: callVar("--color-warning"),
 
+      infoColor: callVar("--color-info"),
+      infoColorHover: callVar("--color-info-hover"),
+      infoColorPressed: callVar("--color-info"),
+
       errorColor: callVar("--color-error"),
       errorColorHover: callVar("--color-error-hover"),
       errorColorPressed: callVar("--color-error"),
-    },
-    Button: {
-      colorInfo: callVar("--color-accent"),
-      colorHoverInfo: callVar("--color-accent-hover"),
-      colorPressedInfo: callVar("--color-accent-disabled"),
-      colorFocusInfo: callVar("--color-accent"),
-      colorDisabledInfo: callVar("--color-accent-disabled"),
-      borderInfo: callVar("--color-accent"),
-      borderHoverInfo: callVar("--color-accent-hover"),
-      borderFocusInfo: callVar("--color-accent"),
-    },
-    Dialog: {
-      iconColorInfo: callVar("--color-accent"),
     },
   };
 });

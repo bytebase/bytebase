@@ -228,7 +228,8 @@
     "off": "Off",
     "verify": "Verify",
     "regenerate": "Regenerate",
-    "download": "Download"
+    "download": "Download",
+    "will-lose-unsaved-data": "Will lose any unsaved data."
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1734,6 +1735,10 @@
         "title": "Unlock 100+ SQL Review checks",
         "desc": "Specify SQL lint rules to adopt SQL best practice and enforce schema consistency across the engineering organization."
       },
+      "bb-feature-custom-approval": {
+        "title": "Custom approval",
+        "desc": "Configure security risk level and approval flow for different tasks."
+      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
         "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
@@ -2063,6 +2068,88 @@
       },
       "statement-copied": "Statement copied to clipboard",
       "dont-show-again": "Don't show again"
+    }
+  },
+  "custom-approval": {
+    "self": "Custom Approval",
+    "security-rule": {
+      "self": "Security rule",
+      "security-rules": "Security rules",
+      "description": "For each operation type, configure custom condition, risk and approval flow. ",
+      "x-risk-rules": {
+        "low": "Low Risk Rules",
+        "medium": "Medium Risk Rules",
+        "high": "High Risk Rules"
+      },
+      "active": "Active",
+      "add-rule": "Add rule",
+      "edit-rule": "Edit rule",
+      "delete": "Delete security rule",
+      "default-rules": {
+        "self": "Default rules",
+        "description": "The default rules will be executed when an issue fails to comply with the custom rules."
+      },
+      "risk": {
+        "self": "Risk",
+        "select": "Select risk",
+        "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Create Database"
+        }
+      },
+      "condition": {
+        "self": "Condition",
+        "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will filter outer issues executed in the \"prod\" environment.",
+        "add": "Add condition",
+        "add-group": "Add condition group",
+        "group": {
+          "or": {
+            "description": "Any of the following are true..."
+          },
+          "and": {
+            "description": "All of the following are true..."
+          }
+        },
+        "input-value": "Input value",
+        "add-condition-here": "Add condition here",
+        "select-value": "Select value"
+      },
+      "template": {
+        "templates": "Templates",
+        "load": "Load"
+      },
+      "rule-name": "Rule name",
+      "view-rule": "View rule"
+    },
+    "approval-flow": {
+      "self": "Approval flow",
+      "approval-flows": "Approval flows",
+      "approval-nodes": "Approval nodes",
+      "type": {
+        "system": "System",
+        "custom": "Custom"
+      },
+      "delete": "Delete approval flow",
+      "search": "Search approval flow",
+      "select": "Select approval flow",
+      "create-approval-flow": "Create approval flow",
+      "edit-approval-flow": "Edit approval flow",
+      "node": {
+        "nodes": "Approval nodes",
+        "description": "Only one approval is required on this node when there are multiple approvers.",
+        "order": "Order",
+        "approver": "Approver",
+        "add": "Add node",
+        "delete": "Delete approval node"
+      },
+      "view-approval-flow": "View approval flow"
+    },
+    "risk": {
+      "risk-center": "Risk Center"
+    },
+    "workflow-center": {
+      "workflow": "Workflow"
     }
   }
 }
