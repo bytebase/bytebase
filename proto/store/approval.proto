@@ -11,17 +11,18 @@ message IssuePayloadApproval {
   repeated ApprovalHistory history = 2;
 }
 
-enum ApprovalNodeStatus {
-  APPROVAL_NODE_STATUS_UNSPECIFIED = 0;
-  PENDING = 1;
-  APPROVED = 2;
-}
-
 message ApprovalHistory {
   // The `uid` of the approval node.
   string node_uid = 1;
+
+  enum NodeStatus {
+    NODE_STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    APPROVED = 2;
+  }
   // The new status.
-  ApprovalNodeStatus status = 2;
+  NodeStatus status = 2;
+
   // The principal id of the approver.
   int32 creator_id = 3;
 }
