@@ -34,7 +34,7 @@ message ApprovalTemplate {
 }
 
 message ApprovalFlow {
-  repeated ApprovalStep steps = 2;
+  repeated ApprovalStep steps = 1;
 }
 
 message ApprovalStep {
