@@ -29,6 +29,7 @@ func NewReviewService(store *store.Store) *ReviewService {
 }
 
 // GetReview gets a review.
+// Currently, only review.ApprovalTemplates and review.Approvers are set.
 func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRequest) (*v1pb.Review, error) {
 	reviewID, err := getReviewID(request.Name)
 	if err != nil {
@@ -56,10 +57,7 @@ func convertToReview(ctx context.Context, store *store.Store, issue *store.Issue
 		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 
-	review := &v1pb.Review{
-		Name: fmt.Sprintf("%s%v%s%v", projectNamePrefix, issue.Project.UID, reviewPrefix, issue.UID),
-		Uid:  fmt.Sprintf("%v", issue.UID),
-	}
+	review := &v1pb.Review{}
 	for _, template := range issuePayload.Approval.ApprovalTemplates {
 		review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
 	}
