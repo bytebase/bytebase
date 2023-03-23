@@ -27,7 +27,7 @@ message AgentPluginSetting {
   string token = 2;
 }
 
-message ApprovalConfigSetting {
+message WorkspaceApprovalSetting {
   message Rule {
     google.api.expr.v1alpha1.ParsedExpr expression = 1;
     ApprovalTemplate template = 2;
