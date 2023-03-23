@@ -21,9 +21,9 @@
     - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
     - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
   
-    - [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue)
+    - [ApprovalHistory.NodeStatus](#bytebase-store-ApprovalHistory-NodeStatus)
+    - [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
-    - [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus)
     - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
@@ -225,7 +225,7 @@ convert to the expected struct there.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | node_uid | [string](#string) |  | The `uid` of the approval node. |
-| status | [ApprovalNodeStatus](#bytebase-store-ApprovalNodeStatus) |  | The new status. |
+| status | [ApprovalHistory.NodeStatus](#bytebase-store-ApprovalHistory-NodeStatus) |  | The new status. |
 | creator_id | [int32](#int32) |  | The principal id of the approver. |
 
 
@@ -243,7 +243,7 @@ convert to the expected struct there.
 | ----- | ---- | ----- | ----------- |
 | uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
-| role_value | [ApprovalNode.RoleValue](#bytebase-store-ApprovalNode-RoleValue) |  |  |
+| group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
 
 
 
@@ -293,7 +293,7 @@ IssuePayloadApproval records the approval template used and the approval history
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
+| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) | repeated |  |
 | history | [ApprovalHistory](#bytebase-store-ApprovalHistory) | repeated |  |
 
 
@@ -303,10 +303,23 @@ IssuePayloadApproval records the approval template used and the approval history
  
 
 
-<a name="bytebase-store-ApprovalNode-RoleValue"></a>
+<a name="bytebase-store-ApprovalHistory-NodeStatus"></a>
 
-### ApprovalNode.RoleValue
-RoleValue is used if ApprovalNode Type is ROLE
+### ApprovalHistory.NodeStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NODE_STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+
+
+
+<a name="bytebase-store-ApprovalNode-GroupValue"></a>
+
+### ApprovalNode.GroupValue
+GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
 The predefined user groups are:
 - WORKSPACE_OWNER
 - DBA
@@ -315,7 +328,7 @@ The predefined user groups are:
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ROLE_VALUE_UNSPECIFILED | 0 |  |
+| GROUP_VALUE_UNSPECIFILED | 0 |  |
 | WORKSPACE_OWNER | 1 |  |
 | DBA | 2 |  |
 | PROJECT_OWNER | 3 |  |
@@ -328,26 +341,13 @@ The predefined user groups are:
 ### ApprovalNode.Type
 Type of the ApprovalNode.
 type determines who should approve this node.
-ROLE means the ApprovalNode can be approved by an user from our predefined user group.
-See RoleValue below for the predefined user groups.
+ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
+See GroupValue below for the predefined user groups.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| ROLE | 1 |  |
-
-
-
-<a name="bytebase-store-ApprovalNodeStatus"></a>
-
-### ApprovalNodeStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_NODE_STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
+| ANY_IN_GROUP | 1 |  |
 
 
 
@@ -355,14 +355,14 @@ See RoleValue below for the predefined user groups.
 
 ### ApprovalStep.Type
 Type of the ApprovalStep
-AND means every node must be approved to proceed.
-OR means approving any node will proceed.
+ALL means every node must be approved to proceed.
+ANY means approving any node will proceed.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| AND | 1 |  |
-| OR | 2 |  |
+| ALL | 1 |  |
+| ANY | 2 |  |
 
 
  

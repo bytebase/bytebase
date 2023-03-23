@@ -3,51 +3,12 @@ import * as _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
-export enum ApprovalNodeStatus {
-  APPROVAL_NODE_STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalNodeStatusFromJSON(object: any): ApprovalNodeStatus {
-  switch (object) {
-    case 0:
-    case "APPROVAL_NODE_STATUS_UNSPECIFIED":
-      return ApprovalNodeStatus.APPROVAL_NODE_STATUS_UNSPECIFIED;
-    case 1:
-    case "PENDING":
-      return ApprovalNodeStatus.PENDING;
-    case 2:
-    case "APPROVED":
-      return ApprovalNodeStatus.APPROVED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalNodeStatus.UNRECOGNIZED;
-  }
-}
-
-export function approvalNodeStatusToJSON(object: ApprovalNodeStatus): string {
-  switch (object) {
-    case ApprovalNodeStatus.APPROVAL_NODE_STATUS_UNSPECIFIED:
-      return "APPROVAL_NODE_STATUS_UNSPECIFIED";
-    case ApprovalNodeStatus.PENDING:
-      return "PENDING";
-    case ApprovalNodeStatus.APPROVED:
-      return "APPROVED";
-    case ApprovalNodeStatus.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 /**
  * IssuePayloadApproval is a part of the payload of an issue.
  * IssuePayloadApproval records the approval template used and the approval history.
  */
 export interface IssuePayloadApproval {
-  approvalTemplate?: ApprovalTemplate;
+  approvalTemplate: ApprovalTemplate[];
   history: ApprovalHistory[];
 }
 
@@ -55,9 +16,48 @@ export interface ApprovalHistory {
   /** The `uid` of the approval node. */
   nodeUid: string;
   /** The new status. */
-  status: ApprovalNodeStatus;
+  status: ApprovalHistory_NodeStatus;
   /** The principal id of the approver. */
   creatorId: number;
+}
+
+export enum ApprovalHistory_NodeStatus {
+  NODE_STATUS_UNSPECIFIED = 0,
+  PENDING = 1,
+  APPROVED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function approvalHistory_NodeStatusFromJSON(object: any): ApprovalHistory_NodeStatus {
+  switch (object) {
+    case 0:
+    case "NODE_STATUS_UNSPECIFIED":
+      return ApprovalHistory_NodeStatus.NODE_STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return ApprovalHistory_NodeStatus.PENDING;
+    case 2:
+    case "APPROVED":
+      return ApprovalHistory_NodeStatus.APPROVED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ApprovalHistory_NodeStatus.UNRECOGNIZED;
+  }
+}
+
+export function approvalHistory_NodeStatusToJSON(object: ApprovalHistory_NodeStatus): string {
+  switch (object) {
+    case ApprovalHistory_NodeStatus.NODE_STATUS_UNSPECIFIED:
+      return "NODE_STATUS_UNSPECIFIED";
+    case ApprovalHistory_NodeStatus.PENDING:
+      return "PENDING";
+    case ApprovalHistory_NodeStatus.APPROVED:
+      return "APPROVED";
+    case ApprovalHistory_NodeStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface ApprovalTemplate {
@@ -78,13 +78,13 @@ export interface ApprovalStep {
 
 /**
  * Type of the ApprovalStep
- * AND means every node must be approved to proceed.
- * OR means approving any node will proceed.
+ * ALL means every node must be approved to proceed.
+ * ANY means approving any node will proceed.
  */
 export enum ApprovalStep_Type {
   TYPE_UNSPECIFIED = 0,
-  AND = 1,
-  OR = 2,
+  ALL = 1,
+  ANY = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -94,11 +94,11 @@ export function approvalStep_TypeFromJSON(object: any): ApprovalStep_Type {
     case "TYPE_UNSPECIFIED":
       return ApprovalStep_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "AND":
-      return ApprovalStep_Type.AND;
+    case "ALL":
+      return ApprovalStep_Type.ALL;
     case 2:
-    case "OR":
-      return ApprovalStep_Type.OR;
+    case "ANY":
+      return ApprovalStep_Type.ANY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -110,10 +110,10 @@ export function approvalStep_TypeToJSON(object: ApprovalStep_Type): string {
   switch (object) {
     case ApprovalStep_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case ApprovalStep_Type.AND:
-      return "AND";
-    case ApprovalStep_Type.OR:
-      return "OR";
+    case ApprovalStep_Type.ALL:
+      return "ALL";
+    case ApprovalStep_Type.ANY:
+      return "ANY";
     case ApprovalStep_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -124,18 +124,18 @@ export interface ApprovalNode {
   /** uid uniquely identifies a node in a flow. */
   uid: string;
   type: ApprovalNode_Type;
-  roleValue?: ApprovalNode_RoleValue | undefined;
+  groupValue?: ApprovalNode_GroupValue | undefined;
 }
 
 /**
  * Type of the ApprovalNode.
  * type determines who should approve this node.
- * ROLE means the ApprovalNode can be approved by an user from our predefined user group.
- * See RoleValue below for the predefined user groups.
+ * ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
+ * See GroupValue below for the predefined user groups.
  */
 export enum ApprovalNode_Type {
   TYPE_UNSPECIFIED = 0,
-  ROLE = 1,
+  ANY_IN_GROUP = 1,
   UNRECOGNIZED = -1,
 }
 
@@ -145,8 +145,8 @@ export function approvalNode_TypeFromJSON(object: any): ApprovalNode_Type {
     case "TYPE_UNSPECIFIED":
       return ApprovalNode_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "ROLE":
-      return ApprovalNode_Type.ROLE;
+    case "ANY_IN_GROUP":
+      return ApprovalNode_Type.ANY_IN_GROUP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -158,8 +158,8 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
   switch (object) {
     case ApprovalNode_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case ApprovalNode_Type.ROLE:
-      return "ROLE";
+    case ApprovalNode_Type.ANY_IN_GROUP:
+      return "ANY_IN_GROUP";
     case ApprovalNode_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -167,15 +167,15 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
 }
 
 /**
- * RoleValue is used if ApprovalNode Type is ROLE
+ * GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
  * The predefined user groups are:
  * - WORKSPACE_OWNER
  * - DBA
  * - PROJECT_OWNER
  * - PROJECT_MEMBER
  */
-export enum ApprovalNode_RoleValue {
-  ROLE_VALUE_UNSPECIFILED = 0,
+export enum ApprovalNode_GroupValue {
+  GROUP_VALUE_UNSPECIFILED = 0,
   WORKSPACE_OWNER = 1,
   DBA = 2,
   PROJECT_OWNER = 3,
@@ -183,56 +183,56 @@ export enum ApprovalNode_RoleValue {
   UNRECOGNIZED = -1,
 }
 
-export function approvalNode_RoleValueFromJSON(object: any): ApprovalNode_RoleValue {
+export function approvalNode_GroupValueFromJSON(object: any): ApprovalNode_GroupValue {
   switch (object) {
     case 0:
-    case "ROLE_VALUE_UNSPECIFILED":
-      return ApprovalNode_RoleValue.ROLE_VALUE_UNSPECIFILED;
+    case "GROUP_VALUE_UNSPECIFILED":
+      return ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED;
     case 1:
     case "WORKSPACE_OWNER":
-      return ApprovalNode_RoleValue.WORKSPACE_OWNER;
+      return ApprovalNode_GroupValue.WORKSPACE_OWNER;
     case 2:
     case "DBA":
-      return ApprovalNode_RoleValue.DBA;
+      return ApprovalNode_GroupValue.DBA;
     case 3:
     case "PROJECT_OWNER":
-      return ApprovalNode_RoleValue.PROJECT_OWNER;
+      return ApprovalNode_GroupValue.PROJECT_OWNER;
     case 4:
     case "PROJECT_MEMBER":
-      return ApprovalNode_RoleValue.PROJECT_MEMBER;
+      return ApprovalNode_GroupValue.PROJECT_MEMBER;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return ApprovalNode_RoleValue.UNRECOGNIZED;
+      return ApprovalNode_GroupValue.UNRECOGNIZED;
   }
 }
 
-export function approvalNode_RoleValueToJSON(object: ApprovalNode_RoleValue): string {
+export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): string {
   switch (object) {
-    case ApprovalNode_RoleValue.ROLE_VALUE_UNSPECIFILED:
-      return "ROLE_VALUE_UNSPECIFILED";
-    case ApprovalNode_RoleValue.WORKSPACE_OWNER:
+    case ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED:
+      return "GROUP_VALUE_UNSPECIFILED";
+    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
       return "WORKSPACE_OWNER";
-    case ApprovalNode_RoleValue.DBA:
+    case ApprovalNode_GroupValue.DBA:
       return "DBA";
-    case ApprovalNode_RoleValue.PROJECT_OWNER:
+    case ApprovalNode_GroupValue.PROJECT_OWNER:
       return "PROJECT_OWNER";
-    case ApprovalNode_RoleValue.PROJECT_MEMBER:
+    case ApprovalNode_GroupValue.PROJECT_MEMBER:
       return "PROJECT_MEMBER";
-    case ApprovalNode_RoleValue.UNRECOGNIZED:
+    case ApprovalNode_GroupValue.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplate: undefined, history: [] };
+  return { approvalTemplate: [], history: [] };
 }
 
 export const IssuePayloadApproval = {
   encode(message: IssuePayloadApproval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.approvalTemplate !== undefined) {
-      ApprovalTemplate.encode(message.approvalTemplate, writer.uint32(10).fork()).ldelim();
+    for (const v of message.approvalTemplate) {
+      ApprovalTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     for (const v of message.history) {
       ApprovalHistory.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -248,7 +248,7 @@ export const IssuePayloadApproval = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.approvalTemplate = ApprovalTemplate.decode(reader, reader.uint32());
+          message.approvalTemplate.push(ApprovalTemplate.decode(reader, reader.uint32()));
           break;
         case 2:
           message.history.push(ApprovalHistory.decode(reader, reader.uint32()));
@@ -263,15 +263,20 @@ export const IssuePayloadApproval = {
 
   fromJSON(object: any): IssuePayloadApproval {
     return {
-      approvalTemplate: isSet(object.approvalTemplate) ? ApprovalTemplate.fromJSON(object.approvalTemplate) : undefined,
+      approvalTemplate: Array.isArray(object?.approvalTemplate)
+        ? object.approvalTemplate.map((e: any) => ApprovalTemplate.fromJSON(e))
+        : [],
       history: Array.isArray(object?.history) ? object.history.map((e: any) => ApprovalHistory.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: IssuePayloadApproval): unknown {
     const obj: any = {};
-    message.approvalTemplate !== undefined &&
-      (obj.approvalTemplate = message.approvalTemplate ? ApprovalTemplate.toJSON(message.approvalTemplate) : undefined);
+    if (message.approvalTemplate) {
+      obj.approvalTemplate = message.approvalTemplate.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    } else {
+      obj.approvalTemplate = [];
+    }
     if (message.history) {
       obj.history = message.history.map((e) => e ? ApprovalHistory.toJSON(e) : undefined);
     } else {
@@ -282,9 +287,7 @@ export const IssuePayloadApproval = {
 
   fromPartial(object: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     const message = createBaseIssuePayloadApproval();
-    message.approvalTemplate = (object.approvalTemplate !== undefined && object.approvalTemplate !== null)
-      ? ApprovalTemplate.fromPartial(object.approvalTemplate)
-      : undefined;
+    message.approvalTemplate = object.approvalTemplate?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.history = object.history?.map((e) => ApprovalHistory.fromPartial(e)) || [];
     return message;
   },
@@ -335,7 +338,7 @@ export const ApprovalHistory = {
   fromJSON(object: any): ApprovalHistory {
     return {
       nodeUid: isSet(object.nodeUid) ? String(object.nodeUid) : "",
-      status: isSet(object.status) ? approvalNodeStatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? approvalHistory_NodeStatusFromJSON(object.status) : 0,
       creatorId: isSet(object.creatorId) ? Number(object.creatorId) : 0,
     };
   },
@@ -343,7 +346,7 @@ export const ApprovalHistory = {
   toJSON(message: ApprovalHistory): unknown {
     const obj: any = {};
     message.nodeUid !== undefined && (obj.nodeUid = message.nodeUid);
-    message.status !== undefined && (obj.status = approvalNodeStatusToJSON(message.status));
+    message.status !== undefined && (obj.status = approvalHistory_NodeStatusToJSON(message.status));
     message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
     return obj;
   },
@@ -442,7 +445,7 @@ function createBaseApprovalFlow(): ApprovalFlow {
 export const ApprovalFlow = {
   encode(message: ApprovalFlow, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.steps) {
-      ApprovalStep.encode(v!, writer.uint32(18).fork()).ldelim();
+      ApprovalStep.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -454,7 +457,7 @@ export const ApprovalFlow = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 2:
+        case 1:
           message.steps.push(ApprovalStep.decode(reader, reader.uint32()));
           break;
         default:
@@ -549,7 +552,7 @@ export const ApprovalStep = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { uid: "", type: 0, roleValue: undefined };
+  return { uid: "", type: 0, groupValue: undefined };
 }
 
 export const ApprovalNode = {
@@ -560,8 +563,8 @@ export const ApprovalNode = {
     if (message.type !== 0) {
       writer.uint32(16).int32(message.type);
     }
-    if (message.roleValue !== undefined) {
-      writer.uint32(24).int32(message.roleValue);
+    if (message.groupValue !== undefined) {
+      writer.uint32(24).int32(message.groupValue);
     }
     return writer;
   },
@@ -580,7 +583,7 @@ export const ApprovalNode = {
           message.type = reader.int32() as any;
           break;
         case 3:
-          message.roleValue = reader.int32() as any;
+          message.groupValue = reader.int32() as any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -594,7 +597,7 @@ export const ApprovalNode = {
     return {
       uid: isSet(object.uid) ? String(object.uid) : "",
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
-      roleValue: isSet(object.roleValue) ? approvalNode_RoleValueFromJSON(object.roleValue) : undefined,
+      groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
     };
   },
 
@@ -602,8 +605,10 @@ export const ApprovalNode = {
     const obj: any = {};
     message.uid !== undefined && (obj.uid = message.uid);
     message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
-    message.roleValue !== undefined &&
-      (obj.roleValue = message.roleValue !== undefined ? approvalNode_RoleValueToJSON(message.roleValue) : undefined);
+    message.groupValue !== undefined &&
+      (obj.groupValue = message.groupValue !== undefined
+        ? approvalNode_GroupValueToJSON(message.groupValue)
+        : undefined);
     return obj;
   },
 
@@ -611,7 +616,7 @@ export const ApprovalNode = {
     const message = createBaseApprovalNode();
     message.uid = object.uid ?? "";
     message.type = object.type ?? 0;
-    message.roleValue = object.roleValue ?? undefined;
+    message.groupValue = object.groupValue ?? undefined;
     return message;
   },
 };
