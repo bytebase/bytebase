@@ -28,10 +28,6 @@ const (
 	ProjectService_UndeleteProject_FullMethodName        = "/bytebase.v1.ProjectService/UndeleteProject"
 	ProjectService_GetIamPolicy_FullMethodName           = "/bytebase.v1.ProjectService/GetIamPolicy"
 	ProjectService_SetIamPolicy_FullMethodName           = "/bytebase.v1.ProjectService/SetIamPolicy"
-	ProjectService_GetReview_FullMethodName              = "/bytebase.v1.ProjectService/GetReview"
-	ProjectService_ListReviews_FullMethodName            = "/bytebase.v1.ProjectService/ListReviews"
-	ProjectService_UpdateReview_FullMethodName           = "/bytebase.v1.ProjectService/UpdateReview"
-	ProjectService_BatchUpdateReviews_FullMethodName     = "/bytebase.v1.ProjectService/BatchUpdateReviews"
 	ProjectService_GetDeploymentConfig_FullMethodName    = "/bytebase.v1.ProjectService/GetDeploymentConfig"
 	ProjectService_UpdateDeploymentConfig_FullMethodName = "/bytebase.v1.ProjectService/UpdateDeploymentConfig"
 	ProjectService_AddWebhook_FullMethodName             = "/bytebase.v1.ProjectService/AddWebhook"
@@ -54,10 +50,6 @@ type ProjectServiceClient interface {
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
-	GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error)
-	ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error)
-	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
-	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
 	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
 	UpdateDeploymentConfig(ctx context.Context, in *UpdateDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
 	AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Project, error)
@@ -148,42 +140,6 @@ func (c *projectServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPolic
 	return out, nil
 }
 
-func (c *projectServiceClient) GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
-	err := c.cc.Invoke(ctx, ProjectService_GetReview_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error) {
-	out := new(ListReviewsResponse)
-	err := c.cc.Invoke(ctx, ProjectService_ListReviews_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
-	err := c.cc.Invoke(ctx, ProjectService_UpdateReview_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error) {
-	out := new(BatchUpdateReviewsResponse)
-	err := c.cc.Invoke(ctx, ProjectService_BatchUpdateReviews_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error) {
 	out := new(DeploymentConfig)
 	err := c.cc.Invoke(ctx, ProjectService_GetDeploymentConfig_FullMethodName, in, out, opts...)
@@ -268,10 +224,6 @@ type ProjectServiceServer interface {
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
-	GetReview(context.Context, *GetReviewRequest) (*Review, error)
-	ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error)
-	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
-	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
 	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*DeploymentConfig, error)
 	UpdateDeploymentConfig(context.Context, *UpdateDeploymentConfigRequest) (*DeploymentConfig, error)
 	AddWebhook(context.Context, *AddWebhookRequest) (*Project, error)
@@ -310,18 +262,6 @@ func (UnimplementedProjectServiceServer) GetIamPolicy(context.Context, *GetIamPo
 }
 func (UnimplementedProjectServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
-}
-func (UnimplementedProjectServiceServer) GetReview(context.Context, *GetReviewRequest) (*Review, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
-}
-func (UnimplementedProjectServiceServer) ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListReviews not implemented")
-}
-func (UnimplementedProjectServiceServer) UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateReview not implemented")
-}
-func (UnimplementedProjectServiceServer) BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateReviews not implemented")
 }
 func (UnimplementedProjectServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*DeploymentConfig, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
@@ -500,78 +440,6 @@ func _ProjectService_SetIamPolicy_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).SetIamPolicy(ctx, req.(*SetIamPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetReviewRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetReview(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetReview_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetReview(ctx, req.(*GetReviewRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_ListReviews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListReviewsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).ListReviews(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_ListReviews_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).ListReviews(ctx, req.(*ListReviewsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_UpdateReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateReviewRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).UpdateReview(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_UpdateReview_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).UpdateReview(ctx, req.(*UpdateReviewRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_BatchUpdateReviews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchUpdateReviewsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).BatchUpdateReviews(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_BatchUpdateReviews_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).BatchUpdateReviews(ctx, req.(*BatchUpdateReviewsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -758,22 +626,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetIamPolicy",
 			Handler:    _ProjectService_SetIamPolicy_Handler,
-		},
-		{
-			MethodName: "GetReview",
-			Handler:    _ProjectService_GetReview_Handler,
-		},
-		{
-			MethodName: "ListReviews",
-			Handler:    _ProjectService_ListReviews_Handler,
-		},
-		{
-			MethodName: "UpdateReview",
-			Handler:    _ProjectService_UpdateReview_Handler,
-		},
-		{
-			MethodName: "BatchUpdateReviews",
-			Handler:    _ProjectService_BatchUpdateReviews_Handler,
 		},
 		{
 			MethodName: "GetDeploymentConfig",
