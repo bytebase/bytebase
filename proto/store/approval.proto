@@ -8,19 +8,16 @@ option go_package = "generated-go/store";
 // IssuePayloadApproval records the approval template used and the approval history.
 message IssuePayloadApproval {
   message Approver {
-    // The `uid` of the approval node.
-    string node_uid = 1;
-
     enum Status {
       STATUS_UNSPECIFIED = 0;
       PENDING = 1;
       APPROVED = 2;
     }
     // The new status.
-    Status status = 2;
+    Status status = 1;
 
     // The principal id of the approver.
-    int32 creator_id = 3;
+    int32 principal_id = 2;
   }
 
   repeated ApprovalTemplate approval_template = 1;
@@ -53,9 +50,6 @@ message ApprovalStep {
 }
 
 message ApprovalNode {
-  // uid uniquely identifies a node in a flow.
-  string uid = 1;
-
   // Type of the ApprovalNode.
   // type determines who should approve this node.
   // ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
@@ -64,7 +58,7 @@ message ApprovalNode {
     TYPE_UNSPECIFIED = 0;
     ANY_IN_GROUP = 1;
   }
-  Type type = 2;
+  Type type = 1;
 
   // GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
   // The predefined user groups are:
@@ -80,6 +74,6 @@ message ApprovalNode {
     PROJECT_MEMBER = 4;
   }
   oneof payload {
-    GroupValue group_value = 3;
+    GroupValue group_value = 2;
   }
 }
