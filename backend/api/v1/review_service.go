@@ -2,10 +2,13 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -33,16 +36,13 @@ func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRe
 	}
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get review, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
 	}
-	var issuePayload storepb.IssuePayload
-	if err := protojson.Unmarshal([]byte(issue.Payload), &issuePayload); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
+	review, err := convertToReview(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
 	}
-	return &v1pb.Review{
-		ApprovalTemplates: issuePayload.Approval.ApprovalTemplates,
-	}
-	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
+	return review, nil
 }
 
 // ApproveReview approves the approval flow of the review.
@@ -50,11 +50,39 @@ func (*ReviewService) ApproveReview(context.Context, *v1pb.ApproveReviewRequest)
 	return nil, status.Errorf(codes.Unimplemented, "method ApproveReview not implemented")
 }
 
-func convertToApprovalTemplates(templates []*storepb.ApprovalTemplate) []*v1pb.ApprovalTemplate {
+func convertToReview(ctx context.Context, store *store.Store, issue *store.IssueMessage) (*v1pb.Review, error) {
+	issuePayload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
+	}
+
+	review := &v1pb.Review{
+		Name: fmt.Sprintf("%s%v%s%v", projectNamePrefix, issue.Project.UID, reviewPrefix, issue.UID),
+		Uid:  fmt.Sprintf("%v", issue.UID),
+	}
+	for _, template := range issuePayload.Approval.ApprovalTemplates {
+		review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
+	}
+	for _, approver := range issuePayload.Approval.Approvers {
+		convertedApprover := &v1pb.Review_Approver{Status: v1pb.Review_Approver_Status(approver.Status)}
+		user, err := store.GetUserByID(ctx, int(approver.PrincipalId))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
+		}
+		convertedApprover.Principal = fmt.Sprintf("user:%s", user.Email)
+
+		review.Approvers = append(review.Approvers, convertedApprover)
+	}
+
+	return review, nil
 }
 
 func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.ApprovalTemplate {
-
+	return &v1pb.ApprovalTemplate{
+		Flow:        convertToApprovalFlow(template.Flow),
+		Title:       template.Title,
+		Description: template.Description,
+	}
 }
 
 func convertToApprovalFlow(flow *storepb.ApprovalFlow) *v1pb.ApprovalFlow {
@@ -76,13 +104,13 @@ func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
 }
 
 func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
-	return &v1pb.ApprovalNode{
-		Type: v1pb.ApprovalNode_Type(node.Type),
-		Payload: node.Payload,
+	switch node.Payload.(type) {
+	case *storepb.ApprovalNode_GroupValue_:
+		return &v1pb.ApprovalNode{
+			Type: v1pb.ApprovalNode_ANY_IN_GROUP,
+			Payload: &v1pb.ApprovalNode_GroupValue_{
+				GroupValue: v1pb.ApprovalNode_GroupValue(node.Payload.(*storepb.ApprovalNode_GroupValue_).GroupValue)},
+		}
 	}
-}
-
-func convertToReview(issue *store.IssueMessage, issuePayload *storepb.IssuePayload) *v1pb.Review {
-	review := &v1pb.Review{}
-	review.ApprovalTemplates = 
+	return &v1pb.ApprovalNode{}
 }
