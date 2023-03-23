@@ -58,18 +58,20 @@ func convertToReview(ctx context.Context, store *store.Store, issue *store.Issue
 	}
 
 	review := &v1pb.Review{}
-	for _, template := range issuePayload.Approval.ApprovalTemplates {
-		review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
-	}
-	for _, approver := range issuePayload.Approval.Approvers {
-		convertedApprover := &v1pb.Review_Approver{Status: v1pb.Review_Approver_Status(approver.Status)}
-		user, err := store.GetUserByID(ctx, int(approver.PrincipalId))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
+	if issuePayload.Approval != nil {
+		for _, template := range issuePayload.Approval.ApprovalTemplates {
+			review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
 		}
-		convertedApprover.Principal = fmt.Sprintf("user:%s", user.Email)
+		for _, approver := range issuePayload.Approval.Approvers {
+			convertedApprover := &v1pb.Review_Approver{Status: v1pb.Review_Approver_Status(approver.Status)}
+			user, err := store.GetUserByID(ctx, int(approver.PrincipalId))
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
+			}
+			convertedApprover.Principal = fmt.Sprintf("user:%s", user.Email)
 
-		review.Approvers = append(review.Approvers, convertedApprover)
+			review.Approvers = append(review.Approvers, convertedApprover)
+		}
 	}
 
 	return review, nil
