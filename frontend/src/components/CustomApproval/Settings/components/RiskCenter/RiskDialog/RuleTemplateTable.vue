@@ -14,38 +14,57 @@
         <NButton size="tiny" @click="applyTemplate(tpl)">
           {{ $t("custom-approval.security-rule.template.load") }}
         </NButton>
-        <NButton size="tiny">
+        <NButton size="tiny" @click="viewTemplate = tpl">
           {{ $t("common.view") }}
         </NButton>
       </div>
     </template>
   </BBGrid>
+
+  <BBModal
+    v-if="viewTemplate"
+    :title="$t('custom-approval.security-rule.template.view')"
+    class="!w-auto lg:!max-w-[36rem]"
+    @close="viewTemplate = undefined"
+  >
+    <ViewTemplate :template="viewTemplate" />
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, useDialog } from "naive-ui";
 
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { type RuleTemplate, useRuleTemplates } from "./template";
+import {
+  type RuleTemplate,
+  useRuleTemplates,
+  titleOfTemplate,
+} from "./template";
 import { useRiskCenterContext } from "../context";
 import { defer } from "@/utils";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
-import { buildCELExpr, SimpleExpr } from "@/plugins/cel";
+import { buildCELExpr, ConditionGroupExpr } from "@/plugins/cel";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import ViewTemplate from "./ViewTemplate.vue";
 
 const props = defineProps<{
   dirty?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "apply-template", overrides: Partial<Risk>, expr: SimpleExpr): void;
+  (
+    event: "apply-template",
+    overrides: Partial<Risk>,
+    expr: ConditionGroupExpr
+  ): void;
 }>();
 
-const { t, te } = useI18n();
+const { t } = useI18n();
 const { dialog } = useRiskCenterContext();
 const templateList = useRuleTemplates();
+const viewTemplate = ref<RuleTemplate>();
 const nDialog = useDialog();
 
 const COLUMNS = computed(() => {
@@ -78,15 +97,6 @@ const filteredTemplateList = computed(() => {
   return list;
 });
 
-const titleOfTemplate = (template: RuleTemplate) => {
-  const { key } = template;
-  const keypath = `custom-approval.security-rule.template.presets.${key}`;
-  if (te(keypath)) {
-    return t(keypath);
-  }
-  return key;
-};
-
 const confirmApplyTemplate = async () => {
   if (dialog.value?.mode === "CREATE" && !props.dirty) {
     return true;
@@ -114,7 +124,9 @@ const applyTemplate = async (template: RuleTemplate) => {
   const title = titleOfTemplate(template);
   const { mode } = dialog.value!;
   const overrides: Partial<Risk> = {
-    expression: ParsedExpr.fromJSON(buildCELExpr(expr)),
+    expression: ParsedExpr.fromJSON({
+      expr: buildCELExpr(expr),
+    }),
     level,
     title,
   };

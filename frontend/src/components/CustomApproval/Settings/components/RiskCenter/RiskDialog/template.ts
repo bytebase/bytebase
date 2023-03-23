@@ -1,10 +1,11 @@
 import { computed } from "vue";
 import { first, last } from "lodash-es";
 
-import { SimpleExpr } from "@/plugins/cel";
+import { ConditionGroupExpr, wrapAsGroup } from "@/plugins/cel";
 import { useEnvironmentList } from "@/store";
 import { PresetRiskLevel } from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { t, te } from "@/plugins/i18n";
 
 /*
 
@@ -27,7 +28,7 @@ environment == "prod"
 
 export type RuleTemplate = {
   key: string;
-  expr: SimpleExpr;
+  expr: ConditionGroupExpr;
   level: number;
   source: Risk_Source;
 };
@@ -43,10 +44,10 @@ export const useRuleTemplates = () => {
       // environment == "prod" -> HIGH
       templates.push({
         key: "environment-prod-high",
-        expr: {
+        expr: wrapAsGroup({
           operator: "_==_",
           args: ["environment_id", prod.value.resourceId],
-        },
+        }),
         level: PresetRiskLevel.HIGH,
         source: Risk_Source.SOURCE_UNSPECIFIED,
       });
@@ -55,10 +56,10 @@ export const useRuleTemplates = () => {
       // environment == "dev" -> LOW
       templates.push({
         key: "environment-dev-low",
-        expr: {
+        expr: wrapAsGroup({
           operator: "_==_",
           args: ["environment_id", dev.value.resourceId],
-        },
+        }),
         level: PresetRiskLevel.LOW,
         source: Risk_Source.SOURCE_UNSPECIFIED,
       });
@@ -68,7 +69,7 @@ export const useRuleTemplates = () => {
       // -> HIGH
       templates.push({
         key: "dml-in-environment-prod-10k-rows-high",
-        expr: {
+        expr: wrapAsGroup({
           operator: "_&&_",
           args: [
             {
@@ -84,7 +85,7 @@ export const useRuleTemplates = () => {
               args: ["sql_type", ["UPDATE", "DELETE"]],
             },
           ],
-        },
+        }),
         level: PresetRiskLevel.HIGH,
         source: Risk_Source.DML,
       });
@@ -95,10 +96,10 @@ export const useRuleTemplates = () => {
       // -> MODERATE
       templates.push({
         key: "create-database-in-environment-prod-moderate",
-        expr: {
+        expr: wrapAsGroup({
           operator: "_==_",
           args: ["environment_id", prod.value.resourceId],
-        },
+        }),
         level: PresetRiskLevel.MODERATE,
         source: Risk_Source.CREATE_DATABASE,
       });
@@ -107,4 +108,13 @@ export const useRuleTemplates = () => {
   });
 
   return ruleTemplateList;
+};
+
+export const titleOfTemplate = (template: RuleTemplate) => {
+  const { key } = template;
+  const keypath = `custom-approval.security-rule.template.presets.${key}`;
+  if (te(keypath)) {
+    return t(keypath);
+  }
+  return key;
 };

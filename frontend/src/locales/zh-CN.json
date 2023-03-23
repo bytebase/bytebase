@@ -2129,7 +2129,8 @@
           "dml-in-environment-prod-10k-rows-high": "生产环境中更新或删除的数据行数超过 10000，默认为高风险",
           "create-database-in-environment-prod-moderate": "在生产环境中创建数据库，默认为中风险"
         },
-        "load-template": "加载模板"
+        "load-template": "加载模板",
+        "view": "查看模板"
       },
       "rule-name": "规则名称",
       "view-rule": "查看规则",

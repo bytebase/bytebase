@@ -95,7 +95,7 @@ import {
   Expr as CELExpr,
   ParsedExpr,
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import type { ConditionGroupExpr, SimpleExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import { useRiskCenterContext } from "../context";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RiskLevelSelect from "./RiskLevelSelect.vue";
@@ -170,10 +170,10 @@ const handleUpsert = async () => {
 
 const handleApplyRuleTemplate = (
   overrides: Partial<Risk>,
-  expr: SimpleExpr
+  expr: ConditionGroupExpr
 ) => {
   Object.assign(state.value.risk, overrides);
-  state.value.expr = wrapAsGroup(cloneDeep(expr));
+  state.value.expr = cloneDeep(expr);
   emit("update");
 };
 </script>

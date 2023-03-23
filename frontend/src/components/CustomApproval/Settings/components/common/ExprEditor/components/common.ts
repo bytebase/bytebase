@@ -55,6 +55,24 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
     }));
   };
 
+  const getSQLTypeOptions = () => {
+    const source = riskSource.value;
+    const mapOptions = (values: readonly string[]) => {
+      return values.map<SelectOption>((v) => ({
+        label: v,
+        value: v,
+      }));
+    };
+    switch (source) {
+      case Risk_Source.DDL:
+        return mapOptions(SQLTypeList.DDL);
+      case Risk_Source.DML:
+        return mapOptions(SQLTypeList.DML);
+    }
+    // unsupported source
+    return [];
+  };
+
   const options = computed(() => {
     const factor = expr.value.args[0];
     if (factor === "environment_id") {
@@ -72,24 +90,8 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
     if (factor === "source") {
       return getSourceOptions();
     }
-
-    const mapOptions = (values: readonly string[]) => {
-      return values.map<SelectOption>((v) => ({
-        label: v,
-        value: v,
-      }));
-    };
     if (factor === "sql_type") {
-      const source = riskSource.value;
-      switch (source) {
-        case Risk_Source.DDL:
-          return mapOptions(SQLTypeList.DDL);
-        case Risk_Source.DML:
-          return mapOptions(SQLTypeList.DML);
-        default:
-          // unsupported namespace
-          return [];
-      }
+      return getSQLTypeOptions();
     }
     return [];
   });

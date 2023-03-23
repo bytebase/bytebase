@@ -2132,7 +2132,8 @@
           "dml-in-environment-prod-10k-rows-high": "In the production environment, if the number of rows to be updated or deleted exceeds 10000, the risk is considered to be high.",
           "create-database-in-environment-prod-moderate": "Creating a database in the production environment is considered to be a moderate risk."
         },
-        "load-template": "Load template"
+        "load-template": "Load template",
+        "view": "View template"
       },
       "rule-name": "Rule name",
       "view-rule": "View rule",
