@@ -2078,7 +2078,7 @@
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "x-risk-rules": {
         "low": "Low Risk Rules",
-        "medium": "Medium Risk Rules",
+        "moderate": "Moderate Risk Rules",
         "high": "High Risk Rules"
       },
       "active": "Active",

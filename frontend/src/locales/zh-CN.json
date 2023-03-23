@@ -2075,7 +2075,7 @@
       "description": "对每种操作类型，配置自定义条件、风险和审批流。",
       "x-risk-rules": {
         "low": "低风险规则",
-        "medium": "中风险规则",
+        "moderate": "中风险规则",
         "high": "高风险规则"
       },
       "active": "开启",
