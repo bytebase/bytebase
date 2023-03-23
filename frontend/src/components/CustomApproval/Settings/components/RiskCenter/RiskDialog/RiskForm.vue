@@ -53,12 +53,6 @@
             :risk-source="state.risk.source"
             @update="$emit('update')"
           />
-          <p class="text-sm cursor-pointer" @click="debug = !debug">
-            DEBUG: CELExpr (click to toggle)
-          </p>
-          <pre v-if="debug" class="text-xs">{{
-            JSON.stringify(buildCELExpr(state.expr), null, "  ")
-          }}</pre>
         </div>
 
         <div
@@ -68,7 +62,10 @@
           <h3 class="font-medium text-sm text-control mb-2">
             {{ $t("custom-approval.security-rule.template.templates") }}
           </h3>
-          <RuleTemplateTable />
+          <RuleTemplateTable
+            :dirty="dirty"
+            @apply-template="handleApplyRuleTemplate"
+          />
         </div>
       </div>
     </div>
@@ -98,7 +95,7 @@ import {
   Expr as CELExpr,
   ParsedExpr,
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import type { ConditionGroupExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr, SimpleExpr } from "@/plugins/cel";
 import { useRiskCenterContext } from "../context";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RiskLevelSelect from "./RiskLevelSelect.vue";
@@ -131,7 +128,6 @@ const context = useRiskCenterContext();
 const { allowAdmin } = context;
 
 const mode = computed(() => context.dialog.value!.mode);
-const debug = ref(false);
 
 const resolveLocalState = (): LocalState => {
   const risk = cloneDeep(context.dialog.value!.risk);
@@ -170,5 +166,14 @@ const handleUpsert = async () => {
     expr: buildCELExpr(state.value.expr),
   });
   emit("save", risk);
+};
+
+const handleApplyRuleTemplate = (
+  overrides: Partial<Risk>,
+  expr: SimpleExpr
+) => {
+  Object.assign(state.value.risk, overrides);
+  state.value.expr = wrapAsGroup(cloneDeep(expr));
+  emit("update");
 };
 </script>

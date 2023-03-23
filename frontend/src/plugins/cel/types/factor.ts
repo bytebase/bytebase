@@ -1,11 +1,6 @@
 import { uniq, without } from "lodash-es";
 
-export const NumberFactorList = [
-  "insert_rows",
-  "update_delete_rows",
-  "risk",
-  "source",
-] as const;
+export const NumberFactorList = ["affected_rows", "risk", "source"] as const;
 export type NumberFactor = typeof NumberFactorList[number];
 
 export const StringFactorList = [

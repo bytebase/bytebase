@@ -230,7 +230,8 @@
     "regenerate": "Regenerate",
     "download": "Download",
     "will-lose-unsaved-data": "Will lose any unsaved data.",
-    "deleted": "Deleted"
+    "deleted": "Deleted",
+    "will-override-current-data": "Will override current data."
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2124,7 +2125,14 @@
       },
       "template": {
         "templates": "Templates",
-        "load": "Load"
+        "load": "Load",
+        "presets": {
+          "environment-prod-high": "The risk for the production environment is considered to be high.",
+          "environment-dev-low": "The risk value for the development environment is considered to be low.",
+          "dml-in-environment-prod-10k-rows-high": "In the production environment, if the number of rows to be updated or deleted exceeds 10000, the risk is considered to be high.",
+          "create-database-in-environment-prod-moderate": "Creating a database in the production environment is considered to be a moderate risk."
+        },
+        "load-template": "Load template"
       },
       "rule-name": "Rule name",
       "view-rule": "View rule",
