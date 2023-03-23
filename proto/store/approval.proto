@@ -69,13 +69,13 @@ message ApprovalNode {
   // GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
   // The predefined user groups are:
   // - WORKSPACE_OWNER
-  // - DBA
+  // - WORKSPACE_DBA
   // - PROJECT_OWNER
   // - PROJECT_MEMBER
   enum GroupValue {
     GROUP_VALUE_UNSPECIFILED = 0;
     WORKSPACE_OWNER = 1;
-    DBA = 2;
+    WORKSPACE_DBA = 2;
     PROJECT_OWNER = 3;
     PROJECT_MEMBER = 4;
   }
