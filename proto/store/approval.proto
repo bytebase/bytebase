@@ -11,13 +11,13 @@ message IssuePayloadApproval {
     // The `uid` of the approval node.
     string node_uid = 1;
   
-    enum NodeStatus {
-      NODE_STATUS_UNSPECIFIED = 0;
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
       PENDING = 1;
       APPROVED = 2;
     }
     // The new status.
-    NodeStatus status = 2;
+    Status status = 2;
   
     // The principal id of the approver.
     int32 creator_id = 3;
