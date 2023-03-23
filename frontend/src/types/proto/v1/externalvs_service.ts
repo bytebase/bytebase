@@ -218,19 +218,24 @@ export const CreateExternalVersionControlRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateExternalVersionControlRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateExternalVersionControlRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.externalVersionControl = ExternalVersionControl.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -249,6 +254,10 @@ export const CreateExternalVersionControlRequest = {
       ? ExternalVersionControl.toJSON(message.externalVersionControl)
       : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateExternalVersionControlRequest>): CreateExternalVersionControlRequest {
+    return CreateExternalVersionControlRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateExternalVersionControlRequest>): CreateExternalVersionControlRequest {
@@ -274,19 +283,24 @@ export const GetExternalVersionControlRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetExternalVersionControlRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetExternalVersionControlRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -299,6 +313,10 @@ export const GetExternalVersionControlRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetExternalVersionControlRequest>): GetExternalVersionControlRequest {
+    return GetExternalVersionControlRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetExternalVersionControlRequest>): GetExternalVersionControlRequest {
@@ -324,22 +342,31 @@ export const ListExternalVersionControlsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListExternalVersionControlsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListExternalVersionControlsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -356,6 +383,10 @@ export const ListExternalVersionControlsRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListExternalVersionControlsRequest>): ListExternalVersionControlsRequest {
+    return ListExternalVersionControlsRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListExternalVersionControlsRequest>): ListExternalVersionControlsRequest {
@@ -382,22 +413,31 @@ export const ListExternalVersionControlsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListExternalVersionControlsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListExternalVersionControlsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.externalVersionControls.push(ExternalVersionControl.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -422,6 +462,10 @@ export const ListExternalVersionControlsResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListExternalVersionControlsResponse>): ListExternalVersionControlsResponse {
+    return ListExternalVersionControlsResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListExternalVersionControlsResponse>): ListExternalVersionControlsResponse {
@@ -449,22 +493,31 @@ export const UpdateExternalVersionControlRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateExternalVersionControlRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateExternalVersionControlRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.externalVersionControl = ExternalVersionControl.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -485,6 +538,10 @@ export const UpdateExternalVersionControlRequest = {
       : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateExternalVersionControlRequest>): UpdateExternalVersionControlRequest {
+    return UpdateExternalVersionControlRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateExternalVersionControlRequest>): UpdateExternalVersionControlRequest {
@@ -511,19 +568,24 @@ export const DeleteExternalVersionControlRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteExternalVersionControlRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteExternalVersionControlRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -536,6 +598,10 @@ export const DeleteExternalVersionControlRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteExternalVersionControlRequest>): DeleteExternalVersionControlRequest {
+    return DeleteExternalVersionControlRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteExternalVersionControlRequest>): DeleteExternalVersionControlRequest {
@@ -564,25 +630,38 @@ export const SearchExternalVersionControlProjectsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SearchExternalVersionControlProjectsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchExternalVersionControlProjectsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.accessToken = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.refreshToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -601,6 +680,10 @@ export const SearchExternalVersionControlProjectsRequest = {
     message.accessToken !== undefined && (obj.accessToken = message.accessToken);
     message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<SearchExternalVersionControlProjectsRequest>): SearchExternalVersionControlProjectsRequest {
+    return SearchExternalVersionControlProjectsRequest.fromPartial(base ?? {});
   },
 
   fromPartial(
@@ -627,19 +710,24 @@ export const SearchExternalVersionControlProjectsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SearchExternalVersionControlProjectsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchExternalVersionControlProjectsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.projects.push(SearchExternalVersionControlProjectsResponse_Project.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -662,6 +750,12 @@ export const SearchExternalVersionControlProjectsResponse = {
       obj.projects = [];
     }
     return obj;
+  },
+
+  create(
+    base?: DeepPartial<SearchExternalVersionControlProjectsResponse>,
+  ): SearchExternalVersionControlProjectsResponse {
+    return SearchExternalVersionControlProjectsResponse.fromPartial(base ?? {});
   },
 
   fromPartial(
@@ -699,28 +793,45 @@ export const SearchExternalVersionControlProjectsResponse_Project = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SearchExternalVersionControlProjectsResponse_Project {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchExternalVersionControlProjectsResponse_Project();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.fullpath = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.webUrl = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -741,6 +852,12 @@ export const SearchExternalVersionControlProjectsResponse_Project = {
     message.fullpath !== undefined && (obj.fullpath = message.fullpath);
     message.webUrl !== undefined && (obj.webUrl = message.webUrl);
     return obj;
+  },
+
+  create(
+    base?: DeepPartial<SearchExternalVersionControlProjectsResponse_Project>,
+  ): SearchExternalVersionControlProjectsResponse_Project {
+    return SearchExternalVersionControlProjectsResponse_Project.fromPartial(base ?? {});
   },
 
   fromPartial(
@@ -768,19 +885,24 @@ export const ListProjectGitOpsInfoRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListProjectGitOpsInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListProjectGitOpsInfoRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -793,6 +915,10 @@ export const ListProjectGitOpsInfoRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListProjectGitOpsInfoRequest>): ListProjectGitOpsInfoRequest {
+    return ListProjectGitOpsInfoRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListProjectGitOpsInfoRequest>): ListProjectGitOpsInfoRequest {
@@ -815,19 +941,24 @@ export const ListProjectGitOpsInfoResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListProjectGitOpsInfoResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListProjectGitOpsInfoResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.projectGitopsInfo.push(ProjectGitOpsInfo.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -848,6 +979,10 @@ export const ListProjectGitOpsInfoResponse = {
       obj.projectGitopsInfo = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<ListProjectGitOpsInfoResponse>): ListProjectGitOpsInfoResponse {
+    return ListProjectGitOpsInfoResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListProjectGitOpsInfoResponse>): ListProjectGitOpsInfoResponse {
@@ -888,37 +1023,66 @@ export const ExternalVersionControl = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ExternalVersionControl {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExternalVersionControl();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.url = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.apiUrl = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.applicationId = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.secret = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -945,6 +1109,10 @@ export const ExternalVersionControl = {
     message.applicationId !== undefined && (obj.applicationId = message.applicationId);
     message.secret !== undefined && (obj.secret = message.secret);
     return obj;
+  },
+
+  create(base?: DeepPartial<ExternalVersionControl>): ExternalVersionControl {
+    return ExternalVersionControl.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ExternalVersionControl>): ExternalVersionControl {
@@ -1015,49 +1183,94 @@ export const ProjectGitOpsInfo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ProjectGitOpsInfo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseProjectGitOpsInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.fullPath = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.webUrl = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.branchFilter = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.baseDirectory = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.filePathTemplate = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.schemaPathTemplate = reader.string();
-          break;
+          continue;
         case 9:
+          if (tag != 74) {
+            break;
+          }
+
           message.sheetPathTemplate = reader.string();
-          break;
+          continue;
         case 10:
+          if (tag != 80) {
+            break;
+          }
+
           message.enableSqlReviewCi = reader.bool();
-          break;
+          continue;
         case 11:
+          if (tag != 90) {
+            break;
+          }
+
           message.webhookEndpointId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1094,6 +1307,10 @@ export const ProjectGitOpsInfo = {
     return obj;
   },
 
+  create(base?: DeepPartial<ProjectGitOpsInfo>): ProjectGitOpsInfo {
+    return ProjectGitOpsInfo.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<ProjectGitOpsInfo>): ProjectGitOpsInfo {
     const message = createBaseProjectGitOpsInfo();
     message.name = object.name ?? "";
@@ -1122,7 +1339,54 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: ExternalVersionControl,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              38,
+              18,
+              36,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     listExternalVersionControls: {
       name: "ListExternalVersionControls",
@@ -1130,7 +1394,45 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: ListExternalVersionControlsResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              29,
+              18,
+              27,
+              47,
+              118,
+              49,
+              47,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     createExternalVersionControl: {
       name: "CreateExternalVersionControl",
@@ -1138,7 +1440,71 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: ExternalVersionControl,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              55,
+              58,
+              24,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              95,
+              118,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              95,
+              99,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              34,
+              27,
+              47,
+              118,
+              49,
+              47,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     updateExternalVersionControl: {
       name: "UpdateExternalVersionControl",
@@ -1146,7 +1512,145 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: ExternalVersionControl,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              36,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              95,
+              118,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              95,
+              99,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              89,
+              58,
+              24,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              95,
+              118,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              95,
+              99,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              50,
+              61,
+              47,
+              118,
+              49,
+              47,
+              123,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              95,
+              118,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              95,
+              99,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteExternalVersionControl: {
       name: "DeleteExternalVersionControl",
@@ -1154,7 +1658,53 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              38,
+              42,
+              36,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     searchExternalVersionControlProjects: {
       name: "SearchExternalVersionControlProjects",
@@ -1162,7 +1712,71 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: SearchExternalVersionControlProjectsResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              56,
+              58,
+              1,
+              42,
+              34,
+              51,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+              80,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     listProjectGitOpsInfo: {
       name: "ListProjectGitOpsInfo",
@@ -1170,7 +1784,62 @@ export const ExternalVersionControlServiceDefinition = {
       requestStream: false,
       responseType: ListProjectGitOpsInfoResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              47,
+              18,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+              47,
+              42,
+              125,
+              47,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

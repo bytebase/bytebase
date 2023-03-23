@@ -221,19 +221,24 @@ export const GetInstanceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetInstanceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetInstanceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -246,6 +251,10 @@ export const GetInstanceRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetInstanceRequest>): GetInstanceRequest {
+    return GetInstanceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetInstanceRequest>): GetInstanceRequest {
@@ -277,28 +286,45 @@ export const ListInstancesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListInstancesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListInstancesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.showDeleted = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -319,6 +345,10 @@ export const ListInstancesRequest = {
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
+    return ListInstancesRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
@@ -347,22 +377,31 @@ export const ListInstancesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListInstancesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListInstancesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.instances.push(Instance.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -383,6 +422,10 @@ export const ListInstancesResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListInstancesResponse>): ListInstancesResponse {
+    return ListInstancesResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListInstancesResponse>): ListInstancesResponse {
@@ -412,25 +455,38 @@ export const CreateInstanceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateInstanceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateInstanceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.instance = Instance.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.instanceId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -449,6 +505,10 @@ export const CreateInstanceRequest = {
     message.instance !== undefined && (obj.instance = message.instance ? Instance.toJSON(message.instance) : undefined);
     message.instanceId !== undefined && (obj.instanceId = message.instanceId);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateInstanceRequest>): CreateInstanceRequest {
+    return CreateInstanceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateInstanceRequest>): CreateInstanceRequest {
@@ -478,22 +538,31 @@ export const UpdateInstanceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateInstanceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateInstanceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.instance = Instance.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -510,6 +579,10 @@ export const UpdateInstanceRequest = {
     message.instance !== undefined && (obj.instance = message.instance ? Instance.toJSON(message.instance) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateInstanceRequest>): UpdateInstanceRequest {
+    return UpdateInstanceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateInstanceRequest>): UpdateInstanceRequest {
@@ -535,19 +608,24 @@ export const DeleteInstanceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteInstanceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteInstanceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -560,6 +638,10 @@ export const DeleteInstanceRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteInstanceRequest>): DeleteInstanceRequest {
+    return DeleteInstanceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteInstanceRequest>): DeleteInstanceRequest {
@@ -582,19 +664,24 @@ export const UndeleteInstanceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteInstanceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUndeleteInstanceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -607,6 +694,10 @@ export const UndeleteInstanceRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteInstanceRequest>): UndeleteInstanceRequest {
+    return UndeleteInstanceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UndeleteInstanceRequest>): UndeleteInstanceRequest {
@@ -632,22 +723,31 @@ export const AddDataSourceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): AddDataSourceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAddDataSourceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.instance = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.dataSources = DataSource.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -665,6 +765,10 @@ export const AddDataSourceRequest = {
     message.dataSources !== undefined &&
       (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<AddDataSourceRequest>): AddDataSourceRequest {
+    return AddDataSourceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<AddDataSourceRequest>): AddDataSourceRequest {
@@ -693,22 +797,31 @@ export const RemoveDataSourceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): RemoveDataSourceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRemoveDataSourceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.instance = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.dataSources = DataSource.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -726,6 +839,10 @@ export const RemoveDataSourceRequest = {
     message.dataSources !== undefined &&
       (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<RemoveDataSourceRequest>): RemoveDataSourceRequest {
+    return RemoveDataSourceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<RemoveDataSourceRequest>): RemoveDataSourceRequest {
@@ -757,25 +874,38 @@ export const UpdateDataSourceRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDataSourceRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateDataSourceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.instance = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.dataSources = DataSource.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -795,6 +925,10 @@ export const UpdateDataSourceRequest = {
       (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateDataSourceRequest>): UpdateDataSourceRequest {
+    return UpdateDataSourceRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateDataSourceRequest>): UpdateDataSourceRequest {
@@ -839,37 +973,66 @@ export const Instance = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Instance {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseInstance();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.uid = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.state = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.engine = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.externalLink = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.dataSources.push(DataSource.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -900,6 +1063,10 @@ export const Instance = {
       obj.dataSources = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<Instance>): Instance {
+    return Instance.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Instance>): Instance {
@@ -982,58 +1149,115 @@ export const DataSource = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DataSource {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDataSource();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.sslCa = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.sslCert = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.sslKey = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.host = reader.string();
-          break;
+          continue;
         case 9:
+          if (tag != 74) {
+            break;
+          }
+
           message.port = reader.string();
-          break;
+          continue;
         case 10:
+          if (tag != 82) {
+            break;
+          }
+
           message.database = reader.string();
-          break;
+          continue;
         case 11:
+          if (tag != 88) {
+            break;
+          }
+
           message.srv = reader.bool();
-          break;
+          continue;
         case 12:
+          if (tag != 98) {
+            break;
+          }
+
           message.authenticationDatabase = reader.string();
-          break;
+          continue;
         case 13:
+          if (tag != 106) {
+            break;
+          }
+
           message.sid = reader.string();
-          break;
+          continue;
         case 14:
+          if (tag != 114) {
+            break;
+          }
+
           message.serviceName = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1076,6 +1300,10 @@ export const DataSource = {
     return obj;
   },
 
+  create(base?: DeepPartial<DataSource>): DataSource {
+    return DataSource.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<DataSource>): DataSource {
     const message = createBaseDataSource();
     message.title = object.title ?? "";
@@ -1107,7 +1335,55 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              39,
+              18,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     listInstances: {
       name: "ListInstances",
@@ -1115,7 +1391,55 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: ListInstancesResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              39,
+              18,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     createInstance: {
       name: "CreateInstance",
@@ -1123,7 +1447,65 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([15, 112, 97, 114, 101, 110, 116, 44, 105, 110, 115, 116, 97, 110, 99, 101])],
+          578365826: [
+            new Uint8Array([
+              49,
+              58,
+              8,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              34,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     updateInstance: {
       name: "UpdateInstance",
@@ -1131,7 +1513,98 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              20,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              58,
+              58,
+              8,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              50,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteInstance: {
       name: "DeleteInstance",
@@ -1139,7 +1612,55 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              39,
+              42,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     undeleteInstance: {
       name: "UndeleteInstance",
@@ -1147,7 +1668,66 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              51,
+              58,
+              1,
+              42,
+              34,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
     },
     addDataSource: {
       name: "AddDataSource",
@@ -1155,7 +1735,75 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              60,
+              58,
+              1,
+              42,
+              34,
+              55,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              97,
+              100,
+              100,
+              68,
+              97,
+              116,
+              97,
+              83,
+              111,
+              117,
+              114,
+              99,
+              101,
+            ]),
+          ],
+        },
+      },
     },
     removeDataSource: {
       name: "RemoveDataSource",
@@ -1163,7 +1811,78 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              34,
+              58,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              114,
+              101,
+              109,
+              111,
+              118,
+              101,
+              68,
+              97,
+              116,
+              97,
+              83,
+              111,
+              117,
+              114,
+              99,
+              101,
+            ]),
+          ],
+        },
+      },
     },
     updateDataSource: {
       name: "UpdateDataSource",
@@ -1171,7 +1890,78 @@ export const InstanceServiceDefinition = {
       requestStream: false,
       responseType: Instance,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              50,
+              58,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              68,
+              97,
+              116,
+              97,
+              83,
+              111,
+              117,
+              114,
+              99,
+              101,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

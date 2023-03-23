@@ -35,28 +35,45 @@ export const DataSourceOptions = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DataSourceOptions {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDataSourceOptions();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.srv = reader.bool();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.authenticationDatabase = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.sid = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.serviceName = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -77,6 +94,10 @@ export const DataSourceOptions = {
     message.sid !== undefined && (obj.sid = message.sid);
     message.serviceName !== undefined && (obj.serviceName = message.serviceName);
     return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceOptions>): DataSourceOptions {
+    return DataSourceOptions.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DataSourceOptions>): DataSourceOptions {

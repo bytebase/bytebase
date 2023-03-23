@@ -89,22 +89,31 @@ export const CreateBookmarkRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateBookmarkRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateBookmarkRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.bookmark = Bookmark.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -121,6 +130,10 @@ export const CreateBookmarkRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.bookmark !== undefined && (obj.bookmark = message.bookmark ? Bookmark.toJSON(message.bookmark) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
+    return CreateBookmarkRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
@@ -146,19 +159,24 @@ export const DeleteBookmarkRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteBookmarkRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteBookmarkRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -171,6 +189,10 @@ export const DeleteBookmarkRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteBookmarkRequest>): DeleteBookmarkRequest {
+    return DeleteBookmarkRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteBookmarkRequest>): DeleteBookmarkRequest {
@@ -199,25 +221,38 @@ export const ListBookmarksRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListBookmarksRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListBookmarksRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -236,6 +271,10 @@ export const ListBookmarksRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
+    return ListBookmarksRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
@@ -263,22 +302,31 @@ export const ListBookmarksResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListBookmarksResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListBookmarksResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.bookmarks.push(Bookmark.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -299,6 +347,10 @@ export const ListBookmarksResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListBookmarksResponse>): ListBookmarksResponse {
+    return ListBookmarksResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListBookmarksResponse>): ListBookmarksResponse {
@@ -328,25 +380,38 @@ export const Bookmark = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Bookmark {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBookmark();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.link = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -365,6 +430,10 @@ export const Bookmark = {
     message.title !== undefined && (obj.title = message.title);
     message.link !== undefined && (obj.link = message.link);
     return obj;
+  },
+
+  create(base?: DeepPartial<Bookmark>): Bookmark {
+    return Bookmark.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Bookmark>): Bookmark {
@@ -388,7 +457,58 @@ export const BookmarkServiceDefinition = {
       requestStream: false,
       responseType: Bookmark,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([15, 112, 97, 114, 101, 110, 116, 44, 98, 111, 111, 107, 109, 97, 114, 107])],
+          578365826: [
+            new Uint8Array([
+              42,
+              58,
+              8,
+              98,
+              111,
+              111,
+              107,
+              109,
+              97,
+              114,
+              107,
+              34,
+              30,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              125,
+              47,
+              98,
+              111,
+              111,
+              107,
+              109,
+              97,
+              114,
+              107,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     /** DeleteBookmark deletes a bookmark. */
     deleteBookmark: {
@@ -397,7 +517,48 @@ export const BookmarkServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              32,
+              42,
+              30,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              47,
+              98,
+              111,
+              111,
+              107,
+              109,
+              97,
+              114,
+              107,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     /** ListBookmark lists bookmarks. */
     listBookmarks: {
@@ -406,7 +567,48 @@ export const BookmarkServiceDefinition = {
       requestStream: false,
       responseType: ListBookmarksResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              32,
+              18,
+              30,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              125,
+              47,
+              98,
+              111,
+              111,
+              107,
+              109,
+              97,
+              114,
+              107,
+              115,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

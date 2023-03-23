@@ -133,22 +133,31 @@ export const ListRisksRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListRisksRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListRisksRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -165,6 +174,10 @@ export const ListRisksRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListRisksRequest>): ListRisksRequest {
+    return ListRisksRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListRisksRequest>): ListRisksRequest {
@@ -191,22 +204,31 @@ export const ListRisksResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListRisksResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListRisksResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.risks.push(Risk.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -227,6 +249,10 @@ export const ListRisksResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListRisksResponse>): ListRisksResponse {
+    return ListRisksResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListRisksResponse>): ListRisksResponse {
@@ -250,19 +276,24 @@ export const CreateRiskRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateRiskRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateRiskRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.risk = Risk.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -275,6 +306,10 @@ export const CreateRiskRequest = {
     const obj: any = {};
     message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
+    return CreateRiskRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
@@ -300,22 +335,31 @@ export const UpdateRiskRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateRiskRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateRiskRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.risk = Risk.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -332,6 +376,10 @@ export const UpdateRiskRequest = {
     message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateRiskRequest>): UpdateRiskRequest {
+    return UpdateRiskRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateRiskRequest>): UpdateRiskRequest {
@@ -355,19 +403,24 @@ export const DeleteRiskRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteRiskRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteRiskRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -380,6 +433,10 @@ export const DeleteRiskRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
+    return DeleteRiskRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
@@ -420,37 +477,66 @@ export const Risk = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Risk {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRisk();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.uid = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.source = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.level = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.expression = ParsedExpr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 7:
+          if (tag != 56) {
+            break;
+          }
+
           message.active = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -480,6 +566,10 @@ export const Risk = {
     return obj;
   },
 
+  create(base?: DeepPartial<Risk>): Risk {
+    return Risk.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Risk>): Risk {
     const message = createBaseRisk();
     message.name = object.name ?? "";
@@ -506,7 +596,12 @@ export const RiskServiceDefinition = {
       requestStream: false,
       responseType: ListRisksResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [new Uint8Array([11, 18, 9, 47, 118, 49, 47, 114, 105, 115, 107, 115])],
+        },
+      },
     },
     createRisk: {
       name: "CreateRisk",
@@ -514,7 +609,12 @@ export const RiskServiceDefinition = {
       requestStream: false,
       responseType: Risk,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 114, 105, 115, 107])],
+          578365826: [new Uint8Array([17, 58, 4, 114, 105, 115, 107, 34, 9, 47, 118, 49, 47, 114, 105, 115, 107, 115])],
+        },
+      },
     },
     updateRisk: {
       name: "UpdateRisk",
@@ -522,7 +622,47 @@ export const RiskServiceDefinition = {
       requestStream: false,
       responseType: Risk,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([16, 114, 105, 115, 107, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
+          578365826: [
+            new Uint8Array([
+              31,
+              58,
+              4,
+              114,
+              105,
+              115,
+              107,
+              50,
+              23,
+              47,
+              118,
+              49,
+              47,
+              123,
+              114,
+              105,
+              115,
+              107,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              114,
+              105,
+              115,
+              107,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteRisk: {
       name: "DeleteRisk",
@@ -530,7 +670,35 @@ export const RiskServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              20,
+              42,
+              18,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              114,
+              105,
+              115,
+              107,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;
@@ -552,7 +720,7 @@ export interface RiskServiceClient<CallOptionsExt = {}> {
 declare var self: any | undefined;
 declare var window: any | undefined;
 declare var global: any | undefined;
-var globalThis: any = (() => {
+var tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -577,7 +745,7 @@ export type DeepPartial<T> = T extends Builtin ? T
 
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
   }
   return long.toNumber();
 }
