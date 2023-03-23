@@ -20,7 +20,9 @@ export type EngineType =
   | "SPANNER"
   | "REDIS"
   | "ORACLE"
-  | "MSSQL";
+  | "MSSQL"
+  | "REDSHIFT"
+  | "MARIADB";
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {
@@ -44,6 +46,10 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.ORACLE;
     case "MSSQL":
       return Engine.MSSQL;
+    case "REDSHIFT":
+      return Engine.REDSHIFT;
+    case "MARIADB":
+      return Engine.MARIADB;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -67,6 +73,10 @@ export function defaultCharset(type: EngineType): string {
     case "ORACLE":
       return "UTF8";
     case "MSSQL":
+      return "";
+    case "REDSHIFT":
+      return "";
+    case "MARIADB":
       return "";
   }
 }
@@ -93,6 +103,10 @@ export function engineName(type: EngineType): string {
       return "Oracle";
     case "MSSQL":
       return "MSSQL";
+    case "REDSHIFT":
+      return "Redshift";
+    case "MARIADB":
+      return "MariaDB";
   }
 }
 
@@ -118,6 +132,10 @@ export function defaultCollation(type: EngineType): string {
     case "ORACLE":
       return "BINARY_CI";
     case "MSSQL":
+      return "";
+    case "REDSHIFT":
+      return "";
+    case "MARIADB":
       return "";
   }
 }

@@ -54,6 +54,8 @@ export enum Engine {
   ORACLE = 9,
   SPANNER = 10,
   MSSQL = 11,
+  REDSHIFT = 12,
+  MARIADB = 13,
   UNRECOGNIZED = -1,
 }
 
@@ -95,6 +97,12 @@ export function engineFromJSON(object: any): Engine {
     case 11:
     case "MSSQL":
       return Engine.MSSQL;
+    case 12:
+    case "REDSHIFT":
+      return Engine.REDSHIFT;
+    case 13:
+    case "MARIADB":
+      return Engine.MARIADB;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -128,6 +136,10 @@ export function engineToJSON(object: Engine): string {
       return "SPANNER";
     case Engine.MSSQL:
       return "MSSQL";
+    case Engine.REDSHIFT:
+      return "REDSHIFT";
+    case Engine.MARIADB:
+      return "MARIADB";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -740,9 +740,11 @@ const engineList = computed(() => {
     "SPANNER",
     "REDIS",
     "ORACLE",
+    "MSSQL",
   ];
   if (isDev()) {
-    engines.push("MSSQL");
+    engines.push("REDSHIFT");
+    engines.push("MARIADB");
   }
   return engines;
 });
@@ -758,6 +760,8 @@ const EngineIconPath = {
   REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
   ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
   MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
+  REDSHIFT: new URL("../assets/db-redshift.svg", import.meta.url).href,
+  MARIADB: new URL("../assets/db-mariadb.svg", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
@@ -847,6 +851,10 @@ const defaultPort = computed(() => {
       return "";
     }
     return "27017";
+  } else if (basicInformation.value.engine == "REDSHIFT") {
+    return "5439";
+  } else if (basicInformation.value.engine == "MARIADB") {
+    return "3306";
   }
   return "3306";
 });
@@ -921,7 +929,15 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: EngineType): boolean => {
-  return ["MONGODB", "SPANNER", "REDIS", "ORACLE", "MSSQL"].includes(engine);
+  return [
+    "MONGODB",
+    "SPANNER",
+    "REDIS",
+    "ORACLE",
+    "MSSQL",
+    "REDSHIFT",
+    "MARIADB",
+  ].includes(engine);
 };
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
