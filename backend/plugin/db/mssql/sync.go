@@ -116,11 +116,15 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
-		SELECT s.name, t.name, dbps.row_count
+		SELECT
+			SCHEMA_NAME(t.schema_id),
+			t.name,
+			SUM(ps.row_count)
 		FROM sys.tables t
-		INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
-		INNER JOIN sys.dm_db_partition_stats dbps ON dbps.object_id = t.object_id
-		ORDER BY s.name, t.name;`
+		INNER JOIN sys.dm_db_partition_stats ps ON ps.object_id = t.object_id WHERE index_id < 2
+		GROUP BY t.name, t.schema_id
+		ORDER BY 1, 2 ASC
+		OPTION (RECOMPILE);`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
