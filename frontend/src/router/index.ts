@@ -1036,8 +1036,12 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_RESET_MODULE ||
     to.name === PASSWORD_FORGOT_MODULE
   ) {
-    useTabStore().reset();
-    useConversationStore().reset();
+    try {
+      useTabStore().reset();
+      useConversationStore().reset();
+    } catch {
+      // nothing
+    }
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
