@@ -1,5 +1,11 @@
 import { inject, provide, type InjectionKey, type Ref } from "vue";
-import { Risk } from "@/types/proto/v1/risk_service";
+import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+
+export type NavigationContext = {
+  source: Risk_Source;
+  levels: Set<number>; // empty to "ALL"
+  search: string; // Risk_Source.SOURCE_UNSPECIFIED to "ALL"
+};
 
 export type DialogContext = {
   mode: "EDIT" | "CREATE";
@@ -12,6 +18,7 @@ export type RiskCenterContext = {
   allowAdmin: Ref<boolean>;
   ready: Ref<boolean>;
 
+  navigation: Ref<NavigationContext>;
   dialog: Ref<DialogContext | undefined>;
 };
 

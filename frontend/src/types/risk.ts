@@ -1,9 +1,14 @@
 import { Risk_Source } from "./proto/v1/risk_service";
 
+export const PresetRiskLevel = {
+  HIGH: 300,
+  MODERATE: 200,
+  LOW: 100,
+};
 export const PresetRiskLevelList = [
-  { name: "HIGH", level: 300 },
-  { name: "MODERATE", level: 200 },
-  { name: "LOW", level: 100 },
+  { name: "HIGH", level: PresetRiskLevel.HIGH },
+  { name: "MODERATE", level: PresetRiskLevel.MODERATE },
+  { name: "LOW", level: PresetRiskLevel.LOW },
 ];
 
 export const SupportedSourceList = [

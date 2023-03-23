@@ -14,9 +14,10 @@
 import { computed } from "vue";
 import { NSelect, SelectOption, type SelectProps } from "naive-ui";
 
-import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { SupportedSourceList } from "@/types";
 import { useRiskCenterContext } from "../context";
+import { sourceText } from "../common";
 
 export interface RiskSourceSelectProps extends SelectProps {
   value: Risk_Source;
@@ -34,7 +35,7 @@ const { allowAdmin } = context;
 
 const options = computed(() => {
   return SupportedSourceList.map<SelectOption>((source) => ({
-    label: risk_SourceToJSON(source),
+    label: sourceText(source),
     value: source,
   }));
 });

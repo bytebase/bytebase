@@ -31,6 +31,7 @@ import {
   RiskDialog,
   provideRiskCenterContext,
 } from "@/components/CustomApproval/Settings";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
 
 interface LocalState {
   ready: boolean;
@@ -56,6 +57,11 @@ provideRiskCenterContext({
   showFeatureModal: toRef(state, "showFeatureModal"),
   allowAdmin,
   ready: toRef(state, "ready"),
+  navigation: ref({
+    levels: new Set<number>(), // empty to "ALL"
+    search: "",
+    source: Risk_Source.SOURCE_UNSPECIFIED, // "ALL"
+  }),
   dialog: ref(),
 });
 

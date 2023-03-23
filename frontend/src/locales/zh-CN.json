@@ -2123,7 +2123,8 @@
         "select": "选择类型",
         "self": "类型"
       },
-      "input-rule-name": "输入规则名称"
+      "input-rule-name": "输入规则名称",
+      "search": "搜索规则"
     },
     "approval-flow": {
       "self": "审批流",

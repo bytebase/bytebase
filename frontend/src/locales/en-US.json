@@ -2126,7 +2126,8 @@
         "select": "Select type",
         "self": "Type"
       },
-      "input-rule-name": "Input rule name"
+      "input-rule-name": "Input rule name",
+      "search": "Search rule"
     },
     "approval-flow": {
       "self": "Approval flow",
