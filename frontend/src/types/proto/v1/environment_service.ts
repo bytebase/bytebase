@@ -152,19 +152,24 @@ export const GetEnvironmentRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetEnvironmentRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetEnvironmentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -177,6 +182,10 @@ export const GetEnvironmentRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
+    return GetEnvironmentRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
@@ -205,25 +214,38 @@ export const ListEnvironmentsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListEnvironmentsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListEnvironmentsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.showDeleted = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -242,6 +264,10 @@ export const ListEnvironmentsRequest = {
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
+    return ListEnvironmentsRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
@@ -269,22 +295,31 @@ export const ListEnvironmentsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListEnvironmentsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListEnvironmentsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.environments.push(Environment.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -307,6 +342,10 @@ export const ListEnvironmentsResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
+    return ListEnvironmentsResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
@@ -333,22 +372,31 @@ export const CreateEnvironmentRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateEnvironmentRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateEnvironmentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.environment = Environment.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.environmentId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -366,6 +414,10 @@ export const CreateEnvironmentRequest = {
       (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
     message.environmentId !== undefined && (obj.environmentId = message.environmentId);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
+    return CreateEnvironmentRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
@@ -394,22 +446,31 @@ export const UpdateEnvironmentRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateEnvironmentRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateEnvironmentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.environment = Environment.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -427,6 +488,10 @@ export const UpdateEnvironmentRequest = {
       (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
+    return UpdateEnvironmentRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
@@ -452,19 +517,24 @@ export const DeleteEnvironmentRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteEnvironmentRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteEnvironmentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -477,6 +547,10 @@ export const DeleteEnvironmentRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
+    return DeleteEnvironmentRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
@@ -499,19 +573,24 @@ export const UndeleteEnvironmentRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteEnvironmentRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUndeleteEnvironmentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -524,6 +603,10 @@ export const UndeleteEnvironmentRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
+    return UndeleteEnvironmentRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
@@ -561,34 +644,59 @@ export const Environment = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Environment {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEnvironment();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.uid = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.state = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.order = reader.int32();
-          break;
+          continue;
         case 6:
+          if (tag != 48) {
+            break;
+          }
+
           message.tier = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -615,6 +723,10 @@ export const Environment = {
     return obj;
   },
 
+  create(base?: DeepPartial<Environment>): Environment {
+    return Environment.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Environment>): Environment {
     const message = createBaseEnvironment();
     message.name = object.name ?? "";
@@ -638,7 +750,43 @@ export const EnvironmentServiceDefinition = {
       requestStream: false,
       responseType: Environment,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              27,
+              18,
+              25,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     listEnvironments: {
       name: "ListEnvironments",
@@ -646,7 +794,14 @@ export const EnvironmentServiceDefinition = {
       requestStream: false,
       responseType: ListEnvironmentsResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([18, 18, 16, 47, 118, 49, 47, 101, 110, 118, 105, 114, 111, 110, 109, 101, 110, 116, 115]),
+          ],
+        },
+      },
     },
     createEnvironment: {
       name: "CreateEnvironment",
@@ -654,7 +809,47 @@ export const EnvironmentServiceDefinition = {
       requestStream: false,
       responseType: Environment,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              31,
+              58,
+              11,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              34,
+              16,
+              47,
+              118,
+              49,
+              47,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     updateEnvironment: {
       name: "UpdateEnvironment",
@@ -662,7 +857,95 @@ export const EnvironmentServiceDefinition = {
       requestStream: false,
       responseType: Environment,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              23,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              52,
+              58,
+              11,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              50,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteEnvironment: {
       name: "DeleteEnvironment",
@@ -670,7 +953,43 @@ export const EnvironmentServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              27,
+              42,
+              25,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     undeleteEnvironment: {
       name: "UndeleteEnvironment",
@@ -678,7 +997,54 @@ export const EnvironmentServiceDefinition = {
       requestStream: false,
       responseType: Environment,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              58,
+              1,
+              42,
+              34,
+              34,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

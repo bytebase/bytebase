@@ -27,6 +27,7 @@ const (
 	bookmarkPrefix               = "bookmarks/"
 	externalVersionControlPrefix = "externalVersionControls/"
 	riskPrefix                   = "risks/"
+	reviewPrefix                 = "reviews/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -173,6 +174,18 @@ func getRiskID(name string) (int64, error) {
 		return 0, errors.Errorf("invalid risk ID %q", tokens[0])
 	}
 	return riskID, nil
+}
+
+func getReviewID(name string) (int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, reviewPrefix)
+	if err != nil {
+		return 0, err
+	}
+	reviewID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return 0, errors.Errorf("invalid review ID %q", tokens[1])
+	}
+	return reviewID, nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {

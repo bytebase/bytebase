@@ -44,6 +44,7 @@ type RiskMessage struct {
 type UpdateRiskMessage struct {
 	Name       *string
 	Active     *bool
+	Level      *int64
 	Expression *v1alpha1.ParsedExpr
 	RowStatus  *api.RowStatus
 }
@@ -210,6 +211,9 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 	}
 	if v := patch.Active; v != nil {
 		set, args = append(set, fmt.Sprintf("active = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Level; v != nil {
+		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Expression; v != nil {
 		expressionBytes, err := protojson.Marshal(patch.Expression)

@@ -389,22 +389,31 @@ export const ParsedExpr = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ParsedExpr {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParsedExpr();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.expr = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.sourceInfo = SourceInfo.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -422,6 +431,10 @@ export const ParsedExpr = {
     message.sourceInfo !== undefined &&
       (obj.sourceInfo = message.sourceInfo ? SourceInfo.toJSON(message.sourceInfo) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<ParsedExpr>): ParsedExpr {
+    return ParsedExpr.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ParsedExpr>): ParsedExpr {
@@ -477,40 +490,73 @@ export const Expr = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.id = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.constExpr = Constant.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.identExpr = Expr_Ident.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.selectExpr = Expr_Select.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.callExpr = Expr_Call.decode(reader, reader.uint32());
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.listExpr = Expr_CreateList.decode(reader, reader.uint32());
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.structExpr = Expr_CreateStruct.decode(reader, reader.uint32());
-          break;
+          continue;
         case 9:
+          if (tag != 74) {
+            break;
+          }
+
           message.comprehensionExpr = Expr_Comprehension.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -549,6 +595,10 @@ export const Expr = {
       ? Expr_Comprehension.toJSON(message.comprehensionExpr)
       : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr>): Expr {
+    return Expr.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr>): Expr {
@@ -592,19 +642,24 @@ export const Expr_Ident = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_Ident {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_Ident();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -617,6 +672,10 @@ export const Expr_Ident = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr_Ident>): Expr_Ident {
+    return Expr_Ident.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr_Ident>): Expr_Ident {
@@ -645,25 +704,38 @@ export const Expr_Select = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_Select {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_Select();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.operand = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.field = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.testOnly = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -682,6 +754,10 @@ export const Expr_Select = {
     message.field !== undefined && (obj.field = message.field);
     message.testOnly !== undefined && (obj.testOnly = message.testOnly);
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr_Select>): Expr_Select {
+    return Expr_Select.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr_Select>): Expr_Select {
@@ -714,25 +790,38 @@ export const Expr_Call = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_Call {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_Call();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.target = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.function = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.args.push(Expr.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -755,6 +844,10 @@ export const Expr_Call = {
       obj.args = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr_Call>): Expr_Call {
+    return Expr_Call.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr_Call>): Expr_Call {
@@ -786,29 +879,40 @@ export const Expr_CreateList = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_CreateList {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_CreateList();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.elements.push(Expr.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
-          if ((tag & 7) === 2) {
+          if (tag == 16) {
+            message.optionalIndices.push(reader.int32());
+            continue;
+          }
+
+          if (tag == 18) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.optionalIndices.push(reader.int32());
             }
-          } else {
-            message.optionalIndices.push(reader.int32());
+
+            continue;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
+
           break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -835,6 +939,10 @@ export const Expr_CreateList = {
     return obj;
   },
 
+  create(base?: DeepPartial<Expr_CreateList>): Expr_CreateList {
+    return Expr_CreateList.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Expr_CreateList>): Expr_CreateList {
     const message = createBaseExpr_CreateList();
     message.elements = object.elements?.map((e) => Expr.fromPartial(e)) || [];
@@ -859,22 +967,31 @@ export const Expr_CreateStruct = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_CreateStruct {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_CreateStruct();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.messageName = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.entries.push(Expr_CreateStruct_Entry.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -897,6 +1014,10 @@ export const Expr_CreateStruct = {
       obj.entries = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr_CreateStruct>): Expr_CreateStruct {
+    return Expr_CreateStruct.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr_CreateStruct>): Expr_CreateStruct {
@@ -932,31 +1053,52 @@ export const Expr_CreateStruct_Entry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_CreateStruct_Entry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_CreateStruct_Entry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.id = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.fieldKey = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.mapKey = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.value = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.optionalEntry = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -979,6 +1121,10 @@ export const Expr_CreateStruct_Entry = {
     message.value !== undefined && (obj.value = message.value ? Expr.toJSON(message.value) : undefined);
     message.optionalEntry !== undefined && (obj.optionalEntry = message.optionalEntry);
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
+    return Expr_CreateStruct_Entry.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
@@ -1033,37 +1179,66 @@ export const Expr_Comprehension = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Expr_Comprehension {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpr_Comprehension();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.iterVar = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.iterRange = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.accuVar = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.accuInit = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.loopCondition = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.loopStep = Expr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.result = Expr.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1091,6 +1266,10 @@ export const Expr_Comprehension = {
     message.loopStep !== undefined && (obj.loopStep = message.loopStep ? Expr.toJSON(message.loopStep) : undefined);
     message.result !== undefined && (obj.result = message.result ? Expr.toJSON(message.result) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<Expr_Comprehension>): Expr_Comprehension {
+    return Expr_Comprehension.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Expr_Comprehension>): Expr_Comprehension {
@@ -1163,43 +1342,80 @@ export const Constant = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Constant {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseConstant();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.nullValue = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.boolValue = reader.bool();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.int64Value = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.uint64Value = longToNumber(reader.uint64() as Long);
-          break;
+          continue;
         case 5:
+          if (tag != 41) {
+            break;
+          }
+
           message.doubleValue = reader.double();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.stringValue = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.bytesValue = reader.bytes();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.durationValue = Duration.decode(reader, reader.uint32());
-          break;
+          continue;
         case 9:
+          if (tag != 74) {
+            break;
+          }
+
           message.timestampValue = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1233,6 +1449,10 @@ export const Constant = {
       (obj.durationValue = message.durationValue ? Duration.toJSON(message.durationValue) : undefined);
     message.timestampValue !== undefined && (obj.timestampValue = message.timestampValue.toISOString());
     return obj;
+  },
+
+  create(base?: DeepPartial<Constant>): Constant {
+    return Constant.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Constant>): Constant {
@@ -1279,44 +1499,67 @@ export const SourceInfo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SourceInfo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSourceInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.syntaxVersion = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.location = reader.string();
-          break;
+          continue;
         case 3:
-          if ((tag & 7) === 2) {
+          if (tag == 24) {
+            message.lineOffsets.push(reader.int32());
+            continue;
+          }
+
+          if (tag == 26) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.lineOffsets.push(reader.int32());
             }
-          } else {
-            message.lineOffsets.push(reader.int32());
+
+            continue;
           }
+
           break;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           const entry4 = SourceInfo_PositionsEntry.decode(reader, reader.uint32());
           if (entry4.value !== undefined) {
             message.positions[entry4.key] = entry4.value;
           }
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           const entry5 = SourceInfo_MacroCallsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
             message.macroCalls[entry5.key] = entry5.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1365,6 +1608,10 @@ export const SourceInfo = {
     return obj;
   },
 
+  create(base?: DeepPartial<SourceInfo>): SourceInfo {
+    return SourceInfo.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<SourceInfo>): SourceInfo {
     const message = createBaseSourceInfo();
     message.syntaxVersion = object.syntaxVersion ?? "";
@@ -1408,22 +1655,31 @@ export const SourceInfo_PositionsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SourceInfo_PositionsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSourceInfo_PositionsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.key = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.value = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1437,6 +1693,10 @@ export const SourceInfo_PositionsEntry = {
     message.key !== undefined && (obj.key = Math.round(message.key));
     message.value !== undefined && (obj.value = Math.round(message.value));
     return obj;
+  },
+
+  create(base?: DeepPartial<SourceInfo_PositionsEntry>): SourceInfo_PositionsEntry {
+    return SourceInfo_PositionsEntry.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<SourceInfo_PositionsEntry>): SourceInfo_PositionsEntry {
@@ -1463,22 +1723,31 @@ export const SourceInfo_MacroCallsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SourceInfo_MacroCallsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSourceInfo_MacroCallsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.key = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = Expr.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1495,6 +1764,10 @@ export const SourceInfo_MacroCallsEntry = {
     message.key !== undefined && (obj.key = Math.round(message.key));
     message.value !== undefined && (obj.value = message.value ? Expr.toJSON(message.value) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<SourceInfo_MacroCallsEntry>): SourceInfo_MacroCallsEntry {
+    return SourceInfo_MacroCallsEntry.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<SourceInfo_MacroCallsEntry>): SourceInfo_MacroCallsEntry {
@@ -1527,28 +1800,45 @@ export const SourcePosition = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SourcePosition {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSourcePosition();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.location = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.offset = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.line = reader.int32();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.column = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1571,6 +1861,10 @@ export const SourcePosition = {
     return obj;
   },
 
+  create(base?: DeepPartial<SourcePosition>): SourcePosition {
+    return SourcePosition.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<SourcePosition>): SourcePosition {
     const message = createBaseSourcePosition();
     message.location = object.location ?? "";
@@ -1584,7 +1878,7 @@ export const SourcePosition = {
 declare var self: any | undefined;
 declare var window: any | undefined;
 declare var global: any | undefined;
-var globalThis: any = (() => {
+var tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -1601,10 +1895,10 @@ var globalThis: any = (() => {
 })();
 
 function bytesFromBase64(b64: string): Uint8Array {
-  if (globalThis.Buffer) {
-    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
   } else {
-    const bin = globalThis.atob(b64);
+    const bin = tsProtoGlobalThis.atob(b64);
     const arr = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; ++i) {
       arr[i] = bin.charCodeAt(i);
@@ -1614,14 +1908,14 @@ function bytesFromBase64(b64: string): Uint8Array {
 }
 
 function base64FromBytes(arr: Uint8Array): string {
-  if (globalThis.Buffer) {
-    return globalThis.Buffer.from(arr).toString("base64");
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
   } else {
     const bin: string[] = [];
     arr.forEach((byte) => {
       bin.push(String.fromCharCode(byte));
     });
-    return globalThis.btoa(bin.join(""));
+    return tsProtoGlobalThis.btoa(bin.join(""));
   }
 }
 
@@ -1656,7 +1950,7 @@ function fromJsonTimestamp(o: any): Date {
 
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
   }
   return long.toNumber();
 }

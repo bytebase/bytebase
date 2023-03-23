@@ -53,19 +53,24 @@ export const GetSettingRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetSettingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -78,6 +83,10 @@ export const GetSettingRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetSettingRequest>): GetSettingRequest {
+    return GetSettingRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetSettingRequest>): GetSettingRequest {
@@ -100,19 +109,24 @@ export const GetSettingResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetSettingResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetSettingResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.setting = Setting.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -125,6 +139,10 @@ export const GetSettingResponse = {
     const obj: any = {};
     message.setting !== undefined && (obj.setting = message.setting ? Setting.toJSON(message.setting) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetSettingResponse>): GetSettingResponse {
+    return GetSettingResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetSettingResponse>): GetSettingResponse {
@@ -149,19 +167,24 @@ export const SetSettingRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SetSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSetSettingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.setting = Setting.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -174,6 +197,10 @@ export const SetSettingRequest = {
     const obj: any = {};
     message.setting !== undefined && (obj.setting = message.setting ? Setting.toJSON(message.setting) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<SetSettingRequest>): SetSettingRequest {
+    return SetSettingRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<SetSettingRequest>): SetSettingRequest {
@@ -201,22 +228,31 @@ export const Setting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Setting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = Value.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -233,6 +269,10 @@ export const Setting = {
     message.name !== undefined && (obj.name = message.name);
     message.value !== undefined && (obj.value = message.value ? Value.toJSON(message.value) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<Setting>): Setting {
+    return Setting.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Setting>): Setting {
@@ -256,19 +296,24 @@ export const Value = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Value {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValue();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.stringValue = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -281,6 +326,10 @@ export const Value = {
     const obj: any = {};
     message.stringValue !== undefined && (obj.stringValue = message.stringValue);
     return obj;
+  },
+
+  create(base?: DeepPartial<Value>): Value {
+    return Value.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Value>): Value {
@@ -301,7 +350,39 @@ export const SettingServiceDefinition = {
       requestStream: false,
       responseType: Setting,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              23,
+              18,
+              21,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     setSetting: {
       name: "SetSetting",
@@ -309,7 +390,55 @@ export const SettingServiceDefinition = {
       requestStream: false,
       responseType: Setting,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              40,
+              58,
+              7,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              50,
+              29,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

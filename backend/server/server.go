@@ -515,6 +515,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store))
+	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -1216,6 +1217,6 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 	}()
 
 	if err != nil {
-		log.Error("failed to backfill migration history", zap.Error(err))
+		log.Warn("failed to backfill migration history", zap.Error(err))
 	}
 }
