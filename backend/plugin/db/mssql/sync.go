@@ -61,6 +61,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
+	viewMap, err := getViews(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -73,6 +77,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
 			Tables: tableMap[schemaName],
+			Views:  viewMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
@@ -273,4 +278,36 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		})
 	}
 	return tableIndexes, nil
+}
+
+// getViews gets all views of a database.
+func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+	viewMap := make(map[string][]*storepb.ViewMetadata)
+
+	query := `
+		SELECT
+			SCHEMA_NAME(v.schema_id) AS schema_name,
+			v.name AS view_name,
+			m.definition
+		FROM sys.views v
+		INNER JOIN sys.sql_modules m ON v.object_id = m.object_id
+		ORDER BY schema_name, view_name;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		view := &storepb.ViewMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
+			return nil, err
+		}
+		viewMap[schemaName] = append(viewMap[schemaName], view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return viewMap, nil
 }
