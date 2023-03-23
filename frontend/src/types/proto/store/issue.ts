@@ -21,19 +21,24 @@ export const IssuePayload = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IssuePayload {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIssuePayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.approval = IssuePayloadApproval.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -47,6 +52,10 @@ export const IssuePayload = {
     message.approval !== undefined &&
       (obj.approval = message.approval ? IssuePayloadApproval.toJSON(message.approval) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<IssuePayload>): IssuePayload {
+    return IssuePayload.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<IssuePayload>): IssuePayload {

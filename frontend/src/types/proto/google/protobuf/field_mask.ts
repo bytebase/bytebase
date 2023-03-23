@@ -221,19 +221,24 @@ export const FieldMask = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): FieldMask {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFieldMask();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.paths.push(reader.string());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -252,6 +257,10 @@ export const FieldMask = {
     return message.paths.join(",");
   },
 
+  create(base?: DeepPartial<FieldMask>): FieldMask {
+    return FieldMask.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<FieldMask>): FieldMask {
     const message = createBaseFieldMask();
     message.paths = object.paths?.map((e) => e) || [];
@@ -260,9 +269,7 @@ export const FieldMask = {
 
   wrap(paths: string[]): FieldMask {
     const result = createBaseFieldMask();
-
     result.paths = paths;
-
     return result;
   },
 

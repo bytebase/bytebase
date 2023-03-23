@@ -129,19 +129,24 @@ export const GetRoleRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetRoleRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -154,6 +159,10 @@ export const GetRoleRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetRoleRequest>): GetRoleRequest {
+    return GetRoleRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetRoleRequest>): GetRoleRequest {
@@ -182,25 +191,38 @@ export const ListRolesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListRolesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListRolesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -219,6 +241,10 @@ export const ListRolesRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListRolesRequest>): ListRolesRequest {
+    return ListRolesRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListRolesRequest>): ListRolesRequest {
@@ -246,22 +272,31 @@ export const ListRolesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListRolesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListRolesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.roles.push(InstanceRole.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -282,6 +317,10 @@ export const ListRolesResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListRolesResponse>): ListRolesResponse {
+    return ListRolesResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListRolesResponse>): ListRolesResponse {
@@ -308,22 +347,31 @@ export const CreateRoleRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateRoleRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.role = InstanceRole.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -340,6 +388,10 @@ export const CreateRoleRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
+    return CreateRoleRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
@@ -368,22 +420,31 @@ export const UpdateRoleRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateRoleRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.role = InstanceRole.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -400,6 +461,10 @@ export const UpdateRoleRequest = {
     message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
+    return UpdateRoleRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
@@ -425,19 +490,24 @@ export const DeleteRoleRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteRoleRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -450,6 +520,10 @@ export const DeleteRoleRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
+    return DeleteRoleRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
@@ -472,19 +546,24 @@ export const UndeleteRoleRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteRoleRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUndeleteRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -497,6 +576,10 @@ export const UndeleteRoleRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteRoleRequest>): UndeleteRoleRequest {
+    return UndeleteRoleRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UndeleteRoleRequest>): UndeleteRoleRequest {
@@ -541,34 +624,59 @@ export const InstanceRole = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): InstanceRole {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseInstanceRole();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.roleName = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.connectionLimit = reader.int32();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.validUntil = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.attribute = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -595,6 +703,10 @@ export const InstanceRole = {
     return obj;
   },
 
+  create(base?: DeepPartial<InstanceRole>): InstanceRole {
+    return InstanceRole.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<InstanceRole>): InstanceRole {
     const message = createBaseInstanceRole();
     message.name = object.name ?? "";
@@ -618,7 +730,63 @@ export const InstanceRoleServiceDefinition = {
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              47,
+              18,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     listRoles: {
       name: "ListRoles",
@@ -626,7 +794,63 @@ export const InstanceRoleServiceDefinition = {
       requestStream: false,
       responseType: ListRolesResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              47,
+              18,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              111,
+              108,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     createRole: {
       name: "CreateRole",
@@ -634,7 +858,69 @@ export const InstanceRoleServiceDefinition = {
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([11, 112, 97, 114, 101, 110, 116, 44, 114, 111, 108, 101])],
+          578365826: [
+            new Uint8Array([
+              53,
+              58,
+              4,
+              114,
+              111,
+              108,
+              101,
+              34,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              111,
+              108,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     updateRole: {
       name: "UpdateRole",
@@ -642,7 +928,74 @@ export const InstanceRoleServiceDefinition = {
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([16, 114, 111, 108, 101, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
+          578365826: [
+            new Uint8Array([
+              58,
+              58,
+              4,
+              114,
+              111,
+              108,
+              101,
+              50,
+              50,
+              47,
+              118,
+              49,
+              47,
+              123,
+              114,
+              111,
+              108,
+              101,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteRole: {
       name: "DeleteRole",
@@ -650,7 +1003,63 @@ export const InstanceRoleServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              47,
+              42,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     undeleteRole: {
       name: "UndeleteRole",
@@ -658,7 +1067,74 @@ export const InstanceRoleServiceDefinition = {
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              59,
+              58,
+              1,
+              42,
+              34,
+              54,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

@@ -328,28 +328,45 @@ export const ListLogsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListLogsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListLogsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.filter = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -370,6 +387,10 @@ export const ListLogsRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListLogsRequest>): ListLogsRequest {
+    return ListLogsRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListLogsRequest>): ListLogsRequest {
@@ -398,22 +419,31 @@ export const ListLogsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListLogsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListLogsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.logEntries.push(LogEntry.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -434,6 +464,10 @@ export const ListLogsResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListLogsResponse>): ListLogsResponse {
+    return ListLogsResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListLogsResponse>): ListLogsResponse {
@@ -483,37 +517,66 @@ export const LogEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): LogEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLogEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.creator = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.action = reader.int32() as any;
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.level = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.resourceName = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.jsonPayload = Struct.unwrap(Struct.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -542,6 +605,10 @@ export const LogEntry = {
     return obj;
   },
 
+  create(base?: DeepPartial<LogEntry>): LogEntry {
+    return LogEntry.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<LogEntry>): LogEntry {
     const message = createBaseLogEntry();
     message.creator = object.creator ?? "";
@@ -566,7 +633,80 @@ export const LoggingServiceDefinition = {
       requestStream: false,
       responseType: ListLogsResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              64,
+              90,
+              32,
+              34,
+              30,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              119,
+              111,
+              114,
+              107,
+              115,
+              112,
+              97,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              108,
+              111,
+              103,
+              115,
+              34,
+              28,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              108,
+              111,
+              103,
+              115,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;
