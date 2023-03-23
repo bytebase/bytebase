@@ -20,7 +20,7 @@ message IssuePayloadApproval {
     int32 principal_id = 2;
   }
 
-  repeated ApprovalTemplate approval_template = 1;
+  repeated ApprovalTemplate approval_templates = 1;
   repeated Approver approvers = 2;
 }
 
