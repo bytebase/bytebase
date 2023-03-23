@@ -315,6 +315,10 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_SPANNER
 	case db.MSSQL:
 		return v1pb.Engine_MSSQL
+	case db.Redshift:
+		return v1pb.Engine_REDSHIFT
+	case db.MariaDB:
+		return v1pb.Engine_MARIADB
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -343,6 +347,10 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.Spanner
 	case v1pb.Engine_MSSQL:
 		return db.MSSQL
+	case v1pb.Engine_REDSHIFT:
+		return db.Redshift
+	case v1pb.Engine_MARIADB:
+		return db.MariaDB
 	}
 	return db.UnknownType
 }

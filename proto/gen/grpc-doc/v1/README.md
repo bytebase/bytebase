@@ -405,6 +405,8 @@ Actuator concept is similar to the Spring Boot Actuator.
 | ORACLE | 9 |  |
 | SPANNER | 10 |  |
 | MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
 
 
 
