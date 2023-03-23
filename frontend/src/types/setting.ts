@@ -5,6 +5,7 @@ export type SettingName =
   | "bb.app.im"
   | "bb.workspace.watermark"
   | "bb.workspace.profile"
+  | "bb.workspace.approval"
   | "bb.plugin.openai.key";
 
 export type Setting = {
