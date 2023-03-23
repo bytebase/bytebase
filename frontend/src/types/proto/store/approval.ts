@@ -8,7 +8,7 @@ export const protobufPackage = "bytebase.store";
  * IssuePayloadApproval records the approval template used and the approval history.
  */
 export interface IssuePayloadApproval {
-  approvalTemplate: ApprovalTemplate[];
+  approvalTemplates: ApprovalTemplate[];
   approvers: IssuePayloadApproval_Approver[];
 }
 
@@ -222,12 +222,12 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 }
 
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplate: [], approvers: [] };
+  return { approvalTemplates: [], approvers: [] };
 }
 
 export const IssuePayloadApproval = {
   encode(message: IssuePayloadApproval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.approvalTemplate) {
+    for (const v of message.approvalTemplates) {
       ApprovalTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     for (const v of message.approvers) {
@@ -244,7 +244,7 @@ export const IssuePayloadApproval = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.approvalTemplate.push(ApprovalTemplate.decode(reader, reader.uint32()));
+          message.approvalTemplates.push(ApprovalTemplate.decode(reader, reader.uint32()));
           break;
         case 2:
           message.approvers.push(IssuePayloadApproval_Approver.decode(reader, reader.uint32()));
@@ -259,8 +259,8 @@ export const IssuePayloadApproval = {
 
   fromJSON(object: any): IssuePayloadApproval {
     return {
-      approvalTemplate: Array.isArray(object?.approvalTemplate)
-        ? object.approvalTemplate.map((e: any) => ApprovalTemplate.fromJSON(e))
+      approvalTemplates: Array.isArray(object?.approvalTemplates)
+        ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
         : [],
       approvers: Array.isArray(object?.approvers)
         ? object.approvers.map((e: any) => IssuePayloadApproval_Approver.fromJSON(e))
@@ -270,10 +270,10 @@ export const IssuePayloadApproval = {
 
   toJSON(message: IssuePayloadApproval): unknown {
     const obj: any = {};
-    if (message.approvalTemplate) {
-      obj.approvalTemplate = message.approvalTemplate.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    if (message.approvalTemplates) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
     } else {
-      obj.approvalTemplate = [];
+      obj.approvalTemplates = [];
     }
     if (message.approvers) {
       obj.approvers = message.approvers.map((e) => e ? IssuePayloadApproval_Approver.toJSON(e) : undefined);
@@ -285,7 +285,7 @@ export const IssuePayloadApproval = {
 
   fromPartial(object: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     const message = createBaseIssuePayloadApproval();
-    message.approvalTemplate = object.approvalTemplate?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
+    message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvers = object.approvers?.map((e) => IssuePayloadApproval_Approver.fromPartial(e)) || [];
     return message;
   },

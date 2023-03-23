@@ -275,7 +275,7 @@ IssuePayloadApproval records the approval template used and the approval history
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) | repeated |  |
+| approval_templates | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) | repeated |  |
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
 
 
