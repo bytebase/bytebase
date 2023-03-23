@@ -2117,7 +2117,12 @@
         "load": "加载"
       },
       "rule-name": "规则名称",
-      "view-rule": "查看规则"
+      "view-rule": "查看规则",
+      "source": {
+        "select": "选择类型",
+        "self": "类型"
+      },
+      "input-rule-name": "输入规则名称"
     },
     "approval-flow": {
       "self": "审批流",

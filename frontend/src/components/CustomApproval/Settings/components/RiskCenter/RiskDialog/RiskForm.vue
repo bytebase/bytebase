@@ -11,6 +11,7 @@
           <NInput
             v-model:value="state.risk.title"
             :disabled="!allowAdmin"
+            :placeholder="$t('custom-approval.security-rule.input-rule-name')"
             @input="$emit('update')"
           />
         </div>
@@ -21,6 +22,16 @@
           <RiskLevelSelect
             v-model:value="state.risk.level"
             :disabled="!allowAdmin"
+            @update:value="$emit('update')"
+          />
+        </div>
+        <div class="space-y-2">
+          <label class="block font-medium text-sm text-control">
+            {{ $t("custom-approval.security-rule.source.self") }}
+          </label>
+          <RiskSourceSelect
+            v-model:value="state.risk.source"
+            :disabled="mode === 'EDIT' || !allowAdmin"
             @update:value="$emit('update')"
           />
         </div>
@@ -84,17 +95,18 @@ import { computed, ref } from "vue";
 import { NButton, NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
-import { Risk } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto/v1/risk_service";
 import {
   Expr as CELExpr,
   ParsedExpr,
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import { useRiskCenterContext } from "../context";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RiskLevelSelect from "./RiskLevelSelect.vue";
+import RiskSourceSelect from "./RiskSourceSelect.vue";
 import ExprEditor from "../../common/ExprEditor";
 import RuleTemplateTable from "./RuleTemplateTable.vue";
-import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   resolveCELExpr,
   buildCELExpr,

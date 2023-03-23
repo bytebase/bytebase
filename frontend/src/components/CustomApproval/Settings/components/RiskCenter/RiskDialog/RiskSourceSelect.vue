@@ -3,7 +3,7 @@
     style="width: 11rem"
     :value="value"
     :options="options"
-    :placeholder="$t('custom-approval.security-rule.risk.select')"
+    :placeholder="$t('custom-approval.security-rule.source.select')"
     :consistent-menu-width="false"
     :disabled="disabled || !allowAdmin"
     @update:value="$emit('update:value', $event)"
@@ -14,27 +14,28 @@
 import { computed } from "vue";
 import { NSelect, SelectOption, type SelectProps } from "naive-ui";
 
-import { PresetRiskLevelList } from "@/types";
+import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
+import { SupportedSourceList } from "@/types";
 import { useRiskCenterContext } from "../context";
 
-export interface RiskLevelSelectorProps extends SelectProps {
-  value: number;
+export interface RiskSourceSelectProps extends SelectProps {
+  value: Risk_Source;
   disabled?: boolean;
 }
 
-defineProps<RiskLevelSelectorProps>();
+defineProps<RiskSourceSelectProps>();
 
 defineEmits<{
-  (event: "update:value", value: string | undefined): void;
+  (event: "update:value", source: Risk_Source | undefined): void;
 }>();
 
 const context = useRiskCenterContext();
 const { allowAdmin } = context;
 
 const options = computed(() => {
-  return PresetRiskLevelList.map<SelectOption>(({ name, level }) => ({
-    label: name,
-    value: level,
+  return SupportedSourceList.map<SelectOption>((source) => ({
+    label: risk_SourceToJSON(source),
+    value: source,
   }));
 });
 </script>

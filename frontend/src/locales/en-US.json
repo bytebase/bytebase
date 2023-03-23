@@ -2120,7 +2120,12 @@
         "load": "Load"
       },
       "rule-name": "Rule name",
-      "view-rule": "View rule"
+      "view-rule": "View rule",
+      "source": {
+        "select": "Select type",
+        "self": "Type"
+      },
+      "input-rule-name": "Input rule name"
     },
     "approval-flow": {
       "self": "Approval flow",
