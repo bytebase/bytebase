@@ -224,7 +224,6 @@ convert to the expected struct there.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  | uid uniquely identifies a node in a flow. |
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
 
@@ -292,9 +291,8 @@ IssuePayloadApproval records the approval template used and the approval history
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_uid | [string](#string) |  | The `uid` of the approval node. |
 | status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  | The new status. |
-| creator_id | [int32](#int32) |  | The principal id of the approver. |
+| principal_id | [int32](#int32) |  | The principal id of the approver. |
 
 
 

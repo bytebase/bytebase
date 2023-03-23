@@ -13,12 +13,10 @@ export interface IssuePayloadApproval {
 }
 
 export interface IssuePayloadApproval_Approver {
-  /** The `uid` of the approval node. */
-  nodeUid: string;
   /** The new status. */
   status: IssuePayloadApproval_Approver_Status;
   /** The principal id of the approver. */
-  creatorId: number;
+  principalId: number;
 }
 
 export enum IssuePayloadApproval_Approver_Status {
@@ -121,8 +119,6 @@ export function approvalStep_TypeToJSON(object: ApprovalStep_Type): string {
 }
 
 export interface ApprovalNode {
-  /** uid uniquely identifies a node in a flow. */
-  uid: string;
   type: ApprovalNode_Type;
   groupValue?: ApprovalNode_GroupValue | undefined;
 }
@@ -296,19 +292,16 @@ export const IssuePayloadApproval = {
 };
 
 function createBaseIssuePayloadApproval_Approver(): IssuePayloadApproval_Approver {
-  return { nodeUid: "", status: 0, creatorId: 0 };
+  return { status: 0, principalId: 0 };
 }
 
 export const IssuePayloadApproval_Approver = {
   encode(message: IssuePayloadApproval_Approver, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.nodeUid !== "") {
-      writer.uint32(10).string(message.nodeUid);
-    }
     if (message.status !== 0) {
-      writer.uint32(16).int32(message.status);
+      writer.uint32(8).int32(message.status);
     }
-    if (message.creatorId !== 0) {
-      writer.uint32(24).int32(message.creatorId);
+    if (message.principalId !== 0) {
+      writer.uint32(16).int32(message.principalId);
     }
     return writer;
   },
@@ -321,13 +314,10 @@ export const IssuePayloadApproval_Approver = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.nodeUid = reader.string();
-          break;
-        case 2:
           message.status = reader.int32() as any;
           break;
-        case 3:
-          message.creatorId = reader.int32();
+        case 2:
+          message.principalId = reader.int32();
           break;
         default:
           reader.skipType(tag & 7);
@@ -339,25 +329,22 @@ export const IssuePayloadApproval_Approver = {
 
   fromJSON(object: any): IssuePayloadApproval_Approver {
     return {
-      nodeUid: isSet(object.nodeUid) ? String(object.nodeUid) : "",
       status: isSet(object.status) ? issuePayloadApproval_Approver_StatusFromJSON(object.status) : 0,
-      creatorId: isSet(object.creatorId) ? Number(object.creatorId) : 0,
+      principalId: isSet(object.principalId) ? Number(object.principalId) : 0,
     };
   },
 
   toJSON(message: IssuePayloadApproval_Approver): unknown {
     const obj: any = {};
-    message.nodeUid !== undefined && (obj.nodeUid = message.nodeUid);
     message.status !== undefined && (obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status));
-    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
+    message.principalId !== undefined && (obj.principalId = Math.round(message.principalId));
     return obj;
   },
 
   fromPartial(object: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
     const message = createBaseIssuePayloadApproval_Approver();
-    message.nodeUid = object.nodeUid ?? "";
     message.status = object.status ?? 0;
-    message.creatorId = object.creatorId ?? 0;
+    message.principalId = object.principalId ?? 0;
     return message;
   },
 };
@@ -554,19 +541,16 @@ export const ApprovalStep = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { uid: "", type: 0, groupValue: undefined };
+  return { type: 0, groupValue: undefined };
 }
 
 export const ApprovalNode = {
   encode(message: ApprovalNode, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.uid !== "") {
-      writer.uint32(10).string(message.uid);
-    }
     if (message.type !== 0) {
-      writer.uint32(16).int32(message.type);
+      writer.uint32(8).int32(message.type);
     }
     if (message.groupValue !== undefined) {
-      writer.uint32(24).int32(message.groupValue);
+      writer.uint32(16).int32(message.groupValue);
     }
     return writer;
   },
@@ -579,12 +563,9 @@ export const ApprovalNode = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.uid = reader.string();
-          break;
-        case 2:
           message.type = reader.int32() as any;
           break;
-        case 3:
+        case 2:
           message.groupValue = reader.int32() as any;
           break;
         default:
@@ -597,7 +578,6 @@ export const ApprovalNode = {
 
   fromJSON(object: any): ApprovalNode {
     return {
-      uid: isSet(object.uid) ? String(object.uid) : "",
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
     };
@@ -605,7 +585,6 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    message.uid !== undefined && (obj.uid = message.uid);
     message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
     message.groupValue !== undefined &&
       (obj.groupValue = message.groupValue !== undefined
@@ -616,7 +595,6 @@ export const ApprovalNode = {
 
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
-    message.uid = object.uid ?? "";
     message.type = object.type ?? 0;
     message.groupValue = object.groupValue ?? undefined;
     return message;
