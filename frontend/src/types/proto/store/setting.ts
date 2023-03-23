@@ -50,22 +50,31 @@ export const WorkspaceProfileSetting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceProfileSetting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseWorkspaceProfileSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.externalUrl = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.disallowSignup = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -82,6 +91,10 @@ export const WorkspaceProfileSetting = {
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
     return obj;
+  },
+
+  create(base?: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
+    return WorkspaceProfileSetting.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
@@ -108,22 +121,31 @@ export const AgentPluginSetting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): AgentPluginSetting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAgentPluginSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.url = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.token = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -137,6 +159,10 @@ export const AgentPluginSetting = {
     message.url !== undefined && (obj.url = message.url);
     message.token !== undefined && (obj.token = message.token);
     return obj;
+  },
+
+  create(base?: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
+    return AgentPluginSetting.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
@@ -160,19 +186,24 @@ export const ApprovalConfigSetting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalConfigSetting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalConfigSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.rules.push(ApprovalConfigSetting_Rule.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -191,6 +222,10 @@ export const ApprovalConfigSetting = {
       obj.rules = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<ApprovalConfigSetting>): ApprovalConfigSetting {
+    return ApprovalConfigSetting.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ApprovalConfigSetting>): ApprovalConfigSetting {
@@ -216,22 +251,31 @@ export const ApprovalConfigSetting_Rule = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ApprovalConfigSetting_Rule {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApprovalConfigSetting_Rule();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.expression = ParsedExpr.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.template = ApprovalTemplate.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -250,6 +294,10 @@ export const ApprovalConfigSetting_Rule = {
     message.template !== undefined &&
       (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<ApprovalConfigSetting_Rule>): ApprovalConfigSetting_Rule {
+    return ApprovalConfigSetting_Rule.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ApprovalConfigSetting_Rule>): ApprovalConfigSetting_Rule {
