@@ -9,8 +9,8 @@ export const NumberFactorList = [
 export type NumberFactor = typeof NumberFactorList[number];
 
 export const StringFactorList = [
-  "environment",
-  "project",
+  "environment_id", // using `environment.resource_id`
+  "project_id", // using `project.resource_id`
   "database_name",
   "db_engine",
   "sql_type",

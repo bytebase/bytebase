@@ -53,13 +53,11 @@
             :risk-source="state.risk.source"
             @update="$emit('update')"
           />
-          <p>DEBUG: CELExpr</p>
-          <pre class="text-xs">{{
+          <p class="text-sm cursor-pointer" @click="debug = !debug">
+            DEBUG: CELExpr (click to toggle)
+          </p>
+          <pre v-if="debug" class="text-xs">{{
             JSON.stringify(buildCELExpr(state.expr), null, "  ")
-          }}</pre>
-          <p>DEBUG: SimpleExpr</p>
-          <pre class="text-xs">{{
-            JSON.stringify(state.expr, null, "  ")
           }}</pre>
         </div>
 
@@ -133,6 +131,7 @@ const context = useRiskCenterContext();
 const { allowAdmin } = context;
 
 const mode = computed(() => context.dialog.value!.mode);
+const debug = ref(false);
 
 const resolveLocalState = (): LocalState => {
   const risk = cloneDeep(context.dialog.value!.risk);

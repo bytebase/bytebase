@@ -54,15 +54,11 @@ export const OperatorList: Record<Factor, Operator[]> = {
   risk: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
 
-  environment: uniq([
-    ...EqualityOperatorList, // using `environment_id`
-    ...CollectionOperatorList, // using `environment_id`
-    ...StringOperatorList, // using `environment_name`
-  ]),
-  project: uniq([
-    ...EqualityOperatorList, // using `project_id`
-    ...CollectionOperatorList, // using `project_id`
-    ...StringOperatorList, // using `project_name`
+  environment_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  project_id: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
   ]),
   database_name: uniq([
     ...EqualityOperatorList,

@@ -2113,7 +2113,8 @@
         },
         "input-value": "Input value",
         "add-condition-here": "Add condition here",
-        "select-value": "Select value"
+        "select-value": "Select value",
+        "input-value-press-enter": "Input value, press Enter to confirm"
       },
       "template": {
         "templates": "Templates",

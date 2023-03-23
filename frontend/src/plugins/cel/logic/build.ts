@@ -1,13 +1,7 @@
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import type {
-  ConditionExpr,
-  ConditionGroupExpr,
-  Operator,
-  SimpleExpr,
-} from "../types";
+import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
 import {
   isEqualityExpr,
-  isStringOperator,
   isCollectionExpr,
   isConditionExpr,
   isConditionGroupExpr,
@@ -27,7 +21,7 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
       const { operator, args } = condition;
       const [factor, value] = args;
       return wrapCallExpr(operator, [
-        wrapIdentExpr(factor, operator),
+        wrapIdentExpr(factor),
         wrapConstExpr(value),
       ]);
     }
@@ -35,7 +29,7 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
       const { operator, args } = condition;
       const [factor, value] = args;
       return wrapCallExpr(operator, [
-        wrapIdentExpr(factor, operator),
+        wrapIdentExpr(factor),
         wrapConstExpr(value),
       ]);
     }
@@ -45,14 +39,14 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
       return wrapCallExpr(
         operator,
         [wrapConstExpr(value)],
-        wrapIdentExpr(factor, operator)
+        wrapIdentExpr(factor)
       );
     }
     if (isCollectionExpr(condition)) {
       const { operator, args } = condition;
       const [factor, values] = args;
       return wrapCallExpr(operator, [
-        wrapIdentExpr(factor, operator),
+        wrapIdentExpr(factor),
         wrapListExpr(values),
       ]);
     }
@@ -104,11 +98,10 @@ const wrapListExpr = (values: string[] | number[]): CELExpr => {
   });
 };
 
-const wrapIdentExpr = (name: string, operator: Operator): CELExpr => {
-  const factorName = splitFactorName(name, operator);
+const wrapIdentExpr = (name: string): CELExpr => {
   return wrapCELExpr({
     identExpr: {
-      name: factorName,
+      name,
     },
   });
 };
@@ -128,14 +121,4 @@ const wrapCallExpr = (
   return wrapCELExpr({
     callExpr: object,
   });
-};
-
-const SplitFactors = new Set(["environment", "project"]);
-// Split "environment_id"/"environment_name", "project_id"/"project_name"
-// according to different operators
-const splitFactorName = (factor: string, operator: Operator): string => {
-  if (SplitFactors.has(factor)) {
-    return isStringOperator(operator) ? `${factor}_name` : `${factor}_id`;
-  }
-  return factor;
 };

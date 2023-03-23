@@ -3,7 +3,7 @@
     <NumberInput
       v-if="isNumberValue"
       :value="getNumberValue()"
-      @update:value="setNumericValue($event)"
+      @update:value="setNumberValue($event)"
     />
     <StringInput
       v-if="isStringValue"
@@ -16,7 +16,7 @@
       v-if="isNumberValue"
       :value="getNumberValue()"
       :expr="expr"
-      @update:value="setNumericValue($event as number)"
+      @update:value="setNumberValue($event as number)"
     />
     <SingleSelect
       v-if="isStringValue"
@@ -25,12 +25,20 @@
       @update:value="setStringValue($event as string)"
     />
   </template>
-  <MultiSelect
-    v-if="isArrayValue"
-    :value="getArrayValue()"
-    :expr="expr"
-    @update:value="setArrayValue($event)"
-  />
+  <template v-if="inputType === 'MULTI-SELECT'">
+    <MultiSelect
+      :value="getArrayValue()"
+      :expr="expr"
+      @update:value="setArrayValue($event)"
+    />
+  </template>
+  <template v-if="inputType === 'MULTI-INPUT'">
+    <MultiStringInput
+      :value="getStringArrayValue()"
+      :expr="expr"
+      @update:value="setArrayValue($event)"
+    />
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -49,11 +57,13 @@ import {
   isStringFactor,
 } from "@/plugins/cel";
 import NumberInput from "./NumberInput.vue";
-import MultiSelect from "./MultiSelect.vue";
 import StringInput from "./StringInput.vue";
 import SingleSelect from "./SingleSelect.vue";
+import MultiSelect from "./MultiSelect.vue";
+import MultiStringInput from "./MultiStringInput.vue";
+import { factorSupportDropdown } from "./common";
 
-type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT";
+type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT" | "MULTI-INPUT";
 
 const props = defineProps<{
   expr: ConditionExpr;
@@ -85,9 +95,13 @@ const isArrayValue = computed(() => {
   return isCollectionOperator(operator.value);
 });
 const inputType = computed((): InputType => {
-  if (isArrayValue.value) return "SINGLE-SELECT";
+  if (isArrayValue.value) {
+    return factorSupportDropdown(factor.value) ? "MULTI-SELECT" : "MULTI-INPUT";
+  }
   if (isEqualityOperator(operator.value)) {
-    return "SINGLE-SELECT";
+    if (factorSupportDropdown(factor.value)) {
+      return "SINGLE-SELECT";
+    }
   }
   return "INPUT";
 });
@@ -97,7 +111,7 @@ const getNumberValue = () => {
   if (!isNumber(value)) return 0;
   return value;
 };
-const setNumericValue = (value: number) => {
+const setNumberValue = (value: number) => {
   props.expr.args[1] = value;
 };
 
@@ -115,21 +129,31 @@ const getArrayValue = () => {
   if (!Array.isArray(values)) return [];
   return values;
 };
+const getStringArrayValue = () => getArrayValue() as string[];
 const setArrayValue = (values: string[] | number[]) => {
   props.expr.args[1] = values;
 };
 
+// clean up value type when factor and operator changed
 watch(
-  [() => props.expr.args[1], () => props.expr.operator],
-  ([value, operator]) => {
+  [factor, operator, () => props.expr.args[1]],
+  ([factor, operator, value]) => {
+    if (isEqualityOperator(operator)) {
+      if (isNumberFactor(factor) && !isNumber(value)) {
+        setNumberValue(0);
+      }
+      if (isStringFactor(factor) && typeof value !== "string") {
+        setStringValue("");
+      }
+    }
     if (isCompareOperator(operator) && !isNumber(value)) {
-      props.expr.args[1] = 0;
+      setNumberValue(0);
     }
     if (isCollectionOperator(operator) && !Array.isArray(value)) {
-      props.expr.args[1] = [];
+      setArrayValue([]);
     }
     if (isStringOperator(operator) && typeof value !== "string") {
-      props.expr.args[1] = "";
+      setStringValue("");
     }
   },
   { immediate: true }

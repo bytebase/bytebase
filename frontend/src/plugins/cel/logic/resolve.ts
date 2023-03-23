@@ -1,6 +1,5 @@
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type {
-  Factor,
   NumberFactor,
   StringFactor,
   Operator,
@@ -79,19 +78,13 @@ const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
   if (isNumberFactor(factor)) {
     return {
       operator,
-      args: [
-        combineResourceNameAndResourceId(factor),
-        valueExpr.constExpr!.int64Value! ?? 0,
-      ],
+      args: [factor, valueExpr.constExpr!.int64Value! ?? 0],
     };
   }
   if (isStringFactor(factor)) {
     return {
       operator,
-      args: [
-        combineResourceNameAndResourceId(factor),
-        valueExpr.constExpr!.stringValue! ?? "",
-      ],
+      args: [factor, valueExpr.constExpr!.stringValue! ?? ""],
     };
   }
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
@@ -130,7 +123,7 @@ const resolveCollectionExpr = (expr: CELExpr): CollectionExpr => {
     return {
       operator,
       args: [
-        combineResourceNameAndResourceId(factor),
+        factor,
         valuesExpr.listExpr?.elements?.map(
           (constant) => constant.constExpr?.int64Value ?? 0
         ) ?? [],
@@ -141,7 +134,7 @@ const resolveCollectionExpr = (expr: CELExpr): CollectionExpr => {
     return {
       operator,
       args: [
-        combineResourceNameAndResourceId(factor),
+        factor,
         valuesExpr.listExpr?.elements?.map(
           (constant) => constant.constExpr?.stringValue ?? ""
         ) ?? [],
@@ -157,14 +150,4 @@ const emptySimpleExpr = (): ConditionGroupExpr => {
     operator: LogicalOperatorList[0],
     args: [],
   };
-};
-
-const combineResourceNameAndResourceId = (factor: string): Factor => {
-  if (factor === "project_id" || factor === "project_name") {
-    return "project";
-  }
-  if (factor === "environment_id" || factor === "environment_name") {
-    return "environment";
-  }
-  return factor as Factor;
 };

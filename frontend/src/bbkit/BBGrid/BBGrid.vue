@@ -22,7 +22,7 @@
 
     <div
       v-for="(item, row) in dataSource"
-      :key="row"
+      :key="rowKey ? item[rowKey] : row"
       row="table-row"
       class="bb-grid-row group"
       :class="{
@@ -70,6 +70,7 @@ const props = withDefaults(
   defineProps<{
     columnList?: BBGridColumn[];
     dataSource?: DataType[];
+    rowKey?: string;
     showHeader?: boolean;
     customHeader?: boolean;
     headerClass?: VueClass;
@@ -79,6 +80,7 @@ const props = withDefaults(
   {
     columnList: () => [],
     dataSource: () => [],
+    rowKey: undefined,
     showHeader: true,
     customHeader: false,
     headerClass: undefined,

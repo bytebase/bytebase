@@ -2110,7 +2110,8 @@
         },
         "input-value": "输入值",
         "add-condition-here": "在这里添加条件",
-        "select-value": "选择值"
+        "select-value": "选择值",
+        "input-value-press-enter": "输入值，按回车确认"
       },
       "template": {
         "templates": "模板",

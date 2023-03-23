@@ -4,6 +4,7 @@
     :data-source="riskList"
     :row-clickable="false"
     :show-placeholder="true"
+    row-key="name"
     class="border"
   >
     <template #item="{ item: risk }: { item: Risk }">
