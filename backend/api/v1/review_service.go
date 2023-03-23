@@ -104,12 +104,12 @@ func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
 }
 
 func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
-	switch node.Payload.(type) {
-	case *storepb.ApprovalNode_GroupValue_:
+	if v, ok := node.Payload.(*storepb.ApprovalNode_GroupValue_); ok {
 		return &v1pb.ApprovalNode{
 			Type: v1pb.ApprovalNode_ANY_IN_GROUP,
 			Payload: &v1pb.ApprovalNode_GroupValue_{
-				GroupValue: v1pb.ApprovalNode_GroupValue(node.Payload.(*storepb.ApprovalNode_GroupValue_).GroupValue)},
+				GroupValue: v1pb.ApprovalNode_GroupValue(v.GroupValue),
+			},
 		}
 	}
 	return &v1pb.ApprovalNode{}
