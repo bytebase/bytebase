@@ -111,7 +111,7 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 			expression
 		FROM risk
 		WHERE row_status = 'NORMAL'
-		ORDER BY source, level, id
+		ORDER BY source, level DESC, id
 	`
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
