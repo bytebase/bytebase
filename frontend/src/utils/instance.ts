@@ -80,6 +80,7 @@ export const instanceHasReadonlyMode = (instance: Instance): boolean => {
 export const instanceHasCreateDatabase = (instance: Instance): boolean => {
   const { engine } = instance;
   if (engine === "REDIS") return false;
+  if (engine === "ORACLE") return false;
   return true;
 };
 
