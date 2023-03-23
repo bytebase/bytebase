@@ -124,10 +124,10 @@ message ViewMetadata {
 message DependentColumn {
   // The schema is the schema of a reference column.
   string schema = 1;
-  
+
   // The table is the table of a reference column.
   string table = 2;
-  
+
   // The column is the name of a reference column.
   string column = 3;
 }
