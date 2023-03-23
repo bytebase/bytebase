@@ -1,5 +1,8 @@
-import { grpc } from "@improbable-eng/grpc-web";
-import { createChannel, createClientFactory } from "nice-grpc-web";
+import {
+  createChannel,
+  createClientFactory,
+  FetchTransport,
+} from "nice-grpc-web";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
@@ -16,8 +19,8 @@ const address = import.meta.env.BB_GRPC_LOCAL
 
 const channel = createChannel(
   address,
-  grpc.CrossBrowserHttpTransport({
-    withCredentials: true,
+  FetchTransport({
+    credentials: "include",
   })
 );
 
