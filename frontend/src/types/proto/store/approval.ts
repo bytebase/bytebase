@@ -10,6 +10,11 @@ export const protobufPackage = "bytebase.store";
 export interface IssuePayloadApproval {
   approvalTemplates: ApprovalTemplate[];
   approvers: IssuePayloadApproval_Approver[];
+  /**
+   * If the value is `false`, it means that the backend is still finding matching approval templates.
+   * If `true`, other fields are available.
+   */
+  approvalFindingDone: boolean;
 }
 
 export interface IssuePayloadApproval_Approver {
@@ -222,7 +227,7 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 }
 
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplates: [], approvers: [] };
+  return { approvalTemplates: [], approvers: [], approvalFindingDone: false };
 }
 
 export const IssuePayloadApproval = {
@@ -232,6 +237,9 @@ export const IssuePayloadApproval = {
     }
     for (const v of message.approvers) {
       IssuePayloadApproval_Approver.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.approvalFindingDone === true) {
+      writer.uint32(24).bool(message.approvalFindingDone);
     }
     return writer;
   },
@@ -257,6 +265,13 @@ export const IssuePayloadApproval = {
 
           message.approvers.push(IssuePayloadApproval_Approver.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.approvalFindingDone = reader.bool();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -274,6 +289,7 @@ export const IssuePayloadApproval = {
       approvers: Array.isArray(object?.approvers)
         ? object.approvers.map((e: any) => IssuePayloadApproval_Approver.fromJSON(e))
         : [],
+      approvalFindingDone: isSet(object.approvalFindingDone) ? Boolean(object.approvalFindingDone) : false,
     };
   },
 
@@ -289,6 +305,7 @@ export const IssuePayloadApproval = {
     } else {
       obj.approvers = [];
     }
+    message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
     return obj;
   },
 
@@ -300,6 +317,7 @@ export const IssuePayloadApproval = {
     const message = createBaseIssuePayloadApproval();
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvers = object.approvers?.map((e) => IssuePayloadApproval_Approver.fromPartial(e)) || [];
+    message.approvalFindingDone = object.approvalFindingDone ?? false;
     return message;
   },
 };
