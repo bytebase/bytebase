@@ -83,7 +83,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 }
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
-	query := `SELECT username FROM all_users ORDER BY username`
+	query := `SELECT username FROM all_users WHERE ORACLE_MAINTAINED = 'N' AND USERNAME != 'OPS$ORACLE' ORDER BY username`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -120,6 +120,9 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	query := `
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY OWNER, TABLE_NAME`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -163,6 +166,9 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			NULLABLE,
 			COLLATION
 		FROM sys.all_tab_columns
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -204,6 +210,9 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	queryColumn := `
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME
 		FROM sys.all_ind_columns
+		WHERE TABLE_OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND TABLE_OWNER != 'OPS$ORACLE'
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`
 	colRows, err := txn.Query(queryColumn)
 	if err != nil {
@@ -222,7 +231,11 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		return nil, err
 	}
 	queryExpression := `
-		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION FROM sys.all_ind_expressions
+		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
+		FROM sys.all_ind_expressions
+		WHERE TABLE_OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND TABLE_OWNER != 'OPS$ORACLE'
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`
 	expRows, err := txn.Query(queryExpression)
 	if err != nil {
@@ -249,6 +262,9 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	query := `
 		SELECT OWNER, TABLE_NAME, INDEX_NAME, UNIQUENESS, INDEX_TYPE
 		FROM sys.all_indexes
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY OWNER, TABLE_NAME, INDEX_NAME`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -285,8 +301,11 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := `
-		SELECT owner, view_name, text
+		SELECT OWNER, VIEW_NAME, TEXT
 		FROM sys.all_views
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY owner, view_name
 	`
 	rows, err := txn.Query(query)
