@@ -8,10 +8,10 @@ option go_package = "generated-go/store";
 // IssuePayloadApproval records the approval template used and the approval history.
 message IssuePayloadApproval {
   repeated ApprovalTemplate approval_template = 1;
-  repeated ApprovalHistory history = 2;
+  repeated Approver approvers = 2;
 }
 
-message ApprovalHistory {
+message Approver {
   // The `uid` of the approval node.
   string node_uid = 1;
 
