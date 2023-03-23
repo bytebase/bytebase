@@ -88,7 +88,7 @@ const titleOfTemplate = (template: RuleTemplate) => {
 };
 
 const confirmApplyTemplate = async () => {
-  if (!props.dirty) {
+  if (dialog.value?.mode === "CREATE" && !props.dirty) {
     return true;
   }
   const d = defer<boolean>();
