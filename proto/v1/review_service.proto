@@ -8,22 +8,133 @@ import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
 
 service ReviewService {
   rpc GetReview(GetReviewRequest) returns (Review) {
-    option (google.api.http) = {get: "/v1/{name=issues/*/review}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/reviews/*}"};
+    option (google.api.method_signature) = "name";
   }
+
+  rpc ListReviews(ListReviewsRequest) returns (ListReviewsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/reviews"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc UpdateReview(UpdateReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      patch: "/v1/{review.name=projects/*/reviews/*}"
+      body: "review"
+    };
+    option (google.api.method_signature) = "review,update_mask";
+  }
+
+  rpc BatchUpdateReviews(BatchUpdateReviewsRequest) returns (BatchUpdateReviewsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/reviews:batchUpdate"
+      body: "*"
+    };
+  }
+
   rpc ApproveReview(ApproveReviewRequest) returns (Review) {
     option (google.api.http) = {
-      post: "/v1/{name=issues/*/review}:approve"
+      post: "/v1/{name=projects/*/reviews/*}:approve"
       body: "*"
     };
   }
 }
 
+message GetReviewRequest {
+  // The name of the review to retrieve.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListReviewsRequest {
+  // The parent, which owns this collection of reviews.
+  // Format: projects/{project}
+  // Use "projects/-" to list all reviews from all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of reviews to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 reviews will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListReviews` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListReviews` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListReviewsResponse {
+  // The reviews from the specified request.
+  repeated Review reviews = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateReviewRequest {
+  // The review to update.
+  //
+  // The review's `name` field is used to identify the review to update.
+  // Format: projects/{project}/reviews/{review}
+  Review review = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message BatchUpdateReviewsRequest {
+  // The parent resource shared by all reviews being updated.
+  // Format: projects/{project}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the status of databases for now.
+  string parent = 1;
+
+  // The request message specifying the resources to update.
+  // A maximum of 1000 databases can be modified in a batch.
+  repeated UpdateReviewRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchUpdateReviewsResponse {
+  // Reviews updated.
+  repeated Review reviews = 1;
+}
+
+message ApproveReviewRequest {
+  // The name of the review to add an approver.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message Review {
+  // The name of the review.
+  // `review` is a system generated ID.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string title = 3;
+
+  string description = 4;
+
+  ReviewStatus status = 5;
+
+  // Format: user:hello@world.com
+  string assignee = 6;
+
+  bool assignee_attention = 7;
+
   message Approver {
     enum Status {
       STATUS_UNSPECIFIED = 0;
@@ -37,19 +148,26 @@ message Review {
     string principal = 2;
   }
 
-  repeated ApprovalTemplate approval_templates = 1;
-  repeated Approver approvers = 2;
+  repeated ApprovalTemplate approval_templates = 8;
+  repeated Approver approvers = 9;
+
+  // The subscribers.
+  // Format: user:hello@world.com
+  repeated string subscribers = 10;
+
+  // Format: user:hello@world.com
+  string creator = 11;
+
+  google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-message GetReviewRequest {
-  // Format: issues/{issue}/review
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message ApproveReviewRequest {
-  // The name of the review to add an approver.
-  // Format: issues/{issue}/review
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+enum ReviewStatus {
+  REVIEW_STATUS_UNSPECIFIED = 0;
+  OPEN = 1;
+  DONE = 2;
+  CANCELED = 3;
 }
 
 message ApprovalTemplate {
