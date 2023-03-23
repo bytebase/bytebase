@@ -39,12 +39,12 @@ message ApprovalFlow {
 
 message ApprovalStep {
   // Type of the ApprovalStep
-  // AND means every node must be approved to proceed.
-  // OR means approving any node will proceed.
+  // ALL means every node must be approved to proceed.
+  // ANY means approving any node will proceed.
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    AND = 1;
-    OR = 2;
+    ALL = 1;
+    ANY = 2;
   }
   Type type = 1;
 
