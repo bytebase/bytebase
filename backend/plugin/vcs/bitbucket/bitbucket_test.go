@@ -375,14 +375,11 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 func TestProvider_CreateFile(t *testing.T) {
 	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
 		assert.Equal(t, "/2.0/repositories/username/slug/src", r.URL.Path)
-		assert.Equal(t, "Initial+commit", r.URL.Query().Get("message"))
-		assert.Empty(t, r.URL.Query().Get("parents"))
-		assert.Equal(t, "main", r.URL.Query().Get("branch"))
-
-		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		wantBodyContains := "Content-Disposition: form-data; name=\"filename\"; filename=\"repo/path/to/image.png\"\r\nContent-Type: application/octet-stream\r\n\r\n#!/bin/sh\nhalt"
-		assert.Contains(t, string(body), wantBodyContains)
+		assert.Contains(t, r.Header.Get("Content-Type"), "multipart/form-data; boundary=")
+		assert.Equal(t, "Initial commit", r.FormValue("message"))
+		assert.Empty(t, r.FormValue("parents"))
+		assert.Equal(t, "main", r.FormValue("branch"))
+		assert.Equal(t, "#!/bin/sh\nhalt", r.FormValue("repo/path/to/image.png"))
 		return &http.Response{
 			StatusCode: http.StatusCreated,
 			Body:       io.NopCloser(strings.NewReader("")),
@@ -409,14 +406,11 @@ func TestProvider_CreateFile(t *testing.T) {
 func TestProvider_OverwriteFile(t *testing.T) {
 	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
 		assert.Equal(t, "/2.0/repositories/username/slug/src", r.URL.Path)
-		assert.Equal(t, "Initial+commit", r.URL.Query().Get("message"))
-		assert.Equal(t, "7638417db6d59f3c431d3e1f261cc637155684cd", r.URL.Query().Get("parents"))
-		assert.Equal(t, "main", r.URL.Query().Get("branch"))
-
-		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		wantBodyContains := "Content-Disposition: form-data; name=\"filename\"; filename=\"repo/path/to/image.png\"\r\nContent-Type: application/octet-stream\r\n\r\n#!/bin/sh\nhalt"
-		assert.Contains(t, string(body), wantBodyContains)
+		assert.Contains(t, r.Header.Get("Content-Type"), "multipart/form-data; boundary=")
+		assert.Equal(t, "Initial commit", r.FormValue("message"))
+		assert.Equal(t, "7638417db6d59f3c431d3e1f261cc637155684cd", r.FormValue("parents"))
+		assert.Equal(t, "main", r.FormValue("branch"))
+		assert.Equal(t, "#!/bin/sh\nhalt", r.FormValue("repo/path/to/image.png"))
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader("")),

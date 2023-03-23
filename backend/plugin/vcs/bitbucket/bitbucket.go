@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -208,7 +209,13 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 	var bbcDiffs []*CommitDiffStat
 	page := 1
 	for {
-		url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?page=%d&pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), afterCommit, beforeCommit, page, apiPageSize)
+		params := url.Values{}
+		params.Add("pagelen", strconv.Itoa(apiPageSize))
+		if page > 1 {
+			params.Add("page", strconv.Itoa(page))
+		}
+
+		url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), afterCommit, beforeCommit, params.Encode())
 		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
@@ -333,7 +340,14 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // user has admin access to in given page. It returns the paginated results
 // along with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []*Repository, hasNextPage bool, err error) {
-	url := fmt.Sprintf(`%s/user/permissions/repositories?q=%s&page=%d&pagelen=%d`, p.APIURL(instanceURL), url.PathEscape(`permission="admin"`), page, apiPageSize)
+	fmt.Println("fuck you", oauthCtx.AccessToken)
+	params := url.Values{}
+	params.Add("q", `permission="admin"`)
+	params.Add("pagelen", strconv.Itoa(apiPageSize))
+	if page > 1 {
+		params.Add("page", strconv.Itoa(page))
+	}
+	url := fmt.Sprintf(`%s/user/permissions/repositories?%s`, p.APIURL(instanceURL), params.Encode())
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -429,9 +443,16 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 // recursively in given page. It returns the paginated results along with a
 // boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (_ []*TreeEntry, hasNextPage bool, err error) {
+	params := url.Values{}
 	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
 	// subdirectories recursively, 10 levels down is just a good guess.
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?max_depth=10&q=%s&page=%d&pagelen=%d", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath), url.QueryEscape(`type="commit_file"`), page, apiPageSize)
+	params.Add("max_depth", "10")
+	params.Add("q", `type="commit_file"`)
+	params.Add("pagelen", strconv.Itoa(apiPageSize))
+	if page > 1 {
+		params.Add("page", strconv.Itoa(page))
+	}
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?%s", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath), params.Encode())
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -478,7 +499,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
-	part, err := w.CreateFormFile("filename", filePath)
+	part, err := w.CreateFormField(filePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to create form file")
 	}
@@ -486,15 +507,13 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	if err != nil {
 		return errors.Wrap(err, "failed to write file to form")
 	}
+	_ = w.WriteField("message", fileCommitCreate.CommitMessage)
+	_ = w.WriteField("parents", fileCommitCreate.LastCommitID)
+	_ = w.WriteField("branch", fileCommitCreate.Branch)
 	_ = w.Close()
 
-	urlParams := &url.Values{}
-	urlParams.Set("message", url.QueryEscape(fileCommitCreate.CommitMessage))
-	urlParams.Set("parents", fileCommitCreate.LastCommitID)
-	urlParams.Set("branch", fileCommitCreate.Branch)
-
-	url := fmt.Sprintf("%s/repositories/%s/src?%s", p.APIURL(instanceURL), repositoryID, urlParams.Encode())
-	code, _, resp, err := oauth.Post(
+	url := fmt.Sprintf("%s/repositories/%s/src", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.PostWithHeader(
 		ctx,
 		p.client,
 		url,
@@ -509,6 +528,9 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 			},
 			oauthCtx.Refresher,
 		),
+		map[string]string{
+			"Content-Type": w.FormDataContentType(),
+		},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
@@ -622,12 +644,15 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return body, nil
 }
 
+// Target is the API message for Bitbucket Cloud target.
+type Target struct {
+	Hash string `json:"hash"`
+}
+
 // Branch is the API message for Bitbucket Cloud branch.
 type Branch struct {
 	Name   string `json:"name"`
-	Target struct {
-		Hash string `json:"hash"`
-	} `json:"target"`
+	Target Target `json:"target"`
 }
 
 // GetBranch gets the given branch in the repository.
@@ -738,7 +763,13 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	var bbcDiffs []*CommitDiffStat
 	page := 1
 	for {
-		url := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?page=%d&pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, page, apiPageSize)
+		params := url.Values{}
+		params.Add("pagelen", strconv.Itoa(apiPageSize))
+		if page > 1 {
+			params.Add("page", strconv.Itoa(page))
+		}
+
+		url := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, params.Encode())
 		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
@@ -863,6 +894,67 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 // WARNING: This is not supported in Bitbucket Cloud.
 func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
 	return errors.New("not supported")
+}
+
+// WebhookCommit is the API message for webhook commit.
+type WebhookCommit struct {
+	Hash   string    `json:"hash"`
+	Date   time.Time `json:"date"`
+	Author struct {
+		Raw  string `json:"raw"`
+		User struct {
+			Nickname string `json:"nickname"`
+		} `json:"user"`
+	} `json:"author"`
+	Message string `json:"message"`
+	Links   struct {
+		HTML struct {
+			Href string `json:"href"`
+		} `json:"html"`
+	} `json:"links"`
+	Parents []struct {
+		Hash string `json:"hash"`
+	} `json:"parents"`
+}
+
+// WebhookPushEvent is the API message for webhook push event.
+type WebhookPushEvent struct {
+	Push struct {
+		Changes []struct {
+			Old struct {
+				Target struct {
+					Hash string `json:"hash"`
+				} `json:"target"`
+			} `json:"old"`
+			New struct {
+				Name   string `json:"name"`
+				Target struct {
+					Hash string `json:"hash"`
+				} `json:"target"`
+			} `json:"new"`
+			Commits []WebhookCommit `json:"commits"`
+		} `json:"changes"`
+	} `json:"push"`
+	Repository struct {
+		FullName string `json:"full_name"`
+		Links    struct {
+			HTML struct {
+				Href string `json:"href"`
+			} `json:"html"`
+		} `json:"links"`
+	} `json:"repository"`
+	Actor struct {
+		Nickname string `json:"nickname"`
+	} `json:"actor"`
+}
+
+// WebhookCreateOrUpdate represents a Bitbucket API request for creating or
+// updating a webhook.
+type WebhookCreateOrUpdate struct {
+	Description string   `json:"description"`
+	URL         string   `json:"url"`
+	Active      bool     `json:"active"`
+	Events      []string `json:"events"`
 }
 
 // CreateWebhook creates a webhook in the repository with given payload.
