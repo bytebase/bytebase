@@ -55,8 +55,8 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
-    - [ApprovalConfigSetting](#bytebase-store-ApprovalConfigSetting)
-    - [ApprovalConfigSetting.Rule](#bytebase-store-ApprovalConfigSetting-Rule)
+    - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
+    - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
 - [store/user.proto](#store_user-proto)
@@ -798,24 +798,24 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-ApprovalConfigSetting"></a>
+<a name="bytebase-store-WorkspaceApprovalSetting"></a>
 
-### ApprovalConfigSetting
+### WorkspaceApprovalSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| rules | [ApprovalConfigSetting.Rule](#bytebase-store-ApprovalConfigSetting-Rule) | repeated |  |
+| rules | [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-store-ApprovalConfigSetting-Rule"></a>
+<a name="bytebase-store-WorkspaceApprovalSetting-Rule"></a>
 
-### ApprovalConfigSetting.Rule
+### WorkspaceApprovalSetting.Rule
 
 
 
