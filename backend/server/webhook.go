@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/mail"
 	"path"
 	"path/filepath"
 	"sort"
@@ -29,7 +30,7 @@ import (
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	_ "github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket" // Import to register the plugin.
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
@@ -174,6 +175,142 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return err
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
+	})
+
+	g.POST("/bitbucket/:id", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		// This shouldn't happen as we only set up webhook to receive push event, just in case.
+		eventType := c.Request().Header.Get("X-Event-Key")
+		if eventType != "repo:push" {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %q, want %q", eventType, "repo:push"))
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		}
+		var pushEvent bitbucket.WebhookPushEvent
+		if err := json.Unmarshal(body, &pushEvent); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
+		repositoryID := pushEvent.Repository.FullName
+
+		var allCreatedMessages []string
+		for _, change := range pushEvent.Push.Changes {
+			var nonBytebaseCommitList []bitbucket.WebhookCommit
+			nonBytebaseCommitList = append(nonBytebaseCommitList, filterBitbucketBytebaseCommit(change.Commits)...)
+			if len(nonBytebaseCommitList) == 0 {
+				var commitList []string
+				for _, change := range pushEvent.Push.Changes {
+					for _, commit := range change.Commits {
+						commitList = append(commitList, commit.Hash)
+					}
+				}
+				log.Debug("all commits are created by Bytebase",
+					zap.String("repoURL", pushEvent.Repository.Links.HTML.Href),
+					zap.String("repoName", pushEvent.Repository.FullName),
+					zap.String("commits", strings.Join(commitList, ", ")),
+				)
+				continue
+			}
+
+			ref := "refs/heads/" + change.New.Name
+			filter := func(repo *api.Repository) (bool, error) {
+				return s.isWebhookEventBranch(ref, repo.BranchFilter)
+			}
+			repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
+			if err != nil {
+				return err
+			}
+			if len(repositoryList) == 0 {
+				log.Debug("Empty handle repo list. Ignore this push event.")
+				continue
+			}
+			repo := repositoryList[0]
+
+			var commitList []vcs.Commit
+			for _, commit := range nonBytebaseCommitList {
+				before := strings.Repeat("0", 40)
+				if len(commit.Parents) > 0 {
+					before = commit.Parents[0].Hash
+				}
+				fileDiffList, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).GetDiffFileList(
+					ctx,
+					common.OauthContext{
+						ClientID:     repo.VCS.ApplicationID,
+						ClientSecret: repo.VCS.Secret,
+						AccessToken:  repo.AccessToken,
+						RefreshToken: repo.RefreshToken,
+						Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+					},
+					repo.VCS.InstanceURL,
+					repo.ExternalID,
+					before,
+					commit.Hash,
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get diff file list for commit %q", commit.Hash)).SetInternal(err)
+				}
+
+				var addedList, modifiedList []string
+				for _, f := range fileDiffList {
+					switch f.Type {
+					case vcs.FileDiffTypeAdded:
+						addedList = append(addedList, f.Path)
+					case vcs.FileDiffTypeModified:
+						modifiedList = append(modifiedList, f.Path)
+					}
+				}
+
+				// Per Git convention, the message title and body are separated by two new line characters.
+				messages := strings.SplitN(commit.Message, "\n\n", 2)
+				messageTitle := messages[0]
+
+				authorName := commit.Author.User.Nickname
+				authorEmail := ""
+				addr, err := mail.ParseAddress(commit.Author.Raw)
+				if err == nil {
+					authorName = addr.Name
+					authorEmail = addr.Address
+				}
+
+				commitList = append(commitList,
+					vcs.Commit{
+						ID:           commit.Hash,
+						Title:        messageTitle,
+						Message:      commit.Message,
+						CreatedTs:    commit.Date.Unix(),
+						URL:          commit.Links.HTML.Href,
+						AuthorName:   authorName,
+						AuthorEmail:  authorEmail,
+						AddedList:    addedList,
+						ModifiedList: modifiedList,
+					},
+				)
+			}
+
+			createdMessages, err := s.processPushEvent(
+				ctx,
+				repositoryList,
+				vcs.PushEvent{
+					VCSType:            vcs.Bitbucket,
+					Ref:                ref,
+					Before:             change.Old.Target.Hash,
+					After:              change.New.Target.Hash,
+					RepositoryID:       pushEvent.Repository.FullName,
+					RepositoryURL:      pushEvent.Repository.Links.HTML.Href,
+					RepositoryFullPath: pushEvent.Repository.FullName,
+					AuthorName:         pushEvent.Actor.Nickname,
+					CommitList:         commitList,
+				},
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to process push event for commit %q", change.New.Target.Hash)).SetInternal(err)
+			}
+			allCreatedMessages = append(allCreatedMessages, createdMessages...)
+		}
+		return c.String(http.StatusOK, strings.Join(allCreatedMessages, "\n"))
 	})
 
 	// id is the webhookEndpointID in repository
@@ -498,7 +635,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
-		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
+		return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid ref: %s", pushEventRef)).SetInternal(err)
 	}
 	ok, err := filepath.Match(branchFilter, branch)
 	if err != nil {
@@ -1403,6 +1540,18 @@ func filterGitLabBytebaseCommit(list []gitlab.WebhookCommit) []gitlab.WebhookCom
 	var result []gitlab.WebhookCommit
 	for _, commit := range list {
 		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
+			continue
+		}
+		result = append(result, commit)
+	}
+	return result
+}
+
+func filterBitbucketBytebaseCommit(list []bitbucket.WebhookCommit) []bitbucket.WebhookCommit {
+	bytebaseRaw := fmt.Sprintf("%s <%s>", vcs.BytebaseAuthorName, vcs.BytebaseAuthorEmail)
+	var result []bitbucket.WebhookCommit
+	for _, commit := range list {
+		if commit.Author.Raw == bytebaseRaw {
 			continue
 		}
 		result = append(result, commit)
