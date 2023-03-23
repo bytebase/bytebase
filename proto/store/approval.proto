@@ -7,7 +7,7 @@ option go_package = "generated-go/store";
 // IssuePayloadApproval is a part of the payload of an issue.
 // IssuePayloadApproval records the approval template used and the approval history.
 message IssuePayloadApproval {
-  ApprovalTemplate approval_template = 1;
+  repeated ApprovalTemplate approval_template = 1;
   repeated ApprovalHistory history = 2;
 }
 
