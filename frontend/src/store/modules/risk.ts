@@ -8,18 +8,10 @@ export const useRiskStore = defineStore("tab", () => {
   const riskList = ref<Risk[]>([]);
 
   const fetchRiskList = async () => {
-    try {
-      const response = await riskServiceClient.listRisks({
-        pageSize: 100,
-      });
-      riskList.value = response.risks;
-
-      // const list = generateMockRisks();
-      // riskList.value.push(...list);
-    } catch (err) {
-      // debugger;
-      console.error(err);
-    }
+    const response = await riskServiceClient.listRisks({
+      pageSize: 100,
+    });
+    riskList.value = response.risks;
     return riskList.value;
   };
 
