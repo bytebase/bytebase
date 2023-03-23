@@ -644,12 +644,15 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return body, nil
 }
 
+// Target is the API message for Bitbucket Cloud target.
+type Target struct {
+	Hash string `json:"hash"`
+}
+
 // Branch is the API message for Bitbucket Cloud branch.
 type Branch struct {
 	Name   string `json:"name"`
-	Target struct {
-		Hash string `json:"hash"`
-	} `json:"target"`
+	Target Target `json:"target"`
 }
 
 // GetBranch gets the given branch in the repository.
