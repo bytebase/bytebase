@@ -96,6 +96,8 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 			patch.Name = &request.Risk.Title
 		case "risk.active":
 			patch.Active = &request.Risk.Active
+		case "risk.level":
+			patch.Level = &request.Risk.Level
 		case "risk.expression":
 			patch.Expression = request.Risk.Expression
 		}
