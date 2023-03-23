@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "store/approval.proto";
+
+option go_package = "generated-go/store";
+
+message IssuePayload {
+  IssuePayloadApproval approval = 1;
+}
