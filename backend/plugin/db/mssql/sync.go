@@ -117,10 +117,11 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	// TODO(d): add table row count.
 	query := `
-		SELECT table_schema, table_name
-		FROM INFORMATION_SCHEMA.TABLES
-		WHERE table_type = 'BASE TABLE'
-		ORDER BY table_schema, table_name;`
+		SELECT s.name, t.name, dbps.row_count
+		FROM sys.tables t
+		INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
+		INNER JOIN sys.dm_db_partition_stats dbps ON dbps.object_id = t.object_id
+		ORDER BY s.name, t.name;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -130,7 +131,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
 		var schemaName string
-		if err := rows.Scan(&schemaName, &table.Name); err != nil {
+		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount); err != nil {
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
