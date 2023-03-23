@@ -11,6 +11,7 @@ import {
   SupportedSourceList,
 } from "@/types";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
+import { levelText } from "../../../RiskCenter/common";
 
 export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const context = useExprEditorContext();
@@ -41,8 +42,8 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   };
 
   const getRiskOptions = () => {
-    return PresetRiskLevelList.map<SelectOption>(({ name, level }) => ({
-      label: name,
+    return PresetRiskLevelList.map<SelectOption>(({ level }) => ({
+      label: levelText(level),
       value: level,
     }));
   };

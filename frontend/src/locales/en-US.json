@@ -229,7 +229,8 @@
     "verify": "Verify",
     "regenerate": "Regenerate",
     "download": "Download",
-    "will-lose-unsaved-data": "Will lose any unsaved data."
+    "will-lose-unsaved-data": "Will lose any unsaved data.",
+    "deleted": "Deleted"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2092,6 +2093,11 @@
       "risk": {
         "self": "Risk",
         "select": "Select risk",
+        "risk-level": {
+          "100": "Low",
+          "200": "Moderate",
+          "300": "High"
+        },
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",

@@ -1,6 +1,6 @@
 <template>
   <NSelect
-    style="width: 11rem"
+    style="width: 8rem"
     :value="value"
     :options="options"
     :placeholder="$t('custom-approval.security-rule.risk.select')"
@@ -16,6 +16,7 @@ import { NSelect, SelectOption, type SelectProps } from "naive-ui";
 
 import { PresetRiskLevelList } from "@/types";
 import { useRiskCenterContext } from "../context";
+import { levelText } from "../common";
 
 export interface RiskLevelSelectorProps extends SelectProps {
   value: number;
@@ -32,8 +33,8 @@ const context = useRiskCenterContext();
 const { allowAdmin } = context;
 
 const options = computed(() => {
-  return PresetRiskLevelList.map<SelectOption>(({ name, level }) => ({
-    label: name,
+  return PresetRiskLevelList.map<SelectOption>(({ level }) => ({
+    label: levelText(level),
     value: level,
   }));
 });

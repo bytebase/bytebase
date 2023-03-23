@@ -227,7 +227,8 @@
     "verify": "验证",
     "regenerate": "重新生成",
     "download": "下载",
-    "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。"
+    "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
+    "deleted": "已删除"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2089,6 +2090,11 @@
       "risk": {
         "self": "风险",
         "select": "选择风险",
+        "risk-level": {
+          "100": "低",
+          "200": "中",
+          "300": "高"
+        },
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",

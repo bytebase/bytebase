@@ -28,6 +28,7 @@ import { NCheckbox } from "naive-ui";
 import BBBadge, { type BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import { PresetRiskLevel, PresetRiskLevelList } from "@/types";
 import { useRiskCenterContext } from "../context";
+import { levelText } from "../common";
 
 type RiskLevelFilterItem = {
   value: number;
@@ -38,10 +39,10 @@ type RiskLevelFilterItem = {
 const { navigation } = useRiskCenterContext();
 
 const riskLevelFilterItemList = computed(() => {
-  return PresetRiskLevelList.map<RiskLevelFilterItem>(({ name, level }) => {
+  return PresetRiskLevelList.map<RiskLevelFilterItem>(({ level }) => {
     return {
       value: level,
-      label: name,
+      label: levelText(level),
       style:
         level === PresetRiskLevel.HIGH
           ? "CRITICAL"

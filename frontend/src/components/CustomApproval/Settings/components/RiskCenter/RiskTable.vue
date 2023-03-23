@@ -9,15 +9,18 @@
   >
     <template #item="{ item: risk }: { item: Risk }">
       <div class="bb-grid-cell justify-center">
+        {{ levelText(risk.level) }}
+      </div>
+      <div class="bb-grid-cell">
+        {{ risk.title }}
+      </div>
+      <div class="bb-grid-cell justify-center">
         <SpinnerSwitch
           :value="risk.active"
           :disabled="!allowAdmin"
           :on-toggle="(active) => toggleRisk(risk, active)"
           size="small"
         />
-      </div>
-      <div class="bb-grid-cell">
-        {{ risk.title }}
       </div>
       <div class="bb-grid-cell gap-x-2">
         <NButton size="small" @click="editRisk(risk)">
@@ -46,6 +49,7 @@ import { SpinnerButton, SpinnerSwitch } from "../common";
 import { useRiskCenterContext } from "./context";
 import { Risk } from "@/types/proto/v1/risk_service";
 import { pushNotification, useRiskStore } from "@/store";
+import { levelText } from "./common";
 
 defineProps<{
   riskList: Risk[];
@@ -58,11 +62,16 @@ const { allowAdmin } = context;
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     {
+      title: t("custom-approval.security-rule.risk.self"),
+      width: "8rem",
+      class: "justify-center",
+    },
+    { title: t("common.name"), width: "1fr" },
+    {
       title: t("custom-approval.security-rule.active"),
       width: "6rem",
       class: "justify-center",
     },
-    { title: t("common.name"), width: "1fr" },
     {
       title: t("common.operations"),
       width: "10rem",
@@ -85,7 +94,7 @@ const toggleRisk = async (risk: Risk, active: boolean) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: "updated",
+    title: t("common.updated"),
   });
 };
 
@@ -94,7 +103,7 @@ const deleteRisk = async (risk: Risk) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: "deleted",
+    title: t("common.deleted"),
   });
 };
 </script>

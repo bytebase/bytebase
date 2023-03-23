@@ -104,7 +104,7 @@ const handleSave = async (risk: Risk) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: "updated",
+      title: t("common.updated"),
     });
     dialog.value = undefined;
   } finally {

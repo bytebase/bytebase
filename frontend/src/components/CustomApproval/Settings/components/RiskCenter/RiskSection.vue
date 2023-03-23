@@ -1,9 +1,10 @@
 <template>
   <div class="space-y-2">
-    <div class="flex items-center justify-between">
-      <div class="font-medium">
-        {{ $t(titleKeyPath) }}
+    <div class="flex items-center justify-start">
+      <div class="font-medium text-base">
+        {{ sourceText(source) }}
       </div>
+      <div class="ml-1">({{ riskList.length }})</div>
     </div>
     <div>
       <RiskTable :risk-list="riskList" />
@@ -12,22 +13,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-
 import RiskTable from "./RiskTable.vue";
-import { Risk } from "@/types/proto/v1/risk_service";
-import { PresetRiskLevelList } from "@/types";
+import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { sourceText } from "./common";
 
-const props = defineProps<{
-  level: number;
+defineProps<{
+  source: Risk_Source;
   riskList: Risk[];
 }>();
-
-const titleKeyPath = computed(() => {
-  const key = PresetRiskLevelList.find(
-    (item) => item.level === props.level
-  )?.name;
-  if (!key) return "";
-  return `custom-approval.security-rule.x-risk-rules.${key.toLowerCase()}`;
-});
 </script>

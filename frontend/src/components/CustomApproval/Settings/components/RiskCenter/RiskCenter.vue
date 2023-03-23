@@ -10,10 +10,10 @@
 
     <div class="space-y-4">
       <RiskSection
-        v-for="group in selectedRiskListGroupByLevel"
-        :key="group.level"
-        :level="group.level"
-        :risk-list="group.riskList"
+        v-for="{ source, riskList } in riskListGroupBySource"
+        :key="source"
+        :source="source"
+        :risk-list="riskList"
       />
     </div>
   </div>
@@ -21,6 +21,7 @@
 
 <script lang="ts" setup>
 import { computed, watch } from "vue";
+import { groupBy } from "lodash-es";
 
 import RiskNavigation from "./RiskNavigation";
 import RiskSection from "./RiskSection.vue";
@@ -28,6 +29,7 @@ import { useRiskCenterContext } from "./context";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
 import { PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { useRiskStore } from "@/store";
+import { orderByLevelDesc } from "./common";
 
 const riskStore = useRiskStore();
 const context = useRiskCenterContext();
@@ -51,22 +53,29 @@ const filteredRiskList = computed(() => {
   return list;
 });
 
-const selectedRiskListGroupByLevel = computed(() => {
-  return PresetRiskLevelList.map(({ level }) => {
-    const riskList = filteredRiskList.value.filter(
-      (risk) => risk.level === level
+const riskListGroupBySource = computed(() => {
+  const groupBySource = groupBy(filteredRiskList.value, (risk) => risk.source);
+  const groups = SupportedSourceList.map((source) => {
+    const riskList = groupBySource[source] ?? [];
+    riskList.sort(orderByLevelDesc);
+    return { source, riskList };
+  });
+  if (navigation.value.source === Risk_Source.SOURCE_UNSPECIFIED) {
+    // Show "ALL" sources
+    return groups;
+  }
+
+  return groups.filter((group) => {
+    return (
+      group.riskList.length > 0 || group.source === navigation.value.source
     );
-    return {
-      level,
-      riskList,
-    };
   });
 });
 
 const addRisk = () => {
   const risk = Risk.fromJSON({
     level: PresetRiskLevelList[0].level,
-    source: navigation.value.source ?? SupportedSourceList[0],
+    source: navigation.value.source || SupportedSourceList[0],
     active: true,
   });
   context.dialog.value = {

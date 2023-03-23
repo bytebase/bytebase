@@ -9,6 +9,7 @@
 
       <NInput
         v-model:value="navigation.search"
+        :clearable="true"
         :placeholder="$t('custom-approval.security-rule.search')"
       >
         <template #prefix>
@@ -20,6 +21,8 @@
 </template>
 
 <script lang="ts" setup>
+import { NInput } from "naive-ui";
+
 import RiskSourceFilter from "./RiskSourceFilter.vue";
 import RiskLevelFilter from "./RiskLevelFilter.vue";
 import { useRiskCenterContext } from "../context";
