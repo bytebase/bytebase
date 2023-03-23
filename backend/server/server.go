@@ -1216,6 +1216,6 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 	}()
 
 	if err != nil {
-		log.Error("failed to backfill migration history", zap.Error(err))
+		log.Warn("failed to backfill migration history", zap.Error(err))
 	}
 }
