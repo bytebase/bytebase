@@ -499,7 +499,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
-	part, err := w.CreateFormFile("filename", filePath)
+	part, err := w.CreateFormField(filePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to create form file")
 	}
@@ -507,15 +507,13 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	if err != nil {
 		return errors.Wrap(err, "failed to write file to form")
 	}
+	_ = w.WriteField("message", fileCommitCreate.CommitMessage)
+	_ = w.WriteField("parents", fileCommitCreate.LastCommitID)
+	_ = w.WriteField("branch", fileCommitCreate.Branch)
 	_ = w.Close()
 
-	urlParams := &url.Values{}
-	urlParams.Set("message", url.QueryEscape(fileCommitCreate.CommitMessage))
-	urlParams.Set("parents", fileCommitCreate.LastCommitID)
-	urlParams.Set("branch", fileCommitCreate.Branch)
-
-	url := fmt.Sprintf("%s/repositories/%s/src?%s", p.APIURL(instanceURL), repositoryID, urlParams.Encode())
-	code, _, resp, err := oauth.Post(
+	url := fmt.Sprintf("%s/repositories/%s/src", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.PostWithHeader(
 		ctx,
 		p.client,
 		url,
@@ -530,6 +528,9 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 			},
 			oauthCtx.Refresher,
 		),
+		map[string]string{
+			"Content-Type": w.FormDataContentType(),
+		},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
