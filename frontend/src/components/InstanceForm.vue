@@ -1,31 +1,29 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border w-[850px]">
-      <div
-        v-if="isCreating"
-        class="w-full mt-4 mb-6 grid grid-cols-1 gap-4"
-        :class="[isDev() ? 'sm:grid-cols-5' : 'sm:grid-cols-4']"
-      >
+      <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-5 gap-2">
         <template v-for="engine in engineList" :key="engine">
           <div
-            class="flex relative justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
+            class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
+            :class="
+              basicInformation.engine === engine &&
+              'font-medium bg-control-bg-hover'
+            "
             @click.capture="changeInstanceEngine(engine)"
           >
-            <div class="flex flex-col items-center">
-              <img class="h-8 w-auto" :src="EngineIconPath[engine]" />
-              <p class="mt-2 text-center textlabel">
+            <div class="flex flex-row justify-start items-center">
+              <input
+                type="radio"
+                class="btn mr-2"
+                :checked="basicInformation.engine == engine"
+              />
+              <img class="h-5 w-auto mr-1" :src="EngineIconPath[engine]" />
+              <p class="text-center text-sm">
                 {{ engineName(engine) }}
               </p>
               <template v-if="isEngineBeta(engine)">
-                <BBBetaBadge class="absolute right-0.5 top-1" />
+                <BBBetaBadge class="ml-1" />
               </template>
-              <div class="mt-4 radio text-sm">
-                <input
-                  type="radio"
-                  class="btn"
-                  :checked="basicInformation.engine == engine"
-                />
-              </div>
             </div>
           </div>
         </template>
@@ -761,7 +759,7 @@ const EngineIconPath = {
   ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
   MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
   REDSHIFT: new URL("../assets/db-redshift.svg", import.meta.url).href,
-  MARIADB: new URL("../assets/db-mariadb.svg", import.meta.url).href,
+  MARIADB: new URL("../assets/db-mariadb.png", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
