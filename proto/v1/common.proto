@@ -23,4 +23,6 @@ enum Engine {
   ORACLE = 9;
   SPANNER = 10;
   MSSQL = 11;
+  REDSHIFT = 12;
+  MARIADB = 13;
 }

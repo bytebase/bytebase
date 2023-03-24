@@ -44,6 +44,10 @@ const (
 	Oracle Type = "ORACLE"
 	// MSSQL is the database type for MS SQL Server.
 	MSSQL Type = "MSSQL"
+	// Redshift is the database type for Redshift.
+	Redshift Type = "REDSHIFT"
+	// MariaDB is the database type for MariaDB.
+	MariaDB Type = "MARIADB"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 

@@ -60,6 +60,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
+	viewMap, err := getViews(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -72,13 +76,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
 			Tables: tableMap[schemaName],
+			Views:  viewMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
 }
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
-	query := `SELECT username FROM all_users ORDER BY username`
+	query := `SELECT username FROM all_users WHERE ORACLE_MAINTAINED = 'N' AND USERNAME != 'OPS$ORACLE' ORDER BY username`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -115,6 +120,9 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	query := `
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY OWNER, TABLE_NAME`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -158,6 +166,9 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			NULLABLE,
 			COLLATION
 		FROM sys.all_tab_columns
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -199,6 +210,9 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	queryColumn := `
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME
 		FROM sys.all_ind_columns
+		WHERE TABLE_OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND TABLE_OWNER != 'OPS$ORACLE'
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`
 	colRows, err := txn.Query(queryColumn)
 	if err != nil {
@@ -217,7 +231,11 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		return nil, err
 	}
 	queryExpression := `
-		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION FROM sys.all_ind_expressions
+		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
+		FROM sys.all_ind_expressions
+		WHERE TABLE_OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND TABLE_OWNER != 'OPS$ORACLE'
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`
 	expRows, err := txn.Query(queryExpression)
 	if err != nil {
@@ -244,6 +262,9 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	query := `
 		SELECT OWNER, TABLE_NAME, INDEX_NAME, UNIQUENESS, INDEX_TYPE
 		FROM sys.all_indexes
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
 		ORDER BY OWNER, TABLE_NAME, INDEX_NAME`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -273,4 +294,36 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	}
 
 	return indexMap, nil
+}
+
+// getViews gets all views of a database.
+func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+	viewMap := make(map[string][]*storepb.ViewMetadata)
+
+	query := `
+		SELECT OWNER, VIEW_NAME, TEXT
+		FROM sys.all_views
+		WHERE OWNER IN (
+			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
+		) AND OWNER != 'OPS$ORACLE'
+		ORDER BY owner, view_name
+	`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		view := &storepb.ViewMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
+			return nil, err
+		}
+		viewMap[schemaName] = append(viewMap[schemaName], view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return viewMap, nil
 }

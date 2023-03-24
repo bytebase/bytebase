@@ -61,6 +61,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
+	viewMap, err := getViews(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -73,6 +77,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
 			Tables: tableMap[schemaName],
+			Views:  viewMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
@@ -115,12 +120,16 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	}
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	// TODO(d): add table row count.
 	query := `
-		SELECT table_schema, table_name
-		FROM INFORMATION_SCHEMA.TABLES
-		WHERE table_type = 'BASE TABLE'
-		ORDER BY table_schema, table_name;`
+		SELECT
+			SCHEMA_NAME(t.schema_id),
+			t.name,
+			SUM(ps.row_count)
+		FROM sys.tables t
+		INNER JOIN sys.dm_db_partition_stats ps ON ps.object_id = t.object_id WHERE index_id < 2
+		GROUP BY t.name, t.schema_id
+		ORDER BY 1, 2 ASC
+		OPTION (RECOMPILE);`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -130,7 +139,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
 		var schemaName string
-		if err := rows.Scan(&schemaName, &table.Name); err != nil {
+		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount); err != nil {
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
@@ -269,4 +278,36 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		})
 	}
 	return tableIndexes, nil
+}
+
+// getViews gets all views of a database.
+func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+	viewMap := make(map[string][]*storepb.ViewMetadata)
+
+	query := `
+		SELECT
+			SCHEMA_NAME(v.schema_id) AS schema_name,
+			v.name AS view_name,
+			m.definition
+		FROM sys.views v
+		INNER JOIN sys.sql_modules m ON v.object_id = m.object_id
+		ORDER BY schema_name, view_name;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		view := &storepb.ViewMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
+			return nil, err
+		}
+		viewMap[schemaName] = append(viewMap[schemaName], view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return viewMap, nil
 }

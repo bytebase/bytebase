@@ -58,7 +58,7 @@ export function openWindowForOAuth(
     return window.open(
       `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
         redirectUrl()
-      )}&state=${stateQueryParameter}&response_type=code&scope=repository:write`,
+      )}&state=${stateQueryParameter}&response_type=code&scope=account%20repository:write%20webhook`,
       "oauth",
       "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes"
     );
