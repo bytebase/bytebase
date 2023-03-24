@@ -46,7 +46,7 @@ export default defineComponent({
       ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
       MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
       REDSHIFT: new URL("../assets/db-redshift.svg", import.meta.url).href,
-      MARIADB: new URL("../assets/db-mariadb.svg", import.meta.url).href,
+      MARIADB: new URL("../assets/db-mariadb.png", import.meta.url).href,
     };
     const SelectedEngineIconPath = computed(() => {
       return EngineIconPath[props.instance.engine];
