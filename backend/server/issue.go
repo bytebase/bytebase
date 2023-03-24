@@ -408,11 +408,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if assignee == nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee %d not found", issueCreate.AssigneeID))
 	}
-
+	// TODO(p0ny): remove issueCreate.Payload
 	issueCreatePayload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issueCreate.Payload), issueCreatePayload); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to unmarshal issue payload").SetInternal(err)
-	}
 	issueCreatePayload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: false,
 	}
