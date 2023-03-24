@@ -1,11 +1,14 @@
 <template>
   <div class="space-y-2">
     <div class="flex items-center justify-between">
-      <RiskLevelFilter />
+      <div>
+        <LevelFilter v-if="!hideLevelFilter" />
+      </div>
 
       <div class="flex items-center justify-end gap-x-4">
         <NInput
-          v-model:value="navigation.search"
+          v-if="!hideSearch"
+          v-model:value="search"
           :clearable="true"
           :placeholder="$t('custom-approval.security-rule.search')"
         >
@@ -18,8 +21,8 @@
       </div>
     </div>
 
-    <div class="flex items-center justify-start">
-      <RiskSourceFilter />
+    <div v-if="!hideSourceFilter" class="flex items-center justify-start">
+      <SourceFilter />
     </div>
   </div>
 </template>
@@ -27,9 +30,15 @@
 <script lang="ts" setup>
 import { NInput } from "naive-ui";
 
-import RiskSourceFilter from "./RiskSourceFilter.vue";
-import RiskLevelFilter from "./RiskLevelFilter.vue";
-import { useRiskCenterContext } from "../context";
+import SourceFilter from "./SourceFilter.vue";
+import LevelFilter from "./LevelFilter.vue";
+import { useRiskFilter } from "./context";
 
-const { navigation } = useRiskCenterContext();
+defineProps<{
+  hideLevelFilter?: boolean;
+  hideSourceFilter?: boolean;
+  hideSearch?: boolean;
+}>();
+
+const { search } = useRiskFilter();
 </script>

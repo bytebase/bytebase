@@ -1,12 +1,12 @@
 <template>
   <div class="w-full">
-    <RiskNavigation class="my-4">
+    <RiskFilter class="my-4">
       <template #suffix>
         <NButton type="primary" :disabled="!allowAdmin" @click="addRisk">
           {{ $t("custom-approval.security-rule.add-rule") }}
         </NButton>
       </template>
-    </RiskNavigation>
+    </RiskFilter>
 
     <div class="space-y-4">
       <RiskSection
@@ -23,29 +23,29 @@
 import { computed, watch } from "vue";
 import { groupBy } from "lodash-es";
 
-import RiskNavigation from "./RiskNavigation";
 import RiskSection from "./RiskSection.vue";
+import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
 import { useRiskCenterContext } from "./context";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
 import { PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { useRiskStore } from "@/store";
-import { orderByLevelDesc } from "./common";
 
 const riskStore = useRiskStore();
 const context = useRiskCenterContext();
-const { allowAdmin, navigation } = context;
+const filter = useRiskFilter();
+const { allowAdmin } = context;
 
 const filteredRiskList = computed(() => {
   let list = [...riskStore.riskList];
-  const { source, levels } = navigation.value;
-  const search = navigation.value.search.trim();
+  const { source, levels } = filter;
+  const search = filter.search.value.trim();
   // Risk_Source.SOURCE_UNSPECIFIED to "ALL"
-  if (source !== Risk_Source.SOURCE_UNSPECIFIED) {
-    list = list.filter((risk) => risk.source === source);
+  if (source.value !== Risk_Source.SOURCE_UNSPECIFIED) {
+    list = list.filter((risk) => risk.source === source.value);
   }
   // empty to "ALL"
-  if (levels.size > 0) {
-    list = list.filter((risk) => levels.has(risk.level));
+  if (levels.value.size > 0) {
+    list = list.filter((risk) => levels.value.has(risk.level));
   }
   if (search) {
     list = list.filter((risk) => risk.title.includes(search));
@@ -60,22 +60,20 @@ const riskListGroupBySource = computed(() => {
     riskList.sort(orderByLevelDesc);
     return { source, riskList };
   });
-  if (navigation.value.source === Risk_Source.SOURCE_UNSPECIFIED) {
+  if (filter.source.value === Risk_Source.SOURCE_UNSPECIFIED) {
     // Show "ALL" sources
     return groups;
   }
 
   return groups.filter((group) => {
-    return (
-      group.riskList.length > 0 || group.source === navigation.value.source
-    );
+    return group.riskList.length > 0 || group.source === filter.source.value;
   });
 });
 
 const addRisk = () => {
   const risk = Risk.fromJSON({
     level: PresetRiskLevelList[0].level,
-    source: navigation.value.source || SupportedSourceList[0],
+    source: filter.source.value || SupportedSourceList[0],
     active: true,
   });
   context.dialog.value = {
@@ -89,8 +87,8 @@ watch(
   (dialog) => {
     const source = dialog?.risk?.source;
     if (!source) return;
-    if (navigation.value.source !== Risk_Source.SOURCE_UNSPECIFIED) {
-      navigation.value.source = source;
+    if (filter.source.value !== Risk_Source.SOURCE_UNSPECIFIED) {
+      filter.source.value = source;
     }
   },
   { immediate: true }

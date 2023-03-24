@@ -4,15 +4,15 @@
     :title="title"
     :esc-closable="false"
     :before-close="beforeClose"
-    :data-state-dirty="state.dirty"
     @close="dialog = undefined"
   >
-    <RiskForm
+    <RuleForm
       :dirty="state.dirty"
       @cancel="cancel"
       @update="state.dirty = true"
       @save="handleSave"
     />
+
     <div
       v-if="state.loading"
       class="absolute inset-0 flex flex-col items-center justify-center bg-white/50 rounded-lg"
@@ -24,15 +24,15 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useDialog } from "naive-ui";
-
 import { defer } from "@/utils";
-import { useRiskCenterContext } from "../context";
-import { sourceText } from "../../common";
-import RiskForm from "./RiskForm.vue";
-import { Risk } from "@/types/proto/v1/risk_service";
-import { pushNotification, useRiskStore } from "@/store";
+import { useDialog } from "naive-ui";
+import { useI18n } from "vue-i18n";
+
+import { BBModal } from "@/bbkit";
+import RuleForm from "./RuleForm.vue";
+import { useCustomApprovalContext } from "../context";
+import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
+import { LocalApprovalRule } from "@/types";
 
 type LocalState = {
   loading: boolean;
@@ -40,32 +40,33 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const context = useRiskCenterContext();
+const context = useCustomApprovalContext();
 const { allowAdmin, dialog } = context;
-const nDialog = useDialog();
 
+const store = useWorkspaceApprovalSettingStore();
 const state = reactive<LocalState>({
   loading: false,
   dirty: false,
 });
 
 const title = computed(() => {
-  const parts: string[] = [];
   if (dialog.value) {
-    const { mode, risk } = dialog.value;
     if (!allowAdmin.value) {
-      parts.push(t("custom-approval.security-rule.view-rule"));
-    } else {
-      if (mode === "CREATE") {
-        parts.push(t("custom-approval.security-rule.add-rule"));
-      } else if (mode === "EDIT") {
-        parts.push(t("custom-approval.security-rule.edit-rule"));
-      }
+      return t("custom-approval.approval-flow.view-approval-flow");
     }
-    parts.push(sourceText(risk.source));
+    const { mode } = dialog.value;
+    if (mode === "CREATE") {
+      return t("custom-approval.approval-flow.create-approval-flow");
+    }
+    if (mode === "EDIT") {
+      return t("custom-approval.approval-flow.edit-approval-flow");
+    }
   }
-  return parts.join(" - ");
+  return "";
 });
+
+const nDialog = useDialog();
+
 const cancel = async () => {
   const pass = await beforeClose();
   if (pass) {
@@ -94,12 +95,13 @@ const beforeClose = async () => {
   return d.promise;
 };
 
-const handleSave = async (risk: Risk) => {
+const handleSave = async (
+  newRule: LocalApprovalRule,
+  oldRule: LocalApprovalRule | undefined
+) => {
   state.loading = true;
-
   try {
-    await useRiskStore().upsertRisk(risk);
-
+    await store.upsertRule(newRule, oldRule);
     state.dirty = false;
     pushNotification({
       module: "bytebase",

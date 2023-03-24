@@ -17,7 +17,7 @@ import { NSelect, SelectOption, type SelectProps } from "naive-ui";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { SupportedSourceList } from "@/types";
 import { useRiskCenterContext } from "../context";
-import { sourceText } from "../common";
+import { sourceText } from "../../common";
 
 export interface RiskSourceSelectProps extends SelectProps {
   value: Risk_Source;
