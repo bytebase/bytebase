@@ -4175,6 +4175,7 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | assignee_attention | [bool](#bool) |  |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
+| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers are available. |
 | subscribers | [string](#string) | repeated | The subscribers. Format: user:hello@world.com |
 | creator | [string](#string) |  | Format: user:hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
