@@ -2,9 +2,12 @@ package server
 
 import (
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser"
 )
 
 func TestValidateSQLSelectStatement(t *testing.T) {
+	engines := []parser.EngineType{parser.MySQL, parser.Postgres, parser.MariaDB, parser.MSSQL, parser.Oracle, parser.TiDB, parser.Standard}
 	tests := []struct {
 		sqlStatement string
 		want         bool
@@ -88,9 +91,11 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := validateSQLSelectStatement(test.sqlStatement)
-		if result != test.want {
-			t.Errorf("Validate SQLStatement %q: got result %v, want %v.", test.sqlStatement, result, test.want)
+		for _, engine := range engines {
+			result := parser.ValidateSQLForEditor(engine, test.sqlStatement)
+			if result != test.want {
+				t.Errorf("Validate SQLStatement %q: got result %v, want %v, for engine %s.", test.sqlStatement, result, test.want, engine)
+			}
 		}
 	}
 }
