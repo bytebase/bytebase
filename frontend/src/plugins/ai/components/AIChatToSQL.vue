@@ -38,7 +38,9 @@ const state = reactive<LocalState>({
 });
 
 const openAIKeySetting = useSettingByName("bb.plugin.openai.key");
+const openAIEndpointSetting = useSettingByName("bb.plugin.openai.endpoint");
 const openAIKey = computed(() => openAIKeySetting.value?.value ?? "");
+const openAIEndpoint = computed(() => openAIEndpointSetting.value?.value ?? "");
 const tab = useCurrentTab();
 
 const instance = useInstanceById(
@@ -62,6 +64,7 @@ const chat = useChatByTab();
 
 provideAIContext({
   openAIKey,
+  openAIEndpoint,
   engineType: computed(() => instance.value.engine),
   databaseMetadata: databaseMetadata,
   autoRun,

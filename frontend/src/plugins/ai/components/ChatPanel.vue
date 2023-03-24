@@ -53,7 +53,8 @@ const store = useConversationStore();
 const isChatMode = computed(() => tab.value.editMode === "CHAT-TO-SQL");
 
 const context = useAIContext();
-const { events, openAIKey, autoRun, showHistoryDialog } = context;
+const { events, openAIKey, openAIEndpoint, autoRun, showHistoryDialog } =
+  context;
 const {
   list: conversationList,
   ready,
@@ -124,7 +125,10 @@ const requestAI = async (query: string) => {
     conversation_id: conversation.id,
     status: "LOADING",
   });
-  const url = "https://api.openai.com/v1/chat/completions";
+  const url =
+    openAIEndpoint.value === ""
+      ? "https://api.openai.com/v1/chat/completions"
+      : openAIEndpoint.value + "/v1/chat/completions";
   const messages: OpenAIMessage[] = [];
 
   conversation.messageList.forEach((message) => {
