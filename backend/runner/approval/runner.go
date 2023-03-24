@@ -1,3 +1,4 @@
+// Package approval is the runner for finding approval templates for issues.
 package approval
 
 import (
@@ -56,11 +57,13 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 	api.IssueDatabaseRestorePITR: store.RiskSourceUnknown,
 }
 
+// Runner is the runner for finding approval templates for issues.
 type Runner struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
+// NewRunner creates a new runner.
 func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
 	return &Runner{
 		store:     store,
@@ -68,6 +71,7 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
 	}
 }
 
+// Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(approvalRunnerInterval)
 	defer ticker.Stop()
@@ -106,7 +110,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if riskLevel == 0 {
 						continue
 					}
-					approvalTemplate, err := getApprovalTemplate(ctx, approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
+					approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
 					if err != nil {
 						return err
 					}
@@ -141,7 +145,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func getApprovalTemplate(ctx context.Context, approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
+func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
 	e, err := cel.NewEnv(riskVariables...)
 	if err != nil {
 		return nil, err
