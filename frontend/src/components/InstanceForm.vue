@@ -739,10 +739,10 @@ const engineList = computed(() => {
     "REDIS",
     "ORACLE",
     "MSSQL",
+    "MARIADB",
   ];
   if (isDev()) {
     engines.push("REDSHIFT");
-    engines.push("MARIADB");
   }
   return engines;
 });
