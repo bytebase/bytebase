@@ -707,6 +707,20 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial workspace approval setting
+	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial workspace approval setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name: api.SettingWorkspaceApproval,
+		// Value is ""
+		Value:       string(approvalSettingValue),
+		Description: "The workspace approval setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace profile setting
 	settingName := api.SettingWorkspaceProfile
 	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
