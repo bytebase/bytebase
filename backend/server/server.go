@@ -711,7 +711,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingPluginOpenAIEndpoint,
 		Value:       "",
-		Description: "API Endpoint for OpenA",
+		Description: "API Endpoint for OpenAI",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
