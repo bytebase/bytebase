@@ -98,6 +98,8 @@ export const useWorkspaceApprovalSettingStore = defineStore(
       );
       if (index >= 0) {
         if (rule) {
+          parsed[index].rule = rule;
+        } else {
           parsed.splice(index, 1);
         }
       } else {

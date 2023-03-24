@@ -90,7 +90,7 @@ const rows = computed(() => {
 
   return displayLevelList.map<Row>((level) => ({
     level,
-    rule: rulesMap.value.get(level)?.rule,
+    rule: rulesMap.value.get(level)?.rule ?? "",
   }));
 });
 

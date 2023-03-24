@@ -2178,7 +2178,8 @@
         "admin": "The system defines the approval process and only needs Administrator approval.",
         "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
       },
-      "view-approval-flow": "View approval flow"
+      "view-approval-flow": "View approval flow",
+      "skip": "Skip manual approval"
     },
     "risk": {
       "self": "Risk",

@@ -32,6 +32,7 @@
 import { computed, useAttrs } from "vue";
 import { NButton, type SelectProps, SelectOption } from "naive-ui";
 import { omit } from "lodash-es";
+import { useI18n } from "vue-i18n";
 
 import { VueClass, VueStyle } from "@/utils";
 import { useCustomApprovalContext } from "../context";
@@ -53,6 +54,7 @@ defineEmits<{
   (event: "update:value", value: string | undefined): void;
 }>();
 
+const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
 const { allowAdmin } = context;
@@ -65,10 +67,14 @@ const selectAttrs = computed(() => ({
 }));
 
 const options = computed(() => {
-  return store.config.rules.map<SelectOption>((rule) => ({
+  const ruleOptions = store.config.rules.map<SelectOption>((rule) => ({
     label: rule.template.title,
     value: rule.uid,
   }));
+  return [
+    { value: "", label: t("custom-approval.approval-flow.skip") },
+    ...ruleOptions,
+  ];
 });
 
 const selectedRule = computed(() => {
