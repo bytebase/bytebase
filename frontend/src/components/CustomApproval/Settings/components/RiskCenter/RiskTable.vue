@@ -45,11 +45,10 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { SpinnerButton, SpinnerSwitch } from "../common";
+import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
 import { useRiskCenterContext } from "./context";
 import { Risk } from "@/types/proto/v1/risk_service";
 import { pushNotification, useRiskStore } from "@/store";
-import { levelText } from "./common";
 
 defineProps<{
   riskList: Risk[];

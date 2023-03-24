@@ -2074,7 +2074,6 @@
     "security-rule": {
       "self": "安全规则",
       "security-rules": "安全规则",
-      "description": "对每种操作类型，配置自定义条件、风险和审批流。",
       "x-risk-rules": {
         "low": "低风险规则",
         "moderate": "中风险规则",
@@ -2143,6 +2142,7 @@
     },
     "approval-flow": {
       "self": "审批流",
+      "description": "对每种操作类型，配置自定义条件、风险和审批流。",
       "approval-flows": "审批流",
       "approval-nodes": "审批节点",
       "type": {
@@ -2158,17 +2158,34 @@
         "nodes": "审批节点",
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "approver": "审批人",
+        "group": {
+          "WORKSPACE_OWNER": "管理员",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "项目所有者",
+          "PROJECT_MEMBER": "项目成员"
+        },
         "add": "增加节点",
         "delete": "删除审批节点",
         "order": "顺序"
       },
+      "presets": {
+        "owner-dba": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。",
+        "owner": "系统定义的流程。只需要项目所有者审批。",
+        "dba": "系统定义的流程。只需要 DBA 审批",
+        "admin": "系统定义的流程。只需要管理员审批",
+        "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
+      },
       "view-approval-flow": "查看审批流"
     },
     "risk": {
+      "self": "风险",
       "risk-center": "风险中心"
     },
     "workflow-center": {
       "workflow": "工作流"
+    },
+    "rule": {
+      "rules": "规则"
     }
   }
 }

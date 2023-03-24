@@ -11,7 +11,7 @@ import {
   SupportedSourceList,
 } from "@/types";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
-import { levelText } from "../../../RiskCenter/common";
+import { levelText } from "../../utils";
 
 export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const context = useExprEditorContext();

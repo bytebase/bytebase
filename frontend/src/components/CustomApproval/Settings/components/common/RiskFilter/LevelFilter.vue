@@ -27,8 +27,8 @@ import { NCheckbox } from "naive-ui";
 
 import BBBadge, { type BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import { PresetRiskLevel, PresetRiskLevelList } from "@/types";
-import { useRiskCenterContext } from "../context";
-import { levelText } from "../common";
+import { levelText } from "../../common";
+import { useRiskFilter } from "./context";
 
 type RiskLevelFilterItem = {
   value: number;
@@ -36,7 +36,7 @@ type RiskLevelFilterItem = {
   style: BBBadgeStyle;
 };
 
-const { navigation } = useRiskCenterContext();
+const { levels } = useRiskFilter();
 
 const riskLevelFilterItemList = computed(() => {
   return PresetRiskLevelList.map<RiskLevelFilterItem>(({ level }) => {
@@ -56,12 +56,11 @@ const riskLevelFilterItemList = computed(() => {
 });
 
 const isCheckedLevel = (level: number) => {
-  return navigation.value.levels.has(level);
+  return levels.value.has(level);
 };
 
 const toggleCheckLevel = (level: number, checked: boolean) => {
-  const { levels } = navigation.value;
-  if (checked) levels.add(level);
-  else levels.delete(level);
+  if (checked) levels.value.add(level);
+  else levels.value.delete(level);
 };
 </script>

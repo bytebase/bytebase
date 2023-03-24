@@ -1,18 +1,12 @@
 <template>
   <div class="w-full mt-4 space-y-4 text-sm">
-    <FeatureAttention
-      v-if="!hasCustomApprovalFeature"
-      feature="bb.feature.custom-approval"
-      :description="$t('subscription.features.bb-feature-custom-approval.desc')"
-    />
-
-    <RiskCenter v-if="state.ready" />
+    <CustomApproval v-if="state.ready" />
     <div v-else class="w-full py-[4rem] flex justify-center items-center">
       <BBSpin />
     </div>
   </div>
 
-  <RiskDialog />
+  <ApprovalRuleDialog />
 
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -24,24 +18,31 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, toRef } from "vue";
 
-import { featureToRef, useCurrentUser, useRiskStore } from "@/store";
+import {
+  featureToRef,
+  useWorkspaceApprovalSettingStore,
+  useCurrentUser,
+} from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import {
-  RiskCenter,
-  RiskDialog,
-  provideRiskCenterContext,
-} from "@/components/CustomApproval/Settings/components/RiskCenter";
-import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
+  CustomApproval,
+  ApprovalRuleDialog,
+  provideCustomApprovalContext,
+  TabValueList,
+} from "@/components/CustomApproval/Settings/components/CustomApproval/";
+import { useRouteHash } from "@/composables/useRouteHash";
 
 interface LocalState {
   ready: boolean;
   showFeatureModal: boolean;
 }
 
+const store = useWorkspaceApprovalSettingStore();
 const state = reactive<LocalState>({
   ready: false,
   showFeatureModal: false,
 });
+const tab = useRouteHash("rules", TabValueList, "replace");
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const currentUser = useCurrentUser();
@@ -52,18 +53,18 @@ const allowAdmin = computed(() => {
   );
 });
 
-provideRiskFilter();
-provideRiskCenterContext({
+provideCustomApprovalContext({
   hasFeature: hasCustomApprovalFeature,
   showFeatureModal: toRef(state, "showFeatureModal"),
   allowAdmin,
   ready: toRef(state, "ready"),
+  tab,
   dialog: ref(),
 });
 
 onMounted(async () => {
   try {
-    await useRiskStore().fetchRiskList();
+    await Promise.all([store.fetchConfig()]);
     state.ready = true;
   } catch {
     // nothing
