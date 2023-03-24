@@ -18,6 +18,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.

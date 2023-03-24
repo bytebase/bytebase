@@ -12,8 +12,9 @@ var (
 
 func init() {
 	advisor.Register(db.MySQL, advisor.Fake, &Advisor{})
-	advisor.Register(db.Postgres, advisor.Fake, &Advisor{})
 	advisor.Register(db.TiDB, advisor.Fake, &Advisor{})
+	advisor.Register(db.MariaDB, advisor.Fake, &Advisor{})
+	advisor.Register(db.Postgres, advisor.Fake, &Advisor{})
 }
 
 // Advisor is the fake sql advisor.

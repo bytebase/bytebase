@@ -21,6 +21,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLRequireColumnDefault, &ColumRequireDefaultAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLRequireColumnDefault, &ColumRequireDefaultAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLRequireColumnDefault, &ColumRequireDefaultAdvisor{})
 }
 
 // ColumRequireDefaultAdvisor is the advisor checking for column default requirement.

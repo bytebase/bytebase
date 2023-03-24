@@ -23,6 +23,7 @@ var (
 
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
 }
 
 // UseInnoDBAdvisor is the advisor checking for using InnoDB engine.

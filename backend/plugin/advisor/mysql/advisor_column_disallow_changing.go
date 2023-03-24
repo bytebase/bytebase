@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
 }
 
 // ColumnDisallowChangingAdvisor is the advisor checking for disallow CHANGE COLUMN statement.

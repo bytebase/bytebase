@@ -1091,7 +1091,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	case db.Snowflake:
 		// Snowflake needs to use upper case of DatabaseName.
 		databaseName = strings.ToUpper(databaseName)
-	case db.MySQL:
+	case db.MySQL, db.MariaDB:
 		// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 		// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 		// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
@@ -1232,7 +1232,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.D
 func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, databaseName, adminDatasourceUser string) (string, error) {
 	var stmt string
 	switch dbType {
-	case db.MySQL, db.TiDB:
+	case db.MySQL, db.TiDB, db.MariaDB:
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil

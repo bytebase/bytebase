@@ -20,6 +20,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 }
 
 // ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.

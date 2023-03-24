@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.

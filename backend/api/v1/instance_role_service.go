@@ -289,7 +289,7 @@ func validateRole(dbType db.Type, upsert *db.DatabaseRoleUpsertMessage) error {
 				return status.Errorf(codes.InvalidArgument, "Invalid timestamp for valid_until, timestamp should in '2006-01-02T15:04:05+08:00' format.")
 			}
 		}
-	case db.MySQL, db.TiDB:
+	case db.MySQL, db.TiDB, db.MariaDB:
 		if v := upsert.ConnectionLimit; v != nil && *v < int32(0) {
 			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
 		}

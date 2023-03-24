@@ -20,6 +20,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
 }
 
 // ColumnAutoIncrementMustUnsignedAdvisor is the advisor checking for unsigned auto-increment column.

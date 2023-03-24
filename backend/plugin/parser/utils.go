@@ -35,7 +35,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres:
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB:
+	case MySQL, TiDB, MariaDB:
 		t := newTokenizer(statement)
 		list, err = t.splitMySQLMultiSQL()
 	default:
@@ -70,7 +70,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	case Postgres:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB:
+	case MySQL, TiDB, MariaDB:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitMySQLMultiSQL()
 	default:
@@ -203,7 +203,7 @@ func ExtractDelimiter(stmt string) (string, error) {
 // ExtractDatabaseList extracts all databases from statement.
 func ExtractDatabaseList(engineType EngineType, statement string) ([]string, error) {
 	switch engineType {
-	case MySQL, TiDB:
+	case MySQL, TiDB, MariaDB:
 		return extractMySQLDatabaseList(statement)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)

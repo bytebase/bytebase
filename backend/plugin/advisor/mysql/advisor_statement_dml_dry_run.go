@@ -21,6 +21,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
 }
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.
