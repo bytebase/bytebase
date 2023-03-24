@@ -708,6 +708,13 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingPluginOpenAIEndpoint,
+		Value:       "",
+		Description: "API Endpoint for OpenA",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
 
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
