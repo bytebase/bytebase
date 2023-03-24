@@ -156,6 +156,9 @@ const (
 	// MySQLIndexPKType is an advisor type for MySQL correct type of PK.
 	MySQLIndexPKType Type = "bb.plugin.advisor.mysql.index.pk-type"
 
+	// MySQLPrimaryKeyTypeAllowlist is an advisor type for MySQL primary key type allowlist.
+	MySQLPrimaryKeyTypeAllowlist Type = "bb.plugin.advisor.mysql.index.primary-key-type-allowlist"
+
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 

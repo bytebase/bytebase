@@ -109,6 +109,7 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexTypeNoBlob,
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
+		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
 
 		// advisor.SchemaRuleCharsetAllowlist enforce the charset allowlist.
 		advisor.SchemaRuleCharsetAllowlist,

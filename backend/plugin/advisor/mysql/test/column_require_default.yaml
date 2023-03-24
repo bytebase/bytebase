@@ -5,21 +5,21 @@
       title: OK
       content: ""
       line: 0
-- statement: |4-
-      CREATE TABLE t(
-        a int,
-        b int default 1
-      )
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int default 1
+    )
   want:
     - status: WARN
       code: 420
       title: column.require-default
       content: Column `t`.`a` doesn't have DEFAULT.
       line: 2
-- statement: |4-
-      ALTER TABLE tech_book ADD COLUMN a BLOB;
-      ALTER TABLE tech_book ADD COLUMN b timestamp;
-      ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a BLOB;
+    ALTER TABLE tech_book ADD COLUMN b timestamp;
+    ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
   want:
     - status: WARN
       code: 420
