@@ -109,7 +109,11 @@ const state = reactive<LocalState>({
 const openAIKeySetting = useSettingByName("bb.plugin.openai.key");
 
 watchEffect(() => {
-  state.openAIKey = openAIKeySetting.value?.value ? "sk-******" : "";
+  state.openAIKey = openAIKeySetting.value?.value
+    ? openAIKeySetting.value?.value.slice(0, 3) +
+      "***" +
+      openAIKeySetting.value?.value.slice(-4)
+    : "";
 });
 
 const allowEdit = computed((): boolean => {
