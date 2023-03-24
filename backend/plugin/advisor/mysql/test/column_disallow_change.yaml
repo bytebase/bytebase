@@ -1,15 +1,15 @@
-- statement: |4-
-      CREATE TABLE t(b int);
-      ALTER TABLE t ADD COLUMN a int
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN a int
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
-- statement: |4-
-      CREATE TABLE t(b int);
-      ALTER TABLE t CHANGE COLUMN b a int
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t CHANGE COLUMN b a int
   want:
     - status: WARN
       code: 406

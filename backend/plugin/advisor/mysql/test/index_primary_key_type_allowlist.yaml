@@ -2,8 +2,8 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 1
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
   want:
@@ -16,20 +16,20 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 1
 - statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 1
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 1
 - statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2))
   want:
@@ -51,8 +51,8 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(a int);
@@ -69,8 +69,8 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(a int);
@@ -78,13 +78,13 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(a int);
@@ -110,8 +110,8 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
@@ -119,13 +119,13 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
@@ -151,8 +151,8 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(id int);
@@ -169,8 +169,8 @@
   want:
     - status: WARN
       code: 803
-      title: index.pk-type-limit
-      content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
+      title: index.primary-key-type-allowlist
+      content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       line: 2
 - statement: |-
     CREATE TABLE t(id int);

@@ -917,7 +917,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLIndexTypeNoBlob, nil
 		}
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
-		if engine == db.Postgres {
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLPrimaryKeyTypeAllowlist, nil
+		case db.Postgres:
 			return PostgreSQLPrimaryKeyTypeAllowlist, nil
 		}
 	case SchemaRuleCreateIndexConcurrently:
