@@ -204,7 +204,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 				return errors.Errorf("context is canceled when doing cutover for PostgreSQL")
 			}
 		}
-	case db.MySQL:
+	case db.MySQL, db.MariaDB:
 		if err := exec.pitrCutoverMySQL(ctx, driver, issue, databaseName); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}

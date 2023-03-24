@@ -23,6 +23,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.

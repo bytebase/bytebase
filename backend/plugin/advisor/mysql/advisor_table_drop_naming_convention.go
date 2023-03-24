@@ -18,6 +18,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.

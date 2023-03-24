@@ -106,6 +106,7 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	}
 	switch instance.Engine {
 	case db.MySQL:
+		// TODO(d): support MariaDB.
 		r.generateMySQLRollbackSQL(ctx, task, payload, instance)
 	case db.Oracle:
 		r.generateOracleRollbackSQL(ctx, task, payload, instance)

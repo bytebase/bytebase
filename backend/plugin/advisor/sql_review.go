@@ -441,7 +441,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
-	case db.TiDB, db.MySQL, db.Postgres:
+	case db.TiDB, db.MySQL, db.MariaDB, db.Postgres:
 		if err := finder.WalkThrough(statements); err != nil {
 			return convertWalkThroughErrorToAdvice(err)
 		}
@@ -664,42 +664,42 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLWhereRequirement, nil
 		case db.Postgres:
 			return PostgreSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNoLeadingWildcardLike, nil
 		case db.Postgres:
 			return PostgreSQLNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNoSelectAll, nil
 		case db.Postgres:
 			return PostgreSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLMigrationCompatibility, nil
 		case db.Postgres:
 			return PostgreSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingTableConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingIndexConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingIndexConvention, nil
@@ -710,209 +710,210 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingUKConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingFKConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingColumnConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleAutoIncrementColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingAutoIncrementColumnConvention, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnRequirement, nil
 		case db.Postgres:
 			return PostgreSQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnNoNull, nil
 		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnDisallowChangingType, nil
 		case db.Postgres:
 			return PostgreSQLColumnDisallowChangingType, nil
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleColumnDisallowChange:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnDisallowChanging, nil
 		}
 	case SchemaRuleColumnDisallowChangingOrder:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
 	case SchemaRuleColumnCommentConvention:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLAutoIncrementColumnMustInteger, nil
 		}
 	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnTypeRestriction, nil
 		case db.Postgres:
 			return PostgreSQLColumnTypeDisallowList, nil
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLDisallowSetColumnCharset, nil
 		}
 	case SchemaRuleColumnMaximumCharacterLength:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLColumnMaximumCharacterLength, nil
 		case db.Postgres:
 			return PostgreSQLColumnMaximumCharacterLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLAutoIncrementColumnInitialValue, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustUnsigned:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleCurrentTimeColumnCountLimit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLCurrentTimeColumnCountLimit, nil
 		}
 	case SchemaRuleColumnRequireDefault:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLRequireColumnDefault, nil
 		case db.Postgres:
 			return PostgreSQLRequireColumnDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLTableRequirePK, nil
 		case db.Postgres:
 			return PostgreSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLTableNoFK, nil
 		case db.Postgres:
 			return PostgreSQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLTableDropNamingConvention, nil
 		case db.Postgres:
 			return PostgreSQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLTableDisallowPartition, nil
 		case db.Postgres:
 			return PostgreSQLTableDisallowPartition, nil
 		}
 	case SchemaRuleMySQLEngine:
-		if engine == db.MySQL {
+		switch engine {
+		case db.MySQL, db.MariaDB:
 			return MySQLUseInnoDB, nil
 		}
 	case SchemaRuleDropEmptyDatabase:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	case SchemaRuleIndexNoDuplicateColumn:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLIndexNoDuplicateColumn, nil
 		case db.Postgres:
 			return PostgreSQLIndexNoDuplicateColumn, nil
 		}
 	case SchemaRuleIndexKeyNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLIndexKeyNumberLimit, nil
 		case db.Postgres:
 			return PostgreSQLIndexKeyNumberLimit, nil
 		}
 	case SchemaRuleIndexTotalNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLIndexTotalNumberLimit, nil
 		case db.Postgres:
 			return PostgreSQLIndexTotalNumberLimit, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLStatementDisallowCommit, nil
 		case db.Postgres:
 			return PostgreSQLStatementDisallowCommit, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLCharsetAllowlist, nil
 		case db.Postgres:
 			return PostgreSQLEncodingAllowlist, nil
 		}
 	case SchemaRuleCollationAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLCollationAllowlist, nil
 		case db.Postgres:
 			return PostgreSQLCollationAllowlist, nil
 		}
 	case SchemaRuleIndexPKTypeLimit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLIndexPKType, nil
 		}
 	case SchemaRuleIndexTypeNoBlob:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLIndexTypeNoBlob, nil
 		}
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
@@ -925,52 +926,52 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
-		case db.MySQL:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLInsertRowLimit, nil
 		case db.Postgres:
 			return PostgreSQLInsertRowLimit, nil
 		}
 	case SchemaRuleStatementInsertMustSpecifyColumn:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLInsertMustSpecifyColumn, nil
 		case db.Postgres:
 			return PostgreSQLInsertMustSpecifyColumn, nil
 		}
 	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLInsertDisallowOrderByRand, nil
 		case db.Postgres:
 			return PostgreSQLInsertDisallowOrderByRand, nil
 		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLDisallowLimit, nil
 		}
 	case SchemaRuleStatementDisallowOrderBy:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLDisallowOrderBy, nil
 		}
 	case SchemaRuleStatementMergeAlterTable:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLMergeAlterTable, nil
 		case db.Postgres:
 			return PostgreSQLMergeAlterTable, nil
 		}
 	case SchemaRuleStatementAffectedRowLimit:
 		switch engine {
-		case db.MySQL:
+		case db.MySQL, db.MariaDB:
 			return MySQLStatementAffectedRowLimit, nil
 		case db.Postgres:
 			return PostgreSQLStatementAffectedRowLimit, nil
 		}
 	case SchemaRuleStatementDMLDryRun:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLStatementDMLDryRun, nil
 		case db.Postgres:
 			return PostgreSQLStatementDMLDryRun, nil

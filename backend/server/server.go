@@ -857,8 +857,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 
 	ruleList := []*advisor.SQLReviewRule{}
 
-	// Add DropEmptyDatabase rule for MySQL and TiDB.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB} {
+	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleDropEmptyDatabase,
 			Level:   advisor.SchemaRuleLevelError,
@@ -867,8 +867,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 		})
 	}
 
-	// Add ColumnNotNull rule for MySQL, TiDB and Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleColumnNotNull,
 			Level:   advisor.SchemaRuleLevelWarning,
@@ -877,8 +877,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 		})
 	}
 
-	// Add TableDropNamingConvention rule for MySQL, TiDB and Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleTableDropNamingConvention,
 			Level:   advisor.SchemaRuleLevelError,

@@ -20,6 +20,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.

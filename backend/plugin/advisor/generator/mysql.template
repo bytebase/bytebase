@@ -16,6 +16,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.%AdvisorType, &%AdvisorName{})
 	advisor.Register(db.TiDB, advisor.%AdvisorType, &%AdvisorName{})
+	advisor.Register(db.Marshal, advisor.%AdvisorType, &%AdvisorName{})
 }
 
 // %AdvisorName is the advisor checking for %AdvisorComment

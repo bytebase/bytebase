@@ -18,6 +18,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.

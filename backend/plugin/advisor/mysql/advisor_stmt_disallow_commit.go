@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for index type no blob.

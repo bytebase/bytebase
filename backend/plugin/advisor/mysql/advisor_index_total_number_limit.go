@@ -21,6 +21,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 }
 
 // IndexTotalNumberLimitAdvisor is the advisor checking for index total number limit.
