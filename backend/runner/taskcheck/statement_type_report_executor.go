@@ -206,14 +206,13 @@ func getStatementTypeFromTidbAstNode(node tidbast.StmtNode) string {
 }
 
 func getStatementTypeFromAstNode(node ast.Node) string {
-	switch node.(type) {
+	switch node := node.(type) {
 	// DDL
 
 	// CREATE
 	case *ast.CreateIndexStmt:
 		return "CREATE_INDEX"
 	case *ast.CreateTableStmt:
-		node := node.(*ast.CreateTableStmt)
 		switch node.Name.Type {
 		case ast.TableTypeView:
 			return "CREATE_VIEW"
@@ -257,13 +256,8 @@ func getStatementTypeFromAstNode(node ast.Node) string {
 	case *ast.DropSequenceStmt:
 		return "DROP_SEQUENCE"
 	case *ast.DropTableStmt:
-		node := node.(*ast.CreateTableStmt)
-		switch node.Name.Type {
-		case ast.TableTypeView:
-			return "DROP_VIEW"
-		case ast.TableTypeBaseTable:
-			return "DROP_TABLE"
-		}
+		return "DROP_TABLE"
+
 	case *ast.DropTriggerStmt:
 		return "DROP_TRIGGER"
 	case *ast.DropTypeStmt:
@@ -275,7 +269,6 @@ func getStatementTypeFromAstNode(node ast.Node) string {
 	case *ast.AlterSequenceStmt:
 		return "ALTER_SEQUENCE"
 	case *ast.AlterTableStmt:
-		node := node.(*ast.AlterTableStmt)
 		switch node.Table.Type {
 		case ast.TableTypeView:
 			return "ALTER_VIEW"
@@ -300,7 +293,6 @@ func getStatementTypeFromAstNode(node ast.Node) string {
 	case *ast.RenameSchemaStmt:
 		return "RENAME_SCHEMA"
 	case *ast.RenameTableStmt:
-		node := node.(*ast.RenameTableStmt)
 		switch node.Table.Type {
 		case ast.TableTypeView:
 			return "RENAME_VIEW"
