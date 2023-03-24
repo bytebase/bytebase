@@ -1,12 +1,12 @@
 <template>
   <div class="w-full">
-    <div class="flex justify-end">
-      <NButton type="primary" :disabled="!allowAdmin" @click="addRisk">
-        {{ $t("custom-approval.security-rule.add-rule") }}
-      </NButton>
-    </div>
-
-    <RiskNavigation class="my-4" />
+    <RiskNavigation class="my-4">
+      <template #suffix>
+        <NButton type="primary" :disabled="!allowAdmin" @click="addRisk">
+          {{ $t("custom-approval.security-rule.add-rule") }}
+        </NButton>
+      </template>
+    </RiskNavigation>
 
     <div class="space-y-4">
       <RiskSection

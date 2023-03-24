@@ -1,21 +1,25 @@
 <template>
-  <div class="flex justify-between items-center">
-    <div class="flex items-center justify-start">
-      <RiskSourceFilter />
-    </div>
-
-    <div class="flex items-center justify-end gap-x-4">
+  <div class="space-y-2">
+    <div class="flex items-center justify-between">
       <RiskLevelFilter />
 
-      <NInput
-        v-model:value="navigation.search"
-        :clearable="true"
-        :placeholder="$t('custom-approval.security-rule.search')"
-      >
-        <template #prefix>
-          <heroicons:magnifying-glass class="w-4 h-4" />
-        </template>
-      </NInput>
+      <div class="flex items-center justify-end gap-x-4">
+        <NInput
+          v-model:value="navigation.search"
+          :clearable="true"
+          :placeholder="$t('custom-approval.security-rule.search')"
+        >
+          <template #prefix>
+            <heroicons:magnifying-glass class="w-4 h-4" />
+          </template>
+        </NInput>
+
+        <slot name="suffix" />
+      </div>
+    </div>
+
+    <div class="flex items-center justify-start">
+      <RiskSourceFilter />
     </div>
   </div>
 </template>
