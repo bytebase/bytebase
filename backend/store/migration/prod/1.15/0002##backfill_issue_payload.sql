@@ -1,2 +1,2 @@
 UPDATE issue
-SET payload = '{"approval": {"approvalFindingDone": false}}'
+SET payload = '{"approval": {"approvalFindingDone": true}}'
