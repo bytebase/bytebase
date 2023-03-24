@@ -495,6 +495,10 @@
               "self": "OpenAI API Key",
               "description": "Supply OpenAI API Key to enable ChatSQL capability in SQL Editor. {viewDoc}",
               "placeholder": "An OpenAI API Key usually starts with sk-*****"
+            },
+            "openai-endpoint": {
+              "self": "OpenAI API Endpoint",
+              "description": "Supply private deployment of OpenAI API Endpoint."
             }
           }
         }
