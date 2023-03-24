@@ -14,6 +14,7 @@ import (
 type EngineType string
 
 const (
+	Standard EngineType = "STANDARD"
 	// MySQL is the engine type for MYSQL.
 	MySQL EngineType = "MYSQL"
 	// TiDB is the engine type for TiDB.

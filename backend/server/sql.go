@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -218,9 +217,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if !exec.Readonly {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support readonly sql statement")
 		}
-		if !validateSQLSelectStatement(exec.Statement) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
-		}
 
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &exec.InstanceID})
 		if err != nil {
@@ -229,6 +225,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+
+		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), exec.Statement) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
+		}
+
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment ID: %s", instance.EnvironmentID)).SetInternal(err)
@@ -777,29 +778,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func validateSQLSelectStatement(sqlStatement string) bool {
-	// Check if the query has only one statement.
-	count := 0
-	if err := util.ApplyMultiStatements(strings.NewReader(sqlStatement), func(_ string) error {
-		count++
-		return nil
-	}); err != nil {
-		return false
+func convertToParserEngine(engine db.Type) parser.EngineType {
+	// convert to parser engine
+	switch engine {
+	case db.Postgres:
+		return parser.Postgres
+	case db.MySQL:
+		return parser.MySQL
+	case db.TiDB:
+		return parser.TiDB
+	case db.MariaDB:
+		return parser.MariaDB
+	case db.Oracle:
+		return parser.Oracle
+	case db.MSSQL:
+		return parser.MSSQL
 	}
-	if count != 1 {
-		return false
-	}
-
-	// Allow SELECT and EXPLAIN queries only.
-	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`, `^WITH\s+?`}
-	formattedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
-	for _, reg := range whiteListRegs {
-		matchResult, _ := regexp.MatchString(reg, formattedStr)
-		if matchResult {
-			return true
-		}
-	}
-	return false
+	return parser.Standard
 }
 
 func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Context, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) error {
