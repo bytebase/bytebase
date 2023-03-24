@@ -30,6 +30,7 @@ var (
 func init() {
 	db.Register(db.MySQL, newDriver)
 	db.Register(db.TiDB, newDriver)
+	db.Register(db.MariaDB, newDriver)
 }
 
 // Driver is the MySQL driver.

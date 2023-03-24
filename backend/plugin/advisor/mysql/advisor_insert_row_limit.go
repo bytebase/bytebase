@@ -22,6 +22,7 @@ var (
 
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for to limit INSERT rows.

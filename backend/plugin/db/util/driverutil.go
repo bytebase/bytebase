@@ -368,7 +368,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		return queryAdmin(ctx, dbType, conn, statement, limit)
 	}
 	// Limit SQL query result size.
-	if dbType == db.MySQL {
+	if dbType == db.MySQL || dbType == db.MariaDB {
 		// MySQL 5.7 doesn't support WITH clause.
 		statement = getMySQLStatementWithResultLimit(statement, limit)
 	} else if dbType == db.Oracle {

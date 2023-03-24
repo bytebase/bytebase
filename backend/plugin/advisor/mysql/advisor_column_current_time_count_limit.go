@@ -27,6 +27,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
 }
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.

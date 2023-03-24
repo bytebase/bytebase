@@ -19,6 +19,8 @@ const (
 	Postgres Type = "POSTGRES"
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
+	// MariaDB is the database type for MariaDB.
+	MariaDB Type = "MARIADB"
 )
 
 // ConvertToAdvisorDBType will convert db type into advisor db type.

@@ -16,10 +16,12 @@ type EngineType string
 const (
 	// MySQL is the engine type for MYSQL.
 	MySQL EngineType = "MYSQL"
-	// Postgres is the engine type for POSTGRES.
-	Postgres EngineType = "POSTGRES"
 	// TiDB is the engine type for TiDB.
 	TiDB EngineType = "TIDB"
+	// MariaDB is the engine type for MariaDB.
+	MariaDB EngineType = "MARIADB"
+	// Postgres is the engine type for POSTGRES.
+	Postgres EngineType = "POSTGRES"
 	// Oracle is the engine type for Oracle.
 	Oracle EngineType = "ORACLE"
 	// MSSQL is the engine type for MSSQL.

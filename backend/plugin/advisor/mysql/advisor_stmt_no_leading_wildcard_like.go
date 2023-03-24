@@ -22,6 +22,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.

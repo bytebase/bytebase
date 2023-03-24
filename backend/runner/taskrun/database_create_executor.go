@@ -250,7 +250,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 
 func getConnectionStatement(dbType db.Type, databaseName string) (string, error) {
 	switch dbType {
-	case db.MySQL, db.TiDB:
+	case db.MySQL, db.TiDB, db.MariaDB:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil

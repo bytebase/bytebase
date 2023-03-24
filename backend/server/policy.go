@@ -496,6 +496,15 @@ func splitSQLReviewRule(payload *string) *string {
 					Payload: rule.Payload,
 				})
 			}
+			if advisor.RuleExists(rule.Type, db.MariaDB) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.MariaDB,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
 			if advisor.RuleExists(rule.Type, db.Postgres) {
 				ruleList = append(ruleList, &advisor.SQLReviewRule{
 					Type:    rule.Type,
