@@ -16,7 +16,7 @@ import { NSelect, SelectOption, type SelectProps } from "naive-ui";
 
 import { PresetRiskLevelList } from "@/types";
 import { useRiskCenterContext } from "../context";
-import { levelText } from "../common";
+import { levelText } from "../../common";
 
 export interface RiskLevelSelectorProps extends SelectProps {
   value: number;

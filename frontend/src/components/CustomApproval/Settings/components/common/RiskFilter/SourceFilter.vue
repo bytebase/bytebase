@@ -12,20 +12,18 @@ import { useI18n } from "vue-i18n";
 
 import { BBTabFilter, type BBTabFilterItem } from "@/bbkit";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
-import { useRiskCenterContext } from "../context";
 import { SupportedSourceList } from "@/types";
 import { minmax } from "@/utils";
-import { sourceText } from "../common";
+import { sourceText } from "../../common";
+import { useRiskFilter } from "./context";
 
 export interface RiskSourceFilterItem {
   value: Risk_Source;
   label: string;
 }
 
-const context = useRiskCenterContext();
-const { navigation } = context;
-
 const { t } = useI18n();
+const { source } = useRiskFilter();
 
 const filterItemList = computed(() => {
   const items: RiskSourceFilterItem[] = [
@@ -46,14 +44,14 @@ const filterItemList = computed(() => {
 const index = computed({
   get() {
     const index = filterItemList.value.findIndex(
-      (item) => item.value === navigation.value.source
+      (item) => item.value === source.value
     );
     if (index < 0) return 0;
     return index;
   },
   set(index) {
     index = minmax(index, 0, filterItemList.value.length - 1);
-    navigation.value.source = filterItemList.value[index].value;
+    source.value = filterItemList.value[index].value;
   },
 });
 

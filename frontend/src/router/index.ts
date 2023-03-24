@@ -417,6 +417,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "custom-approval",
+                name: "setting.workspace.custom-approval",
+                meta: { title: () => t("custom-approval.self") },
+                component: () =>
+                  import("../views/SettingWorkspaceCustomApproval.vue"),
+                props: true,
+              },
+              {
                 path: "gitops",
                 name: "setting.workspace.gitops",
                 meta: { title: () => t("settings.sidebar.gitops") },
@@ -1036,12 +1044,8 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_RESET_MODULE ||
     to.name === PASSWORD_FORGOT_MODULE
   ) {
-    try {
-      useTabStore().reset();
-      useConversationStore().reset();
-    } catch {
-      // nothing
-    }
+    useTabStore().reset();
+    useConversationStore().reset();
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
