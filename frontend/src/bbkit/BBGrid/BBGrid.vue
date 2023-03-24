@@ -22,7 +22,7 @@
 
     <div
       v-for="(item, row) in dataSource"
-      :key="row"
+      :key="rowKey ? item[rowKey] : row"
       row="table-row"
       class="bb-grid-row group"
       :class="{
@@ -32,6 +32,17 @@
     >
       <slot name="item" :item="item" :row="row" />
     </div>
+    <slot name="placeholder">
+      <div
+        v-if="dataSource.length === 0 && showPlaceholder"
+        class="flex flex-col items-center justify-center py-8 text-control-placeholder border-t"
+        :style="{
+          'grid-column': `auto / span ${columnList.length}`,
+        }"
+      >
+        <p>{{ $t("common.no-data") }}</p>
+      </div>
+    </slot>
   </div>
 
   <slot name="footer" />
@@ -59,6 +70,7 @@ const props = withDefaults(
   defineProps<{
     columnList?: BBGridColumn[];
     dataSource?: DataType[];
+    rowKey?: string;
     showHeader?: boolean;
     customHeader?: boolean;
     headerClass?: VueClass;
@@ -68,11 +80,12 @@ const props = withDefaults(
   {
     columnList: () => [],
     dataSource: () => [],
+    rowKey: undefined,
     showHeader: true,
     customHeader: false,
     headerClass: undefined,
     rowClickable: true,
-    showPlaceholder: true,
+    showPlaceholder: false,
   }
 );
 
