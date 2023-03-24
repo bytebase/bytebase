@@ -306,6 +306,14 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
+	create, err = getStatementTypeReportTaskCheck(task, instance, dbSchema, statement, creatorID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to schedule statement type report task check")
+	}
+	if create != nil {
+		createList = append(createList, create...)
+	}
+
 	return createList, nil
 }
 
@@ -424,6 +432,35 @@ func (*Scheduler) getPITRTaskCheck(task *store.TaskMessage, creatorID int) ([]*s
 			CreatorID: creatorID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckPITRMySQL,
+		},
+	}, nil
+}
+
+func getStatementTypeReportTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string, creatorID int) ([]*store.TaskCheckRunMessage, error) {
+	if !api.IsStatementTypeReportCheckSupported(instance.Engine) {
+		return nil, nil
+	}
+	// TBD(p0ny): approval, maybe change to issue type
+	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+		return nil, nil
+	}
+	payload, err := json.Marshal(&api.TaskCheckDatabaseStatementTypeReportPayload{
+		Statement: statement,
+		DbType:    instance.Engine,
+
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal payload")
+	}
+
+	return []*store.TaskCheckRunMessage{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementTypeReport,
+			Payload:   string(payload),
 		},
 	}, nil
 }
