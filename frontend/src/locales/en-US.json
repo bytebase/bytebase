@@ -2077,7 +2077,6 @@
     "security-rule": {
       "self": "Security rule",
       "security-rules": "Security rules",
-      "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "x-risk-rules": {
         "low": "Low Risk Rules",
         "moderate": "Moderate Risk Rules",
@@ -2146,6 +2145,7 @@
     },
     "approval-flow": {
       "self": "Approval flow",
+      "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "approval-flows": "Approval flows",
       "approval-nodes": "Approval nodes",
       "type": {
@@ -2162,16 +2162,34 @@
         "description": "Only one approval is required on this node when there are multiple approvers.",
         "order": "Order",
         "approver": "Approver",
+        "group": {
+          "WORKSPACE_OWNER": "Workspace Owner",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "Project Owner",
+          "PROJECT_MEMBER": "Project Member"
+        },
         "add": "Add node",
         "delete": "Delete approval node"
       },
-      "view-approval-flow": "View approval flow"
+      "presets": {
+        "owner-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
+        "owner": "The system defines the approval process and only needs the project Owner o approve it.",
+        "dba": "The system defines the approval process and only needs DBA approval.",
+        "admin": "The system defines the approval process and only needs Administrator approval.",
+        "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
+      },
+      "view-approval-flow": "View approval flow",
+      "skip": "Skip manual approval"
     },
     "risk": {
+      "self": "Risk",
       "risk-center": "Risk Center"
     },
     "workflow-center": {
       "workflow": "Workflow"
+    },
+    "rule": {
+      "rules": "Rules"
     }
   }
 }

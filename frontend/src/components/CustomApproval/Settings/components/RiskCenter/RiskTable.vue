@@ -45,11 +45,10 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { SpinnerButton, SpinnerSwitch } from "../common";
+import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
 import { useRiskCenterContext } from "./context";
 import { Risk } from "@/types/proto/v1/risk_service";
 import { pushNotification, useRiskStore } from "@/store";
-import { levelText } from "./common";
 
 defineProps<{
   riskList: Risk[];
@@ -89,6 +88,11 @@ const editRisk = (risk: Risk) => {
 };
 
 const toggleRisk = async (risk: Risk, active: boolean) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+
   risk.active = active;
   await useRiskStore().upsertRisk(risk);
   pushNotification({
@@ -99,6 +103,11 @@ const toggleRisk = async (risk: Risk, active: boolean) => {
 };
 
 const deleteRisk = async (risk: Risk) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+
   await useRiskStore().deleteRisk(risk);
   pushNotification({
     module: "bytebase",

@@ -3,10 +3,13 @@ import {
   Risk_Source,
   risk_SourceToJSON,
 } from "@/types/proto/v1/risk_service";
-import { useI18n } from "vue-i18n";
+import { t, te } from "@/plugins/i18n";
 
 export const sourceText = (source: Risk_Source) => {
-  const { t, te } = useI18n();
+  if (source === Risk_Source.SOURCE_UNSPECIFIED) {
+    return t("common.all");
+  }
+
   const name = risk_SourceToJSON(source);
   const keypath = `custom-approval.security-rule.risk.namespace.${name.toLowerCase()}`;
   if (te(keypath)) {
@@ -16,7 +19,6 @@ export const sourceText = (source: Risk_Source) => {
 };
 
 export const levelText = (level: number) => {
-  const { t, te } = useI18n();
   const keypath = `custom-approval.security-rule.risk.risk-level.${level}`;
   if (te(keypath)) {
     return t(keypath);
