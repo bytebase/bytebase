@@ -88,6 +88,11 @@ const editRisk = (risk: Risk) => {
 };
 
 const toggleRisk = async (risk: Risk, active: boolean) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+
   risk.active = active;
   await useRiskStore().upsertRisk(risk);
   pushNotification({
@@ -98,6 +103,11 @@ const toggleRisk = async (risk: Risk, active: boolean) => {
 };
 
 const deleteRisk = async (risk: Risk) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+
   await useRiskStore().deleteRisk(risk);
   pushNotification({
     module: "bytebase",

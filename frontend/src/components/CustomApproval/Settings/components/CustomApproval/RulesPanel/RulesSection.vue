@@ -40,6 +40,7 @@ import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { levelText, sourceText, useRiskFilter } from "../../common";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import RuleSelect from "./RuleSelect.vue";
+import { useCustomApprovalContext } from "../context";
 
 type Row = {
   level: number;
@@ -52,6 +53,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
+const context = useCustomApprovalContext();
 
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
@@ -93,6 +95,11 @@ const rows = computed(() => {
 });
 
 const updateRow = async (row: Row, rule: string | undefined) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+
   const { source } = props;
   const { level } = row;
   await store.updateRuleFlow(source, level, rule);
