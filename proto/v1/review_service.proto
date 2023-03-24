@@ -151,16 +151,20 @@ message Review {
   repeated ApprovalTemplate approval_templates = 8;
   repeated Approver approvers = 9;
 
+  // If the value is `false`, it means that the backend is still finding matching approval templates.
+  // If `true`, approval_templates & approvers are available.
+  bool approval_finding_done = 10;
+
   // The subscribers.
   // Format: user:hello@world.com
-  repeated string subscribers = 10;
+  repeated string subscribers = 11;
 
   // Format: user:hello@world.com
-  string creator = 11;
+  string creator = 12;
 
-  google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum ReviewStatus {

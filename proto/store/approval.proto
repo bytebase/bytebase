@@ -22,6 +22,10 @@ message IssuePayloadApproval {
 
   repeated ApprovalTemplate approval_templates = 1;
   repeated Approver approvers = 2;
+
+  // If the value is `false`, it means that the backend is still finding matching approval templates.
+  // If `true`, other fields are available.
+  bool approval_finding_done = 3;
 }
 
 message ApprovalTemplate {
