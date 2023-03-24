@@ -18,6 +18,7 @@ export type AIChatInfo = {
 
 export type AIContext = {
   openAIKey: Ref<string>;
+  openAIEndpoint: Ref<string>;
   engineType: Ref<EngineType | undefined>;
   databaseMetadata: Ref<DatabaseMetadata | undefined>;
   autoRun: Ref<boolean>;

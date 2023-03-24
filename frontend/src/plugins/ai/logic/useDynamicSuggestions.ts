@@ -56,7 +56,10 @@ export const useDynamicSuggestions = () => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${context.openAIKey.value}`,
     };
-    const url = "https://api.openai.com/v1/chat/completions";
+    const url =
+      context.openAIEndpoint.value === ""
+        ? "https://api.openai.com/v1/chat/completions"
+        : context.openAIEndpoint.value + "/v1/chat/completions";
     try {
       const response: AxiosResponse<string> = await axios.post(
         url,

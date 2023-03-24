@@ -36,6 +36,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingAppIM,
 	api.SettingWatermark,
 	api.SettingPluginOpenAIKey,
+	api.SettingPluginOpenAIEndpoint,
 	api.SettingWorkspaceApproval,
 }
 
