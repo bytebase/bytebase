@@ -127,7 +127,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 	}
 
 	for _, instance := range instanceList {
-		if instance.Engine != db.MySQL {
+		if instance.Engine != db.MySQL && instance.Engine != db.MariaDB {
 			continue
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
@@ -262,7 +262,7 @@ func (r *Runner) downloadBinlogFiles(ctx context.Context) {
 	r.downloadBinlogMu.Lock()
 	defer r.downloadBinlogMu.Unlock()
 	for _, instance := range instances {
-		if instance.Engine != db.MySQL {
+		if instance.Engine != db.MySQL && instance.Engine != db.MariaDB {
 			continue
 		}
 		if _, ok := r.downloadBinlogInstanceIDs[instance.UID]; !ok {

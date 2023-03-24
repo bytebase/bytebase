@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.

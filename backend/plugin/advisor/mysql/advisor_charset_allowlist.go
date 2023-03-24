@@ -20,6 +20,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 }
 
 // CharsetAllowlistAdvisor is the advisor checking for charset allowlist.

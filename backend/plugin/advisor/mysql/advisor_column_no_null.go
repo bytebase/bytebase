@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.

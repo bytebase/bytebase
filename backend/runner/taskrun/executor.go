@@ -171,7 +171,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		zap.String("statement", statementRecord),
 	)
 
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
+	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
 		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
@@ -202,7 +202,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		return "", "", err
 	}
 
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.MySQL {
+	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
 		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
@@ -406,7 +406,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 	if writebackBranch != "" {
 		// Transform the schema to standard style for SDL mode.
-		if instance.Engine == db.MySQL {
+		if instance.Engine == db.MySQL || instance.Engine == db.MariaDB {
 			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
 				return true, nil, errors.Errorf("failed to transform to standard schema for database %q", database.DatabaseName)

@@ -64,6 +64,7 @@ export function defaultCharset(type: EngineType): string {
       return "";
     case "MYSQL":
     case "TIDB":
+    case "MARIADB":
       return "utf8mb4";
     case "POSTGRES":
       return "UTF8";
@@ -78,8 +79,6 @@ export function defaultCharset(type: EngineType): string {
     case "MSSQL":
       return "";
     case "REDSHIFT":
-      return "";
-    case "MARIADB":
       return "";
   }
 }
@@ -120,6 +119,7 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "MYSQL":
     case "TIDB":
+    case "MARIADB":
       return "utf8mb4_general_ci";
     // For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
     // If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
@@ -137,8 +137,6 @@ export function defaultCollation(type: EngineType): string {
     case "MSSQL":
       return "";
     case "REDSHIFT":
-      return "";
-    case "MARIADB":
       return "";
   }
 }
