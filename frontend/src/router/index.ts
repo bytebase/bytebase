@@ -409,6 +409,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "risk-center",
+                name: "setting.workspace.risk-center",
+                meta: { title: () => t("custom-approval.risk.risk-center") },
+                component: () =>
+                  import("../views/SettingWorkspaceRiskCenter.vue"),
+                props: true,
+              },
+              {
                 path: "gitops",
                 name: "setting.workspace.gitops",
                 meta: { title: () => t("settings.sidebar.gitops") },
@@ -1028,8 +1036,12 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_RESET_MODULE ||
     to.name === PASSWORD_FORGOT_MODULE
   ) {
-    useTabStore().reset();
-    useConversationStore().reset();
+    try {
+      useTabStore().reset();
+      useConversationStore().reset();
+    } catch {
+      // nothing
+    }
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
