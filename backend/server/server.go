@@ -713,7 +713,8 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, errors.Wrap(err, "failed to marshal initial workspace approval setting")
 	}
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceApproval,
+		Name: api.SettingWorkspaceApproval,
+		// Value is ""
 		Value:       string(approvalSettingValue),
 		Description: "The workspace approval setting",
 	}, api.SystemBotID); err != nil {
