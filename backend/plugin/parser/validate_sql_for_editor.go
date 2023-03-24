@@ -30,6 +30,11 @@ func ValidateSQLForEditor(engine EngineType, statement string) bool {
 	}
 }
 
+// standardValidateSQLForEditor validates the SQL statement for SQL editor.
+// We validate the statement by following steps:
+// 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
+// 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
+// 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
 func standardValidateSQLForEditor(statement string) bool {
 	textWithoutQuotedAndComment, err := removeQuotedTextAndComment(Standard, statement)
 	if err != nil {
@@ -40,6 +45,11 @@ func standardValidateSQLForEditor(statement string) bool {
 	return checkStatementWithoutQuotedTextAndComment(textWithoutQuotedAndComment)
 }
 
+// mysqlValidateSQLForEditor validates the SQL statement for SQL editor.
+// We validate the statement by following steps:
+// 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
+// 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
+// 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
 func mysqlValidateSQLForEditor(statement string) bool {
 	textWithoutQuotedAndComment, err := removeQuotedTextAndComment(MySQL, statement)
 	if err != nil {
@@ -50,6 +60,10 @@ func mysqlValidateSQLForEditor(statement string) bool {
 	return checkStatementWithoutQuotedTextAndComment(textWithoutQuotedAndComment)
 }
 
+// postgresValidateSQLForEditor validates the SQL statement for SQL editor.
+// Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
+// For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
+// For CTE, we need to parse the statement to JSON and check the JSON keys.
 func postgresValidateSQLForEditor(statement string) bool {
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
@@ -143,7 +157,7 @@ func checkStatementWithoutQuotedTextAndComment(statement string) bool {
 func removeQuotedTextAndComment(engine EngineType, statement string) (string, error) {
 	switch engine {
 	case Postgres:
-		return postgresRemoveQuotedTextAndComment(statement)
+		return "", errors.Errorf("unsupported engine type: %s", engine)
 	case MySQL, TiDB, MariaDB:
 		return mysqlRemoveQuotedTextAndComment(statement)
 	case Standard, Oracle, MSSQL:
@@ -294,86 +308,6 @@ func mysqlRemoveQuotedTextAndComment(statement string) (string, error) {
 				return "", err
 			}
 			startPos = t.pos()
-		default:
-			t.skip(1)
-		}
-	}
-}
-
-func postgresRemoveQuotedTextAndComment(statement string) (string, error) {
-	var buf bytes.Buffer
-	t := newTokenizer(statement)
-
-	t.skipBlank()
-	startPos := t.pos()
-	for {
-		switch {
-		case t.char(0) == '/' && t.char(1) == '*':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '-' && t.char(1) == '-':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '\'':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanString('\''); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '$':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanDoubleDollarQuotedString(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '"':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanIdentifier('"'); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == eofRune:
-			text := t.getString(startPos, t.pos()-startPos)
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			return buf.String(), nil
 		default:
 			t.skip(1)
 		}
