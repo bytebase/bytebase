@@ -14,6 +14,7 @@ import (
 type EngineType string
 
 const (
+	// Standard is the engine type for standard SQL.
 	Standard EngineType = "STANDARD"
 	// MySQL is the engine type for MYSQL.
 	MySQL EngineType = "MYSQL"
