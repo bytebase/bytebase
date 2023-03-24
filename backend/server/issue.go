@@ -15,6 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -27,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -406,6 +408,16 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if assignee == nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee %d not found", issueCreate.AssigneeID))
 	}
+	// TODO(p0ny): remove issueCreate.Payload
+	issueCreatePayload := &storepb.IssuePayload{}
+	issueCreatePayload.Approval = &storepb.IssuePayloadApproval{
+		ApprovalFindingDone: false,
+	}
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+	}
+
 	issueCreateMessage := &store.IssueMessage{
 		Project:       project,
 		Title:         issueCreate.Name,
@@ -413,7 +425,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Description:   issueCreate.Description,
 		Assignee:      assignee,
 		NeedAttention: issueCreate.AssigneeNeedAttention,
-		Payload:       issueCreate.Payload,
+		Payload:       string(issueCreatePayloadBytes),
 	}
 
 	if issueCreate.ValidateOnly {
