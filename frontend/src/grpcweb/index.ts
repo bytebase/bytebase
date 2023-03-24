@@ -9,6 +9,8 @@ import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_servi
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
+import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
+// import { ApprovalTemplateServiceDefinition } from "@/types/proto/v1/approval_template_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -50,6 +52,16 @@ export const identityProviderClient = clientFactory.create(
   IdentityProviderServiceDefinition,
   channel
 );
+
+export const riskServiceClient = clientFactory.create(
+  RiskServiceDefinition,
+  channel
+);
+
+// export const approvalTemplateServiceClient = clientFactory.create(
+//   ApprovalTemplateServiceDefinition,
+//   channel
+// );
 
 export const sqlClient = clientFactory.create(SQLServiceDefinition, channel);
 
