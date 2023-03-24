@@ -94,13 +94,13 @@ func postgresValidateSQLForEditor(statement string) bool {
 
 		dmlKeyList := []string{"InsertStmt", "UpdateStmt", "DeleteStmt"}
 
-		return !keyExistsInJsonData(jsonData, dmlKeyList)
+		return !keyExistsInJSONData(jsonData, dmlKeyList)
 	}
 
 	return false
 }
 
-func keyExistsInJsonData(jsonData map[string]interface{}, keyList []string) bool {
+func keyExistsInJSONData(jsonData map[string]interface{}, keyList []string) bool {
 	for _, key := range keyList {
 		if _, ok := jsonData[key]; ok {
 			return true
@@ -110,13 +110,13 @@ func keyExistsInJsonData(jsonData map[string]interface{}, keyList []string) bool
 	for _, value := range jsonData {
 		switch v := value.(type) {
 		case map[string]interface{}:
-			if keyExistsInJsonData(v, keyList) {
+			if keyExistsInJSONData(v, keyList) {
 				return true
 			}
 		case []interface{}:
 			for _, item := range v {
 				if m, ok := item.(map[string]interface{}); ok {
-					if keyExistsInJsonData(m, keyList) {
+					if keyExistsInJSONData(m, keyList) {
 						return true
 					}
 				}
