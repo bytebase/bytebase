@@ -207,19 +207,24 @@ export const GetIdentityProviderRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetIdentityProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -232,6 +237,10 @@ export const GetIdentityProviderRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetIdentityProviderRequest>): GetIdentityProviderRequest {
+    return GetIdentityProviderRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetIdentityProviderRequest>): GetIdentityProviderRequest {
@@ -260,25 +269,38 @@ export const ListIdentityProvidersRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListIdentityProvidersRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListIdentityProvidersRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.showDeleted = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -297,6 +319,10 @@ export const ListIdentityProvidersRequest = {
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListIdentityProvidersRequest>): ListIdentityProvidersRequest {
+    return ListIdentityProvidersRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListIdentityProvidersRequest>): ListIdentityProvidersRequest {
@@ -324,22 +350,31 @@ export const ListIdentityProvidersResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListIdentityProvidersResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListIdentityProvidersResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.identityProviders.push(IdentityProvider.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -362,6 +397,10 @@ export const ListIdentityProvidersResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListIdentityProvidersResponse>): ListIdentityProvidersResponse {
+    return ListIdentityProvidersResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListIdentityProvidersResponse>): ListIdentityProvidersResponse {
@@ -388,22 +427,31 @@ export const CreateIdentityProviderRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateIdentityProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.identityProvider = IdentityProvider.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.identityProviderId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -421,6 +469,10 @@ export const CreateIdentityProviderRequest = {
       (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
     message.identityProviderId !== undefined && (obj.identityProviderId = message.identityProviderId);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateIdentityProviderRequest>): CreateIdentityProviderRequest {
+    return CreateIdentityProviderRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateIdentityProviderRequest>): CreateIdentityProviderRequest {
@@ -449,22 +501,31 @@ export const UpdateIdentityProviderRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateIdentityProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.identityProvider = IdentityProvider.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -482,6 +543,10 @@ export const UpdateIdentityProviderRequest = {
       (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateIdentityProviderRequest>): UpdateIdentityProviderRequest {
+    return UpdateIdentityProviderRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateIdentityProviderRequest>): UpdateIdentityProviderRequest {
@@ -507,19 +572,24 @@ export const DeleteIdentityProviderRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteIdentityProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -532,6 +602,10 @@ export const DeleteIdentityProviderRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteIdentityProviderRequest>): DeleteIdentityProviderRequest {
+    return DeleteIdentityProviderRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteIdentityProviderRequest>): DeleteIdentityProviderRequest {
@@ -554,19 +628,24 @@ export const UndeleteIdentityProviderRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUndeleteIdentityProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -579,6 +658,10 @@ export const UndeleteIdentityProviderRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteIdentityProviderRequest>): UndeleteIdentityProviderRequest {
+    return UndeleteIdentityProviderRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UndeleteIdentityProviderRequest>): UndeleteIdentityProviderRequest {
@@ -604,22 +687,31 @@ export const TestIdentityProviderRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TestIdentityProviderRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTestIdentityProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.identityProvider = IdentityProvider.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.oauth2Context = OAuth2IdentityProviderTestRequestContext.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -641,6 +733,10 @@ export const TestIdentityProviderRequest = {
       ? OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context)
       : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<TestIdentityProviderRequest>): TestIdentityProviderRequest {
+    return TestIdentityProviderRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<TestIdentityProviderRequest>): TestIdentityProviderRequest {
@@ -668,19 +764,24 @@ export const OAuth2IdentityProviderTestRequestContext = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OAuth2IdentityProviderTestRequestContext {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOAuth2IdentityProviderTestRequestContext();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.code = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -693,6 +794,10 @@ export const OAuth2IdentityProviderTestRequestContext = {
     const obj: any = {};
     message.code !== undefined && (obj.code = message.code);
     return obj;
+  },
+
+  create(base?: DeepPartial<OAuth2IdentityProviderTestRequestContext>): OAuth2IdentityProviderTestRequestContext {
+    return OAuth2IdentityProviderTestRequestContext.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<OAuth2IdentityProviderTestRequestContext>): OAuth2IdentityProviderTestRequestContext {
@@ -712,16 +817,17 @@ export const TestIdentityProviderResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TestIdentityProviderResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTestIdentityProviderResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -733,6 +839,10 @@ export const TestIdentityProviderResponse = {
   toJSON(_: TestIdentityProviderResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create(base?: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
+    return TestIdentityProviderResponse.fromPartial(base ?? {});
   },
 
   fromPartial(_: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
@@ -772,37 +882,66 @@ export const IdentityProvider = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IdentityProvider {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIdentityProvider();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.uid = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.state = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.domain = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 48) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.config = IdentityProviderConfig.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -830,6 +969,10 @@ export const IdentityProvider = {
     message.config !== undefined &&
       (obj.config = message.config ? IdentityProviderConfig.toJSON(message.config) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<IdentityProvider>): IdentityProvider {
+    return IdentityProvider.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<IdentityProvider>): IdentityProvider {
@@ -863,22 +1006,31 @@ export const IdentityProviderConfig = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IdentityProviderConfig {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIdentityProviderConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.oauth2Config = OAuth2IdentityProviderConfig.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.oidcConfig = OIDCIdentityProviderConfig.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -897,6 +1049,10 @@ export const IdentityProviderConfig = {
     message.oidcConfig !== undefined &&
       (obj.oidcConfig = message.oidcConfig ? OIDCIdentityProviderConfig.toJSON(message.oidcConfig) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
+    return IdentityProviderConfig.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
@@ -950,37 +1106,66 @@ export const OAuth2IdentityProviderConfig = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OAuth2IdentityProviderConfig {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOAuth2IdentityProviderConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.authUrl = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.tokenUrl = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.userInfoUrl = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.clientId = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.clientSecret = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.scopes.push(reader.string());
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.fieldMapping = FieldMapping.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1012,6 +1197,10 @@ export const OAuth2IdentityProviderConfig = {
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<OAuth2IdentityProviderConfig>): OAuth2IdentityProviderConfig {
+    return OAuth2IdentityProviderConfig.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<OAuth2IdentityProviderConfig>): OAuth2IdentityProviderConfig {
@@ -1054,31 +1243,52 @@ export const OIDCIdentityProviderConfig = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OIDCIdentityProviderConfig {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOIDCIdentityProviderConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.issuer = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.clientId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.clientSecret = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.scopes.push(reader.string());
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.fieldMapping = FieldMapping.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1106,6 +1316,10 @@ export const OIDCIdentityProviderConfig = {
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<OIDCIdentityProviderConfig>): OIDCIdentityProviderConfig {
+    return OIDCIdentityProviderConfig.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<OIDCIdentityProviderConfig>): OIDCIdentityProviderConfig {
@@ -1140,25 +1354,38 @@ export const FieldMapping = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): FieldMapping {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFieldMapping();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.identifier = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.displayName = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.email = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1177,6 +1404,10 @@ export const FieldMapping = {
     message.displayName !== undefined && (obj.displayName = message.displayName);
     message.email !== undefined && (obj.email = message.email);
     return obj;
+  },
+
+  create(base?: DeepPartial<FieldMapping>): FieldMapping {
+    return FieldMapping.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<FieldMapping>): FieldMapping {
@@ -1199,7 +1430,14 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: IdentityProvider,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([19, 18, 17, 47, 118, 49, 47, 123, 110, 97, 109, 101, 61, 105, 100, 112, 115, 47, 42, 125]),
+          ],
+        },
+      },
     },
     listIdentityProviders: {
       name: "ListIdentityProviders",
@@ -1207,7 +1445,12 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: ListIdentityProvidersResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [new Uint8Array([10, 18, 8, 47, 118, 49, 47, 105, 100, 112, 115])],
+        },
+      },
     },
     createIdentityProvider: {
       name: "CreateIdentityProvider",
@@ -1215,7 +1458,45 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: IdentityProvider,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              29,
+              58,
+              17,
+              105,
+              100,
+              101,
+              110,
+              116,
+              105,
+              116,
+              121,
+              95,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              34,
+              8,
+              47,
+              118,
+              49,
+              47,
+              105,
+              100,
+              112,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     updateIdentityProvider: {
       name: "UpdateIdentityProvider",
@@ -1223,7 +1504,105 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: IdentityProvider,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              29,
+              105,
+              100,
+              101,
+              110,
+              116,
+              105,
+              116,
+              121,
+              95,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              56,
+              58,
+              17,
+              105,
+              100,
+              101,
+              110,
+              116,
+              105,
+              116,
+              121,
+              95,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              50,
+              35,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              100,
+              101,
+              110,
+              116,
+              105,
+              116,
+              121,
+              95,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              100,
+              112,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteIdentityProvider: {
       name: "DeleteIdentityProvider",
@@ -1231,7 +1610,14 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([19, 42, 17, 47, 118, 49, 47, 123, 110, 97, 109, 101, 61, 105, 100, 112, 115, 47, 42, 125]),
+          ],
+        },
+      },
     },
     undeleteIdentityProvider: {
       name: "UndeleteIdentityProvider",
@@ -1239,7 +1625,46 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: IdentityProvider,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              31,
+              58,
+              1,
+              42,
+              34,
+              26,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              100,
+              112,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
     },
     testIdentityProvider: {
       name: "TestIdentityProvider",
@@ -1247,7 +1672,35 @@ export const IdentityProviderServiceDefinition = {
       requestStream: false,
       responseType: TestIdentityProviderResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              20,
+              58,
+              1,
+              42,
+              34,
+              15,
+              47,
+              118,
+              49,
+              47,
+              105,
+              100,
+              112,
+              115,
+              47,
+              42,
+              58,
+              116,
+              101,
+              115,
+              116,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

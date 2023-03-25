@@ -20,6 +20,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 }
 
 // StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.

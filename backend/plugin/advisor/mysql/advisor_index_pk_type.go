@@ -23,6 +23,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
 }
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.

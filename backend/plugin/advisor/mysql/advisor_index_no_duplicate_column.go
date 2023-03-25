@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 }
 
 // IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.

@@ -34,7 +34,7 @@ func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *stor
 		advisorType = advisor.Fake
 	case api.TaskCheckDatabaseStatementSyntax:
 		switch payload.DbType {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			advisorType = advisor.MySQLSyntax
 		case db.Postgres:
 			advisorType = advisor.PostgreSQLSyntax

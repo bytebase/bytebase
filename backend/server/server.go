@@ -404,6 +404,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
 		pitrMySQLExecutor := taskcheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
+		statementTypeReportExecutor := taskcheck.NewStatementTypeReportExecutor(storeInstance)
+		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementTypeReport, statementTypeReportExecutor)
 
 		// Anomaly scanner
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
@@ -514,6 +516,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
+	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store))
+	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -704,6 +708,27 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingPluginOpenAIEndpoint,
+		Value:       "",
+		Description: "API Endpoint for OpenAI",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
+	// initial workspace approval setting
+	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial workspace approval setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name: api.SettingWorkspaceApproval,
+		// Value is ""
+		Value:       string(approvalSettingValue),
+		Description: "The workspace approval setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
 
 	// initial workspace profile setting
 	settingName := api.SettingWorkspaceProfile
@@ -855,8 +880,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 
 	ruleList := []*advisor.SQLReviewRule{}
 
-	// Add DropEmptyDatabase rule for MySQL and TiDB.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB} {
+	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleDropEmptyDatabase,
 			Level:   advisor.SchemaRuleLevelError,
@@ -865,8 +890,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 		})
 	}
 
-	// Add ColumnNotNull rule for MySQL, TiDB and Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleColumnNotNull,
 			Level:   advisor.SchemaRuleLevelWarning,
@@ -875,8 +900,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 		})
 	}
 
-	// Add TableDropNamingConvention rule for MySQL, TiDB and Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.Postgres} {
+	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleTableDropNamingConvention,
 			Level:   advisor.SchemaRuleLevelError,
@@ -1215,6 +1240,6 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 	}()
 
 	if err != nil {
-		log.Error("failed to backfill migration history", zap.Error(err))
+		log.Warn("failed to backfill migration history", zap.Error(err))
 	}
 }

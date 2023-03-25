@@ -55,12 +55,45 @@
           "
           @input="handleOpenAIKeyChange"
         />
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
+          <span class="font-medium">{{
+            $t("settings.general.workspace.plugin.openai.openai-endpoint.self")
+          }}</span>
+
+          <FeatureBadge
+            feature="bb.feature.plugin.openai"
+            class="text-accent"
+          />
+
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
+            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+          </span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "settings.general.workspace.plugin.openai.openai-endpoint.description"
+            )
+          }}
+        </div>
+        <BBTextField
+          class="mb-5 w-full"
+          :disabled="!allowEdit"
+          :value="state.openAIEndpoint"
+          @input="handleOpenAIEndpointChange"
+        />
         <div class="flex">
           <button
             type="button"
             class="btn-primary ml-auto"
             :disabled="!allowSave"
-            @click.prevent="updateOpenAIKey"
+            @click.prevent="updateOpenAIKeyEndpoint"
           >
             {{ $t("common.update") }}
           </button>
@@ -93,6 +126,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 
 interface LocalState {
   openAIKey: string;
+  openAIEndpoint: string;
   showFeatureModal: boolean;
 }
 
@@ -103,13 +137,18 @@ const containerRef = ref<HTMLDivElement>();
 
 const state = reactive<LocalState>({
   openAIKey: "",
+  openAIEndpoint: "",
   showFeatureModal: false,
 });
 
 const openAIKeySetting = useSettingByName("bb.plugin.openai.key");
+const openAIEndpointSetting = useSettingByName("bb.plugin.openai.endpoint");
 
 watchEffect(() => {
-  state.openAIKey = openAIKeySetting.value?.value ? "sk-******" : "";
+  state.openAIKey = maskKey(openAIKeySetting.value?.value);
+  state.openAIEndpoint = openAIEndpointSetting.value?.value
+    ? openAIEndpointSetting.value?.value
+    : "";
 });
 
 const allowEdit = computed((): boolean => {
@@ -120,14 +159,29 @@ const allowEdit = computed((): boolean => {
 });
 
 const allowSave = computed((): boolean => {
-  return allowEdit.value && state.openAIKey !== openAIKeySetting.value?.value;
+  const openAIKeyUpdated =
+    state.openAIKey !== maskKey(openAIKeySetting.value?.value) ||
+    !state.openAIKey.includes("***");
+  return (
+    allowEdit.value &&
+    (openAIKeyUpdated ||
+      state.openAIEndpoint !== openAIEndpointSetting.value?.value)
+  );
 });
+
+function maskKey(key: string | undefined): string {
+  return key ? key.slice(0, 3) + "***" + key.slice(-4) : "";
+}
 
 const handleOpenAIKeyChange = (event: InputEvent) => {
   state.openAIKey = (event.target as HTMLInputElement).value;
 };
 
-const updateOpenAIKey = async () => {
+const handleOpenAIEndpointChange = (event: InputEvent) => {
+  state.openAIEndpoint = (event.target as HTMLInputElement).value;
+};
+
+const updateOpenAIKeyEndpoint = async () => {
   if (!hasFeature("bb.feature.plugin.openai")) {
     state.showFeatureModal = true;
     return;
@@ -137,10 +191,21 @@ const updateOpenAIKey = async () => {
     return;
   }
 
-  await settingStore.updateSettingByName({
-    name: "bb.plugin.openai.key",
-    value: state.openAIKey,
-  });
+  if (
+    state.openAIKey !== maskKey(openAIKeySetting.value?.value) ||
+    !state.openAIKey.includes("***")
+  ) {
+    await settingStore.updateSettingByName({
+      name: "bb.plugin.openai.key",
+      value: state.openAIKey,
+    });
+  }
+  if (state.openAIEndpoint !== openAIEndpointSetting.value?.value) {
+    await settingStore.updateSettingByName({
+      name: "bb.plugin.openai.endpoint",
+      value: state.openAIEndpoint,
+    });
+  }
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

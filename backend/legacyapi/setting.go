@@ -16,6 +16,8 @@ const (
 	SettingWorkspaceID SettingName = "bb.workspace.id"
 	// SettingWorkspaceProfile is the setting name for workspace profile settings.
 	SettingWorkspaceProfile SettingName = "bb.workspace.profile"
+	// SettingWorkspaceApproval is the setting name for workspace approval config.
+	SettingWorkspaceApproval SettingName = "bb.workspace.approval"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
@@ -27,6 +29,8 @@ const (
 	// SettingPluginOpenAIKey is used for OpenAI's API key.
 	// For AI-related features.
 	SettingPluginOpenAIKey SettingName = "bb.plugin.openai.key"
+	// SettingPluginOpenAIEndpoint is used for OpenAI's API endpoint.
+	SettingPluginOpenAIEndpoint SettingName = "bb.plugin.openai.endpoint"
 	// SettingPluginAgent is the setting name for the internal agent API.
 	// For now we will call the hub to fetch the subscription license.
 	SettingPluginAgent SettingName = "bb.plugin.agent"

@@ -18,6 +18,10 @@ import (
 type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
+	return requesterWithHeader(ctx, client, method, url, token, body, nil)
+}
+
+func requesterWithHeader(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader, header map[string]string) func() (*http.Response, error) {
 	// The body may be read multiple times but io.Reader is meant to be read once,
 	// so we read the body first and build the reader every time.
 	var bodyBytes []byte
@@ -38,6 +42,10 @@ func requester(ctx context.Context, client *http.Client, method, url string, tok
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		for k, v := range header {
+			req.Header.Set(k, v)
+		}
+
 		resp, err := client.Do(req)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s %s", method, url)
@@ -49,7 +57,14 @@ func requester(ctx context.Context, client *http.Client, method, url string, tok
 // Post makes a HTTP POST request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Post(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPost, url, token, body))
+	return PostWithHeader(ctx, client, url, token, body, tokenRefresher, nil)
+}
+
+// PostWithHeader makes a HTTP POST request to the given URL using the token and
+// additional header. It refreshes token and retries the request in the case of
+// the token has expired.
+func PostWithHeader(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodPost, url, token, body, header))
 }
 
 // Get makes a HTTP GET request to the given URL using the token. It refreshes
@@ -131,6 +146,11 @@ func (e oauthError) Error() string {
 func getOAuthErrorDetails(code int, body []byte) error {
 	if 200 <= code && code < 300 {
 		return nil
+	}
+
+	// Special case for Bitbucket OAuth error.
+	if bytes.Contains(body, []byte("OAuth2 access token expired.")) {
+		return &oauthError{}
 	}
 
 	var oe oauthError

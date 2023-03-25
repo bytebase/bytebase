@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
 }
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.

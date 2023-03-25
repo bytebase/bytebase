@@ -448,7 +448,58 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		return nil, err
 	}
 
+	for schemaName, list := range viewMap {
+		for _, view := range list {
+			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
+			}
+			view.DependentColumns = dependencies
+		}
+	}
+
 	return viewMap, nil
+}
+
+// getViewDependencies gets the dependencies of a view.
+func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependentColumn, error) {
+	var result []*storepb.DependentColumn
+
+	query := fmt.Sprintf(`
+		SELECT source_ns.nspname as source_schema,
+	  		source_table.relname as source_table,
+	  		pg_attribute.attname as column_name
+	  	FROM pg_depend 
+	  		JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
+	  		JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
+	  		JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
+	  		JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid 
+	  		    AND pg_depend.refobjsubid = pg_attribute.attnum 
+	  		JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
+	  		JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
+	  	WHERE 
+	  		dependent_ns.nspname = '%s'
+	  		AND dependent_view.relname = '%s'
+	  		AND pg_attribute.attnum > 0 
+	  	ORDER BY 1,2,3;
+	`, schemaName, viewName)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		dependentColumn := &storepb.DependentColumn{}
+		if err := rows.Scan(&dependentColumn.Schema, &dependentColumn.Table, &dependentColumn.Column); err != nil {
+			return nil, err
+		}
+		result = append(result, dependentColumn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // getExtensions gets all extensions of a database.

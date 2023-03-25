@@ -19,6 +19,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
 }
 
 // DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.

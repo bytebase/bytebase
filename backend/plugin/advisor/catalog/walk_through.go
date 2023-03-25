@@ -56,6 +56,10 @@ const (
 	ErrorTypeTableNotExists = 302
 	// ErrorTypeUseCreateTableAs is the error that using CREATE TABLE AS statements.
 	ErrorTypeUseCreateTableAs = 303
+	// ErrorTypeTableIsReferencedByView is the error that table is referenced by view.
+	ErrorTypeTableIsReferencedByView = 304
+	// ErrorTypeViewNotExists is the error that view not exists.
+	ErrorTypeViewNotExists = 305
 
 	// 401 ~ 499 column error type.
 
@@ -73,6 +77,8 @@ const (
 	ErrorTypeSetNullDefaultForNotNullColumn = 406
 	// ErrorTypeInvalidColumnTypeForDefaultValue is the error that invalid column type for default value.
 	ErrorTypeInvalidColumnTypeForDefaultValue = 407
+	// ErrorTypeColumnIsReferencedByView is the error that column is referenced by view.
+	ErrorTypeColumnIsReferencedByView = 408
 
 	// 501 ~ 599 index error type.
 
@@ -197,7 +203,7 @@ func (e *WalkThroughError) Error() string {
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
-	case db.MySQL, db.TiDB:
+	case db.MySQL, db.TiDB, db.MariaDB:
 		return d.mysqlWalkThrough(stmt)
 	case db.Postgres:
 		if err := d.pgWalkThrough(stmt); err != nil {

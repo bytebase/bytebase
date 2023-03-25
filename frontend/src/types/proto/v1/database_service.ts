@@ -276,6 +276,18 @@ export interface ViewMetadata {
   definition: string;
   /** The comment is the comment of a view. */
   comment: string;
+  /** The dependent_columns is the list of dependent columns of a view. */
+  dependentColumns: DependentColumn[];
+}
+
+/** DependentColumn is the metadata for dependent columns. */
+export interface DependentColumn {
+  /** The schema is the schema of a reference column. */
+  schema: string;
+  /** The table is the table of a reference column. */
+  table: string;
+  /** The column is the name of a reference column. */
+  column: string;
 }
 
 /** IndexMetadata is the metadata for indexes. */
@@ -501,19 +513,24 @@ export const GetDatabaseRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetDatabaseRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -526,6 +543,10 @@ export const GetDatabaseRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetDatabaseRequest>): GetDatabaseRequest {
+    return GetDatabaseRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetDatabaseRequest>): GetDatabaseRequest {
@@ -557,28 +578,45 @@ export const ListDatabasesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListDatabasesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListDatabasesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.filter = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -599,6 +637,10 @@ export const ListDatabasesRequest = {
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.filter !== undefined && (obj.filter = message.filter);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListDatabasesRequest>): ListDatabasesRequest {
+    return ListDatabasesRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListDatabasesRequest>): ListDatabasesRequest {
@@ -627,22 +669,31 @@ export const ListDatabasesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListDatabasesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListDatabasesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.databases.push(Database.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -663,6 +714,10 @@ export const ListDatabasesResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListDatabasesResponse>): ListDatabasesResponse {
+    return ListDatabasesResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListDatabasesResponse>): ListDatabasesResponse {
@@ -689,22 +744,31 @@ export const UpdateDatabaseRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateDatabaseRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.database = Database.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -721,6 +785,10 @@ export const UpdateDatabaseRequest = {
     message.database !== undefined && (obj.database = message.database ? Database.toJSON(message.database) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateDatabaseRequest>): UpdateDatabaseRequest {
+    return UpdateDatabaseRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateDatabaseRequest>): UpdateDatabaseRequest {
@@ -749,22 +817,31 @@ export const BatchUpdateDatabasesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateDatabasesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBatchUpdateDatabasesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.requests.push(UpdateDatabaseRequest.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -789,6 +866,10 @@ export const BatchUpdateDatabasesRequest = {
     return obj;
   },
 
+  create(base?: DeepPartial<BatchUpdateDatabasesRequest>): BatchUpdateDatabasesRequest {
+    return BatchUpdateDatabasesRequest.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<BatchUpdateDatabasesRequest>): BatchUpdateDatabasesRequest {
     const message = createBaseBatchUpdateDatabasesRequest();
     message.parent = object.parent ?? "";
@@ -810,19 +891,24 @@ export const BatchUpdateDatabasesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateDatabasesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBatchUpdateDatabasesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.databases.push(Database.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -841,6 +927,10 @@ export const BatchUpdateDatabasesResponse = {
       obj.databases = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<BatchUpdateDatabasesResponse>): BatchUpdateDatabasesResponse {
+    return BatchUpdateDatabasesResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<BatchUpdateDatabasesResponse>): BatchUpdateDatabasesResponse {
@@ -863,19 +953,24 @@ export const GetDatabaseMetadataRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseMetadataRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetDatabaseMetadataRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -888,6 +983,10 @@ export const GetDatabaseMetadataRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
+    return GetDatabaseMetadataRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
@@ -910,19 +1009,24 @@ export const GetDatabaseSchemaRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseSchemaRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetDatabaseSchemaRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -935,6 +1039,10 @@ export const GetDatabaseSchemaRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
+    return GetDatabaseSchemaRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
@@ -957,19 +1065,24 @@ export const GetBackupSettingRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetBackupSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetBackupSettingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -982,6 +1095,10 @@ export const GetBackupSettingRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
+    return GetBackupSettingRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
@@ -1004,19 +1121,24 @@ export const UpdateBackupSettingRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateBackupSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateBackupSettingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.setting = BackupSetting.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1030,6 +1152,10 @@ export const UpdateBackupSettingRequest = {
     message.setting !== undefined &&
       (obj.setting = message.setting ? BackupSetting.toJSON(message.setting) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
+    return UpdateBackupSettingRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
@@ -1057,22 +1183,31 @@ export const CreateBackupRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateBackupRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateBackupRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.backup = Backup.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1089,6 +1224,10 @@ export const CreateBackupRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.backup !== undefined && (obj.backup = message.backup ? Backup.toJSON(message.backup) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateBackupRequest>): CreateBackupRequest {
+    return CreateBackupRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateBackupRequest>): CreateBackupRequest {
@@ -1120,25 +1259,38 @@ export const ListBackupRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListBackupRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.parent = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1157,6 +1309,10 @@ export const ListBackupRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListBackupRequest>): ListBackupRequest {
+    return ListBackupRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListBackupRequest>): ListBackupRequest {
@@ -1184,22 +1340,31 @@ export const ListBackupResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListBackupResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.backups.push(Backup.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1220,6 +1385,10 @@ export const ListBackupResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListBackupResponse>): ListBackupResponse {
+    return ListBackupResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListBackupResponse>): ListBackupResponse {
@@ -1261,40 +1430,69 @@ export const Database = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Database {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDatabase();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.uid = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.syncState = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.successfulSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.project = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.schemaVersion = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           const entry7 = Database_LabelsEntry.decode(reader, reader.uint32());
           if (entry7.value !== undefined) {
             message.labels[entry7.key] = entry7.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1333,6 +1531,10 @@ export const Database = {
     return obj;
   },
 
+  create(base?: DeepPartial<Database>): Database {
+    return Database.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Database>): Database {
     const message = createBaseDatabase();
     message.name = object.name ?? "";
@@ -1367,22 +1569,31 @@ export const Database_LabelsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Database_LabelsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDatabase_LabelsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1396,6 +1607,10 @@ export const Database_LabelsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create(base?: DeepPartial<Database_LabelsEntry>): Database_LabelsEntry {
+    return Database_LabelsEntry.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<Database_LabelsEntry>): Database_LabelsEntry {
@@ -1431,31 +1646,52 @@ export const DatabaseMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDatabaseMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.schemas.push(SchemaMetadata.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.characterSet = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.collation = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.extensions.push(ExtensionMetadata.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1490,6 +1726,10 @@ export const DatabaseMetadata = {
     return obj;
   },
 
+  create(base?: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
+    return DatabaseMetadata.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
     const message = createBaseDatabaseMetadata();
     message.name = object.name ?? "";
@@ -1520,25 +1760,38 @@ export const SchemaMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SchemaMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSchemaMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.tables.push(TableMetadata.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.views.push(ViewMetadata.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1565,6 +1818,10 @@ export const SchemaMetadata = {
       obj.views = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<SchemaMetadata>): SchemaMetadata {
+    return SchemaMetadata.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<SchemaMetadata>): SchemaMetadata {
@@ -1635,52 +1892,101 @@ export const TableMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TableMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTableMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.columns.push(ColumnMetadata.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.indexes.push(IndexMetadata.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.engine = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.collation = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 48) {
+            break;
+          }
+
           message.rowCount = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 7:
+          if (tag != 56) {
+            break;
+          }
+
           message.dataSize = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 8:
+          if (tag != 64) {
+            break;
+          }
+
           message.indexSize = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 9:
+          if (tag != 72) {
+            break;
+          }
+
           message.dataFree = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 10:
+          if (tag != 82) {
+            break;
+          }
+
           message.createOptions = reader.string();
-          break;
+          continue;
         case 11:
+          if (tag != 90) {
+            break;
+          }
+
           message.comment = reader.string();
-          break;
+          continue;
         case 12:
+          if (tag != 98) {
+            break;
+          }
+
           message.foreignKeys.push(ForeignKeyMetadata.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1731,6 +2037,10 @@ export const TableMetadata = {
       obj.foreignKeys = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<TableMetadata>): TableMetadata {
+    return TableMetadata.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<TableMetadata>): TableMetadata {
@@ -1794,40 +2104,73 @@ export const ColumnMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ColumnMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseColumnMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.position = reader.int32();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.default = StringValue.decode(reader, reader.uint32()).value;
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.nullable = reader.bool();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.type = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.characterSet = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.collation = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.comment = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1858,6 +2201,10 @@ export const ColumnMetadata = {
     return obj;
   },
 
+  create(base?: DeepPartial<ColumnMetadata>): ColumnMetadata {
+    return ColumnMetadata.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<ColumnMetadata>): ColumnMetadata {
     const message = createBaseColumnMetadata();
     message.name = object.name ?? "";
@@ -1873,7 +2220,7 @@ export const ColumnMetadata = {
 };
 
 function createBaseViewMetadata(): ViewMetadata {
-  return { name: "", definition: "", comment: "" };
+  return { name: "", definition: "", comment: "", dependentColumns: [] };
 }
 
 export const ViewMetadata = {
@@ -1887,29 +2234,52 @@ export const ViewMetadata = {
     if (message.comment !== "") {
       writer.uint32(26).string(message.comment);
     }
+    for (const v of message.dependentColumns) {
+      DependentColumn.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
     return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ViewMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseViewMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.definition = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.comment = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.dependentColumns.push(DependentColumn.decode(reader, reader.uint32()));
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1919,6 +2289,9 @@ export const ViewMetadata = {
       name: isSet(object.name) ? String(object.name) : "",
       definition: isSet(object.definition) ? String(object.definition) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      dependentColumns: Array.isArray(object?.dependentColumns)
+        ? object.dependentColumns.map((e: any) => DependentColumn.fromJSON(e))
+        : [],
     };
   },
 
@@ -1927,7 +2300,16 @@ export const ViewMetadata = {
     message.name !== undefined && (obj.name = message.name);
     message.definition !== undefined && (obj.definition = message.definition);
     message.comment !== undefined && (obj.comment = message.comment);
+    if (message.dependentColumns) {
+      obj.dependentColumns = message.dependentColumns.map((e) => e ? DependentColumn.toJSON(e) : undefined);
+    } else {
+      obj.dependentColumns = [];
+    }
     return obj;
+  },
+
+  create(base?: DeepPartial<ViewMetadata>): ViewMetadata {
+    return ViewMetadata.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ViewMetadata>): ViewMetadata {
@@ -1935,6 +2317,91 @@ export const ViewMetadata = {
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     message.comment = object.comment ?? "";
+    message.dependentColumns = object.dependentColumns?.map((e) => DependentColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDependentColumn(): DependentColumn {
+  return { schema: "", table: "", column: "" };
+}
+
+export const DependentColumn = {
+  encode(message: DependentColumn, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(18).string(message.table);
+    }
+    if (message.column !== "") {
+      writer.uint32(26).string(message.column);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DependentColumn {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDependentColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.column = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DependentColumn {
+    return {
+      schema: isSet(object.schema) ? String(object.schema) : "",
+      table: isSet(object.table) ? String(object.table) : "",
+      column: isSet(object.column) ? String(object.column) : "",
+    };
+  },
+
+  toJSON(message: DependentColumn): unknown {
+    const obj: any = {};
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.table !== undefined && (obj.table = message.table);
+    message.column !== undefined && (obj.column = message.column);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DependentColumn>): DependentColumn {
+    return DependentColumn.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DependentColumn>): DependentColumn {
+    const message = createBaseDependentColumn();
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
+    message.column = object.column ?? "";
     return message;
   },
 };
@@ -1970,37 +2437,66 @@ export const IndexMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IndexMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIndexMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.expressions.push(reader.string());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.type = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.unique = reader.bool();
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.primary = reader.bool();
-          break;
+          continue;
         case 6:
+          if (tag != 48) {
+            break;
+          }
+
           message.visible = reader.bool();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.comment = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2031,6 +2527,10 @@ export const IndexMetadata = {
     message.visible !== undefined && (obj.visible = message.visible);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
+  },
+
+  create(base?: DeepPartial<IndexMetadata>): IndexMetadata {
+    return IndexMetadata.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<IndexMetadata>): IndexMetadata {
@@ -2068,28 +2568,45 @@ export const ExtensionMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ExtensionMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExtensionMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.schema = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.version = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.description = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2110,6 +2627,10 @@ export const ExtensionMetadata = {
     message.version !== undefined && (obj.version = message.version);
     message.description !== undefined && (obj.description = message.description);
     return obj;
+  },
+
+  create(base?: DeepPartial<ExtensionMetadata>): ExtensionMetadata {
+    return ExtensionMetadata.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ExtensionMetadata>): ExtensionMetadata {
@@ -2165,40 +2686,73 @@ export const ForeignKeyMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ForeignKeyMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseForeignKeyMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.columns.push(reader.string());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.referencedSchema = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.referencedTable = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.referencedColumns.push(reader.string());
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.onDelete = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.onUpdate = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.matchType = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2239,6 +2793,10 @@ export const ForeignKeyMetadata = {
     return obj;
   },
 
+  create(base?: DeepPartial<ForeignKeyMetadata>): ForeignKeyMetadata {
+    return ForeignKeyMetadata.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<ForeignKeyMetadata>): ForeignKeyMetadata {
     const message = createBaseForeignKeyMetadata();
     message.name = object.name ?? "";
@@ -2266,19 +2824,24 @@ export const DatabaseSchema = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchema {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDatabaseSchema();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.schema = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2291,6 +2854,10 @@ export const DatabaseSchema = {
     const obj: any = {};
     message.schema !== undefined && (obj.schema = message.schema);
     return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseSchema>): DatabaseSchema {
+    return DatabaseSchema.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DatabaseSchema>): DatabaseSchema {
@@ -2322,28 +2889,45 @@ export const BackupSetting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): BackupSetting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBackupSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.backupRetainDuration = Duration.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.cronSchedule = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.hookUrl = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2368,6 +2952,10 @@ export const BackupSetting = {
     message.cronSchedule !== undefined && (obj.cronSchedule = message.cronSchedule);
     message.hookUrl !== undefined && (obj.hookUrl = message.hookUrl);
     return obj;
+  },
+
+  create(base?: DeepPartial<BackupSetting>): BackupSetting {
+    return BackupSetting.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<BackupSetting>): BackupSetting {
@@ -2410,34 +2998,59 @@ export const Backup = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Backup {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBackup();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.state = reader.int32() as any;
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.backupType = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.comment = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2464,6 +3077,10 @@ export const Backup = {
     return obj;
   },
 
+  create(base?: DeepPartial<Backup>): Backup {
+    return Backup.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Backup>): Backup {
     const message = createBaseBackup();
     message.name = object.name ?? "";
@@ -2487,7 +3104,67 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: Database,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              51,
+              18,
+              49,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     listDatabases: {
       name: "ListDatabases",
@@ -2495,7 +3172,67 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: ListDatabasesResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              51,
+              18,
+              49,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     updateDatabase: {
       name: "UpdateDatabase",
@@ -2503,7 +3240,110 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: Database,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              20,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              70,
+              58,
+              8,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              50,
+              58,
+              47,
+              118,
+              49,
+              47,
+              123,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     batchUpdateDatabases: {
       name: "BatchUpdateDatabases",
@@ -2511,7 +3351,81 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: BatchUpdateDatabasesResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              66,
+              58,
+              1,
+              42,
+              34,
+              61,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              85,
+              112,
+              100,
+              97,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
     },
     getDatabaseMetadata: {
       name: "GetDatabaseMetadata",
@@ -2519,7 +3433,75 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: DatabaseMetadata,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              60,
+              18,
+              58,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     getDatabaseSchema: {
       name: "GetDatabaseSchema",
@@ -2527,7 +3509,73 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: DatabaseSchema,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              58,
+              18,
+              56,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     getBackupSetting: {
       name: "GetBackupSetting",
@@ -2535,7 +3583,80 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: BackupSetting,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              65,
+              18,
+              63,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              98,
+              97,
+              99,
+              107,
+              117,
+              112,
+              83,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     updateBackupSetting: {
       name: "UpdateBackupSetting",
@@ -2543,7 +3664,97 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: BackupSetting,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              82,
+              58,
+              7,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              50,
+              71,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              98,
+              97,
+              99,
+              107,
+              117,
+              112,
+              83,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     createBackup: {
       name: "CreateBackup",
@@ -2551,7 +3762,84 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: Backup,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              69,
+              58,
+              6,
+              98,
+              97,
+              99,
+              107,
+              117,
+              112,
+              34,
+              59,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              98,
+              97,
+              99,
+              107,
+              117,
+              112,
+              115,
+            ]),
+          ],
+        },
+      },
     },
     listBackup: {
       name: "ListBackup",
@@ -2559,7 +3847,77 @@ export const DatabaseServiceDefinition = {
       requestStream: false,
       responseType: ListBackupResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              61,
+              18,
+              59,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              98,
+              97,
+              99,
+              107,
+              117,
+              112,
+              115,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;
@@ -2638,7 +3996,7 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
 declare var self: any | undefined;
 declare var window: any | undefined;
 declare var global: any | undefined;
-var globalThis: any = (() => {
+var tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -2685,7 +4043,7 @@ function fromJsonTimestamp(o: any): Date {
 
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
   }
   return long.toNumber();
 }

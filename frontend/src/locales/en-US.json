@@ -228,7 +228,10 @@
     "off": "Off",
     "verify": "Verify",
     "regenerate": "Regenerate",
-    "download": "Download"
+    "download": "Download",
+    "will-lose-unsaved-data": "Will lose any unsaved data.",
+    "deleted": "Deleted",
+    "will-override-current-data": "Will override current data."
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -492,6 +495,10 @@
               "self": "OpenAI API Key",
               "description": "Supply OpenAI API Key to enable ChatSQL capability in SQL Editor. {viewDoc}",
               "placeholder": "An OpenAI API Key usually starts with sk-*****"
+            },
+            "openai-endpoint": {
+              "self": "OpenAI API Endpoint",
+              "description": "Supply private deployment of OpenAI API Endpoint."
             }
           }
         }
@@ -1734,6 +1741,10 @@
         "title": "Unlock 100+ SQL Review checks",
         "desc": "Specify SQL lint rules to adopt SQL best practice and enforce schema consistency across the engineering organization."
       },
+      "bb-feature-custom-approval": {
+        "title": "Custom approval",
+        "desc": "Configure security risk level and approval flow for different tasks."
+      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
         "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
@@ -2063,6 +2074,126 @@
       },
       "statement-copied": "Statement copied to clipboard",
       "dont-show-again": "Don't show again"
+    }
+  },
+  "custom-approval": {
+    "self": "Custom Approval",
+    "security-rule": {
+      "self": "Security rule",
+      "security-rules": "Security rules",
+      "x-risk-rules": {
+        "low": "Low Risk Rules",
+        "moderate": "Moderate Risk Rules",
+        "high": "High Risk Rules"
+      },
+      "active": "Active",
+      "add-rule": "Add rule",
+      "edit-rule": "Edit rule",
+      "delete": "Delete security rule",
+      "default-rules": {
+        "self": "Default rules",
+        "description": "The default rules will be executed when an issue fails to comply with the custom rules."
+      },
+      "risk": {
+        "self": "Risk",
+        "select": "Select risk",
+        "risk-level": {
+          "100": "Low",
+          "200": "Moderate",
+          "300": "High"
+        },
+        "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Create Database"
+        }
+      },
+      "condition": {
+        "self": "Condition",
+        "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will filter outer issues executed in the \"prod\" environment.",
+        "add": "Add condition",
+        "add-group": "Add condition group",
+        "group": {
+          "or": {
+            "description": "Any of the following are true..."
+          },
+          "and": {
+            "description": "All of the following are true..."
+          }
+        },
+        "input-value": "Input value",
+        "add-condition-here": "Add condition here",
+        "select-value": "Select value",
+        "input-value-press-enter": "Input value, press Enter to confirm"
+      },
+      "template": {
+        "templates": "Templates",
+        "load": "Load",
+        "presets": {
+          "environment-prod-high": "The risk for the production environment is considered to be high.",
+          "environment-dev-low": "The risk value for the development environment is considered to be low.",
+          "dml-in-environment-prod-10k-rows-high": "In the production environment, if the number of rows to be updated or deleted exceeds 10000, the risk is considered to be high.",
+          "create-database-in-environment-prod-moderate": "Creating a database in the production environment is considered to be a moderate risk."
+        },
+        "load-template": "Load template",
+        "view": "View template"
+      },
+      "rule-name": "Rule name",
+      "view-rule": "View rule",
+      "source": {
+        "select": "Select type",
+        "self": "Type"
+      },
+      "input-rule-name": "Input rule name",
+      "search": "Search rule"
+    },
+    "approval-flow": {
+      "self": "Approval flow",
+      "description": "For each operation type, configure custom condition, risk and approval flow. ",
+      "approval-flows": "Approval flows",
+      "approval-nodes": "Approval nodes",
+      "type": {
+        "system": "System",
+        "custom": "Custom"
+      },
+      "delete": "Delete approval flow",
+      "search": "Search approval flow",
+      "select": "Select approval flow",
+      "create-approval-flow": "Create approval flow",
+      "edit-approval-flow": "Edit approval flow",
+      "node": {
+        "nodes": "Approval nodes",
+        "description": "Only one approval is required on this node when there are multiple approvers.",
+        "order": "Order",
+        "approver": "Approver",
+        "group": {
+          "WORKSPACE_OWNER": "Workspace Owner",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "Project Owner",
+          "PROJECT_MEMBER": "Project Member"
+        },
+        "add": "Add node",
+        "delete": "Delete approval node"
+      },
+      "presets": {
+        "owner-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
+        "owner": "The system defines the approval process and only needs the project Owner o approve it.",
+        "dba": "The system defines the approval process and only needs DBA approval.",
+        "admin": "The system defines the approval process and only needs Administrator approval.",
+        "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
+      },
+      "view-approval-flow": "View approval flow",
+      "skip": "Skip manual approval"
+    },
+    "risk": {
+      "self": "Risk",
+      "risk-center": "Risk Center"
+    },
+    "workflow-center": {
+      "workflow": "Workflow"
+    },
+    "rule": {
+      "rules": "Rules"
     }
   }
 }

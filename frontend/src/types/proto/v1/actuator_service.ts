@@ -47,16 +47,17 @@ export const GetActuatorInfoRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetActuatorInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetActuatorInfoRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -68,6 +69,10 @@ export const GetActuatorInfoRequest = {
   toJSON(_: GetActuatorInfoRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create(base?: DeepPartial<GetActuatorInfoRequest>): GetActuatorInfoRequest {
+    return GetActuatorInfoRequest.fromPartial(base ?? {});
   },
 
   fromPartial(_: DeepPartial<GetActuatorInfoRequest>): GetActuatorInfoRequest {
@@ -131,49 +136,94 @@ export const ActuatorInfo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ActuatorInfo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseActuatorInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.version = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.gitCommit = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.readonly = reader.bool();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.saas = reader.bool();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.demoName = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.host = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.port = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.externalUrl = reader.string();
-          break;
+          continue;
         case 9:
+          if (tag != 72) {
+            break;
+          }
+
           message.needAdminSetup = reader.bool();
-          break;
+          continue;
         case 10:
+          if (tag != 80) {
+            break;
+          }
+
           message.disallowSignup = reader.bool();
-          break;
+          continue;
         case 11:
+          if (tag != 90) {
+            break;
+          }
+
           message.lastActiveTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -210,6 +260,10 @@ export const ActuatorInfo = {
     return obj;
   },
 
+  create(base?: DeepPartial<ActuatorInfo>): ActuatorInfo {
+    return ActuatorInfo.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<ActuatorInfo>): ActuatorInfo {
     const message = createBaseActuatorInfo();
     message.version = object.version ?? "";
@@ -238,7 +292,14 @@ export const ActuatorServiceDefinition = {
       requestStream: false,
       responseType: ActuatorInfo,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([19, 18, 17, 47, 118, 49, 47, 97, 99, 116, 117, 97, 116, 111, 114, 47, 105, 110, 102, 111]),
+          ],
+        },
+      },
     },
   },
 } as const;

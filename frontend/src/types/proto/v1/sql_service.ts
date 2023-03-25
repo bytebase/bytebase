@@ -42,25 +42,38 @@ export const PrettyRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PrettyRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePrettyRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.engine = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.currentSchema = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.expectedSchema = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -79,6 +92,10 @@ export const PrettyRequest = {
     message.currentSchema !== undefined && (obj.currentSchema = message.currentSchema);
     message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
     return obj;
+  },
+
+  create(base?: DeepPartial<PrettyRequest>): PrettyRequest {
+    return PrettyRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<PrettyRequest>): PrettyRequest {
@@ -106,22 +123,31 @@ export const PrettyResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PrettyResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePrettyResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.currentSchema = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.expectedSchema = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -138,6 +164,10 @@ export const PrettyResponse = {
     message.currentSchema !== undefined && (obj.currentSchema = message.currentSchema);
     message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
     return obj;
+  },
+
+  create(base?: DeepPartial<PrettyResponse>): PrettyResponse {
+    return PrettyResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<PrettyResponse>): PrettyResponse {
@@ -159,7 +189,13 @@ export const SQLServiceDefinition = {
       requestStream: false,
       responseType: PrettyResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 115, 113, 108, 47, 112, 114, 101, 116, 116, 121]),
+          ],
+        },
+      },
     },
   },
 } as const;

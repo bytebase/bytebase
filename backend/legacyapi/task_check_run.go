@@ -67,6 +67,8 @@ const (
 	TaskCheckDatabaseStatementAdvise TaskCheckType = "bb.task-check.database.statement.advise"
 	// TaskCheckDatabaseStatementType is the task check type for statement type.
 	TaskCheckDatabaseStatementType TaskCheckType = "bb.task-check.database.statement.type"
+	// TaskCheckDatabaseStatementTypeReport is the task check type for statement type report.
+	TaskCheckDatabaseStatementTypeReport TaskCheckType = "bb.task-check.database.statement.type.report"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
@@ -94,6 +96,16 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 
 // TaskCheckDatabaseStatementTypePayload is the task check payload for SQL type.
 type TaskCheckDatabaseStatementTypePayload struct {
+	Statement string  `json:"statement,omitempty"`
+	DbType    db.Type `json:"dbType,omitempty"`
+
+	// MySQL special fields.
+	Charset   string `json:"charset,omitempty"`
+	Collation string `json:"collation,omitempty"`
+}
+
+// TaskCheckDatabaseStatementTypeReportPayload is the task check payload for SQL statement type report.
+type TaskCheckDatabaseStatementTypeReportPayload struct {
 	Statement string  `json:"statement,omitempty"`
 	DbType    db.Type `json:"dbType,omitempty"`
 
@@ -154,7 +166,7 @@ type TaskCheckRun struct {
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
+	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
@@ -168,7 +180,7 @@ func IsSyntaxCheckSupported(dbType db.Type) bool {
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
+	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
@@ -182,6 +194,16 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 
 // IsStatementTypeCheckSupported checks the engine type if statement type check supports it.
 func IsStatementTypeCheckSupported(dbType db.Type) bool {
+	switch dbType {
+	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsStatementTypeReportCheckSupported checks if statement type report supports the engine type.
+func IsStatementTypeReportCheckSupported(dbType db.Type) bool {
 	switch dbType {
 	case db.Postgres, db.TiDB, db.MySQL:
 		return true

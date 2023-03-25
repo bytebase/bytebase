@@ -1,5 +1,7 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
+import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { ApprovalTemplate } from "./approval";
 
 export const protobufPackage = "bytebase.store";
 
@@ -23,6 +25,15 @@ export interface AgentPluginSetting {
   token: string;
 }
 
+export interface WorkspaceApprovalSetting {
+  rules: WorkspaceApprovalSetting_Rule[];
+}
+
+export interface WorkspaceApprovalSetting_Rule {
+  expression?: ParsedExpr;
+  template?: ApprovalTemplate;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return { externalUrl: "", disallowSignup: false };
 }
@@ -39,22 +50,31 @@ export const WorkspaceProfileSetting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceProfileSetting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseWorkspaceProfileSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.externalUrl = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.disallowSignup = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -71,6 +91,10 @@ export const WorkspaceProfileSetting = {
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
     return obj;
+  },
+
+  create(base?: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
+    return WorkspaceProfileSetting.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
@@ -97,22 +121,31 @@ export const AgentPluginSetting = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): AgentPluginSetting {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAgentPluginSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.url = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.token = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -128,10 +161,155 @@ export const AgentPluginSetting = {
     return obj;
   },
 
+  create(base?: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
+    return AgentPluginSetting.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
     const message = createBaseAgentPluginSetting();
     message.url = object.url ?? "";
     message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseWorkspaceApprovalSetting(): WorkspaceApprovalSetting {
+  return { rules: [] };
+}
+
+export const WorkspaceApprovalSetting = {
+  encode(message: WorkspaceApprovalSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.rules) {
+      WorkspaceApprovalSetting_Rule.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceApprovalSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkspaceApprovalSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.rules.push(WorkspaceApprovalSetting_Rule.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkspaceApprovalSetting {
+    return {
+      rules: Array.isArray(object?.rules)
+        ? object.rules.map((e: any) => WorkspaceApprovalSetting_Rule.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: WorkspaceApprovalSetting): unknown {
+    const obj: any = {};
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? WorkspaceApprovalSetting_Rule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<WorkspaceApprovalSetting>): WorkspaceApprovalSetting {
+    return WorkspaceApprovalSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<WorkspaceApprovalSetting>): WorkspaceApprovalSetting {
+    const message = createBaseWorkspaceApprovalSetting();
+    message.rules = object.rules?.map((e) => WorkspaceApprovalSetting_Rule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseWorkspaceApprovalSetting_Rule(): WorkspaceApprovalSetting_Rule {
+  return { expression: undefined, template: undefined };
+}
+
+export const WorkspaceApprovalSetting_Rule = {
+  encode(message: WorkspaceApprovalSetting_Rule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.expression !== undefined) {
+      ParsedExpr.encode(message.expression, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.template !== undefined) {
+      ApprovalTemplate.encode(message.template, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceApprovalSetting_Rule {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkspaceApprovalSetting_Rule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.expression = ParsedExpr.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.template = ApprovalTemplate.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkspaceApprovalSetting_Rule {
+    return {
+      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
+      template: isSet(object.template) ? ApprovalTemplate.fromJSON(object.template) : undefined,
+    };
+  },
+
+  toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
+    const obj: any = {};
+    message.expression !== undefined &&
+      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
+    message.template !== undefined &&
+      (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
+    return WorkspaceApprovalSetting_Rule.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
+    const message = createBaseWorkspaceApprovalSetting_Rule();
+    message.expression = (object.expression !== undefined && object.expression !== null)
+      ? ParsedExpr.fromPartial(object.expression)
+      : undefined;
+    message.template = (object.template !== undefined && object.template !== null)
+      ? ApprovalTemplate.fromPartial(object.template)
+      : undefined;
     return message;
   },
 };

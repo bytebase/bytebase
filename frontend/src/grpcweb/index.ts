@@ -1,11 +1,16 @@
-import { grpc } from "@improbable-eng/grpc-web";
-import { createChannel, createClientFactory } from "nice-grpc-web";
+import {
+  createChannel,
+  createClientFactory,
+  FetchTransport,
+} from "nice-grpc-web";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
+import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
+import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -16,8 +21,8 @@ const address = import.meta.env.BB_GRPC_LOCAL
 
 const channel = createChannel(
   address,
-  grpc.CrossBrowserHttpTransport({
-    withCredentials: true,
+  FetchTransport({
+    credentials: "include",
   })
 );
 
@@ -45,6 +50,16 @@ export const projectServiceClient = clientFactory.create(
 
 export const identityProviderClient = clientFactory.create(
   IdentityProviderServiceDefinition,
+  channel
+);
+
+export const riskServiceClient = clientFactory.create(
+  RiskServiceDefinition,
+  channel
+);
+
+export const settingServiceClient = clientFactory.create(
+  SettingServiceDefinition,
   channel
 );
 

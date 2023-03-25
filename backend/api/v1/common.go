@@ -26,6 +26,8 @@ const (
 	backupPrefix                 = "backups/"
 	bookmarkPrefix               = "bookmarks/"
 	externalVersionControlPrefix = "externalVersionControls/"
+	riskPrefix                   = "risks/"
+	reviewPrefix                 = "reviews/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -162,6 +164,30 @@ func getExternalVersionControlID(name string) (int, error) {
 	return externalVersionControlID, nil
 }
 
+func getRiskID(name string) (int64, error) {
+	tokens, err := getNameParentTokens(name, riskPrefix)
+	if err != nil {
+		return 0, err
+	}
+	riskID, err := strconv.ParseInt(tokens[0], 10, 64)
+	if err != nil {
+		return 0, errors.Errorf("invalid risk ID %q", tokens[0])
+	}
+	return riskID, nil
+}
+
+func getReviewID(name string) (int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, reviewPrefix)
+	if err != nil {
+		return 0, err
+	}
+	reviewID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return 0, errors.Errorf("invalid review ID %q", tokens[1])
+	}
+	return reviewID, nil
+}
+
 func trimSuffix(name, suffix string) (string, error) {
 	if !strings.HasSuffix(name, suffix) {
 		return "", errors.Errorf("invalid request %q with suffix %q", name, suffix)
@@ -289,6 +315,10 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_SPANNER
 	case db.MSSQL:
 		return v1pb.Engine_MSSQL
+	case db.Redshift:
+		return v1pb.Engine_REDSHIFT
+	case db.MariaDB:
+		return v1pb.Engine_MARIADB
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -317,6 +347,10 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.Spanner
 	case v1pb.Engine_MSSQL:
 		return db.MSSQL
+	case v1pb.Engine_REDSHIFT:
+		return db.Redshift
+	case v1pb.Engine_MARIADB:
+		return db.MariaDB
 	}
 	return db.UnknownType
 }

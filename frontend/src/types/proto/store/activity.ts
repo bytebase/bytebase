@@ -144,22 +144,31 @@ export const ActivityPayload = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ActivityPayload {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseActivityPayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.issueCreatePayload = ActivityIssueCreatePayload.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.issueCommentCreatePayload = ActivityIssueCommentCreatePayload.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -185,6 +194,10 @@ export const ActivityPayload = {
         ? ActivityIssueCommentCreatePayload.toJSON(message.issueCommentCreatePayload)
         : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<ActivityPayload>): ActivityPayload {
+    return ActivityPayload.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ActivityPayload>): ActivityPayload {
@@ -213,19 +226,24 @@ export const ActivityIssueCreatePayload = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueCreatePayload {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseActivityIssueCreatePayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.issueName = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -238,6 +256,10 @@ export const ActivityIssueCreatePayload = {
     const obj: any = {};
     message.issueName !== undefined && (obj.issueName = message.issueName);
     return obj;
+  },
+
+  create(base?: DeepPartial<ActivityIssueCreatePayload>): ActivityIssueCreatePayload {
+    return ActivityIssueCreatePayload.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ActivityIssueCreatePayload>): ActivityIssueCreatePayload {
@@ -270,28 +292,41 @@ export const ActivityIssueCommentCreatePayload = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueCommentCreatePayload {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseActivityIssueCommentCreatePayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.externalApprovalEvent = ActivityIssueCommentCreatePayload_ExternalApprovalEvent.decode(
             reader,
             reader.uint32(),
           );
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.taskRollbackBy = ActivityIssueCommentCreatePayload_TaskRollbackBy.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.issueName = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -318,6 +353,10 @@ export const ActivityIssueCommentCreatePayload = {
       : undefined);
     message.issueName !== undefined && (obj.issueName = message.issueName);
     return obj;
+  },
+
+  create(base?: DeepPartial<ActivityIssueCommentCreatePayload>): ActivityIssueCommentCreatePayload {
+    return ActivityIssueCommentCreatePayload.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ActivityIssueCommentCreatePayload>): ActivityIssueCommentCreatePayload {
@@ -359,28 +398,45 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueCommentCreatePayload_TaskRollbackBy {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseActivityIssueCommentCreatePayload_TaskRollbackBy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.issueId = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.taskId = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.rollbackByIssueId = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.rollbackByTaskId = longToNumber(reader.int64() as Long);
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -401,6 +457,12 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
     message.rollbackByIssueId !== undefined && (obj.rollbackByIssueId = Math.round(message.rollbackByIssueId));
     message.rollbackByTaskId !== undefined && (obj.rollbackByTaskId = Math.round(message.rollbackByTaskId));
     return obj;
+  },
+
+  create(
+    base?: DeepPartial<ActivityIssueCommentCreatePayload_TaskRollbackBy>,
+  ): ActivityIssueCommentCreatePayload_TaskRollbackBy {
+    return ActivityIssueCommentCreatePayload_TaskRollbackBy.fromPartial(base ?? {});
   },
 
   fromPartial(
@@ -437,25 +499,38 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseActivityIssueCommentCreatePayload_ExternalApprovalEvent();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.action = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.stageName = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -480,6 +555,12 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
     return obj;
   },
 
+  create(
+    base?: DeepPartial<ActivityIssueCommentCreatePayload_ExternalApprovalEvent>,
+  ): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
+    return ActivityIssueCommentCreatePayload_ExternalApprovalEvent.fromPartial(base ?? {});
+  },
+
   fromPartial(
     object: DeepPartial<ActivityIssueCommentCreatePayload_ExternalApprovalEvent>,
   ): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
@@ -494,7 +575,7 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
 declare var self: any | undefined;
 declare var window: any | undefined;
 declare var global: any | undefined;
-var globalThis: any = (() => {
+var tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -519,7 +600,7 @@ export type DeepPartial<T> = T extends Builtin ? T
 
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
   }
   return long.toNumber();
 }

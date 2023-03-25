@@ -409,6 +409,22 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "risk-center",
+                name: "setting.workspace.risk-center",
+                meta: { title: () => t("custom-approval.risk.risk-center") },
+                component: () =>
+                  import("../views/SettingWorkspaceRiskCenter.vue"),
+                props: true,
+              },
+              {
+                path: "custom-approval",
+                name: "setting.workspace.custom-approval",
+                meta: { title: () => t("custom-approval.self") },
+                component: () =>
+                  import("../views/SettingWorkspaceCustomApproval.vue"),
+                props: true,
+              },
+              {
                 path: "gitops",
                 name: "setting.workspace.gitops",
                 meta: { title: () => t("settings.sidebar.gitops") },

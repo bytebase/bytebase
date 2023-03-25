@@ -49,3 +49,5 @@ export * from "./onboardingGuide";
 export * from "./schemaEditor";
 export * from "./externalApproval";
 export * from "./mfa";
+export * from "./risk";
+export * from "./workspaceApprovalSetting";

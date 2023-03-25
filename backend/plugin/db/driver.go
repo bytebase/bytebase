@@ -44,6 +44,10 @@ const (
 	Oracle Type = "ORACLE"
 	// MSSQL is the database type for MS SQL Server.
 	MSSQL Type = "MSSQL"
+	// Redshift is the database type for Redshift.
+	Redshift Type = "REDSHIFT"
+	// MariaDB is the database type for MariaDB.
+	MariaDB Type = "MARIADB"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
@@ -203,7 +207,16 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 	// Escape "." characters to match literals instead of using it as a wildcard.
 	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
 
-	filePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]+/`)
+	// We need using for-loop to handle the continuous "*" case.
+	// For example, if filePathTemplate is "foo/*/*/bar", then we need to convert it to "foo/[^/]+/[^/]+/bar",
+	// but strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]+/`) will only replace the first "*" to "/[^/]+/"(i.e "foo/[^/]+/*/bar")
+	tempFilePathRegex := strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]+/`)
+	for tempFilePathRegex != filePathRegex {
+		filePathRegex = tempFilePathRegex
+		tempFilePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]+/`)
+	}
+
+	// After the previous for-loop, filePathRegex will not include any "/*/" anymore, so we can safely replace all ** to .*.
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
 	for _, placeholder := range placeholderList {

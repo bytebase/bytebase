@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -67,7 +66,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		var tlsConfig db.TLSConfig
-		supportTLS := (connectionInfo.Engine == db.ClickHouse || connectionInfo.Engine == db.MySQL || connectionInfo.Engine == db.TiDB)
+		supportTLS := (connectionInfo.Engine == db.ClickHouse || connectionInfo.Engine == db.MySQL || connectionInfo.Engine == db.TiDB || connectionInfo.Engine == db.MariaDB)
 		if supportTLS {
 			if connectionInfo.SslCa == nil && connectionInfo.SslCert == nil && connectionInfo.SslKey == nil && connectionInfo.InstanceID != nil {
 				// Frontend will not pass ssl related field if user don't modify ssl suite, we need get ssl suite from database for this case.
@@ -218,9 +217,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if !exec.Readonly {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support readonly sql statement")
 		}
-		if !validateSQLSelectStatement(exec.Statement) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
-		}
 
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &exec.InstanceID})
 		if err != nil {
@@ -229,6 +225,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+
+		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), exec.Statement) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
+		}
+
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment ID: %s", instance.EnvironmentID)).SetInternal(err)
@@ -260,7 +261,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		// Database Access Control for MySQL dialect.
 		// MySQL dialect can query cross the database.
 		// We need special check.
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
@@ -388,7 +389,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 		switch instance.Engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.MariaDB:
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
@@ -647,7 +648,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			var singleSQLResults []api.SingleSQLResult
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
-			if instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.TiDB || instance.Engine == db.Oracle {
+			if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.Postgres || instance.Engine == db.Oracle {
 				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to split statements")
@@ -777,29 +778,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func validateSQLSelectStatement(sqlStatement string) bool {
-	// Check if the query has only one statement.
-	count := 0
-	if err := util.ApplyMultiStatements(strings.NewReader(sqlStatement), func(_ string) error {
-		count++
-		return nil
-	}); err != nil {
-		return false
+func convertToParserEngine(engine db.Type) parser.EngineType {
+	// convert to parser engine
+	switch engine {
+	case db.Postgres:
+		return parser.Postgres
+	case db.MySQL:
+		return parser.MySQL
+	case db.TiDB:
+		return parser.TiDB
+	case db.MariaDB:
+		return parser.MariaDB
+	case db.Oracle:
+		return parser.Oracle
+	case db.MSSQL:
+		return parser.MSSQL
 	}
-	if count != 1 {
-		return false
-	}
-
-	// Allow SELECT and EXPLAIN queries only.
-	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`, `^WITH\s+?`}
-	formattedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
-	for _, reg := range whiteListRegs {
-		matchResult, _ := regexp.MatchString(reg, formattedStr)
-		if matchResult {
-			return true
-		}
-	}
-	return false
+	return parser.Standard
 }
 
 func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Context, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) error {
@@ -999,7 +994,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 
 func isExcludeDatabase(dbType db.Type, database string) bool {
 	switch dbType {
-	case db.MySQL:
+	case db.MySQL, db.MariaDB:
 		return isMySQLExcludeDatabase(database)
 	case db.TiDB:
 		if isMySQLExcludeDatabase(database) {

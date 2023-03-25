@@ -258,19 +258,24 @@ export const GetUserRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetUserRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetUserRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -283,6 +288,10 @@ export const GetUserRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<GetUserRequest>): GetUserRequest {
+    return GetUserRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GetUserRequest>): GetUserRequest {
@@ -311,25 +320,38 @@ export const ListUsersRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListUsersRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListUsersRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.pageSize = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.pageToken = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.showDeleted = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -348,6 +370,10 @@ export const ListUsersRequest = {
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListUsersRequest>): ListUsersRequest {
+    return ListUsersRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListUsersRequest>): ListUsersRequest {
@@ -375,22 +401,31 @@ export const ListUsersResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListUsersResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListUsersResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.users.push(User.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextPageToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -411,6 +446,10 @@ export const ListUsersResponse = {
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<ListUsersResponse>): ListUsersResponse {
+    return ListUsersResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ListUsersResponse>): ListUsersResponse {
@@ -434,19 +473,24 @@ export const CreateUserRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateUserRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateUserRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.user = User.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -459,6 +503,10 @@ export const CreateUserRequest = {
     const obj: any = {};
     message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CreateUserRequest>): CreateUserRequest {
+    return CreateUserRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CreateUserRequest>): CreateUserRequest {
@@ -499,31 +547,52 @@ export const UpdateUserRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UpdateUserRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateUserRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.user = User.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.otpCode = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.regenerateTempMfaSecret = reader.bool();
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.regenerateRecoveryCodes = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -546,6 +615,10 @@ export const UpdateUserRequest = {
     message.regenerateTempMfaSecret !== undefined && (obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret);
     message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
     return obj;
+  },
+
+  create(base?: DeepPartial<UpdateUserRequest>): UpdateUserRequest {
+    return UpdateUserRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UpdateUserRequest>): UpdateUserRequest {
@@ -572,19 +645,24 @@ export const DeleteUserRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteUserRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteUserRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -597,6 +675,10 @@ export const DeleteUserRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<DeleteUserRequest>): DeleteUserRequest {
+    return DeleteUserRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DeleteUserRequest>): DeleteUserRequest {
@@ -619,19 +701,24 @@ export const UndeleteUserRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteUserRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUndeleteUserRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -644,6 +731,10 @@ export const UndeleteUserRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteUserRequest>): UndeleteUserRequest {
+    return UndeleteUserRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<UndeleteUserRequest>): UndeleteUserRequest {
@@ -696,40 +787,73 @@ export const LoginRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): LoginRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLoginRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.email = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.web = reader.bool();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.idpName = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.idpContext = IdentityProviderContext.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.otpCode = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.recoveryCode = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.mfaTempToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -759,6 +883,10 @@ export const LoginRequest = {
     message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
     message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<LoginRequest>): LoginRequest {
+    return LoginRequest.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<LoginRequest>): LoginRequest {
@@ -793,22 +921,31 @@ export const IdentityProviderContext = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IdentityProviderContext {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIdentityProviderContext();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.oauth2Context = OAuth2IdentityProviderContext.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.oidcContext = OIDCIdentityProviderContext.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -830,6 +967,10 @@ export const IdentityProviderContext = {
     message.oidcContext !== undefined &&
       (obj.oidcContext = message.oidcContext ? OIDCIdentityProviderContext.toJSON(message.oidcContext) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<IdentityProviderContext>): IdentityProviderContext {
+    return IdentityProviderContext.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<IdentityProviderContext>): IdentityProviderContext {
@@ -857,19 +998,24 @@ export const OAuth2IdentityProviderContext = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OAuth2IdentityProviderContext {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOAuth2IdentityProviderContext();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.code = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -882,6 +1028,10 @@ export const OAuth2IdentityProviderContext = {
     const obj: any = {};
     message.code !== undefined && (obj.code = message.code);
     return obj;
+  },
+
+  create(base?: DeepPartial<OAuth2IdentityProviderContext>): OAuth2IdentityProviderContext {
+    return OAuth2IdentityProviderContext.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<OAuth2IdentityProviderContext>): OAuth2IdentityProviderContext {
@@ -901,16 +1051,17 @@ export const OIDCIdentityProviderContext = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OIDCIdentityProviderContext {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOIDCIdentityProviderContext();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -922,6 +1073,10 @@ export const OIDCIdentityProviderContext = {
   toJSON(_: OIDCIdentityProviderContext): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create(base?: DeepPartial<OIDCIdentityProviderContext>): OIDCIdentityProviderContext {
+    return OIDCIdentityProviderContext.fromPartial(base ?? {});
   },
 
   fromPartial(_: DeepPartial<OIDCIdentityProviderContext>): OIDCIdentityProviderContext {
@@ -946,22 +1101,31 @@ export const LoginResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): LoginResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLoginResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.token = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.mfaTempToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -978,6 +1142,10 @@ export const LoginResponse = {
     message.token !== undefined && (obj.token = message.token);
     message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
     return obj;
+  },
+
+  create(base?: DeepPartial<LoginResponse>): LoginResponse {
+    return LoginResponse.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
@@ -998,16 +1166,17 @@ export const LogoutRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): LogoutRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLogoutRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1019,6 +1188,10 @@ export const LogoutRequest = {
   toJSON(_: LogoutRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create(base?: DeepPartial<LogoutRequest>): LogoutRequest {
+    return LogoutRequest.fromPartial(base ?? {});
   },
 
   fromPartial(_: DeepPartial<LogoutRequest>): LogoutRequest {
@@ -1082,49 +1255,94 @@ export const User = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): User {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUser();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.state = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.email = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.userType = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag != 48) {
+            break;
+          }
+
           message.userRole = reader.int32() as any;
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           message.serviceKey = reader.string();
-          break;
+          continue;
         case 9:
+          if (tag != 72) {
+            break;
+          }
+
           message.mfaEnabled = reader.bool();
-          break;
+          continue;
         case 10:
+          if (tag != 82) {
+            break;
+          }
+
           message.mfaSecret = reader.string();
-          break;
+          continue;
         case 11:
+          if (tag != 90) {
+            break;
+          }
+
           message.recoveryCodes.push(reader.string());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1165,6 +1383,10 @@ export const User = {
     return obj;
   },
 
+  create(base?: DeepPartial<User>): User {
+    return User.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<User>): User {
     const message = createBaseUser();
     message.name = object.name ?? "";
@@ -1193,7 +1415,36 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: User,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              20,
+              18,
+              18,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     listUsers: {
       name: "ListUsers",
@@ -1201,7 +1452,12 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: ListUsersResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [new Uint8Array([11, 18, 9, 47, 118, 49, 47, 117, 115, 101, 114, 115])],
+        },
+      },
     },
     createUser: {
       name: "CreateUser",
@@ -1209,7 +1465,12 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: User,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 117, 115, 101, 114])],
+          578365826: [new Uint8Array([17, 58, 4, 117, 115, 101, 114, 34, 9, 47, 118, 49, 47, 117, 115, 101, 114, 115])],
+        },
+      },
     },
     updateUser: {
       name: "UpdateUser",
@@ -1217,7 +1478,47 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: User,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([16, 117, 115, 101, 114, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
+          578365826: [
+            new Uint8Array([
+              31,
+              58,
+              4,
+              117,
+              115,
+              101,
+              114,
+              50,
+              23,
+              47,
+              118,
+              49,
+              47,
+              123,
+              117,
+              115,
+              101,
+              114,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     deleteUser: {
       name: "DeleteUser",
@@ -1225,7 +1526,36 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              20,
+              42,
+              18,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
     },
     undeleteUser: {
       name: "UndeleteUser",
@@ -1233,7 +1563,47 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: User,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              32,
+              58,
+              1,
+              42,
+              34,
+              27,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
     },
     login: {
       name: "Login",
@@ -1241,7 +1611,13 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: LoginResponse,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 97, 117, 116, 104, 47, 108, 111, 103, 105, 110]),
+          ],
+        },
+      },
     },
     logout: {
       name: "Logout",
@@ -1249,7 +1625,35 @@ export const AuthServiceDefinition = {
       requestStream: false,
       responseType: Empty,
       responseStream: false,
-      options: {},
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              20,
+              58,
+              1,
+              42,
+              34,
+              15,
+              47,
+              118,
+              49,
+              47,
+              97,
+              117,
+              116,
+              104,
+              47,
+              108,
+              111,
+              103,
+              111,
+              117,
+              116,
+            ]),
+          ],
+        },
+      },
     },
   },
 } as const;

@@ -21,6 +21,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
 }
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.

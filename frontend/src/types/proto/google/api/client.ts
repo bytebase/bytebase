@@ -367,29 +367,40 @@ export const CommonLanguageSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CommonLanguageSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCommonLanguageSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.referenceDocsUri = reader.string();
-          break;
+          continue;
         case 2:
-          if ((tag & 7) === 2) {
+          if (tag == 16) {
+            message.destinations.push(reader.int32() as any);
+            continue;
+          }
+
+          if (tag == 18) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.destinations.push(reader.int32() as any);
             }
-          } else {
-            message.destinations.push(reader.int32() as any);
+
+            continue;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
+
           break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -412,6 +423,10 @@ export const CommonLanguageSettings = {
       obj.destinations = [];
     }
     return obj;
+  },
+
+  create(base?: DeepPartial<CommonLanguageSettings>): CommonLanguageSettings {
+    return CommonLanguageSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CommonLanguageSettings>): CommonLanguageSettings {
@@ -477,49 +492,94 @@ export const ClientLibrarySettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ClientLibrarySettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseClientLibrarySettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.version = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.launchStage = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.restNumericEnums = reader.bool();
-          break;
+          continue;
         case 21:
+          if (tag != 170) {
+            break;
+          }
+
           message.javaSettings = JavaSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 22:
+          if (tag != 178) {
+            break;
+          }
+
           message.cppSettings = CppSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 23:
+          if (tag != 186) {
+            break;
+          }
+
           message.phpSettings = PhpSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 24:
+          if (tag != 194) {
+            break;
+          }
+
           message.pythonSettings = PythonSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 25:
+          if (tag != 202) {
+            break;
+          }
+
           message.nodeSettings = NodeSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 26:
+          if (tag != 210) {
+            break;
+          }
+
           message.dotnetSettings = DotnetSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 27:
+          if (tag != 218) {
+            break;
+          }
+
           message.rubySettings = RubySettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 28:
+          if (tag != 226) {
+            break;
+          }
+
           message.goSettings = GoSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -562,6 +622,10 @@ export const ClientLibrarySettings = {
     message.goSettings !== undefined &&
       (obj.goSettings = message.goSettings ? GoSettings.toJSON(message.goSettings) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<ClientLibrarySettings>): ClientLibrarySettings {
+    return ClientLibrarySettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<ClientLibrarySettings>): ClientLibrarySettings {
@@ -644,43 +708,80 @@ export const Publishing = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Publishing {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublishing();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.methodSettings.push(MethodSettings.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 101:
+          if (tag != 810) {
+            break;
+          }
+
           message.newIssueUri = reader.string();
-          break;
+          continue;
         case 102:
+          if (tag != 818) {
+            break;
+          }
+
           message.documentationUri = reader.string();
-          break;
+          continue;
         case 103:
+          if (tag != 826) {
+            break;
+          }
+
           message.apiShortName = reader.string();
-          break;
+          continue;
         case 104:
+          if (tag != 834) {
+            break;
+          }
+
           message.githubLabel = reader.string();
-          break;
+          continue;
         case 105:
+          if (tag != 842) {
+            break;
+          }
+
           message.codeownerGithubTeams.push(reader.string());
-          break;
+          continue;
         case 106:
+          if (tag != 850) {
+            break;
+          }
+
           message.docTagPrefix = reader.string();
-          break;
+          continue;
         case 107:
+          if (tag != 856) {
+            break;
+          }
+
           message.organization = reader.int32() as any;
-          break;
+          continue;
         case 109:
+          if (tag != 874) {
+            break;
+          }
+
           message.librarySettings.push(ClientLibrarySettings.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -731,6 +832,10 @@ export const Publishing = {
     return obj;
   },
 
+  create(base?: DeepPartial<Publishing>): Publishing {
+    return Publishing.fromPartial(base ?? {});
+  },
+
   fromPartial(object: DeepPartial<Publishing>): Publishing {
     const message = createBasePublishing();
     message.methodSettings = object.methodSettings?.map((e) => MethodSettings.fromPartial(e)) || [];
@@ -765,28 +870,41 @@ export const JavaSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): JavaSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseJavaSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.libraryPackage = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = JavaSettings_ServiceClassNamesEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.serviceClassNames[entry2.key] = entry2.value;
           }
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -816,6 +934,10 @@ export const JavaSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<JavaSettings>): JavaSettings {
+    return JavaSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<JavaSettings>): JavaSettings {
@@ -853,22 +975,31 @@ export const JavaSettings_ServiceClassNamesEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): JavaSettings_ServiceClassNamesEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseJavaSettings_ServiceClassNamesEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -882,6 +1013,10 @@ export const JavaSettings_ServiceClassNamesEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create(base?: DeepPartial<JavaSettings_ServiceClassNamesEntry>): JavaSettings_ServiceClassNamesEntry {
+    return JavaSettings_ServiceClassNamesEntry.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<JavaSettings_ServiceClassNamesEntry>): JavaSettings_ServiceClassNamesEntry {
@@ -905,19 +1040,24 @@ export const CppSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CppSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCppSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -931,6 +1071,10 @@ export const CppSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<CppSettings>): CppSettings {
+    return CppSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<CppSettings>): CppSettings {
@@ -955,19 +1099,24 @@ export const PhpSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PhpSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePhpSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -981,6 +1130,10 @@ export const PhpSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<PhpSettings>): PhpSettings {
+    return PhpSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<PhpSettings>): PhpSettings {
@@ -1005,19 +1158,24 @@ export const PythonSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PythonSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePythonSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1031,6 +1189,10 @@ export const PythonSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<PythonSettings>): PythonSettings {
+    return PythonSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<PythonSettings>): PythonSettings {
@@ -1055,19 +1217,24 @@ export const NodeSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1081,6 +1248,10 @@ export const NodeSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<NodeSettings>): NodeSettings {
+    return NodeSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<NodeSettings>): NodeSettings {
@@ -1105,19 +1276,24 @@ export const DotnetSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DotnetSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDotnetSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1131,6 +1307,10 @@ export const DotnetSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<DotnetSettings>): DotnetSettings {
+    return DotnetSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<DotnetSettings>): DotnetSettings {
@@ -1155,19 +1335,24 @@ export const RubySettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): RubySettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRubySettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1181,6 +1366,10 @@ export const RubySettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<RubySettings>): RubySettings {
+    return RubySettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<RubySettings>): RubySettings {
@@ -1205,19 +1394,24 @@ export const GoSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GoSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGoSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1231,6 +1425,10 @@ export const GoSettings = {
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<GoSettings>): GoSettings {
+    return GoSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<GoSettings>): GoSettings {
@@ -1258,22 +1456,31 @@ export const MethodSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): MethodSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMethodSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.selector = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.longRunning = MethodSettings_LongRunning.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1291,6 +1498,10 @@ export const MethodSettings = {
     message.longRunning !== undefined &&
       (obj.longRunning = message.longRunning ? MethodSettings_LongRunning.toJSON(message.longRunning) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<MethodSettings>): MethodSettings {
+    return MethodSettings.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<MethodSettings>): MethodSettings {
@@ -1325,28 +1536,45 @@ export const MethodSettings_LongRunning = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): MethodSettings_LongRunning {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMethodSettings_LongRunning();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.initialPollDelay = Duration.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 21) {
+            break;
+          }
+
           message.pollDelayMultiplier = reader.float();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.maxPollDelay = Duration.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.totalPollTimeout = Duration.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -1370,6 +1598,10 @@ export const MethodSettings_LongRunning = {
     message.totalPollTimeout !== undefined &&
       (obj.totalPollTimeout = message.totalPollTimeout ? Duration.toJSON(message.totalPollTimeout) : undefined);
     return obj;
+  },
+
+  create(base?: DeepPartial<MethodSettings_LongRunning>): MethodSettings_LongRunning {
+    return MethodSettings_LongRunning.fromPartial(base ?? {});
   },
 
   fromPartial(object: DeepPartial<MethodSettings_LongRunning>): MethodSettings_LongRunning {

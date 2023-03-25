@@ -75,15 +75,31 @@ func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, err
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
-	totalRowsAffected := int64(0)
-	tx, err := driver.db.BeginTx(ctx, nil)
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+	return driver.executeWithBeforeCommitTxFunc(ctx, statement, createDatabase, nil)
+}
+
+// executeWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
+//
+// Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
+//
+// Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
+func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, _ bool, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
+	conn, err := driver.db.Conn(ctx)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get connection")
+	}
+	defer conn.Close()
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
+	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
+		// The underlying oracle golang driver go-ora does not support semicolon, so we should trim the suffix semicolon.
+		stmt = strings.TrimSuffix(stmt, ";")
 		sqlResult, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
 			return err
@@ -102,8 +118,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, err
 	}
 
+	if beforeCommitTx != nil {
+		if err := beforeCommitTx(tx); err != nil {
+			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return totalRowsAffected, nil
 }

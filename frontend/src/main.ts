@@ -1,6 +1,10 @@
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import { createApp } from "vue";
+import Long from "long";
+import protobufjs from "protobufjs";
+protobufjs.util.Long = Long;
+protobufjs.configure();
 
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";

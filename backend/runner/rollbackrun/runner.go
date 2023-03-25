@@ -2,7 +2,9 @@
 package rollbackrun
 
 import (
+	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -68,7 +70,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND task.payload->>'threadID'!='' AND task.payload->>'rollbackSqlStatus'='PENDING'",
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
@@ -97,12 +99,96 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Invalid database data update payload", zap.Error(err))
 		return
 	}
+	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		log.Error("Failed to find instance", zap.Error(err))
+		return
+	}
+	switch instance.Engine {
+	case db.MySQL:
+		// TODO(d): support MariaDB.
+		r.generateMySQLRollbackSQL(ctx, task, payload, instance)
+	case db.Oracle:
+		r.generateOracleRollbackSQL(ctx, task, payload, instance)
+	}
+}
 
+func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
+	var rollbackSQLStatus api.RollbackSQLStatus
+	var rollbackStatement, rollbackError string
+
+	statementsBuffer, err := r.generateOracleRollbackSQLImpl(ctx, payload, instance)
+	if err != nil {
+		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
+		rollbackSQLStatus = api.RollbackSQLStatusFailed
+		rollbackError = err.Error()
+	} else {
+		rollbackSQLStatus = api.RollbackSQLStatusDone
+		rollbackStatement = statementsBuffer.String()
+	}
+
+	patch := &api.TaskPatch{
+		ID:                task.ID,
+		UpdaterID:         api.SystemBotID,
+		RollbackSQLStatus: &rollbackSQLStatus,
+		RollbackStatement: &rollbackStatement,
+		RollbackError:     &rollbackError,
+	}
+	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
+		log.Error("Failed to patch task with the Oracle payload", zap.Int("taskID", task.ID))
+		return
+	}
+	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
+}
+
+func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) (*bytes.Buffer, error) {
+	if payload.TransactionID == "" {
+		return nil, errors.New("missing transaction ID, may be there is no data change in the transaction")
+	}
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get admin database driver")
+	}
+	defer driver.Close(ctx)
+
+	db, err := driver.GetDBConnection(ctx, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database connection")
+	}
+
+	// Get the undo SQL from the undo log.
+	var statements bytes.Buffer
+	rows, err := db.QueryContext(ctx, "SELECT undo_sql FROM flashback_transaction_query WHERE xid=HEXTORAW(:1)", payload.TransactionID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query undo SQL")
+	}
+	defer rows.Close()
+
+	var undoSQL sql.NullString
+	for rows.Next() {
+		err := rows.Scan(&undoSQL)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to scan undo SQL")
+		}
+		if !undoSQL.Valid {
+			continue
+		}
+		if _, err := statements.WriteString(undoSQL.String); err != nil {
+			return nil, errors.Wrapf(err, "failed to write undo SQL to buffer")
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate undo SQL")
+	}
+	return &statements, nil
+}
+
+func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
 	const binlogSizeLimit = 8 * 1024 * 1024
-	rollbackSQL, err := r.generateRollbackSQLImpl(ctx, task, payload, binlogSizeLimit)
+	rollbackSQL, err := r.generateMySQLRollbackSQLImpl(ctx, payload, binlogSizeLimit, instance)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
@@ -132,13 +218,9 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
-func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, binlogSizeLimit int) (string, error) {
+func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, binlogSizeLimit int, instance *store.InstanceMessage) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
-	}
-	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return "", err
 	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
 	if payload.SheetID > 0 {

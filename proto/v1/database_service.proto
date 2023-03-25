@@ -333,6 +333,21 @@ message ViewMetadata {
 
   // The comment is the comment of a view.
   string comment = 3;
+
+  // The dependent_columns is the list of dependent columns of a view.
+  repeated DependentColumn dependent_columns = 4;
+}
+
+// DependentColumn is the metadata for dependent columns.
+message DependentColumn {
+  // The schema is the schema of a reference column.
+  string schema = 1;
+
+  // The table is the table of a reference column.
+  string table = 2;
+
+  // The column is the name of a reference column.
+  string column = 3;
 }
 
 // IndexMetadata is the metadata for indexes.

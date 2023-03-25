@@ -15,6 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -27,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -406,6 +408,16 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if assignee == nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee %d not found", issueCreate.AssigneeID))
 	}
+	// TODO(p0ny): remove issueCreate.Payload
+	issueCreatePayload := &storepb.IssuePayload{}
+	issueCreatePayload.Approval = &storepb.IssuePayloadApproval{
+		ApprovalFindingDone: false,
+	}
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+	}
+
 	issueCreateMessage := &store.IssueMessage{
 		Project:       project,
 		Title:         issueCreate.Name,
@@ -413,7 +425,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Description:   issueCreate.Description,
 		Assignee:      assignee,
 		NeedAttention: issueCreate.AssigneeNeedAttention,
-		Payload:       issueCreate.Payload,
+		Payload:       string(issueCreatePayloadBytes),
 	}
 
 	if issueCreate.ValidateOnly {
@@ -1091,7 +1103,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	case db.Snowflake:
 		// Snowflake needs to use upper case of DatabaseName.
 		databaseName = strings.ToUpper(databaseName)
-	case db.MySQL:
+	case db.MySQL, db.MariaDB:
 		// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 		// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 		// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
@@ -1232,7 +1244,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.D
 func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, databaseName, adminDatasourceUser string) (string, error) {
 	var stmt string
 	switch dbType {
-	case db.MySQL, db.TiDB:
+	case db.MySQL, db.TiDB, db.MariaDB:
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil

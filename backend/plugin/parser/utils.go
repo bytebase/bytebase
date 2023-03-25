@@ -11,6 +11,7 @@ import (
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
@@ -35,7 +36,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres:
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB:
+	case MySQL, TiDB, MariaDB:
 		t := newTokenizer(statement)
 		list, err = t.splitMySQLMultiSQL()
 	default:
@@ -70,7 +71,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	case Postgres:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB:
+	case MySQL, TiDB, MariaDB:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitMySQLMultiSQL()
 	default:
@@ -200,10 +201,65 @@ func ExtractDelimiter(stmt string) (string, error) {
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
+// TypeString returns the string representation of the type for MySQL.
+func TypeString(tp byte) string {
+	switch tp {
+	case mysql.TypeTiny:
+		return "tinyint"
+	case mysql.TypeShort:
+		return "smallint"
+	case mysql.TypeInt24:
+		return "mediumint"
+	case mysql.TypeLong:
+		return "int"
+	case mysql.TypeLonglong:
+		return "bigint"
+	case mysql.TypeFloat:
+		return "float"
+	case mysql.TypeDouble:
+		return "double"
+	case mysql.TypeNewDecimal:
+		return "decimal"
+	case mysql.TypeVarchar:
+		return "varchar"
+	case mysql.TypeBit:
+		return "bit"
+	case mysql.TypeTimestamp:
+		return "timestamp"
+	case mysql.TypeDatetime:
+		return "datetime"
+	case mysql.TypeDate:
+		return "date"
+	case mysql.TypeDuration:
+		return "time"
+	case mysql.TypeJSON:
+		return "json"
+	case mysql.TypeEnum:
+		return "enum"
+	case mysql.TypeSet:
+		return "set"
+	case mysql.TypeTinyBlob:
+		return "tinyblob"
+	case mysql.TypeMediumBlob:
+		return "mediumblob"
+	case mysql.TypeLongBlob:
+		return "longblob"
+	case mysql.TypeBlob:
+		return "blob"
+	case mysql.TypeVarString:
+		return "varbinary"
+	case mysql.TypeString:
+		return "binary"
+	case mysql.TypeGeometry:
+		return "geometry"
+	}
+	return "unknown"
+}
+
 // ExtractDatabaseList extracts all databases from statement.
 func ExtractDatabaseList(engineType EngineType, statement string) ([]string, error) {
 	switch engineType {
-	case MySQL, TiDB:
+	case MySQL, TiDB, MariaDB:
 		return extractMySQLDatabaseList(statement)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)

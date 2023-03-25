@@ -155,7 +155,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		IssueID:        strconv.Itoa(issue.UID),
 	}
 
-	if _, _, err := utils.ExecuteMigration(ctx, exec.store, driver, m, "/* pitr cutover */"); err != nil {
+	if _, _, err := utils.ExecuteMigration(ctx, exec.store, driver, m, "/* pitr cutover */", nil /* executeBeforeCommitTx */); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
@@ -204,7 +204,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 				return errors.Errorf("context is canceled when doing cutover for PostgreSQL")
 			}
 		}
-	case db.MySQL:
+	case db.MySQL, db.MariaDB:
 		if err := exec.pitrCutoverMySQL(ctx, driver, issue, databaseName); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}
