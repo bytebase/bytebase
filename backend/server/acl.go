@@ -91,12 +91,12 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, princ
 
 			// Get the database ID from the path.
 			matches := databaseGeneralRouteRegex.FindStringSubmatch(path)
-			dbId, err := strconv.Atoi(matches[1])
+			dbID, err := strconv.Atoi(matches[1])
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
 			}
 
-			in, err := isMemberOfAnyProjectOwnsDatabase(principalID, dbId)
+			in, err := isMemberOfAnyProjectOwnsDatabase(principalID, dbID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
@@ -359,7 +359,7 @@ func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipa
 	}
 }
 
-func isGettingSelf(ctx context.Context, c echo.Context, _ *Server, curPrincipalID int, path string) (bool, error) {
+func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int, path string) (bool, error) {
 	if strings.HasPrefix(path, "/inbox/user") {
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
