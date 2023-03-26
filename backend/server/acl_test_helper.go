@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
@@ -168,4 +170,64 @@ var isMemberOfAnyProjectOwnsDatabase = func(principalID int, databaseID int) (bo
 		}
 	}
 	return false, nil
+}
+
+var testMemberIssueMap = struct {
+	// principalIDToProjectID is a map from principal ID to the project ID.
+	// We assume that a principal can only be a member of one project (actually it can be a member of multiple projects).
+	principalIDToProjectID map[int]int
+	// issueIDToProjectID is a map from issue ID to the project ID.
+	issueIDToProjectID map[int]int
+	// issueIDToCreatorID is a map from issue ID to the creator ID.
+	issueIDToCreatorID map[int]int
+}{
+	principalIDToProjectID: map[int]int{
+		// User 202 is a member of project 102.
+		202: 102,
+		// User 203 is a member of project 102.
+		203: 102,
+		// User 203 is a member of project 103.
+		204: 103,
+	},
+	issueIDToProjectID: map[int]int{
+		// Issue 401 belongs to project 102.
+		401: 102,
+		// Issue 402 belongs to project 102.
+		402: 102,
+		// Issue 403 belongs to project 103.
+		403: 103,
+	},
+	issueIDToCreatorID: map[int]int{
+		// Issue 401 is created by user 202.
+		401: 202,
+		// Issue 402 is created by user 203.
+		402: 203,
+		// Issue 403 is created by user 204.
+		403: 204,
+	},
+}
+
+// If the principal is one of the following, it is considered as a member of the issue:
+// 1. The creator of the issue.
+// 2. The member of the project that the issue belongs to.
+var isWorkspaceDeveloperMemberOfIssue = func(issueID int, principalID int) error {
+	if creatorID, ok := testMemberIssueMap.issueIDToCreatorID[issueID]; !ok {
+		return errors.Errorf("issue %d does not exist", issueID)
+	} else if creatorID == principalID {
+		return nil
+	}
+
+	issueProjectIDBelongTo, ok := testMemberIssueMap.issueIDToProjectID[issueID]
+	if !ok {
+		return errors.Errorf("issue %d does not belong to any project", issueID)
+	}
+
+	principalProjectIDBelongTo, ok := testMemberIssueMap.principalIDToProjectID[principalID]
+	if !ok {
+		return errors.Errorf("user %d is not a member of any project", principalID)
+	}
+	if issueProjectIDBelongTo != principalProjectIDBelongTo {
+		return errors.Errorf("user %d is not a member of issue %d", principalID, issueID)
+	}
+	return nil
 }
