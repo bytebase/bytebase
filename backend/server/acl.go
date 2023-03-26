@@ -190,8 +190,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 
 var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status`)
 
-// enforceIssueRouteACL enforces the ACL for /issue route, return true if the request is allowed, error is not nil indicates encounter error during the process.
-func enforceIssueRouteACL(path string, method string, queryParams url.Values, principalID int, role api.Role, isWorkspaceDeveloperMemberOfIssue func(issueID int, principalID int) error) *echo.HTTPError {
+func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, role api.Role, canWorkspaceDeveloperUpdateIssue func(issueID int, principalID int) error) *echo.HTTPError {
 	if !strings.HasPrefix(path, "/issue") {
 		return nil
 	}
@@ -211,11 +210,8 @@ func enforceIssueRouteACL(path string, method string, queryParams url.Values, pr
 			}
 		}
 	} else if method == "PATCH" {
-		// Workspace developer can only operating the issues in the project they are a member of or the issues they created.
+		// Workspace developer can only operating the issues if canWorkspaceDeveloperUpdateIssue returns no error.
 		if matches := issueStatusRegex.FindStringSubmatch(path); len(matches) > 0 {
-			if role == api.DBA || role == api.Owner {
-				return nil
-			}
 			issueIDStr := matches[1]
 			issueID, err := strconv.Atoi(issueIDStr)
 			if err != nil {
@@ -225,7 +221,6 @@ func enforceIssueRouteACL(path string, method string, queryParams url.Values, pr
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user %d is not a member of issue %d", principalID, issueID)).SetInternal(err)
 			}
 		}
-
 	}
 	return nil
 }
@@ -376,14 +371,12 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 					return false, nil
 				}
 				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, principalID, isMemberOfAnyProjectOwnsDatabase)
+			} else if strings.HasPrefix(path, "/issue") {
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, role, getCanWorkspaceDeveloperUpdateIssue(ctx, s.store))
 			}
 			if aclErr != nil {
 				return aclErr
 			}
-		}
-
-		if err := enforceIssueRouteACL(path, method, c.QueryParams(), principalID, role, getIsWorkspaceDeveloperMemberOfIssue(ctx, s.store)); err != nil {
-			return err
 		}
 
 		// Stores role into context.
@@ -393,11 +386,10 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 	}
 }
 
-// getIsWorkspaceDeveloperMemberOfIssue returns a function that checks if a principal is a member of an issue.
-// If the principal is one of the following, it is considered as a member of the issue:
+// getCanWorkspaceDeveloperUpdateIssue returns a function that checks if a workspace developer can update an issue.
 // 1. The creator of the issue.
 // 2. The member of the project that the issue belongs to.
-func getIsWorkspaceDeveloperMemberOfIssue(ctx context.Context, s *store.Store) func(issueID int, principalID int) error {
+func getCanWorkspaceDeveloperUpdateIssue(ctx context.Context, s *store.Store) func(issueID int, principalID int) error {
 	return func(issueID, principalID int) error {
 		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
 			UID: &issueID,
@@ -408,7 +400,7 @@ func getIsWorkspaceDeveloperMemberOfIssue(ctx context.Context, s *store.Store) f
 		if issue == nil {
 			return errors.Errorf("cannot find issue %d", issueID)
 		}
-		if issue.Assignee.ID == principalID || issue.Creator.ID == principalID {
+		if issue.Creator.ID == principalID {
 			return nil
 		}
 
@@ -428,7 +420,7 @@ func getIsWorkspaceDeveloperMemberOfIssue(ctx context.Context, s *store.Store) f
 				}
 			}
 		}
-		return errors.Errorf("principal %d is not a member of issue %d", principalID, issueID)
+		return errors.Errorf("principal %d cannot update the issue %d", principalID, issueID)
 	}
 }
 

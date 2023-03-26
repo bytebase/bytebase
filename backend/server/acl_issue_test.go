@@ -7,7 +7,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-func TestEnforceEnforceIssueRouteACL_RetrieveIssue(t *testing.T) {
+func TestWorkspaceDeveloperIssueRouteACL_RetrieveIssue(t *testing.T) {
 	type test struct {
 		desc        string
 		path        string
@@ -38,7 +38,7 @@ func TestEnforceEnforceIssueRouteACL_RetrieveIssue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, api.Developer, isWorkspaceDeveloperMemberOfIssue)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, api.Developer, isWorkspaceDeveloperMemberOfIssue)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
@@ -52,7 +52,7 @@ func TestEnforceEnforceIssueRouteACL_RetrieveIssue(t *testing.T) {
 	}
 }
 
-func TestEnforceEnforceIssueRouteACL_OperateIssue(t *testing.T) {
+func TestWorkspaceDeveloperIssueRouteACL_OperateIssue(t *testing.T) {
 	type test struct {
 		desc        string
 		path        string
@@ -91,7 +91,7 @@ func TestEnforceEnforceIssueRouteACL_OperateIssue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, api.Developer, isWorkspaceDeveloperMemberOfIssue)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, api.Developer, isWorkspaceDeveloperMemberOfIssue)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
