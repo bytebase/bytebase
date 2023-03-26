@@ -350,6 +350,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		XFrameOptions: "DENY",
 	}))
 
+	// MetricReporter middleware.
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			defer func() {
@@ -438,10 +439,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	// Middleware
+	//
+	// Error recorder middleware.
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		errorRecorderMiddleware(err, s, c, e)
 	}
-
+	// API logger middleware.
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
@@ -453,6 +456,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			`"method":"${method}","uri":"${uri}",` +
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
+	// Panic recovery middleware.
 	e.Use(recoverMiddleware)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -460,6 +464,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerWebhookRoutes(webhookGroup)
 
 	apiGroup := e.Group(internalAPIPrefix)
+	// API JWT authentication middleware.
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
 	})
