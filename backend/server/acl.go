@@ -197,7 +197,7 @@ func enforceIssueRouteACL(path string, method string, queryParams url.Values, pr
 	}
 
 	if method == "GET" {
-		// For /issue route, users excluding BytebaseBot cannot list other users' issues.
+		// For /issue route, users other than BytebaseBot cannot list other users' issues.
 		if userStr := queryParams.Get("user"); userStr != "" {
 			if principalID == api.SystemBotID {
 				return nil
