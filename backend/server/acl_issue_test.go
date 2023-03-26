@@ -36,7 +36,7 @@ func TestWorkspaceDeveloperIssueRouteACL_RetrieveIssue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, canWorkspaceDeveloperUpdateIssue)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, mockGetIssueCreatorIDAndProjectID, mockGetProjectIDMemberIDs)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
@@ -67,7 +67,7 @@ func TestWorkspaceDeveloperIssueRouteACL_OperateIssue(t *testing.T) {
 			queryParams: url.Values{},
 			method:      "PATCH",
 			principalID: 202,
-			errMsg:      "user 202 is not a member of issue 403",
+			errMsg:      "not allowed to operate the issue",
 		},
 		{
 			desc:        "Operating the issue I created",
@@ -89,7 +89,7 @@ func TestWorkspaceDeveloperIssueRouteACL_OperateIssue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, canWorkspaceDeveloperUpdateIssue)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.queryParams, tc.principalID, mockGetIssueCreatorIDAndProjectID, mockGetProjectIDMemberIDs)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)

@@ -190,7 +190,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 
 var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status`)
 
-func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, canWorkspaceDeveloperUpdateIssue func(issueID int, principalID int) error) *echo.HTTPError {
+func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, getIssueCreatorIDAndProjectID func(issueID int) (int, int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
 	if !strings.HasPrefix(path, "/issue") {
 		return nil
 	}
@@ -210,16 +210,32 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryPar
 			}
 		}
 	} else if method == "PATCH" {
-		// Workspace developer can only operating the issues if canWorkspaceDeveloperUpdateIssue returns no error.
+		// Workspace developer can only operating the issues if match one of the following conditions:
+		// 1. The creator of the issue.
+		// 2. The member of the project that the issue belongs to.
 		if matches := issueStatusRegex.FindStringSubmatch(path); len(matches) > 0 {
 			issueIDStr := matches[1]
 			issueID, err := strconv.Atoi(issueIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
 			}
-			if err := canWorkspaceDeveloperUpdateIssue(issueID, principalID); err != nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user %d is not a member of issue %d", principalID, issueID)).SetInternal(err)
+			creatorID, projectID, err := getIssueCreatorIDAndProjectID(issueID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
+			if creatorID == principalID {
+				return nil
+			}
+			memberIDs, err := getProjectMemberIDs(projectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			for _, memberID := range memberIDs {
+				if memberID == principalID {
+					return nil
+				}
+			}
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 		}
 	}
 	return nil
@@ -372,7 +388,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, principalID, isMemberOfAnyProjectOwnsDatabase)
 			} else if strings.HasPrefix(path, "/issue") {
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, getCanWorkspaceDeveloperUpdateIssue(ctx, s.store))
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, getRetrieveIssueCreatorIDAndProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
 			}
 			if aclErr != nil {
 				return aclErr
@@ -386,41 +402,39 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 	}
 }
 
-// getCanWorkspaceDeveloperUpdateIssue returns a function that checks if a workspace developer can update an issue.
-// 1. The creator of the issue.
-// 2. The member of the project that the issue belongs to.
-func getCanWorkspaceDeveloperUpdateIssue(ctx context.Context, s *store.Store) func(issueID int, principalID int) error {
-	return func(issueID, principalID int) error {
+func getRetrieveIssueCreatorIDAndProjectID(ctx context.Context, s *store.Store) func(issueID int) (int, int, error) {
+	return func(issueID int) (int, int, error) {
 		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
 			UID: &issueID,
 		})
 		if err != nil {
-			return err
+			return 0, 0, err
 		}
 		if issue == nil {
-			return errors.Errorf("cannot find issue %d", issueID)
+			return 0, 0, errors.Errorf("cannot find issue %d", issueID)
 		}
-		if issue.Creator.ID == principalID {
-			return nil
-		}
+		return issue.Creator.ID, issue.Project.UID, nil
+	}
+}
 
+func getRetrieveProjectMemberIDs(ctx context.Context, s *store.Store) func(projectID int) ([]int, error) {
+	return func(projectID int) ([]int, error) {
 		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-			ProjectID: &issue.Project.ResourceID,
+			UID: &projectID,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if policy == nil {
-			return errors.Errorf("cannot find policy for project %s", issue.Project.ResourceID)
+			return nil, errors.Errorf("cannot find policy for project %d", projectID)
 		}
+		var memberIDs []int
 		for _, binding := range policy.Bindings {
 			for _, member := range binding.Members {
-				if member.ID == principalID {
-					return nil
-				}
+				memberIDs = append(memberIDs, member.ID)
 			}
 		}
-		return errors.Errorf("principal %d cannot update the issue %d", principalID, issueID)
+		return memberIDs, nil
 	}
 }
 

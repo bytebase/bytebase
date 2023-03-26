@@ -172,7 +172,7 @@ var isMemberOfAnyProjectOwnsDatabase = func(principalID int, databaseID int) (bo
 	return false, nil
 }
 
-var testMemberIssueMap = struct {
+var testMemberIssueHelper = struct {
 	// principalIDToProjectID is a map from principal ID to the project ID.
 	// We assume that a principal can only be a member of one project (actually it can be a member of multiple projects).
 	principalIDToProjectID map[int]int
@@ -207,22 +207,46 @@ var testMemberIssueMap = struct {
 	},
 }
 
+func mockGetIssueCreatorIDAndProjectID(issueID int) (int, int, error) {
+	creatorID, ok := testMemberIssueHelper.issueIDToCreatorID[issueID]
+	if !ok {
+		return 0, 0, errors.Errorf("issue %d does not exist", issueID)
+	}
+
+	projectID, ok := testMemberIssueHelper.issueIDToProjectID[issueID]
+	if !ok {
+		return 0, 0, errors.Errorf("issue %d does not belong to any project", issueID)
+	}
+
+	return creatorID, projectID, nil
+}
+
+func mockGetProjectIDMemberIDs(projectID int) ([]int, error) {
+	var memberIDs []int
+	for principalID, id := range testMemberIssueHelper.principalIDToProjectID {
+		if id == projectID {
+			memberIDs = append(memberIDs, principalID)
+		}
+	}
+	return memberIDs, nil
+}
+
 // If the workspace developer principal is one of the following, it can update the issue:
 // 1. The creator of the issue.
 // 2. The member of the project that the issue belongs to.
 var canWorkspaceDeveloperUpdateIssue = func(issueID int, principalID int) error {
-	if creatorID, ok := testMemberIssueMap.issueIDToCreatorID[issueID]; !ok {
+	if creatorID, ok := testMemberIssueHelper.issueIDToCreatorID[issueID]; !ok {
 		return errors.Errorf("issue %d does not exist", issueID)
 	} else if creatorID == principalID {
 		return nil
 	}
 
-	issueProjectIDBelongTo, ok := testMemberIssueMap.issueIDToProjectID[issueID]
+	issueProjectIDBelongTo, ok := testMemberIssueHelper.issueIDToProjectID[issueID]
 	if !ok {
 		return errors.Errorf("issue %d does not belong to any project", issueID)
 	}
 
-	principalProjectIDBelongTo, ok := testMemberIssueMap.principalIDToProjectID[principalID]
+	principalProjectIDBelongTo, ok := testMemberIssueHelper.principalIDToProjectID[principalID]
 	if !ok {
 		return errors.Errorf("user %d is not a member of any project", principalID)
 	}
