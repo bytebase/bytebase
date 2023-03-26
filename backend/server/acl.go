@@ -190,7 +190,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 
 var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status`)
 
-func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, role api.Role, canWorkspaceDeveloperUpdateIssue func(issueID int, principalID int) error) *echo.HTTPError {
+func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, canWorkspaceDeveloperUpdateIssue func(issueID int, principalID int) error) *echo.HTTPError {
 	if !strings.HasPrefix(path, "/issue") {
 		return nil
 	}
@@ -372,7 +372,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, principalID, isMemberOfAnyProjectOwnsDatabase)
 			} else if strings.HasPrefix(path, "/issue") {
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, role, getCanWorkspaceDeveloperUpdateIssue(ctx, s.store))
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, getCanWorkspaceDeveloperUpdateIssue(ctx, s.store))
 			}
 			if aclErr != nil {
 				return aclErr
