@@ -100,7 +100,7 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, princ
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
 			if !in {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access database")
+				return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
 			}
 			return nil
 		}
@@ -312,7 +312,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 					}
 					// If the database is not assigned to any project, WORKSPACE DEVELOPER cannot access it.
 					if db.ProjectID == api.DefaultProjectID {
-						return true, nil
+						return false, nil
 					}
 
 					policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
@@ -322,7 +322,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 						return false, err
 					}
 					if policy == nil {
-						return false, err
+						return false, errors.Errorf("cannot find policy for project %s", db.ProjectID)
 					}
 					for _, binding := range policy.Bindings {
 						for _, member := range binding.Members {
