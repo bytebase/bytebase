@@ -86,11 +86,10 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, princ
 	if method == "GET" {
 		// For /database route, server should list the databases that the user has access to.
 
-		if databaseGeneralRouteRegex.MatchString(path) {
+		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
 			// For /database/xxx subroutes, since Developer cannot retrieve the database if it's not a member of the project which owns the database.
 
 			// Get the database ID from the path.
-			matches := databaseGeneralRouteRegex.FindStringSubmatch(path)
 			dbID, err := strconv.Atoi(matches[1])
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
