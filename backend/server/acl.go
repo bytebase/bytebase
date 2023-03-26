@@ -217,7 +217,7 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryPar
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
 			}
-			if err := isWorkspaceDeveloperMemberOfIssue(issueID, principalID); err != nil {
+			if err := canWorkspaceDeveloperUpdateIssue(issueID, principalID); err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user %d is not a member of issue %d", principalID, issueID)).SetInternal(err)
 			}
 		}
