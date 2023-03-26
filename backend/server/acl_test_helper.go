@@ -207,7 +207,7 @@ var testMemberIssueMap = struct {
 	},
 }
 
-// If the principal is one of the following, it is considered as a member of the issue:
+// If the workspace developer principal is one of the following, it can update the issue:
 // 1. The creator of the issue.
 // 2. The member of the project that the issue belongs to.
 var canWorkspaceDeveloperUpdateIssue = func(issueID int, principalID int) error {
