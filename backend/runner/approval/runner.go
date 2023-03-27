@@ -187,6 +187,24 @@ func getIssueRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMe
 	if err != nil {
 		return 0, err
 	}
+
+	// all tasks must have passed task checks.
+	for _, task := range tasks {
+		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			UID: &task.InstanceID,
+		})
+		if err != nil {
+			return 0, err
+		}
+		pass, err := utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunRawList, instance.Engine)
+		if err != nil {
+			return 0, err
+		}
+		if !pass {
+			return 0, nil
+		}
+	}
+
 	var maxRiskLevel int64
 	for _, task := range tasks {
 		riskLevel, err := getTaskRiskLevel(ctx, s, issue, task, risks)
