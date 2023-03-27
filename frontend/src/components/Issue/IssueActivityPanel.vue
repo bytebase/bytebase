@@ -304,18 +304,6 @@
                 <div>
                   <button
                     type="button"
-                    class="group btn-normal !text-accent hover:!bg-gray-50"
-                    @click="lgtm"
-                  >
-                    <heroicons-outline:thumb-up
-                      class="w-5 h-5 group-hover:thumb-up"
-                    />
-                    <span class="ml-1">LGTM</span>
-                  </button>
-                </div>
-                <div>
-                  <button
-                    type="button"
                     class="btn-normal"
                     :disabled="newComment.length == 0"
                     @click.prevent="doCreateComment(newComment)"
@@ -523,26 +511,6 @@ const doCreateComment = (comment: string, clear = true) => {
     if (comment === "LGTM") {
       emit("run-checks", logic.selectedTask.value as Task);
     }
-  });
-};
-
-const lgtm = (e: Event) => {
-  doCreateComment("LGTM", false);
-
-  // import the effect lib asynchronously
-  import("canvas-confetti").then(({ default: confetti }) => {
-    const button = e.target as HTMLElement;
-    const { left, top, width, height } = button.getBoundingClientRect();
-    const { innerWidth: winWidth, innerHeight: winHeight } = window;
-    // Create a confetti effect from the position of the LGTM button
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: {
-        x: (left + width / 2) / winWidth,
-        y: (top + height / 2) / winHeight,
-      },
-    });
   });
 };
 
