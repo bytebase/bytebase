@@ -423,8 +423,12 @@ watch(
       if (sheetId) {
         const statement = (await sheetStore.getOrFetchSheetById(sheetId))
           .statement;
+        // Update statement in the editor.
         state.editStatement = statement;
-        updateStatement(state.editStatement);
+        // Only update statement when creating issue.
+        if (create.value) {
+          updateStatement(statement);
+        }
       }
     }
   },
