@@ -242,21 +242,25 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		return 0, false, err
 	}
 
-	// TODO(p0ny): not all tasks have these reports
-	affectedRowsReportResult, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementAffectedRowsReport)
-	if err != nil {
-		return 0, false, err
-	}
-	if !done {
-		return 0, false, nil
-	}
+	var affectedRowsReportResult, statementTypeReportResult []api.TaskCheckResult
+	if api.IsTaskCheckReportSupported(instance.Engine) && api.IsTaskCheckReportNeededForTaskType(task.Type) {
+		affectedRowsReportResultInner, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementAffectedRowsReport)
+		if err != nil {
+			return 0, false, err
+		}
+		if !done {
+			return 0, false, nil
+		}
+		affectedRowsReportResult = affectedRowsReportResultInner
 
-	statementTypeReportResult, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementTypeReport)
-	if err != nil {
-		return 0, false, err
-	}
-	if !done {
-		return 0, false, nil
+		statementTypeReportResultInner, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementTypeReport)
+		if err != nil {
+			return 0, false, err
+		}
+		if !done {
+			return 0, false, nil
+		}
+		statementTypeReportResult = statementTypeReportResultInner
 	}
 
 	if len(affectedRowsReportResult) != len(statementTypeReportResult) {
