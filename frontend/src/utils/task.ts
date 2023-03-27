@@ -4,6 +4,7 @@ import { useDatabaseStore } from "@/store";
 import {
   Issue,
   Task,
+  TaskCheckType,
   TaskCreate,
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
@@ -85,6 +86,11 @@ export const buildIssueLinkWithTask = (
   return url;
 };
 
+export const HiddenCheckTypes = new Set<TaskCheckType>([
+  "bb.task-check.database.statement.type.report",
+  "bb.task-check.database.statement.affected-rows.report",
+]);
+
 export type TaskCheckRunSummary = {
   runningCount: number;
   successCount: number;
@@ -102,7 +108,9 @@ export function taskCheckRunSummary(task?: Task): TaskCheckRunSummary {
 
   if (!task) return summary;
 
-  const taskCheckRunList = task.taskCheckRunList;
+  const taskCheckRunList = task.taskCheckRunList.filter(
+    (check) => !HiddenCheckTypes.has(check.type)
+  );
 
   const listGroupByType = groupBy(
     taskCheckRunList,
@@ -127,7 +135,7 @@ export function taskCheckRunSummary(task?: Task): TaskCheckRunSummary {
         summary.runningCount++;
         break;
       case "DONE":
-        for (const result of checkRun.result.resultList) {
+        for (const result of checkRun.result.resultList ?? []) {
           switch (result.status) {
             case "SUCCESS":
               summary.successCount++;
