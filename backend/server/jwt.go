@@ -129,10 +129,6 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 		}
 
 		method := c.Request().Method
-		// Skip GET /subscription request
-		if common.HasPrefixes(path, "/subscription") && method == "GET" {
-			return next(c)
-		}
 
 		// Skip GET /feature request
 		if common.HasPrefixes(path, "/feature") && method == "GET" {

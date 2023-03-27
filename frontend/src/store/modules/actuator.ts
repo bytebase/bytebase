@@ -1,9 +1,10 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { ActuatorState, ServerInfo, Release } from "@/types";
+import { ActuatorState, Release } from "@/types";
 import { useLocalStorage } from "@vueuse/core";
 import { semverCompare } from "@/utils";
 import { useSilentRequest } from "@/plugins/silent-request";
+import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://www.bytebase.com/docs/get-started/install/external-url";
@@ -59,11 +60,11 @@ export const useActuatorStore = defineStore("actuator", {
     },
   },
   actions: {
-    setServerInfo(serverInfo: ServerInfo) {
+    setServerInfo(serverInfo: ActuatorInfo) {
       this.serverInfo = serverInfo;
     },
     async fetchServerInfo() {
-      const { data: serverInfo } = await axios.get<ServerInfo>(
+      const { data: serverInfo } = await axios.get<ActuatorInfo>(
         `/v1/actuator/info`
       );
 

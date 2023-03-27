@@ -290,24 +290,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeaturePluginOpenAI: {false, false, true},
 }
 
-// Plan is the API message for a plan.
-type Plan struct {
-	Type PlanType `jsonapi:"attr,type"`
-}
-
-// PlanPatch is the API message for patching a plan.
-type PlanPatch struct {
-	Type PlanType `jsonapi:"attr,type"`
-}
-
-// TrialPlanCreate is the API message for creating a trial plan.
-type TrialPlanCreate struct {
-	Type          PlanType `jsonapi:"attr,type"`
-	Days          int      `jsonapi:"attr,days"`
-	Seat          int      `jsonapi:"attr,seat"`
-	InstanceCount int      `jsonapi:"attr,instanceCount"`
-}
-
 // PlanLimit is the type for plan limits.
 type PlanLimit int
 

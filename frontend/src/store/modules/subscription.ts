@@ -3,13 +3,12 @@ import axios from "axios";
 import dayjs from "dayjs";
 import { computed, Ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureType, SubscriptionState, planTypeToString } from "@/types";
 import {
-  Subscription,
-  FeatureType,
   PlanType,
-  SubscriptionState,
-  planTypeToString,
-} from "@/types";
+  Subscription,
+  planTypeFromJSON,
+} from "@/types/proto/v1/subscription_service";
 
 export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({
@@ -33,50 +32,68 @@ export const useSubscriptionStore = defineStore("subscription", {
       return count;
     },
     currentPlan(state): PlanType {
-      return state.subscription?.plan ?? PlanType.FREE;
+      if (!state.subscription) {
+        return PlanType.FREE;
+      }
+      return planTypeFromJSON(state.subscription.plan);
+    },
+    isFreePlan(state): boolean {
+      return this.currentPlan == PlanType.FREE;
     },
     expireAt(state): string {
-      if (!state.subscription || state.subscription.expiresTs <= 0) {
+      if (
+        !state.subscription ||
+        !state.subscription.expiresTime ||
+        this.isFreePlan
+      ) {
         return "";
       }
 
-      return dayjs(state.subscription.expiresTs * 1000).format("YYYY-MM-DD");
+      return dayjs(state.subscription.expiresTime).format("YYYY-MM-DD");
     },
     isTrialing(state): boolean {
       return !!state.subscription?.trialing;
     },
     isExpired(state): boolean {
-      if (!state.subscription || state.subscription.expiresTs <= 0) {
+      if (
+        !state.subscription ||
+        !state.subscription.expiresTime ||
+        this.isFreePlan
+      ) {
         return false;
       }
-      return dayjs(state.subscription.expiresTs * 1000).isBefore(new Date());
+      return dayjs(state.subscription.expiresTime).isBefore(new Date());
     },
     daysBeforeExpire(state): number {
-      if (!state.subscription || state.subscription.expiresTs <= 0) {
+      if (
+        !state.subscription ||
+        !state.subscription.expiresTime ||
+        this.isFreePlan
+      ) {
         return -1;
       }
 
-      const expiresTime = dayjs(state.subscription.expiresTs * 1000);
+      const expiresTime = dayjs(state.subscription.expiresTime);
       return Math.max(expiresTime.diff(new Date(), "day"), 0);
     },
     isNearExpireTime(state): boolean {
-      if (!state.subscription || !state.subscription?.trialing) return false;
+      if (
+        !state.subscription ||
+        !state.subscription?.trialing ||
+        this.isFreePlan
+      ) {
+        return false;
+      }
 
       const daysBeforeExpire = this.daysBeforeExpire;
       if (daysBeforeExpire <= 0) return false;
 
-      const trialEndTime = dayjs(state.subscription.expiresTs * 1000);
-      const total = trialEndTime.diff(
-        state.subscription.startedTs * 1000,
-        "day"
-      );
+      const trialEndTime = dayjs(state.subscription.expiresTime);
+      const total = trialEndTime.diff(state.subscription.startedTime, "day");
       return daysBeforeExpire / total < 0.5;
     },
     canTrial(state): boolean {
-      if (!state.subscription) {
-        return true;
-      }
-      if (state.subscription.plan === PlanType.FREE) {
+      if (!state.subscription || this.isFreePlan) {
         return true;
       }
       return this.canUpgradeTrial;
@@ -86,8 +103,7 @@ export const useSubscriptionStore = defineStore("subscription", {
         return false;
       }
       return (
-        state.subscription.trialing &&
-        state.subscription.plan < PlanType.ENTERPRISE
+        state.subscription.trialing && this.currentPlan < PlanType.ENTERPRISE
       );
     },
   },
@@ -127,8 +143,9 @@ export const useSubscriptionStore = defineStore("subscription", {
     },
     async fetchSubscription() {
       try {
-        const data = (await axios.get(`/api/subscription`)).data.data;
-        const subscription = data.attributes as Subscription;
+        const { data: subscription } = await axios.get<Subscription>(
+          `/v1/subscription`
+        );
         this.setSubscription(subscription);
         return subscription;
       } catch (e) {
@@ -148,35 +165,25 @@ export const useSubscriptionStore = defineStore("subscription", {
       }
     },
     async patchSubscription(license: string) {
-      const data = (
-        await axios.patch(`/api/subscription`, {
-          data: {
-            type: "SubscriptionPatch",
-            attributes: {
-              license,
-            },
-          },
-        })
-      ).data.data;
-      const subscription = data.attributes as Subscription;
+      const { data: subscription } = await axios.patch<Subscription>(
+        `/v1/subscription`,
+        {
+          license,
+        }
+      );
       this.setSubscription(subscription);
       return subscription;
     },
     async trialSubscription(planType: PlanType) {
-      const data = (
-        await axios.post(`/api/subscription/trial`, {
-          data: {
-            type: "TrialPlanCreate",
-            attributes: {
-              type: planType,
-              days: this.trialingDays,
-              seat: 10,
-              instanceCount: -1,
-            },
-          },
-        })
-      ).data.data;
-      const subscription = data.attributes as Subscription;
+      const { data: subscription } = await axios.post<Subscription>(
+        `/v1/subscription/trial`,
+        {
+          plan: planType,
+          days: this.trialingDays,
+          seat: 10,
+          instanceCount: -1,
+        }
+      );
       this.setSubscription(subscription);
       return subscription;
     },

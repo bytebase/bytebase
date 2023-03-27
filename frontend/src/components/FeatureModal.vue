@@ -104,7 +104,8 @@ import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
-import { FeatureType, PlanType, planTypeToString } from "@/types";
+import { FeatureType, planTypeToString } from "@/types";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const props = defineProps({
   feature: {
@@ -132,25 +133,25 @@ const featureKey = props.feature.split(".").join("-");
 
 const trialSubscription = () => {
   const isUpgrade = subscriptionStore.canUpgradeTrial;
-  subscriptionStore
-    .trialSubscription(PlanType.ENTERPRISE)
-    .then((subscription) => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.success"),
-        description: isUpgrade
-          ? t("subscription.successfully-upgrade-trial", {
-              plan: t(
-                `subscription.plan.${planTypeToString(subscription.plan)}.title`
-              ),
-            })
-          : t("subscription.successfully-start-trial", {
-              days: subscriptionStore.trialingDays,
-            }),
-      });
-      emit("cancel");
+  subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.success"),
+      description: isUpgrade
+        ? t("subscription.successfully-upgrade-trial", {
+            plan: t(
+              `subscription.plan.${planTypeToString(
+                subscriptionStore.currentPlan
+              )}.title`
+            ),
+          })
+        : t("subscription.successfully-start-trial", {
+            days: subscriptionStore.trialingDays,
+          }),
     });
+    emit("cancel");
+  });
 };
 </script>
 

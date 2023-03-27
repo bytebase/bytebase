@@ -233,9 +233,10 @@ import {
   useOnboardingStateStore,
   useSubscriptionStore,
 } from "@/store";
-import { SignupInfo, PlanType, TEXT_VALIDATION_DELAY } from "@/types";
+import { SignupInfo, TEXT_VALIDATION_DELAY } from "@/types";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   email: string;

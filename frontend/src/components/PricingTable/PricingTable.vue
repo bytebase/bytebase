@@ -278,10 +278,11 @@
 <script lang="ts" setup>
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Plan, PlanType, PLANS, FEATURE_SECTIONS } from "@/types";
+import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
 import { useSubscriptionStore } from "@/store";
 import { LocalPlan } from "./types";
 import FeatureItem from "./FeatureItem.vue";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   isMonthly: boolean;
