@@ -178,8 +178,6 @@ var testMemberIssueHelper = struct {
 	principalIDToProjectID map[int]int
 	// issueIDToProjectID is a map from issue ID to the project ID.
 	issueIDToProjectID map[int]int
-	// issueIDToCreatorID is a map from issue ID to the creator ID.
-	issueIDToCreatorID map[int]int
 }{
 	principalIDToProjectID: map[int]int{
 		// User 202 is a member of project 102.
@@ -197,31 +195,17 @@ var testMemberIssueHelper = struct {
 		// Issue 403 belongs to project 103.
 		403: 103,
 	},
-	issueIDToCreatorID: map[int]int{
-		// Issue 401 is created by user 202.
-		401: 202,
-		// Issue 402 is created by user 203.
-		402: 203,
-		// Issue 403 is created by user 204.
-		403: 204,
-	},
 }
 
-func mockGetIssueCreatorIDAndProjectID(issueID int) (int, int, error) {
-	creatorID, ok := testMemberIssueHelper.issueIDToCreatorID[issueID]
-	if !ok {
-		return 0, 0, errors.Errorf("issue %d does not exist", issueID)
-	}
-
+func mockGetIssueProjectID(issueID int) (int, error) {
 	projectID, ok := testMemberIssueHelper.issueIDToProjectID[issueID]
 	if !ok {
-		return 0, 0, errors.Errorf("issue %d does not belong to any project", issueID)
+		return 0, errors.Errorf("issue %d does not belong to any project", issueID)
 	}
-
-	return creatorID, projectID, nil
+	return projectID, nil
 }
 
-func mockGetProjectIDMemberIDs(projectID int) ([]int, error) {
+func mockGetProjectMembers(projectID int) ([]int, error) {
 	var memberIDs []int
 	for principalID, id := range testMemberIssueHelper.principalIDToProjectID {
 		if id == projectID {
