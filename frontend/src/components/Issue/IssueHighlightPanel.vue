@@ -22,7 +22,8 @@
           />
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-            <slot />
+            <IssueReviewButtonGroup v-if="showReviewButton" />
+            <IssueStatusTransitionButtonGroup v-else />
           </div>
         </div>
         <div v-if="!create">
@@ -87,6 +88,8 @@
 
 <script lang="ts" setup>
 import { reactive, watch, computed, Ref } from "vue";
+import { head } from "lodash-es";
+
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueRollbackFromTips from "./IssueRollbackFromTips.vue";
 import { activeTask } from "@/utils";
@@ -97,7 +100,9 @@ import {
   VCSPushEvent,
 } from "@/types";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import { head } from "lodash-es";
+import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
+import { IssueReviewButtonGroup } from "./review";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 
 interface LocalState {
   editing: boolean;
@@ -108,10 +113,17 @@ const logic = useIssueLogic();
 const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
+const issueReview = useIssueReviewContext();
+const { done: reviewDone } = issueReview;
 
 const state = reactive<LocalState>({
   editing: false,
   name: issue.value.name,
+});
+
+const showReviewButton = computed(() => {
+  if (create.value) return false;
+  return !reviewDone.value;
 });
 
 watch(
