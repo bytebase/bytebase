@@ -51,6 +51,7 @@ import { groupBy, maxBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
+import { HiddenCheckTypes } from "@/utils";
 
 interface LocalState {
   selectedTaskCheckType: TaskCheckType | undefined;
@@ -225,11 +226,6 @@ export default defineComponent({
     };
   },
 });
-
-const HiddenCheckTypes = new Set<TaskCheckType>([
-  "bb.task-check.database.statement.type.report",
-  "bb.task-check.database.statement.affected-rows.report",
-]);
 
 // Defines the order of TaskCheckType
 const TaskCheckTypeOrderList: TaskCheckType[] = [
