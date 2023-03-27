@@ -22,12 +22,14 @@ var ownerAndDBAMethods = map[string]bool{
 	"InstanceService/AddDataSource":          true,
 	"InstanceService/RemoveDataSource":       true,
 	"InstanceService/UpdateDataSource":       true,
+	"SubscriptionService/TrialSubscription":  true,
 }
 
 var projectOwnerMethods = map[string]bool{
-	"ProjectService/UpdateProject":   true,
-	"ProjectService/DeleteProject":   true,
-	"ProjectService/UndeleteProject": true,
+	"ProjectService/UpdateProject":           true,
+	"ProjectService/DeleteProject":           true,
+	"ProjectService/UndeleteProject":         true,
+	"SubscriptionService/UpdateSubscription": true,
 }
 
 var transferDatabaseMethods = map[string]bool{

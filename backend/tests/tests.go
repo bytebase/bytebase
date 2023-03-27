@@ -525,50 +525,67 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 // get sends a GET client request.
 func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCloser, error) {
 	gURL := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("GET", gURL, nil, params)
+	return ctl.request("GET", gURL, nil, params, map[string]string{
+		"Cookie": ctl.cookie,
+	})
 }
 
 // OpenAPI sends a GET OpenAPI client request.
 func (ctl *controller) getOpenAPI(shortURL string, params map[string]string) (io.ReadCloser, error) {
 	gURL := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	return ctl.request("GET", gURL, nil, params)
+	return ctl.request("GET", gURL, nil, params, map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
+	})
 }
 
 // postOpenAPI sends a openAPI POST request.
 func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	return ctl.request("POST", url, body, map[string]string{})
+	return ctl.request("POST", url, body, nil, map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
+	})
 }
 
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("POST", url, body, map[string]string{})
+	return ctl.request("POST", url, body, nil, map[string]string{
+		"Cookie": ctl.cookie,
+	})
 }
 
 // patch sends a PATCH client request.
 func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("PATCH", url, body, map[string]string{})
+	return ctl.request("PATCH", url, body, nil, map[string]string{
+		"Cookie": ctl.cookie,
+	})
 }
 
 // patchOpenAPI sends a openAPI PATCH client request.
 func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	return ctl.request("PATCH", url, body, map[string]string{})
+	return ctl.request("PATCH", url, body, nil, map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
+	})
 }
 
 func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("DELETE", url, body, map[string]string{})
+	return ctl.request("DELETE", url, body, nil, map[string]string{
+		"Cookie": ctl.cookie,
+	})
 }
 
-func (ctl *controller) request(method, fullURL string, body io.Reader, params map[string]string) (io.ReadCloser, error) {
+func (ctl *controller) request(method, fullURL string, body io.Reader, params, header map[string]string) (io.ReadCloser, error) {
 	req, err := http.NewRequest(method, fullURL, body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "fail to create a new %s request(%q)", method, fullURL)
 	}
-	req.Header.Set("Cookie", ctl.cookie)
+
+	for k, v := range header {
+		req.Header.Set(k, v)
+	}
 
 	q := url.Values{}
 	for k, v := range params {
