@@ -41,7 +41,7 @@ var riskFactors = []cel.EnvOption{
 }
 
 var riskVariables = []cel.EnvOption{
-	cel.Variable("risk", cel.IntType),
+	cel.Variable("level", cel.IntType),
 	cel.Variable("source", cel.IntType),
 }
 
@@ -162,17 +162,17 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		return nil, err
 	}
 	for _, rule := range approvalSetting.Rules {
-		if rule.Expression == nil {
+		if rule.Expression == nil || rule.Expression.Expr == nil {
 			continue
 		}
 		ast := cel.ParsedExprToAst(rule.Expression)
 		prg, err := e.Program(ast)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to compile expression")
 		}
 
 		res, _, err := prg.Eval(map[string]interface{}{
-			"risk":   riskLevel,
+			"level":  riskLevel,
 			"source": convertToSource(riskSource),
 		})
 		if err != nil {
@@ -306,6 +306,9 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	var maxRisk int64
 	for _, risk := range risks {
 		if risk.Source != issueTypeToRiskSource[issue.Type] {
+			continue
+		}
+		if risk.Expression == nil || risk.Expression.Expr == nil {
 			continue
 		}
 
