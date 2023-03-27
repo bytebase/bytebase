@@ -228,6 +228,7 @@ export default defineComponent({
 
 const HiddenCheckTypes = new Set<TaskCheckType>([
   "bb.task-check.database.statement.type.report",
+  "bb.task-check.database.statement.affected-rows.report",
 ]);
 
 // Defines the order of TaskCheckType
