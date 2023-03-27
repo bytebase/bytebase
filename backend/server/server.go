@@ -330,7 +330,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		},
 		Timeout: 30 * time.Second,
 	}))
-	e.Use(middleware.BodyLimit("5M"))
 	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
 			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
