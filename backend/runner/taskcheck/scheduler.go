@@ -314,6 +314,14 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
+	create, err = getStatementAffectedRowsReportTaskCheck(task, instance, dbSchema, statement, creatorID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to schedule statement affected rows report task check")
+	}
+	if create != nil {
+		createList = append(createList, create...)
+	}
+
 	return createList, nil
 }
 
@@ -460,6 +468,39 @@ func getStatementTypeReportTaskCheck(task *store.TaskMessage, instance *store.In
 			CreatorID: creatorID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementTypeReport,
+			Payload:   string(payload),
+		},
+	}, nil
+}
+
+func getStatementAffectedRowsReportTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string, creatorID int) ([]*store.TaskCheckRunMessage, error) {
+	if !api.IsStatementAffectedRowsReportCheckSupported(instance.Engine) {
+		return nil, nil
+	}
+	switch task.Type {
+	case api.TaskDatabaseSchemaUpdate:
+	case api.TaskDatabaseSchemaUpdateSDL:
+	case api.TaskDatabaseSchemaUpdateGhostSync:
+	case api.TaskDatabaseDataUpdate:
+	default:
+		return nil, nil
+	}
+	payload, err := json.Marshal(&api.TaskCheckDatabaseStatementAffectedRowsReportPayload{
+		Statement: statement,
+		DbType:    instance.Engine,
+
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal payload")
+	}
+
+	return []*store.TaskCheckRunMessage{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementAffectedRowsReport,
 			Payload:   string(payload),
 		},
 	}, nil
