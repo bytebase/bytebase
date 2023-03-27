@@ -591,7 +591,9 @@ func (ctl *controller) request(method, fullURL string, body io.Reader, params, h
 	for k, v := range params {
 		q.Add(k, v)
 	}
-	req.URL.RawQuery = q.Encode()
+	if len(q) > 0 {
+		req.URL.RawQuery = q.Encode()
+	}
 
 	resp, err := ctl.client.Do(req)
 	if err != nil {
