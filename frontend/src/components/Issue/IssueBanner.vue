@@ -51,7 +51,7 @@ const reviewContext = useIssueReviewContext();
 
 const showPendingReview = computed(() => {
   if (issueContext.create.value) return false;
-  return reviewContext.ready.value && !reviewContext.done.value;
+  return !reviewContext.done.value;
 });
 
 const showCancelBanner = computed(() => {
