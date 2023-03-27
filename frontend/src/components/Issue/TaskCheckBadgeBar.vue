@@ -153,7 +153,10 @@ export default defineComponent({
 
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
-      const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
+      const groupByType = groupBy(
+        props.taskCheckRunList.filter((run) => !HiddenCheckTypes.has(run.type)),
+        (run) => run.type
+      );
       /*
         `groupByType` looks like: {
           "bb.task-check.database.statement.compatibility": [run1, run2, ...],
@@ -222,6 +225,11 @@ export default defineComponent({
     };
   },
 });
+
+const HiddenCheckTypes = new Set<TaskCheckType>([
+  "bb.task-check.database.statement.type.report",
+  "bb.task-check.database.statement.affected-rows.report",
+]);
 
 // Defines the order of TaskCheckType
 const TaskCheckTypeOrderList: TaskCheckType[] = [
