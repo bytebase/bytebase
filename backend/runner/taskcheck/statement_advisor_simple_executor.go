@@ -13,19 +13,45 @@ import (
 )
 
 // NewStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
-func NewStatementAdvisorSimpleExecutor() Executor {
-	return &StatementAdvisorSimpleExecutor{}
+func NewStatementAdvisorSimpleExecutor(store *store.Store) Executor {
+	return &StatementAdvisorSimpleExecutor{
+		store: store,
+	}
 }
 
 // StatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
 type StatementAdvisorSimpleExecutor struct {
+	store *store.Store
 }
 
 // Run will run the task check statement advisor executor once.
-func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
-	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
-	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
+func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, err
+	}
+	payload := &TaskPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, err
+	}
+	if payload.SheetID > 0 {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusSuccess,
+				Namespace: api.AdvisorNamespace,
+				Code:      common.Ok.Int(),
+				Title:     "Large SQL statement check is disabled",
+				Content:   "",
+			},
+		}, nil
 	}
 
 	var advisorType advisor.Type
@@ -33,17 +59,17 @@ func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *stor
 	case api.TaskCheckDatabaseStatementFakeAdvise:
 		advisorType = advisor.Fake
 	case api.TaskCheckDatabaseStatementSyntax:
-		switch payload.DbType {
+		switch instance.Engine {
 		case db.MySQL, db.TiDB, db.MariaDB:
 			advisorType = advisor.MySQLSyntax
 		case db.Postgres:
 			advisorType = advisor.PostgreSQLSyntax
 		default:
-			return nil, common.Errorf(common.Invalid, "invalid database type: %s for syntax statement advisor", payload.DbType)
+			return nil, common.Errorf(common.Invalid, "invalid database type: %s for syntax statement advisor", instance.Engine)
 		}
 	}
 
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(payload.DbType))
+	dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +78,8 @@ func (*StatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *stor
 		dbType,
 		advisorType,
 		advisor.Context{
-			Charset:    payload.Charset,
-			Collation:  payload.Collation,
+			Charset:    dbSchema.Metadata.CharacterSet,
+			Collation:  dbSchema.Metadata.Collation,
 			SyntaxMode: task.GetSyntaxMode(),
 		},
 		payload.Statement,
