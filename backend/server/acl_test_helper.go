@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
@@ -168,4 +170,47 @@ var isMemberOfAnyProjectOwnsDatabase = func(principalID int, databaseID int) (bo
 		}
 	}
 	return false, nil
+}
+
+var testMemberIssueHelper = struct {
+	// principalIDToProjectID is a map from principal ID to the project ID.
+	// We assume that a principal can only be a member of one project (actually it can be a member of multiple projects).
+	principalIDToProjectID map[int]int
+	// issueIDToProjectID is a map from issue ID to the project ID.
+	issueIDToProjectID map[int]int
+}{
+	principalIDToProjectID: map[int]int{
+		// User 202 is a member of project 102.
+		202: 102,
+		// User 203 is a member of project 102.
+		203: 102,
+		// User 203 is a member of project 103.
+		204: 103,
+	},
+	issueIDToProjectID: map[int]int{
+		// Issue 401 belongs to project 102.
+		401: 102,
+		// Issue 402 belongs to project 102.
+		402: 102,
+		// Issue 403 belongs to project 103.
+		403: 103,
+	},
+}
+
+func mockGetIssueProjectID(issueID int) (int, error) {
+	projectID, ok := testMemberIssueHelper.issueIDToProjectID[issueID]
+	if !ok {
+		return 0, errors.Errorf("issue %d does not belong to any project", issueID)
+	}
+	return projectID, nil
+}
+
+func mockGetProjectMembers(projectID int) ([]int, error) {
+	var memberIDs []int
+	for principalID, id := range testMemberIssueHelper.principalIDToProjectID {
+		if id == projectID {
+			memberIDs = append(memberIDs, principalID)
+		}
+	}
+	return memberIDs, nil
 }
