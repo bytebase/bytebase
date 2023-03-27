@@ -88,24 +88,6 @@ type TaskCheckEarliestAllowedTimePayload struct {
 	EarliestAllowedTs int64 `json:"earliestAllowedTs,omitempty"`
 }
 
-// TaskCheckDatabaseStatementAdvisePayload is the task check payload for database statement advise.
-type TaskCheckDatabaseStatementAdvisePayload struct {
-	Statement string  `json:"statement,omitempty"`
-	DbType    db.Type `json:"dbType,omitempty"`
-	Charset   string  `json:"charset,omitempty"`
-	Collation string  `json:"collation,omitempty"`
-}
-
-// TaskCheckDatabaseStatementTypePayload is the task check payload for SQL type.
-type TaskCheckDatabaseStatementTypePayload struct {
-	Statement string  `json:"statement,omitempty"`
-	DbType    db.Type `json:"dbType,omitempty"`
-
-	// MySQL special fields.
-	Charset   string `json:"charset,omitempty"`
-	Collation string `json:"collation,omitempty"`
-}
-
 // TaskCheckDatabaseStatementTypeReportPayload is the task check payload for SQL statement type report.
 type TaskCheckDatabaseStatementTypeReportPayload struct {
 	Statement string  `json:"statement,omitempty"`

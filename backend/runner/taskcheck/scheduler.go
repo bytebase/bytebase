@@ -338,21 +338,11 @@ func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessa
 	if !api.IsStatementTypeCheckSupported(instance.Engine) {
 		return nil, nil
 	}
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
-	}
 	return []*store.TaskCheckRunMessage{
 		{
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementType,
-			Payload:   string(payload),
 		},
 	}, nil
 }
@@ -361,21 +351,11 @@ func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-	}
 	return []*store.TaskCheckRunMessage{
 		{
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementAdvise,
-			Payload:   string(payload),
 		},
 	}, nil
 }
@@ -384,21 +364,11 @@ func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMe
 	if !api.IsSyntaxCheckSupported(instance.Engine) {
 		return nil, nil
 	}
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-	}
 	return []*store.TaskCheckRunMessage{
 		{
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementSyntax,
-			Payload:   string(payload),
 		},
 	}, nil
 }
