@@ -11,6 +11,7 @@ import {
   useUIStateStore,
   useProjectStore,
   useDebugStore,
+  useUserStore,
 } from "@/store";
 import { defineComponent } from "vue";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -22,6 +23,7 @@ export default defineComponent({
       useSettingStore().fetchSetting(),
       // Fetch so MemberSelect can have the data.
       useMemberStore().fetchMemberList(),
+      useUserStore().fetchUserList(),
       // Though fetchMemberList also return the principal info, it's possible that a principal is no longer a member.
       // since all record types have creator, updater which are associated with principal, so we need to fetch
       // the principal list as well.
