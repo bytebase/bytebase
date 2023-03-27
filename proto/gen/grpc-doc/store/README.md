@@ -5,11 +5,13 @@
 
 - [store/activity.proto](#store_activity-proto)
     - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
+    - [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
     - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
     - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
     - [ActivityPayload](#bytebase-store-ActivityPayload)
   
+    - [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
@@ -83,7 +85,23 @@ ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
 | ----- | ---- | ----- | ----------- |
 | external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
 | task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
+| approval_event | [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent) |  |  |
 | issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent"></a>
+
+### ActivityIssueCommentCreatePayload.ApprovalEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status) |  | The new status. |
 
 
 
@@ -161,6 +179,19 @@ convert to the expected struct there.
 
 
  
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status"></a>
+
+### ActivityIssueCommentCreatePayload.ApprovalEvent.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+
 
 
 <a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
