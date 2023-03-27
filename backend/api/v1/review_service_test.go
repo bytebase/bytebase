@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -33,6 +35,85 @@ func TestConvertToApprovalNode(t *testing.T) {
 	a := require.New(t)
 	for _, test := range tests {
 		got := convertToApprovalNode(test.node)
+		a.Equal(test.want, got)
+	}
+}
+
+func TestCanUserApproveStep(t *testing.T) {
+	tests := []struct {
+		step   *storepb.ApprovalStep
+		user   *store.UserMessage
+		policy *store.IAMPolicyMessage
+		want   bool
+	}{
+		{
+			step: &storepb.ApprovalStep{
+				Type: storepb.ApprovalStep_ANY,
+				Nodes: []*storepb.ApprovalNode{
+					{
+						Type: storepb.ApprovalNode_ANY_IN_GROUP,
+						Payload: &storepb.ApprovalNode_GroupValue_{
+							GroupValue: storepb.ApprovalNode_WORKSPACE_DBA,
+						},
+					},
+				},
+			},
+			user: &store.UserMessage{
+				ID:   1,
+				Role: api.Developer,
+			},
+			policy: &store.IAMPolicyMessage{
+				Bindings: []*store.PolicyBinding{
+					{
+						Role: api.Developer,
+						Members: []*store.UserMessage{
+							{
+								ID:   1,
+								Role: api.Developer,
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			step: &storepb.ApprovalStep{
+				Type: storepb.ApprovalStep_ANY,
+				Nodes: []*storepb.ApprovalNode{
+					{
+						Type: storepb.ApprovalNode_ANY_IN_GROUP,
+						Payload: &storepb.ApprovalNode_GroupValue_{
+							GroupValue: storepb.ApprovalNode_WORKSPACE_DBA,
+						},
+					},
+				},
+			},
+			user: &store.UserMessage{
+				ID:   1,
+				Role: api.DBA,
+			},
+			policy: &store.IAMPolicyMessage{
+				Bindings: []*store.PolicyBinding{
+					{
+						Role: api.Developer,
+						Members: []*store.UserMessage{
+							{
+								ID:   1,
+								Role: api.Developer,
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+
+	a := require.New(t)
+	for _, test := range tests {
+		got, err := canUserApproveStep(test.step, test.user, test.policy)
+		a.NoError(err)
 		a.Equal(test.want, got)
 	}
 }
