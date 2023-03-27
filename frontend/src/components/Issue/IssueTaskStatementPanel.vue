@@ -421,9 +421,10 @@ watch(
         ? (task as TaskCreate).sheetId
         : sheetIdOfTask(task as Task);
       if (sheetId) {
-        state.editStatement = (
-          await sheetStore.getOrFetchSheetById(sheetId)
-        ).statement;
+        const statement = (await sheetStore.getOrFetchSheetById(sheetId))
+          .statement;
+        state.editStatement = statement;
+        updateStatement(state.editStatement);
       }
     }
   },
@@ -605,6 +606,10 @@ const handleUploadLocalFileAsSheet = async (event: Event) => {
 };
 
 const onStatementChange = (value: string) => {
+  if (readonly.value) {
+    return;
+  }
+
   state.editStatement = value;
   if (create.value) {
     // If we are creating an issue, emit the event immediately when every
