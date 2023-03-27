@@ -231,7 +231,8 @@
     "download": "Download",
     "will-lose-unsaved-data": "Will lose any unsaved data.",
     "deleted": "Deleted",
-    "will-override-current-data": "Will override current data."
+    "will-override-current-data": "Will override current data.",
+    "rollout": "Roll out"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -576,7 +577,8 @@
       "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
       "dismissed-stale-approval": "dismissed stale approvals of {task}",
       "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\"",
-      "skipped": "skipped"
+      "skipped": "skipped",
+      "rolled-out": "rolled out"
     },
     "subject-prefix": {
       "task": "Task",

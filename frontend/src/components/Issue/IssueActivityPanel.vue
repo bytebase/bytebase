@@ -62,23 +62,17 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(item.activity) == 'run'">
+                <template
+                  v-else-if="
+                    actionIcon(item.activity) == 'run' ||
+                    actionIcon(item.activity) == 'rollout'
+                  "
+                >
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:play class="w-6 h-6 text-control" />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'approve'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:thumb-up
-                        class="w-5 h-5 text-control"
-                      />
                     </div>
                   </div>
                 </template>
@@ -379,6 +373,7 @@ type ActionIconType =
   | "update"
   | "run"
   | "approve"
+  | "rollout"
   | "cancel"
   | "fail"
   | "complete"
@@ -564,7 +559,7 @@ const actionIcon = (activity: Activity): ActionIconType => {
         if (payload.oldStatus == "RUNNING") {
           return "cancel";
         } else if (payload.oldStatus == "PENDING_APPROVAL") {
-          return "approve";
+          return "rollout";
         }
         break;
       }

@@ -229,7 +229,8 @@
     "download": "下载",
     "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
-    "will-override-current-data": "将会覆盖当前数据。"
+    "will-override-current-data": "将会覆盖当前数据。",
+    "rollout": "发布"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -574,7 +575,8 @@
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
       "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
       "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批",
-      "skipped": "跳过"
+      "skipped": "跳过",
+      "rolled-out": "发布"
     },
     "subject-prefix": {
       "task": "任务",
