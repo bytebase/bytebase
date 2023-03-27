@@ -17,7 +17,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -256,10 +255,6 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	statement, err := utils.GetTaskStatement(task.Payload)
-	if err != nil {
-		return nil, err
-	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
@@ -282,7 +277,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
 
-	create, err = getSyntaxCheckTaskCheck(task, instance, dbSchema, statement)
+	create, err = getSyntaxCheckTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
@@ -290,7 +285,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	create, err = s.getSQLReviewTaskCheck(task, instance, dbSchema, statement)
+	create, err = s.getSQLReviewTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
@@ -298,7 +293,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	create, err = getStmtTypeTaskCheck(task, instance, dbSchema, statement)
+	create, err = getStmtTypeTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
@@ -318,71 +313,41 @@ func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMes
 	return s.store.CreateTaskCheckRun(ctx, createList...)
 }
 
-func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
+func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
 	if !api.IsStatementTypeCheckSupported(instance.Engine) {
 		return nil, nil
-	}
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
 	}
 	return []*store.TaskCheckRunMessage{
 		{
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementType,
-			Payload:   string(payload),
 		},
 	}, nil
 }
 
-func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
+func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
-	}
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 	return []*store.TaskCheckRunMessage{
 		{
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementAdvise,
-			Payload:   string(payload),
 		},
 	}, nil
 }
 
-func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
+func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
 	if !api.IsSyntaxCheckSupported(instance.Engine) {
 		return nil, nil
-	}
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 	return []*store.TaskCheckRunMessage{
 		{
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementSyntax,
-			Payload:   string(payload),
 		},
 	}, nil
 }

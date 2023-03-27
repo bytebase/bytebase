@@ -35,20 +35,43 @@ type StatementTypeExecutor struct {
 }
 
 // Run will run the task check database connector executor once.
-func (exec *StatementTypeExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
-	payload := &api.TaskCheckDatabaseStatementTypePayload{}
-	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Wrapf(err, common.Invalid, "invalid check statement type payload")
+func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	dbSchema, err := exec.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, err
+	}
+	payload := &TaskPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, err
+	}
+	if payload.SheetID > 0 {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusSuccess,
+				Namespace: api.AdvisorNamespace,
+				Code:      common.Ok.Int(),
+				Title:     "Large SQL statement type check is disabled",
+				Content:   "",
+			},
+		}, nil
 	}
 
-	switch payload.DbType {
+	switch instance.Engine {
 	case db.Postgres:
 		result, err = postgresqlStatementTypeCheck(payload.Statement, task.Type)
 		if err != nil {
 			return nil, err
 		}
 	case db.MySQL, db.TiDB:
-		result, err = mysqlStatementTypeCheck(payload.Statement, payload.Charset, payload.Collation, task.Type)
+		result, err = mysqlStatementTypeCheck(payload.Statement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, task.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +83,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, taskCheckRun *store.
 			result = append(result, sdlAdvice...)
 		}
 	default:
-		return nil, common.Errorf(common.Invalid, "invalid check statement type database type: %s", payload.DbType)
+		return nil, common.Errorf(common.Invalid, "invalid check statement type database type: %s", instance.Engine)
 	}
 
 	if len(result) == 0 {
