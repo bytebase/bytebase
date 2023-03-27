@@ -98,7 +98,8 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				for _, issue := range issues {
 					payload := &storepb.IssuePayload{}
 					if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-						return err
+						log.Error("failed to unmarshal issue payload", zap.Error(err))
+						continue
 					}
 					if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
 						continue
@@ -106,14 +107,16 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
 					if err != nil {
-						return err
+						log.Error("failed to get issue risk level", zap.Int("issueID", issue.UID), zap.Error(err))
+						continue
 					}
 					if !done {
 						continue
 					}
 					approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
 					if err != nil {
-						return err
+						log.Error("failed to get approval template", zap.Int64("riskLevel", riskLevel), zap.String("issueType", string(issue.Type)), zap.Error(err))
+						continue
 					}
 					payload = &storepb.IssuePayload{
 						Approval: &storepb.IssuePayloadApproval{
@@ -124,13 +127,15 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 					payloadBytes, err := protojson.Marshal(payload)
 					if err != nil {
-						return err
+						log.Error("failed to marshal issue payload", zap.Error(err))
+						continue
 					}
 					payloadStr := string(payloadBytes)
 					if _, err := r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 						Payload: &payloadStr,
 					}, api.SystemBotID); err != nil {
-						return err
+						log.Error("failed to update issue payload", zap.Error(err))
+						continue
 					}
 				}
 
