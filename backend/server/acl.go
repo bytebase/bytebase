@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/casbin/casbin/v2"
+	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 
 	"github.com/labstack/echo/v4"
@@ -188,6 +190,85 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	return nil
 }
 
+var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status`)
+var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
+
+func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
+	switch method {
+	case http.MethodGet:
+		// For /issue route, require the caller principal to be the same as the user in the query.
+		if userStr := queryParams.Get("user"); userStr != "" {
+			userID, err := strconv.Atoi(userStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID").SetInternal(err)
+			}
+			if principalID != userID {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
+			}
+		} else if matches := issueRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
+			issueIDStr := matches[1]
+			issueID, err := strconv.Atoi(issueIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
+			}
+			projectID, err := getIssueProjectID(issueID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			memberIDs, err := getProjectMemberIDs(projectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			for _, memberID := range memberIDs {
+				if memberID == principalID {
+					return nil
+				}
+			}
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to retrieve issue that is in the project that the user is not a member of")
+		}
+	case http.MethodPatch:
+		// Workspace developer can only operating the issues if the user is the member of the project that the issue belongs to.
+		if matches := issueStatusRegex.FindStringSubmatch(path); len(matches) > 0 {
+			issueIDStr := matches[1]
+			issueID, err := strconv.Atoi(issueIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
+			}
+			projectID, err := getIssueProjectID(issueID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			memberIDs, err := getProjectMemberIDs(projectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			for _, memberID := range memberIDs {
+				if memberID == principalID {
+					return nil
+				}
+			}
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
+		}
+	case http.MethodPost:
+		// Workspace developer can only create issue under the project that the user is the member of.
+		var issueCreate api.IssueCreate
+		if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
+		}
+		memberIDs, err := getProjectMemberIDs(issueCreate.ProjectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+		for _, memberID := range memberIDs {
+			if memberID == principalID {
+				return nil
+			}
+		}
+		return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
+	}
+	return nil
+}
+
 func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -334,6 +415,15 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 					return false, nil
 				}
 				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, principalID, isMemberOfAnyProjectOwnsDatabase)
+			} else if strings.HasPrefix(path, "/issue") {
+				var bodyCopy strings.Builder
+				if _, err := io.Copy(&bodyCopy, c.Request().Body); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+				}
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+				}
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, bodyCopy.String(), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
 			}
 			if aclErr != nil {
 				return aclErr
@@ -344,6 +434,42 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		c.Set(getRoleContextKey(), role)
 
 		return next(c)
+	}
+}
+
+func getRetrieveIssueProjectID(ctx context.Context, s *store.Store) func(issueID int) (int, error) {
+	return func(issueID int) (int, error) {
+		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
+			UID: &issueID,
+		})
+		if err != nil {
+			return 0, err
+		}
+		if issue == nil {
+			return 0, errors.Errorf("cannot find issue %d", issueID)
+		}
+		return issue.Project.UID, nil
+	}
+}
+
+func getRetrieveProjectMemberIDs(ctx context.Context, s *store.Store) func(projectID int) ([]int, error) {
+	return func(projectID int) ([]int, error) {
+		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+			UID: &projectID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if policy == nil {
+			return nil, errors.Errorf("cannot find policy for project %d", projectID)
+		}
+		var memberIDs []int
+		for _, binding := range policy.Bindings {
+			for _, member := range binding.Members {
+				memberIDs = append(memberIDs, member.ID)
+			}
+		}
+		return memberIDs, nil
 	}
 }
 
