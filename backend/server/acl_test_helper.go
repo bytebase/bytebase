@@ -109,3 +109,63 @@ var sheetFinder = func(sheetID int) (*api.Sheet, error) {
 	}
 	return nil, nil
 }
+
+var testProjectDatabaseMemberMap = struct {
+	// projectToPolicy is a map from project ID to the map of <principal ID, role>.
+	projectToPolicy map[int]map[int]common.ProjectRole
+	// projectOwnsDatabase is a map from project ID to the map of <database ID, true>.
+	projectOwnsDatabase map[int]map[int]bool
+}{
+	projectToPolicy: map[int]map[int]common.ProjectRole{
+		// Default Project contains no member.
+		1: {},
+		// Project 101 contains no member.
+		101: {},
+		// Project 102 contains member 201 as developer.
+		102: {
+			201: common.ProjectDeveloper,
+		},
+	},
+	projectOwnsDatabase: map[int]map[int]bool{
+		// Default Project owns database 301.
+		1: {
+			301: true,
+		},
+		// Project 101 owns database 302.
+		101: {
+			302: true,
+		},
+		// Project 102 owns database 303.
+		102: {
+			303: true,
+		},
+	},
+}
+
+var isMemberOfAnyProjectOwnsDatabase = func(principalID int, databaseID int) (bool, error) {
+	// Get the ID of the project owns the database.
+	var projectID int
+	for id, databaseMap := range testProjectDatabaseMemberMap.projectOwnsDatabase {
+		if _, ok := databaseMap[databaseID]; ok {
+			projectID = id
+			break
+		}
+	}
+
+	// Default project contains no member.
+	if projectID == 1 {
+		return false, nil
+	}
+
+	// Check if the principal is a member of the project.
+	m, ok := testProjectDatabaseMemberMap.projectToPolicy[projectID]
+	if !ok {
+		return false, nil
+	}
+	for id := range m {
+		if id == principalID {
+			return true, nil
+		}
+	}
+	return false, nil
+}

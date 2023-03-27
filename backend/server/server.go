@@ -321,12 +321,36 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
+	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+		Skipper: func(c echo.Context) bool {
+			// Skip grpc calls.
+			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.")
+		},
+		Timeout: 30 * time.Second,
+	}))
+	e.Use(middleware.BodyLimit("5M"))
+	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
+		),
+		IdentifierExtractor: func(ctx echo.Context) (string, error) {
+			id := ctx.RealIP()
+			return id, nil
+		},
+		ErrorHandler: func(context echo.Context, err error) error {
+			return context.JSON(http.StatusForbidden, nil)
+		},
+		DenyHandler: func(context echo.Context, identifier string, err error) error {
+			return context.JSON(http.StatusTooManyRequests, nil)
+		},
+	}))
 
 	// Disallow to be embedded in an iFrame.
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
 
+	// MetricReporter middleware.
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			defer func() {
@@ -415,10 +439,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	// Middleware
+	//
+	// Error recorder middleware.
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		errorRecorderMiddleware(err, s, c, e)
 	}
-
+	// API logger middleware.
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
@@ -430,6 +456,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			`"method":"${method}","uri":"${uri}",` +
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
+	// Panic recovery middleware.
 	e.Use(recoverMiddleware)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -437,6 +464,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerWebhookRoutes(webhookGroup)
 
 	apiGroup := e.Group(internalAPIPrefix)
+	// API JWT authentication middleware.
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
 	})

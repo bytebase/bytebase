@@ -80,6 +80,34 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 	return nil
 }
 
+var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d+)`)
+
+func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, principalID int, isMemberOfAnyProjectOwnsDatabase func(principalID int, databaseID int) (bool, error)) *echo.HTTPError {
+	if method == "GET" {
+		// For /database route, server should list the databases that the user has access to.
+
+		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
+			// For /database/xxx subroutes, since Developer cannot retrieve the database if it's not a member of the project which owns the database.
+
+			// Get the database ID from the path.
+			dbID, err := strconv.Atoi(matches[1])
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
+			}
+
+			in, err := isMemberOfAnyProjectOwnsDatabase(principalID, dbID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			if !in {
+				return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
+			}
+			return nil
+		}
+	}
+	return nil
+}
+
 var sheetRouteRegex = regexp.MustCompile(`^/sheet/(?P<sheetID>\d+)`)
 var sheetOrganizeRouteRegex = regexp.MustCompile(`^/sheet/(?P<projectID>\d+)/organize`)
 
@@ -271,8 +299,42 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
 				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
-			}
+			} else if strings.HasPrefix(path, "/database") {
+				isMemberOfAnyProjectOwnsDatabase := func(principalID int, databaseID int) (bool, error) {
+					db, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+						UID: &databaseID,
+					})
+					if err != nil {
+						return false, err
+					}
+					if db == nil {
+						return false, err
+					}
+					// If the database is not assigned to any project, WORKSPACE DEVELOPER cannot access it.
+					if db.ProjectID == api.DefaultProjectID {
+						return false, nil
+					}
 
+					policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+						ProjectID: &db.ProjectID,
+					})
+					if err != nil {
+						return false, err
+					}
+					if policy == nil {
+						return false, errors.Errorf("cannot find policy for project %s", db.ProjectID)
+					}
+					for _, binding := range policy.Bindings {
+						for _, member := range binding.Members {
+							if member.ID == principalID {
+								return true, nil
+							}
+						}
+					}
+					return false, nil
+				}
+				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, principalID, isMemberOfAnyProjectOwnsDatabase)
+			}
 			if aclErr != nil {
 				return aclErr
 			}
@@ -395,6 +457,5 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			return sheet.CreatorID == curPrincipalID, nil
 		}
 	}
-
 	return false, nil
 }
