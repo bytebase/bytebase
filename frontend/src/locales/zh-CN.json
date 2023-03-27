@@ -81,7 +81,7 @@
       "developer": "开发者",
       "member": "成员"
     },
-    "assignee": "审核人",
+    "assignee": "责任人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -686,7 +686,13 @@
       "generated-ddl-statements": "生成的 DDL 语句",
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
-    }
+    },
+    "assignee-tooltip": "该工单的发布负责人",
+    "approval-flow": {
+      "self": "审批流"
+    },
+    "waiting-to-roll-out": "等待发布",
+    "waiting-for-review": "等待审核"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2193,6 +2199,14 @@
     },
     "rule": {
       "rules": "规则"
+    },
+    "issue-review": {
+      "approve-issue": "批准工单？",
+      "form": {
+        "placeholder": "（可选）添加一段笔记…",
+        "note": "笔记"
+      },
+      "you": "你"
     }
   }
 }
