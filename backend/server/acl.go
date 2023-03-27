@@ -286,10 +286,6 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		}
 
 		method := c.Request().Method
-		// Skip GET /subscription request
-		if common.HasPrefixes(path, "/subscription") && method == "GET" {
-			return next(c)
-		}
 
 		// Skip GET /feature request
 		if common.HasPrefixes(path, "/feature") && method == "GET" {

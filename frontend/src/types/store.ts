@@ -11,7 +11,6 @@ import {
   PolicyResourceType,
 } from ".";
 import { Activity } from "./activity";
-import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Command } from "./common";
@@ -36,7 +35,6 @@ import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
 import { Member } from "./member";
 import { Notification } from "./notification";
-import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
@@ -48,9 +46,10 @@ import { ReleaseInfo } from "./actuator";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
 import { DatabaseMetadata } from "./proto/store/database";
+import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
 
 export interface ActuatorState {
-  serverInfo?: ServerInfo;
+  serverInfo?: ActuatorInfo;
   releaseInfo: RemovableRef<ReleaseInfo>;
 }
 
@@ -60,10 +59,6 @@ export interface AuditLogState {
 
 export interface SettingState {
   settingByName: Map<SettingName, Setting>;
-}
-
-export interface PlanState {
-  plan: PlanType;
 }
 
 export interface MemberState {
