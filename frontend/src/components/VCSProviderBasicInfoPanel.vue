@@ -46,7 +46,7 @@
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
       <span class="whitespace-nowrap">GitHub.com</span>
     </label>
-    <label v-if="isDev" class="radio space-x-2">
+    <label class="radio space-x-2">
       <input
         v-model="config.uiType"
         name="Bitbucket.org"
