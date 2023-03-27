@@ -85,15 +85,15 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					StatusList: []api.IssueStatus{api.IssueOpen},
 				})
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to list issues")
 				}
 				risks, err := r.store.ListRisks(ctx)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to list risks")
 				}
 				approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to get workspace approval setting")
 				}
 				for _, issue := range issues {
 					payload := &storepb.IssuePayload{}
