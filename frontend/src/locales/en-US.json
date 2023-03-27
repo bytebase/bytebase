@@ -2209,7 +2209,8 @@
         "placeholder": "(Optional) Add a note...",
         "note": "Note"
       },
-      "you": "You"
+      "you": "You",
+      "generating-approval-flow": "Generating approval flow"
     }
   }
 }
