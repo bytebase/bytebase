@@ -110,7 +110,7 @@
       $t('subscription.trial-start-modal.title', {
         plan: $t(
           `subscription.plan.${planTypeToString(
-            subscriptionStore.subscription.plan
+            subscriptionStore.currentPlan
           ).toLowerCase()}.title`
         ),
       })
@@ -128,7 +128,7 @@
                   {{
                     $t(
                       `subscription.plan.${planTypeToString(
-                        subscriptionStore.subscription.plan
+                        subscriptionStore.currentPlan
                       ).toLowerCase()}.title`
                     )
                   }}
@@ -173,7 +173,7 @@ import { useRoute, useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import { activeEnvironment } from "../utils";
-import { Environment, Issue, planTypeToString, PlanType } from "../types";
+import { Environment, Issue, planTypeToString } from "../types";
 import {
   useCurrentUser,
   useEnvironmentStore,
@@ -181,6 +181,7 @@ import {
   useOnboardingStateStore,
 } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   searchText: string;

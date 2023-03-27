@@ -274,6 +274,8 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 	if err := tx.Commit(); err != nil {
 		return errors.Wrap(err, "failed to commit transaction")
 	}
+
+	s.settingCache.Delete(name)
 	return nil
 }
 

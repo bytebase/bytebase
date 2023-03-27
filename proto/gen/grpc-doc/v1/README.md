@@ -311,6 +311,18 @@
   
     - [SQLService](#bytebase-v1-SQLService)
   
+- [v1/subscription_service.proto](#v1_subscription_service-proto)
+    - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
+    - [PatchSubscription](#bytebase-v1-PatchSubscription)
+    - [Subscription](#bytebase-v1-Subscription)
+    - [TrialSubscription](#bytebase-v1-TrialSubscription)
+    - [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest)
+    - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
+  
+    - [PlanType](#bytebase-v1-PlanType)
+  
+    - [SubscriptionService](#bytebase-v1-SubscriptionService)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -4625,6 +4637,143 @@ The data in setting value.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
+
+ 
+
+
+
+<a name="v1_subscription_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/subscription_service.proto
+
+
+
+<a name="bytebase-v1-GetSubscriptionRequest"></a>
+
+### GetSubscriptionRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-PatchSubscription"></a>
+
+### PatchSubscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| license | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Subscription"></a>
+
+### Subscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seat | [int32](#int32) |  |  |
+| instance_count | [int32](#int32) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| trialing | [bool](#bool) |  |  |
+| org_id | [string](#string) |  |  |
+| org_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TrialSubscription"></a>
+
+### TrialSubscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| days | [int32](#int32) |  |  |
+| seat | [int32](#int32) |  |  |
+| instance_count | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TrialSubscriptionRequest"></a>
+
+### TrialSubscriptionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| trial | [TrialSubscription](#bytebase-v1-TrialSubscription) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSubscriptionRequest"></a>
+
+### UpdateSubscriptionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| patch | [PatchSubscription](#bytebase-v1-PatchSubscription) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-PlanType"></a>
+
+### PlanType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_TYPE_UNSPECIFIED | 0 |  |
+| FREE | 1 |  |
+| TEAM | 2 |  |
+| ENTERPRISE | 3 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SubscriptionService"></a>
+
+### SubscriptionService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| TrialSubscription | [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 
  
 

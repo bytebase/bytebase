@@ -8,16 +8,17 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 type trial struct {
-	instanceCount       int
-	expectInstanceCount int
-	plan                api.PlanType
-	expectPlan          api.PlanType
-	Days                int
+	seat                int32
+	instanceCount       int32
+	expectInstanceCount int32
+	plan                v1pb.PlanType
+	expectPlan          v1pb.PlanType
+	Days                int32
 }
 
 func TestSubscription(t *testing.T) {
@@ -35,39 +36,43 @@ func TestSubscription(t *testing.T) {
 
 	subscription, err := ctl.getSubscription()
 	a.NoError(err)
-	a.Equal(api.FREE, subscription.Plan)
+	a.Equal(v1pb.PlanType_FREE, subscription.Plan)
 
 	trialList := []trial{
 		{
 			// Test trial the TEAM plan.
+			seat:                10,
 			instanceCount:       20,
 			expectInstanceCount: 20,
-			plan:                api.TEAM,
-			expectPlan:          api.TEAM,
+			plan:                v1pb.PlanType_TEAM,
+			expectPlan:          v1pb.PlanType_TEAM,
 			Days:                7,
 		},
 		{
 			// Test trial the ENTERPRISE plan.
+			seat:                10,
 			instanceCount:       10,
 			expectInstanceCount: 10,
-			plan:                api.ENTERPRISE,
-			expectPlan:          api.ENTERPRISE,
+			plan:                v1pb.PlanType_ENTERPRISE,
+			expectPlan:          v1pb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
 		{
 			// Downgrade should be ignored.
+			seat:                10,
 			instanceCount:       99,
 			expectInstanceCount: 10,
-			plan:                api.TEAM,
-			expectPlan:          api.ENTERPRISE,
+			plan:                v1pb.PlanType_TEAM,
+			expectPlan:          v1pb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
 	}
 
 	for _, trial := range trialList {
-		err = ctl.trialPlan(&api.TrialPlanCreate{
+		err = ctl.trialPlan(&v1pb.TrialSubscription{
+			Seat:          trial.seat,
 			InstanceCount: trial.instanceCount,
-			Type:          trial.plan,
+			Plan:          trial.plan,
 			Days:          trial.Days,
 		})
 		a.NoError(err)

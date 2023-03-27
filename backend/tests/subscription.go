@@ -2,25 +2,24 @@ package tests
 
 import (
 	"bytes"
+	"io"
 
-	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
-
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (ctl *controller) setLicense() error {
-	return ctl.trialPlan(&api.TrialPlanCreate{
+	return ctl.trialPlan(&v1pb.TrialSubscription{
 		InstanceCount: 100,
-		Type:          api.ENTERPRISE,
+		Plan:          v1pb.PlanType_ENTERPRISE,
 		Days:          1,
 	})
 }
 
 func (ctl *controller) removeLicense() error {
-	err := ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
+	err := ctl.switchPlan(&v1pb.PatchSubscription{
 		License: "",
 	})
 	if err != nil {
@@ -29,37 +28,41 @@ func (ctl *controller) removeLicense() error {
 	return nil
 }
 
-func (ctl *controller) getSubscription() (*enterpriseAPI.Subscription, error) {
-	body, err := ctl.get("/subscription", nil)
+func (ctl *controller) getSubscription() (*v1pb.Subscription, error) {
+	body, err := ctl.getOpenAPI("/subscription", nil)
+	if err != nil {
+		return nil, err
+	}
+	bs, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}
 
-	subscription := new(enterpriseAPI.Subscription)
-	if err = jsonapi.UnmarshalPayload(body, subscription); err != nil {
+	subscription := new(v1pb.Subscription)
+	if err = protojson.Unmarshal(bs, subscription); err != nil {
 		return nil, errors.Wrap(err, "fail to unmarshal get subscription response")
 	}
 	return subscription, nil
 }
 
-func (ctl *controller) trialPlan(trial *api.TrialPlanCreate) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, trial); err != nil {
+func (ctl *controller) trialPlan(trial *v1pb.TrialSubscription) error {
+	bs, err := protojson.Marshal(trial)
+	if err != nil {
 		return errors.Wrap(err, "failed to marshal subscription patch")
 	}
-
-	_, err := ctl.post("/subscription/trial", buf)
-	return err
+	if _, err := ctl.postOpenAPI("/subscription/trial", bytes.NewReader(bs)); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, patch); err != nil {
+func (ctl *controller) switchPlan(patch *v1pb.PatchSubscription) error {
+	bs, err := protojson.Marshal(patch)
+	if err != nil {
 		return errors.Wrap(err, "failed to marshal subscription patch")
 	}
 
-	_, err := ctl.patch("/subscription", buf)
-	if err != nil {
+	if _, err := ctl.patchOpenAPI("/subscription", bytes.NewReader(bs)); err != nil {
 		return err
 	}
 
