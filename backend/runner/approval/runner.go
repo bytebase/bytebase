@@ -26,7 +26,7 @@ import (
 
 const approvalRunnerInterval = 30 * time.Second
 
-var predefinedVariables = []cel.EnvOption{
+var riskFactors = []cel.EnvOption{
 	// string factors
 	// use environment.resource_id
 	cel.Variable("environment_id", cel.StringType),
@@ -289,7 +289,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		databaseName = database.DatabaseName
 	}
 
-	e, err := cel.NewEnv(predefinedVariables...)
+	e, err := cel.NewEnv(riskFactors...)
 	if err != nil {
 		return 0, false, err
 	}
