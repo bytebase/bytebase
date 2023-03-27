@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// NewStatementAffectedRowsReportExecutor creates a task check statement affected rows report executor.
 func NewStatementAffectedRowsReportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
 	return &StatementAffectedRowsReportExecutor{
 		store:     store,
@@ -30,11 +31,13 @@ func NewStatementAffectedRowsReportExecutor(store *store.Store, dbFactory *dbfac
 	}
 }
 
+// StatementAffectedRowsReportExecutor is the task check statement affected rows report executor. It reports the affected rows of each statement.
 type StatementAffectedRowsReportExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
+// Run will run the task check statement affected rows report executor once.
 func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
 	switch task.Type {
 	case api.TaskDatabaseSchemaUpdate:
