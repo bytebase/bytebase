@@ -1,13 +1,5 @@
-import { PlanType, FeatureType } from "./plan";
-
-export interface Subscription {
-  instanceCount: number;
-  seat: number;
-  expiresTs: number;
-  startedTs: number;
-  plan: PlanType;
-  trialing: boolean;
-}
+import { FeatureType } from "./plan";
+import { Subscription } from "@/types/proto/v1/subscription_service";
 
 export interface SubscriptionState {
   featureMatrix: Map<FeatureType, boolean[]>;

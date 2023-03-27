@@ -2,19 +2,20 @@ package tests
 
 import (
 	"bytes"
+	"encoding/json"
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (ctl *controller) setLicense() error {
-	return ctl.trialPlan(&api.TrialPlanCreate{
+	return ctl.trialPlan(&v1pb.TrialSubscription{
 		InstanceCount: 100,
-		Type:          api.ENTERPRISE,
+		Plan:          v1pb.PlanType_ENTERPRISE,
 		Days:          1,
 	})
 }
@@ -30,7 +31,7 @@ func (ctl *controller) removeLicense() error {
 }
 
 func (ctl *controller) getSubscription() (*enterpriseAPI.Subscription, error) {
-	body, err := ctl.get("/subscription", nil)
+	body, err := ctl.getOpenAPI("/subscription", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +43,15 @@ func (ctl *controller) getSubscription() (*enterpriseAPI.Subscription, error) {
 	return subscription, nil
 }
 
-func (ctl *controller) trialPlan(trial *api.TrialPlanCreate) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, trial); err != nil {
+func (ctl *controller) trialPlan(trial *v1pb.TrialSubscription) error {
+	bs, err := json.Marshal(trial)
+	if err != nil {
 		return errors.Wrap(err, "failed to marshal subscription patch")
 	}
-
-	_, err := ctl.post("/subscription/trial", buf)
-	return err
+	if _, err := ctl.postOpenAPI("/subscription/trial", bytes.NewReader(bs)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
@@ -58,7 +60,7 @@ func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error 
 		return errors.Wrap(err, "failed to marshal subscription patch")
 	}
 
-	_, err := ctl.patch("/subscription", buf)
+	_, err := ctl.patchOpenAPI("/subscription", buf)
 	if err != nil {
 		return err
 	}

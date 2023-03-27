@@ -2,7 +2,7 @@ import { useI18n } from "vue-i18n";
 import { PolicyId } from "./id";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { PlanType } from "./plan";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";

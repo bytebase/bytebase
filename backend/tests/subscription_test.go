@@ -10,14 +10,15 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 type trial struct {
-	instanceCount       int
-	expectInstanceCount int
-	plan                api.PlanType
-	expectPlan          api.PlanType
-	Days                int
+	instanceCount       int32
+	expectInstanceCount int32
+	plan                v1pb.PlanType
+	expectPlan          v1pb.PlanType
+	Days                int32
 }
 
 func TestSubscription(t *testing.T) {
@@ -42,32 +43,32 @@ func TestSubscription(t *testing.T) {
 			// Test trial the TEAM plan.
 			instanceCount:       20,
 			expectInstanceCount: 20,
-			plan:                api.TEAM,
-			expectPlan:          api.TEAM,
+			plan:                v1pb.PlanType_TEAM,
+			expectPlan:          v1pb.PlanType_TEAM,
 			Days:                7,
 		},
 		{
 			// Test trial the ENTERPRISE plan.
 			instanceCount:       10,
 			expectInstanceCount: 10,
-			plan:                api.ENTERPRISE,
-			expectPlan:          api.ENTERPRISE,
+			plan:                v1pb.PlanType_ENTERPRISE,
+			expectPlan:          v1pb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
 		{
 			// Downgrade should be ignored.
 			instanceCount:       99,
 			expectInstanceCount: 10,
-			plan:                api.TEAM,
-			expectPlan:          api.ENTERPRISE,
+			plan:                v1pb.PlanType_TEAM,
+			expectPlan:          v1pb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
 	}
 
 	for _, trial := range trialList {
-		err = ctl.trialPlan(&api.TrialPlanCreate{
+		err = ctl.trialPlan(&v1pb.TrialSubscription{
 			InstanceCount: trial.instanceCount,
-			Type:          trial.plan,
+			Plan:          trial.plan,
 			Days:          trial.Days,
 		})
 		a.NoError(err)

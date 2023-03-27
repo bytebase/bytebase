@@ -525,106 +525,60 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 // get sends a GET client request.
 func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCloser, error) {
 	gURL := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	req, err := http.NewRequest("GET", gURL, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to create a new GET request(%q)", gURL)
-	}
-	req.Header.Set("Cookie", ctl.cookie)
-	q := url.Values{}
-	for k, v := range params {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-	resp, err := ctl.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to send a GET request(%q)", gURL)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read http response body")
-		}
-		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
-	}
-	return resp.Body, nil
+	return ctl.request("GET", gURL, nil, params)
+}
+
+// OpenAPI sends a GET OpenAPI client request.
+func (ctl *controller) getOpenAPI(shortURL string, params map[string]string) (io.ReadCloser, error) {
+	gURL := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
+	return ctl.request("GET", gURL, nil, params)
 }
 
 // postOpenAPI sends a openAPI POST request.
 func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	req, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
-	}
-	req.Header.Set("Cookie", ctl.cookie)
-	resp, err := ctl.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to send a POST request(%q)", url)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read http response body")
-		}
-		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
-	}
-	return resp.Body, nil
+	return ctl.request("POST", url, body, map[string]string{})
 }
 
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	req, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
-	}
-	req.Header.Set("Cookie", ctl.cookie)
-	resp, err := ctl.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to send a POST request(%q)", url)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read http response body")
-		}
-		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
-	}
-	return resp.Body, nil
+	return ctl.request("POST", url, body, map[string]string{})
 }
 
 // patch sends a PATCH client request.
 func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	req, err := http.NewRequest("PATCH", url, body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to create a new PATCH request(%q)", url)
-	}
-	req.Header.Set("Cookie", ctl.cookie)
-	resp, err := ctl.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to send a PATCH request(%q)", url)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read http response body")
-		}
-		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
-	}
-	return resp.Body, nil
+	return ctl.request("PATCH", url, body, map[string]string{})
+}
+
+// patchOpenAPI sends a openAPI PATCH client request.
+func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
+	return ctl.request("PATCH", url, body, map[string]string{})
 }
 
 func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	req, err := http.NewRequest("DELETE", url, body)
+	return ctl.request("DELETE", url, body, map[string]string{})
+}
+
+func (ctl *controller) request(method, fullURL string, body io.Reader, params map[string]string) (io.ReadCloser, error) {
+	req, err := http.NewRequest(method, fullURL, body)
 	if err != nil {
-		return nil, errors.Wrapf(err, "fail to create a new DELETE request(%q)", url)
+		return nil, errors.Wrapf(err, "fail to create a new %s request(%q)", method, fullURL)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
+
+	q := url.Values{}
+	for k, v := range params {
+		q.Add(k, v)
+	}
+	req.URL.RawQuery = q.Encode()
+
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrapf(err, "fail to send a DELETE request(%q)", url)
+		return nil, errors.Wrapf(err, "fail to send a %s request(%q)", method, fullURL)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
