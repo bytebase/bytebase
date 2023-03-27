@@ -214,8 +214,8 @@ func IsStatementTypeCheckSupported(dbType db.Type) bool {
 	}
 }
 
-// IsStatementTypeReportCheckSupported checks if statement type report supports the engine type.
-func IsStatementTypeReportCheckSupported(dbType db.Type) bool {
+// IsTaskCheckReportSupported checks if the task report supports the engine type.
+func IsTaskCheckReportSupported(dbType db.Type) bool {
 	switch dbType {
 	case db.Postgres, db.TiDB, db.MySQL:
 		return true
@@ -224,10 +224,10 @@ func IsStatementTypeReportCheckSupported(dbType db.Type) bool {
 	}
 }
 
-// IsStatementAffectedRowsReportCheckSupported checks if statement affected rows report supports the engine type.
-func IsStatementAffectedRowsReportCheckSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL:
+// IsTaskCheckReportNeededForTaskType checks if the task report is needed for the task type.
+func IsTaskCheckReportNeededForTaskType(taskType TaskType) bool {
+	switch taskType {
+	case TaskDatabaseSchemaUpdate, TaskDatabaseSchemaUpdateSDL, TaskDatabaseSchemaUpdateGhostSync, TaskDatabaseDataUpdate:
 		return true
 	default:
 		return false

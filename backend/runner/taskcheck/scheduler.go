@@ -445,11 +445,10 @@ func (*Scheduler) getPITRTaskCheck(task *store.TaskMessage, creatorID int) ([]*s
 }
 
 func getStatementTypeReportTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string, creatorID int) ([]*store.TaskCheckRunMessage, error) {
-	if !api.IsStatementTypeReportCheckSupported(instance.Engine) {
+	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-	// TBD(p0ny): approval, maybe change to issue type
-	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
 	payload, err := json.Marshal(&api.TaskCheckDatabaseStatementTypeReportPayload{
@@ -474,15 +473,10 @@ func getStatementTypeReportTaskCheck(task *store.TaskMessage, instance *store.In
 }
 
 func getStatementAffectedRowsReportTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string, creatorID int) ([]*store.TaskCheckRunMessage, error) {
-	if !api.IsStatementAffectedRowsReportCheckSupported(instance.Engine) {
+	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-	switch task.Type {
-	case api.TaskDatabaseSchemaUpdate:
-	case api.TaskDatabaseSchemaUpdateSDL:
-	case api.TaskDatabaseSchemaUpdateGhostSync:
-	case api.TaskDatabaseDataUpdate:
-	default:
+	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
 	payload, err := json.Marshal(&api.TaskCheckDatabaseStatementAffectedRowsReportPayload{
