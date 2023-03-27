@@ -463,7 +463,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
-			if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, instance, taskPatched); err != nil {
+			if err := s.triggerDatabaseStatementAdviseTask(ctx, taskPatched); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 			}
 		}
@@ -544,7 +544,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	return nil
 }
 
-func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, instance *store.InstanceMessage, task *store.TaskMessage) error {
+func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, task *store.TaskMessage) error {
 	dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 	if err != nil {
 		return err

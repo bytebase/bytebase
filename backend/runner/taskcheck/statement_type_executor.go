@@ -35,7 +35,7 @@ type StatementTypeExecutor struct {
 }
 
 // Run will run the task check database connector executor once.
-func (exec *StatementTypeExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
+func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error) {
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err

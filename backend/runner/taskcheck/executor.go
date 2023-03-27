@@ -13,7 +13,7 @@ type Executor interface {
 	Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) (result []api.TaskCheckResult, err error)
 }
 
-// TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
+// TaskPayload is the task payload.
 type TaskPayload struct {
 	Statement string `json:"statement,omitempty"`
 	SheetID   int    `json:"sheetId,omitempty"`

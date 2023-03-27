@@ -282,7 +282,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
 
-	create, err = getSyntaxCheckTaskCheck(task, instance, dbSchema, statement)
+	create, err = getSyntaxCheckTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
@@ -290,7 +290,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	create, err = s.getSQLReviewTaskCheck(task, instance, dbSchema, statement)
+	create, err = s.getSQLReviewTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
@@ -298,7 +298,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	create, err = getStmtTypeTaskCheck(task, instance, dbSchema, statement)
+	create, err = getStmtTypeTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
@@ -334,7 +334,7 @@ func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMes
 	return s.store.CreateTaskCheckRun(ctx, createList...)
 }
 
-func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
+func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
 	if !api.IsStatementTypeCheckSupported(instance.Engine) {
 		return nil, nil
 	}
@@ -347,7 +347,7 @@ func getStmtTypeTaskCheck(task *store.TaskMessage, instance *store.InstanceMessa
 	}, nil
 }
 
-func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
+func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
@@ -360,7 +360,7 @@ func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store
 	}, nil
 }
 
-func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*store.TaskCheckRunMessage, error) {
+func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
 	if !api.IsSyntaxCheckSupported(instance.Engine) {
 		return nil, nil
 	}
