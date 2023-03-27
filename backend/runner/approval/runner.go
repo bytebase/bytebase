@@ -118,13 +118,18 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						log.Error("failed to get approval template", zap.Int64("riskLevel", riskLevel), zap.String("issueType", string(issue.Type)), zap.Error(err))
 						continue
 					}
+
 					payload = &storepb.IssuePayload{
 						Approval: &storepb.IssuePayloadApproval{
 							ApprovalFindingDone: true,
-							ApprovalTemplates:   []*storepb.ApprovalTemplate{approvalTemplate},
+							ApprovalTemplates:   nil,
 							Approvers:           nil,
 						},
 					}
+					if approvalTemplate != nil {
+						payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
+					}
+
 					payloadBytes, err := protojson.Marshal(payload)
 					if err != nil {
 						log.Error("failed to marshal issue payload", zap.Error(err))
