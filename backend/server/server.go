@@ -323,8 +323,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.HidePort = true
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Skipper: func(c echo.Context) bool {
-			// Skip grpc calls.
-			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.")
+			// Skip grpc and webhook calls.
+			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
+				strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix) ||
+				strings.HasPrefix(c.Request().URL.Path, "/api/sheet/")
 		},
 		Timeout: 30 * time.Second,
 	}))
