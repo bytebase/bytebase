@@ -264,7 +264,9 @@ export type TaskCheckType =
   | "bb.task-check.instance.migration-schema"
   | "bb.task-check.database.ghost.sync"
   | "bb.task-check.issue.lgtm"
-  | "bb.task-check.pitr.mysql";
+  | "bb.task-check.pitr.mysql"
+  | "bb.task-check.database.statement.type.report"
+  | "bb.task-check.database.statement.affected-rows.report";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;
