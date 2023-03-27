@@ -314,6 +314,14 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
+	create, err = getStatementAffectedRowsReportTaskCheck(task, instance, dbSchema, statement, creatorID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to schedule statement affected rows report task check")
+	}
+	if create != nil {
+		createList = append(createList, create...)
+	}
+
 	return createList, nil
 }
 
@@ -437,11 +445,10 @@ func (*Scheduler) getPITRTaskCheck(task *store.TaskMessage, creatorID int) ([]*s
 }
 
 func getStatementTypeReportTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string, creatorID int) ([]*store.TaskCheckRunMessage, error) {
-	if !api.IsStatementTypeReportCheckSupported(instance.Engine) {
+	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-	// TBD(p0ny): approval, maybe change to issue type
-	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
 	payload, err := json.Marshal(&api.TaskCheckDatabaseStatementTypeReportPayload{
@@ -460,6 +467,34 @@ func getStatementTypeReportTaskCheck(task *store.TaskMessage, instance *store.In
 			CreatorID: creatorID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementTypeReport,
+			Payload:   string(payload),
+		},
+	}, nil
+}
+
+func getStatementAffectedRowsReportTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string, creatorID int) ([]*store.TaskCheckRunMessage, error) {
+	if !api.IsTaskCheckReportSupported(instance.Engine) {
+		return nil, nil
+	}
+	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
+		return nil, nil
+	}
+	payload, err := json.Marshal(&api.TaskCheckDatabaseStatementAffectedRowsReportPayload{
+		Statement: statement,
+		DbType:    instance.Engine,
+
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal payload")
+	}
+
+	return []*store.TaskCheckRunMessage{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementAffectedRowsReport,
 			Payload:   string(payload),
 		},
 	}, nil
