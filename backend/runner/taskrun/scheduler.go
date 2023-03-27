@@ -448,20 +448,10 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			return err
 		}
 		if api.IsSyntaxCheckSupported(instance.Engine) {
-			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-				Statement: *taskPatch.Statement,
-				DbType:    instance.Engine,
-				Charset:   dbSchema.Metadata.CharacterSet,
-				Collation: dbSchema.Metadata.Collation,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
-			}
 			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
 				CreatorID: api.SystemBotID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementSyntax,
-				Payload:   string(payload),
 			}); err != nil {
 				// It's OK if we failed to trigger a check, just emit an error log
 				log.Error("Failed to trigger syntax check after changing the task statement",
@@ -473,26 +463,16 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
-			if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, instance, taskPatched); err != nil {
+			if err := s.triggerDatabaseStatementAdviseTask(ctx, taskPatched); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 			}
 		}
 
 		if api.IsStatementTypeCheckSupported(instance.Engine) {
-			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
-				Statement: *taskPatch.Statement,
-				DbType:    instance.Engine,
-				Charset:   dbSchema.Metadata.CharacterSet,
-				Collation: dbSchema.Metadata.Collation,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
-			}
 			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
 				CreatorID: api.SystemBotID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementType,
-				Payload:   string(payload),
 			}); err != nil {
 				// It's OK if we failed to trigger a check, just emit an error log
 				log.Error("Failed to trigger statement type check after changing the task statement",
@@ -564,7 +544,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	return nil
 }
 
-func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, instance *store.InstanceMessage, task *store.TaskMessage) error {
+func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, task *store.TaskMessage) error {
 	dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 	if err != nil {
 		return err
@@ -573,21 +553,10 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 		return errors.Errorf("database schema ID not found %v", task.DatabaseID)
 	}
 
-	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-		Statement: statement,
-		DbType:    instance.Engine,
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-	}
-
 	if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskID:    task.ID,
 		Type:      api.TaskCheckDatabaseStatementAdvise,
-		Payload:   string(payload),
 	}); err != nil {
 		// It's OK if we failed to trigger a check, just emit an error log
 		log.Error("Failed to trigger statement advise task after changing task statement",
