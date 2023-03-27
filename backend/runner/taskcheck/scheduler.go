@@ -17,7 +17,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -256,10 +255,6 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 		createList = append(createList, create...)
 	}
 
-	statement, err := utils.GetTaskStatement(task.Payload)
-	if err != nil {
-		return nil, err
-	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
