@@ -127,7 +127,7 @@ export function taskCheckRunSummary(task?: Task): TaskCheckRunSummary {
         summary.runningCount++;
         break;
       case "DONE":
-        for (const result of checkRun.result.resultList) {
+        for (const result of checkRun.result.resultList ?? []) {
           switch (result.status) {
             case "SUCCESS":
               summary.successCount++;
