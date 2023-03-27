@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -11,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -20,13 +23,15 @@ import (
 // ReviewService implements the review service.
 type ReviewService struct {
 	v1pb.UnimplementedReviewServiceServer
-	store *store.Store
+	store           *store.Store
+	activityManager *activity.Manager
 }
 
 // NewReviewService creates a new ReviewService.
-func NewReviewService(store *store.Store) *ReviewService {
+func NewReviewService(store *store.Store, activityManager *activity.Manager) *ReviewService {
 	return &ReviewService{
-		store: store,
+		store:           store,
+		activityManager: activityManager,
 	}
 }
 
@@ -110,6 +115,33 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+	}
+
+	// It's ok to fail to create activity.
+	if err := func() error {
+		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
+			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
+				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
+					Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED,
+				},
+			},
+			IssueName: issue.Title,
+		})
+		if err != nil {
+			return err
+		}
+		create := &api.ActivityCreate{
+			CreatorID:   principalID,
+			ContainerID: issue.UID,
+			Type:        api.ActivityIssueCommentCreate,
+			Level:       api.ActivityInfo,
+			Comment:     "",
+			Payload:     string(activityPayload),
+		}
+		_, err = s.activityManager.CreateActivity(ctx, create, &activity.Metadata{})
+		return err
+	}(); err != nil {
+		log.Error("failed to create activity after approving review", zap.Error(err))
 	}
 
 	review, err := convertToReview(ctx, s.store, issue)
