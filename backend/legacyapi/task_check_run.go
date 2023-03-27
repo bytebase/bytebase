@@ -69,6 +69,8 @@ const (
 	TaskCheckDatabaseStatementType TaskCheckType = "bb.task-check.database.statement.type"
 	// TaskCheckDatabaseStatementTypeReport is the task check type for statement type report.
 	TaskCheckDatabaseStatementTypeReport TaskCheckType = "bb.task-check.database.statement.type.report"
+	// TaskCheckDatabaseStatementAffectedRowsReport is the task check type for statement affected rows.
+	TaskCheckDatabaseStatementAffectedRowsReport TaskCheckType = "bb.task-check.database.statement.affected-rows.report"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
@@ -106,6 +108,16 @@ type TaskCheckDatabaseStatementTypePayload struct {
 
 // TaskCheckDatabaseStatementTypeReportPayload is the task check payload for SQL statement type report.
 type TaskCheckDatabaseStatementTypeReportPayload struct {
+	Statement string  `json:"statement,omitempty"`
+	DbType    db.Type `json:"dbType,omitempty"`
+
+	// MySQL special fields.
+	Charset   string `json:"charset,omitempty"`
+	Collation string `json:"collation,omitempty"`
+}
+
+// TaskCheckDatabaseStatementAffectedRowsReportPayload is the task check payload for SQL statement affected rows report.
+type TaskCheckDatabaseStatementAffectedRowsReportPayload struct {
 	Statement string  `json:"statement,omitempty"`
 	DbType    db.Type `json:"dbType,omitempty"`
 
@@ -204,6 +216,16 @@ func IsStatementTypeCheckSupported(dbType db.Type) bool {
 
 // IsStatementTypeReportCheckSupported checks if statement type report supports the engine type.
 func IsStatementTypeReportCheckSupported(dbType db.Type) bool {
+	switch dbType {
+	case db.Postgres, db.TiDB, db.MySQL:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsStatementAffectedRowsReportCheckSupported checks if statement affected rows report supports the engine type.
+func IsStatementAffectedRowsReportCheckSupported(dbType db.Type) bool {
 	switch dbType {
 	case db.Postgres, db.TiDB, db.MySQL:
 		return true
