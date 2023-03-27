@@ -319,7 +319,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 				args := args
 				affectedRows, err := strconv.ParseInt(affectedRowsReportResult[i].Content, 10, 64)
 				if err != nil {
-					log.Warn("", zap.Error(err))
+					log.Warn("failed to convert affectedRows to int64, will use 0 as the value of affected_rows", zap.Error(err))
 				} else {
 					args["affected_rows"] = affectedRows
 				}
