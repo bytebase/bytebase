@@ -71,7 +71,6 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to store license: %v", err.Error())
 	}
 
-	// s.licenseService.RefreshCache(ctx)
 	return s.loadSubscription(ctx)
 }
 
