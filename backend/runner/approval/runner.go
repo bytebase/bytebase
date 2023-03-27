@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -103,11 +104,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					riskLevel, err := getIssueRiskLevel(ctx, r.store, issue, risks)
+					riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
 					if err != nil {
 						return err
 					}
-					if riskLevel == 0 {
+					if !done {
 						continue
 					}
 					approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
@@ -179,42 +180,94 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func getIssueRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, error) {
+func getIssueRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
 	tasks, err := s.ListTasks(ctx, &api.TaskFind{
 		PipelineID: &issue.PipelineUID,
 		StatusList: &[]api.TaskStatus{api.TaskPendingApproval},
 	})
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
 	var maxRiskLevel int64
 	for _, task := range tasks {
-		riskLevel, err := getTaskRiskLevel(ctx, s, issue, task, risks)
+		riskLevel, done, err := getTaskRiskLevel(ctx, s, issue, task, risks)
 		if err != nil {
-			return 0, err
+			return 0, false, errors.Wrapf(err, "failed to get task risk level for task %v", task.ID)
+		}
+		if !done {
+			return 0, false, nil
 		}
 		if riskLevel > maxRiskLevel {
 			maxRiskLevel = riskLevel
 		}
 	}
 
-	return maxRiskLevel, nil
+	return maxRiskLevel, true, nil
 }
 
-func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, task *store.TaskMessage, risks []*store.RiskMessage) (int64, error) {
+func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessage, taskCheckType api.TaskCheckType) ([]api.TaskCheckResult, bool, error) {
+	reports, err := s.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{
+		TaskID: &task.ID,
+		Type:   &taskCheckType,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	if len(reports) == 0 {
+		return nil, false, nil
+	}
+	lastReport := reports[0]
+	for i, report := range reports {
+		if report.ID > lastReport.ID {
+			lastReport = reports[i]
+		}
+	}
+	if lastReport.Status != api.TaskCheckRunDone {
+		return nil, false, nil
+	}
+
+	payload := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(lastReport.Payload), payload); err != nil {
+		return nil, false, err
+	}
+	return payload.ResultList, true, nil
+}
+
+func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, task *store.TaskMessage, risks []*store.RiskMessage) (int64, bool, error) {
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &task.InstanceID,
 	})
 	if err != nil {
-		return 0, err
+		return 0, false, err
+	}
+
+	// TODO(p0ny): not all tasks have these reports
+	affectedRowsReportResult, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementAffectedRowsReport)
+	if err != nil {
+		return 0, false, err
+	}
+	if !done {
+		return 0, false, nil
+	}
+
+	statementTypeReportResult, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementTypeReport)
+	if err != nil {
+		return 0, false, err
+	}
+	if !done {
+		return 0, false, nil
+	}
+
+	if len(affectedRowsReportResult) != len(statementTypeReportResult) {
+		return 0, false, errors.New("affected rows report result and statement type report result length mismatch")
 	}
 
 	var databaseName string
 	if task.Type == api.TaskDatabaseCreate {
 		payload := &api.TaskDatabaseCreatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-			return 0, err
+			return 0, false, err
 		}
 		databaseName = payload.DatabaseName
 	} else {
@@ -222,20 +275,21 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 			UID: task.DatabaseID,
 		})
 		if err != nil {
-			return 0, err
+			return 0, false, err
 		}
 		databaseName = database.DatabaseName
 	}
 
 	e, err := cel.NewEnv(predefinedVariables...)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
 	// higher risks go first
 	sort.Slice(risks, func(i, j int) bool {
 		return risks[i].Level > risks[j].Level
 	})
+	var maxRisk int64
 	for _, risk := range risks {
 		if risk.Source != issueTypeToRiskSource[issue.Type] {
 			continue
@@ -244,31 +298,60 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		ast := cel.ParsedExprToAst(risk.Expression)
 		prg, err := e.Program(ast)
 		if err != nil {
-			return 0, err
+			return 0, false, err
 		}
-
-		// TODO(p0ny): approval, impl other factors.
-		res, _, err := prg.Eval(map[string]interface{}{
+		args := map[string]interface{}{
 			"environment_id": instance.EnvironmentID,
 			"project_id":     issue.Project.ResourceID,
 			"database_name":  databaseName,
 			"db_engine":      instance.Engine,
 			"sql_type":       "UNKNOWN",
 			"affected_rows":  0,
-		})
-		if err != nil {
-			return 0, err
 		}
 
-		val, err := res.ConvertToNative(reflect.TypeOf(false))
-		if err != nil {
-			return 0, errors.Wrap(err, "expect bool result")
-		}
-		if boolVal, ok := val.(bool); ok && boolVal {
-			return risk.Level, nil
+		// eval for each statement
+		if len(affectedRowsReportResult) > 0 {
+			for i := range affectedRowsReportResult {
+				args := args
+				affectedRows, err := strconv.ParseInt(affectedRowsReportResult[i].Content, 10, 64)
+				if err != nil {
+					log.Warn("", zap.Error(err))
+				} else {
+					args["affected_rows"] = affectedRows
+				}
+				args["sql_type"] = statementTypeReportResult[i].Content
+
+				res, _, err := prg.Eval(args)
+				if err != nil {
+					return 0, false, err
+				}
+
+				val, err := res.ConvertToNative(reflect.TypeOf(false))
+				if err != nil {
+					return 0, false, errors.Wrap(err, "expect bool result")
+				}
+				if boolVal, ok := val.(bool); ok && boolVal {
+					if risk.Level > maxRisk {
+						maxRisk = risk.Level
+					}
+				}
+			}
+		} else {
+			res, _, err := prg.Eval(args)
+			if err != nil {
+				return 0, false, err
+			}
+			val, err := res.ConvertToNative(reflect.TypeOf(false))
+			if err != nil {
+				return 0, false, errors.Wrap(err, "expect bool result")
+			}
+			if boolVal, ok := val.(bool); ok && boolVal {
+				return risk.Level, true, nil
+			}
 		}
 	}
-	return 0, nil
+
+	return maxRisk, true, nil
 }
 
 func convertToSource(source store.RiskSource) v1pb.Risk_Source {
