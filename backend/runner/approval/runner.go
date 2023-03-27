@@ -3,6 +3,7 @@ package approval
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"sort"
 	"sync"
@@ -227,16 +228,14 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		return 0, err
 	}
 
-	pass, err := utils.PassAllCheck(task, api.TaskCheckStatusWarn, task.TaskCheckRunRawList, instance.Engine)
-	if err != nil {
-		return 0, err
-	}
-	if !pass {
-		return 0, nil
-	}
-
 	var databaseName string
-	if task.Type != api.TaskDatabaseCreate {
+	if task.Type == api.TaskDatabaseCreate {
+		payload := &api.TaskDatabaseCreatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+			return 0, err
+		}
+		databaseName = payload.DatabaseName
+	} else {
 		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			UID: task.DatabaseID,
 		})
