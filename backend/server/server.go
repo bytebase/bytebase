@@ -63,6 +63,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/anomaly"
+	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -140,6 +141,7 @@ type Server struct {
 	AnomalyScanner     *anomaly.Scanner
 	ApplicationRunner  *apprun.Runner
 	RollbackRunner     *rollbackrun.Runner
+	ApprovalRunner     *approval.Runner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *activity.Manager
@@ -397,6 +399,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
+		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory)
 
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -824,6 +827,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.ApprovalRunner.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
