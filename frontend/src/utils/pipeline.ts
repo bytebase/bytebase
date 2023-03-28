@@ -159,7 +159,7 @@ export function activeDatabase(pipeline: Pipeline): Database | undefined {
 
 export type TaskStatusTransitionType =
   | "RUN"
-  | "APPROVE"
+  | "ROLLOUT"
   | "RETRY"
   | "CANCEL"
   | "SKIP"
@@ -186,11 +186,11 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
     },
   ],
   [
-    "APPROVE",
+    "ROLLOUT",
     {
-      type: "APPROVE",
+      type: "ROLLOUT",
       to: "PENDING",
-      buttonName: "common.approve",
+      buttonName: "common.rollout",
       buttonType: "PRIMARY",
     },
   ],
@@ -229,7 +229,7 @@ export const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", ["CANCEL"]],
-  ["PENDING_APPROVAL", ["APPROVE"]],
+  ["PENDING_APPROVAL", ["ROLLOUT"]],
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY"]],

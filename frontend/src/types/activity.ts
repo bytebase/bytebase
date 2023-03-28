@@ -17,6 +17,7 @@ import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 import { Advice } from "./sqlAdvice";
 import { t } from "../plugins/i18n";
+import { ApprovalEvent } from "./review";
 
 export type IssueActivityType =
   | "bb.issue.create"
@@ -117,6 +118,7 @@ export type ActivityIssueCommentCreatePayload = {
   externalApprovalEvent?: ExternalApprovalEvent;
   issueName: string;
   taskRollbackBy?: TaskRollbackBy;
+  approvalEvent?: ApprovalEvent;
 };
 
 export type ActivityIssueFieldUpdatePayload = {

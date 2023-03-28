@@ -51,3 +51,4 @@ export * from "./externalApproval";
 export * from "./mfa";
 export * from "./risk";
 export * from "./workspaceApprovalSetting";
+export * from "./review";

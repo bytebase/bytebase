@@ -244,7 +244,7 @@ export default defineComponent({
           switch ((props.transition as TaskStatusTransition).type) {
             case "RUN":
               return "btn-primary";
-            case "APPROVE":
+            case "ROLLOUT":
               return "btn-primary";
             case "RETRY":
               return "btn-primary";

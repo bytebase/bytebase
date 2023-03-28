@@ -76,8 +76,18 @@ export const useUserStore = defineStore("user", {
     getUserById(id: number) {
       return this.userMapByName.get(getUserNameWithUserId(id));
     },
+    getUserByEmail(email: string) {
+      return [...this.userMapByName.values()].find(
+        (user) => user.email === email
+      );
+    },
   },
 });
+
+export const extractUserEmail = (emailResource: string) => {
+  const matches = emailResource.match(/^user:(.+)$/);
+  return matches?.[1] ?? "";
+};
 
 export const getUserNameWithUserId = (userId: number) => {
   return `${userNamePrefix}${userId}`;
