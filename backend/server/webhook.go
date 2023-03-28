@@ -20,6 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -35,6 +36,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -1392,6 +1394,28 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
 			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID), zap.Error(err))
 			return nil
+		}
+
+		// dismiss stale review, re-find the approval template
+		// it's ok if we failed
+		if err := func() error {
+			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: false,
+				},
+			})
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal issue payload")
+			}
+			payloadStr := string(payloadBytes)
+			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+				Payload: &payloadStr,
+			}, api.SystemBotID); err != nil {
+				return errors.Wrap(err, "failed to update issue payload")
+			}
+			return nil
+		}(); err != nil {
+			log.Warn("Failed to dismiss stale review", zap.Error(err))
 		}
 	}
 	return nil
