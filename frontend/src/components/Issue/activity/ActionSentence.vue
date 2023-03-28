@@ -52,6 +52,9 @@ const renderActionSentence = () => {
           });
         }
       }
+      if (payload.approvalEvent?.status === "APPROVED") {
+        return t("custom-approval.issue-review.approved-issue");
+      }
     }
     const [tid, params] = issueActivityActionSentence(activity);
     return t(tid, params);

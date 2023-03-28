@@ -5,6 +5,10 @@ import type {
   Review_Approver,
 } from "./proto/v1/review_service";
 
+export type ApprovalEvent = {
+  status: "APPROVED";
+};
+
 export type ReviewFlow = {
   template: ApprovalTemplate;
   approvers: Review_Approver[];

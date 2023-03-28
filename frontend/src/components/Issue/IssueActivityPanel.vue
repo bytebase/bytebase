@@ -76,6 +76,17 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="actionIcon(item.activity) == 'approve'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+                    >
+                      <heroicons-outline:thumb-up
+                        class="w-5 h-5 text-control"
+                      />
+                    </div>
+                  </div>
+                </template>
                 <template v-else-if="actionIcon(item.activity) == 'cancel'">
                   <div class="relative pl-0.5">
                     <div
@@ -601,6 +612,11 @@ const actionIcon = (activity: Activity): ActionIconType => {
     activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
   ) {
     return "update";
+  } else if (activity.type === "bb.issue.comment.create") {
+    const payload = activity.payload as ActivityIssueCommentCreatePayload;
+    if (payload.approvalEvent?.status === "APPROVED") {
+      return "approve";
+    }
   }
 
   return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";

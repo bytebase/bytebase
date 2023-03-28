@@ -2210,7 +2210,8 @@
         "note": "Note"
       },
       "you": "You",
-      "generating-approval-flow": "Generating approval flow"
+      "generating-approval-flow": "Generating approval flow",
+      "approved-issue": "Approved issue"
     }
   }
 }

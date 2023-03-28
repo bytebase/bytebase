@@ -79,6 +79,8 @@ const handleConfirmApprove = async (onSuccess: () => void) => {
     await store.approveReview(issue.value);
     onSuccess();
     state.modal = false;
+
+    // notify the issue logic to update issue status
     issueContext.onStatusChanged(true);
   } finally {
     state.loading = false;
