@@ -36,7 +36,7 @@
           >
             <template #viewDoc>
               <a
-                href="https://platform.openai.com/docs/introduction/overview"
+                href="https://platform.openai.com/account/api-keys"
                 class="normal-link"
                 target="_blank"
                 >{{ $t("common.view-doc") }}</a
