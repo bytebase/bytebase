@@ -181,6 +181,9 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 	// If the migration is a data migration, enable the rollback SQL generation and the type of the driver is Oracle, we need to get the rollback SQL before the transaction is committed.
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
 		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, getSetOracleTransactionIDFunc(ctx, task, stores))
+		if err != nil {
+			return "", "", err
+		}
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
 		updatedTask, err := stores.GetTaskV2ByID(ctx, task.ID)
 		if err != nil {
