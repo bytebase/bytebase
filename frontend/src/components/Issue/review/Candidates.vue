@@ -5,6 +5,13 @@
       raw: true,
       showArrow: false,
     }"
+    :theme-overrides="{
+      peers: {
+        Tooltip: {
+          boxShadow: 'none',
+        },
+      },
+    }"
   >
     <div
       v-for="(user, i) in candidates"
@@ -25,9 +32,9 @@
 
     <template #tooltip>
       <div
-        class="w-[12rem] max-h-[18rem] flex flex-col bg-white text-control-light overflow-y-hidden"
+        class="w-[12rem] max-h-[18rem] flex flex-col border rounded bg-white shadow-md text-control-light overflow-y-hidden"
       >
-        <div class="whitespace-nowrap py-2 px-2 border-b textlabel">
+        <div class="whitespace-nowrap pt-3 pb-2 px-2 border-b textlabel">
           {{ approvalNodeGroupValueText(step.step.nodes[0].groupValue!) }}
         </div>
         <div class="flex-1 overflow-auto text-xs">
