@@ -39,17 +39,15 @@ type StatementAffectedRowsReportExecutor struct {
 
 // Run will run the task check statement affected rows report executor once.
 func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
-	switch task.Type {
-	case api.TaskDatabaseSchemaUpdate:
-	case api.TaskDatabaseSchemaUpdateSDL:
-	case api.TaskDatabaseSchemaUpdateGhostSync:
-	case api.TaskDatabaseDataUpdate:
-	default:
+	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
 	payload := &api.TaskCheckDatabaseStatementAffectedRowsReportPayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, err
+	}
+	if !api.IsTaskCheckReportSupported(payload.DbType) {
+		return nil, nil
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
