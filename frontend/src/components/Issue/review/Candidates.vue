@@ -25,18 +25,28 @@
 
     <template #tooltip>
       <div
-        class="w-[12rem] max-h-[18rem] bg-white text-control-light py-1 px-2 overflow-auto divide-y"
+        class="w-[12rem] max-h-[18rem] flex flex-col bg-white text-control-light overflow-y-hidden"
       >
-        <div
-          v-for="user in candidates"
-          :key="user.name"
-          class="py-1"
-          :class="[user.name === currentUser.name && 'font-bold']"
-        >
-          <span class="whitespace-nowrap">{{ user.title }}</span>
-          <span v-if="user.name === currentUser.name" class="ml-1">
-            ({{ $t("custom-approval.issue-review.you") }})
-          </span>
+        <div class="whitespace-nowrap py-2 px-2 border-b textlabel">
+          {{ approvalNodeGroupValueText(step.step.nodes[0].groupValue!) }}
+        </div>
+        <div class="flex-1 overflow-auto text-xs">
+          <div
+            v-for="user in candidates"
+            :key="user.name"
+            class="flex items-center py-1.5 px-2"
+            :class="[user.name === currentUser.name && 'font-bold']"
+          >
+            <PrincipalAvatar
+              :principal="convertUserToPrincipal(user)"
+              size="SMALL"
+              class="mr-2"
+            />
+            <span class="whitespace-nowrap">{{ user.title }}</span>
+            <span v-if="user.name === currentUser.name" class="ml-1">
+              ({{ $t("custom-approval.issue-review.you") }})
+            </span>
+          </div>
         </div>
       </div>
     </template>
@@ -44,15 +54,20 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { NEllipsis } from "naive-ui";
 
-import { useAuthStore } from "@/store";
-import { User } from "@/types/proto/v1/auth_service";
+import { convertUserToPrincipal, useAuthStore } from "@/store";
+import { WrappedReviewStep } from "@/types";
+import { approvalNodeGroupValueText } from "@/utils";
+import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 
 const { currentUser } = storeToRefs(useAuthStore());
 
-defineProps<{
-  candidates: User[];
+const props = defineProps<{
+  step: WrappedReviewStep;
 }>();
+
+const candidates = computed(() => props.step.candidates);
 </script>
