@@ -63,7 +63,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		protocol = "unix"
 	}
 
-	params := []string{"multiStatements=true"}
+	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
 
 	port := connCfg.Port
 	if port == "" {
