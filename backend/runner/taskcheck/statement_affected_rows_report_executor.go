@@ -53,6 +53,17 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, taskCheck
 	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
+	if payload.SheetID > 0 {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusSuccess,
+				Namespace: api.BBNamespace,
+				Code:      common.Ok.Int(),
+				Title:     "Large SQL affected rows report is disabled",
+				Content:   "",
+			},
+		}, nil
+	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err

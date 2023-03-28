@@ -45,7 +45,17 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, taskCheckRun *sto
 	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-
+	if payload.SheetID > 0 {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusSuccess,
+				Namespace: api.BBNamespace,
+				Code:      common.Ok.Int(),
+				Title:     "Large SQL affected rows report is disabled",
+				Content:   "",
+			},
+		}, nil
+	}
 	var charset, collation string
 	if task.DatabaseID != nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
