@@ -30,22 +30,37 @@ type StatementTypeReportExecutor struct {
 }
 
 // Run will run the task check statement type report executor once.
-func (*StatementTypeReportExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
+func (s *StatementTypeReportExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
 	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
-	payload := &api.TaskCheckDatabaseStatementTypeReportPayload{}
+	payload := &TaskPayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, err
 	}
-	if !api.IsTaskCheckReportSupported(payload.DbType) {
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-	switch payload.DbType {
+
+	var charset, collation string
+	if task.DatabaseID != nil {
+		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
+		if err != nil {
+			return nil, err
+		}
+		charset = dbSchema.Metadata.CharacterSet
+		collation = dbSchema.Metadata.Collation
+	}
+
+	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementTypeForPostgres(payload.Statement)
 	case db.MySQL:
-		return reportStatementTypeForMySQL(payload.Statement, payload.Charset, payload.Collation)
+		return reportStatementTypeForMySQL(payload.Statement, charset, collation)
 	default:
 		return nil, errors.New("unsupported db type")
 	}

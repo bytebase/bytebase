@@ -42,22 +42,25 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, taskCheck
 	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
-	payload := &api.TaskCheckDatabaseStatementAffectedRowsReportPayload{}
+	payload := &TaskPayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, err
-	}
-	if !api.IsTaskCheckReportSupported(payload.DbType) {
-		return nil, nil
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
 	}
+	if !api.IsTaskCheckReportSupported(instance.Engine) {
+		return nil, nil
+	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
-
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, err
+	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
 		return nil, err
@@ -69,11 +72,11 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, taskCheck
 		return nil, err
 	}
 
-	switch payload.DbType {
+	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, payload.Statement)
 	case db.MySQL:
-		return reportStatementAffectedRowsForMySQL(ctx, sqlDB, payload.Statement, payload.Charset, payload.Collation)
+		return reportStatementAffectedRowsForMySQL(ctx, sqlDB, payload.Statement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
 	default:
 		return nil, errors.New("unsupported db type")
 	}
