@@ -46,50 +46,7 @@
               ({{ $t("custom-approval.issue-review.you") }})
             </span>
           </NEllipsis>
-          <!-- <Candidates v-else :candidates="step.candidates" /> -->
-          <NEllipsis
-            v-else
-            class="flex-1 truncate"
-            :tooltip="{
-              raw: true,
-              showArrow: false,
-            }"
-          >
-            <div
-              v-for="(user, i) in step.candidates"
-              :key="user.name"
-              class="inline-flex flex-nowrap truncate"
-            >
-              <span
-                :class="user.name === currentUserName && 'font-bold'"
-                class="truncate"
-              >
-                {{ user.title }}
-              </span>
-              <span v-if="user.name === currentUserName" class="font-bold ml-1">
-                ({{ $t("custom-approval.issue-review.you") }})
-              </span>
-              <span v-if="i < step.candidates.length - 1" class="mr-1">,</span>
-            </div>
-
-            <template #tooltip>
-              <div
-                class="w-[12rem] max-h-[18rem] bg-white text-control-light py-1 px-2 overflow-auto divide-y"
-              >
-                <div
-                  v-for="user in step.candidates"
-                  :key="user.name"
-                  class="py-1"
-                  :class="[user.name === currentUserName && 'font-bold']"
-                >
-                  <span class="whitespace-nowrap">{{ user.title }}</span>
-                  <span v-if="user.name === currentUserName" class="ml-1">
-                    ({{ $t("custom-approval.issue-review.you") }})
-                  </span>
-                </div>
-              </div>
-            </template>
-          </NEllipsis>
+          <Candidates v-else :candidates="step.candidates" />
         </div>
       </div>
 
@@ -119,6 +76,7 @@ import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
 import { ApprovalStep } from "@/types/proto/v1/review_service";
 import { User } from "@/types/proto/v1/auth_service";
+import Candidates from "./Candidates.vue";
 
 const userStore = useUserStore();
 const issueLogic = useIssueLogic();
