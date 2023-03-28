@@ -1,5 +1,6 @@
 import { useI18n } from "vue-i18n";
 import planData from "./plan.yaml";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
@@ -39,12 +40,6 @@ export type FeatureType =
   // Plugins
   | "bb.feature.plugin.openai";
 
-export enum PlanType {
-  FREE = 0,
-  TEAM = 1,
-  ENTERPRISE = 2,
-}
-
 export const planTypeToString = (planType: PlanType): string => {
   switch (planType) {
     case PlanType.FREE:
@@ -53,6 +48,8 @@ export const planTypeToString = (planType: PlanType): string => {
       return "team";
     case PlanType.ENTERPRISE:
       return "enterprise";
+    default:
+      return "";
   }
 };
 

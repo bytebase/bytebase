@@ -40,10 +40,6 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}
 
-	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
-	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
-	}
 	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
@@ -57,6 +53,29 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	}
 	if environment == nil {
 		return nil, errors.Errorf("environment %q not found", database.EnvironmentID)
+	}
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, err
+	}
+	payload := &TaskPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, err
+	}
+	if payload.SheetID > 0 {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusSuccess,
+				Namespace: api.AdvisorNamespace,
+				Code:      common.Ok.Int(),
+				Title:     "Large SQL review policy is disabled",
+				Content:   "",
+			},
+		}, nil
 	}
 
 	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
@@ -75,20 +94,16 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 	}
 
-	catalog, err := e.store.NewCatalog(ctx, *task.DatabaseID, payload.DbType, task.GetSyntaxMode())
+	catalog, err := e.store.NewCatalog(ctx, *task.DatabaseID, instance.Engine, task.GetSyntaxMode())
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
 
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(payload.DbType))
+	dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 	if err != nil {
 		return nil, err
 	}
 
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return nil, err
-	}
 	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
 		return nil, err
@@ -100,8 +115,8 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	}
 
 	adviceList, err := advisor.SQLReviewCheck(payload.Statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:   payload.Charset,
-		Collation: payload.Collation,
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
 		DbType:    dbType,
 		Catalog:   catalog,
 		Driver:    connection,

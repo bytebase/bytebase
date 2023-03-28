@@ -102,8 +102,6 @@ p, DBA, /setting, GET
 p, DBA, /label, GET
 p, DBA, /label/{labelID}, PATCH
 p, DBA, /feature, GET
-p, DBA, /subscription, GET
-p, DBA, /subscription/trial, POST
 p, DBA, /sheet, POST
 p, DBA, /sheet/my, GET
 p, DBA, /sheet/shared, GET
