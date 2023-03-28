@@ -4,6 +4,7 @@ package approval
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -25,8 +26,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
-
-const approvalRunnerInterval = 30 * time.Second
 
 var riskFactors = []cel.EnvOption{
 	// string factors
@@ -78,9 +77,10 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile confi
 
 // Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(approvalRunnerInterval)
+	ticker := time.NewTicker(r.profile.ApprovalRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
+	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", r.profile.ApprovalRunnerInterval))
 	for {
 		select {
 		case <-ticker.C:
