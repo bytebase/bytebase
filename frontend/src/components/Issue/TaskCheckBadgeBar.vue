@@ -190,7 +190,7 @@ export default defineComponent({
     // Returns the most severe status
     const taskCheckStatus = (taskCheckRun: TaskCheckRun): TaskCheckStatus => {
       let value: TaskCheckStatus = "SUCCESS";
-      for (const result of taskCheckRun.result.resultList) {
+      for (const result of taskCheckRun.result.resultList ?? []) {
         if (result.status == "ERROR") {
           return "ERROR";
         }
