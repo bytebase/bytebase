@@ -73,6 +73,9 @@ export const useActuatorStore = defineStore("actuator", {
       return serverInfo;
     },
     async tryToRemindRelease(): Promise<boolean> {
+      if (this.serverInfo?.saas ?? false) {
+        return false;
+      }
       if (!this.releaseInfo.latest) {
         const relase = await this.fetchLatestRelease();
         this.releaseInfo.latest = relase;
