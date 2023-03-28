@@ -792,6 +792,21 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			continue
 		}
 
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		if err != nil {
+			return err
+		}
+		if issue != nil {
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				log.Warn("taskrun scheduler: failed to check if the issue is approved when scheduling auto-deployed tasks", zap.Int("taskID", task.ID), zap.Int("issueID", issue.UID), zap.Error(err))
+				continue
+			}
+			if !approved {
+				continue
+			}
+		}
+
 		taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
 		if err != nil {
 			return err
@@ -901,7 +916,7 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 	}
 
 	if issue != nil {
-		if err := s.onTaskPatched(ctx, issue, taskPatched); err != nil {
+		if err := s.onTaskStatusPatched(ctx, issue, taskPatched); err != nil {
 			return err
 		}
 	}
@@ -1183,7 +1198,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	return nil
 }
 
-func (s *Scheduler) onTaskPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
+func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
 	stages, err := s.store.ListStageV2(ctx, taskPatched.PipelineID)
 	if err != nil {
 		return err

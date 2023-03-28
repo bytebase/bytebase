@@ -209,6 +209,18 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			Payload:       issuePatch.Payload,
 		}
 
+		// If we are to set AssigneeNeedAttention to true
+		// make sure that CI approval is finished.
+		if issuePatch.AssigneeNeedAttention != nil && *issuePatch.AssigneeNeedAttention {
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+			}
+			if !approved {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention because the issue is not approved")
+			}
+		}
+
 		if issuePatch.AssigneeID != nil {
 			assignee, err := s.store.GetUserByID(ctx, *issuePatch.AssigneeID)
 			if err != nil {

@@ -159,6 +159,14 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								// Approve stage.
 								if err := func() error {
 									// TODO(d): optimize the active stage tasks.
+									approved, err := utils.CheckIssueApproved(issue)
+									if err != nil {
+										return errors.Wrap(err, "failed to check if issue is approved")
+									}
+									if !approved {
+										return nil
+									}
+
 									var taskIDList []int
 									var tasks []*store.TaskMessage
 									stageTasks, err := r.store.ListTasks(ctx, &api.TaskFind{PipelineID: &activeStage.PipelineID, StageID: &activeStage.ID})
@@ -282,6 +290,7 @@ func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *s
 		pendingApprovalCount := 0
 		tasks, err := r.store.ListTasks(ctx, &api.TaskFind{PipelineID: &stage.PipelineID, StageID: &stage.ID})
 		if err != nil {
+			log.Warn("apprun runner: failed to list tasks", zap.Int("issueID", issue.UID), zap.Error(err))
 			return false
 		}
 		for _, task := range tasks {
@@ -291,6 +300,14 @@ func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *s
 		}
 		if pendingApprovalCount == 0 {
 			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
+			return true
+		}
+		approved, err := utils.CheckIssueApproved(issue)
+		if err != nil {
+			log.Warn("apprun runner: failed to check if issue is approved", zap.Int("issueID", issue.UID), zap.Error(err))
+			return false
+		}
+		if !approved {
 			return true
 		}
 		return false
@@ -399,6 +416,14 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason
 }
 
 func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.IssueMessage, stage *store.StageMessage, oldApproval *store.ExternalApprovalMessage) (bool, error) {
+	approved, err := utils.CheckIssueApproved(issue)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to check if issue is approved")
+	}
+	if !approved {
+		return false, nil
+	}
+
 	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
 	if err != nil {
 		return false, err
@@ -571,6 +596,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 	// 1. the approval policy of the stage environment is MANUAL_APPROVAL_ALWAYS.
 	// 2. the stage has one or more PENDING_APPROVAL tasks.
 	// 3. all task checks of the stage are done and the results have no errors.
+	// 4. the issue is approved.
 	ok, err := r.shouldCreateExternalApproval(ctx, issue, activeStage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))

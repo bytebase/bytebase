@@ -294,19 +294,20 @@ func (ctl *controller) initWorkspaceProfile() error {
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
 func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                 testReleaseMode,
-		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:             port + 1,
-		DatastorePort:        port + 2,
-		SampleDatabasePort:   port + 3,
-		PgUser:               "bbtest",
-		Readonly:             readOnly,
-		DataDir:              dataDir,
-		ResourceDir:          resourceDir,
-		AppRunnerInterval:    1 * time.Second,
-		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
-		FeishuAPIURL:         feishuAPIURL,
+		Mode:                   testReleaseMode,
+		ExternalURL:            fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:               port + 1,
+		DatastorePort:          port + 2,
+		SampleDatabasePort:     port + 3,
+		PgUser:                 "bbtest",
+		Readonly:               readOnly,
+		DataDir:                dataDir,
+		ResourceDir:            resourceDir,
+		AppRunnerInterval:      1 * time.Second,
+		ApprovalRunnerInterval: 1 * time.Second,
+		BackupRunnerInterval:   10 * time.Second,
+		BackupStorageBackend:   api.BackupStorageBackendLocal,
+		FeishuAPIURL:           feishuAPIURL,
 	}
 }
 
@@ -323,6 +324,7 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 		DataDir:                    dataDir,
 		ResourceDir:                resourceDir,
 		AppRunnerInterval:          1 * time.Second,
+		ApprovalRunnerInterval:     1 * time.Second,
 		BackupRunnerInterval:       10 * time.Second,
 		BackupStorageBackend:       api.BackupStorageBackendLocal,
 		FeishuAPIURL:               feishuAPIURL,
