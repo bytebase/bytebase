@@ -527,6 +527,12 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 					RollbackByTaskId:  int64(originalPayload.TaskRollbackBy.RollbackByTaskID),
 				},
 			}
+		} else if originalPayload.ApprovalEvent != nil {
+			protoPayload.Event = &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
+				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
+					Status: convertAPIApprovalEventStatusToStorePBStatus(originalPayload.ApprovalEvent.Status),
+				},
+			}
 		}
 		newPayload, err := protojson.Marshal(protoPayload)
 		if err != nil {
@@ -584,6 +590,10 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 					RollbackByIssueID: int(event.TaskRollbackBy.RollbackByIssueId),
 					RollbackByTaskID:  int(event.TaskRollbackBy.RollbackByTaskId),
 				}
+			case *storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_:
+				originalPayload.ApprovalEvent = &api.ApprovalEvent{
+					Status: convertStorePBStatusToAPIApprovalEventStatus(event.ApprovalEvent.Status),
+				}
 			}
 		}
 	}
@@ -627,5 +637,27 @@ func convertStorePBTypeToAPIExternalApprovalEventType(eventType storepb.Activity
 		return api.ExternalApprovalTypeFeishu, nil
 	default:
 		return api.ExternalApprovalType(""), nil
+	}
+}
+
+func convertAPIApprovalEventStatusToStorePBStatus(status string) storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status {
+	switch status {
+	case "APPROVED":
+		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED
+	case "PENDING":
+		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING
+	default:
+		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_STATUS_UNSPECIFIED
+	}
+}
+
+func convertStorePBStatusToAPIApprovalEventStatus(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status) string {
+	switch status {
+	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED:
+		return "APPROVED"
+	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING:
+		return "PENDING"
+	default:
+		return ""
 	}
 }

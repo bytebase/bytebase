@@ -3,10 +3,10 @@ package taskcheck
 import (
 	"context"
 	"encoding/json"
-	"errors"
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -30,10 +30,16 @@ type StatementTypeReportExecutor struct {
 }
 
 // Run will run the task check statement type report executor once.
-func (*StatementTypeReportExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, _ *store.TaskMessage) ([]api.TaskCheckResult, error) {
+func (*StatementTypeReportExecutor) Run(_ context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
+	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
+		return nil, nil
+	}
 	payload := &api.TaskCheckDatabaseStatementTypeReportPayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, err
+	}
+	if !api.IsTaskCheckReportSupported(payload.DbType) {
+		return nil, nil
 	}
 	switch payload.DbType {
 	case db.Postgres:

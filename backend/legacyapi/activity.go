@@ -98,11 +98,18 @@ type TaskRollbackBy struct {
 	RollbackByTaskID  int `json:"rollbackByTaskId"`
 }
 
+// ApprovalEvent duplicates store/approval.proto.
+type ApprovalEvent struct {
+	Status string `json:"status"`
+}
+
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
 type ActivityIssueCommentCreatePayload struct {
 	ExternalApprovalEvent *ExternalApprovalEvent `json:"externalApprovalEvent,omitempty"`
 
 	TaskRollbackBy *TaskRollbackBy `json:"taskRollbackBy,omitempty"`
+
+	ApprovalEvent *ApprovalEvent `json:"approvalEvent,omitempty"`
 
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
