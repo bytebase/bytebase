@@ -645,11 +645,7 @@ func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storep
 	return template.Flow.Steps[len(approvers)]
 }
 
-// IsApprovalDone checks if the approval flow is done.
-func IsApprovalDone(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) bool {
-	return FindNextPendingStep(template, approvers) == nil
-}
-
+// CheckIssueApproved checks if the issue is approved.
 func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	issuePayload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
@@ -664,5 +660,5 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	if len(issuePayload.Approval.ApprovalTemplates) != 1 {
 		return false, errors.Errorf("expecting one approval template but got %d", len(issuePayload.Approval.ApprovalTemplates))
 	}
-	return IsApprovalDone(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers), nil
+	return FindNextPendingStep(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers) == nil, nil
 }
