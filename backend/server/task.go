@@ -155,6 +155,21 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if taskStatusPatch.Status == api.TaskPending {
+			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
+			}
+			if issue == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipeline ID %d", task.PipelineID))
+			}
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+			}
+			if !approved {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
+			}
+
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 			if err != nil {
 				return err

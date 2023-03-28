@@ -29,7 +29,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -798,19 +797,13 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			return err
 		}
 		if issue != nil {
-			payload := &storepb.IssuePayload{}
-			if err := json.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return err
-			}
-			if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				log.Warn("taskrun scheduler: failed to check if the issue is approved when scheduling auto-deployed tasks", zap.Int("taskID", task.ID), zap.Int("issueID", issue.UID), zap.Error(err))
 				continue
 			}
-			if len(payload.Approval.ApprovalTemplates) > 0 {
-				if len(payload.Approval.ApprovalTemplates) != 1 {
-					log.Warn("taskrun scheduler: expecting only one approval template", zap.Int("issue", issue.UID), zap.Int("task", task.ID), zap.Any("approval templates", payload.Approval.ApprovalTemplates))
-				} else if !utils.IsApprovalDone(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers) {
-					continue
-				}
+			if !approved {
+				continue
 			}
 		}
 
@@ -923,7 +916,7 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *store.TaskMessage
 	}
 
 	if issue != nil {
-		if err := s.onTaskPatched(ctx, issue, taskPatched); err != nil {
+		if err := s.onTaskStatusPatched(ctx, issue, taskPatched); err != nil {
 			return err
 		}
 	}
@@ -1205,7 +1198,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	return nil
 }
 
-func (s *Scheduler) onTaskPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
+func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
 	stages, err := s.store.ListStageV2(ctx, taskPatched.PipelineID)
 	if err != nil {
 		return err

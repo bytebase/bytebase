@@ -16,6 +16,7 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -647,4 +648,21 @@ func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storep
 // IsApprovalDone checks if the approval flow is done.
 func IsApprovalDone(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) bool {
 	return FindNextPendingStep(template, approvers) == nil
+}
+
+func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
+	issuePayload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal issue payload")
+	}
+	if issuePayload.Approval == nil || !issuePayload.Approval.ApprovalFindingDone {
+		return false, nil
+	}
+	if len(issuePayload.Approval.ApprovalTemplates) == 0 {
+		return true, nil
+	}
+	if len(issuePayload.Approval.ApprovalTemplates) != 1 {
+		return false, errors.Errorf("expecting one approval template but got %d", len(issuePayload.Approval.ApprovalTemplates))
+	}
+	return IsApprovalDone(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers), nil
 }

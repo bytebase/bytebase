@@ -29,6 +29,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find stage %v", stageID)).SetInternal(err)
 		}
+
 		var stage *store.StageMessage
 		for _, v := range stages {
 			if v.ID == stageID {
@@ -55,6 +56,21 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 
 		if stageAllTaskStatusPatch.Status != api.TaskPending {
 			return echo.NewHTTPError(http.StatusBadRequest, "Only support status transitioning from PENDING_APPROVAL to PENDING")
+		}
+
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &pipelineID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", pipelineID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipeline ID %d", pipelineID))
+		}
+		approved, err := utils.CheckIssueApproved(issue)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+		}
+		if !approved {
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
 		}
 
 		pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}

@@ -212,21 +212,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		// If we are to set AssigneeNeedAttention to true
 		// make sure that CI approval is finished.
 		if issuePatch.AssigneeNeedAttention != nil && *issuePatch.AssigneeNeedAttention {
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal issue payload").SetInternal(err)
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
 			}
-			if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
-				return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to true because bytebase is still finding the approval template for the issue")
-			}
-			// payload.Approval.ApprovalTemplates can be empty if we didn't find any approval template.
-			if len(payload.Approval.ApprovalTemplates) != 0 {
-				if len(payload.Approval.ApprovalTemplates) != 1 {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("expecting 1 approval template buf got %d from issue payload", len(payload.Approval.ApprovalTemplates)))
-				}
-				if !utils.IsApprovalDone(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers) {
-					return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to true because the issue is not approved")
-				}
+			if !approved {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention because the issue is not approved")
 			}
 		}
 
