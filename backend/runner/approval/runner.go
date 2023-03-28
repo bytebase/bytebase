@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -330,13 +331,17 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		if len(affectedRowsReportResult) > 0 {
 			for i := range affectedRowsReportResult {
 				args := args
-				affectedRows, err := strconv.ParseInt(affectedRowsReportResult[i].Content, 10, 64)
-				if err != nil {
-					log.Warn("failed to convert affectedRows to int64, will use 0 as the value of affected_rows", zap.Error(err))
-				} else {
-					args["affected_rows"] = affectedRows
+				if affectedRowsReportResult[i].Code == common.Ok.Int() {
+					affectedRows, err := strconv.ParseInt(affectedRowsReportResult[i].Content, 10, 64)
+					if err != nil {
+						log.Warn("failed to convert affectedRows to int64, will use 0 as the value of affected_rows", zap.Error(err))
+					} else {
+						args["affected_rows"] = affectedRows
+					}
 				}
-				args["sql_type"] = statementTypeReportResult[i].Content
+				if statementTypeReportResult[i].Code == common.Ok.Int() {
+					args["sql_type"] = statementTypeReportResult[i].Content
+				}
 
 				res, _, err := prg.Eval(args)
 				if err != nil {
