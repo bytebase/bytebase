@@ -1,30 +1,39 @@
 <template>
-  <div
-    v-if="showCancelBanner"
-    class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
-  >
-    {{ $t("common.canceled") }}
-  </div>
-  <div
-    v-else-if="showSuccessBanner"
-    class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
-  >
-    {{ $t("common.done") }}
-  </div>
-  <div
-    v-else-if="showPendingApproval"
-    class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
-  >
-    {{ $t("issue.waiting-approval") }}
-  </div>
-  <div
-    v-else-if="showEarliestAllowedTimeBanner"
-    class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
-  >
-    {{
-      $t("issue.waiting-earliest-allowed-time", { time: earliestAllowedTime })
-    }}
-  </div>
+  <template v-if="showPendingReview">
+    <div
+      class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
+    >
+      {{ $t("issue.waiting-for-review") }}
+    </div>
+  </template>
+  <template v-else>
+    <div
+      v-if="showCancelBanner"
+      class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
+    >
+      {{ $t("common.canceled") }}
+    </div>
+    <div
+      v-else-if="showSuccessBanner"
+      class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
+    >
+      {{ $t("common.done") }}
+    </div>
+    <div
+      v-else-if="showPendingRollout"
+      class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
+    >
+      {{ $t("issue.waiting-to-roll-out") }}
+    </div>
+    <div
+      v-else-if="showEarliestAllowedTimeBanner"
+      class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
+    >
+      {{
+        $t("issue.waiting-earliest-allowed-time", { time: earliestAllowedTime })
+      }}
+    </div>
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -34,8 +43,16 @@ import dayjs from "dayjs";
 import { Issue } from "@/types";
 import { activeTask } from "@/utils";
 import { useIssueLogic } from "./logic";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 
-const issue = useIssueLogic().issue as Ref<Issue>;
+const issueContext = useIssueLogic();
+const issue = issueContext.issue as Ref<Issue>;
+const reviewContext = useIssueReviewContext();
+
+const showPendingReview = computed(() => {
+  if (issueContext.create.value) return false;
+  return !reviewContext.done.value;
+});
 
 const showCancelBanner = computed(() => {
   if (issue.value.status == "CANCELED") {
@@ -50,7 +67,7 @@ const showSuccessBanner = computed(() => {
   return issue.value.status == "DONE";
 });
 
-const showPendingApproval = computed(() => {
+const showPendingRollout = computed(() => {
   const task = activeTask(issue.value.pipeline);
   return task.status == "PENDING_APPROVAL";
 });

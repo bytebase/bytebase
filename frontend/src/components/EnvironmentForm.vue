@@ -65,12 +65,14 @@
         </div>
       </div>
       <div class="col-span-1 mt-6">
-        <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
+        <label class="textlabel">
+          {{ $t("policy.roll-out.name") }}
+        </label>
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
-          $t("policy.approval.tip")
+          $t("policy.roll-out.tip")
         }}</span>
         <div class="mt-1 textinfolabel">
-          {{ $t("policy.approval.info") }}
+          {{ $t("policy.roll-out.info") }}
         </div>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
@@ -84,9 +86,11 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t("policy.approval.manual") }}</div>
+              <div class="textlabel">
+                {{ $t("policy.roll-out.manual") }}
+              </div>
               <div class="mt-1 textinfolabel">
-                {{ $t("policy.approval.manual-info") }}
+                {{ $t("policy.roll-out.manual-info") }}
               </div>
             </div>
           </div>
@@ -112,14 +116,14 @@
             />
             <div class="-mt-0.5">
               <div class="textlabel flex">
-                {{ $t("policy.approval.auto") }}
+                {{ $t("policy.roll-out.auto") }}
                 <FeatureBadge
                   feature="bb.feature.approval-policy"
                   class="text-accent"
                 />
               </div>
               <div class="mt-1 textinfolabel">
-                {{ $t("policy.approval.auto-info") }}
+                {{ $t("policy.roll-out.auto-info") }}
               </div>
             </div>
           </div>

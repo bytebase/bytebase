@@ -19,8 +19,20 @@
         </div>
       </template>
 
+      <template v-if="!create">
+        <IssueReviewSidebarSection />
+      </template>
+
       <h2 class="textlabel flex items-center col-span-1 col-start-1 gap-x-1">
         <span>{{ $t("common.assignee") }}</span>
+        <span>
+          <NTooltip>
+            <template #trigger>
+              <heroicons-outline:question-mark-circle />
+            </template>
+            <div>{{ $t("issue.assignee-tooltip") }}</div>
+          </NTooltip>
+        </span>
         <span v-if="create" class="text-red-600">*</span>
         <AssigneeAttentionButton />
       </h2>
@@ -289,6 +301,7 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import StageSelect from "./StageSelect.vue";
 import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
+import { IssueReviewSidebarSection } from "./review";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";

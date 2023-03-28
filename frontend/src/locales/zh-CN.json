@@ -81,7 +81,7 @@
       "developer": "开发者",
       "member": "成员"
     },
-    "assignee": "审核人",
+    "assignee": "责任人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -229,7 +229,8 @@
     "download": "下载",
     "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
-    "will-override-current-data": "将会覆盖当前数据。"
+    "will-override-current-data": "将会覆盖当前数据。",
+    "rollout": "发布"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -574,7 +575,8 @@
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
       "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
       "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批",
-      "skipped": "跳过"
+      "skipped": "跳过",
+      "rolled-out": "发布"
     },
     "subject-prefix": {
       "task": "任务",
@@ -684,7 +686,13 @@
       "generated-ddl-statements": "生成的 DDL 语句",
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
-    }
+    },
+    "assignee-tooltip": "该工单的发布负责人",
+    "approval-flow": {
+      "self": "审批流"
+    },
+    "waiting-to-roll-out": "等待发布",
+    "waiting-for-review": "等待审核"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -918,17 +926,17 @@
     }
   },
   "policy": {
-    "approval": {
-      "name": "审批策略",
+    "roll-out": {
+      "name": "发布策略",
       "tip": "新策略对旧工单也生效",
-      "info": "要更改数据库 schema，该选项控制了是否需要手动审批。",
-      "manual": "需要人工审批",
-      "manual-info": "任务只有被人工审批后才会执行。",
-      "auto": "无需审批",
-      "auto-info": "如果任务检查都通过的话，任务无需审批并且会被自动执行。",
+      "info": "要更改数据库 schema，该选项控制了是否需要手动发布。",
+      "manual": "需要人工发布",
+      "manual-info": "任务只有被人工发布后才会执行。",
+      "auto": "无需发布",
+      "auto-info": "如果任务检查都通过的话，任务无需发布并且会被自动执行。",
       "assignee-group": {
-        "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者审批。",
-        "project-owner": "需要项目所有者审批。"
+        "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者发布。",
+        "project-owner": "需要项目所有者发布。"
       }
     },
     "backup": {
@@ -1709,8 +1717,8 @@
         "desc": "「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。"
       },
       "bb-feature-approval-policy": {
-        "title": "审批策略",
-        "desc": "「审批策略」可以控制数据库 schema 的变更是否需要手动审批"
+        "title": "发布策略",
+        "desc": "「发布策略」可以控制数据库 schema 的变更是否需要手动发布"
       },
       "bb-feature-backup-policy": {
         "title": "备份策略",
@@ -2191,6 +2199,16 @@
     },
     "rule": {
       "rules": "规则"
+    },
+    "issue-review": {
+      "approve-issue": "批准工单？",
+      "form": {
+        "placeholder": "（可选）添加一段笔记…",
+        "note": "笔记"
+      },
+      "you": "你",
+      "generating-approval-flow": "正在生成审批流",
+      "approved-issue": "批准工单"
     }
   }
 }

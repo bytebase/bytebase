@@ -231,7 +231,8 @@
     "download": "Download",
     "will-lose-unsaved-data": "Will lose any unsaved data.",
     "deleted": "Deleted",
-    "will-override-current-data": "Will override current data."
+    "will-override-current-data": "Will override current data.",
+    "rollout": "Roll out"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -576,7 +577,8 @@
       "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
       "dismissed-stale-approval": "dismissed stale approvals of {task}",
       "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\"",
-      "skipped": "skipped"
+      "skipped": "skipped",
+      "rolled-out": "rolled out"
     },
     "subject-prefix": {
       "task": "Task",
@@ -686,7 +688,13 @@
       "generated-ddl-statements": "Generated DDL statements",
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
-    }
+    },
+    "assignee-tooltip": "The one who's responsible for the rolling out.",
+    "approval-flow": {
+      "self": "Approval flow"
+    },
+    "waiting-to-roll-out": "Waiting to roll out",
+    "waiting-for-review": "Waiting for review"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -920,17 +928,17 @@
     }
   },
   "policy": {
-    "approval": {
-      "name": "Approval Policy",
+    "roll-out": {
+      "name": "Roll out policy",
       "tip": "The policy is applied to issues retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
-      "manual": "Require manual approval",
-      "manual-info": "Tasks will only be executed after being manually approved.",
-      "auto": "Skip manual approval",
-      "auto-info": "Tasks will be approved and executed automatically if all task checks pass.",
+      "manual": "Require manual rolling out",
+      "manual-info": "Tasks will only be executed after being manually rolled out.",
+      "auto": "Skip manual rolling out",
+      "auto-info": "Tasks will be rolled out and executed automatically if all task checks pass.",
       "assignee-group": {
-        "workspace-owner-or-dba": "Require approval from DBA or workspace owner.",
-        "project-owner": "Require approval from project owner."
+        "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
+        "project-owner": "Require rolling out from project owner."
       }
     },
     "backup": {
@@ -1710,8 +1718,8 @@
         "desc": "Intelligent database management for tenants using identical schemas."
       },
       "bb-feature-approval-policy": {
-        "title": "Approval policy",
-        "desc": "Approval policy controls whether the schema change task requires manual approval."
+        "title": "Roll out policy",
+        "desc": "Roll out policy controls whether the schema change task requires manual rolling out."
       },
       "bb-feature-backup-policy": {
         "title": "Backup policy",
@@ -2194,6 +2202,16 @@
     },
     "rule": {
       "rules": "Rules"
+    },
+    "issue-review": {
+      "approve-issue": "Approve issue?",
+      "form": {
+        "placeholder": "(Optional) Add a note...",
+        "note": "Note"
+      },
+      "you": "You",
+      "generating-approval-flow": "Generating approval flow",
+      "approved-issue": "approved issue"
     }
   }
 }

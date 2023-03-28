@@ -52,6 +52,9 @@ const renderActionSentence = () => {
           });
         }
       }
+      if (payload.approvalEvent?.status === "APPROVED") {
+        return t("custom-approval.issue-review.approved-issue");
+      }
     }
     const [tid, params] = issueActivityActionSentence(activity);
     return t(tid, params);
@@ -77,7 +80,7 @@ const renderActionSentence = () => {
           if (payload.oldStatus == "RUNNING") {
             str = t("activity.sentence.canceled");
           } else if (payload.oldStatus == "PENDING_APPROVAL") {
-            str = t("activity.sentence.approved");
+            str = t("activity.sentence.rolled-out");
           }
           break;
         }
