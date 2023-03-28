@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -63,13 +64,15 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 type Runner struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
+	profile   config.Profile
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) *Runner {
 	return &Runner{
 		store:     store,
 		dbFactory: dbFactory,
+		profile:   profile,
 	}
 }
 
@@ -97,8 +100,20 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return errors.Wrap(err, "failed to get workspace approval setting")
 				}
 				for _, issue := range issues {
-					// no need to find for RiskSourceUnknown issues.
-					if issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown {
+					payload := &storepb.IssuePayload{}
+					if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+						log.Error("failed to unmarshal issue payload", zap.Error(err))
+						continue
+					}
+					if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
+						continue
+					}
+
+					// no need to find if
+					// - risk source is RiskSourceUnknown
+					// - risks are empty
+					// - approval setting rules are empty
+					if issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
 						payload := &storepb.IssuePayload{
 							Approval: &storepb.IssuePayloadApproval{
 								ApprovalFindingDone: true,
@@ -118,15 +133,6 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("failed to update issue payload", zap.Error(err))
 							continue
 						}
-						continue
-					}
-
-					payload := &storepb.IssuePayload{}
-					if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-						log.Error("failed to unmarshal issue payload", zap.Error(err))
-						continue
-					}
-					if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
 						continue
 					}
 
