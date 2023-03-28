@@ -238,6 +238,8 @@ const TaskCheckTypeOrderList: TaskCheckType[] = [
   "bb.task-check.instance.migration-schema",
   "bb.task-check.database.statement.advise",
   "bb.task-check.issue.lgtm",
+  "bb.task-check.database.statement.affected-rows.report",
+  "bb.task-check.database.statement.type.report",
 ];
 const TaskCheckTypeOrderDict = new Map<TaskCheckType, number>(
   TaskCheckTypeOrderList.map((type, index) => [type, index])
@@ -266,5 +268,10 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
   ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
   ["bb.task-check.issue.lgtm", "task.check-type.lgtm"],
   ["bb.task-check.pitr.mysql", "task.check-type.pitr"],
+  [
+    "bb.task-check.database.statement.affected-rows.report",
+    "task.check-type.affected-rows",
+  ],
+  ["bb.task-check.database.statement.type.report", "task.check-type.sql-type"],
 ]);
 </script>
