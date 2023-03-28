@@ -88,26 +88,6 @@ type TaskCheckEarliestAllowedTimePayload struct {
 	EarliestAllowedTs int64 `json:"earliestAllowedTs,omitempty"`
 }
 
-// TaskCheckDatabaseStatementTypeReportPayload is the task check payload for SQL statement type report.
-type TaskCheckDatabaseStatementTypeReportPayload struct {
-	Statement string  `json:"statement,omitempty"`
-	DbType    db.Type `json:"dbType,omitempty"`
-
-	// MySQL special fields.
-	Charset   string `json:"charset,omitempty"`
-	Collation string `json:"collation,omitempty"`
-}
-
-// TaskCheckDatabaseStatementAffectedRowsReportPayload is the task check payload for SQL statement affected rows report.
-type TaskCheckDatabaseStatementAffectedRowsReportPayload struct {
-	Statement string  `json:"statement,omitempty"`
-	DbType    db.Type `json:"dbType,omitempty"`
-
-	// MySQL special fields.
-	Charset   string `json:"charset,omitempty"`
-	Collation string `json:"collation,omitempty"`
-}
-
 // Namespace is the namespace for task check result.
 type Namespace string
 
