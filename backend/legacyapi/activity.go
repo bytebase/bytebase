@@ -98,7 +98,7 @@ type TaskRollbackBy struct {
 	RollbackByTaskID  int `json:"rollbackByTaskId"`
 }
 
-// ApprovalEvent duplicates store/approval.proto
+// ApprovalEvent duplicates store/approval.proto.
 type ApprovalEvent struct {
 	Status string `json:"status"`
 }
