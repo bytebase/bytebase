@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -790,6 +791,27 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		}
 		if policy.Value != api.PipelineApprovalValueManualNever {
 			continue
+		}
+
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		if err != nil {
+			return err
+		}
+		if issue != nil {
+			payload := &storepb.IssuePayload{}
+			if err := json.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return err
+			}
+			if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
+				continue
+			}
+			if len(payload.Approval.ApprovalTemplates) > 0 {
+				if len(payload.Approval.ApprovalTemplates) != 1 {
+					log.Warn("taskrun scheduler: expecting only one approval template", zap.Int("issue", issue.UID), zap.Int("task", task.ID), zap.Any("approval templates", payload.Approval.ApprovalTemplates))
+				} else if !utils.IsApprovalDone(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers) {
+					continue
+				}
+			}
 		}
 
 		taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
