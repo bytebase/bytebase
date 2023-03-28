@@ -16,6 +16,7 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -24,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetLatestSchemaVersion gets the latest schema version for a database.
@@ -631,4 +633,32 @@ func EndMigration(ctx context.Context, store *store.Store, startedNs int64, inse
 		err = store.UpdateInstanceChangeHistoryAsFailed(ctx, migrationDurationNs, insertedID)
 	}
 	return err
+}
+
+// FindNextPendingStep finds the next pending step in the approval flow.
+func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
+	// We can do the finding like this for now because we are presuming that
+	// one step is approved by one approver.
+	if len(approvers) >= len(template.Flow.Steps) {
+		return nil
+	}
+	return template.Flow.Steps[len(approvers)]
+}
+
+// CheckIssueApproved checks if the issue is approved.
+func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
+	issuePayload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal issue payload")
+	}
+	if issuePayload.Approval == nil || !issuePayload.Approval.ApprovalFindingDone {
+		return false, nil
+	}
+	if len(issuePayload.Approval.ApprovalTemplates) == 0 {
+		return true, nil
+	}
+	if len(issuePayload.Approval.ApprovalTemplates) != 1 {
+		return false, errors.Errorf("expecting one approval template but got %d", len(issuePayload.Approval.ApprovalTemplates))
+	}
+	return FindNextPendingStep(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers) == nil, nil
 }

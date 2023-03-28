@@ -299,7 +299,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 				return api.TaskDone, nil
 			}
 			if err := approveFunc(issue); err != nil {
-				if strings.Contains(err.Error(), "The task has not passed all the checks yet") {
+				if strings.Contains(err.Error(), "The task has not passed all the checks yet") || strings.Contains(err.Error(), "Cannot patch task status because the issue is not approved") {
 					continue
 				}
 				// "invalid task status transition" error means this task has been approved.

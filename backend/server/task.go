@@ -7,11 +7,13 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
@@ -57,6 +59,25 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return err
 			}
 		}
+
+		// dismiss stale review, re-find the approval template
+		if taskPatch.Statement != nil {
+			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: false,
+				},
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+			}
+			payloadStr := string(payloadBytes)
+			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+				Payload: &payloadStr,
+			}, api.SystemBotID); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
+			}
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		return nil
 	})
@@ -110,6 +131,25 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if err := s.TaskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
 			return err
 		}
+
+		// dismiss stale review, re-find the approval template
+		if taskPatch.Statement != nil {
+			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: false,
+				},
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+			}
+			payloadStr := string(payloadBytes)
+			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+				Payload: &payloadStr,
+			}, api.SystemBotID); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
+			}
+		}
+
 		composedTaskPatched, err := s.store.GetTaskByID(ctx, task.ID)
 		if err != nil {
 			return err
@@ -155,6 +195,21 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if taskStatusPatch.Status == api.TaskPending {
+			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
+			}
+			if issue == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipeline ID %d", task.PipelineID))
+			}
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+			}
+			if !approved {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
+			}
+
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 			if err != nil {
 				return err
