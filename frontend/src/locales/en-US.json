@@ -928,17 +928,17 @@
     }
   },
   "policy": {
-    "approval": {
-      "name": "Approval Policy",
+    "roll-out": {
+      "name": "Roll out policy",
       "tip": "The policy is applied to issues retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
-      "manual": "Require manual approval",
-      "manual-info": "Tasks will only be executed after being manually approved.",
-      "auto": "Skip manual approval",
-      "auto-info": "Tasks will be approved and executed automatically if all task checks pass.",
+      "manual": "Require manual rolling out",
+      "manual-info": "Tasks will only be executed after being manually rolled out.",
+      "auto": "Skip manual rolling out",
+      "auto-info": "Tasks will be rolled out and executed automatically if all task checks pass.",
       "assignee-group": {
-        "workspace-owner-or-dba": "Require approval from DBA or workspace owner.",
-        "project-owner": "Require approval from project owner."
+        "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
+        "project-owner": "Require rolling out from project owner."
       }
     },
     "backup": {
@@ -1718,8 +1718,8 @@
         "desc": "Intelligent database management for tenants using identical schemas."
       },
       "bb-feature-approval-policy": {
-        "title": "Approval policy",
-        "desc": "Approval policy controls whether the schema change task requires manual approval."
+        "title": "Roll out policy",
+        "desc": "Roll out policy controls whether the schema change task requires manual rolling out."
       },
       "bb-feature-backup-policy": {
         "title": "Backup policy",
