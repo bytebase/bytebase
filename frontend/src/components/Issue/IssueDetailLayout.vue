@@ -9,9 +9,7 @@
 
       <!-- Highlight Panel -->
       <div class="bg-white px-4 pb-4">
-        <IssueHighlightPanel>
-          <IssueStatusTransitionButtonGroup />
-        </IssueHighlightPanel>
+        <IssueHighlightPanel />
       </div>
 
       <!-- Stage Flow Bar -->
@@ -109,7 +107,6 @@ import {
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
 import IssueStagePanel from "./IssueStagePanel.vue";
-import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
 import IssueOutputPanel from "./IssueOutputPanel.vue";
 import IssueSidebar from "./IssueSidebar.vue";
 import IssueTaskSDLPanel from "./IssueTaskSDLPanel.vue";

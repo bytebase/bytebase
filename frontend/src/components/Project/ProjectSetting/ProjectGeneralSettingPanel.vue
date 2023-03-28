@@ -109,10 +109,10 @@ import {
   ProjectPatch,
   ProjectTenantMode,
   FeatureType,
-} from "../types";
+} from "../../../types";
 import FeatureModal from "@/components/FeatureModal.vue";
 import { hasFeature, pushNotification, useProjectStore } from "@/store";
-import ResourceIdField from "./ResourceIdField.vue";
+import ResourceIdField from "../../ResourceIdField.vue";
 
 interface LocalState {
   name: string;

@@ -127,7 +127,9 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
-import type { ButtonAction } from "@/bbkit/BBContextMenuButton.vue";
+import BBContextMenuButton, {
+  type ButtonAction,
+} from "@/bbkit/BBContextMenuButton.vue";
 
 export type IssueContext = {
   currentUser: Principal;
@@ -228,8 +230,8 @@ const tryStartStageOrTaskStatusTransition = (
     case "RUN":
       actionText = t("common.run");
       break;
-    case "APPROVE":
-      actionText = t("common.approve");
+    case "ROLLOUT":
+      actionText = t("common.rollout");
       break;
     case "RETRY":
       actionText = t("common.retry");

@@ -24,6 +24,8 @@
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRoute, _RouteLocationBase } from "vue-router";
 import { NSpin } from "naive-ui";
+import { useI18n } from "vue-i18n";
+
 import { IssueDetailLayout } from "@/components/Issue";
 import {
   IssueType,
@@ -40,9 +42,12 @@ import {
   useProjectStore,
   useUIStateStore,
 } from "@/store";
-import { useInitializeIssue, usePollIssue } from "@/plugins/issue/logic";
+import {
+  useInitializeIssue,
+  provideIssueReview,
+  usePollIssue,
+} from "@/plugins/issue/logic";
 import { useTitle } from "@vueuse/core";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -74,6 +79,12 @@ const showLoading = computed(() => {
 });
 
 const pollIssue = usePollIssue(issueSlug, issue);
+
+provideIssueReview(
+  computed(() => {
+    return create.value ? undefined : (issue.value as Issue);
+  })
+);
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("issue.visit")) {

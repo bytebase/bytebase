@@ -62,7 +62,12 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(item.activity) == 'run'">
+                <template
+                  v-else-if="
+                    actionIcon(item.activity) == 'run' ||
+                    actionIcon(item.activity) == 'rollout'
+                  "
+                >
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -304,18 +309,6 @@
                 <div>
                   <button
                     type="button"
-                    class="group btn-normal !text-accent hover:!bg-gray-50"
-                    @click="lgtm"
-                  >
-                    <heroicons-outline:thumb-up
-                      class="w-5 h-5 group-hover:thumb-up"
-                    />
-                    <span class="ml-1">LGTM</span>
-                  </button>
-                </div>
-                <div>
-                  <button
-                    type="button"
                     class="btn-normal"
                     :disabled="newComment.length == 0"
                     @click.prevent="doCreateComment(newComment)"
@@ -391,6 +384,7 @@ type ActionIconType =
   | "update"
   | "run"
   | "approve"
+  | "rollout"
   | "cancel"
   | "fail"
   | "complete"
@@ -526,26 +520,6 @@ const doCreateComment = (comment: string, clear = true) => {
   });
 };
 
-const lgtm = (e: Event) => {
-  doCreateComment("LGTM", false);
-
-  // import the effect lib asynchronously
-  import("canvas-confetti").then(({ default: confetti }) => {
-    const button = e.target as HTMLElement;
-    const { left, top, width, height } = button.getBoundingClientRect();
-    const { innerWidth: winWidth, innerHeight: winHeight } = window;
-    // Create a confetti effect from the position of the LGTM button
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: {
-        x: (left + width / 2) / winWidth,
-        y: (top + height / 2) / winHeight,
-      },
-    });
-  });
-};
-
 const allowEditActivity = (activity: Activity) => {
   if (activity.type !== "bb.issue.comment.create") {
     return false;
@@ -596,7 +570,7 @@ const actionIcon = (activity: Activity): ActionIconType => {
         if (payload.oldStatus == "RUNNING") {
           return "cancel";
         } else if (payload.oldStatus == "PENDING_APPROVAL") {
-          return "approve";
+          return "rollout";
         }
         break;
       }
@@ -638,6 +612,11 @@ const actionIcon = (activity: Activity): ActionIconType => {
     activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
   ) {
     return "update";
+  } else if (activity.type === "bb.issue.comment.create") {
+    const payload = activity.payload as ActivityIssueCommentCreatePayload;
+    if (payload.approvalEvent?.status === "APPROVED") {
+      return "approve";
+    }
   }
 
   return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
