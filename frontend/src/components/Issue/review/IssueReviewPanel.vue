@@ -13,10 +13,10 @@
           v-if="step.status === 'DONE'"
           class="w-3.5 h-3.5 text-white"
         />
-        <div
+        <heroicons-outline:user
           v-else-if="step.status === 'CURRENT'"
-          class="w-1.5 h-1.5 rounded-full bg-info"
-        ></div>
+          class="w-3.5 h-3.5"
+        />
         <template v-else>
           {{ step.index + 1 }}
         </template>
