@@ -98,7 +98,7 @@ export const useSubscriptionStore = defineStore("subscription", {
         return false;
       }
 
-      return !this.isExpired && matrix[this.currentPlan - 1];
+      return !this.isExpired && matrix[this.currentPlan];
     },
     getMinimumRequiredPlan(type: FeatureType): PlanType {
       const matrix = this.featureMatrix.get(type);
