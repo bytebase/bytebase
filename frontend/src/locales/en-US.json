@@ -272,7 +272,9 @@
       "ghost-sync": "gh-ost sync",
       "statement-type": "Statement type",
       "lgtm": "LGTM",
-      "pitr": "PITR"
+      "pitr": "PITR",
+      "affected-rows": "Affected rows",
+      "sql-type": "SQL type"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
