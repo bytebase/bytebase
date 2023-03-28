@@ -96,6 +96,30 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return errors.Wrap(err, "failed to get workspace approval setting")
 				}
 				for _, issue := range issues {
+					// no need to find for RiskSourceUnknown issues.
+					if issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown {
+						payload := &storepb.IssuePayload{
+							Approval: &storepb.IssuePayloadApproval{
+								ApprovalFindingDone: true,
+								ApprovalTemplates:   nil,
+								Approvers:           nil,
+							},
+						}
+						payloadBytes, err := protojson.Marshal(payload)
+						if err != nil {
+							log.Error("failed to marshal issue payload", zap.Error(err))
+							continue
+						}
+						payloadStr := string(payloadBytes)
+						if _, err := r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+							Payload: &payloadStr,
+						}, api.SystemBotID); err != nil {
+							log.Error("failed to update issue payload", zap.Error(err))
+							continue
+						}
+						continue
+					}
+
 					payload := &storepb.IssuePayload{}
 					if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
 						log.Error("failed to unmarshal issue payload", zap.Error(err))
