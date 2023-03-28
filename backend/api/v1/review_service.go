@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -77,7 +78,7 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		return nil, status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
 	}
 
-	step := findPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "the review has been approved")
 	}
@@ -149,15 +150,6 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
 	}
 	return review, nil
-}
-
-func findPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
-	// We can do the finding like this for now because we are presuming that
-	// one step is approved by one approver.
-	if len(approvers) >= len(template.Flow.Steps) {
-		return nil
-	}
-	return template.Flow.Steps[len(approvers)]
 }
 
 func canUserApproveStep(step *storepb.ApprovalStep, user *store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
