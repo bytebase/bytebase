@@ -143,13 +143,17 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 			} else {
 				err, yes := err.(*WalkThroughError)
 				require.True(t, yes)
-				actualPayloadText, yes := err.Payload.([]string)
-				require.True(t, yes)
-				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]interface{}))
-				err.Payload = nil
-				test.Err.Payload = nil
-				require.Equal(t, test.Err, err)
-				require.Equal(t, expectedPayloadText, actualPayloadText)
+				if err.Payload != nil {
+					actualPayloadText, yes := err.Payload.([]string)
+					require.True(t, yes)
+					expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]interface{}))
+					err.Payload = nil
+					test.Err.Payload = nil
+					require.Equal(t, test.Err, err)
+					require.Equal(t, expectedPayloadText, actualPayloadText)
+				} else {
+					require.Equal(t, test.Err, err)
+				}
 			}
 			continue
 		}
