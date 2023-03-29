@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   ParsedApprovalRule,
   SYSTEM_BOT_ID,
+  UNKNOWN_ID,
   UnrecognizedApprovalRule,
 } from "@/types";
 import {
@@ -20,6 +21,7 @@ import {
   LocalApprovalRule,
   PresetRiskLevelList,
   SupportedSourceList,
+  unknown,
 } from "@/types";
 import { t, te } from "@/plugins/i18n";
 import {
@@ -28,6 +30,7 @@ import {
   ApprovalNode_Type,
   ApprovalStep_Type,
 } from "@/types/proto/store/approval";
+import { usePrincipalStore } from "@/store";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -313,4 +316,14 @@ export const seedWorkspaceApprovalSetting = () => {
     const description = t(keypath);
     return generateRule(title, description, preset.roles);
   });
+};
+
+export const creatorOfRule = (rule: LocalApprovalRule) => {
+  const creatorId = rule.template.creatorId ?? UNKNOWN_ID;
+  if (creatorId === UNKNOWN_ID) return unknown("PRINCIPAL");
+  if (creatorId === SYSTEM_BOT_ID) {
+    return usePrincipalStore().principalById(creatorId);
+  }
+
+  return usePrincipalStore().principalById(creatorId);
 };
