@@ -198,15 +198,14 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 	switch method {
 	case http.MethodGet:
 		// For /issue route, require the caller principal to be the same as the user in the query.
-		if path == "/issue" {
-			if userStr := queryParams.Get("user"); userStr != "" {
-				userID, err := strconv.Atoi(userStr)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID").SetInternal(err)
-				}
-				if principalID != userID {
-					return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
-				}
+		// Only /issue and /project route will bring parameter user in the query.
+		if userStr := queryParams.Get("user"); userStr != "" {
+			userID, err := strconv.Atoi(userStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID").SetInternal(err)
+			}
+			if principalID != userID {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
 			}
 		} else if matches := issueRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
 			issueIDStr := matches[1]
