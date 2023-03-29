@@ -74,6 +74,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
 	}
+	if payload.Approval.ApprovalFindingError != "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
+	}
 	if len(payload.Approval.ApprovalTemplates) != 1 {
 		return nil, status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
 	}
