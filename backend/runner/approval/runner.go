@@ -20,14 +20,17 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+
 	"github.com/bytebase/bytebase/backend/store"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var riskFactors = []cel.EnvOption{
+// RiskFactors are the variables when evaluating the risk level.
+var RiskFactors = []cel.EnvOption{
 	// string factors
 	// use environment.resource_id
 	cel.Variable("environment_id", cel.StringType),
@@ -41,7 +44,8 @@ var riskFactors = []cel.EnvOption{
 	cel.Variable("affected_rows", cel.IntType),
 }
 
-var riskVariables = []cel.EnvOption{
+// ApprovalFactors are the variables when finding the approval template.
+var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
 	cel.Variable("source", cel.IntType),
 }
@@ -61,17 +65,19 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
-	profile   config.Profile
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	profile        config.Profile
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
-		store:     store,
-		dbFactory: dbFactory,
-		profile:   profile,
+		store:          store,
+		dbFactory:      dbFactory,
+		profile:        profile,
+		licenseService: licenseService,
 	}
 }
 
@@ -110,10 +116,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					// no need to find if
+					// - feature is not enabled
 					// - risk source is RiskSourceUnknown
 					// - risks are empty
 					// - approval setting rules are empty
-					if issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
+					if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
 						payload := &storepb.IssuePayload{
 							Approval: &storepb.IssuePayloadApproval{
 								ApprovalFindingDone: true,
@@ -188,7 +195,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
-	e, err := cel.NewEnv(riskVariables...)
+	e, err := cel.NewEnv(ApprovalFactors...)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +332,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		databaseName = database.DatabaseName
 	}
 
-	e, err := cel.NewEnv(riskFactors...)
+	e, err := cel.NewEnv(RiskFactors...)
 	if err != nil {
 		return 0, false, err
 	}
