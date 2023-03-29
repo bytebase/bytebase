@@ -29,7 +29,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var riskFactors = []cel.EnvOption{
+// RiskFactors are the variables when evaluating the risk level.
+var RiskFactors = []cel.EnvOption{
 	// string factors
 	// use environment.resource_id
 	cel.Variable("environment_id", cel.StringType),
@@ -43,7 +44,8 @@ var riskFactors = []cel.EnvOption{
 	cel.Variable("affected_rows", cel.IntType),
 }
 
-var riskVariables = []cel.EnvOption{
+// ApprovalFactors are the variables when finding the approval template.
+var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
 	cel.Variable("source", cel.IntType),
 }
@@ -193,7 +195,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
-	e, err := cel.NewEnv(riskVariables...)
+	e, err := cel.NewEnv(ApprovalFactors...)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +332,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		databaseName = database.DatabaseName
 	}
 
-	e, err := cel.NewEnv(riskFactors...)
+	e, err := cel.NewEnv(RiskFactors...)
 	if err != nil {
 		return 0, false, err
 	}
