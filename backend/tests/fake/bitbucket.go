@@ -370,6 +370,6 @@ func (bb *Bitbucket) GetFiles(repositoryID string, filePaths ...string) (map[str
 }
 
 // AddPullRequest creates a new pull request and add changed files to it.
-func (bb *Bitbucket) AddPullRequest(string, int, []*vcs.PullRequestFile) error {
+func (*Bitbucket) AddPullRequest(string, int, []*vcs.PullRequestFile) error {
 	return errors.New("not implemented yet")
 }
