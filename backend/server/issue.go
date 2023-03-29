@@ -421,10 +421,15 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee %d not found", issueCreate.AssigneeID))
 	}
 	// TODO(p0ny): remove issueCreate.Payload
-	issueCreatePayload := &storepb.IssuePayload{}
-	issueCreatePayload.Approval = &storepb.IssuePayloadApproval{
-		ApprovalFindingDone: false,
+	issueCreatePayload := &storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+		},
 	}
+	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+		issueCreatePayload.Approval.ApprovalFindingDone = true
+	}
+
 	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
