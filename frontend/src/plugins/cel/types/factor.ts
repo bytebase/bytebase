@@ -1,6 +1,6 @@
 import { uniq, without } from "lodash-es";
 
-export const NumberFactorList = ["affected_rows", "risk", "source"] as const;
+export const NumberFactorList = ["affected_rows", "level", "source"] as const;
 export type NumberFactor = typeof NumberFactorList[number];
 
 export const StringFactorList = [
@@ -12,7 +12,7 @@ export const StringFactorList = [
 ] as const;
 export type StringFactor = typeof StringFactorList[number];
 
-export const HighLevelFactorList = ["risk", "source"] as const;
+export const HighLevelFactorList = ["level", "source"] as const;
 export type HighLevelFactor = typeof HighLevelFactorList[number];
 
 export type Factor = NumberFactor | StringFactor | HighLevelFactor;
