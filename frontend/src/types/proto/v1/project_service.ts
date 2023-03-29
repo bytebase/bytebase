@@ -203,51 +203,6 @@ export function schemaChangeToJSON(object: SchemaChange): string {
   }
 }
 
-export enum LgtmCheck {
-  LGTM_CHECK_UNSPECIFIED = 0,
-  LGTM_CHECK_DISABLED = 1,
-  LGTM_CHECK_PROJECT_OWNER = 2,
-  LGTM_CHECK_PROJECT_MEMBER = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function lgtmCheckFromJSON(object: any): LgtmCheck {
-  switch (object) {
-    case 0:
-    case "LGTM_CHECK_UNSPECIFIED":
-      return LgtmCheck.LGTM_CHECK_UNSPECIFIED;
-    case 1:
-    case "LGTM_CHECK_DISABLED":
-      return LgtmCheck.LGTM_CHECK_DISABLED;
-    case 2:
-    case "LGTM_CHECK_PROJECT_OWNER":
-      return LgtmCheck.LGTM_CHECK_PROJECT_OWNER;
-    case 3:
-    case "LGTM_CHECK_PROJECT_MEMBER":
-      return LgtmCheck.LGTM_CHECK_PROJECT_MEMBER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return LgtmCheck.UNRECOGNIZED;
-  }
-}
-
-export function lgtmCheckToJSON(object: LgtmCheck): string {
-  switch (object) {
-    case LgtmCheck.LGTM_CHECK_UNSPECIFIED:
-      return "LGTM_CHECK_UNSPECIFIED";
-    case LgtmCheck.LGTM_CHECK_DISABLED:
-      return "LGTM_CHECK_DISABLED";
-    case LgtmCheck.LGTM_CHECK_PROJECT_OWNER:
-      return "LGTM_CHECK_PROJECT_OWNER";
-    case LgtmCheck.LGTM_CHECK_PROJECT_MEMBER:
-      return "LGTM_CHECK_PROJECT_MEMBER";
-    case LgtmCheck.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum ProjectRole {
   PROJECT_ROLE_UNSPECIFIED = 0,
   PROJECT_ROLE_OWNER = 1,
@@ -474,7 +429,6 @@ export interface Project {
   dbNameTemplate: string;
   schemaVersion: SchemaVersion;
   schemaChange: SchemaChange;
-  lgtmCheck: LgtmCheck;
   webhooks: Webhook[];
 }
 
@@ -1725,7 +1679,6 @@ function createBaseProject(): Project {
     dbNameTemplate: "",
     schemaVersion: 0,
     schemaChange: 0,
-    lgtmCheck: 0,
     webhooks: [],
   };
 }
@@ -1765,11 +1718,8 @@ export const Project = {
     if (message.schemaChange !== 0) {
       writer.uint32(88).int32(message.schemaChange);
     }
-    if (message.lgtmCheck !== 0) {
-      writer.uint32(96).int32(message.lgtmCheck);
-    }
     for (const v of message.webhooks) {
-      Webhook.encode(v!, writer.uint32(106).fork()).ldelim();
+      Webhook.encode(v!, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -1859,14 +1809,7 @@ export const Project = {
           message.schemaChange = reader.int32() as any;
           continue;
         case 12:
-          if (tag != 96) {
-            break;
-          }
-
-          message.lgtmCheck = reader.int32() as any;
-          continue;
-        case 13:
-          if (tag != 106) {
+          if (tag != 98) {
             break;
           }
 
@@ -1894,7 +1837,6 @@ export const Project = {
       dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
       schemaVersion: isSet(object.schemaVersion) ? schemaVersionFromJSON(object.schemaVersion) : 0,
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
-      lgtmCheck: isSet(object.lgtmCheck) ? lgtmCheckFromJSON(object.lgtmCheck) : 0,
       webhooks: Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
     };
   },
@@ -1912,7 +1854,6 @@ export const Project = {
     message.dbNameTemplate !== undefined && (obj.dbNameTemplate = message.dbNameTemplate);
     message.schemaVersion !== undefined && (obj.schemaVersion = schemaVersionToJSON(message.schemaVersion));
     message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
-    message.lgtmCheck !== undefined && (obj.lgtmCheck = lgtmCheckToJSON(message.lgtmCheck));
     if (message.webhooks) {
       obj.webhooks = message.webhooks.map((e) => e ? Webhook.toJSON(e) : undefined);
     } else {
@@ -1938,7 +1879,6 @@ export const Project = {
     message.dbNameTemplate = object.dbNameTemplate ?? "";
     message.schemaVersion = object.schemaVersion ?? 0;
     message.schemaChange = object.schemaChange ?? 0;
-    message.lgtmCheck = object.lgtmCheck ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     return message;
   },
