@@ -367,11 +367,6 @@ func (*Scheduler) getGeneralTaskCheck(task *store.TaskMessage, creatorID int) ([
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseConnect,
 		},
-		{
-			CreatorID: creatorID,
-			TaskID:    task.ID,
-			Type:      api.TaskCheckInstanceMigrationSchema,
-		},
 	}, nil
 }
 
