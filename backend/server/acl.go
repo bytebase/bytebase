@@ -191,7 +191,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	return nil
 }
 
-var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status`)
+var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
 var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
 
 func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
