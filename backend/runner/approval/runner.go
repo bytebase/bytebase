@@ -20,7 +20,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+
 	"github.com/bytebase/bytebase/backend/store"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -61,17 +63,19 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
-	profile   config.Profile
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	profile        config.Profile
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
-		store:     store,
-		dbFactory: dbFactory,
-		profile:   profile,
+		store:          store,
+		dbFactory:      dbFactory,
+		profile:        profile,
+		licenseService: licenseService,
 	}
 }
 
@@ -110,10 +114,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					// no need to find if
+					// - feature is not enabled
 					// - risk source is RiskSourceUnknown
 					// - risks are empty
 					// - approval setting rules are empty
-					if issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
+					if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
 						payload := &storepb.IssuePayload{
 							Approval: &storepb.IssuePayloadApproval{
 								ApprovalFindingDone: true,
