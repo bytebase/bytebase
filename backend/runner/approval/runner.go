@@ -46,8 +46,8 @@ var RiskFactors = []cel.EnvOption{
 
 // ApprovalFactors are the variables when finding the approval template.
 var ApprovalFactors = []cel.EnvOption{
-	cel.Variable("level", cel.IntType),
-	cel.Variable("source", cel.IntType),
+	cel.Variable("risk_level", cel.IntType),
+	cel.Variable("risk_source", cel.IntType),
 }
 
 var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
@@ -210,8 +210,8 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		}
 
 		res, _, err := prg.Eval(map[string]interface{}{
-			"level":  riskLevel,
-			"source": convertToSource(riskSource),
+			"risk_level":  riskLevel,
+			"risk_source": convertToSource(riskSource),
 		})
 		if err != nil {
 			return nil, err
