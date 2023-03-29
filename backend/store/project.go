@@ -138,7 +138,6 @@ type ProjectMessage struct {
 	TenantMode       api.ProjectTenantMode
 	DBNameTemplate   string
 	SchemaChangeType api.ProjectSchemaChangeType
-	LGTMCheckSetting api.LGTMCheckSetting // deprecated
 	Webhooks         []*ProjectWebhookMessage
 	// The following fields are output only and not used for create().
 	UID     int
@@ -247,10 +246,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	if create.SchemaChangeType == "" {
 		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
 	}
-	if create.LGTMCheckSetting.Value == "" {
-		create.LGTMCheckSetting = api.GetDefaultLGTMCheckSetting()
-	}
-
 	user, err := s.GetUserByID(ctx, creatorID)
 	if err != nil {
 		return nil, err
@@ -271,7 +266,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		TenantMode:       create.TenantMode,
 		DBNameTemplate:   create.DBNameTemplate,
 		SchemaChangeType: create.SchemaChangeType,
-		LGTMCheckSetting: create.LGTMCheckSetting,
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO project (
@@ -284,10 +278,9 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				visibility,
 				tenant_mode,
 				db_name_template,
-				schema_change_type,
-				lgtm_check
+				schema_change_type
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING id
 		`,
 		creatorID,
@@ -300,7 +293,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.TenantMode,
 		create.DBNameTemplate,
 		create.SchemaChangeType,
-		create.LGTMCheckSetting,
 	).Scan(
 		&project.UID,
 	); err != nil {
@@ -401,7 +393,6 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 			tenant_mode,
 			db_name_template,
 			schema_change_type,
-			lgtm_check,
 			row_status
 	`, len(args)),
 		args...,
@@ -415,7 +406,6 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 		&project.TenantMode,
 		&project.DBNameTemplate,
 		&project.SchemaChangeType,
-		&project.LGTMCheckSetting,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -456,7 +446,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			tenant_mode,
 			db_name_template,
 			schema_change_type,
-			lgtm_check,
 			row_status
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
@@ -480,7 +469,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.TenantMode,
 			&projectMessage.DBNameTemplate,
 			&projectMessage.SchemaChangeType,
-			&projectMessage.LGTMCheckSetting,
 			&rowStatus,
 		); err != nil {
 			return nil, FormatError(err)
