@@ -527,7 +527,6 @@ func (ctl *controller) Close(ctx context.Context) error {
 	if ctl.vcsProvider != nil {
 		if err := ctl.vcsProvider.Close(); err != nil {
 			e = multierr.Append(e, err)
-
 		}
 	}
 	if ctl.grpcConn != nil {
