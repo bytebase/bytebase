@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -18,15 +19,17 @@ import (
 // SettingService implements the setting service.
 type SettingService struct {
 	v1pb.UnimplementedSettingServiceServer
-	store   *store.Store
-	profile *config.Profile
+	store          *store.Store
+	profile        *config.Profile
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewSettingService creates a new setting service.
-func NewSettingService(store *store.Store, profile *config.Profile) *SettingService {
+func NewSettingService(store *store.Store, profile *config.Profile, licenseService enterpriseAPI.LicenseService) *SettingService {
 	return &SettingService{
-		store:   store,
-		profile: profile,
+		store:          store,
+		profile:        profile,
+		licenseService: licenseService,
 	}
 }
 
@@ -100,6 +103,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
 		}
 		settingValue = string(bytes)
+	}
+	if apiSettingName == api.SettingWorkspaceApproval && !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
 	}
 
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
