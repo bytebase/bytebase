@@ -280,13 +280,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if task == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
-		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-		if err != nil {
-			return err
-		}
-		project := issue.Project
 
-		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
+		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
 		}
 		composedTask, err := s.store.GetTaskByID(ctx, task.ID)

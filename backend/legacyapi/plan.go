@@ -92,8 +92,6 @@ const (
 	//   only access database.
 	// - Developers can submit troubleshooting issue.
 	FeatureDBAWorkflow FeatureType = "bb.feature.dba-workflow"
-	// FeatureLGTM checks LGTM comments.
-	FeatureLGTM FeatureType = "bb.feature.lgtm"
 	// FeatureIMApproval integrates IM approval into Bytebase, allowing users approve Bytebase issues on the IM.
 	FeatureIMApproval FeatureType = "bb.feature.im.approval"
 	// FeatureMultiTenancy allows user to enable tenant mode for the project.
@@ -185,8 +183,6 @@ func (e FeatureType) Name() string {
 		return "Data source"
 	case FeatureDBAWorkflow:
 		return "DBA workflow"
-	case FeatureLGTM:
-		return "LGTM"
 	case FeatureIMApproval:
 		return "IM approval integration"
 	case FeatureMultiTenancy:
@@ -264,7 +260,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Change Workflow
 	FeatureDataSource:       {false, false, false},
 	FeatureDBAWorkflow:      {false, false, true},
-	FeatureLGTM:             {false, false, true},
 	FeatureIMApproval:       {false, false, true},
 	FeatureMultiTenancy:     {false, false, true},
 	FeatureOnlineMigration:  {false, true, true},
