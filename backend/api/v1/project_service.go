@@ -137,12 +137,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			patch.SchemaChangeType = &schemaChange
-		case "project.lgtm_check":
-			lgtm, err := convertToLGTMCheckSetting(request.Project.LgtmCheck)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			patch.LGTMCheckSetting = &lgtm
 		}
 	}
 
