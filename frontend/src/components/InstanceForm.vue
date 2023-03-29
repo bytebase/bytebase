@@ -895,7 +895,8 @@ const hasReadonlyReplicaPort = computed((): boolean => {
 
 const showDatabase = computed((): boolean => {
   return (
-    basicInformation.value.engine === "POSTGRES" &&
+    (basicInformation.value.engine === "POSTGRES" ||
+      basicInformation.value.engine === "REDSHIFT") &&
     state.currentDataSourceType === "ADMIN"
   );
 });

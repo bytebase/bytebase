@@ -260,11 +260,14 @@ const makeUnknown = (type: ResourceType) => {
     host: "",
     port: "",
     database: "",
-    options: { srv: false, authenticationDatabase: "" },
+    options: {
+      srv: false,
+      authenticationDatabase: "",
+      sid: "",
+      serviceName: "",
+    },
     // UI-only fields
     updateSsl: false,
-    sid: "",
-    serviceName: "",
   };
 
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {

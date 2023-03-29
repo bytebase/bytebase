@@ -630,6 +630,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			Username:      dataSourcePatch.Username,
 			Host:          dataSourcePatch.Host,
 			Port:          dataSourcePatch.Port,
+			Database:      dataSourcePatch.Database,
 		}
 		if dataSourcePatch.Password != nil {
 			obfuscated := common.Obfuscate(*dataSourcePatch.Password, s.secret)
