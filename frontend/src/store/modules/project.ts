@@ -40,7 +40,6 @@ function convert(
     tenantMode: attrs.tenantMode,
     dbNameTemplate: attrs.dbNameTemplate,
     schemaChangeType: attrs.schemaChangeType,
-    lgtmCheckSetting: attrs.lgtmCheckSetting,
   };
 
   const memberList: ProjectMember[] = [];

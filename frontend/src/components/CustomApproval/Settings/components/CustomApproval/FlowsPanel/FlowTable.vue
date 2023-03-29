@@ -72,15 +72,12 @@ import { NButton } from "naive-ui";
 
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { SpinnerButton } from "../../common";
-import {
-  pushNotification,
-  useWorkspaceApprovalSettingStore,
-  usePrincipalStore,
-} from "@/store";
-import { LocalApprovalRule, SYSTEM_BOT_ID, UNKNOWN_ID, unknown } from "@/types";
+import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
+import { LocalApprovalRule, SYSTEM_BOT_ID } from "@/types";
 import { ApprovalFlow } from "@/types/proto/store/approval";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
+import { creatorOfRule } from "@/utils";
 
 type LocalState = {
   viewFlow: ApprovalFlow | undefined;
@@ -117,16 +114,6 @@ const COLUMN_LIST = computed(() => {
 
   return columns;
 });
-
-const creatorOfRule = (rule: LocalApprovalRule) => {
-  const creatorId = rule.template.creatorId ?? UNKNOWN_ID;
-  if (creatorId === UNKNOWN_ID) return unknown("PRINCIPAL");
-  if (creatorId === SYSTEM_BOT_ID) {
-    return usePrincipalStore().principalById(creatorId);
-  }
-
-  return usePrincipalStore().principalById(creatorId);
-};
 
 const filteredApprovalRuleList = computed(() => {
   // const { searchText } = approvalConfigContext.value;
