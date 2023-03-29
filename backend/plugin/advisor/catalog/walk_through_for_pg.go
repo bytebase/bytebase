@@ -198,6 +198,7 @@ func (d *DatabaseState) pgDropTable(tableDef *ast.TableDef, ifExists bool, _ ast
 		return &WalkThroughError{
 			Type:    ErrorTypeTableIsReferencedByView,
 			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
 		}
 	}
 
@@ -415,6 +416,7 @@ func (d *DatabaseState) pgAlterColumnType(schema *SchemaState, t *TableState, no
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnIsReferencedByView,
 			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, t.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
 		}
 	}
 
@@ -448,6 +450,7 @@ func (d *DatabaseState) pgDropColumn(schema *SchemaState, t *TableState, node *a
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnIsReferencedByView,
 			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, t.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
 		}
 	}
 
