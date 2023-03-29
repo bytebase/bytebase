@@ -137,12 +137,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			patch.SchemaChangeType = &schemaChange
-		case "project.lgtm_check":
-			lgtm, err := convertToLGTMCheckSetting(request.Project.LgtmCheck)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			patch.LGTMCheckSetting = &lgtm
 		}
 	}
 
@@ -800,16 +794,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		schemaChange = v1pb.SchemaChange_SDL
 	}
 
-	lgtmCheck := v1pb.LgtmCheck_LGTM_CHECK_UNSPECIFIED
-	switch projectMessage.LGTMCheckSetting.Value {
-	case api.LGTMValueDisabled:
-		lgtmCheck = v1pb.LgtmCheck_LGTM_CHECK_DISABLED
-	case api.LGTMValueProjectMember:
-		lgtmCheck = v1pb.LgtmCheck_LGTM_CHECK_PROJECT_MEMBER
-	case api.LGTMValueProjectOwner:
-		lgtmCheck = v1pb.LgtmCheck_LGTM_CHECK_PROJECT_OWNER
-	}
-
 	return &v1pb.Project{
 		Name:           fmt.Sprintf("%s%s", projectNamePrefix, projectMessage.ResourceID),
 		Uid:            fmt.Sprintf("%d", projectMessage.UID),
@@ -822,7 +806,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		// TODO(d): schema_version_type for project.
 		SchemaVersion: v1pb.SchemaVersion_SCHEMA_VERSION_UNSPECIFIED,
 		SchemaChange:  schemaChange,
-		LgtmCheck:     lgtmCheck,
 	}
 }
 
@@ -878,27 +861,6 @@ func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) (api.Proje
 	return s, nil
 }
 
-func convertToLGTMCheckSetting(lgtmCheck v1pb.LgtmCheck) (api.LGTMCheckSetting, error) {
-	var lgtm api.LGTMCheckSetting
-	switch lgtmCheck {
-	case v1pb.LgtmCheck_LGTM_CHECK_DISABLED:
-		lgtm = api.LGTMCheckSetting{
-			Value: api.LGTMValueDisabled,
-		}
-	case v1pb.LgtmCheck_LGTM_CHECK_PROJECT_MEMBER:
-		lgtm = api.LGTMCheckSetting{
-			Value: api.LGTMValueProjectMember,
-		}
-	case v1pb.LgtmCheck_LGTM_CHECK_PROJECT_OWNER:
-		lgtm = api.LGTMCheckSetting{
-			Value: api.LGTMValueProjectOwner,
-		}
-	default:
-		return lgtm, errors.Errorf("invalid LGTM check %v", lgtmCheck)
-	}
-	return lgtm, nil
-}
-
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
 	workflow, err := convertToProjectWorkflowType(project.Workflow)
 	if err != nil {
@@ -920,11 +882,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		return nil, err
 	}
 
-	lgtmCheck, err := convertToLGTMCheckSetting(project.LgtmCheck)
-	if err != nil {
-		return nil, err
-	}
-
 	return &store.ProjectMessage{
 		ResourceID:       resourceID,
 		Title:            project.Title,
@@ -934,7 +891,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		TenantMode:       tenantMode,
 		DBNameTemplate:   project.DbNameTemplate,
 		SchemaChangeType: schemaChange,
-		LGTMCheckSetting: lgtmCheck,
 	}, nil
 }
 
