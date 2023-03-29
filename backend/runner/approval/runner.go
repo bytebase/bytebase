@@ -82,18 +82,46 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile confi
 	}
 }
 
-func updateIssuePayload(ctx context.Context, s *store.Store, issueID int, payload *storepb.IssuePayload) error {
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal issue payload")
+// Run runs the runner.
+func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(r.profile.ApprovalRunnerInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", r.profile.ApprovalRunnerInterval))
+	for {
+		select {
+		case <-ticker.C:
+			err := func() error {
+				issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
+					StatusList: []api.IssueStatus{api.IssueOpen},
+				})
+				if err != nil {
+					return errors.Wrap(err, "failed to list issues")
+				}
+				risks, err := r.store.ListRisks(ctx)
+				if err != nil {
+					return errors.Wrap(err, "failed to list risks")
+				}
+				approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
+				if err != nil {
+					return errors.Wrap(err, "failed to get workspace approval setting")
+				}
+				var errs error
+				for _, issue := range issues {
+					if err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting); err != nil {
+						errs = multierr.Append(errs, err)
+					}
+				}
+				return err
+			}()
+			if err != nil {
+				log.Error("approval runner", zap.Error(err))
+			}
+
+		case <-ctx.Done():
+			return
+		}
 	}
-	payloadStr := string(payloadBytes)
-	if _, err := s.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
-	}, api.SystemBotID); err != nil {
-		return errors.Wrap(err, "failed to update issue payload")
-	}
-	return nil
 }
 
 func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
@@ -169,48 +197,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return errors.Wrap(err, "failed to update issue payload")
 	}
 	return nil
-}
-
-// Run runs the runner.
-func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(r.profile.ApprovalRunnerInterval)
-	defer ticker.Stop()
-	defer wg.Done()
-	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", r.profile.ApprovalRunnerInterval))
-	for {
-		select {
-		case <-ticker.C:
-			err := func() error {
-				issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
-					StatusList: []api.IssueStatus{api.IssueOpen},
-				})
-				if err != nil {
-					return errors.Wrap(err, "failed to list issues")
-				}
-				risks, err := r.store.ListRisks(ctx)
-				if err != nil {
-					return errors.Wrap(err, "failed to list risks")
-				}
-				approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
-				if err != nil {
-					return errors.Wrap(err, "failed to get workspace approval setting")
-				}
-				var errs error
-				for _, issue := range issues {
-					if err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting); err != nil {
-						errs = multierr.Append(errs, err)
-					}
-				}
-				return err
-			}()
-			if err != nil {
-				log.Error("approval runner", zap.Error(err))
-			}
-
-		case <-ctx.Done():
-			return
-		}
-	}
 }
 
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
@@ -430,6 +416,20 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	}
 
 	return maxRisk, true, nil
+}
+
+func updateIssuePayload(ctx context.Context, s *store.Store, issueID int, payload *storepb.IssuePayload) error {
+	payloadBytes, err := protojson.Marshal(payload)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal issue payload")
+	}
+	payloadStr := string(payloadBytes)
+	if _, err := s.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{
+		Payload: &payloadStr,
+	}, api.SystemBotID); err != nil {
+		return errors.Wrap(err, "failed to update issue payload")
+	}
+	return nil
 }
 
 func convertToSource(source store.RiskSource) v1pb.Risk_Source {
