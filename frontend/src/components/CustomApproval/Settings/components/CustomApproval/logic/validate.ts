@@ -18,6 +18,10 @@ const validateApprovalFlow = (flow: ApprovalFlow) => {
     ApprovalNode_GroupValue.WORKSPACE_OWNER,
   ]);
 
+  if (flow.steps.length === 0) {
+    return false;
+  }
+
   return flow.steps.every((step) => {
     const { type, nodes } = step;
     if (!SupportedStepTypes.has(type)) {

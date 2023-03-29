@@ -50,8 +50,19 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
     if (isLogicalOperator(operator)) {
       const group: ConditionGroupExpr = {
         operator,
-        args: args.map(dfs),
+        args: [],
       };
+      const [left, right] = args;
+      const sub = (subTree: CELExpr, expand: boolean) => {
+        const subExpr = dfs(subTree);
+        if (expand && subExpr.operator === operator) {
+          group.args.push(...subExpr.args);
+        } else {
+          group.args.push(subExpr);
+        }
+      };
+      sub(left, false);
+      sub(right, true);
       return group;
     }
     if (isEqualityOperator(operator)) {

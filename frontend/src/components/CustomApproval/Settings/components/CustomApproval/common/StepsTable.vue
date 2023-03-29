@@ -137,7 +137,7 @@ const addStep = () => {
 };
 
 const removeStep = async (step: ApprovalStep, index: number) => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
   steps.value.splice(index, 1);
+  emit("update");
 };
 </script>
