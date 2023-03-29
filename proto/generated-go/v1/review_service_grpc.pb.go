@@ -24,6 +24,7 @@ const (
 	ReviewService_UpdateReview_FullMethodName       = "/bytebase.v1.ReviewService/UpdateReview"
 	ReviewService_BatchUpdateReviews_FullMethodName = "/bytebase.v1.ReviewService/BatchUpdateReviews"
 	ReviewService_ApproveReview_FullMethodName      = "/bytebase.v1.ReviewService/ApproveReview"
+	ReviewService_RefindReview_FullMethodName       = "/bytebase.v1.ReviewService/RefindReview"
 )
 
 // ReviewServiceClient is the client API for ReviewService service.
@@ -35,6 +36,7 @@ type ReviewServiceClient interface {
 	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
 	ApproveReview(ctx context.Context, in *ApproveReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	RefindReview(ctx context.Context, in *RefindReviewRequest, opts ...grpc.CallOption) (*Review, error)
 }
 
 type reviewServiceClient struct {
@@ -90,6 +92,15 @@ func (c *reviewServiceClient) ApproveReview(ctx context.Context, in *ApproveRevi
 	return out, nil
 }
 
+func (c *reviewServiceClient) RefindReview(ctx context.Context, in *RefindReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+	out := new(Review)
+	err := c.cc.Invoke(ctx, ReviewService_RefindReview_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReviewServiceServer is the server API for ReviewService service.
 // All implementations must embed UnimplementedReviewServiceServer
 // for forward compatibility
@@ -99,6 +110,7 @@ type ReviewServiceServer interface {
 	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
 	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
 	ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error)
+	RefindReview(context.Context, *RefindReviewRequest) (*Review, error)
 	mustEmbedUnimplementedReviewServiceServer()
 }
 
@@ -120,6 +132,9 @@ func (UnimplementedReviewServiceServer) BatchUpdateReviews(context.Context, *Bat
 }
 func (UnimplementedReviewServiceServer) ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApproveReview not implemented")
+}
+func (UnimplementedReviewServiceServer) RefindReview(context.Context, *RefindReviewRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefindReview not implemented")
 }
 func (UnimplementedReviewServiceServer) mustEmbedUnimplementedReviewServiceServer() {}
 
@@ -224,6 +239,24 @@ func _ReviewService_ApproveReview_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReviewService_RefindReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefindReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReviewServiceServer).RefindReview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReviewService_RefindReview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReviewServiceServer).RefindReview(ctx, req.(*RefindReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReviewService_ServiceDesc is the grpc.ServiceDesc for ReviewService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -250,6 +283,10 @@ var ReviewService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApproveReview",
 			Handler:    _ReviewService_ApproveReview_Handler,
+		},
+		{
+			MethodName: "RefindReview",
+			Handler:    _ReviewService_RefindReview_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

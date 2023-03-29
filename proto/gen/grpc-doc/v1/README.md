@@ -271,6 +271,7 @@
     - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
+    - [RefindReviewRequest](#bytebase-v1-RefindReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
@@ -4154,6 +4155,21 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
+<a name="bytebase-v1-RefindReviewRequest"></a>
+
+### RefindReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to refind the approval template. Format: projects/{project}/reviews/{review} |
+
+
+
+
+
+
 <a name="bytebase-v1-Review"></a>
 
 ### Review
@@ -4311,6 +4327,7 @@ ANY means approving any node will proceed.
 | UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| RefindReview | [RefindReviewRequest](#bytebase-v1-RefindReviewRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 
