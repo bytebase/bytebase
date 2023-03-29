@@ -73,8 +73,6 @@ const (
 	TaskCheckDatabaseStatementAffectedRowsReport TaskCheckType = "bb.task-check.database.statement.affected-rows.report"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
-	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
-	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
 	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
 	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
 	// TaskCheckPITRMySQL is the task check type for MySQL PITR.

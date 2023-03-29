@@ -399,14 +399,6 @@ func PassAllCheck(task *store.TaskMessage, allowedStatus api.TaskCheckStatus, ta
 			return false, nil
 		}
 
-		pass, err = passCheck(runs, api.TaskCheckInstanceMigrationSchema, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-
 		if api.IsSyntaxCheckSupported(engine) {
 			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
