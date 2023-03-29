@@ -449,17 +449,17 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 			} else {
 				changeDelimiter = true
 			}
-			result = append(result, stmt.Text)
+			result = append(result, stmt.Text+"\n\n")
 			continue
 		}
 		if changeDelimiter {
 			// TiDB parser cannot deal with delimiter change.
 			// So we need to skip the statement if the delimiter is not `;`.
-			result = append(result, stmt.Text)
+			result = append(result, stmt.Text+"\n\n")
 			continue
 		}
 		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
-			result = append(result, stmt.Text)
+			result = append(result, stmt.Text+"\n\n")
 			continue
 		}
 		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
@@ -524,11 +524,11 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 			// Skip these spammy set session variable statements.
 			continue
 		default:
-			result = append(result, stmt.Text)
+			result = append(result, stmt.Text+"\n\n")
 		}
 	}
 
-	return strings.Join(result, "\n\n"), nil
+	return strings.Join(result, ""), nil
 }
 
 func deparse(newNodeList []ast.Node) (string, error) {
