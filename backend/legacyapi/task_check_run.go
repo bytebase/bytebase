@@ -77,8 +77,6 @@ const (
 	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
 	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
 	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
-	// TaskCheckIssueLGTM is the task check type for LGTM comments.
-	TaskCheckIssueLGTM TaskCheckType = "bb.task-check.issue.lgtm"
 	// TaskCheckPITRMySQL is the task check type for MySQL PITR.
 	TaskCheckPITRMySQL TaskCheckType = "bb.task-check.pitr.mysql"
 )
