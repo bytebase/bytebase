@@ -249,9 +249,7 @@ message Project {
 
   SchemaChange schema_change = 11;
 
-  LgtmCheck lgtm_check = 12;
-
-  repeated Webhook webhooks = 13;
+  repeated Webhook webhooks = 12;
 }
 
 message IamPolicy {
@@ -301,13 +299,6 @@ enum SchemaChange {
   SCHEMA_CHANGE_UNSPECIFIED = 0;
   DDL = 1;
   SDL = 2;
-}
-
-enum LgtmCheck {
-  LGTM_CHECK_UNSPECIFIED = 0;
-  LGTM_CHECK_DISABLED = 1;
-  LGTM_CHECK_PROJECT_OWNER = 2;
-  LGTM_CHECK_PROJECT_MEMBER = 3;
 }
 
 enum ProjectRole {
