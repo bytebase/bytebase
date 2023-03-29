@@ -216,7 +216,7 @@ func (s *Scheduler) Register(taskType api.TaskCheckType, executor Executor) {
 	s.executors[taskType] = executor
 }
 
-func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunMessage, error) {
+func (s *Scheduler) getTaskCheck(ctx context.Context, task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunMessage, error) {
 	var createList []*store.TaskCheckRunMessage
 
 	create, err := s.getPITRTaskCheck(task, creatorID)
@@ -312,9 +312,9 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMess
 	return createList, nil
 }
 
-// ScheduleCheck schedules variouse task checks depending on the task type.
-func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) error {
-	createList, err := s.getTaskCheck(ctx, project, task, creatorID)
+// ScheduleCheck schedules various task checks depending on the task type.
+func (s *Scheduler) ScheduleCheck(ctx context.Context, task *store.TaskMessage, creatorID int) error {
+	createList, err := s.getTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return errors.Wrap(err, "failed to getTaskCheck")
 	}
@@ -435,14 +435,14 @@ func getStatementAffectedRowsReportTaskCheck(task *store.TaskMessage, instance *
 }
 
 // SchedulePipelineTaskCheck schedules the task checks for a pipeline.
-func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *store.ProjectMessage, pipelineID int) error {
+func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, pipelineID int) error {
 	var createList []*store.TaskCheckRunMessage
 	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &pipelineID})
 	if err != nil {
 		return err
 	}
 	for _, task := range tasks {
-		create, err := s.getTaskCheck(ctx, project, task, api.SystemBotID)
+		create, err := s.getTaskCheck(ctx, task, api.SystemBotID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
 		}
