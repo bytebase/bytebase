@@ -24,7 +24,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
-import { defer } from "@/utils";
+import { creatorOfRule, defer } from "@/utils";
 import { useDialog } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
@@ -32,7 +32,7 @@ import { BBModal } from "@/bbkit";
 import RuleForm from "./RuleForm.vue";
 import { useCustomApprovalContext } from "../context";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
-import { LocalApprovalRule } from "@/types";
+import { LocalApprovalRule, SYSTEM_BOT_ID } from "@/types";
 
 type LocalState = {
   loading: boolean;
@@ -49,9 +49,16 @@ const state = reactive<LocalState>({
   dirty: false,
 });
 
+const allowEditRule = computed(() => {
+  if (!allowAdmin.value) return false;
+  const rule = dialog.value?.rule;
+  if (!rule) return false;
+  return creatorOfRule(rule).id !== SYSTEM_BOT_ID;
+});
+
 const title = computed(() => {
   if (dialog.value) {
-    if (!allowAdmin.value) {
+    if (!allowEditRule.value) {
       return t("custom-approval.approval-flow.view-approval-flow");
     }
     const { mode } = dialog.value;

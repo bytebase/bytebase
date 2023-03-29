@@ -12,7 +12,7 @@
           v-model:value="state.rule.template.title"
           :show-count="true"
           :maxlength="64"
-          :disabled="!allowAdmin"
+          :disabled="!allowEditRule"
           @update:value="$emit('update')"
         />
       </div>
@@ -28,7 +28,7 @@
             minRows: 3,
             maxRows: 5,
           }"
-          :disabled="!allowAdmin"
+          :disabled="!allowEditRule"
           @update:value="$emit('update')"
         />
       </div>
@@ -44,7 +44,7 @@
           <StepsTable
             v-if="state.rule.template.flow"
             :flow="state.rule.template.flow"
-            :editable="true"
+            :editable="allowEditRule"
             @update="$emit('update')"
           />
         </div>
@@ -52,7 +52,7 @@
     </div>
 
     <footer
-      v-if="allowAdmin"
+      v-if="allowEditRule"
       class="flex items-center justify-end gap-x-2 pt-4 border-t"
     >
       <NButton @click="$emit('cancel')">{{ $t("common.cancel") }}</NButton>
@@ -72,11 +72,12 @@ import { computed, ref } from "vue";
 import { NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
-import type { LocalApprovalRule } from "@/types";
+import { LocalApprovalRule, SYSTEM_BOT_ID } from "@/types";
 import { RequiredStar } from "../../common";
 import { StepsTable } from "../common";
 import { validateApprovalTemplate } from "../logic";
 import { useCustomApprovalContext } from "../context";
+import { creatorOfRule } from "@/utils";
 
 type LocalState = {
   rule: LocalApprovalRule;
@@ -109,6 +110,11 @@ const resolveLocalState = (): LocalState => {
 };
 
 const state = ref(resolveLocalState());
+
+const allowEditRule = computed(() => {
+  if (!allowAdmin.value) return false;
+  return creatorOfRule(rule.value).id !== SYSTEM_BOT_ID;
+});
 
 const allowCreateOrUpdate = computed(() => {
   if (!validateApprovalTemplate(state.value.rule.template)) {
