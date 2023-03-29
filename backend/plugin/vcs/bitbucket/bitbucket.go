@@ -52,8 +52,11 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 }
 
 // APIURL returns the API URL path of Bitbucket Cloud.
-func (*Provider) APIURL(string) string {
-	return "https://api.bitbucket.org/2.0"
+func (*Provider) APIURL(instanceURL string) string {
+	if instanceURL == bitbucketCloudURL {
+		return "https://api.bitbucket.org/2.0"
+	}
+	return fmt.Sprintf("%s/2.0", instanceURL)
 }
 
 // oauthResponse is a Bitbucket Cloud OAuth response.
@@ -126,6 +129,7 @@ func (*Provider) TryLogin(context.Context, common.OauthContext, string) (*vcs.Us
 // User represents a Bitbucket Cloud API response for a user.
 type User struct {
 	DisplayName string `json:"display_name"`
+	Nickname    string `json:"nickname"`
 }
 
 // CommitAuthor represents a Bitbucket Cloud API response for a commit author.
@@ -187,11 +191,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 // CommitFile represents a Bitbucket Cloud API response for a file at a commit.
 type CommitFile struct {
 	Path  string `json:"path"`
-	Links struct {
-		Self struct {
-			Href string `json:"href"`
-		} `json:"self"`
-	} `json:"links"`
+	Links Links  `json:"links"`
 }
 
 // CommitDiffStat represents a Bitbucket Cloud API response for commit diff stat.
@@ -215,7 +215,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 			params.Add("page", strconv.Itoa(page))
 		}
 
-		url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), afterCommit, beforeCommit, params.Encode())
+		url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?%s", p.APIURL(instanceURL), repositoryID, afterCommit, beforeCommit, params.Encode())
 		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
@@ -294,6 +294,7 @@ type Repository struct {
 	UUID     string `json:"uuid"`
 	Name     string `json:"name"`
 	FullName string `json:"full_name"`
+	Links    Links  `json:"links"`
 }
 
 // RepositoryPermission represents a Bitbucket Cloud API response for a
@@ -340,7 +341,6 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // user has admin access to in given page. It returns the paginated results
 // along with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []*Repository, hasNextPage bool, err error) {
-	fmt.Println("fuck you", oauthCtx.AccessToken)
 	params := url.Values{}
 	params.Add("q", `permission="admin"`)
 	params.Add("pagelen", strconv.Itoa(apiPageSize))
@@ -452,7 +452,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	if page > 1 {
 		params.Add("page", strconv.Itoa(page))
 	}
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?%s", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath), params.Encode())
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath), params.Encode())
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -559,7 +559,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
 func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath))
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath))
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -611,7 +611,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#raw-file-contents
 func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(instanceURL), repositoryID, ref, url.PathEscape(filePath))
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath))
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -896,56 +896,50 @@ func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext,
 	return errors.New("not supported")
 }
 
+// Link is the API message for link.
+type Link struct {
+	Href string `json:"href"`
+}
+
+// Links is the API message for links.
+type Links struct {
+	Self Link `json:"self"`
+	HTML Link `json:"html"`
+}
+
+// Author is the API message for author.
+type Author struct {
+	Raw  string `json:"raw"`
+	User User   `json:"user"`
+}
+
 // WebhookCommit is the API message for webhook commit.
 type WebhookCommit struct {
-	Hash   string    `json:"hash"`
-	Date   time.Time `json:"date"`
-	Author struct {
-		Raw  string `json:"raw"`
-		User struct {
-			Nickname string `json:"nickname"`
-		} `json:"user"`
-	} `json:"author"`
-	Message string `json:"message"`
-	Links   struct {
-		HTML struct {
-			Href string `json:"href"`
-		} `json:"html"`
-	} `json:"links"`
-	Parents []struct {
-		Hash string `json:"hash"`
-	} `json:"parents"`
+	Hash    string    `json:"hash"`
+	Date    time.Time `json:"date"`
+	Author  Author    `json:"author"`
+	Message string    `json:"message"`
+	Links   Links     `json:"links"`
+	Parents []Target  `json:"parents"`
+}
+
+// WebhookPushChange is the API message for webhook push change.
+type WebhookPushChange struct {
+	Old     Branch          `json:"old"`
+	New     Branch          `json:"new"`
+	Commits []WebhookCommit `json:"commits"`
+}
+
+// WebhookPush is the API message for webhook push.
+type WebhookPush struct {
+	Changes []WebhookPushChange `json:"changes"`
 }
 
 // WebhookPushEvent is the API message for webhook push event.
 type WebhookPushEvent struct {
-	Push struct {
-		Changes []struct {
-			Old struct {
-				Target struct {
-					Hash string `json:"hash"`
-				} `json:"target"`
-			} `json:"old"`
-			New struct {
-				Name   string `json:"name"`
-				Target struct {
-					Hash string `json:"hash"`
-				} `json:"target"`
-			} `json:"new"`
-			Commits []WebhookCommit `json:"commits"`
-		} `json:"changes"`
-	} `json:"push"`
-	Repository struct {
-		FullName string `json:"full_name"`
-		Links    struct {
-			HTML struct {
-				Href string `json:"href"`
-			} `json:"html"`
-		} `json:"links"`
-	} `json:"repository"`
-	Actor struct {
-		Nickname string `json:"nickname"`
-	} `json:"actor"`
+	Push       WebhookPush `json:"push"`
+	Repository Repository  `json:"repository"`
+	Actor      User        `json:"actor"`
 }
 
 // WebhookCreateOrUpdate represents a Bitbucket API request for creating or
@@ -955,6 +949,12 @@ type WebhookCreateOrUpdate struct {
 	URL         string   `json:"url"`
 	Active      bool     `json:"active"`
 	Events      []string `json:"events"`
+}
+
+// Webhook represents a Bitbucket Cloud API response for the webhook
+// information.
+type Webhook struct {
+	UUID string `json:"uuid"`
 }
 
 // CreateWebhook creates a webhook in the repository with given payload.
@@ -996,9 +996,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		)
 	}
 
-	var resp struct {
-		UUID string `json:"uuid"`
-	}
+	var resp Webhook
 	if err = json.Unmarshal([]byte(body), &resp); err != nil {
 		return "", errors.Wrap(err, "unmarshal body")
 	}
