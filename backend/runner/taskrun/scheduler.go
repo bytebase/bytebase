@@ -449,7 +449,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 		if api.IsSyntaxCheckSupported(instance.Engine) {
 			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
-				CreatorID: api.SystemBotID,
+				CreatorID: taskPatched.CreatorID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementSyntax,
 			}); err != nil {
@@ -470,7 +470,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 
 		if api.IsStatementTypeCheckSupported(instance.Engine) {
 			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
-				CreatorID: api.SystemBotID,
+				CreatorID: taskPatched.CreatorID,
 				TaskID:    task.ID,
 				Type:      api.TaskCheckDatabaseStatementType,
 			}); err != nil {
@@ -480,6 +480,24 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 					zap.String("task_name", task.Name),
 					zap.Error(err),
 				)
+			}
+		}
+
+		if api.IsTaskCheckReportSupported(instance.Engine) && api.IsTaskCheckReportNeededForTaskType(task.Type) {
+			if err := s.store.CreateTaskCheckRun(ctx,
+				&store.TaskCheckRunMessage{
+					CreatorID: taskPatched.CreatorID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckDatabaseStatementAffectedRowsReport,
+				},
+				&store.TaskCheckRunMessage{
+					CreatorID: taskPatched.CreatorID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckDatabaseStatementTypeReport,
+				},
+			); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger task report check after changing the task statement", zap.Int("task_id", task.ID), zap.String("task_name", task.Name), zap.Error(err))
 			}
 		}
 	}
