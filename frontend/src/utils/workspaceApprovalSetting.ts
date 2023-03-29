@@ -1,4 +1,4 @@
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isNumber } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -7,10 +7,7 @@ import {
   UNKNOWN_ID,
   UnrecognizedApprovalRule,
 } from "@/types";
-import {
-  Expr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
@@ -31,6 +28,13 @@ import {
   ApprovalStep_Type,
 } from "@/types/proto/store/approval";
 import { usePrincipalStore } from "@/store";
+import {
+  buildCELExpr,
+  EqualityExpr,
+  LogicalExpr,
+  resolveCELExpr,
+  SimpleExpr,
+} from "@/plugins/cel";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -59,11 +63,24 @@ export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
 export const resolveLocalApprovalConfig = (
   config: WorkspaceApprovalSetting
 ): LocalApprovalConfig => {
-  const rules = config.rules.map<LocalApprovalRule>((rule) => ({
-    uid: uuidv4(),
-    expression: cloneDeep(rule.expression),
-    template: cloneDeep(rule.template!),
-  }));
+  const rules = config.rules.map<LocalApprovalRule>((rule) => {
+    const localRule: LocalApprovalRule = {
+      uid: uuidv4(),
+      expr: undefined,
+      template: cloneDeep(rule.template!),
+    };
+    try {
+      if (rule.expression?.expr) {
+        localRule.expr = resolveCELExpr(rule.expression.expr);
+      }
+    } catch (err) {
+      console.warn(
+        "cannot resolve stored CEL expr",
+        JSON.stringify(rule.expression?.expr)
+      );
+    }
+    return localRule;
+  });
   const { parsed, unrecognized } = resolveApprovalConfigRules(rules);
   return {
     rules,
@@ -75,12 +92,12 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
   const parsed: ParsedApprovalRule[] = [];
   const unrecognized: UnrecognizedApprovalRule[] = [];
 
-  const fail = (expr: Expr | undefined, rule: LocalApprovalRule) => {
+  const fail = (expr: SimpleExpr | undefined, rule: LocalApprovalRule) => {
     unrecognized.push({ expr, rule: rule.uid });
   };
 
-  const resolveLogicAndExpr = (expr: Expr, rule: LocalApprovalRule) => {
-    const { function: operator, args } = expr.callExpr ?? {};
+  const resolveLogicAndExpr = (expr: SimpleExpr, rule: LocalApprovalRule) => {
+    const { operator, args } = expr;
     if (operator !== "_&&_") return fail(expr, rule);
     if (!args || args.length !== 2) return fail(expr, rule);
     const source = resolveSourceExpr(args[0]);
@@ -96,8 +113,8 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
     });
   };
 
-  const resolveLogicOrExpr = (expr: Expr, rule: LocalApprovalRule) => {
-    const { function: operator, args } = expr.callExpr ?? {};
+  const resolveLogicOrExpr = (expr: SimpleExpr, rule: LocalApprovalRule) => {
+    const { operator, args } = expr;
     if (operator !== "_||_") return fail(expr, rule);
     if (!args || args.length === 0) return fail(expr, rule);
 
@@ -108,12 +125,12 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
 
   for (let i = 0; i < rules.length; i++) {
     const rule = rules[i];
-    const expr = rule.expression?.expr;
+    const expr = rule.expr;
     if (!expr) {
       fail(expr, rule);
       continue;
     }
-    if (expr.callExpr?.function === "_&&_") {
+    if (expr.operator === "_&&_") {
       // A single "AND" expr maybe.
       resolveLogicAndExpr(expr, rule);
     } else {
@@ -143,34 +160,26 @@ export const buildWorkspaceApprovalSetting = (config: LocalApprovalConfig) => {
   });
 };
 
-const resolveIdentExpr = (expr: Expr): string => {
-  return expr.identExpr?.name ?? "";
-};
-
-const resolveNumberExpr = (expr: Expr): number | undefined => {
-  return expr.constExpr?.int64Value;
-};
-
-const resolveSourceExpr = (expr: Expr): Risk_Source => {
-  const { function: operator, args } = expr.callExpr ?? {};
+const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
+  const { operator, args } = expr;
   if (operator !== "_==_") return Risk_Source.UNRECOGNIZED;
   if (!args || args.length !== 2) return Risk_Source.UNRECOGNIZED;
-  const factor = resolveIdentExpr(args[0]);
+  const factor = args[0];
   if (factor !== "source") return Risk_Source.UNRECOGNIZED;
-  const source = resolveNumberExpr(args[1]);
-  if (typeof source === "undefined") return Risk_Source.UNRECOGNIZED;
+  const source = args[1];
+  if (!isNumber(source)) return Risk_Source.UNRECOGNIZED;
   if (!SupportedSourceList.includes(source)) return Risk_Source.UNRECOGNIZED;
   return source;
 };
 
-const resolveLevelExpr = (expr: Expr): number => {
-  const { function: operator, args } = expr.callExpr ?? {};
+const resolveLevelExpr = (expr: SimpleExpr): number => {
+  const { operator, args } = expr;
   if (operator !== "_==_") return Number.NaN;
   if (!args || args.length !== 2) return Number.NaN;
-  const factor = resolveIdentExpr(args[0]);
+  const factor = args[0];
   if (factor !== "level") return Number.NaN;
-  const level = resolveNumberExpr(args[1]);
-  if (typeof level === "undefined") return Number.NaN;
+  const level = args[1];
+  if (!isNumber(level)) return Number.NaN;
   if (!PresetRiskLevelList.find((item) => item.level === level))
     return Number.NaN;
   return level;
@@ -190,65 +199,32 @@ const buildParsedExpression = (parsed: ParsedApprovalRule[]) => {
   if (parsed.length === 0) {
     return ParsedExpr.fromJSON({});
   }
-
-  const seq = {
-    id: 0,
-    next() {
-      return seq.id++;
-    },
-  };
-
-  const buildCallExpr = (op: "_&&_" | "_||_" | "_==_", args: Expr[]) => {
-    return Expr.fromJSON({
-      id: seq.next(),
-      callExpr: {
-        id: seq.next(),
-        function: op,
-        args,
-      },
-    });
-  };
-  const buildIdentExpr = (name: string) => {
-    return Expr.fromJSON({
-      id: seq.next(),
-      identExpr: {
-        id: seq.next(),
-        name,
-      },
-    });
-  };
-  const buildInt64Constant = (value: number) => {
-    return Expr.fromJSON({
-      id: seq.next(),
-      constExpr: {
-        id: seq.next(),
-        int64Value: value,
-      },
-    });
-  };
-  const args = parsed.map(({ source, level }) => {
-    const sourceExpr = buildCallExpr("_==_", [
-      buildIdentExpr("source"),
-      buildInt64Constant(source),
-    ]);
-    const levelExpr = buildCallExpr("_==_", [
-      buildIdentExpr("level"),
-      buildInt64Constant(level),
-    ]);
-    return buildCallExpr("_&&_", [sourceExpr, levelExpr]);
+  const args = parsed.map<LogicalExpr>(({ source, level }) => {
+    const sourceExpr: EqualityExpr = {
+      operator: "_==_",
+      args: ["source", source],
+    };
+    const levelExpr: EqualityExpr = {
+      operator: "_==_",
+      args: ["level", level],
+    };
+    return {
+      operator: "_&&_",
+      args: [sourceExpr, levelExpr],
+    };
   });
-  // A single '_&&_' expr
-  if (args.length === 1) {
-    return ParsedExpr.fromJSON({
-      expr: args[0],
-    });
-  }
-  // A huge '_||_' expr combined with several '_&&_' exprs.
+  const listedOrExpr: LogicalExpr = {
+    operator: "_||_",
+    args,
+  };
+  // expr will be unwrapped to an "&&" expr if listedOrExpr.length === 0
+  const expr = buildCELExpr(listedOrExpr);
   return ParsedExpr.fromJSON({
-    expr: buildCallExpr("_||_", args),
+    expr,
   });
 };
 
+// Create seed (SYSTEM preset) approval flows
 export const seedWorkspaceApprovalSetting = () => {
   const generateRule = (
     title: string,
