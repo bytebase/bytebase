@@ -44,7 +44,11 @@
           </h3>
           <div class="text-sm text-control-light">
             {{ $t("custom-approval.security-rule.condition.description-tips") }}
-            <LearnMoreLink url="https://www.bytebase.com/404" class="ml-1" />
+            <LearnMoreLink
+              v-if="false"
+              url="https://www.bytebase.com/404"
+              class="ml-1"
+            />
           </div>
           <ExprEditor
             :expr="state.expr"

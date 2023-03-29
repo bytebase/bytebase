@@ -15,12 +15,6 @@ export type ProjectTenantMode = "DISABLED" | "TENANT";
 
 export type SchemaChangeType = "DDL" | "SDL";
 
-export type LGTMCheckValue = "DISABLED" | "PROJECT_OWNER" | "PROJECT_MEMBER";
-
-export type LGTMCheckSetting = {
-  value: LGTMCheckValue;
-};
-
 // Project
 export type Project = {
   id: ProjectId;
@@ -38,13 +32,6 @@ export type Project = {
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
   schemaChangeType: SchemaChangeType;
-  lgtmCheckSetting: LGTMCheckSetting;
-};
-
-export const getDefaultLGTMCheckSetting = (): LGTMCheckSetting => {
-  return {
-    value: "DISABLED",
-  };
 };
 
 export type ProjectCreate = {
@@ -66,7 +53,6 @@ export type ProjectPatch = {
   name?: string;
   key?: string;
   schemaChangeType?: SchemaChangeType;
-  lgtmCheckSetting?: LGTMCheckSetting;
   workflowType?: ProjectWorkflowType;
   dbNameTemplate?: string;
   tenantMode?: ProjectTenantMode;

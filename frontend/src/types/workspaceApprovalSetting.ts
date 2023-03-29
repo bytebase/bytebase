@@ -1,13 +1,10 @@
-import type {
-  Expr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { SimpleExpr } from "@/plugins/cel";
 import type { Risk_Source } from "@/types/proto/v1/risk_service";
 import type { ApprovalTemplate } from "./proto/store/approval";
 
 export type LocalApprovalRule = {
   uid: string;
-  expression?: ParsedExpr;
+  expr?: SimpleExpr;
   template: ApprovalTemplate;
 };
 
@@ -18,7 +15,7 @@ export type ParsedApprovalRule = {
 };
 
 export type UnrecognizedApprovalRule = {
-  expr?: Expr;
+  expr?: SimpleExpr;
   rule: string; // LocalApprovalRule.uid
 };
 
