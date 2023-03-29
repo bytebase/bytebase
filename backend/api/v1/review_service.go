@@ -155,6 +155,7 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	return review, nil
 }
 
+// RefindReview refinds the approval template of the review.
 func (s *ReviewService) RefindReview(ctx context.Context, request *v1pb.RefindReviewRequest) (*v1pb.Review, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	reviewID, err := getReviewID(request.Name)
