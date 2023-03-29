@@ -29,6 +29,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
 	// string factors
 	// use environment.resource_id
@@ -43,6 +44,7 @@ var RiskFactors = []cel.EnvOption{
 	cel.Variable("affected_rows", cel.IntType),
 }
 
+// ApprovalFactors are the variables when finding the approval template.
 var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
 	cel.Variable("source", cel.IntType),
