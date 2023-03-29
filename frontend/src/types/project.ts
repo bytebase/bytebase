@@ -15,8 +15,6 @@ export type ProjectTenantMode = "DISABLED" | "TENANT";
 
 export type SchemaChangeType = "DDL" | "SDL";
 
-export type LGTMCheckValue = "DISABLED" | "PROJECT_OWNER" | "PROJECT_MEMBER";
-
 // Project
 export type Project = {
   id: ProjectId;
