@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -416,14 +416,14 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
 				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
-				bodyBytes, err := ioutil.ReadAll(c.Request().Body)
+				bodyBytes, err := io.ReadAll(c.Request().Body)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
 				}
 				if err := c.Request().Body.Close(); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
 				}
-				c.Request().Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
 			}
