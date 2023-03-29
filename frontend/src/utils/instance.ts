@@ -107,5 +107,6 @@ export const instanceHasSSL = (
     "POSTGRES",
     "REDIS",
     "ORACLE",
+    "MARIADB",
   ].includes(engine);
 };
