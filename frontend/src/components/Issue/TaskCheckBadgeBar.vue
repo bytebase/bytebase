@@ -51,7 +51,6 @@ import { groupBy, maxBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
-import { HiddenCheckTypes } from "@/utils";
 
 interface LocalState {
   selectedTaskCheckType: TaskCheckType | undefined;
