@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -81,6 +82,95 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile confi
 	}
 }
 
+func updateIssuePayload(ctx context.Context, s *store.Store, issueID int, payload *storepb.IssuePayload) error {
+	payloadBytes, err := protojson.Marshal(payload)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal issue payload")
+	}
+	payloadStr := string(payloadBytes)
+	if _, err := s.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{
+		Payload: &payloadStr,
+	}, api.SystemBotID); err != nil {
+		return errors.Wrap(err, "failed to update issue payload")
+	}
+	return nil
+}
+
+func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
+	payload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+		return errors.Wrap(err, "failed to unmarshal issue payload")
+	}
+	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
+		return nil
+	}
+
+	// no need to find if
+	// - feature is not enabled
+	// - risk source is RiskSourceUnknown
+	// - risks are empty
+	// - approval setting rules are empty
+	if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
+		if err := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: true,
+				ApprovalTemplates:   nil,
+				Approvers:           nil,
+			},
+		}); err != nil {
+			return errors.Wrap(err, "failed to update issue payload")
+		}
+		return nil
+	}
+
+	riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
+	if err != nil {
+		err = errors.Wrap(err, "failed to get issue risk level")
+		if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalFindingError: err.Error(),
+			},
+		}); updateErr != nil {
+			return multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
+		}
+		return err
+	}
+	if !done {
+		return nil
+	}
+
+	approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
+		if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalFindingError: err.Error(),
+			},
+		}); updateErr != nil {
+			return multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
+		}
+		return err
+	}
+
+	payload = &storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplates:   nil,
+			Approvers:           nil,
+		},
+	}
+	if approvalTemplate != nil {
+		payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
+	}
+
+	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
+		return errors.Wrap(err, "failed to update issue payload")
+	}
+	return nil
+}
+
 // Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(r.profile.ApprovalRunnerInterval)
@@ -105,84 +195,13 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				if err != nil {
 					return errors.Wrap(err, "failed to get workspace approval setting")
 				}
+				var errs error
 				for _, issue := range issues {
-					payload := &storepb.IssuePayload{}
-					if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-						log.Error("failed to unmarshal issue payload", zap.Error(err))
-						continue
-					}
-					if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
-						continue
-					}
-
-					// no need to find if
-					// - feature is not enabled
-					// - risk source is RiskSourceUnknown
-					// - risks are empty
-					// - approval setting rules are empty
-					if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(risks) == 0 || len(approvalSetting.Rules) == 0 {
-						payload := &storepb.IssuePayload{
-							Approval: &storepb.IssuePayloadApproval{
-								ApprovalFindingDone: true,
-								ApprovalTemplates:   nil,
-								Approvers:           nil,
-							},
-						}
-						payloadBytes, err := protojson.Marshal(payload)
-						if err != nil {
-							log.Error("failed to marshal issue payload", zap.Error(err))
-							continue
-						}
-						payloadStr := string(payloadBytes)
-						if _, err := r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-							Payload: &payloadStr,
-						}, api.SystemBotID); err != nil {
-							log.Error("failed to update issue payload", zap.Error(err))
-							continue
-						}
-						continue
-					}
-
-					riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
-					if err != nil {
-						log.Error("failed to get issue risk level", zap.Int("issueID", issue.UID), zap.Error(err))
-						continue
-					}
-					if !done {
-						continue
-					}
-					approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
-					if err != nil {
-						log.Error("failed to get approval template", zap.Int64("riskLevel", riskLevel), zap.String("issueType", string(issue.Type)), zap.Error(err))
-						continue
-					}
-
-					payload = &storepb.IssuePayload{
-						Approval: &storepb.IssuePayloadApproval{
-							ApprovalFindingDone: true,
-							ApprovalTemplates:   nil,
-							Approvers:           nil,
-						},
-					}
-					if approvalTemplate != nil {
-						payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
-					}
-
-					payloadBytes, err := protojson.Marshal(payload)
-					if err != nil {
-						log.Error("failed to marshal issue payload", zap.Error(err))
-						continue
-					}
-					payloadStr := string(payloadBytes)
-					if _, err := r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-						Payload: &payloadStr,
-					}, api.SystemBotID); err != nil {
-						log.Error("failed to update issue payload", zap.Error(err))
-						continue
+					if err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting); err != nil {
+						errs = multierr.Append(errs, err)
 					}
 				}
-
-				return nil
+				return err
 			}()
 			if err != nil {
 				log.Error("approval runner", zap.Error(err))
