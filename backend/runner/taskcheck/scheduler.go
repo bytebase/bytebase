@@ -219,15 +219,7 @@ func (s *Scheduler) Register(taskType api.TaskCheckType, executor Executor) {
 func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunMessage, error) {
 	var createList []*store.TaskCheckRunMessage
 
-	create, err := s.getLGTMTaskCheck(ctx, project, task, creatorID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
-	}
-	if create != nil {
-		createList = append(createList, create...)
-	}
-
-	create, err = s.getPITRTaskCheck(task, creatorID)
+	create, err := s.getPITRTaskCheck(task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
@@ -438,39 +430,6 @@ func getStatementAffectedRowsReportTaskCheck(task *store.TaskMessage, instance *
 			CreatorID: creatorID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementAffectedRowsReport,
-		},
-	}, nil
-}
-
-func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.ProjectMessage, task *store.TaskMessage, creatorID int) ([]*store.TaskCheckRunMessage, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
-		return nil, nil
-	}
-	if project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
-		// don't schedule LGTM check if it's disabled.
-		return nil, nil
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return nil, err
-	}
-	approvalPolicy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	if approvalPolicy.Value == api.PipelineApprovalValueManualNever {
-		// don't schedule LGTM check if the approval policy is auto-approval.
-		return nil, nil
-	}
-	return []*store.TaskCheckRunMessage{
-		{
-			CreatorID: creatorID,
-			TaskID:    task.ID,
-			Type:      api.TaskCheckIssueLGTM,
 		},
 	}, nil
 }

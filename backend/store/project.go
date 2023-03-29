@@ -56,12 +56,11 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 		return nil, errors.Wrapf(err, "failed to get project %d", patch.ID)
 	}
 	v2Update := &UpdateProjectMessage{
-		UpdaterID:        patch.UpdaterID,
-		ResourceID:       project.ResourceID,
-		Title:            patch.Name,
-		Key:              patch.Key,
-		DBNameTemplate:   patch.DBNameTemplate,
-		LGTMCheckSetting: patch.LGTMCheckSetting,
+		UpdaterID:      patch.UpdaterID,
+		ResourceID:     project.ResourceID,
+		Title:          patch.Name,
+		Key:            patch.Key,
+		DBNameTemplate: patch.DBNameTemplate,
 	}
 	if patch.TenantMode != nil {
 		m := api.ProjectTenantMode(*patch.TenantMode)
@@ -103,7 +102,6 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 		TenantMode:       project.TenantMode,
 		DBNameTemplate:   project.DBNameTemplate,
 		SchemaChangeType: project.SchemaChangeType,
-		LGTMCheckSetting: project.LGTMCheckSetting,
 	}
 	if project.Deleted {
 		composedProject.RowStatus = api.Archived
@@ -140,7 +138,7 @@ type ProjectMessage struct {
 	TenantMode       api.ProjectTenantMode
 	DBNameTemplate   string
 	SchemaChangeType api.ProjectSchemaChangeType
-	LGTMCheckSetting api.LGTMCheckSetting
+	LGTMCheckSetting api.LGTMCheckSetting // deprecated
 	Webhooks         []*ProjectWebhookMessage
 	// The following fields are output only and not used for create().
 	UID     int
@@ -167,7 +165,6 @@ type UpdateProjectMessage struct {
 	DBNameTemplate   *string
 	Workflow         *api.ProjectWorkflowType
 	SchemaChangeType *api.ProjectSchemaChangeType
-	LGTMCheckSetting *api.LGTMCheckSetting
 	Delete           *bool
 }
 
@@ -385,9 +382,6 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 	}
 	if v := patch.SchemaChangeType; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.LGTMCheckSetting; v != nil {
-		set, args = append(set, fmt.Sprintf("lgtm_check = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.ResourceID)
 
