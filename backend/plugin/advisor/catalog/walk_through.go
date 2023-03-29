@@ -129,6 +129,8 @@ type WalkThroughError struct {
 	Type    WalkThroughErrorType
 	Content string
 	Line    int
+
+	Payload interface{}
 }
 
 // NewParseError returns a new ErrorTypeParseError.

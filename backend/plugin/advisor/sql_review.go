@@ -1,14 +1,18 @@
 package advisor
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
+	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 )
@@ -443,7 +447,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	switch checkContext.DbType {
 	case db.TiDB, db.MySQL, db.MariaDB, db.Postgres:
 		if err := finder.WalkThrough(statements); err != nil {
-			return convertWalkThroughErrorToAdvice(err)
+			return convertWalkThroughErrorToAdvice(checkContext, err)
 		}
 	}
 
@@ -458,7 +462,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
 		if err != nil {
 			if rule.Engine != "" {
-				log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
+				log.Warn("not supported rule", zap.String("rule type", string(rule.Type)), zap.String("engine", string(rule.Engine)), zap.Error(err))
 			}
 			continue
 		}
@@ -498,7 +502,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	return result, nil
 }
 
-func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
+func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err error) ([]Advice, error) {
 	walkThroughError, ok := err.(*catalog.WalkThroughError)
 	if !ok {
 		return nil, err
@@ -641,6 +645,48 @@ func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
 			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
 		})
+	case catalog.ErrorTypeColumnIsReferencedByView:
+		content := walkThroughError.Content
+		if checkContext.DbType == db.Postgres {
+			list, yes := walkThroughError.Payload.([]string)
+			if !yes {
+				return nil, errors.Errorf("invalid payload for ColumnIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
+			}
+			if definition, err := getViewDefinition(checkContext, list); err != nil {
+				log.Warn("failed to get view definition", zap.Error(err))
+			} else {
+				content = fmt.Sprintf("%s\n\n%s", content, definition)
+			}
+		}
+
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    ColumnIsReferencedByView,
+			Title:   "Column is referenced by view",
+			Content: content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeTableIsReferencedByView:
+		content := walkThroughError.Content
+		if checkContext.DbType == db.Postgres {
+			list, yes := walkThroughError.Payload.([]string)
+			if !yes {
+				return nil, errors.Errorf("invalid payload for TableIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
+			}
+			if definition, err := getViewDefinition(checkContext, list); err != nil {
+				log.Warn("failed to get view definition", zap.Error(err))
+			} else {
+				content = fmt.Sprintf("%s\n\n%s", content, definition)
+			}
+		}
+
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    TableIsReferencedByView,
+			Title:   "Table is referenced by view",
+			Content: content,
+			Line:    walkThroughError.Line,
+		})
 	default:
 		res = append(res, Advice{
 			Status:  Error,
@@ -652,6 +698,49 @@ func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
 	}
 
 	return res, nil
+}
+
+func getViewDefinition(checkContext SQLReviewCheckContext, viewList []string) (string, error) {
+	var buf bytes.Buffer
+	sql := fmt.Sprintf(`
+		WITH view_list(view_name) AS (
+			VALUES ('%s')
+		)
+		SELECT view_name, pg_get_viewdef(view_name) AS view_definition
+		FROM view_list;
+	`, strings.Join(viewList, "'),('"))
+
+	rows, err := checkContext.Driver.QueryContext(checkContext.Context, sql)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var viewName, viewDefinition string
+		if err := rows.Scan(&viewName, &viewDefinition); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("The definition of view "); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(viewName); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(" is \n"); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(viewDefinition); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n\n"); err != nil {
+			return "", err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 // RuleExists returns true if rule exists.
