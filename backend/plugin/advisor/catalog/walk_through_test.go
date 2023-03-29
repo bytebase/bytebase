@@ -105,6 +105,14 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 	}
 }
 
+func convertInterfaceSliceToStringSlice(slice []interface{}) []string {
+	var res []string
+	for _, item := range slice {
+		res = append(res, item.(string))
+	}
+	return res
+}
+
 func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDatabase *storepb.DatabaseMetadata, record bool) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
@@ -133,7 +141,15 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 				require.True(t, ok)
 				tests[i].Err = walkThroughError
 			} else {
-				require.Equal(t, err, test.Err)
+				err, yes := err.(*WalkThroughError)
+				require.True(t, yes)
+				actualPayloadText, yes := err.Payload.([]string)
+				require.True(t, yes)
+				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]interface{}))
+				err.Payload = nil
+				test.Err.Payload = nil
+				require.Equal(t, test.Err, err)
+				require.Equal(t, expectedPayloadText, actualPayloadText)
 			}
 			continue
 		}
