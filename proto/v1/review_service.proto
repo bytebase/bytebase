@@ -44,6 +44,13 @@ service ReviewService {
       body: "*"
     };
   }
+
+  rpc RefindReview(RefindReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/reviews/*}:refind"
+      body: "*"
+    };
+  }
 }
 
 message GetReviewRequest {
@@ -111,6 +118,12 @@ message BatchUpdateReviewsResponse {
 
 message ApproveReviewRequest {
   // The name of the review to add an approver.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RefindReviewRequest {
+  // The name of the review to refind the approval template.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
