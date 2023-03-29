@@ -143,8 +143,15 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// TODO(p0ny): remove me after supporting get review.
-	time.Sleep(10 * time.Second)
+	for {
+		review, err := ctl.getReview(fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID))
+		a.NoError(err)
+		if review.ApprovalFindingDone {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
 	attention := true
 	issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
 		AssigneeNeedAttention: &attention,
@@ -301,8 +308,15 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// TODO(p0ny): remove me after supporting get review.
-	time.Sleep(10 * time.Second)
+	for {
+		review, err := ctl.getReview(fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID))
+		a.NoError(err)
+		if review.ApprovalFindingDone {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
 	attention := true
 	issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
 		AssigneeNeedAttention: &attention,

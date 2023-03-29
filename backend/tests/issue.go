@@ -2,15 +2,18 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // createIssue creates an issue.
@@ -30,6 +33,23 @@ func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, err
 		return nil, errors.Wrap(err, "fail to unmarshal post issue response")
 	}
 	return issue, nil
+}
+
+func (ctl *controller) getReview(name string) (*v1pb.Review, error) {
+	ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(
+		"Authorization",
+		fmt.Sprintf("Bearer %s", ctl.grpcMDAccessToken),
+	))
+
+	c := v1pb.NewReviewServiceClient(ctl.grpcConn)
+	review, err := c.GetReview(ctx, &v1pb.GetReviewRequest{
+		Name: name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return review, nil
 }
 
 // getIssue gets the issue with given ID.
@@ -285,6 +305,14 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 			return api.TaskFailed, err
 		}
 
+		review, err := ctl.getReview(fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID))
+		if err != nil {
+			return api.TaskFailed, err
+		}
+		if !review.ApprovalFindingDone {
+			continue
+		}
+
 		status, err := getNextTaskStatus(issue)
 		if err != nil {
 			return status, err
@@ -299,7 +327,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 				return api.TaskDone, nil
 			}
 			if err := approveFunc(issue); err != nil {
-				if strings.Contains(err.Error(), "The task has not passed all the checks yet") || strings.Contains(err.Error(), "Cannot patch task status because the issue is not approved") {
+				if strings.Contains(err.Error(), "The task has not passed all the checks yet") {
 					continue
 				}
 				// "invalid task status transition" error means this task has been approved.
