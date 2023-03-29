@@ -155,6 +155,50 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	return review, nil
 }
 
+func (s *ReviewService) RefindReview(ctx context.Context, request *v1pb.RefindReviewRequest) (*v1pb.Review, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	reviewID, err := getReviewID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
+	}
+	payload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
+	}
+	if payload.Approval == nil {
+		return nil, status.Errorf(codes.Internal, "issue payload approval is nil")
+	}
+	if !payload.Approval.ApprovalFindingDone {
+		return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
+	}
+	payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+		},
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+	}
+	payloadStr := string(payloadBytes)
+
+	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+		Payload: &payloadStr,
+	}, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+	}
+
+	review, err := convertToReview(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+	}
+	return review, nil
+}
+
 func canUserApproveStep(step *storepb.ApprovalStep, user *store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
