@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/google/cel-go/cel"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -124,6 +125,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 					return nil, status.Errorf(codes.InvalidArgument, "invalid cel expression: %v, issues: %v", rule.Expression.String(), issues.Err())
 				}
 			}
+			if err := validateApprovalTemplate(rule.Template); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
+			}
 		}
 	}
 
@@ -147,4 +151,22 @@ func convertToSettingMessage(setting *store.SettingMessage) *v1pb.Setting {
 			},
 		},
 	}
+}
+
+func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {
+	if template.Flow == nil {
+		return errors.Errorf("approval template cannot be nil")
+	}
+	if len(template.Flow.Steps) == 0 {
+		return errors.Errorf("approval template cannot have 0 step")
+	}
+	for _, step := range template.Flow.Steps {
+		if step.Type != storepb.ApprovalStep_ANY {
+			return errors.Errorf("invalid approval step type: %v", step.Type)
+		}
+		if len(step.Nodes) != 1 {
+			return errors.Errorf("expect 1 node in approval step, got: %v", len(step.Nodes))
+		}
+	}
+	return nil
 }
