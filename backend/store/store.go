@@ -4,6 +4,7 @@ package store
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
@@ -12,25 +13,26 @@ import (
 type Store struct {
 	db *DB
 
-	userIDCache                    sync.Map // map[int]*UserMessage
-	environmentCache               sync.Map // map[string]*EnvironmentMessage
-	environmentIDCache             sync.Map // map[int]*EnvironmentMessage
-	instanceCache                  sync.Map // map[string]*InstanceMessage
-	instanceIDCache                sync.Map // map[int]*InstanceMessage
-	databaseCache                  sync.Map // map[string]*DatabaseMessage
-	databaseIDCache                sync.Map // map[int]*DatabaseMessage
-	projectCache                   sync.Map // map[string]*ProjectMessage
-	projectIDCache                 sync.Map // map[int]*ProjectMessage
-	projectPolicyCache             sync.Map // map[string]*IAMPolicyMessage
-	projectIDPolicyCache           sync.Map // map[int]*IAMPolicyMessage
-	policyCache                    sync.Map // map[string]*PolicyMessage
-	issueCache                     sync.Map // map[int]*IssueMessage
-	issueByPipelineCache           sync.Map // map[int]*IssueMessage
-	pipelineCache                  sync.Map // map[int]*PipelineMessage
-	dbSchemaCache                  sync.Map // map[int]*DBSchema
-	settingCache                   sync.Map // map[string]*SettingMessage
-	idpCache                       sync.Map // map[string]*IdentityProvider
-	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
+	userIDCache                    sync.Map     // map[int]*UserMessage
+	environmentCache               sync.Map     // map[string]*EnvironmentMessage
+	environmentIDCache             sync.Map     // map[int]*EnvironmentMessage
+	instanceCache                  sync.Map     // map[string]*InstanceMessage
+	instanceIDCache                sync.Map     // map[int]*InstanceMessage
+	databaseCache                  sync.Map     // map[string]*DatabaseMessage
+	databaseIDCache                sync.Map     // map[int]*DatabaseMessage
+	projectCache                   sync.Map     // map[string]*ProjectMessage
+	projectIDCache                 sync.Map     // map[int]*ProjectMessage
+	projectPolicyCache             sync.Map     // map[string]*IAMPolicyMessage
+	projectIDPolicyCache           sync.Map     // map[int]*IAMPolicyMessage
+	policyCache                    sync.Map     // map[string]*PolicyMessage
+	issueCache                     sync.Map     // map[int]*IssueMessage
+	issueByPipelineCache           sync.Map     // map[int]*IssueMessage
+	pipelineCache                  sync.Map     // map[int]*PipelineMessage
+	dbSchemaCache                  sync.Map     // map[int]*DBSchema
+	settingCache                   sync.Map     // map[string]*SettingMessage
+	idpCache                       sync.Map     // map[string]*IdentityProvider
+	projectIDDeploymentConfigCache sync.Map     // map[int]*DeploymentConfigMessage
+	risksCache                     atomic.Value // []*RiskMessage
 }
 
 // New creates a new instance of Store.
