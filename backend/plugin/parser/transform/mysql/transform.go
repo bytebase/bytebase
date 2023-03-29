@@ -91,7 +91,27 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}
 
+	changeDelimiter := false
 	for i, stmt := range list {
+		if bbparser.IsDelimiter(stmt.Text) {
+			delimiter, err := bbparser.ExtractDelimiter(stmt.Text)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to extract delimiter from %q", stmt.Text)
+			}
+			if delimiter == ";" {
+				changeDelimiter = false
+			} else {
+				changeDelimiter = true
+			}
+			remainingStatement = append(remainingStatement, stmt.Text)
+			continue
+		}
+		if changeDelimiter {
+			// TiDB parser cannot deal with delimiter change.
+			// So we need to skip the statement if the delimiter is not `;`.
+			remainingStatement = append(remainingStatement, stmt.Text)
+			continue
+		}
 		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			remainingStatement = append(remainingStatement, stmt.Text)
 			continue
@@ -325,7 +345,25 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 		return 0, errors.Wrapf(err, "failed to split SQL")
 	}
 
+	changeDelimiter := false
 	for _, stmt := range list {
+		if bbparser.IsDelimiter(stmt.Text) {
+			delimiter, err := bbparser.ExtractDelimiter(stmt.Text)
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to extract delimiter from %q", stmt.Text)
+			}
+			if delimiter == ";" {
+				changeDelimiter = false
+			} else {
+				changeDelimiter = true
+			}
+			continue
+		}
+		if changeDelimiter {
+			// TiDB parser cannot deal with delimiter change.
+			// So we need to skip the statement if the delimiter is not `;`.
+			continue
+		}
 		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
@@ -393,17 +431,50 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 
 // Transform returns the transformed schema.
 func (*SchemaTransformer) Transform(schema string) (string, error) {
-	nodes, _, err := parser.New().Parse(schema, "", "")
+	var result []string
+	list, err := bbparser.SplitMultiSQL(bbparser.MySQL, schema)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+		return "", errors.Wrapf(err, "failed to split SQL")
 	}
-	var newNodeList []ast.Node
-	for _, node := range nodes {
-		switch newStmt := node.(type) {
+
+	changeDelimiter := false
+	for _, stmt := range list {
+		if bbparser.IsDelimiter(stmt.Text) {
+			delimiter, err := bbparser.ExtractDelimiter(stmt.Text)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to extract delimiter from %q", stmt.Text)
+			}
+			if delimiter == ";" {
+				changeDelimiter = false
+			} else {
+				changeDelimiter = true
+			}
+			result = append(result, stmt.Text+"\n\n")
+			continue
+		}
+		if changeDelimiter {
+			// TiDB parser cannot deal with delimiter change.
+			// So we need to skip the statement if the delimiter is not `;`.
+			result = append(result, stmt.Text+"\n\n")
+			continue
+		}
+		if bbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+			result = append(result, stmt.Text+"\n\n")
+			continue
+		}
+		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+		}
+		if len(nodeList) != 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		}
+
+		switch node := nodeList[0].(type) {
 		case *ast.CreateTableStmt:
 			var constraintList []*ast.Constraint
 			var indexList []*ast.CreateIndexStmt
-			for _, constraint := range newStmt.Constraints {
+			for _, constraint := range node.Constraints {
 				switch constraint.Tp {
 				case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 					// This becomes the unique index.
@@ -414,7 +485,7 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 					indexList = append(indexList, &ast.CreateIndexStmt{
 						IndexName: constraint.Name,
 						Table: &ast.TableName{
-							Name: model.NewCIStr(newStmt.Table.Name.O),
+							Name: model.NewCIStr(node.Table.Name.O),
 						},
 						IndexPartSpecifications: constraint.Keys,
 						IndexOption:             indexOption,
@@ -429,7 +500,7 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 					indexList = append(indexList, &ast.CreateIndexStmt{
 						IndexName: constraint.Name,
 						Table: &ast.TableName{
-							Name: model.NewCIStr(newStmt.Table.Name.O),
+							Name: model.NewCIStr(node.Table.Name.O),
 						},
 						IndexPartSpecifications: constraint.Keys,
 						IndexOption:             indexOption,
@@ -439,20 +510,25 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 					constraintList = append(constraintList, constraint)
 				}
 			}
-			newStmt.Constraints = constraintList
-			newNodeList = append(newNodeList, newStmt)
+			node.Constraints = constraintList
+			nodeList := []ast.Node{node}
 			for _, node := range indexList {
-				newNodeList = append(newNodeList, node)
+				nodeList = append(nodeList, node)
 			}
+			text, err := deparse(nodeList)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to deparse %q", stmt.Text)
+			}
+			result = append(result, text)
 		case *ast.SetStmt:
 			// Skip these spammy set session variable statements.
 			continue
 		default:
-			newNodeList = append(newNodeList, node)
+			result = append(result, stmt.Text+"\n\n")
 		}
 	}
 
-	return deparse(newNodeList)
+	return strings.Join(result, ""), nil
 }
 
 func deparse(newNodeList []ast.Node) (string, error) {
