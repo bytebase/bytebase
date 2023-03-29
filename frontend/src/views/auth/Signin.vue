@@ -189,11 +189,15 @@ onMounted(async () => {
   } else {
     const url = new URL(window.location.href);
     const params = new URLSearchParams(url.search);
-    const email = params.get("email") ?? "";
-    state.email = email;
+    state.email = params.get("email") ?? "";
+    state.password = params.get("password") ?? "";
+    state.showPassword = false;
   }
 
   await identityProviderStore.fetchIdentityProviderList();
+  if (state.email && state.password) {
+    await trySignin();
+  }
 });
 
 const allowSignin = computed(() => {
