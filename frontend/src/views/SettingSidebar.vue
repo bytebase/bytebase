@@ -117,7 +117,7 @@
           >
         </div>
       </div>
-      <div class="mt-8">
+      <div v-if="showIntegrationSection" class="mt-8">
         <div
           class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
@@ -203,6 +203,10 @@ const showVCSItem = computed((): boolean => {
     "bb.permission.workspace.manage-vcs-provider",
     currentUser.value.role
   );
+});
+
+const showIntegrationSection = computed(() => {
+  return showVCSItem.value || showIMIntegrationItem.value || showSSOItem.value;
 });
 
 const showDebugLogItem = computed((): boolean => {

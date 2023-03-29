@@ -13,7 +13,7 @@ import { Issue } from "./issue";
 import { Member } from "./member";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
-import { Project, ProjectMember, getDefaultLGTMCheckSetting } from "./project";
+import { Project, ProjectMember } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
@@ -197,7 +197,6 @@ const makeUnknown = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     schemaChangeType: "DDL",
-    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
@@ -554,7 +553,6 @@ const makeEmpty = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     schemaChangeType: "DDL",
-    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {

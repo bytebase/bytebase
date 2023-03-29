@@ -9,6 +9,13 @@ import {
   isStringExpr,
 } from "../types";
 
+const seq = {
+  id: 1,
+  next() {
+    return seq.id++;
+  },
+};
+
 // Build CEL expr according to simple expr
 export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
   const convert = (expr: ConditionGroupExpr | ConditionExpr): CELExpr => {
@@ -58,9 +65,19 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
       // A dangled Logical Group should be extracted as single condition
       return convert(args[0]);
     }
-    return wrapCallExpr(operator, args.map(convert));
+    const [left, ...rest] = args;
+    const _args = [
+      convert(left),
+      convertGroup({
+        operator,
+        args: rest,
+      }),
+    ];
+    // return createCallExpr(operator, args);
+    return wrapCallExpr(operator, _args);
   };
 
+  seq.id = 1;
   try {
     return convert(expr);
   } catch (err) {
@@ -70,7 +87,10 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
 };
 
 const wrapCELExpr = (object: any): CELExpr => {
-  return CELExpr.fromJSON(object);
+  return CELExpr.fromJSON({
+    id: seq.next(),
+    ...object,
+  });
 };
 
 const wrapConstExpr = (value: number | string): CELExpr => {
