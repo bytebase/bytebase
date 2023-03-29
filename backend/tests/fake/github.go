@@ -31,12 +31,12 @@ type GitHub struct {
 	client *http.Client
 
 	nextWebhookID int
-	repositories  map[string]*repositoryData
+	repositories  map[string]*githubRepositoryData
 }
 
 const publicKeyName = "public-key"
 
-type repositoryData struct {
+type githubRepositoryData struct {
 	webhooks []*github.WebhookCreateOrUpdate
 	// files is a map that the full file path is the key and the file content is the
 	// value.
@@ -66,7 +66,7 @@ func NewGitHub(port int) VCSProvider {
 		echo:          e,
 		client:        &http.Client{},
 		nextWebhookID: 20210113,
-		repositories:  make(map[string]*repositoryData),
+		repositories:  make(map[string]*githubRepositoryData),
 	}
 
 	g := e.Group("/api/v3")
@@ -408,7 +408,7 @@ func (gh *GitHub) compareCommits(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-func (gh *GitHub) validRepository(c echo.Context) (*repositoryData, error) {
+func (gh *GitHub) validRepository(c echo.Context) (*githubRepositoryData, error) {
 	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
 	if !ok {
@@ -440,7 +440,7 @@ func (*GitHub) APIURL(instanceURL string) string {
 
 // CreateRepository creates a GitHub repository with given ID.
 func (gh *GitHub) CreateRepository(id string) {
-	gh.repositories[id] = &repositoryData{
+	gh.repositories[id] = &githubRepositoryData{
 		files: make(map[string]string),
 		secrets: map[string]*github.RepositorySecret{
 			publicKeyName: {
