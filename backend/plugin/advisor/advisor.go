@@ -330,6 +330,7 @@ type Advice struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	Line    int    `json:"line"`
+	Details string `json:"details,omitempty"`
 }
 
 // MarshalLogObject constructs a field that carries Advice.
@@ -339,6 +340,7 @@ func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("title", a.Title)
 	enc.AddString("content", a.Content)
 	enc.AddInt("line", a.Line)
+	enc.AddString("details", a.Details)
 	return nil
 }
 
