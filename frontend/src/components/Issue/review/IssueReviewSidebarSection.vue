@@ -3,8 +3,10 @@
     <h2 class="textlabel flex items-start col-span-1 col-start-1 pt-1">
       <div class="flex items-center gap-x-1">
         <span>{{ $t("issue.approval-flow.self") }}</span>
-        <NTooltip v-if="false">
-          <div>{{ $t("issue.approval-flow.tooltip") }}</div>
+        <NTooltip>
+          <div class="max-w-[24rem]">
+            {{ $t("issue.approval-flow.tooltip") }}
+          </div>
           <template #trigger>
             <heroicons-outline:question-mark-circle />
           </template>
@@ -21,6 +23,23 @@
           {{ $t("custom-approval.issue-review.generating-approval-flow") }}
         </span>
       </div>
+      <div v-else-if="error" class="flex items-center gap-x-2 mt-0.5">
+        <NTooltip>
+          <template #trigger>
+            <span class="text-error text-sm">{{ $t("common.error") }}</span>
+          </template>
+
+          <div class="max-w-[20rem]">
+            {{ error }}
+          </div>
+        </NTooltip>
+        <NButton
+          size="tiny"
+          :loading="retrying"
+          @click="retryFindingApprovalFlow"
+          >{{ $t("common.retry") }}</NButton
+        >
+      </div>
       <IssueReviewPanel v-else-if="steps.length > 0" />
     </div>
   </template>
@@ -29,10 +48,12 @@
       <div class="flex items-center gap-x-1">
         <span>{{ $t("issue.approval-flow.self") }}</span>
         <NTooltip>
+          <div class="max-w-[20rem]">
+            {{ $t("issue.approval-flow.tooltip") }}
+          </div>
           <template #trigger>
             <heroicons-outline:question-mark-circle />
           </template>
-          <div>{{ $t("issue.approval-flow.tooltip") }}</div>
         </NTooltip>
       </div>
     </h2>
@@ -40,13 +61,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, Ref, ref } from "vue";
 
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import IssueReviewPanel from "./IssueReviewPanel.vue";
+import { useReviewStore } from "@/store";
+import { useIssueLogic } from "../logic";
+import { Issue } from "@/types";
 
+const store = useReviewStore();
+const issueContext = useIssueLogic();
+const issue = issueContext.issue as Ref<Issue>;
 const context = useIssueReviewContext();
-const { ready, flow } = context;
+const { ready, error, flow } = context;
 
 const steps = computed(() => flow.value.template.flow?.steps ?? []);
 
@@ -55,7 +82,21 @@ const showApprovalFlowSection = computed(() => {
     // Show a 'generating' indicator
     return true;
   }
+  if (error.value) {
+    // Show error and retry button
+    return true;
+  }
   // Show if not skip manual review
   return steps.value.length > 0;
 });
+
+const retrying = ref(false);
+const retryFindingApprovalFlow = async () => {
+  retrying.value = true;
+  try {
+    await store.regenerateReview(issue.value);
+  } finally {
+    retrying.value = false;
+  }
+};
 </script>
