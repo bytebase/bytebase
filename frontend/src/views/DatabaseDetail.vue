@@ -450,7 +450,7 @@ const allowTransferProject = computed(() => {
 });
 
 const allowTransferToDefaultProject = computed(() => {
-  if (database.value.project.id == DEFAULT_PROJECT_ID) {
+  if (database.value.project.id === DEFAULT_PROJECT_ID) {
     return true;
   }
 
