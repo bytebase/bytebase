@@ -1890,7 +1890,8 @@
       "active": "Active"
     },
     "enabled-rules": "Enabled rules",
-    "rule-detail": "Rule detail"
+    "rule-detail": "Rule detail",
+    "view-definition": "View definition"
   },
   "debug-log": {
     "title": "Debug Log",
