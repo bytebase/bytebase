@@ -13,6 +13,8 @@ export type IssueReviewContext = {
   flow: Ref<ReviewFlow>;
   // Whether the review flow is finished successfully.
   done: Ref<boolean>;
+  // Whether the review finding has error.
+  error: Ref<string | undefined>;
 };
 
 export const KEY = Symbol(
