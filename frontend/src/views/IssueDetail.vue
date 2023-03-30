@@ -46,8 +46,10 @@ import {
   useInitializeIssue,
   provideIssueReview,
   usePollIssue,
+  ReviewEvents,
 } from "@/plugins/issue/logic";
 import { useTitle } from "@vueuse/core";
+import Emittery from "emittery";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -80,10 +82,12 @@ const showLoading = computed(() => {
 
 const pollIssue = usePollIssue(issueSlug, issue);
 
+const reviewEvents = new Emittery<ReviewEvents>();
 provideIssueReview(
   computed(() => {
     return create.value ? undefined : (issue.value as Issue);
-  })
+  }),
+  reviewEvents
 );
 
 onMounted(() => {
@@ -115,6 +119,7 @@ watch(issueSlug, async () => {
 
 const onStatusChanged = (eager: boolean) => {
   pollIssue(eager ? MINIMUM_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
+  reviewEvents.emit("issue-status-changed", eager);
 };
 
 const findProject = async (): Promise<Project> => {
