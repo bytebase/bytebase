@@ -553,6 +553,7 @@ import {
   instanceSlug,
   isDev,
   isValidSpannerHost,
+  supportedEngineList,
 } from "../utils";
 import {
   InstancePatch,
@@ -733,23 +734,7 @@ watch(
 );
 
 const engineList = computed(() => {
-  const engines: EngineType[] = [
-    "MYSQL",
-    "POSTGRES",
-    "TIDB",
-    "SNOWFLAKE",
-    "CLICKHOUSE",
-    "MONGODB",
-    "SPANNER",
-    "REDIS",
-    "ORACLE",
-    "MSSQL",
-    "MARIADB",
-  ];
-  if (isDev()) {
-    engines.push("REDSHIFT");
-  }
-  return engines;
+  return supportedEngineList();
 });
 
 const EngineIconPath = {
