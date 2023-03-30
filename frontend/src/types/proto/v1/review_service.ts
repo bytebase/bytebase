@@ -152,9 +152,10 @@ export interface Review {
   approvers: Review_Approver[];
   /**
    * If the value is `false`, it means that the backend is still finding matching approval templates.
-   * If `true`, approval_templates & approvers are available.
+   * If `true`, approval_templates & approvers & approval_finding_error are available.
    */
   approvalFindingDone: boolean;
+  approvalFindingError: string;
   /**
    * The subscribers.
    * Format: user:hello@world.com
@@ -865,6 +866,7 @@ function createBaseReview(): Review {
     approvalTemplates: [],
     approvers: [],
     approvalFindingDone: false,
+    approvalFindingError: "",
     subscribers: [],
     creator: "",
     createTime: undefined,
@@ -904,17 +906,20 @@ export const Review = {
     if (message.approvalFindingDone === true) {
       writer.uint32(80).bool(message.approvalFindingDone);
     }
+    if (message.approvalFindingError !== "") {
+      writer.uint32(90).string(message.approvalFindingError);
+    }
     for (const v of message.subscribers) {
-      writer.uint32(90).string(v!);
+      writer.uint32(98).string(v!);
     }
     if (message.creator !== "") {
-      writer.uint32(98).string(message.creator);
+      writer.uint32(106).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(106).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(114).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1001,24 +1006,31 @@ export const Review = {
             break;
           }
 
-          message.subscribers.push(reader.string());
+          message.approvalFindingError = reader.string();
           continue;
         case 12:
           if (tag != 98) {
             break;
           }
 
-          message.creator = reader.string();
+          message.subscribers.push(reader.string());
           continue;
         case 13:
           if (tag != 106) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.creator = reader.string();
           continue;
         case 14:
           if (tag != 114) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 15:
+          if (tag != 122) {
             break;
           }
 
@@ -1047,6 +1059,7 @@ export const Review = {
         : [],
       approvers: Array.isArray(object?.approvers) ? object.approvers.map((e: any) => Review_Approver.fromJSON(e)) : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? Boolean(object.approvalFindingDone) : false,
+      approvalFindingError: isSet(object.approvalFindingError) ? String(object.approvalFindingError) : "",
       subscribers: Array.isArray(object?.subscribers) ? object.subscribers.map((e: any) => String(e)) : [],
       creator: isSet(object.creator) ? String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -1074,6 +1087,7 @@ export const Review = {
       obj.approvers = [];
     }
     message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
+    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
     if (message.subscribers) {
       obj.subscribers = message.subscribers.map((e) => e);
     } else {
@@ -1101,6 +1115,7 @@ export const Review = {
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvers = object.approvers?.map((e) => Review_Approver.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
+    message.approvalFindingError = object.approvalFindingError ?? "";
     message.subscribers = object.subscribers?.map((e) => e) || [];
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;

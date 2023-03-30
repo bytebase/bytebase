@@ -654,6 +654,9 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	if issuePayload.Approval == nil || !issuePayload.Approval.ApprovalFindingDone {
 		return false, nil
 	}
+	if issuePayload.Approval.ApprovalFindingError != "" {
+		return false, nil
+	}
 	if len(issuePayload.Approval.ApprovalTemplates) == 0 {
 		return true, nil
 	}
