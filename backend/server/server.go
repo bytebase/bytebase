@@ -424,8 +424,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
 		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-		migrationSchemaExecutor := taskcheck.NewMigrationSchemaExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
 		ghostSyncExecutor := taskcheck.NewGhostSyncExecutor(storeInstance, s.secret)
 		s.TaskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
 		pitrMySQLExecutor := taskcheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
