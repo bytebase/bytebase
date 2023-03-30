@@ -337,7 +337,7 @@ const getButtonText = (plan: Plan): string => {
   if (plan.type === PlanType.ENTERPRISE) return t("subscription.contact-us");
 
   if (subscriptionStore.isTrialing) return t("subscription.subscribe");
-  if (plan.type === subscriptionStore.subscription?.plan)
+  if (plan.type === subscriptionStore.currentPlan)
     return t("subscription.upgrade");
   if (plan.trialDays) return t("subscription.start-trial");
 

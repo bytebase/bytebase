@@ -216,7 +216,7 @@ const onTrialingModalClose = () => {
 const planImage = computed(() => {
   return new URL(
     `../assets/plan-${planTypeToString(
-      subscriptionStore.subscription?.plan ?? PlanType.FREE
+      subscriptionStore.currentPlan
     ).toLowerCase()}.png`,
     import.meta.url
   ).href;
