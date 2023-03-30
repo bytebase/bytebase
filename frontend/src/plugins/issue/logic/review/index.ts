@@ -1,4 +1,5 @@
 import { computed, watch, type Ref } from "vue";
+import type Emittery from "emittery";
 
 import type { Issue, ReviewFlow } from "@/types";
 import { Review } from "@/types/proto/v1/review_service";
@@ -7,7 +8,14 @@ import { provideIssueReviewContext } from "./context";
 import { ApprovalTemplate } from "@/types/proto/store/approval";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 
-export const provideIssueReview = (issue: Ref<Issue | undefined>) => {
+export type ReviewEvents = {
+  "issue-status-changed": boolean;
+};
+
+export const provideIssueReview = (
+  issue: Ref<Issue | undefined>,
+  events: Emittery<ReviewEvents>
+) => {
   const store = useReviewStore();
   const review = computed(() => {
     return issue.value
@@ -60,6 +68,9 @@ export const provideIssueReview = (issue: Ref<Issue | undefined>) => {
       immediate: true,
     }
   );
+  events.on("issue-status-changed", () => {
+    update();
+  });
 
   provideIssueReviewContext({
     review,
