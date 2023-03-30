@@ -8,7 +8,7 @@
     class="border"
   >
     <template #item="{ item: risk }: { item: Risk }">
-      <div class="bb-grid-cell justify-center">
+      <div class="bb-grid-cell">
         {{ levelText(risk.level) }}
       </div>
       <div class="bb-grid-cell">
@@ -62,8 +62,7 @@ const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     {
       title: t("custom-approval.security-rule.risk.self"),
-      width: "8rem",
-      class: "justify-center",
+      width: "6rem",
     },
     { title: t("common.name"), width: "1fr" },
     {
