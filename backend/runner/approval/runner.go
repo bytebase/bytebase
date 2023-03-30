@@ -238,7 +238,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 
 		res, _, err := prg.Eval(map[string]interface{}{
 			"level":  riskLevel,
-			"source": convertToSource(riskSource),
+			"source": int64(convertToSource(riskSource)),
 		})
 		if err != nil {
 			return nil, err
@@ -370,6 +370,9 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	})
 	var maxRisk int64
 	for _, risk := range risks {
+		if !risk.Active {
+			continue
+		}
 		if risk.Source != issueTypeToRiskSource[issue.Type] {
 			continue
 		}
@@ -386,9 +389,10 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 			"environment_id": instance.EnvironmentID,
 			"project_id":     issue.Project.ResourceID,
 			"database_name":  databaseName,
-			"db_engine":      instance.Engine,
-			"sql_type":       "UNKNOWN",
-			"affected_rows":  0,
+			// convert to string type otherwise cel-go will complain that db.Type is not string type.
+			"db_engine":     string(instance.Engine),
+			"sql_type":      "UNKNOWN",
+			"affected_rows": 0,
 		}
 
 		// eval for each statement
