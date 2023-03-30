@@ -194,7 +194,7 @@
             class="mt-1"
             name="project"
             :allowed-role-list="['OWNER']"
-            :include-default-project="true"
+            :include-default-project="allowTransferToDefaultProject"
             :selected-id="state.editingProjectId"
             @select-project-id="
               (projectId) => {
@@ -447,6 +447,20 @@ const allowTransferProject = computed(() => {
   }
 
   return false;
+});
+
+const allowTransferToDefaultProject = computed(() => {
+  if (database.value.project.id === DEFAULT_PROJECT_ID) {
+    return true;
+  }
+
+  // Allow to transfer a database to DEFAULT project only if the current user
+  // can manage all projects.
+  // AKA DBA or workspace owner.
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-project",
+    currentUser.value.role
+  );
 });
 
 // Database can be admined if meets either of the condition below:
