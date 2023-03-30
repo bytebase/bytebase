@@ -471,6 +471,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
 	}
 
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Title,
 	}

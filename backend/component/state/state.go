@@ -20,6 +20,9 @@ type State struct {
 	// RollbackCancel cancels the running rollback SQL generation for task taskID.
 	RollbackCancel sync.Map // map[taskID]context.CancelFunc
 
+	// ApprovalFinding is the set of issues for finding the approval template.
+	ApprovalFinding sync.Map // map[issue.ID]*store.IssueMessage
+
 	// TaskProgress is the map from task ID to task progress.
 	TaskProgress sync.Map // map[taskID]api.Progress
 	// GhostTaskState is the map from task ID to gh-ost state.

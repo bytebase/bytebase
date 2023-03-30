@@ -15,6 +15,7 @@ export interface IssuePayloadApproval {
    * If `true`, other fields are available.
    */
   approvalFindingDone: boolean;
+  approvalFindingError: string;
 }
 
 export interface IssuePayloadApproval_Approver {
@@ -227,7 +228,7 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 }
 
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplates: [], approvers: [], approvalFindingDone: false };
+  return { approvalTemplates: [], approvers: [], approvalFindingDone: false, approvalFindingError: "" };
 }
 
 export const IssuePayloadApproval = {
@@ -240,6 +241,9 @@ export const IssuePayloadApproval = {
     }
     if (message.approvalFindingDone === true) {
       writer.uint32(24).bool(message.approvalFindingDone);
+    }
+    if (message.approvalFindingError !== "") {
+      writer.uint32(34).string(message.approvalFindingError);
     }
     return writer;
   },
@@ -272,6 +276,13 @@ export const IssuePayloadApproval = {
 
           message.approvalFindingDone = reader.bool();
           continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.approvalFindingError = reader.string();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -290,6 +301,7 @@ export const IssuePayloadApproval = {
         ? object.approvers.map((e: any) => IssuePayloadApproval_Approver.fromJSON(e))
         : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? Boolean(object.approvalFindingDone) : false,
+      approvalFindingError: isSet(object.approvalFindingError) ? String(object.approvalFindingError) : "",
     };
   },
 
@@ -306,6 +318,7 @@ export const IssuePayloadApproval = {
       obj.approvers = [];
     }
     message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
+    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
     return obj;
   },
 
@@ -318,6 +331,7 @@ export const IssuePayloadApproval = {
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvers = object.approvers?.map((e) => IssuePayloadApproval_Approver.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
+    message.approvalFindingError = object.approvalFindingError ?? "";
     return message;
   },
 };

@@ -26,6 +26,8 @@ message IssuePayloadApproval {
   // If the value is `false`, it means that the backend is still finding matching approval templates.
   // If `true`, other fields are available.
   bool approval_finding_done = 3;
+
+  string approval_finding_error = 4;
 }
 
 message ApprovalTemplate {
