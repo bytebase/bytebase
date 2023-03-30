@@ -32,6 +32,49 @@ func TestCreateTableSeparateIndex(t *testing.T) {
 	a.Equal(want, got)
 }
 
+func TestTransform(t *testing.T) {
+	input := `
+		CREATE TABLE t (
+			id int NOT NULL,
+			name varchar(60) CHARACTER SET ucs2 COLLATE ucs2_general_ci,
+			uuid varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT (replace(uuid(),_utf8mb4'-',_utf8mb4'')),
+			PRIMARY KEY (id),
+			KEY idx_name (name)
+		);
+		
+		DELIMITER ;;
+		CREATE PROCEDURE p1()
+		BEGIN
+			SELECT * FROM t;
+		END;;
+		DELIMITER ;
+	`
+
+	want := "CREATE TABLE `t` (" + "\n" +
+		"  `id` INT NOT NULL," + "\n" +
+		"  `name` VARCHAR(60) CHARACTER SET UCS2 COLLATE ucs2_general_ci," + "\n" +
+		"  `uuid` VARCHAR(40) CHARACTER SET UTF8MB4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT REPLACE(UUID(), '-', '')," + "\n" +
+		"  PRIMARY KEY (`id`)" + "\n" +
+		");" + "\n" +
+		"\n" +
+		"CREATE INDEX `idx_name` ON `t` (`name`);" + "\n" +
+		"\n" +
+		"DELIMITER ;;" + "\n" +
+		"\n" +
+		"CREATE PROCEDURE p1()" + "\n" +
+		"		BEGIN" + "\n" +
+		"			SELECT * FROM t;" + "\n" +
+		"		END;;" + "\n" +
+		"\n" +
+		"DELIMITER ;\n\n"
+
+	a := require.New(t)
+	mysqlTransformer := &SchemaTransformer{}
+	got, err := mysqlTransformer.Transform(input)
+	a.NoError(err)
+	a.Equal(want, got)
+}
+
 func TestNormalize(t *testing.T) {
 	input := `
 	create table t(a int DEFAULT NULL, b varchar(20) COLLATE utf8mb4_general_ci) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
