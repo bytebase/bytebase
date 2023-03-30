@@ -25,7 +25,7 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
 
   if (payload.value === "MANUAL_APPROVAL_NEVER") {
     // We don't need to approve manually.
-    // But we still set the project owner as the default assignee.
+    // But we still set the workspace owner or DBA as the default assignee.
     // Just to notify the project owner.
     assignToWorkspaceOwnerOrDBA(issueCreate);
     return;
