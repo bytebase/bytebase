@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -275,4 +276,32 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 	return deletes, &IAMPolicyMessage{
 		Bindings: upsertBindings,
 	}
+}
+
+// GetProjectMemberIDByProjectIDAndPrincipalID returns the project member id by project id and principal id.
+func (s *Store) GetProjectMemberIDByProjectIDAndPrincipalID(ctx context.Context, projectID int, principalID int) (int, error) {
+	var projectMemberID int
+	query := `SELECT project_member.id FROM project_member WHERE project_member.project_id = $1 AND project_member.principal_id = $2`
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, projectID, principalID)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&projectMemberID); err != nil {
+			return 0, FormatError(err)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, FormatError(err)
+	}
+
+	return projectMemberID, nil
 }
