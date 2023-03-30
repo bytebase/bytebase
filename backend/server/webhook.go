@@ -1408,13 +1408,13 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 				return errors.Wrap(err, "failed to marshal issue payload")
 			}
 			payloadStr := string(payloadBytes)
-			if issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				Payload: &payloadStr,
-			}, api.SystemBotID); err != nil {
+			}, api.SystemBotID)
+			if err != nil {
 				return errors.Wrap(err, "failed to update issue payload")
-			} else {
-				s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			}
+			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			return nil
 		}(); err != nil {
 			log.Warn("Failed to dismiss stale review", zap.Error(err))
