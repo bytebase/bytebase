@@ -4,14 +4,10 @@ import type { SelectOption } from "naive-ui";
 import { ConditionExpr, Factor, SQLTypeList } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
-import {
-  engineName,
-  EngineTypeList,
-  PresetRiskLevelList,
-  SupportedSourceList,
-} from "@/types";
+import { engineName, PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
 import { levelText } from "../../utils";
+import { supportedEngineList } from "@/utils";
 
 export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const context = useExprEditorContext();
@@ -35,13 +31,13 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   };
 
   const getDBEndingOptions = () => {
-    return EngineTypeList.map<SelectOption>((type) => ({
+    return supportedEngineList().map<SelectOption>((type) => ({
       label: engineName(type),
       value: type,
     }));
   };
 
-  const getRiskOptions = () => {
+  const getLevelOptions = () => {
     return PresetRiskLevelList.map<SelectOption>(({ level }) => ({
       label: levelText(level),
       value: level,
@@ -84,8 +80,8 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
     if (factor === "db_engine") {
       return getDBEndingOptions();
     }
-    if (factor === "risk") {
-      return getRiskOptions();
+    if (factor === "level") {
+      return getLevelOptions();
     }
     if (factor === "source") {
       return getSourceOptions();
@@ -104,7 +100,7 @@ export const factorSupportDropdown = (factor: Factor): boolean => {
     "environment_id",
     "db_engine",
     "sql_type",
-    "risk",
+    "level",
     "source",
   ];
   return list.includes(factor);
