@@ -23,6 +23,10 @@ var ownerAndDBAMethods = map[string]bool{
 	"InstanceService/RemoveDataSource":       true,
 	"InstanceService/UpdateDataSource":       true,
 	"SubscriptionService/TrialSubscription":  true,
+	"RiskService/ListRisks":                  true,
+	"RiskService/CreateRisk":                 true,
+	"RiskService/UpdateRisk":                 true,
+	"RiskService/DeleteRisk":                 true,
 }
 
 var projectOwnerMethods = map[string]bool{
