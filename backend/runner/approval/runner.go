@@ -19,7 +19,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -71,47 +70,25 @@ type Runner struct {
 	dbFactory *dbfactory.DBFactory
 	stateCfg  *state.State
 
-	profile        config.Profile
 	licenseService enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
 		store:          store,
 		dbFactory:      dbFactory,
 		stateCfg:       stateCfg,
-		profile:        profile,
 		licenseService: licenseService,
-	}
-}
-
-func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
-	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		StatusList: []api.IssueStatus{api.IssueOpen},
-	})
-	if err != nil {
-		err := errors.Wrap(err, "failed to list issues")
-		log.Error("failed to retry finding approval template", zap.Error(err))
-	}
-	for _, issue := range issues {
-		payload := &storepb.IssuePayload{}
-		if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-			log.Error("failed to retry finding approval template", zap.Int("issueID", issue.UID), zap.Error(err))
-			continue
-		}
-		if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
-			r.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-		}
 	}
 }
 
 // Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(r.profile.ApprovalRunnerInterval)
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", r.profile.ApprovalRunnerInterval))
+	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", 1*time.Second))
 	r.retryFindApprovalTemplate(ctx)
 	for {
 		select {
@@ -143,6 +120,26 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 		case <-ctx.Done():
 			return
+		}
+	}
+}
+
+func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
+	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
+		StatusList: []api.IssueStatus{api.IssueOpen},
+	})
+	if err != nil {
+		err := errors.Wrap(err, "failed to list issues")
+		log.Error("failed to retry finding approval template", zap.Error(err))
+	}
+	for _, issue := range issues {
+		payload := &storepb.IssuePayload{}
+		if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+			log.Error("failed to retry finding approval template", zap.Int("issueID", issue.UID), zap.Error(err))
+			continue
+		}
+		if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
+			r.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 		}
 	}
 }
