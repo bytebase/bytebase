@@ -128,6 +128,8 @@ const showReviewButton = computed(() => {
 });
 
 const showRolloutButton = computed(() => {
+  if (create.value) return true;
+
   return reviewDone.value;
 });
 
