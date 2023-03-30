@@ -252,7 +252,7 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 		}
 	case http.MethodPost:
-		if matches := issueRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
+		if path == "/issue" {
 			// Workspace developer can only create issue under the project that the user is the member of.
 			var issueCreate api.IssueCreate
 			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
