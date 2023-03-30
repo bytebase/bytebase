@@ -1890,7 +1890,7 @@
     },
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
-    "view-details": "查看定义"
+    "view-definition": "查看定义"
   },
   "debug-log": {
     "title": "Debug 日志",
