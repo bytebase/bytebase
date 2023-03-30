@@ -343,6 +343,9 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	})
 	var maxRisk int64
 	for _, risk := range risks {
+		if !risk.Active {
+			continue
+		}
 		if risk.Source != issueTypeToRiskSource[issue.Type] {
 			continue
 		}
