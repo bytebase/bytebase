@@ -16,7 +16,6 @@ func activeProfile(dataDir string) config.Profile {
 	p.PgUser = "bb"
 	p.BackupRunnerInterval = 10 * time.Minute
 	p.AppRunnerInterval = 30 * time.Second
-	p.ApprovalRunnerInterval = 30 * time.Second
 	p.MetricConnectionKey = "so9lLwj5zLjH09sxNabsyVNYSsAHn68F"
 	return p
 }

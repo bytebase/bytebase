@@ -399,7 +399,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
-		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, profile, s.licenseService)
+		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.licenseService)
 
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -554,7 +554,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager))
+	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.stateCfg))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.

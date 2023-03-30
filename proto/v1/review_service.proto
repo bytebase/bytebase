@@ -89,7 +89,7 @@ message UpdateReviewRequest {
   Review review = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message BatchUpdateReviewsRequest {
@@ -152,19 +152,20 @@ message Review {
   repeated Approver approvers = 9;
 
   // If the value is `false`, it means that the backend is still finding matching approval templates.
-  // If `true`, approval_templates & approvers are available.
+  // If `true`, approval_templates & approvers & approval_finding_error are available.
   bool approval_finding_done = 10;
+  string approval_finding_error = 11;
 
   // The subscribers.
   // Format: user:hello@world.com
-  repeated string subscribers = 11;
+  repeated string subscribers = 12;
 
   // Format: user:hello@world.com
-  string creator = 12;
+  string creator = 13;
 
-  google.protobuf.Timestamp create_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum ReviewStatus {
