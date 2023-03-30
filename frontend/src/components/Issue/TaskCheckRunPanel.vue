@@ -71,12 +71,6 @@
       </template>
     </BBTable>
 
-    <TaskCheckResultDefinitionModal
-      v-if="state.activeDefinition"
-      :definition="state.activeDefinition"
-      @cancel="state.activeDefinition = undefined"
-    />
-
     <SQLRuleEditDialog
       v-if="state.activeRule"
       :editable="false"
@@ -84,6 +78,12 @@
       :payload="state.activeRule.payload"
       :disabled="false"
       @cancel="state.activeRule = undefined"
+    />
+
+    <TaskCheckResultDefinitionModal
+      v-if="state.activeDefinition"
+      :definition="state.activeDefinition"
+      @cancel="state.activeDefinition = undefined"
     />
   </div>
 </template>
