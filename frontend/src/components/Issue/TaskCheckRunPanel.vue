@@ -44,7 +44,7 @@
           <template v-if="row.checkResult.details">
             <span
               class="ml-1 normal-link"
-              @click="state.activeDefinition = row.checkResult.details"
+              @click="state.activeResultDefinition = row.checkResult.details"
               >{{ $t("sql-review.view-definition") }}</span
             >
             <span class="border-r border-control-border ml-1"></span>
@@ -81,9 +81,9 @@
     />
 
     <TaskCheckResultDefinitionModal
-      v-if="state.activeDefinition"
-      :definition="state.activeDefinition"
-      @cancel="state.activeDefinition = undefined"
+      v-if="state.activeResultDefinition"
+      :definition="state.activeResultDefinition"
+      @cancel="state.activeResultDefinition = undefined"
     />
   </div>
 </template>
@@ -130,7 +130,7 @@ type TableRow = {
 
 type LocalState = {
   activeRule: PreviewSQLReviewRule | undefined;
-  activeDefinition?: string;
+  activeResultDefinition?: string;
 };
 
 const props = defineProps({
