@@ -2129,12 +2129,14 @@
           },
           "and": {
             "description": "All of the following are true..."
-          }
+          },
+          "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
         },
         "input-value": "Input value",
-        "add-condition-here": "Add condition here",
+        "add-condition-in-group-placeholder": "Add {plus} to add condition",
         "select-value": "Select value",
-        "input-value-press-enter": "Input value, press Enter to confirm"
+        "input-value-press-enter": "Input value, press Enter to confirm",
+        "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition"
       },
       "template": {
         "templates": "Templates",
