@@ -646,7 +646,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Line:    walkThroughError.Line,
 		})
 	case catalog.ErrorTypeColumnIsReferencedByView:
-		content := walkThroughError.Content
+		details := ""
 		if checkContext.DbType == db.Postgres {
 			list, yes := walkThroughError.Payload.([]string)
 			if !yes {
@@ -655,7 +655,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			if definition, err := getViewDefinition(checkContext, list); err != nil {
 				log.Warn("failed to get view definition", zap.Error(err))
 			} else {
-				content = fmt.Sprintf("%s\n\n%s", content, definition)
+				details = definition
 			}
 		}
 
@@ -663,11 +663,12 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Status:  Error,
 			Code:    ColumnIsReferencedByView,
 			Title:   "Column is referenced by view",
-			Content: content,
+			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
+			Details: details,
 		})
 	case catalog.ErrorTypeTableIsReferencedByView:
-		content := walkThroughError.Content
+		details := ""
 		if checkContext.DbType == db.Postgres {
 			list, yes := walkThroughError.Payload.([]string)
 			if !yes {
@@ -676,7 +677,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			if definition, err := getViewDefinition(checkContext, list); err != nil {
 				log.Warn("failed to get view definition", zap.Error(err))
 			} else {
-				content = fmt.Sprintf("%s\n\n%s", content, definition)
+				details = definition
 			}
 		}
 
@@ -684,8 +685,9 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Status:  Error,
 			Code:    TableIsReferencedByView,
 			Title:   "Table is referenced by view",
-			Content: content,
+			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
+			Details: details,
 		})
 	default:
 		res = append(res, Advice{
