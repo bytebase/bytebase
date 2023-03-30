@@ -101,6 +101,10 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 
 // ListRisks lists risks.
 func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
+	if risks, ok := s.risksCache.Load(0); ok {
+		return risks.([]*RiskMessage), nil
+	}
+
 	query := `
 		SELECT
 			id,
@@ -157,6 +161,7 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 		return nil, errors.Wrap(err, "failed to commit")
 	}
 
+	s.risksCache.Store(0, risks)
 	return risks, nil
 }
 
@@ -194,6 +199,7 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage, creatorID int
 		return nil, errors.Wrap(err, "failed to commit")
 	}
 
+	s.risksCache.Delete(0)
 	return &RiskMessage{
 		ID:         id,
 		Source:     risk.Source,
@@ -247,5 +253,6 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 		return nil, errors.Wrap(err, "failed to commit")
 	}
 
+	s.risksCache.Delete(0)
 	return s.GetRisk(ctx, id)
 }

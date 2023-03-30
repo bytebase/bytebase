@@ -7,6 +7,27 @@ import {
   languageOfEngine,
   MaybeRef,
 } from "../types";
+import { isDev } from "./util";
+
+export const supportedEngineList = () => {
+  const engines: EngineType[] = [
+    "MYSQL",
+    "POSTGRES",
+    "TIDB",
+    "SNOWFLAKE",
+    "CLICKHOUSE",
+    "MONGODB",
+    "SPANNER",
+    "REDIS",
+    "ORACLE",
+    "MSSQL",
+    "MARIADB",
+  ];
+  if (isDev()) {
+    engines.push("REDSHIFT");
+  }
+  return engines;
+};
 
 export function instanceName(instance: Instance) {
   let name = instance.name;
@@ -107,5 +128,6 @@ export const instanceHasSSL = (
     "POSTGRES",
     "REDIS",
     "ORACLE",
+    "MARIADB",
   ].includes(engine);
 };

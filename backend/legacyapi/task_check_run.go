@@ -73,12 +73,8 @@ const (
 	TaskCheckDatabaseStatementAffectedRowsReport TaskCheckType = "bb.task-check.database.statement.affected-rows.report"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
-	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
-	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
 	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
 	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
-	// TaskCheckIssueLGTM is the task check type for LGTM comments.
-	TaskCheckIssueLGTM TaskCheckType = "bb.task-check.issue.lgtm"
 	// TaskCheckPITRMySQL is the task check type for MySQL PITR.
 	TaskCheckPITRMySQL TaskCheckType = "bb.task-check.pitr.mysql"
 )
@@ -106,6 +102,7 @@ type TaskCheckResult struct {
 	Title     string          `json:"title,omitempty"`
 	Content   string          `json:"content,omitempty"`
 	Line      int             `json:"line,omitempty"`
+	Details   string          `json:"details,omitempty"`
 }
 
 // TaskCheckRunResultPayload is the result payload of a task check run.

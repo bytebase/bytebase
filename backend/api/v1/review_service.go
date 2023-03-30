@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -26,13 +27,15 @@ type ReviewService struct {
 	v1pb.UnimplementedReviewServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	stateCfg        *state.State
 }
 
 // NewReviewService creates a new ReviewService.
-func NewReviewService(store *store.Store, activityManager *activity.Manager) *ReviewService {
+func NewReviewService(store *store.Store, activityManager *activity.Manager, stateCfg *state.State) *ReviewService {
 	return &ReviewService{
 		store:           store,
 		activityManager: activityManager,
+		stateCfg:        stateCfg,
 	}
 }
 
@@ -73,6 +76,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	}
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
+	}
+	if payload.Approval.ApprovalFindingError != "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
 	}
 	if len(payload.Approval.ApprovalTemplates) != 1 {
 		return nil, status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
@@ -152,6 +158,65 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	return review, nil
 }
 
+// UpdateReview updates the review.
+// It can only update approval_finding_done to false.
+func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateReviewRequest) (*v1pb.Review, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+	reviewID, err := getReviewID(request.Review.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
+	}
+
+	patch := &store.UpdateIssueMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		if path == "review.approval_finding_done" {
+			if request.Review.ApprovalFindingDone {
+				return nil, status.Errorf(codes.InvalidArgument, "cannot set approval_finding_done to true")
+			}
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
+			}
+			if payload.Approval == nil {
+				return nil, status.Errorf(codes.Internal, "issue payload approval is nil")
+			}
+			if !payload.Approval.ApprovalFindingDone {
+				return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
+			}
+			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: false,
+				},
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+			}
+			payloadStr := string(payloadBytes)
+			patch.Payload = &payloadStr
+		}
+	}
+
+	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, patch, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+	}
+
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
+	review, err := convertToReview(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+	}
+	return review, nil
+}
+
 func canUserApproveStep(step *storepb.ApprovalStep, user *store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
@@ -194,6 +259,7 @@ func convertToReview(ctx context.Context, store *store.Store, issue *store.Issue
 	review := &v1pb.Review{}
 	if issuePayload.Approval != nil {
 		review.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
+		review.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
 		for _, template := range issuePayload.Approval.ApprovalTemplates {
 			review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
 		}

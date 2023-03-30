@@ -171,14 +171,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if v := projectPatch.Key; v != nil && *v == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
-		if v := projectPatch.LGTMCheckSetting; v != nil {
-			if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
-				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureLGTM.AccessErrorMessage())
-			}
-			if v.Value != api.LGTMValueDisabled && v.Value != api.LGTMValueProjectMember && v.Value != api.LGTMValueProjectOwner {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid LGTM check setting value: %v", v.Value))
-			}
-		}
 		if v := projectPatch.TenantMode; v != nil {
 			if api.ProjectTenantMode(*v) == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())

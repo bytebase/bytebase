@@ -249,7 +249,6 @@
     - [Webhook](#bytebase-v1-Webhook)
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
-    - [LgtmCheck](#bytebase-v1-LgtmCheck)
     - [OperatorType](#bytebase-v1-OperatorType)
     - [ProjectRole](#bytebase-v1-ProjectRole)
     - [SchemaChange](#bytebase-v1-SchemaChange)
@@ -3608,7 +3607,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | db_name_template | [string](#string) |  |  |
 | schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
-| lgtm_check | [LgtmCheck](#bytebase-v1-LgtmCheck) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 
 
@@ -3845,20 +3843,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TYPE_PROJECT_MEMBER_ROLE_UPDATE | 18 | TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
 | TYPE_SQL_EDITOR_QUERY | 19 | SQL Editor related activity types. TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor. |
 | TYPE_DATABASE_RECOVERY_PITR_DONE | 20 | Database related activity types. TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done. |
-
-
-
-<a name="bytebase-v1-LgtmCheck"></a>
-
-### LgtmCheck
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LGTM_CHECK_UNSPECIFIED | 0 |  |
-| LGTM_CHECK_DISABLED | 1 |  |
-| LGTM_CHECK_PROJECT_OWNER | 2 |  |
-| LGTM_CHECK_PROJECT_MEMBER | 3 |  |
 
 
 
@@ -4187,7 +4171,8 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | assignee_attention | [bool](#bool) |  |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
-| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers are available. |
+| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
+| approval_finding_error | [string](#string) |  |  |
 | subscribers | [string](#string) | repeated | The subscribers. Format: user:hello@world.com |
 | creator | [string](#string) |  | Format: user:hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

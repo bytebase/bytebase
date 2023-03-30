@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
@@ -346,6 +347,69 @@ func TestVCS(t *testing.T) {
 						Login: "fake_github_author",
 					},
 					Commits: commits,
+				}
+			},
+		},
+		{
+			name:               "Bitbucket",
+			vcsProviderCreator: fake.NewBitbucket,
+			vcsType:            vcs.Bitbucket,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added, _ [][]string, beforeSHA, afterSHA string) interface{} {
+				var commits []bitbucket.WebhookCommit
+				for range added {
+					commits = append(commits, bitbucket.WebhookCommit{
+						Hash: afterSHA,
+						Date: time.Now(),
+						Author: bitbucket.Author{
+							Raw: "fake_bitbucket_author <fake_bitbucket_author@localhost>",
+							User: bitbucket.User{
+								Nickname: "fake_bitbucket_author",
+							},
+						},
+						Message: "Fake Bitbucket commit message",
+						Links: bitbucket.Links{
+							HTML: bitbucket.Link{
+								Href: "https://bitbucket.org/octocat/Hello-World/commits/fake_github_commit_id",
+							},
+						},
+						Parents: []bitbucket.Target{
+							{Hash: beforeSHA},
+						},
+					})
+				}
+				return bitbucket.WebhookPushEvent{
+					Push: bitbucket.WebhookPush{
+						Changes: []bitbucket.WebhookPushChange{
+							{
+								Old: bitbucket.Branch{
+									Name: "feature/foo",
+									Target: bitbucket.Target{
+										Hash: beforeSHA,
+									},
+								},
+								New: bitbucket.Branch{
+									Name: "feature/foo",
+									Target: bitbucket.Target{
+										Hash: afterSHA,
+									},
+								},
+								Commits: commits,
+							},
+						},
+					},
+					Repository: bitbucket.Repository{
+						FullName: "octocat/Hello-World",
+						Links: bitbucket.Links{
+							HTML: bitbucket.Link{
+								Href: "https://bitbuket.org/octocat/Hello-World",
+							},
+						},
+					},
+					Actor: bitbucket.User{
+						Nickname: "fake_bitbucket_author",
+					},
 				}
 			},
 		},

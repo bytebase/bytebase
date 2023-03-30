@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -26,6 +27,89 @@ type PolicyBinding struct {
 type GetProjectPolicyMessage struct {
 	ProjectID *string
 	UID       *int
+}
+
+// TODO(zp): Do not expose the project member after migrating to V1 API.
+
+// ProjectMemberMessage is the message to create a project member.
+type ProjectMemberMessage struct {
+	ID          int
+	ProjectID   int
+	PrincipalID int
+}
+
+// GetProjectMemberByProjectIDAndPrincipalID gets a project member by project ID and principal ID.
+func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, projectID int, principalID int) (*ProjectMemberMessage, error) {
+	var projectMember ProjectMemberMessage
+	query := `
+	SELECT
+		project_member.id,
+		project_member.project_id,
+		project_member.principal_id
+	FROM project_member 
+	WHERE project_member.project_id = $1 AND project_member.principal_id = $2`
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, projectID, principalID)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&projectMember.ID, &projectMember.ProjectID, &projectMember.PrincipalID); err != nil {
+			return nil, FormatError(err)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return &projectMember, nil
+}
+
+// GetProjectMemberByID gets a project member by ID.
+func (s *Store) GetProjectMemberByID(ctx context.Context, projectMemberID int) (*ProjectMemberMessage, error) {
+	var projectMember ProjectMemberMessage
+	query := `
+	SELECT
+		project_member.id,
+		project_member.project_id,
+		project_member.principal_id
+	FROM project_member 
+	WHERE project_member.id = $1`
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, projectMemberID)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&projectMember.ID, &projectMember.ProjectID, &projectMember.PrincipalID); err != nil {
+			return nil, FormatError(err)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	return &projectMember, nil
 }
 
 // GetProjectPolicy gets the IAM policy of a project.

@@ -50,7 +50,7 @@ export const isStringOperator = (op: Operator): op is StringOperator => {
 export const OperatorList: Record<Factor, Operator[]> = {
   affected_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
 
-  risk: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  level: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
 
   environment_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),

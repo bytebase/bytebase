@@ -112,7 +112,7 @@ var sheetFinder = func(sheetID int) (*api.Sheet, error) {
 	return nil, nil
 }
 
-var testProjectDatabaseMemberMap = struct {
+var testWorkspaceDeveloperDatabaseRouteHelper = struct {
 	// projectToPolicy is a map from project ID to the map of <principal ID, role>.
 	projectToPolicy map[int]map[int]common.ProjectRole
 	// projectOwnsDatabase is a map from project ID to the map of <database ID, true>.
@@ -125,6 +125,9 @@ var testProjectDatabaseMemberMap = struct {
 		101: {},
 		// Project 102 contains member 201 as developer.
 		102: {
+			201: common.ProjectDeveloper,
+		},
+		103: {
 			201: common.ProjectDeveloper,
 		},
 	},
@@ -141,38 +144,37 @@ var testProjectDatabaseMemberMap = struct {
 		102: {
 			303: true,
 		},
+		// Project 103 owns database 304.
+		103: {
+			304: true,
+		},
 	},
 }
 
-var isMemberOfAnyProjectOwnsDatabase = func(principalID int, databaseID int) (bool, error) {
-	// Get the ID of the project owns the database.
-	var projectID int
-	for id, databaseMap := range testProjectDatabaseMemberMap.projectOwnsDatabase {
-		if _, ok := databaseMap[databaseID]; ok {
-			projectID = id
-			break
+func testWorkspaceDeveloperDatabaseRouteMockGetDatabaseProjectID(databaseID int) (int, error) {
+	for projectID, databaseMap := range testWorkspaceDeveloperDatabaseRouteHelper.projectOwnsDatabase {
+		_, ok := databaseMap[databaseID]
+		if ok {
+			return projectID, nil
 		}
 	}
-
-	// Default project contains no member.
-	if projectID == 1 {
-		return false, nil
-	}
-
-	// Check if the principal is a member of the project.
-	m, ok := testProjectDatabaseMemberMap.projectToPolicy[projectID]
-	if !ok {
-		return false, nil
-	}
-	for id := range m {
-		if id == principalID {
-			return true, nil
-		}
-	}
-	return false, nil
+	return 0, errors.Errorf("database %d not found", databaseID)
 }
 
-var testMemberIssueHelper = struct {
+func testWorkspaceDeveloperDatabaseRouteMockGetProjectMemberIDs(projectID int) ([]int, error) {
+	m, ok := testWorkspaceDeveloperDatabaseRouteHelper.projectToPolicy[projectID]
+	if !ok {
+		return nil, errors.Errorf("project %d not found", projectID)
+	}
+
+	var memberIDs []int
+	for memberID := range m {
+		memberIDs = append(memberIDs, memberID)
+	}
+	return memberIDs, nil
+}
+
+var testWorkspaceDeveloperIssueRouteHelper = struct {
 	// principalIDToProjectID is a map from principal ID to the project ID.
 	// We assume that a principal can only be a member of one project (actually it can be a member of multiple projects).
 	principalIDToProjectID map[int]int
@@ -197,17 +199,17 @@ var testMemberIssueHelper = struct {
 	},
 }
 
-func mockGetIssueProjectID(issueID int) (int, error) {
-	projectID, ok := testMemberIssueHelper.issueIDToProjectID[issueID]
+func testWorkspaceDeveloperIssueRouteMockGetIssueProjectID(issueID int) (int, error) {
+	projectID, ok := testWorkspaceDeveloperIssueRouteHelper.issueIDToProjectID[issueID]
 	if !ok {
 		return 0, errors.Errorf("issue %d does not belong to any project", issueID)
 	}
 	return projectID, nil
 }
 
-func mockGetProjectMembers(projectID int) ([]int, error) {
+func testWorkspaceDeveloperIssueRouteMockGetProjectMemberIDs(projectID int) ([]int, error) {
 	var memberIDs []int
-	for principalID, id := range testMemberIssueHelper.principalIDToProjectID {
+	for principalID, id := range testWorkspaceDeveloperIssueRouteHelper.principalIDToProjectID {
 		if id == projectID {
 			memberIDs = append(memberIDs, principalID)
 		}

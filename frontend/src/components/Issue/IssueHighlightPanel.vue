@@ -23,7 +23,7 @@
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
             <IssueReviewButtonGroup v-if="showReviewButton" />
-            <IssueStatusTransitionButtonGroup v-else />
+            <IssueStatusTransitionButtonGroup v-else-if="showRolloutButton" />
           </div>
         </div>
         <div v-if="!create">
@@ -114,7 +114,7 @@ const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
 const issueReview = useIssueReviewContext();
-const { done: reviewDone } = issueReview;
+const { done: reviewDone, error: reviewError } = issueReview;
 
 const state = reactive<LocalState>({
   editing: false,
@@ -123,7 +123,14 @@ const state = reactive<LocalState>({
 
 const showReviewButton = computed(() => {
   if (create.value) return false;
+  if (reviewError.value) return false;
   return !reviewDone.value;
+});
+
+const showRolloutButton = computed(() => {
+  if (create.value) return true;
+
+  return reviewDone.value;
 });
 
 watch(

@@ -81,7 +81,7 @@
       "developer": "开发者",
       "member": "成员"
     },
-    "assignee": "责任人",
+    "assignee": "发布人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -689,9 +689,10 @@
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
     },
-    "assignee-tooltip": "该工单的发布负责人",
+    "assignee-tooltip": "发布人可以在审批流完成后进行发布。",
     "approval-flow": {
-      "self": "审批流"
+      "self": "审批流",
+      "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。"
     },
     "waiting-to-roll-out": "等待发布",
     "waiting-for-review": "等待审核"
@@ -1889,7 +1890,8 @@
       "active": "开启"
     },
     "enabled-rules": "开启的规则数",
-    "rule-detail": "规则详情"
+    "rule-detail": "规则详情",
+    "view-definition": "查看定义"
   },
   "debug-log": {
     "title": "Debug 日志",
@@ -2126,12 +2128,14 @@
           },
           "and": {
             "description": "以下全部为真…"
-          }
+          },
+          "tooltip": "条件组是一系列由「与」或「或」运算符连接的条件的集合。"
         },
         "input-value": "输入值",
-        "add-condition-here": "在这里添加条件",
+        "add-condition-in-group-placeholder": "点击{plus}添加条件",
         "select-value": "选择值",
-        "input-value-press-enter": "输入值，按回车确认"
+        "input-value-press-enter": "输入值，按回车确认",
+        "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
       },
       "template": {
         "templates": "模板",

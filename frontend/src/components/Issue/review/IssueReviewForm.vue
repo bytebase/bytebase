@@ -1,5 +1,8 @@
 <template>
-  <div space-y-3>
+  <div class="mt-2">
+    <div class="text-sm">
+      {{ issue.name }}
+    </div>
     <div class="pt-4 pb-1 flex justify-end gap-x-3">
       <button class="btn-normal" @click="$emit('cancel')">
         {{ $t("common.cancel") }}
@@ -12,9 +15,8 @@
 </template>
 
 <script lang="ts" setup>
-import { h, Ref } from "vue";
+import { Ref } from "vue";
 
-import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
 
@@ -25,16 +27,6 @@ const emit = defineEmits<{
 
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;
-
-useOverrideSubtitle(() => {
-  return h(
-    "div",
-    {
-      class: "mt-1 textinfolabel whitespace-pre-wrap",
-    },
-    issue.value.name
-  );
-});
 
 const handleConfirm = (e: MouseEvent) => {
   const button = e.target as HTMLElement;

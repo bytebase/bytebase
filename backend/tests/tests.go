@@ -17,7 +17,10 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	// Import pg driver.
@@ -154,10 +157,16 @@ CREATE TABLE book4 (
 )
 
 type controller struct {
-	server         *server.Server
-	profile        componentConfig.Profile
-	client         *http.Client
-	cookie         string
+	server   *server.Server
+	profile  componentConfig.Profile
+	client   *http.Client
+	grpcConn *grpc.ClientConn
+
+	cookie             string
+	grpcMDAccessToken  string
+	grpcMDRefreshToken string
+	grpcMDUser         string
+
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
 
@@ -294,20 +303,19 @@ func (ctl *controller) initWorkspaceProfile() error {
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
 func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                   testReleaseMode,
-		ExternalURL:            fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:               port + 1,
-		DatastorePort:          port + 2,
-		SampleDatabasePort:     port + 3,
-		PgUser:                 "bbtest",
-		Readonly:               readOnly,
-		DataDir:                dataDir,
-		ResourceDir:            resourceDir,
-		AppRunnerInterval:      1 * time.Second,
-		ApprovalRunnerInterval: 1 * time.Second,
-		BackupRunnerInterval:   10 * time.Second,
-		BackupStorageBackend:   api.BackupStorageBackendLocal,
-		FeishuAPIURL:           feishuAPIURL,
+		Mode:                 testReleaseMode,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:             port + 1,
+		DatastorePort:        port + 2,
+		SampleDatabasePort:   port + 3,
+		PgUser:               "bbtest",
+		Readonly:             readOnly,
+		DataDir:              dataDir,
+		ResourceDir:          resourceDir,
+		AppRunnerInterval:    1 * time.Second,
+		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
 	}
 }
 
@@ -324,7 +332,6 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 		DataDir:                    dataDir,
 		ResourceDir:                resourceDir,
 		AppRunnerInterval:          1 * time.Second,
-		ApprovalRunnerInterval:     1 * time.Second,
 		BackupRunnerInterval:       10 * time.Second,
 		BackupStorageBackend:       api.BackupStorageBackendLocal,
 		FeishuAPIURL:               feishuAPIURL,
@@ -395,6 +402,13 @@ func (ctl *controller) start(ctx context.Context, port int) error {
 
 	// initialize controller clients.
 	ctl.client = &http.Client{}
+
+	// initialize grpc connection.
+	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", ctl.profile.GrpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return errors.Wrap(err, "failed to dial grpc")
+	}
+	ctl.grpcConn = grpcConn
 
 	if err := ctl.waitForHealthz(); err != nil {
 		return errors.Wrap(err, "failed to wait for healthz")
@@ -504,11 +518,18 @@ func (ctl *controller) waitForHealthz() error {
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
-		e = ctl.server.Shutdown(ctx)
+		if err := ctl.server.Shutdown(ctx); err != nil {
+			e = multierr.Append(e, err)
+		}
 	}
 	if ctl.vcsProvider != nil {
 		if err := ctl.vcsProvider.Close(); err != nil {
-			e = err
+			e = multierr.Append(e, err)
+		}
+	}
+	if ctl.grpcConn != nil {
+		if err := ctl.grpcConn.Close(); err != nil {
+			e = multierr.Append(e, err)
 		}
 	}
 	return e
@@ -655,6 +676,9 @@ func (ctl *controller) Login() error {
 	}
 	ctl.cookie = cookie
 
+	ctl.grpcMDAccessToken = resp.Header.Get("grpc-metadata-bytebase-access-token")
+	ctl.grpcMDRefreshToken = resp.Header.Get("grpc-metadata-bytebase-refresh-token")
+	ctl.grpcMDUser = resp.Header.Get("grpc-metadata-bytebase-user")
 	return nil
 }
 

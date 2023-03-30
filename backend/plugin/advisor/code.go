@@ -74,6 +74,7 @@ const (
 	DefaultCurrentTimeColumnCountExceedsLimit  Code = 418
 	OnUpdateCurrentTimeColumnCountExceedsLimit Code = 419
 	NoDefault                                  Code = 420
+	ColumnIsReferencedByView                   Code = 421
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -87,6 +88,7 @@ const (
 	TableCommentTooLong               Code = 606
 	TableExists                       Code = 607
 	CreateTablePartition              Code = 608
+	TableIsReferencedByView           Code = 609
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701

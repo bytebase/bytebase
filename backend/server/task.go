@@ -71,11 +71,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 			}
 			payloadStr := string(payloadBytes)
-			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				Payload: &payloadStr,
-			}, api.SystemBotID); err != nil {
+			}, api.SystemBotID)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
 			}
+			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -143,11 +145,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 			}
 			payloadStr := string(payloadBytes)
-			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				Payload: &payloadStr,
-			}, api.SystemBotID); err != nil {
+			}, api.SystemBotID)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
 			}
+			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 		}
 
 		composedTaskPatched, err := s.store.GetTaskByID(ctx, task.ID)
@@ -280,13 +284,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if task == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
-		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-		if err != nil {
-			return err
-		}
-		project := issue.Project
 
-		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, project, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
+		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
 		}
 		composedTask, err := s.store.GetTaskByID(ctx, task.ID)

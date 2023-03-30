@@ -8,8 +8,15 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/google/cel-go/cel"
+	"github.com/pkg/errors"
+
+	v1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
+
 	"github.com/bytebase/bytebase/backend/common"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -17,13 +24,15 @@ import (
 // RiskService implements the risk service.
 type RiskService struct {
 	v1pb.UnimplementedRiskServiceServer
-	store *store.Store
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewRiskService creates a new RiskService.
-func NewRiskService(store *store.Store) *RiskService {
+func NewRiskService(store *store.Store, licenseService enterpriseAPI.LicenseService) *RiskService {
 	return &RiskService{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
@@ -54,6 +63,12 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (
 
 // CreateRisk creates a risk.
 func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
+	}
+	if err := validateRiskExpression(request.Risk.Expression); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
+	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
 		Source:     convertSource(request.Risk.Source),
@@ -70,6 +85,9 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 
 // UpdateRisk updates a risk.
 func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
+	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -99,6 +117,9 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 		case "risk.level":
 			patch.Level = &request.Risk.Level
 		case "risk.expression":
+			if err := validateRiskExpression(request.Risk.Expression); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
+			}
 			patch.Expression = request.Risk.Expression
 		}
 	}
@@ -164,4 +185,20 @@ func convertSource(source v1pb.Risk_Source) store.RiskSource {
 		return store.RiskSourceDatabaseDataUpdate
 	}
 	return store.RiskSourceUnknown
+}
+
+func validateRiskExpression(expression *v1alpha1.ParsedExpr) error {
+	if expression == nil || expression.Expr == nil {
+		return nil
+	}
+	e, err := cel.NewEnv(approval.RiskFactors...)
+	if err != nil {
+		return errors.Wrap(err, "failed to create cel env")
+	}
+	ast := cel.ParsedExprToAst(expression)
+	_, issues := e.Check(ast)
+	if issues != nil {
+		return errors.Wrap(issues.Err(), "invalid cel expression")
+	}
+	return nil
 }

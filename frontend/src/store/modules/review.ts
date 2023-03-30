@@ -58,10 +58,22 @@ export const useReviewStore = defineStore("review", () => {
     await setReviewByIssue(issue, review);
   };
 
+  const regenerateReview = async (issue: Issue) => {
+    const review = await reviewServiceClient.updateReview({
+      review: {
+        name: reviewName(issue),
+        approvalFindingDone: false,
+      },
+      updateMask: ["review.approval_finding_done"],
+    });
+    await setReviewByIssue(issue, review);
+  };
+
   return {
     getReviewByIssue,
     fetchReviewByIssue,
     approveReview,
+    regenerateReview,
   };
 });
 

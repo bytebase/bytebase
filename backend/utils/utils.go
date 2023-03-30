@@ -399,14 +399,6 @@ func PassAllCheck(task *store.TaskMessage, allowedStatus api.TaskCheckStatus, ta
 			return false, nil
 		}
 
-		pass, err = passCheck(runs, api.TaskCheckInstanceMigrationSchema, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-
 		if api.IsSyntaxCheckSupported(engine) {
 			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
@@ -652,6 +644,9 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 		return false, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 	if issuePayload.Approval == nil || !issuePayload.Approval.ApprovalFindingDone {
+		return false, nil
+	}
+	if issuePayload.Approval.ApprovalFindingError != "" {
 		return false, nil
 	}
 	if len(issuePayload.Approval.ApprovalTemplates) == 0 {

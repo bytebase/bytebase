@@ -41,6 +41,14 @@
         </BBTableCell>
         <BBTableCell class="w-auto">
           <span>{{ row.checkResult.content }}</span>
+          <template v-if="row.checkResult.details">
+            <span
+              class="ml-1 normal-link"
+              @click="state.activeResultDefinition = row.checkResult.details"
+              >{{ $t("sql-review.view-definition") }}</span
+            >
+            <span class="border-r border-control-border ml-1"></span>
+          </template>
           <template
             v-if="row.checkResult.namespace === 'bb.advisor' && getActiveRule(row.checkResult.title as RuleType)"
           >
@@ -70,6 +78,12 @@
       :payload="state.activeRule.payload"
       :disabled="false"
       @cancel="state.activeRule = undefined"
+    />
+
+    <TaskCheckResultDefinitionModal
+      v-if="state.activeResultDefinition"
+      :definition="state.activeResultDefinition"
+      @cancel="state.activeResultDefinition = undefined"
     />
   </div>
 </template>
@@ -116,6 +130,7 @@ type TableRow = {
 
 type LocalState = {
   activeRule: PreviewSQLReviewRule | undefined;
+  activeResultDefinition?: string;
 };
 
 const props = defineProps({

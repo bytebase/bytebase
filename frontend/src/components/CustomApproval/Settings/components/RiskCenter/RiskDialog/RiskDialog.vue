@@ -29,7 +29,6 @@ import { useDialog } from "naive-ui";
 
 import { defer } from "@/utils";
 import { useRiskCenterContext } from "../context";
-import { sourceText } from "../../common";
 import RiskForm from "./RiskForm.vue";
 import { Risk } from "@/types/proto/v1/risk_service";
 import { pushNotification, useRiskStore } from "@/store";
@@ -50,21 +49,19 @@ const state = reactive<LocalState>({
 });
 
 const title = computed(() => {
-  const parts: string[] = [];
   if (dialog.value) {
-    const { mode, risk } = dialog.value;
+    const { mode } = dialog.value;
     if (!allowAdmin.value) {
-      parts.push(t("custom-approval.security-rule.view-rule"));
+      return t("custom-approval.security-rule.view-rule");
     } else {
       if (mode === "CREATE") {
-        parts.push(t("custom-approval.security-rule.add-rule"));
+        return t("custom-approval.security-rule.add-rule");
       } else if (mode === "EDIT") {
-        parts.push(t("custom-approval.security-rule.edit-rule"));
+        return t("custom-approval.security-rule.edit-rule");
       }
     }
-    parts.push(sourceText(risk.source));
   }
-  return parts.join(" - ");
+  return "";
 });
 const cancel = async () => {
   const pass = await beforeClose();

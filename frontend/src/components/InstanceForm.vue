@@ -17,12 +17,17 @@
                 class="btn mr-2"
                 :checked="basicInformation.engine == engine"
               />
-              <img class="h-5 w-auto mr-1" :src="EngineIconPath[engine]" />
+              <img
+                class="w-5 h-auto max-h-[20px] object-contain mr-1"
+                :src="EngineIconPath[engine]"
+              />
               <p class="text-center text-sm">
                 {{ engineName(engine) }}
               </p>
               <template v-if="isEngineBeta(engine)">
-                <BBBetaBadge class="ml-1" />
+                <BBBetaBadge
+                  class="absolute -top-px -right-px rounded text-xs !bg-gray-500 px-1 !py-0"
+                />
               </template>
             </div>
           </div>
@@ -548,6 +553,7 @@ import {
   instanceSlug,
   isDev,
   isValidSpannerHost,
+  supportedEngineList,
 } from "../utils";
 import {
   InstancePatch,
@@ -728,23 +734,7 @@ watch(
 );
 
 const engineList = computed(() => {
-  const engines: EngineType[] = [
-    "MYSQL",
-    "POSTGRES",
-    "TIDB",
-    "SNOWFLAKE",
-    "CLICKHOUSE",
-    "MONGODB",
-    "SPANNER",
-    "REDIS",
-    "ORACLE",
-    "MSSQL",
-    "MARIADB",
-  ];
-  if (isDev()) {
-    engines.push("REDSHIFT");
-  }
-  return engines;
+  return supportedEngineList();
 });
 
 const EngineIconPath = {

@@ -85,8 +85,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+		projectMember, err := s.store.GetProjectMemberByProjectIDAndPrincipalID(ctx, project.UID, principal.ID)
+		if err != nil {
+			return err
+		}
 		composedProjectMember := &api.ProjectMember{
-			ID:        user.ID,
+			ID:        projectMember.ID,
 			ProjectID: project.UID,
 			Role:      string(projectMemberCreate.Role),
 			Principal: principal,
@@ -104,10 +108,18 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		principalID, err := strconv.Atoi(c.Param("memberID"))
+		memberID, err := strconv.Atoi(c.Param("memberID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
+		oldProjectMember, err := s.store.GetProjectMemberByID(ctx, memberID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get project member").SetInternal(err)
+		}
+		if oldProjectMember == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "project member not found")
+		}
+
 		projectMemberPatch := &api.ProjectMemberPatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed change project membership").SetInternal(err)
@@ -129,7 +141,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
-		user, err := s.store.GetUserByID(ctx, principalID)
+		user, err := s.store.GetUserByID(ctx, oldProjectMember.PrincipalID)
 		if err != nil {
 			return err
 		}
@@ -176,15 +188,19 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+		projectMember, err := s.store.GetProjectMemberByProjectIDAndPrincipalID(ctx, project.UID, principal.ID)
+		if err != nil {
+			return err
+		}
 		composedProjectMember := &api.ProjectMember{
-			ID:        user.ID,
+			ID:        projectMember.ID,
 			ProjectID: project.UID,
 			Role:      string(newRole),
 			Principal: principal,
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProjectMember); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project membership change response: %v", principalID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project membership change response: %v", oldProjectMember.PrincipalID)).SetInternal(err)
 		}
 		return nil
 	})
@@ -195,9 +211,16 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		principalID, err := strconv.Atoi(c.Param("memberID"))
+		memberID, err := strconv.Atoi(c.Param("memberID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
+		}
+		projectMember, err := s.store.GetProjectMemberByID(ctx, memberID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get project member").SetInternal(err)
+		}
+		if projectMember == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "project member not found")
 		}
 		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 
@@ -212,7 +235,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
-		user, err := s.store.GetUserByID(ctx, principalID)
+		user, err := s.store.GetUserByID(ctx, projectMember.PrincipalID)
 		if err != nil {
 			return err
 		}
