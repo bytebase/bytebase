@@ -90,6 +90,5 @@ const toApprovalFlow = () => {
     mode: "EDIT",
     rule,
   };
-  context.tab.value = "flows";
 };
 </script>
