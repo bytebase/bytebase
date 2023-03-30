@@ -181,7 +181,6 @@ import {
   useOnboardingStateStore,
 } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   searchText: string;
@@ -216,7 +215,7 @@ const onTrialingModalClose = () => {
 const planImage = computed(() => {
   return new URL(
     `../assets/plan-${planTypeToString(
-      subscriptionStore.subscription?.plan ?? PlanType.FREE
+      subscriptionStore.currentPlan
     ).toLowerCase()}.png`,
     import.meta.url
   ).href;
