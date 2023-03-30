@@ -90,11 +90,11 @@ type ResourceType = "environment" | "instance" | "project" | "idp";
 const props = withDefaults(
   defineProps<{
     resource: ResourceType;
-    value: string;
-    resourceTitle: string;
-    readonly: boolean;
-    randomString: boolean;
-    validator: (resourceId: ResourceId) => Promise<string | undefined>;
+    value?: string;
+    resourceTitle?: string;
+    randomString?: boolean;
+    readonly?: boolean;
+    validator?: (resourceId: ResourceId) => Promise<string | undefined>;
   }>(),
   {
     value: "",
