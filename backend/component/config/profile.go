@@ -41,8 +41,6 @@ type Profile struct {
 	DemoName string
 	// AppRunnerInterval is the interval for application runner.
 	AppRunnerInterval time.Duration
-	// ApprovalRunnerInterval is the interval for approval runner.
-	ApprovalRunnerInterval time.Duration
 	// BackupRunnerInterval is the interval for backup runner.
 	BackupRunnerInterval time.Duration
 	// BackupStorageBackend is the backup storage backend.
