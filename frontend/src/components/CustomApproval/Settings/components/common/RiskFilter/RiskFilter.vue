@@ -21,6 +21,8 @@
       </div>
     </div>
 
+    <hr v-if="!hideSourceFilter" />
+
     <div v-if="!hideSourceFilter" class="flex items-center justify-start">
       <SourceFilter />
     </div>
