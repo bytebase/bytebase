@@ -691,9 +691,10 @@
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "The one who's responsible for the rolling out.",
+    "assignee-tooltip": "Allow the assignee to roll out the issue once the approval flow has been passed.",
     "approval-flow": {
-      "self": "Approval flow"
+      "self": "Approval flow",
+      "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk."
     },
     "waiting-to-roll-out": "Waiting to roll out",
     "waiting-for-review": "Waiting for review"
