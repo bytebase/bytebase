@@ -85,8 +85,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+		projectMemberID, err := s.store.GetProjectMemberIDByProjectIDAndPrincipalID(ctx, project.UID, principal.ID)
+		if err != nil {
+			return err
+		}
 		composedProjectMember := &api.ProjectMember{
-			ID:        user.ID,
+			ID:        projectMemberID,
 			ProjectID: project.UID,
 			Role:      string(projectMemberCreate.Role),
 			Principal: principal,
@@ -176,8 +180,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
+		projectMemberID, err := s.store.GetProjectMemberIDByProjectIDAndPrincipalID(ctx, project.UID, principal.ID)
+		if err != nil {
+			return err
+		}
 		composedProjectMember := &api.ProjectMember{
-			ID:        user.ID,
+			ID:        projectMemberID,
 			ProjectID: project.UID,
 			Role:      string(newRole),
 			Principal: principal,
