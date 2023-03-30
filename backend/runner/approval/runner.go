@@ -83,12 +83,14 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *sta
 	}
 }
 
+const approvalRunnerInterval = 1 * time.Second
+
 // Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(approvalRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", 1*time.Second))
+	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", approvalRunnerInterval))
 	r.retryFindApprovalTemplate(ctx)
 	for {
 		select {
