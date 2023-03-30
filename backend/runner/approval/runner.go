@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 
@@ -66,19 +67,42 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store          *store.Store
-	dbFactory      *dbfactory.DBFactory
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
+	stateCfg  *state.State
+
 	profile        config.Profile
 	licenseService enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
 		store:          store,
 		dbFactory:      dbFactory,
+		stateCfg:       stateCfg,
 		profile:        profile,
 		licenseService: licenseService,
+	}
+}
+
+func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
+	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
+		StatusList: []api.IssueStatus{api.IssueOpen},
+	})
+	if err != nil {
+		err := errors.Wrap(err, "failed to list issues")
+		log.Error("failed to retry finding approval template", zap.Error(err))
+	}
+	for _, issue := range issues {
+		payload := &storepb.IssuePayload{}
+		if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+			log.Error("failed to retry finding approval template", zap.Int("issueID", issue.UID), zap.Error(err))
+			continue
+		}
+		if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
+			r.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+		}
 	}
 }
 
@@ -88,16 +112,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", r.profile.ApprovalRunnerInterval))
+	r.retryFindApprovalTemplate(ctx)
 	for {
 		select {
 		case <-ticker.C:
-			err := func() error {
-				issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
-					StatusList: []api.IssueStatus{api.IssueOpen},
-				})
-				if err != nil {
-					return errors.Wrap(err, "failed to list issues")
-				}
+			if err := func() error {
 				risks, err := r.store.ListRisks(ctx)
 				if err != nil {
 					return errors.Wrap(err, "failed to list risks")
@@ -106,15 +125,19 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				if err != nil {
 					return errors.Wrap(err, "failed to get workspace approval setting")
 				}
+
 				var errs error
-				for _, issue := range issues {
+				r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
+					issue := value.(*store.IssueMessage)
 					if err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting); err != nil {
-						errs = multierr.Append(errs, err)
+						errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
 					}
-				}
-				return err
-			}()
-			if err != nil {
+					r.stateCfg.ApprovalFinding.Delete(key)
+					return true
+				})
+
+				return errs
+			}(); err != nil {
 				log.Error("approval runner", zap.Error(err))
 			}
 

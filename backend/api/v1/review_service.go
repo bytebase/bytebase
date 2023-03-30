@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -26,13 +27,15 @@ type ReviewService struct {
 	v1pb.UnimplementedReviewServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	stateCfg        *state.State
 }
 
 // NewReviewService creates a new ReviewService.
-func NewReviewService(store *store.Store, activityManager *activity.Manager) *ReviewService {
+func NewReviewService(store *store.Store, activityManager *activity.Manager, stateCfg *state.State) *ReviewService {
 	return &ReviewService{
 		store:           store,
 		activityManager: activityManager,
+		stateCfg:        stateCfg,
 	}
 }
 
@@ -192,6 +195,8 @@ func (s *ReviewService) RefindReview(ctx context.Context, request *v1pb.RefindRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
+
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {

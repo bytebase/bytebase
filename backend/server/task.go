@@ -71,10 +71,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 			}
 			payloadStr := string(payloadBytes)
-			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			if issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				Payload: &payloadStr,
 			}, api.SystemBotID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
+			} else {
+				s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			}
 		}
 
@@ -143,10 +145,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 			}
 			payloadStr := string(payloadBytes)
-			if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			if issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				Payload: &payloadStr,
 			}, api.SystemBotID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
+			} else {
+				s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			}
 		}
 
