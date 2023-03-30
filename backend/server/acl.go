@@ -191,13 +191,14 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	return nil
 }
 
-var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status`)
+var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
 var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
 
 func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
 		// For /issue route, require the caller principal to be the same as the user in the query.
+		// Only /issue and /project route will bring parameter user in the query.
 		if userStr := queryParams.Get("user"); userStr != "" {
 			userID, err := strconv.Atoi(userStr)
 			if err != nil {
@@ -251,21 +252,23 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 		}
 	case http.MethodPost:
-		// Workspace developer can only create issue under the project that the user is the member of.
-		var issueCreate api.IssueCreate
-		if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
-		}
-		memberIDs, err := getProjectMemberIDs(issueCreate.ProjectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-		for _, memberID := range memberIDs {
-			if memberID == principalID {
-				return nil
+		if path == "/issue" {
+			// Workspace developer can only create issue under the project that the user is the member of.
+			var issueCreate api.IssueCreate
+			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 			}
+			memberIDs, err := getProjectMemberIDs(issueCreate.ProjectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			for _, memberID := range memberIDs {
+				if memberID == principalID {
+					return nil
+				}
+			}
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
 		}
-		return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
 	}
 	return nil
 }
