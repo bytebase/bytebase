@@ -108,10 +108,13 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				var errs error
 				r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
 					issue := value.(*store.IssueMessage)
-					if err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting); err != nil {
+					done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
+					if err != nil {
 						errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
 					}
-					r.stateCfg.ApprovalFinding.Delete(key)
+					if err != nil || done {
+						r.stateCfg.ApprovalFinding.Delete(key)
+					}
 					return true
 				})
 
@@ -146,13 +149,13 @@ func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 	}
 }
 
-func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
+func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage, approvalSetting *storepb.WorkspaceApprovalSetting) (bool, error) {
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return errors.Wrap(err, "failed to unmarshal issue payload")
+		return false, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
-		return nil
+		return true, nil
 	}
 
 	// no need to find if
@@ -168,9 +171,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				Approvers:           nil,
 			},
 		}); err != nil {
-			return errors.Wrap(err, "failed to update issue payload")
+			return false, errors.Wrap(err, "failed to update issue payload")
 		}
-		return nil
+		return true, nil
 	}
 
 	riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
@@ -182,12 +185,12 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				ApprovalFindingError: err.Error(),
 			},
 		}); updateErr != nil {
-			return multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
+			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
 		}
-		return err
+		return false, err
 	}
 	if !done {
-		return nil
+		return false, nil
 	}
 
 	approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
@@ -199,9 +202,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				ApprovalFindingError: err.Error(),
 			},
 		}); updateErr != nil {
-			return multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
+			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
 		}
-		return err
+		return false, err
 	}
 
 	payload = &storepb.IssuePayload{
@@ -216,9 +219,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
-		return errors.Wrap(err, "failed to update issue payload")
+		return false, errors.Wrap(err, "failed to update issue payload")
 	}
-	return nil
+	return true, nil
 }
 
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
