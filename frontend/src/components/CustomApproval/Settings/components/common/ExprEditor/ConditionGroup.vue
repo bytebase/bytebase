@@ -22,11 +22,15 @@
           </template>
         </template>
         <template v-else>
-          <div>
-            {{
-              $t("custom-approval.security-rule.condition.add-condition-here")
-            }}
-          </div>
+          <i18n-t
+            keypath="custom-approval.security-rule.condition.add-condition-in-group-placeholder"
+            tag="div"
+            class="inline-flex items-center"
+          >
+            <template #plus>
+              <heroicons:plus class="w-3 h-3 mx-1" />
+            </template>
+          </i18n-t>
         </template>
       </div>
       <div v-if="allowAdmin" class="flex items-center justify-end">
@@ -52,7 +56,11 @@
     </div>
 
     <div v-if="root && args.length === 0" class="px-1.5 text-gray-500">
-      {{ $t("custom-approval.security-rule.condition.add-condition-here") }}
+      {{
+        $t(
+          "custom-approval.security-rule.condition.add-root-condition-placeholder"
+        )
+      }}
     </div>
     <div
       v-for="(operand, i) in args"
@@ -103,7 +111,9 @@
           <template #trigger>
             <heroicons:question-mark-circle class="ml-1 w-3 h-3" />
           </template>
-          <div>tips here</div>
+          <div class="max-w-[18rem]">
+            {{ $t("custom-approval.security-rule.condition.group.tooltip") }}
+          </div>
         </NTooltip>
       </NButton>
     </div>
