@@ -181,7 +181,6 @@ import {
   useOnboardingStateStore,
 } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   searchText: string;
