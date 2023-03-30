@@ -107,6 +107,7 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 			Title:     advice.Title,
 			Content:   advice.Content,
 			Line:      advice.Line,
+			Details:   advice.Details,
 		})
 	}
 
