@@ -37,10 +37,15 @@ export const provideIssueReview = (
   });
   const done = computed(() => {
     if (!ready.value) return false;
+    if (review.value.approvalFindingError) return false;
+
     const { template, approvers } = flow.value;
     const steps = template.flow?.steps ?? [];
     if (steps.length === 0) return true;
     return approvers.length === steps.length;
+  });
+  const error = computed(() => {
+    return review.value.approvalFindingError;
   });
 
   const update = () => {
@@ -77,6 +82,7 @@ export const provideIssueReview = (
     ready,
     flow,
     done,
+    error,
   });
 };
 
