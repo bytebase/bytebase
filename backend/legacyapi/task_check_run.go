@@ -104,6 +104,7 @@ type TaskCheckResult struct {
 	Title     string          `json:"title,omitempty"`
 	Content   string          `json:"content,omitempty"`
 	Line      int             `json:"line,omitempty"`
+	Details   string          `json:"details,omitempty"`
 }
 
 // TaskCheckRunResultPayload is the result payload of a task check run.
