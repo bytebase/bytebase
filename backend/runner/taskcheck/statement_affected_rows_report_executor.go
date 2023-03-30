@@ -38,12 +38,12 @@ type StatementAffectedRowsReportExecutor struct {
 }
 
 // Run will run the task check statement affected rows report executor once.
-func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, taskCheckRun *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
+func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessage, task *store.TaskMessage) ([]api.TaskCheckResult, error) {
 	if !api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		return nil, nil
 	}
 	payload := &TaskPayload{}
-	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, err
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
