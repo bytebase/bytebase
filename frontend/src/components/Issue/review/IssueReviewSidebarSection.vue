@@ -3,8 +3,10 @@
     <h2 class="textlabel flex items-start col-span-1 col-start-1 pt-1">
       <div class="flex items-center gap-x-1">
         <span>{{ $t("issue.approval-flow.self") }}</span>
-        <NTooltip v-if="false">
-          <div>{{ $t("issue.approval-flow.tooltip") }}</div>
+        <NTooltip>
+          <div class="max-w-[24rem]">
+            {{ $t("issue.approval-flow.tooltip") }}
+          </div>
           <template #trigger>
             <heroicons-outline:question-mark-circle />
           </template>
