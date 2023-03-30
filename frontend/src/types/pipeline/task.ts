@@ -300,6 +300,7 @@ export type TaskCheckResult = {
   content: string;
   line: number | undefined;
   namespace: TaskCheckNamespace;
+  details?: string;
 };
 
 export type TaskCheckRunResultPayload = {
