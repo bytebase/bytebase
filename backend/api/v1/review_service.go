@@ -259,6 +259,7 @@ func convertToReview(ctx context.Context, store *store.Store, issue *store.Issue
 	review := &v1pb.Review{}
 	if issuePayload.Approval != nil {
 		review.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
+		review.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
 		for _, template := range issuePayload.Approval.ApprovalTemplates {
 			review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
 		}
