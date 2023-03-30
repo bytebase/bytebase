@@ -117,8 +117,12 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 			if err != nil {
 				return nil, err
 			}
+			projectMemberID, err := s.GetProjectMemberIDByProjectIDAndPrincipalID(ctx, project.UID, principal.ID)
+			if err != nil {
+				return nil, err
+			}
 			composedProject.ProjectMemberList = append(composedProject.ProjectMemberList, &api.ProjectMember{
-				ID:        member.ID,
+				ID:        projectMemberID,
 				ProjectID: project.UID,
 				Role:      string(binding.Role),
 				Principal: principal,
