@@ -52,8 +52,10 @@ import {
   useTabStore,
   useIdentityProviderStore,
   useCurrentUser,
+  useSubscriptionStore,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -644,14 +646,27 @@ const routes: Array<RouteRecordRaw> = [
                         "bb.permission.project.change-database",
                         memberOfProject.role
                       );
-                      allowCreateDB = hasProjectPermission(
-                        "bb.permission.project.create-database",
-                        memberOfProject.role
-                      );
                       allowTransferDB = hasProjectPermission(
                         "bb.permission.project.transfer-database",
                         memberOfProject.role
                       );
+
+                      if (
+                        useSubscriptionStore().currentPlan ===
+                        PlanType.ENTERPRISE
+                      ) {
+                        // in ENTERPRISE edition
+                        // workspace developers are never allowed to create db
+                        // even if they are project owners
+                        allowCreateDB = false;
+                      } else {
+                        // See RBAC otherwise.
+                        // AKA yes if project owner.
+                        allowCreateDB = hasProjectPermission(
+                          "bb.permission.project.create-database",
+                          memberOfProject.role
+                        );
+                      }
                     }
                   }
                   if (project.id === DEFAULT_PROJECT_ID) {
