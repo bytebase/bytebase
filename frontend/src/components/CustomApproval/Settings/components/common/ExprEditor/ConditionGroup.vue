@@ -89,7 +89,7 @@
         />
       </div>
     </div>
-    <div v-if="root && allowAdmin">
+    <div v-if="root && allowAdmin" class="space-x-1">
       <NButton size="small" quaternary @click="addCondition">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("custom-approval.security-rule.condition.add") }}</span>
