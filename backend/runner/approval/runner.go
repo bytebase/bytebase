@@ -112,7 +112,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if err != nil {
 						errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
 					}
-					if err == nil && done {
+					if err != nil || done {
 						r.stateCfg.ApprovalFinding.Delete(key)
 					}
 					return true
