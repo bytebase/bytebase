@@ -303,5 +303,8 @@ func (s *Store) GetProjectMemberIDByProjectIDAndPrincipalID(ctx context.Context,
 		return 0, FormatError(err)
 	}
 
+	if err := tx.Commit(); err != nil {
+		return 0, errors.Wrapf(err, "failed to commit transaction")
+	}
 	return projectMemberID, nil
 }
