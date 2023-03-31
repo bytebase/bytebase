@@ -44,7 +44,9 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 		if err != nil {
 			return "", err
 		}
-		sqlList = append(sqlList, sql)
+		if sql != "" {
+			sqlList = append(sqlList, sql)
+		}
 	}
 	return strings.Join(sqlList, "\n"), nil
 }
@@ -114,7 +116,9 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		if err != nil {
 			return "", errors.WithMessage(err, "failed to generate rollback SQL statement for transaction")
 		}
-		rollbackSQLList = append(rollbackSQLList, sql)
+		if sql != "" {
+			rollbackSQLList = append(rollbackSQLList, sql)
+		}
 	}
 
 	errReader := bufio.NewReader(errPipe)
