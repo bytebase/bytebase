@@ -306,7 +306,7 @@ func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessag
 	}
 
 	payload := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(lastReport.Payload), payload); err != nil {
+	if err := json.Unmarshal([]byte(lastReport.Result), payload); err != nil {
 		return nil, false, err
 	}
 	return payload.ResultList, true, nil
