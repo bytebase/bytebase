@@ -1247,7 +1247,8 @@ const doCreate = async () => {
 
   if (
     instanceCreate.engine !== "POSTGRES" &&
-    instanceCreate.engine !== "MONGODB"
+    instanceCreate.engine !== "MONGODB" &&
+    instanceCreate.engine !== "REDSHIFT"
   ) {
     // Clear the `database` field if not needed.
     instanceCreate.database = "";

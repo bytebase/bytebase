@@ -1,19 +1,19 @@
+// Package redshift is the plugin for RedShift driver.
 package redshift
 
 import (
 	"context"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
-// Dump and restore
-// Dump the database, if dbName is empty, then dump all databases.
-// The returned string is the JSON encoded metadata for the logical dump.
-// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-func (_ *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+// Dump dumps the database to the writer. But not implemented yet.
+func (*Driver) Dump(context.Context, string, io.Writer, bool) (string, error) {
 	return "", nil
 }
 
 // Restore the database from src, which is a full backup.
-func (_ *Driver) Restore(ctx context.Context, src io.Reader) error {
-	return nil
+func (*Driver) Restore(context.Context, io.Reader) error {
+	return errors.Errorf("not implemented")
 }

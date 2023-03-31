@@ -79,7 +79,7 @@ export function defaultCharset(type: EngineType): string {
     case "MSSQL":
       return "";
     case "REDSHIFT":
-      return "";
+      return "UNICODE";
   }
 }
 
