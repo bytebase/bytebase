@@ -44,7 +44,9 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 		if err != nil {
 			return "", err
 		}
-		sqlList = append(sqlList, sql)
+		if sql != "" {
+			sqlList = append(sqlList, sql)
+		}
 	}
 	return strings.Join(sqlList, "\n"), nil
 }
@@ -114,7 +116,9 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		if err != nil {
 			return "", errors.WithMessage(err, "failed to generate rollback SQL statement for transaction")
 		}
-		rollbackSQLList = append(rollbackSQLList, sql)
+		if sql != "" {
+			rollbackSQLList = append(rollbackSQLList, sql)
+		}
 	}
 
 	errReader := bufio.NewReader(errPipe)
@@ -169,6 +173,16 @@ func GetTableColumns(schema string) (map[string][]string, error) {
 }
 
 func (e *BinlogEvent) getRollbackSQL(tables map[string][]string) (string, error) {
+	// 0. early return if the body is empty.
+	switch e.Type {
+	case WriteRowsEventType, DeleteRowsEventType, UpdateRowsEventType:
+		if e.Body == "" {
+			return "", nil
+		}
+	default:
+		return "", errors.Errorf("invalid binlog event type %s", e.Type.String())
+	}
+
 	// 1. Remove the "### " prefix of each line.
 	// mysqlbinlog output is separated by "\n", ref https://sourcegraph.com/github.com/mysql/mysql-server@a246bad76b9271cb4333634e954040a970222e0a/-/blob/sql/log_event.cc?L2398
 	body := strings.Split(e.Body, "\n")
