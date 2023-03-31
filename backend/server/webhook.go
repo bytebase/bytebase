@@ -1399,6 +1399,9 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		// dismiss stale review, re-find the approval template
 		// it's ok if we failed
 		if err := func() error {
+			if task.Status != api.TaskPendingApproval {
+				return nil
+			}
 			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone: false,
@@ -1417,7 +1420,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			return nil
 		}(); err != nil {
-			log.Warn("Failed to dismiss stale review", zap.Error(err))
+			log.Error("Failed to dismiss stale review", zap.Error(err))
 		}
 	}
 	return nil
