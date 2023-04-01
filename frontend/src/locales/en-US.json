@@ -2122,7 +2122,7 @@
       },
       "condition": {
         "self": "Condition",
-        "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will filter outer issues executed in the \"prod\" environment.",
+        "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
         "add": "Add condition",
         "add-group": "Add condition group",
         "group": {
