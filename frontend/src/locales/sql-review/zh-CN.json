@@ -204,7 +204,7 @@
     },
     "column-set-default-for-not-null": {
       "title": "强制 \"NOT NULL\" 列设置默认值",
-      "description": "会和已经存在的 NULL 数据不兼容，此外旧应用代码中未提供有效值的插入语句都将报错。建议错误等级：错误"
+      "description": "对于 \"NOT NULL\" 列，在插入新行时如果不给该列赋值且该列没有默认值，数据库将会拒绝该行插入。对于新增列设置默认值也可以更好的兼容旧应用代码。建议错误等级：错误"
     },
     "column-auto-increment-must-integer": {
       "title": "强制自增列使用整数类型",

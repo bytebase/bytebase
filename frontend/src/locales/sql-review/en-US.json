@@ -203,7 +203,7 @@
     },
     "column-set-default-for-not-null": {
       "title": "Enforce default value on \"NOT NULL\" columns",
-      "description": "Existing NULL data will be incompatible with this rule, and the legacy application code inserting NULL value will throw error. Suggested error level: Error"
+      "description": "For a 'NOT NULL' column, if a value is not assigned to the column when inserting a new row and the column does not have a default value, the database will reject the insertion of that row. Setting a default value for a new column can also ensure compatibility with legacy application. Suggested error level: Error"
     },
     "column-auto-increment-must-integer": {
       "title": "Enforce the use of \"INTEGER\" data type for auto-increment columns",
