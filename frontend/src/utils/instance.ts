@@ -67,6 +67,7 @@ export const instanceHasBackupRestore = (instance: Instance): boolean => {
   if (engine === "MONGODB") return false;
   if (engine === "REDIS") return false;
   if (engine === "SPANNER") return false;
+  if (engine === "REDSHIFT") return false;
   return true;
 };
 
