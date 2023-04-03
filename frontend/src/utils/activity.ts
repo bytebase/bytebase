@@ -1,5 +1,6 @@
 import { usePrincipalStore } from "@/store";
 import { IssueBuiltinFieldId } from "../plugins";
+import { t } from "@/plugins/i18n";
 import {
   Activity,
   ActivityIssueFieldUpdatePayload,
@@ -19,10 +20,21 @@ export function issueActivityActionSentence(
       const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
       switch (update.fieldId) {
+        case IssueBuiltinFieldId.NAME: {
+          const oldName = update.oldValue ?? "";
+          const newName = update.newValue ?? "";
+          return [
+            "activity.sentence.changed-from-to",
+            {
+              name: t("issue.issue-name").toLowerCase(),
+              oldValue: oldName,
+              newValue: newName,
+            },
+          ];
+        }
         case IssueBuiltinFieldId.ASSIGNEE: {
           if (update.oldValue && update.newValue) {
             const oldName = principalStore.principalById(+update.oldValue).name;
-
             const newName = principalStore.principalById(+update.newValue).name;
             return [
               "activity.sentence.reassigned-issue",
@@ -57,7 +69,6 @@ export function issueActivityActionSentence(
         case IssueBuiltinFieldId.DESCRIPTION:
           // Description could be very long, so we don't display it.
           return ["activity.sentence.changed-description", {}];
-        case IssueBuiltinFieldId.NAME:
         case IssueBuiltinFieldId.PROJECT:
         case IssueBuiltinFieldId.SQL:
       }

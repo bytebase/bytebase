@@ -1,6 +1,7 @@
 import { h, defineComponent, PropType } from "vue";
 import { Activity } from "@/types";
 
+// Render activity comments and render "#{issue_id}" patterns as issue links.
 export default defineComponent({
   name: "ActivityComment",
   props: {

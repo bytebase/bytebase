@@ -159,7 +159,7 @@ export const useActivityStore = defineStore("activity", {
           return a.createdTs - b.createdTs;
         }
 
-        return a.id - b.id;
+        return +a.id - +b.id;
       });
 
       this.setActivityListForIssue({
