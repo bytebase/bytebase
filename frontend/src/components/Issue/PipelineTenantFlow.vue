@@ -16,6 +16,7 @@
           :key="j"
           class="task px-2 py-1 cursor-pointer border rounded"
           :class="taskClass(task)"
+          :data-task-id="create ? '' : (task as Task).id"
           @click="onClickTask(task, j)"
         >
           <div class="flex items-center justify-between pb-1">

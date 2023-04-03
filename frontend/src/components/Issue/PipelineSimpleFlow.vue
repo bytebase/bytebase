@@ -15,6 +15,7 @@
           <div
             class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 justify-between items-center overflow-hidden"
             :class="taskClass(task)"
+            :data-task-id="create ? '' : (task as Task).id"
             @click="onClickTask(task, i)"
           >
             <div class="flex items-center pb-1">

@@ -581,7 +581,11 @@
       "dismissed-stale-approval": "dismissed stale approvals of {task}",
       "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\"",
       "skipped": "skipped",
-      "rolled-out": "rolled out"
+      "rolled-out": "rolled out",
+      "schema-version": "schema version {version}",
+      "xxx-automatically": "{verb} automatically",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}"
     },
     "subject-prefix": {
       "task": "Task",
@@ -698,7 +702,8 @@
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk."
     },
     "waiting-to-roll-out": "Waiting to roll out",
-    "waiting-for-review": "Waiting for review"
+    "waiting-for-review": "Waiting for review",
+    "issue-name": "Issue name"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

@@ -4,6 +4,9 @@
 
 <script lang="ts" setup>
 import { defineComponent, h, PropType } from "vue";
+import dayjs from "dayjs";
+import { Translation, useI18n } from "vue-i18n";
+
 import {
   Activity,
   ActivityIssueCommentCreatePayload,
@@ -15,10 +18,16 @@ import {
   Issue,
   SYSTEM_BOT_ID,
 } from "@/types";
-import { findTaskById, issueActivityActionSentence } from "@/utils";
-import { Translation, useI18n } from "vue-i18n";
-import dayjs from "dayjs";
+import {
+  findStageById,
+  findTaskById,
+  issueActivityActionSentence,
+} from "@/utils";
+import TaskName from "./TaskName.vue";
 import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
+import StageName from "./StageName.vue";
+
+type RenderedContent = string | ReturnType<typeof h>;
 
 const props = defineProps({
   activity: {
@@ -34,6 +43,10 @@ const props = defineProps({
 const { t } = useI18n();
 
 const renderActionSentence = () => {
+  const renderSpan = (content: string, props?: object) => {
+    return h("span", props, content);
+  };
+
   const { activity, issue } = props;
   if (activity.type.startsWith("bb.issue.")) {
     if (activity.type === "bb.issue.comment.create") {
@@ -46,18 +59,21 @@ const renderActionSentence = () => {
               imName = t("common.feishu");
               break;
           }
-          return t("activity.sentence.external-approval-rejected", {
-            stageName: payload.externalApprovalEvent.stageName,
-            imName: imName,
-          });
+          return renderSpan(
+            t("activity.sentence.external-approval-rejected", {
+              stageName: payload.externalApprovalEvent.stageName,
+              imName: imName,
+            })
+          );
         }
       }
       if (payload.approvalEvent?.status === "APPROVED") {
-        return t("custom-approval.issue-review.approved-issue");
+        return renderSpan(t("custom-approval.issue-review.approved-issue"));
       }
     }
+
     const [tid, params] = issueActivityActionSentence(activity);
-    return t(tid, params);
+    return renderSpan(t(tid, params));
   }
   switch (activity.type) {
     case "bb.pipeline.task.status.update": {
@@ -73,56 +89,81 @@ const renderActionSentence = () => {
           task: taskName,
         });
       }
-
-      let str = t("activity.sentence.changed");
+      const params: VerbTypeTarget = {
+        activity,
+        verb: "",
+        type: t("common.task"),
+        target: "",
+      };
       switch (payload.newStatus) {
         case "PENDING": {
           if (payload.oldStatus == "RUNNING") {
-            str = t("activity.sentence.canceled");
+            params.verb = t("activity.sentence.canceled");
           } else if (payload.oldStatus == "PENDING_APPROVAL") {
-            str = t("activity.sentence.rolled-out");
+            params.verb = maybeAutomaticallyVerb(
+              activity,
+              t("activity.sentence.rolled-out")
+            );
           }
           break;
         }
         case "RUNNING": {
-          str = t("activity.sentence.started");
+          params.verb = t("activity.sentence.started");
           break;
         }
         case "DONE": {
           if (payload.oldStatus === "RUNNING") {
-            str = t("activity.sentence.completed");
+            params.verb = t("activity.sentence.completed");
           } else {
-            str = t("activity.sentence.skipped");
+            params.verb = t("activity.sentence.skipped");
           }
           break;
         }
         case "FAILED": {
-          str = t("activity.sentence.failed");
+          params.verb = t("activity.sentence.failed");
           break;
         }
         case "CANCELED": {
-          str = t("activity.sentence.canceled");
+          params.verb = t("activity.sentence.canceled");
           break;
         }
+        default:
+          params.verb = t("activity.sentence.changed");
       }
-      if (activity.creator.id != SYSTEM_BOT_ID) {
-        // If creator is not the robot (which means we do NOT use task name in the subject),
-        // then we append the task name here.
-        const task = findTaskById(issue.pipeline, payload.taskId);
-        str += t("activity.sentence.task-name", { name: task.name });
+      const task = findTaskById(issue.pipeline, payload.taskId);
+      if (task) {
+        params.target = h(TaskName, { issue, task });
       }
-      return str;
+      return renderVerbTypeTarget(params, {
+        tag: "span",
+      });
     }
     case "bb.pipeline.stage.status.update": {
       const payload = activity.payload as ActivityStageStatusUpdatePayload;
+      const stage = findStageById(issue.pipeline, payload.stageId);
+      const params: VerbTypeTarget = {
+        activity,
+        verb: "",
+        type: t("common.stage"),
+        target: h(StageName, { stage, issue }),
+      };
       switch (payload.stageStatusUpdateType) {
         case "BEGIN":
-          return t("activity.sentence.started");
+          params.verb = maybeAutomaticallyVerb(
+            activity,
+            t("activity.sentence.started")
+          );
+          break;
         case "END":
-          return t("activity.sentence.completed");
+          params.verb = t("activity.sentence.completed");
+          break;
         default:
-          return t("activity.sentence.changed");
+          params.verb = t("activity.sentence.changed");
+          break;
       }
+      return renderVerbTypeTarget(params, {
+        tag: "span",
+      });
     }
     case "bb.pipeline.task.file.commit": {
       const payload = activity.payload as ActivityTaskFileCommitPayload;
@@ -137,15 +178,19 @@ const renderActionSentence = () => {
       const payload = activity.payload as ActivityTaskStatementUpdatePayload;
 
       return h(
-        Translation,
-        {
-          keypath: "activity.sentence.changed-from-to",
-        },
-        {
-          name: () => "SQL",
-          oldValue: () => renderStatement(payload.oldStatement),
-          newValue: () => renderStatement(payload.newStatement),
-        }
+        "span",
+        {},
+        h(
+          Translation,
+          {
+            keypath: "activity.sentence.changed-from-to",
+          },
+          {
+            name: () => "SQL",
+            oldValue: () => renderStatement(payload.oldStatement),
+            newValue: () => renderStatement(payload.newStatement),
+          }
+        )
       );
     }
     case "bb.pipeline.task.general.earliest-allowed-time.update": {
@@ -163,7 +208,42 @@ const renderActionSentence = () => {
   return "";
 };
 
+const maybeAutomaticallyVerb = (activity: Activity, verb: string): string => {
+  if (activity.creator.id !== SYSTEM_BOT_ID) {
+    return verb;
+  }
+  return t("activity.sentence.xxx-automatically", {
+    verb,
+  });
+};
+
+type VerbTypeTarget = {
+  activity: Activity;
+  verb: RenderedContent;
+  type: RenderedContent;
+  target?: RenderedContent;
+};
+const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
+  const keypath =
+    params.activity.creator.id === SYSTEM_BOT_ID
+      ? "activity.sentence.verb-type-target-by-system-bot"
+      : "activity.sentence.verb-type-target-by-people";
+  return h(
+    Translation,
+    {
+      ...props,
+      keypath,
+    },
+    {
+      verb: () => params.verb,
+      type: () => params.type,
+      target: () => params.target,
+    }
+  );
+};
+
 const Renderer = defineComponent({
+  name: "ActionSentenceRenderer",
   render: renderActionSentence,
 });
 
