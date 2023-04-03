@@ -28,6 +28,8 @@ const (
 	Oracle EngineType = "ORACLE"
 	// MSSQL is the engine type for MSSQL.
 	MSSQL EngineType = "MSSQL"
+	// Redshift is the engine type for redshift.
+	Redshift EngineType = "REDSHIFT"
 
 	// DeparseIndentString is the string for each indent level.
 	DeparseIndentString = "    "

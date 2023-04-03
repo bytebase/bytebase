@@ -266,6 +266,8 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 		// We embed mongosh to execute the mongodb statement, and `use` statement is not effective in mongosh.
 		// We will connect to the specified database by specifying the database name in the connection string.
 		return "", nil
+	case db.Redshift:
+		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
 	}
 
 	return "", errors.Errorf("unsupported database type %s", dbType)

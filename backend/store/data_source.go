@@ -50,6 +50,7 @@ type UpdateDataSourceMessage struct {
 	ObfuscatedSslKey   *string
 	Host               *string
 	Port               *string
+	Database           *string
 	// Flatten data source options.
 	SRV                    *bool
 	AuthenticationDatabase *string
@@ -206,6 +207,9 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 	if v := patch.Port; v != nil {
 		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Database; v != nil {
+		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Use jsonb_build_object to build the jsonb object to update some fields in jsonb instead of whole column.

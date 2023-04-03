@@ -238,8 +238,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 	// Check schema drift
 	if s.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
 		// Redis and MongoDB are schemaless.
-		// TODO(zp): remove oracle.
-		if instance.Engine == db.Redis || instance.Engine == db.MongoDB || instance.Engine == db.Oracle {
+		if disableSchemaDriftAnomalyCheck(instance.Engine) {
 			return
 		}
 		var schemaBuf bytes.Buffer
@@ -320,8 +319,8 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 }
 
 func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, policyMap map[int]*api.BackupPlanPolicy) {
-	if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
-		// skip checking backup anomalies for MongoDB, Spanner, Redis, Oracle because they don't support Backup.
+	if disableBackupAnomalyCheck(instance.Engine) {
+		// skip checking backup anomalies for MongoDB, Spanner, Redis, Oracle, etc. because they don't support Backup.
 		return
 	}
 
@@ -482,4 +481,32 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 			}
 		}
 	}
+}
+
+func disableBackupAnomalyCheck(dbTp db.Type) bool {
+	m := map[db.Type]struct{}{
+		db.MongoDB:  {},
+		db.Spanner:  {},
+		db.Redis:    {},
+		db.Oracle:   {},
+		db.MSSQL:    {},
+		db.MariaDB:  {},
+		db.Redshift: {},
+	}
+	_, ok := m[dbTp]
+	return ok
+}
+
+func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
+	m := map[db.Type]struct{}{
+		db.MongoDB:  {},
+		db.Spanner:  {},
+		db.Redis:    {},
+		db.Oracle:   {},
+		db.MSSQL:    {},
+		db.MariaDB:  {},
+		db.Redshift: {},
+	}
+	_, ok := m[dbTp]
+	return ok
 }
