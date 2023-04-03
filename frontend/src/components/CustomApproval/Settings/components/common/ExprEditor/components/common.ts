@@ -13,15 +13,15 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const context = useExprEditorContext();
   const { riskSource } = context;
 
-  const getEnvironmentOptions = () => {
+  const getEnvironmentIdOptions = () => {
     const environmentList = useEnvironmentStore().getEnvironmentList();
     return environmentList.map<SelectOption>((env) => ({
-      label: env.name,
+      label: env.resourceId,
       value: env.resourceId,
     }));
   };
 
-  const getProjectOptions = () => {
+  const getProjectIdOptions = () => {
     const user = useCurrentUser().value;
     const projectList = useProjectStore().getProjectListByUser(user.id);
     return projectList.map<SelectOption>((proj) => ({
@@ -72,10 +72,10 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const options = computed(() => {
     const factor = expr.value.args[0];
     if (factor === "environment_id") {
-      return getEnvironmentOptions();
+      return getEnvironmentIdOptions();
     }
     if (factor === "project_id") {
-      return getProjectOptions();
+      return getProjectIdOptions();
     }
     if (factor === "db_engine") {
       return getDBEndingOptions();
