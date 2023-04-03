@@ -13,6 +13,7 @@ export const supportedEngineList = () => {
   const engines: EngineType[] = [
     "MYSQL",
     "POSTGRES",
+    "OCEANBASE",
     "TIDB",
     "SNOWFLAKE",
     "CLICKHOUSE",
