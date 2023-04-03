@@ -260,7 +260,7 @@
         </template>
       </div>
     </div>
-    <div>
+    <div v-if="canEnableSQLReview">
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.sql-review-ci") }}
         <FeatureBadge feature="bb.feature.vcs-sql-review" class="text-accent" />
@@ -378,6 +378,11 @@ export default defineComponent({
     });
     const isProjectSchemaChangeTypeSDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "SDL";
+    });
+    const canEnableSQLReview = computed(() => {
+      return (
+        props.vcsType.startsWith("GITLAB") || props.vcsType.startsWith("GITHUB")
+      );
     });
     const enableSQLReviewTitle = computed(() => {
       return props.vcsType.startsWith("GITLAB")
@@ -518,6 +523,7 @@ export default defineComponent({
       getRquiredPlanString: subscriptionStore.getRquiredPlanString,
       isProjectSchemaChangeTypeDDL,
       isProjectSchemaChangeTypeSDL,
+      canEnableSQLReview,
       enableSQLReviewTitle,
       sampleFilePath,
       sampleSchemaPath,
