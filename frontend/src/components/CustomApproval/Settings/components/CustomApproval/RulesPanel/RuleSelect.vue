@@ -13,6 +13,7 @@
       :placeholder="$t('custom-approval.approval-flow.select')"
       :consistent-menu-width="false"
       :disabled="disabled || !allowAdmin"
+      :filterable="true"
       v-bind="selectAttrs"
     />
     <NButton
