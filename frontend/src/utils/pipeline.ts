@@ -7,6 +7,7 @@ import {
   Pipeline,
   PipelineCreate,
   Stage,
+  StageId,
   Task,
   TaskId,
   TaskStatus,
@@ -69,6 +70,10 @@ export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
     }
   }
   return unknown("TASK") as Task;
+}
+
+export function findStageById(pipeline: Pipeline, stageId: StageId): Stage {
+  return pipeline.stageList.find((s) => s.id === stageId) ?? unknown("STAGE");
 }
 
 export function activeStage(pipeline: Pipeline): Stage {
