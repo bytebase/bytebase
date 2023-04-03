@@ -112,10 +112,9 @@
           />
 
           <button
-            v-if="allowEdit"
+            v-if="allowEdit && disableBackupButton"
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="database.instance.engine === 'MONGODB'"
             @click.prevent="state.showCreateBackupModal = true"
           >
             {{ $t("database.backup-now") }}
@@ -196,6 +195,8 @@ import {
   localFromUTC,
   parseScheduleFromBackupSetting,
 } from "@/components/DatabaseBackup/";
+
+import { instanceHasBackupRestore } from "@/utils";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -279,6 +280,10 @@ export default defineComponent({
 
       state.backupSetting = backupSetting;
     };
+
+    const disableBackupButton = computed(() => {
+      return !instanceHasBackupRestore(props.database.instance);
+    });
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
@@ -459,6 +464,7 @@ export default defineComponent({
       updateBackupSetting,
       urlChanged,
       updateBackupHookUrl,
+      disableBackupButton,
     };
   },
 });

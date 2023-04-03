@@ -885,7 +885,8 @@ const hasReadonlyReplicaPort = computed((): boolean => {
 
 const showDatabase = computed((): boolean => {
   return (
-    basicInformation.value.engine === "POSTGRES" &&
+    (basicInformation.value.engine === "POSTGRES" ||
+      basicInformation.value.engine === "REDSHIFT") &&
     state.currentDataSourceType === "ADMIN"
   );
 });
@@ -1228,7 +1229,8 @@ const doCreate = async () => {
 
   if (
     instanceCreate.engine !== "POSTGRES" &&
-    instanceCreate.engine !== "MONGODB"
+    instanceCreate.engine !== "MONGODB" &&
+    instanceCreate.engine !== "REDSHIFT"
   ) {
     // Clear the `database` field if not needed.
     instanceCreate.database = "";

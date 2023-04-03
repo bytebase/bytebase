@@ -1308,6 +1308,25 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
 	case db.Oracle:
 		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
+	case db.Redshift:
+		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
+		}
+		if createDatabaseContext.Collation == "" {
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING '%s';", stmt, databaseName, createDatabaseContext.CharacterSet)
+		} else {
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING '%s' LC_COLLATE '%s';", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
+		}
+		// Set the database owner.
+		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
+		// However, people can still use ALTER DATABASE to change the owner afterwards.
+		// Error string below:
+		// query: CREATE DATABASE h1 WITH OWNER hello;
+		// ERROR:  must be member of role "hello"
+		//
+		// For tenant project, the schema for the newly created database will belong to the same owner.
+		// TODO(d): alter schema "public" owner to the database owner.
+		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, createDatabaseContext.Owner), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
@@ -1389,6 +1408,10 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	case db.Postgres:
 		if owner == "" {
 			return errors.Errorf("database owner is required for PostgreSQL")
+		}
+	case db.Redshift:
+		if owner == "" {
+			return errors.Errorf("database owner is required for Redshift")
 		}
 	case db.SQLite, db.MongoDB, db.MSSQL:
 		// no-op.

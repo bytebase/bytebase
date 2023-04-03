@@ -97,7 +97,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	// Register mssql driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
-
+	// Register redshift driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	// Register fake advisor.

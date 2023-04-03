@@ -149,7 +149,8 @@
         <div class="w-full">
           <label for="charset" class="textlabel">
             {{
-              selectedInstance.engine == "POSTGRES"
+              selectedInstance.engine == "POSTGRES" ||
+              selectedInstance.engine == "REDSHIFT"
                 ? $t("db.encoding")
                 : $t("db.character-set")
             }}</label
@@ -460,7 +461,7 @@ export default defineComponent({
       if (instance.id === UNKNOWN_ID) {
         return false;
       }
-      return instance.engine === "POSTGRES";
+      return instance.engine === "POSTGRES" || instance.engine === "REDSHIFT";
     });
 
     const validDatabaseOwnerName = computed((): boolean => {
