@@ -27,11 +27,16 @@ import (
 var (
 	systemDatabases = map[string]bool{
 		"information_schema": true,
-		// TiDB only
-		"metrics_schema":     true,
 		"mysql":              true,
 		"performance_schema": true,
 		"sys":                true,
+		// TiDB only
+		"metrics_schema": true,
+		// OceanBase only
+		"oceanbase":  true,
+		"SYS":        true,
+		"LBACSYS":    true,
+		"ORAAUDITOR": true,
 	}
 )
 

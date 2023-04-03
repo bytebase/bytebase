@@ -252,7 +252,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			// We only support MySQL now.
 			var engineType parser.EngineType
 			switch instance.Engine {
-			case db.MySQL, db.TiDB, db.MariaDB:
+			case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 				engineType = parser.MySQL
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not support SDL format for %s instance", instance.Engine))

@@ -60,7 +60,7 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 		advisorType = advisor.Fake
 	case api.TaskCheckDatabaseStatementSyntax:
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			advisorType = advisor.MySQLSyntax
 		case db.Postgres:
 			advisorType = advisor.PostgreSQLSyntax

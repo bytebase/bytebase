@@ -247,7 +247,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 
 func getConnectionStatement(dbType db.Type, databaseName string) (string, error) {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil

@@ -452,6 +452,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | MSSQL | 11 |  |
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
 
 
 
