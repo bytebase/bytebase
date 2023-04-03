@@ -392,15 +392,17 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
-		SELECT tbl.schemaname, tbl.tablename,
-			pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-			pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-			GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-			obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
-		FROM pg_catalog.pg_tables tbl
-		LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass
-		WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema')
-		ORDER BY tbl.schemaname, tbl.tablename;`
+	SELECT
+		ptbl.schemaname,
+		ptbl.tablename,
+		0, -- data size
+		0, -- index size
+		GREATEST(pc.reltuples::bigint, 0::bigint) AS estimate,
+		obj_description(pc.oid) AS comment
+	FROM pg_catalog.pg_tables AS ptbl
+	JOIN pg_namespace AS pns ON pns.nspname = ptbl.schemaname
+	LEFT JOIN pg_class AS pc ON pc.relname = ptbl.tablename AND pns.oid = pc.relnamespace
+	WHERE ptbl.schemaname NOT IN ('pg_catalog', 'information_schema');`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
