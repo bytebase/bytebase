@@ -55,32 +55,10 @@
           />
           <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
-        <BBContextMenuButton
-          v-if="state.editing"
-          :disabled="state.isUploadingFile"
-          :action-list="uploadSQLActionButtonList"
-        >
-          <template #default="{ action }">
-            <button type="button">
-              <label
-                for="sql-file-input"
-                class="w-full flex flex-row justify-center items-center cursor-pointer"
-              >
-                <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
-                <span>{{ action.text }}</span>
-                <input
-                  id="sql-file-input"
-                  type="file"
-                  accept=".sql,.txt,application/sql,text/plain"
-                  class="hidden"
-                  @change="
-                    (event) => handleUploadFileButtonClick(event, action.key)
-                  "
-                />
-              </label>
-            </button>
-          </template>
-        </BBContextMenuButton>
+
+        <UploadProgressButton :upload="handleUploadFile">
+          {{ $t("issue.upload-sql") }}
+        </UploadProgressButton>
       </template>
 
       <button
@@ -149,6 +127,8 @@
 import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
+import { isNumber, isUndefined } from "lodash-es";
+
 import {
   hasFeature,
   pushNotification,
@@ -168,9 +148,9 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { isUndefined } from "lodash-es";
 import { useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
+import UploadProgressButton from "../misc/UploadProgressButton.vue";
 
 interface LocalState {
   editing: boolean;
@@ -347,24 +327,6 @@ const allowUploadSheetForTask = computed(() => {
   return TaskTypeWithSheetId.includes(task.type);
 });
 
-const uploadSQLActionButtonList = computed(() => {
-  const list = [
-    {
-      key: "NORMAL",
-      text: t("issue.upload-sql"),
-    },
-  ];
-
-  if (allowUploadSheetForTask.value) {
-    list.push({
-      key: "SHEET",
-      text: t("issue.upload-sql-as-sheet"),
-    });
-  }
-
-  return list;
-});
-
 const isTaskHasSheetId = computed(() => {
   const task = selectedTask.value;
   if (create.value) {
@@ -471,15 +433,65 @@ const allowSaveSQL = computed((): boolean => {
   return true;
 });
 
-const handleUploadFileButtonClick = (
-  event: Event,
-  action: "NORMAL" | "SHEET"
-) => {
-  if (action === "SHEET") {
-    handleUploadLocalFileAsSheet(event);
-  } else {
-    handleUploadLocalFile(event);
+const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
+  if (!allowUploadSheetForTask.value || !selectedDatabase.value) {
+    return;
   }
+
+  state.isUploadingFile = true;
+  const projectId = selectedDatabase.value.projectId;
+  const { filename, content: statement } = await handleUploadFileEvent(
+    event,
+    100
+  );
+
+  const uploadStatementAsSheet = async (statement: string) => {
+    const sheet = await sheetStore.createSheet(
+      {
+        projectId: projectId,
+        name: filename,
+        statement,
+        visibility: "PRIVATE",
+        payload: {},
+      },
+      {
+        timeout: 0, // 10 * 60 * 1000, // 10 minutes
+        onUploadProgress: (event) => {
+          console.debug("upload progress", event);
+          const progress = event.progress;
+          if (isNumber(progress)) {
+            tick(progress * 100);
+          } else {
+            tick(-1); // -1 to show a simple spinner instead of progress
+          }
+        },
+      }
+    );
+
+    updateSheetId(sheet.id);
+    state.isUploadingFile = false;
+    if (selectedTask.value) updateEditorHeight();
+  };
+
+  return new Promise((resolve) => {
+    if (state.editStatement) {
+      // Show a confirm dialog before replacing if the editing statement
+      // is not empty
+      overrideSQLDialog.create({
+        positiveText: t("common.confirm"),
+        negativeText: t("common.cancel"),
+        title: t("issue.override-current-statement"),
+        onNegativeClick: () => {
+          // nothing to do
+        },
+        onPositiveClick: () => {
+          resolve(uploadStatementAsSheet(statement));
+        },
+      });
+    } else {
+      resolve(uploadStatementAsSheet(statement));
+    }
+  });
 };
 
 const handleUploadFileEvent = (
@@ -540,73 +552,6 @@ const handleUploadFileEvent = (
     fr.readAsText(file);
     cleanup();
   });
-};
-
-const handleUploadLocalFile = async (event: Event) => {
-  const { content: statement } = await handleUploadFileEvent(event, 1);
-  if (state.editStatement) {
-    // Show a confirm dialog before replacing if the editing statement
-    // is not empty
-    overrideSQLDialog.create({
-      positiveText: t("common.confirm"),
-      negativeText: t("common.cancel"),
-      title: t("issue.override-current-statement"),
-      onNegativeClick: () => {
-        // nothing to do
-      },
-      onPositiveClick: () => {
-        onStatementChange(statement);
-      },
-    });
-  } else {
-    updateSheetId(undefined);
-    updateStatement(statement);
-  }
-};
-
-const handleUploadLocalFileAsSheet = async (event: Event) => {
-  if (!allowUploadSheetForTask.value || !selectedDatabase.value) {
-    return;
-  }
-
-  state.isUploadingFile = true;
-  const projectId = selectedDatabase.value.projectId;
-  const { filename, content: statement } = await handleUploadFileEvent(
-    event,
-    100
-  );
-
-  const uploadStatementAsSheet = async (statement: string) => {
-    const sheet = await sheetStore.createSheet({
-      projectId: projectId,
-      name: filename,
-      statement: statement,
-      visibility: "PRIVATE",
-      payload: {},
-    });
-
-    updateSheetId(sheet.id);
-    state.isUploadingFile = false;
-    if (selectedTask.value) updateEditorHeight();
-  };
-
-  if (state.editStatement) {
-    // Show a confirm dialog before replacing if the editing statement
-    // is not empty
-    overrideSQLDialog.create({
-      positiveText: t("common.confirm"),
-      negativeText: t("common.cancel"),
-      title: t("issue.override-current-statement"),
-      onNegativeClick: () => {
-        // nothing to do
-      },
-      onPositiveClick: () => {
-        uploadStatementAsSheet(statement);
-      },
-    });
-  } else {
-    uploadStatementAsSheet(statement);
-  }
 };
 
 const onStatementChange = (value: string) => {

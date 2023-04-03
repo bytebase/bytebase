@@ -230,7 +230,8 @@
     "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
     "will-override-current-data": "将会覆盖当前数据。",
-    "rollout": "发布"
+    "rollout": "发布",
+    "uploading": "上传中"
   },
   "error-page": {
     "go-back-home": "回到主页"

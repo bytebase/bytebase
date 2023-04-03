@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import axios from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import { isEmpty } from "lodash-es";
 import {
   Sheet,
@@ -170,7 +170,10 @@ export const useSheetStore = defineStore("sheet", {
         visibility: "PRIVATE",
       });
     },
-    async createSheet(sheetCreate: SheetCreate): Promise<Sheet> {
+    async createSheet(
+      sheetCreate: SheetCreate,
+      config?: AxiosRequestConfig
+    ): Promise<Sheet> {
       if (sheetCreate.databaseId === UNKNOWN_ID) {
         sheetCreate.databaseId = undefined;
       }
@@ -181,12 +184,16 @@ export const useSheetStore = defineStore("sheet", {
       }
 
       const resData = (
-        await axios.post(`/api/sheet`, {
-          data: {
-            type: "createSheet",
-            attributes,
+        await axios.post(
+          `/api/sheet`,
+          {
+            data: {
+              type: "createSheet",
+              attributes,
+            },
           },
-        })
+          config
+        )
       ).data;
       const sheet = convertSheet(resData.data, resData.included);
 
