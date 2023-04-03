@@ -24,7 +24,7 @@
       :disabled="!selectedRule"
       @click="toApprovalFlow"
     >
-      <heroicons:arrow-top-right-on-square class="w-5 h-5" />
+      <heroicons:pencil-square class="w-5 h-5" />
     </NButton>
   </div>
 </template>
