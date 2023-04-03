@@ -232,7 +232,8 @@
     "will-lose-unsaved-data": "Will lose any unsaved data.",
     "deleted": "Deleted",
     "will-override-current-data": "Will override current data.",
-    "rollout": "Roll out"
+    "rollout": "Roll out",
+    "uploading": "Uploading"
   },
   "error-page": {
     "go-back-home": "Go back home"
