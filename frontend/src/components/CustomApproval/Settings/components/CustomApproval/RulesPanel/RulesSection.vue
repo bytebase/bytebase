@@ -83,6 +83,7 @@ const rulesMap = computed(() => {
 
 const rows = computed(() => {
   const filteredLevelList = [...filter.levels.value.values()];
+  filteredLevelList.sort((a, b) => -(a - b)); // by level DESC
   const displayLevelList =
     filteredLevelList.length === 0
       ? PresetRiskLevelList.map((item) => item.level)
