@@ -1,6 +1,6 @@
 import { groupBy, maxBy } from "lodash-es";
 
-import { useDatabaseStore } from "@/store";
+import { useCurrentUser, useDatabaseStore } from "@/store";
 import {
   Issue,
   Task,
@@ -13,10 +13,13 @@ import {
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseSchemaUpdateSDLPayload,
+  TaskStatus,
   TaskType,
   unknown,
 } from "@/types";
 import { issueSlug, stageSlug, taskSlug } from "./slug";
+import { activeTask } from "./pipeline";
+import { hasWorkspacePermission } from "./role";
 
 export const extractDatabaseNameFromTask = (
   task: Task | TaskCreate
@@ -195,4 +198,49 @@ export const isTaskEntity = (task: Task | TaskCreate): task is Task => {
 
 export const isTaskCreate = (task: Task | TaskCreate): task is TaskCreate => {
   return !isTaskEntity(task);
+};
+
+/**
+ *
+ * @param task
+ * @param issue
+ * @param activeOnly if true, only "Active Task" can be skipped
+ * @returns
+ */
+export const canSkipTask = (
+  task: Task,
+  issue: Issue,
+  activeOnly = false,
+  failedOnly = false
+) => {
+  const pipeline = issue.pipeline;
+  const isActiveTask = task.id === activeTask(pipeline).id;
+  if (activeOnly && !isActiveTask) {
+    return false;
+  }
+
+  const applicableStatusList: TaskStatus[] = failedOnly
+    ? ["FAILED"]
+    : ["PENDING_APPROVAL", "FAILED"];
+
+  if (!applicableStatusList.includes(task.status)) {
+    return false;
+  }
+
+  const currentUser = useCurrentUser();
+
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-issue",
+      currentUser.value.role
+    )
+  ) {
+    return true;
+  }
+
+  if (currentUser.value.id === issue.assignee.id) {
+    return true;
+  }
+
+  return false;
 };
