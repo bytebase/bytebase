@@ -171,8 +171,8 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	// created_on, kind, name, database_name.
-	if len(cols) < 4 {
+	// created_on, kind, name, database_name, to, owner, comment, listing_global_name.
+	if len(cols) < 8 {
 		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
