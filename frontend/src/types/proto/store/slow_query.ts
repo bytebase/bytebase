@@ -13,8 +13,8 @@ export interface SlowQueryStatistics {
   count: number;
   /** latest_log_time is the time of the latest slow query with the same fingerprint. */
   latestLogTime?: Date;
-  /** details is the details of the slow query. */
-  details: SlowQueryDetails[];
+  /** samples are the details of the sample slow queries with the same fingerprint. */
+  samples: SlowQueryDetails[];
 }
 
 /** SlowQueryDetails is the details of a slow query. */
@@ -34,7 +34,7 @@ export interface SlowQueryDetails {
 }
 
 function createBaseSlowQueryStatistics(): SlowQueryStatistics {
-  return { sqlFingerprint: "", count: 0, latestLogTime: undefined, details: [] };
+  return { sqlFingerprint: "", count: 0, latestLogTime: undefined, samples: [] };
 }
 
 export const SlowQueryStatistics = {
@@ -48,7 +48,7 @@ export const SlowQueryStatistics = {
     if (message.latestLogTime !== undefined) {
       Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
     }
-    for (const v of message.details) {
+    for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
@@ -87,7 +87,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.details.push(SlowQueryDetails.decode(reader, reader.uint32()));
+          message.samples.push(SlowQueryDetails.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -103,7 +103,7 @@ export const SlowQueryStatistics = {
       sqlFingerprint: isSet(object.sqlFingerprint) ? String(object.sqlFingerprint) : "",
       count: isSet(object.count) ? Number(object.count) : 0,
       latestLogTime: isSet(object.latestLogTime) ? fromJsonTimestamp(object.latestLogTime) : undefined,
-      details: Array.isArray(object?.details) ? object.details.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
+      samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
 
@@ -112,10 +112,10 @@ export const SlowQueryStatistics = {
     message.sqlFingerprint !== undefined && (obj.sqlFingerprint = message.sqlFingerprint);
     message.count !== undefined && (obj.count = Math.round(message.count));
     message.latestLogTime !== undefined && (obj.latestLogTime = message.latestLogTime.toISOString());
-    if (message.details) {
-      obj.details = message.details.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
+    if (message.samples) {
+      obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
-      obj.details = [];
+      obj.samples = [];
     }
     return obj;
   },
@@ -129,7 +129,7 @@ export const SlowQueryStatistics = {
     message.sqlFingerprint = object.sqlFingerprint ?? "";
     message.count = object.count ?? 0;
     message.latestLogTime = object.latestLogTime ?? undefined;
-    message.details = object.details?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
+    message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },
 };

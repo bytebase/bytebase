@@ -18,8 +18,8 @@ message SlowQueryStatistics {
   // latest_log_time is the time of the latest slow query with the same fingerprint.
   google.protobuf.Timestamp latest_log_time = 3;
   
-  // details is the details of the slow query.
-  repeated SlowQueryDetails details = 4;
+  // samples are the details of the sample slow queries with the same fingerprint.
+  repeated SlowQueryDetails samples = 4;
 }
 
 // SlowQueryDetails is the details of a slow query.

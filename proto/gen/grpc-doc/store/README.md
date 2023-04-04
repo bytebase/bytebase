@@ -931,7 +931,7 @@ SlowQueryStatistics is a summary of slow queries.
 | sql_fingerprint | [string](#string) |  | sql_fingerprint is the fingerprint of the slow query. |
 | count | [int32](#int32) |  | count is the number of slow queries with the same fingerprint. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_log_time is the time of the latest slow query with the same fingerprint. |
-| details | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | details is the details of the slow query. |
+| samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
 
 
 
