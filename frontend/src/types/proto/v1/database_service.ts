@@ -569,8 +569,8 @@ export interface SlowQueryStatistics {
   averageRowsExamined: number;
   /** The nighty fifth percentile rows examined of the slow query log. */
   nightyFifthPercentileRowsExamined: number;
-  /** The details of the slow query log. */
-  details: SlowQueryDetails[];
+  /** Samples are details of the sample slow query logs with the same fingerprint. */
+  samples: SlowQueryDetails[];
 }
 
 /** SlowQueryDetails is the details of the slow query log. */
@@ -3415,7 +3415,7 @@ function createBaseSlowQueryStatistics(): SlowQueryStatistics {
     nightyFifthPercentileRowsSent: 0,
     averageRowsExamined: 0,
     nightyFifthPercentileRowsExamined: 0,
-    details: [],
+    samples: [],
   };
 }
 
@@ -3448,7 +3448,7 @@ export const SlowQueryStatistics = {
     if (message.nightyFifthPercentileRowsExamined !== 0) {
       writer.uint32(72).int32(message.nightyFifthPercentileRowsExamined);
     }
-    for (const v of message.details) {
+    for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     return writer;
@@ -3529,7 +3529,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.details.push(SlowQueryDetails.decode(reader, reader.uint32()));
+          message.samples.push(SlowQueryDetails.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -3557,7 +3557,7 @@ export const SlowQueryStatistics = {
       nightyFifthPercentileRowsExamined: isSet(object.nightyFifthPercentileRowsExamined)
         ? Number(object.nightyFifthPercentileRowsExamined)
         : 0,
-      details: Array.isArray(object?.details) ? object.details.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
+      samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
 
@@ -3578,10 +3578,10 @@ export const SlowQueryStatistics = {
     message.averageRowsExamined !== undefined && (obj.averageRowsExamined = Math.round(message.averageRowsExamined));
     message.nightyFifthPercentileRowsExamined !== undefined &&
       (obj.nightyFifthPercentileRowsExamined = Math.round(message.nightyFifthPercentileRowsExamined));
-    if (message.details) {
-      obj.details = message.details.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
+    if (message.samples) {
+      obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
-      obj.details = [];
+      obj.samples = [];
     }
     return obj;
   },
@@ -3606,7 +3606,7 @@ export const SlowQueryStatistics = {
     message.nightyFifthPercentileRowsSent = object.nightyFifthPercentileRowsSent ?? 0;
     message.averageRowsExamined = object.averageRowsExamined ?? 0;
     message.nightyFifthPercentileRowsExamined = object.nightyFifthPercentileRowsExamined ?? 0;
-    message.details = object.details?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
+    message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },
 };
