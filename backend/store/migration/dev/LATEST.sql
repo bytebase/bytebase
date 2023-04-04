@@ -1135,6 +1135,7 @@ CREATE TABLE slow_query (
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
+    -- updated_ts is used to identify the latest timestamp for syncing slow query logs.
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     -- In MySQL, users can query without specifying a database. In this case, instance_id is used to identify the instance.
     instance_id INTEGER NOT NULL REFERENCES instance (id),
