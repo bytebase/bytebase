@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "generated-go/store";
+
+// SlowQueryStatistics is a summary of slow queries.
+message SlowQueryStatistics {
+  // sql_fingerprint is the fingerprint of the slow query.
+  string sql_fingerprint = 1;
+  
+  // count is the number of slow queries with the same fingerprint.
+  int32 count = 2;
+  
+  // latest_log_time is the time of the latest slow query with the same fingerprint.
+  google.protobuf.Timestamp latest_log_time = 3;
+  
+  // samples are the details of the sample slow queries with the same fingerprint.
+  repeated SlowQueryDetails samples = 4;
+}
+
+// SlowQueryDetails is the details of a slow query.
+message SlowQueryDetails {
+  // start_time is the start time of the slow query.
+  google.protobuf.Timestamp start_time = 1;
+  
+  // query_time is the query time of the slow query.
+  google.protobuf.Duration query_time = 2;
+  
+  // lock_time is the lock time of the slow query.
+  google.protobuf.Duration lock_time = 3;
+  
+  // rows_sent is the number of rows sent by the slow query.
+  int32 rows_sent = 4;
+  
+  // rows_examined is the number of rows examined by the slow query.
+  int32 rows_examined = 5;
+  
+  // sql_text is the SQL text of the slow query.
+  string sql_text = 6;
+}

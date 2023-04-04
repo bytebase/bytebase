@@ -577,8 +577,8 @@ message SlowQueryStatistics {
   // The nighty fifth percentile rows examined of the slow query log.
   int32 nighty_fifth_percentile_rows_examined = 9;
   
-  // The details of the slow query log.
-  repeated SlowQueryDetails details = 10;
+  // Samples are details of the sample slow query logs with the same fingerprint.
+  repeated SlowQueryDetails samples = 10;
 }
 
 // SlowQueryDetails is the details of the slow query log.
