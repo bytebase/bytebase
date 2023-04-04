@@ -154,10 +154,6 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 }
 
 func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
-		return nil, err
-	}
-
 	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
 	inboundDatabases := make(map[string]bool)
 	shareQuery := "SHOW SHARES"
