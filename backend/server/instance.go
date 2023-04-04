@@ -49,7 +49,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if !isValidResourceID(instanceCreate.ResourceID) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid instance id %s", instanceCreate.ResourceID))
 		}
-		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Database != "" {
+		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Engine != db.Redshift && instanceCreate.Database != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 		}
 		environment, err := s.store.GetEnvironmentByID(ctx, instanceCreate.EnvironmentID)

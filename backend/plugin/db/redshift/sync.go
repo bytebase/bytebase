@@ -6,13 +6,19 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser"
+	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -127,9 +133,498 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 }
 
 // SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
-	// TODO(zp): implement it.
-	return &storepb.DatabaseMetadata{}, nil
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+	// Query db info
+	databases, err := driver.getDatabases(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get databases")
+	}
+
+	var databaseMetadata *storepb.DatabaseMetadata
+	for _, database := range databases {
+		if database.Name == databaseName {
+			databaseMetadata = database
+			break
+		}
+	}
+	if databaseMetadata == nil {
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+	}
+
+	sqldb, err := driver.GetDBConnection(ctx, databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+	}
+	txn, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	schemaList, err := getSchemas(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", databaseName)
+	}
+	tableMap, err := getTables(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+	}
+	viewMap, err := getViews(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	schemaNameMap := make(map[string]bool)
+	for _, schemaName := range schemaList {
+		schemaNameMap[schemaName] = true
+	}
+	for schemaName := range tableMap {
+		schemaNameMap[schemaName] = true
+	}
+	for schemaName := range viewMap {
+		schemaNameMap[schemaName] = true
+	}
+	var schemaNames []string
+	for schemaName := range schemaNameMap {
+		schemaNames = append(schemaNames, schemaName)
+	}
+	sort.Strings(schemaNames)
+	for _, schemaName := range schemaNames {
+		var tables []*storepb.TableMetadata
+		var views []*storepb.ViewMetadata
+		var exists bool
+		if tables, exists = tableMap[schemaName]; !exists {
+			tables = []*storepb.TableMetadata{}
+		}
+		if views, exists = viewMap[schemaName]; !exists {
+			views = []*storepb.ViewMetadata{}
+		}
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+			Name:   schemaName,
+			Tables: tables,
+			Views:  views,
+		})
+	}
+
+	return databaseMetadata, err
+}
+
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+	query := `
+	SELECT
+		n.nspname AS fk_schema,
+		conrelid::regclass AS fk_table,
+		conname AS fk_name,
+		(SELECT nspname FROM pg_namespace JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace WHERE c.confrelid = pg_class.oid) AS fk_ref_schema,
+		confrelid::regclass AS fk_ref_table,
+		confdeltype AS delete_option,
+		confupdtype AS update_option,
+		confmatchtype AS match_option,
+		pg_get_constraintdef(c.oid) AS fk_def
+	FROM
+		pg_constraint c
+		JOIN pg_namespace n ON n.oid = c.connamespace
+	WHERE
+		n.nspname NOT IN('pg_catalog', 'information_schema')
+		AND c.contype = 'f'
+	ORDER BY fk_schema, fk_table, fk_name;
+	`
+	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var fkMetadata storepb.ForeignKeyMetadata
+		var fkSchema, fkTable, fkDefinition string
+		if err := rows.Scan(
+			&fkSchema,
+			&fkTable,
+			&fkMetadata.Name,
+			&fkMetadata.ReferencedSchema,
+			&fkMetadata.ReferencedTable,
+			&fkMetadata.OnDelete,
+			&fkMetadata.OnUpdate,
+			&fkMetadata.MatchType,
+			&fkDefinition,
+		); err != nil {
+			return nil, err
+		}
+
+		fkTable = formatTableNameFromRegclass(fkTable)
+		fkMetadata.ReferencedTable = formatTableNameFromRegclass(fkMetadata.ReferencedTable)
+		fkMetadata.OnDelete = convertForeignKeyActionCode(fkMetadata.OnDelete)
+		fkMetadata.OnUpdate = convertForeignKeyActionCode(fkMetadata.OnUpdate)
+		fkMetadata.MatchType = convertForeignKeyMatchType(fkMetadata.MatchType)
+
+		if fkMetadata.Columns, fkMetadata.ReferencedColumns, err = getForeignKeyColumnsAndReferencedColumns(fkDefinition); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: fkSchema, Table: fkTable}
+		foreignKeysMap[key] = append(foreignKeysMap[key], &fkMetadata)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return foreignKeysMap, nil
+}
+
+func convertForeignKeyMatchType(in string) string {
+	switch in {
+	case "f":
+		return "FULL"
+	case "p":
+		return "PARTIAL"
+	case "s":
+		return "SIMPLE"
+	default:
+		return in
+	}
+}
+
+func convertForeignKeyActionCode(in string) string {
+	switch in {
+	case "a":
+		return "NO ACTION"
+	case "r":
+		return "RESTRICT"
+	case "c":
+		return "CASCADE"
+	case "n":
+		return "SET NULL"
+	case "d":
+		return "SET DEFAULT"
+	default:
+		return in
+	}
+}
+
+func getForeignKeyColumnsAndReferencedColumns(definition string) ([]string, []string, error) {
+	columnsRegexp := regexp.MustCompile(`FOREIGN KEY \((.*)\) REFERENCES (.*)\((.*)\)`)
+	matches := columnsRegexp.FindStringSubmatch(definition)
+	if len(matches) != 4 {
+		return nil, nil, errors.Errorf("invalid foreign key definition: %q", definition)
+	}
+	columnList, err := getColumnList(matches[1])
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "invalid foreign key definition: %q", definition)
+	}
+	referencedColumnList, err := getColumnList(matches[3])
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "invalid foreign key definition: %q", definition)
+	}
+
+	return columnList, referencedColumnList, nil
+}
+
+func getColumnList(definition string) ([]string, error) {
+	list := strings.Split(definition, ",")
+	if len(list) == 0 {
+		return nil, errors.Errorf("invalid column list definition: %q", definition)
+	}
+	var result []string
+	for _, name := range list {
+		name = strings.TrimSpace(name)
+		name = strings.Trim(name, `"`)
+		result = append(result, name)
+	}
+	return result, nil
+}
+
+func formatTableNameFromRegclass(name string) string {
+	if strings.Contains(name, ".") {
+		name = name[1+strings.Index(name, "."):]
+	}
+	return strings.Trim(name, `"`)
+}
+
+func getSchemas(txn *sql.Tx) ([]string, error) {
+	// For Redshift, we will filter out the schema which owner is 'rdsdb' excluding 'public' or name prefix with 'pg_'.
+	query := `
+		SELECT
+			n.nspname
+		FROM
+			pg_catalog.pg_namespace AS n
+		WHERE
+			n.nspname = 'public' OR (n.nspname !~ '^pg_' AND pg_catalog.pg_get_userbyid(n.nspowner) <> 'rdsdb');
+	`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var schemaName string
+		if err := rows.Scan(&schemaName); err != nil {
+			return nil, err
+		}
+		result = append(result, schemaName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// getTables gets all tables of a database.
+func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
+	columnMap, err := getTableColumns(txn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get table columns")
+	}
+	indexMap, err := getIndexes(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indices")
+	}
+	foreignKeysMap, err := getForeignKeys(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get foreign keys")
+	}
+
+	tableMap := make(map[string][]*storepb.TableMetadata)
+	query := `
+	SELECT
+		ptbl.schemaname,
+		ptbl.tablename,
+		0, -- data size
+		0, -- index size
+		GREATEST(pc.reltuples::bigint, 0::bigint) AS estimate,
+		obj_description(pc.oid) AS comment
+	FROM pg_catalog.pg_tables AS ptbl
+	JOIN pg_namespace AS pns ON pns.nspname = ptbl.schemaname
+	LEFT JOIN pg_class AS pc ON pc.relname = ptbl.tablename AND pns.oid = pc.relnamespace
+	WHERE ptbl.schemaname NOT IN ('pg_catalog', 'information_schema');`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		table := &storepb.TableMetadata{}
+		var schemaName string
+		var comment sql.NullString
+		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
+			return nil, err
+		}
+		if comment.Valid {
+			table.Comment = comment.String
+		}
+		key := db.TableKey{Schema: schemaName, Table: table.Name}
+		table.Columns = columnMap[key]
+		table.Indexes = indexMap[key]
+		table.ForeignKeys = foreignKeysMap[key]
+
+		tableMap[schemaName] = append(tableMap[schemaName], table)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tableMap, nil
+}
+
+// getTableColumns gets the columns of a table.
+func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+
+	query := `
+	SELECT
+		cols.table_schema,
+		cols.table_name,
+		cols.column_name,
+		cols.data_type,
+		cols.ordinal_position,
+		cols.column_default,
+		cols.is_nullable,
+		cols.collation_name,
+		cols.udt_schema,
+		cols.udt_name,
+		pg_catalog.col_description(pc.oid, cols.ordinal_position::int) as column_comment
+	FROM 
+		INFORMATION_SCHEMA.COLUMNS AS cols
+		JOIN pg_namespace AS pns ON pns.nspname = cols.table_schema
+		LEFT JOIN pg_class AS pc ON pc.relname = cols.table_name AND pns.oid = pc.relnamespace
+	WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema')
+	ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		column := &storepb.ColumnMetadata{}
+		var schemaName, tableName, nullable string
+		var defaultStr, collation, udtSchema, udtName, comment sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
+			return nil, err
+		}
+		if defaultStr.Valid {
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+		}
+		isNullBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, err
+		}
+		column.Nullable = isNullBool
+		switch column.Type {
+		case "USER-DEFINED":
+			column.Type = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
+		case "ARRAY":
+			column.Type = udtName.String
+		}
+		column.Collation = collation.String
+		column.Comment = comment.String
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		columnsMap[key] = append(columnsMap[key], column)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return columnsMap, nil
+}
+
+// getViews gets all views of a database.
+func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+	viewMap := make(map[string][]*storepb.ViewMetadata)
+
+	query := `
+	SELECT
+		pgv.schemaname,
+		pgv.viewname,
+		pgv.definition,
+		obj_description(pc.oid) AS comment
+	FROM pg_catalog.pg_views AS pgv
+	JOIN pg_namespace AS pns ON pns.nspname = pgv.schemaname
+	JOIN pg_class AS pc ON pc.relname = pgv.viewname AND pns.oid = pc.relnamespace
+	WHERE pgv.schemaname NOT IN ('pg_catalog', 'information_schema');
+	`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		view := &storepb.ViewMetadata{}
+		var schemaName string
+		var def, comment sql.NullString
+		if err := rows.Scan(&schemaName, &view.Name, &def, &comment); err != nil {
+			return nil, err
+		}
+		// Return error on NULL view definition.
+		// https://github.com/bytebase/bytebase/issues/343
+		if !def.Valid {
+			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, view.Name)
+		}
+		view.Definition = def.String
+		if comment.Valid {
+			view.Comment = comment.String
+		}
+
+		viewMap[schemaName] = append(viewMap[schemaName], view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return viewMap, nil
+}
+
+// getIndexes gets all indices of a database.
+func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
+
+	query := `
+	SELECT 
+		pgidx.schemaname, 
+		pgidx.tablename, 
+		pgidx.indexname, 
+		pgidx.indexdef, 
+		(
+		SELECT 1
+			FROM information_schema.table_constraints
+			WHERE 	constraint_schema = pgidx.schemaname
+					AND constraint_name = pgidx.indexname
+					AND table_schema = pgidx.schemaname
+					AND table_name = pgidx.tablename
+					AND constraint_type = 'PRIMARY KEY'
+		) AS primary,
+		obj_description(pc.oid) AS comment
+	FROM
+		pg_indexes AS pgidx 
+		JOIN pg_namespace AS pns ON pns.nspname = pgidx.schemaname
+		JOIN pg_class AS pc ON pc.relname = pgidx.indexname AND pns.oid = pc.relnamespace
+	WHERE 
+		pgidx.schemaname NOT IN ('pg_catalog', 'information_schema')
+	ORDER BY
+		pgidx.schemaname, pgidx.tablename, pgidx.indexname;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		index := &storepb.IndexMetadata{}
+		var schemaName, tableName, statement string
+		var primary sql.NullInt32
+		var comment sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &primary, &comment); err != nil {
+			return nil, err
+		}
+
+		nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+		if err != nil {
+			return nil, err
+		}
+		if len(nodes) != 1 {
+			return nil, errors.Errorf("invalid number of statements %v, expecting one", len(nodes))
+		}
+		node, ok := nodes[0].(*ast.CreateIndexStmt)
+		if !ok {
+			return nil, errors.Errorf("statement %q is not index statement", statement)
+		}
+
+		index.Type = getIndexMethodType(statement)
+		index.Unique = node.Index.Unique
+		index.Expressions = node.Index.GetKeyNameList()
+		if err != nil {
+			return nil, err
+		}
+		if primary.Valid && primary.Int32 == 1 {
+			index.Primary = true
+		}
+		if comment.Valid {
+			index.Comment = comment.String
+		}
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		indexMap[key] = append(indexMap[key], index)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return indexMap, nil
+}
+
+func getIndexMethodType(stmt string) string {
+	re := regexp.MustCompile(`USING (\w+) `)
+	matches := re.FindStringSubmatch(stmt)
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[1]
 }
 
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
