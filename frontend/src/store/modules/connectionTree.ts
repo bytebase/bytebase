@@ -42,6 +42,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
   // states
   const accessControlPolicyList = ref<Policy[]>([]);
   const tree = reactive({
+    databaseList: [] as Database[],
     data: [] as ConnectionAtom[],
     mode: treeModeInLocalStorage.value,
     state: ConnectionTreeState.UNSET,
