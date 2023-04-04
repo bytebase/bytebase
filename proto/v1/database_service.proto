@@ -10,7 +10,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-import "google/type/interval.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -72,8 +71,8 @@ service DatabaseService {
     option (google.api.method_signature) = "parent";
   }
   
-  rpc ListSlowQuery(ListSlowQueryRequest) returns (ListSlowQueryResponse) {
-    option (google.api.http) = {get: "/v1/slowQuery"};
+  rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
+    option (google.api.http) = {get: "/v1/environments/*/instances/*/databases/*/slowQueries"};
   }
 }
 
@@ -505,23 +504,19 @@ message Backup {
   string comment = 6;
 }
 
-// ListSlowQueryRequest is the request of listing slow query.
-message ListSlowQueryRequest {
-  // The interval of the slow query log.
-  google.type.Interval interval = 1;
-
+// ListSlowQueriesRequest is the request of listing slow query.
+message ListSlowQueriesRequest {
   // The filter of the slow query log.
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // Support filter by resource and project for now.
+  // Support filter by project and start_time in SlowQueryDetails for now.
   // For example:
-  // Search the slow query log of the specific resource:
-  //   - the specific environment: resource = "environments/{environment}"
-  //   - for all environments: resource = "environments/-"
-  //   - the specific instance: resource = "environment/{environment}/instances/{instance}"
-  //   - the specific database: resource = "environment/{environment}/instances/{instance}/databases/{database}"
   // Search the slow query log of the specific project:
   //   - the specific project: project = "projects/{project}"
-  string filter = 2;
+  // Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
+  //   - start_time > "2022-01-01T12:00:00.000Z"
+  //   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
+  //   - Currently we only support filtering down to date granularity.
+  string filter = 1;
 
   // The order by of the slow query log.
   // Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
@@ -530,11 +525,11 @@ message ListSlowQueryRequest {
   //  - order by count: order_by = "count"
   //  - order by latest_log_time desc: order_by = "latest_log_time desc"
   // Default: order by nighty_fifth_percentile_query_time desc.
-  string order_by = 3;
+  string order_by = 2;
 }
 
-// ListSlowQueryResponse is the response of listing slow query.
-message ListSlowQueryResponse {
+// ListSlowQueriesResponse is the response of listing slow query.
+message ListSlowQueriesResponse {
   // The slow query logs.
   repeated SlowQueryLog slow_query_logs = 1; 
 }

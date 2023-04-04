@@ -6,7 +6,6 @@ import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
-import { Interval } from "../google/type/interval";
 import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -501,22 +500,19 @@ export function backup_BackupStateToJSON(object: Backup_BackupState): string {
   }
 }
 
-/** ListSlowQueryRequest is the request of listing slow query. */
-export interface ListSlowQueryRequest {
-  /** The interval of the slow query log. */
-  interval?: Interval;
+/** ListSlowQueriesRequest is the request of listing slow query. */
+export interface ListSlowQueriesRequest {
   /**
    * The filter of the slow query log.
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Support filter by resource and project for now.
+   * Support filter by project and start_time in SlowQueryDetails for now.
    * For example:
-   * Search the slow query log of the specific resource:
-   *   - the specific environment: resource = "environments/{environment}"
-   *   - for all environments: resource = "environments/-"
-   *   - the specific instance: resource = "environment/{environment}/instances/{instance}"
-   *   - the specific database: resource = "environment/{environment}/instances/{instance}/databases/{database}"
    * Search the slow query log of the specific project:
    *   - the specific project: project = "projects/{project}"
+   * Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
+   *   - start_time > "2022-01-01T12:00:00.000Z"
+   *   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
+   *   - Currently we only support filtering down to date granularity.
    */
   filter: string;
   /**
@@ -531,8 +527,8 @@ export interface ListSlowQueryRequest {
   orderBy: string;
 }
 
-/** ListSlowQueryResponse is the response of listing slow query. */
-export interface ListSlowQueryResponse {
+/** ListSlowQueriesResponse is the response of listing slow query. */
+export interface ListSlowQueriesResponse {
   /** The slow query logs. */
   slowQueryLogs: SlowQueryLog[];
 }
@@ -3186,28 +3182,25 @@ export const Backup = {
   },
 };
 
-function createBaseListSlowQueryRequest(): ListSlowQueryRequest {
-  return { interval: undefined, filter: "", orderBy: "" };
+function createBaseListSlowQueriesRequest(): ListSlowQueriesRequest {
+  return { filter: "", orderBy: "" };
 }
 
-export const ListSlowQueryRequest = {
-  encode(message: ListSlowQueryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.interval !== undefined) {
-      Interval.encode(message.interval, writer.uint32(10).fork()).ldelim();
-    }
+export const ListSlowQueriesRequest = {
+  encode(message: ListSlowQueriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.filter !== "") {
-      writer.uint32(18).string(message.filter);
+      writer.uint32(10).string(message.filter);
     }
     if (message.orderBy !== "") {
-      writer.uint32(26).string(message.orderBy);
+      writer.uint32(18).string(message.orderBy);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListSlowQueryRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSlowQueriesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListSlowQueryRequest();
+    const message = createBaseListSlowQueriesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3216,17 +3209,10 @@ export const ListSlowQueryRequest = {
             break;
           }
 
-          message.interval = Interval.decode(reader, reader.uint32());
+          message.filter = reader.string();
           continue;
         case 2:
           if (tag != 18) {
-            break;
-          }
-
-          message.filter = reader.string();
-          continue;
-        case 3:
-          if (tag != 26) {
             break;
           }
 
@@ -3241,53 +3227,48 @@ export const ListSlowQueryRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListSlowQueryRequest {
+  fromJSON(object: any): ListSlowQueriesRequest {
     return {
-      interval: isSet(object.interval) ? Interval.fromJSON(object.interval) : undefined,
       filter: isSet(object.filter) ? String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
     };
   },
 
-  toJSON(message: ListSlowQueryRequest): unknown {
+  toJSON(message: ListSlowQueriesRequest): unknown {
     const obj: any = {};
-    message.interval !== undefined && (obj.interval = message.interval ? Interval.toJSON(message.interval) : undefined);
     message.filter !== undefined && (obj.filter = message.filter);
     message.orderBy !== undefined && (obj.orderBy = message.orderBy);
     return obj;
   },
 
-  create(base?: DeepPartial<ListSlowQueryRequest>): ListSlowQueryRequest {
-    return ListSlowQueryRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListSlowQueriesRequest>): ListSlowQueriesRequest {
+    return ListSlowQueriesRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListSlowQueryRequest>): ListSlowQueryRequest {
-    const message = createBaseListSlowQueryRequest();
-    message.interval = (object.interval !== undefined && object.interval !== null)
-      ? Interval.fromPartial(object.interval)
-      : undefined;
+  fromPartial(object: DeepPartial<ListSlowQueriesRequest>): ListSlowQueriesRequest {
+    const message = createBaseListSlowQueriesRequest();
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
     return message;
   },
 };
 
-function createBaseListSlowQueryResponse(): ListSlowQueryResponse {
+function createBaseListSlowQueriesResponse(): ListSlowQueriesResponse {
   return { slowQueryLogs: [] };
 }
 
-export const ListSlowQueryResponse = {
-  encode(message: ListSlowQueryResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListSlowQueriesResponse = {
+  encode(message: ListSlowQueriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.slowQueryLogs) {
       SlowQueryLog.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListSlowQueryResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSlowQueriesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListSlowQueryResponse();
+    const message = createBaseListSlowQueriesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3307,7 +3288,7 @@ export const ListSlowQueryResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListSlowQueryResponse {
+  fromJSON(object: any): ListSlowQueriesResponse {
     return {
       slowQueryLogs: Array.isArray(object?.slowQueryLogs)
         ? object.slowQueryLogs.map((e: any) => SlowQueryLog.fromJSON(e))
@@ -3315,7 +3296,7 @@ export const ListSlowQueryResponse = {
     };
   },
 
-  toJSON(message: ListSlowQueryResponse): unknown {
+  toJSON(message: ListSlowQueriesResponse): unknown {
     const obj: any = {};
     if (message.slowQueryLogs) {
       obj.slowQueryLogs = message.slowQueryLogs.map((e) => e ? SlowQueryLog.toJSON(e) : undefined);
@@ -3325,12 +3306,12 @@ export const ListSlowQueryResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListSlowQueryResponse>): ListSlowQueryResponse {
-    return ListSlowQueryResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListSlowQueriesResponse>): ListSlowQueriesResponse {
+    return ListSlowQueriesResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListSlowQueryResponse>): ListSlowQueryResponse {
-    const message = createBaseListSlowQueryResponse();
+  fromPartial(object: DeepPartial<ListSlowQueriesResponse>): ListSlowQueriesResponse {
+    const message = createBaseListSlowQueriesResponse();
     message.slowQueryLogs = object.slowQueryLogs?.map((e) => SlowQueryLog.fromPartial(e)) || [];
     return message;
   },
@@ -4584,15 +4565,75 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    listSlowQuery: {
-      name: "ListSlowQuery",
-      requestType: ListSlowQueryRequest,
+    listSlowQueries: {
+      name: "ListSlowQueries",
+      requestType: ListSlowQueriesRequest,
       requestStream: false,
-      responseType: ListSlowQueryResponse,
+      responseType: ListSlowQueriesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
-          578365826: [new Uint8Array([15, 18, 13, 47, 118, 49, 47, 115, 108, 111, 119, 81, 117, 101, 114, 121])],
+          578365826: [
+            new Uint8Array([
+              56,
+              18,
+              54,
+              47,
+              118,
+              49,
+              47,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              108,
+              111,
+              119,
+              81,
+              117,
+              101,
+              114,
+              105,
+              101,
+              115,
+            ]),
+          ],
         },
       },
     },
@@ -4631,10 +4672,10 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: ListBackupRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListBackupResponse>>;
-  listSlowQuery(
-    request: ListSlowQueryRequest,
+  listSlowQueries(
+    request: ListSlowQueriesRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSlowQueryResponse>>;
+  ): Promise<DeepPartial<ListSlowQueriesResponse>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -4672,10 +4713,10 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListBackupRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListBackupResponse>;
-  listSlowQuery(
-    request: DeepPartial<ListSlowQueryRequest>,
+  listSlowQueries(
+    request: DeepPartial<ListSlowQueriesRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSlowQueryResponse>;
+  ): Promise<ListSlowQueriesResponse>;
 }
 
 declare var self: any | undefined;

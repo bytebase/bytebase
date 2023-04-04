@@ -82,8 +82,8 @@
     - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
-    - [ListSlowQueryRequest](#bytebase-v1-ListSlowQueryRequest)
-    - [ListSlowQueryResponse](#bytebase-v1-ListSlowQueryResponse)
+    - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
+    - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
@@ -1460,16 +1460,15 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 
 
 
-<a name="bytebase-v1-ListSlowQueryRequest"></a>
+<a name="bytebase-v1-ListSlowQueriesRequest"></a>
 
-### ListSlowQueryRequest
-ListSlowQueryRequest is the request of listing slow query.
+### ListSlowQueriesRequest
+ListSlowQueriesRequest is the request of listing slow query.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| interval | [google.type.Interval](#google-type-Interval) |  | The interval of the slow query log. |
-| filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by resource and project for now. For example: Search the slow query log of the specific resource: - the specific environment: resource = &#34;environments/{environment}&#34; - for all environments: resource = &#34;environments/-&#34; - the specific instance: resource = &#34;environment/{environment}/instances/{instance}&#34; - the specific database: resource = &#34;environment/{environment}/instances/{instance}/databases/{database}&#34; Search the slow query log of the specific project: - the specific project: project = &#34;projects/{project}&#34; |
+| filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by project and start_time in SlowQueryDetails for now. For example: Search the slow query log of the specific project: - the specific project: project = &#34;projects/{project}&#34; Search the slow query log that start_time after 2022-01-01T12:00:00.000Z: - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34; - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339). - Currently we only support filtering down to date granularity. |
 | order_by | [string](#string) |  | The order by of the slow query log. Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time, average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now. For example: - order by count: order_by = &#34;count&#34; - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34; Default: order by nighty_fifth_percentile_query_time desc. |
 
 
@@ -1477,10 +1476,10 @@ ListSlowQueryRequest is the request of listing slow query.
 
 
 
-<a name="bytebase-v1-ListSlowQueryResponse"></a>
+<a name="bytebase-v1-ListSlowQueriesResponse"></a>
 
-### ListSlowQueryResponse
-ListSlowQueryResponse is the response of listing slow query.
+### ListSlowQueriesResponse
+ListSlowQueriesResponse is the response of listing slow query.
 
 
 | Field | Type | Label | Description |
@@ -1699,7 +1698,7 @@ The type of the backup.
 | UpdateBackupSetting | [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |
 | ListBackup | [ListBackupRequest](#bytebase-v1-ListBackupRequest) | [ListBackupResponse](#bytebase-v1-ListBackupResponse) |  |
-| ListSlowQuery | [ListSlowQueryRequest](#bytebase-v1-ListSlowQueryRequest) | [ListSlowQueryResponse](#bytebase-v1-ListSlowQueryResponse) |  |
+| ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
 
  
 

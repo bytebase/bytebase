@@ -29,7 +29,7 @@ const (
 	DatabaseService_UpdateBackupSetting_FullMethodName  = "/bytebase.v1.DatabaseService/UpdateBackupSetting"
 	DatabaseService_CreateBackup_FullMethodName         = "/bytebase.v1.DatabaseService/CreateBackup"
 	DatabaseService_ListBackup_FullMethodName           = "/bytebase.v1.DatabaseService/ListBackup"
-	DatabaseService_ListSlowQuery_FullMethodName        = "/bytebase.v1.DatabaseService/ListSlowQuery"
+	DatabaseService_ListSlowQueries_FullMethodName      = "/bytebase.v1.DatabaseService/ListSlowQueries"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -46,7 +46,7 @@ type DatabaseServiceClient interface {
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error)
 	ListBackup(ctx context.Context, in *ListBackupRequest, opts ...grpc.CallOption) (*ListBackupResponse, error)
-	ListSlowQuery(ctx context.Context, in *ListSlowQueryRequest, opts ...grpc.CallOption) (*ListSlowQueryResponse, error)
+	ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error)
 }
 
 type databaseServiceClient struct {
@@ -147,9 +147,9 @@ func (c *databaseServiceClient) ListBackup(ctx context.Context, in *ListBackupRe
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListSlowQuery(ctx context.Context, in *ListSlowQueryRequest, opts ...grpc.CallOption) (*ListSlowQueryResponse, error) {
-	out := new(ListSlowQueryResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListSlowQuery_FullMethodName, in, out, opts...)
+func (c *databaseServiceClient) ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error) {
+	out := new(ListSlowQueriesResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_ListSlowQueries_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ type DatabaseServiceServer interface {
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
 	CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error)
 	ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error)
-	ListSlowQuery(context.Context, *ListSlowQueryRequest) (*ListSlowQueryResponse, error)
+	ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -208,8 +208,8 @@ func (UnimplementedDatabaseServiceServer) CreateBackup(context.Context, *CreateB
 func (UnimplementedDatabaseServiceServer) ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListBackup not implemented")
 }
-func (UnimplementedDatabaseServiceServer) ListSlowQuery(context.Context, *ListSlowQueryRequest) (*ListSlowQueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQuery not implemented")
+func (UnimplementedDatabaseServiceServer) ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQueries not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 
@@ -404,20 +404,20 @@ func _DatabaseService_ListBackup_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListSlowQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSlowQueryRequest)
+func _DatabaseService_ListSlowQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSlowQueriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListSlowQuery(ctx, in)
+		return srv.(DatabaseServiceServer).ListSlowQueries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DatabaseService_ListSlowQuery_FullMethodName,
+		FullMethod: DatabaseService_ListSlowQueries_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListSlowQuery(ctx, req.(*ListSlowQueryRequest))
+		return srv.(DatabaseServiceServer).ListSlowQueries(ctx, req.(*ListSlowQueriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -470,8 +470,8 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DatabaseService_ListBackup_Handler,
 		},
 		{
-			MethodName: "ListSlowQuery",
-			Handler:    _DatabaseService_ListSlowQuery_Handler,
+			MethodName: "ListSlowQueries",
+			Handler:    _DatabaseService_ListSlowQueries_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
