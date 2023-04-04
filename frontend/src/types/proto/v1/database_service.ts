@@ -500,6 +500,95 @@ export function backup_BackupStateToJSON(object: Backup_BackupState): string {
   }
 }
 
+/** ListSlowQueriesRequest is the request of listing slow query. */
+export interface ListSlowQueriesRequest {
+  /**
+   * The filter of the slow query log.
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * Support filter by project and start_time in SlowQueryDetails for now.
+   * For example:
+   * Search the slow query log of the specific project:
+   *   - the specific project: project = "projects/{project}"
+   * Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
+   *   - start_time > "2022-01-01T12:00:00.000Z"
+   *   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
+   *   - Currently we only support filtering down to date granularity.
+   */
+  filter: string;
+  /**
+   * The order by of the slow query log.
+   * Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
+   * average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+   * For example:
+   *  - order by count: order_by = "count"
+   *  - order by latest_log_time desc: order_by = "latest_log_time desc"
+   * Default: order by nighty_fifth_percentile_query_time desc.
+   */
+  orderBy: string;
+}
+
+/** ListSlowQueriesResponse is the response of listing slow query. */
+export interface ListSlowQueriesResponse {
+  /** The slow query logs. */
+  slowQueryLogs: SlowQueryLog[];
+}
+
+/** SlowQueryLog is the slow query log. */
+export interface SlowQueryLog {
+  /**
+   * The resource of the slow query log.
+   * The format is "environments/{environment}/instances/{instance}/databases/{database}".
+   */
+  resource: string;
+  /**
+   * The project of the slow query log.
+   * The format is "projects/{project}".
+   */
+  project: string;
+  /** The statistics of the slow query log. */
+  statistics?: SlowQueryStatistics;
+}
+
+/** SlowQueryStatistics is the statistics of the slow query log. */
+export interface SlowQueryStatistics {
+  /** The fingerprint of the slow query log. */
+  sqlFingerprint: string;
+  /** The count of the slow query log. */
+  count: number;
+  /** The latest log time of the slow query log. */
+  latestLogTime?: Date;
+  /** The average query time of the slow query log. */
+  averageQueryTime?: Duration;
+  /** The nighty fifth percentile query time of the slow query log. */
+  nightyFifthPercentileQueryTime?: Duration;
+  /** The average rows sent of the slow query log. */
+  averageRowsSent: number;
+  /** The nighty fifth percentile rows sent of the slow query log. */
+  nightyFifthPercentileRowsSent: number;
+  /** The average rows examined of the slow query log. */
+  averageRowsExamined: number;
+  /** The nighty fifth percentile rows examined of the slow query log. */
+  nightyFifthPercentileRowsExamined: number;
+  /** The details of the slow query log. */
+  details: SlowQueryDetails[];
+}
+
+/** SlowQueryDetails is the details of the slow query log. */
+export interface SlowQueryDetails {
+  /** The start time of the slow query log. */
+  startTime?: Date;
+  /** The query time of the slow query log. */
+  queryTime?: Duration;
+  /** The lock time of the slow query log. */
+  lockTime?: Duration;
+  /** The rows sent of the slow query log. */
+  rowsSent: number;
+  /** The rows examined of the slow query log. */
+  rowsExamined: number;
+  /** The sql text of the slow query log. */
+  sqlText: string;
+}
+
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
   return { name: "" };
 }
@@ -3093,6 +3182,563 @@ export const Backup = {
   },
 };
 
+function createBaseListSlowQueriesRequest(): ListSlowQueriesRequest {
+  return { filter: "", orderBy: "" };
+}
+
+export const ListSlowQueriesRequest = {
+  encode(message: ListSlowQueriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.filter !== "") {
+      writer.uint32(10).string(message.filter);
+    }
+    if (message.orderBy !== "") {
+      writer.uint32(18).string(message.orderBy);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSlowQueriesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSlowQueriesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.orderBy = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSlowQueriesRequest {
+    return {
+      filter: isSet(object.filter) ? String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
+    };
+  },
+
+  toJSON(message: ListSlowQueriesRequest): unknown {
+    const obj: any = {};
+    message.filter !== undefined && (obj.filter = message.filter);
+    message.orderBy !== undefined && (obj.orderBy = message.orderBy);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSlowQueriesRequest>): ListSlowQueriesRequest {
+    return ListSlowQueriesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSlowQueriesRequest>): ListSlowQueriesRequest {
+    const message = createBaseListSlowQueriesRequest();
+    message.filter = object.filter ?? "";
+    message.orderBy = object.orderBy ?? "";
+    return message;
+  },
+};
+
+function createBaseListSlowQueriesResponse(): ListSlowQueriesResponse {
+  return { slowQueryLogs: [] };
+}
+
+export const ListSlowQueriesResponse = {
+  encode(message: ListSlowQueriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.slowQueryLogs) {
+      SlowQueryLog.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSlowQueriesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSlowQueriesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.slowQueryLogs.push(SlowQueryLog.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSlowQueriesResponse {
+    return {
+      slowQueryLogs: Array.isArray(object?.slowQueryLogs)
+        ? object.slowQueryLogs.map((e: any) => SlowQueryLog.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ListSlowQueriesResponse): unknown {
+    const obj: any = {};
+    if (message.slowQueryLogs) {
+      obj.slowQueryLogs = message.slowQueryLogs.map((e) => e ? SlowQueryLog.toJSON(e) : undefined);
+    } else {
+      obj.slowQueryLogs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSlowQueriesResponse>): ListSlowQueriesResponse {
+    return ListSlowQueriesResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSlowQueriesResponse>): ListSlowQueriesResponse {
+    const message = createBaseListSlowQueriesResponse();
+    message.slowQueryLogs = object.slowQueryLogs?.map((e) => SlowQueryLog.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSlowQueryLog(): SlowQueryLog {
+  return { resource: "", project: "", statistics: undefined };
+}
+
+export const SlowQueryLog = {
+  encode(message: SlowQueryLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.resource !== "") {
+      writer.uint32(10).string(message.resource);
+    }
+    if (message.project !== "") {
+      writer.uint32(18).string(message.project);
+    }
+    if (message.statistics !== undefined) {
+      SlowQueryStatistics.encode(message.statistics, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryLog {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSlowQueryLog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.resource = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.project = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.statistics = SlowQueryStatistics.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SlowQueryLog {
+    return {
+      resource: isSet(object.resource) ? String(object.resource) : "",
+      project: isSet(object.project) ? String(object.project) : "",
+      statistics: isSet(object.statistics) ? SlowQueryStatistics.fromJSON(object.statistics) : undefined,
+    };
+  },
+
+  toJSON(message: SlowQueryLog): unknown {
+    const obj: any = {};
+    message.resource !== undefined && (obj.resource = message.resource);
+    message.project !== undefined && (obj.project = message.project);
+    message.statistics !== undefined &&
+      (obj.statistics = message.statistics ? SlowQueryStatistics.toJSON(message.statistics) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SlowQueryLog>): SlowQueryLog {
+    return SlowQueryLog.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SlowQueryLog>): SlowQueryLog {
+    const message = createBaseSlowQueryLog();
+    message.resource = object.resource ?? "";
+    message.project = object.project ?? "";
+    message.statistics = (object.statistics !== undefined && object.statistics !== null)
+      ? SlowQueryStatistics.fromPartial(object.statistics)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSlowQueryStatistics(): SlowQueryStatistics {
+  return {
+    sqlFingerprint: "",
+    count: 0,
+    latestLogTime: undefined,
+    averageQueryTime: undefined,
+    nightyFifthPercentileQueryTime: undefined,
+    averageRowsSent: 0,
+    nightyFifthPercentileRowsSent: 0,
+    averageRowsExamined: 0,
+    nightyFifthPercentileRowsExamined: 0,
+    details: [],
+  };
+}
+
+export const SlowQueryStatistics = {
+  encode(message: SlowQueryStatistics, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.sqlFingerprint !== "") {
+      writer.uint32(10).string(message.sqlFingerprint);
+    }
+    if (message.count !== 0) {
+      writer.uint32(16).int32(message.count);
+    }
+    if (message.latestLogTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.averageQueryTime !== undefined) {
+      Duration.encode(message.averageQueryTime, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.nightyFifthPercentileQueryTime !== undefined) {
+      Duration.encode(message.nightyFifthPercentileQueryTime, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.averageRowsSent !== 0) {
+      writer.uint32(48).int32(message.averageRowsSent);
+    }
+    if (message.nightyFifthPercentileRowsSent !== 0) {
+      writer.uint32(56).int32(message.nightyFifthPercentileRowsSent);
+    }
+    if (message.averageRowsExamined !== 0) {
+      writer.uint32(64).int32(message.averageRowsExamined);
+    }
+    if (message.nightyFifthPercentileRowsExamined !== 0) {
+      writer.uint32(72).int32(message.nightyFifthPercentileRowsExamined);
+    }
+    for (const v of message.details) {
+      SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryStatistics {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSlowQueryStatistics();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.sqlFingerprint = reader.string();
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.count = reader.int32();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.latestLogTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.averageQueryTime = Duration.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.nightyFifthPercentileQueryTime = Duration.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag != 48) {
+            break;
+          }
+
+          message.averageRowsSent = reader.int32();
+          continue;
+        case 7:
+          if (tag != 56) {
+            break;
+          }
+
+          message.nightyFifthPercentileRowsSent = reader.int32();
+          continue;
+        case 8:
+          if (tag != 64) {
+            break;
+          }
+
+          message.averageRowsExamined = reader.int32();
+          continue;
+        case 9:
+          if (tag != 72) {
+            break;
+          }
+
+          message.nightyFifthPercentileRowsExamined = reader.int32();
+          continue;
+        case 10:
+          if (tag != 82) {
+            break;
+          }
+
+          message.details.push(SlowQueryDetails.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SlowQueryStatistics {
+    return {
+      sqlFingerprint: isSet(object.sqlFingerprint) ? String(object.sqlFingerprint) : "",
+      count: isSet(object.count) ? Number(object.count) : 0,
+      latestLogTime: isSet(object.latestLogTime) ? fromJsonTimestamp(object.latestLogTime) : undefined,
+      averageQueryTime: isSet(object.averageQueryTime) ? Duration.fromJSON(object.averageQueryTime) : undefined,
+      nightyFifthPercentileQueryTime: isSet(object.nightyFifthPercentileQueryTime)
+        ? Duration.fromJSON(object.nightyFifthPercentileQueryTime)
+        : undefined,
+      averageRowsSent: isSet(object.averageRowsSent) ? Number(object.averageRowsSent) : 0,
+      nightyFifthPercentileRowsSent: isSet(object.nightyFifthPercentileRowsSent)
+        ? Number(object.nightyFifthPercentileRowsSent)
+        : 0,
+      averageRowsExamined: isSet(object.averageRowsExamined) ? Number(object.averageRowsExamined) : 0,
+      nightyFifthPercentileRowsExamined: isSet(object.nightyFifthPercentileRowsExamined)
+        ? Number(object.nightyFifthPercentileRowsExamined)
+        : 0,
+      details: Array.isArray(object?.details) ? object.details.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: SlowQueryStatistics): unknown {
+    const obj: any = {};
+    message.sqlFingerprint !== undefined && (obj.sqlFingerprint = message.sqlFingerprint);
+    message.count !== undefined && (obj.count = Math.round(message.count));
+    message.latestLogTime !== undefined && (obj.latestLogTime = message.latestLogTime.toISOString());
+    message.averageQueryTime !== undefined &&
+      (obj.averageQueryTime = message.averageQueryTime ? Duration.toJSON(message.averageQueryTime) : undefined);
+    message.nightyFifthPercentileQueryTime !== undefined &&
+      (obj.nightyFifthPercentileQueryTime = message.nightyFifthPercentileQueryTime
+        ? Duration.toJSON(message.nightyFifthPercentileQueryTime)
+        : undefined);
+    message.averageRowsSent !== undefined && (obj.averageRowsSent = Math.round(message.averageRowsSent));
+    message.nightyFifthPercentileRowsSent !== undefined &&
+      (obj.nightyFifthPercentileRowsSent = Math.round(message.nightyFifthPercentileRowsSent));
+    message.averageRowsExamined !== undefined && (obj.averageRowsExamined = Math.round(message.averageRowsExamined));
+    message.nightyFifthPercentileRowsExamined !== undefined &&
+      (obj.nightyFifthPercentileRowsExamined = Math.round(message.nightyFifthPercentileRowsExamined));
+    if (message.details) {
+      obj.details = message.details.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
+    } else {
+      obj.details = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
+    return SlowQueryStatistics.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
+    const message = createBaseSlowQueryStatistics();
+    message.sqlFingerprint = object.sqlFingerprint ?? "";
+    message.count = object.count ?? 0;
+    message.latestLogTime = object.latestLogTime ?? undefined;
+    message.averageQueryTime = (object.averageQueryTime !== undefined && object.averageQueryTime !== null)
+      ? Duration.fromPartial(object.averageQueryTime)
+      : undefined;
+    message.nightyFifthPercentileQueryTime =
+      (object.nightyFifthPercentileQueryTime !== undefined && object.nightyFifthPercentileQueryTime !== null)
+        ? Duration.fromPartial(object.nightyFifthPercentileQueryTime)
+        : undefined;
+    message.averageRowsSent = object.averageRowsSent ?? 0;
+    message.nightyFifthPercentileRowsSent = object.nightyFifthPercentileRowsSent ?? 0;
+    message.averageRowsExamined = object.averageRowsExamined ?? 0;
+    message.nightyFifthPercentileRowsExamined = object.nightyFifthPercentileRowsExamined ?? 0;
+    message.details = object.details?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSlowQueryDetails(): SlowQueryDetails {
+  return { startTime: undefined, queryTime: undefined, lockTime: undefined, rowsSent: 0, rowsExamined: 0, sqlText: "" };
+}
+
+export const SlowQueryDetails = {
+  encode(message: SlowQueryDetails, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.startTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.queryTime !== undefined) {
+      Duration.encode(message.queryTime, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.lockTime !== undefined) {
+      Duration.encode(message.lockTime, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.rowsSent !== 0) {
+      writer.uint32(32).int32(message.rowsSent);
+    }
+    if (message.rowsExamined !== 0) {
+      writer.uint32(40).int32(message.rowsExamined);
+    }
+    if (message.sqlText !== "") {
+      writer.uint32(50).string(message.sqlText);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryDetails {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSlowQueryDetails();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.queryTime = Duration.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.lockTime = Duration.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag != 32) {
+            break;
+          }
+
+          message.rowsSent = reader.int32();
+          continue;
+        case 5:
+          if (tag != 40) {
+            break;
+          }
+
+          message.rowsExamined = reader.int32();
+          continue;
+        case 6:
+          if (tag != 50) {
+            break;
+          }
+
+          message.sqlText = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SlowQueryDetails {
+    return {
+      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
+      queryTime: isSet(object.queryTime) ? Duration.fromJSON(object.queryTime) : undefined,
+      lockTime: isSet(object.lockTime) ? Duration.fromJSON(object.lockTime) : undefined,
+      rowsSent: isSet(object.rowsSent) ? Number(object.rowsSent) : 0,
+      rowsExamined: isSet(object.rowsExamined) ? Number(object.rowsExamined) : 0,
+      sqlText: isSet(object.sqlText) ? String(object.sqlText) : "",
+    };
+  },
+
+  toJSON(message: SlowQueryDetails): unknown {
+    const obj: any = {};
+    message.startTime !== undefined && (obj.startTime = message.startTime.toISOString());
+    message.queryTime !== undefined &&
+      (obj.queryTime = message.queryTime ? Duration.toJSON(message.queryTime) : undefined);
+    message.lockTime !== undefined && (obj.lockTime = message.lockTime ? Duration.toJSON(message.lockTime) : undefined);
+    message.rowsSent !== undefined && (obj.rowsSent = Math.round(message.rowsSent));
+    message.rowsExamined !== undefined && (obj.rowsExamined = Math.round(message.rowsExamined));
+    message.sqlText !== undefined && (obj.sqlText = message.sqlText);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SlowQueryDetails>): SlowQueryDetails {
+    return SlowQueryDetails.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SlowQueryDetails>): SlowQueryDetails {
+    const message = createBaseSlowQueryDetails();
+    message.startTime = object.startTime ?? undefined;
+    message.queryTime = (object.queryTime !== undefined && object.queryTime !== null)
+      ? Duration.fromPartial(object.queryTime)
+      : undefined;
+    message.lockTime = (object.lockTime !== undefined && object.lockTime !== null)
+      ? Duration.fromPartial(object.lockTime)
+      : undefined;
+    message.rowsSent = object.rowsSent ?? 0;
+    message.rowsExamined = object.rowsExamined ?? 0;
+    message.sqlText = object.sqlText ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -3919,6 +4565,78 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    listSlowQueries: {
+      name: "ListSlowQueries",
+      requestType: ListSlowQueriesRequest,
+      requestStream: false,
+      responseType: ListSlowQueriesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              56,
+              18,
+              54,
+              47,
+              118,
+              49,
+              47,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              108,
+              111,
+              119,
+              81,
+              117,
+              101,
+              114,
+              105,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -3954,6 +4672,10 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: ListBackupRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListBackupResponse>>;
+  listSlowQueries(
+    request: ListSlowQueriesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListSlowQueriesResponse>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -3991,6 +4713,10 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListBackupRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListBackupResponse>;
+  listSlowQueries(
+    request: DeepPartial<ListSlowQueriesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListSlowQueriesResponse>;
 }
 
 declare var self: any | undefined;
