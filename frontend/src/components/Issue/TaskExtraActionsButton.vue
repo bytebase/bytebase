@@ -24,12 +24,6 @@
     class="relative overflow-hidden"
     @close="state.showModal = false"
   >
-    <div
-      v-if="state.isLoading"
-      class="absolute inset-0 flex items-center justify-center bg-white/50"
-    >
-      <BBSpin />
-    </div>
     <StatusTransitionForm
       mode="TASK"
       :ok-text="confirmButtonText"
@@ -48,14 +42,9 @@ import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { DropdownOption, NDropdown } from "naive-ui";
 
-import type { Issue, Task, TaskStatus } from "@/types";
-import { useCurrentUser } from "@/store";
+import type { Issue, Task } from "@/types";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import {
-  activeTask,
-  hasWorkspacePermission,
-  TaskStatusTransition,
-} from "@/utils";
+import { canSkipTask, TaskStatusTransition } from "@/utils";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
 
 type LocalState = {
@@ -76,7 +65,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
 
 const { create, issue } = useIssueLogic();
 const { changeTaskStatus } = useExtraIssueLogic();
@@ -86,34 +74,12 @@ const allowSkipTask = computed(() => {
     return false;
   }
 
-  const { task } = props;
-
-  const pipeline = (issue.value as Issue).pipeline;
-  const isActiveTask = task.id === activeTask(pipeline).id;
-  if (!isActiveTask) {
-    return false;
-  }
-
-  const applicableStatusList: TaskStatus[] = ["PENDING_APPROVAL", "FAILED"];
-
-  if (!applicableStatusList.includes(task.status)) {
-    return false;
-  }
-
-  if (
-    hasWorkspacePermission(
-      "bb.permission.workspace.manage-issue",
-      currentUser.value.role
-    )
-  ) {
-    return true;
-  }
-
-  if (currentUser.value.id === (issue.value as Issue).assignee.id) {
-    return true;
-  }
-
-  return false;
+  return canSkipTask(
+    props.task,
+    issue.value as Issue,
+    true /* activeOnly */,
+    false /* !failedOnly */
+  );
 });
 
 const options = computed(() => {

@@ -208,6 +208,7 @@
     "sync-now": "现在同步",
     "show-help": "查看帮助",
     "success": "成功",
+    "failed": "失败",
     "load-more": "加载更多",
     "access-denied": "拒绝访问",
     "no": "否",
@@ -319,7 +320,8 @@
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
       "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。{link}"
-    }
+    },
+    "skip-failed-in-current-stage": "跳过当前阶段失败的任务"
   },
   "banner": {
     "update-license": "更新证书",
