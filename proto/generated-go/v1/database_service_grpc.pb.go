@@ -29,6 +29,7 @@ const (
 	DatabaseService_UpdateBackupSetting_FullMethodName  = "/bytebase.v1.DatabaseService/UpdateBackupSetting"
 	DatabaseService_CreateBackup_FullMethodName         = "/bytebase.v1.DatabaseService/CreateBackup"
 	DatabaseService_ListBackup_FullMethodName           = "/bytebase.v1.DatabaseService/ListBackup"
+	DatabaseService_ListSlowQuery_FullMethodName        = "/bytebase.v1.DatabaseService/ListSlowQuery"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -45,6 +46,7 @@ type DatabaseServiceClient interface {
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error)
 	ListBackup(ctx context.Context, in *ListBackupRequest, opts ...grpc.CallOption) (*ListBackupResponse, error)
+	ListSlowQuery(ctx context.Context, in *ListSlowQueryRequest, opts ...grpc.CallOption) (*ListSlowQueryResponse, error)
 }
 
 type databaseServiceClient struct {
@@ -145,6 +147,15 @@ func (c *databaseServiceClient) ListBackup(ctx context.Context, in *ListBackupRe
 	return out, nil
 }
 
+func (c *databaseServiceClient) ListSlowQuery(ctx context.Context, in *ListSlowQueryRequest, opts ...grpc.CallOption) (*ListSlowQueryResponse, error) {
+	out := new(ListSlowQueryResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_ListSlowQuery_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility
@@ -159,6 +170,7 @@ type DatabaseServiceServer interface {
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
 	CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error)
 	ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error)
+	ListSlowQuery(context.Context, *ListSlowQueryRequest) (*ListSlowQueryResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -195,6 +207,9 @@ func (UnimplementedDatabaseServiceServer) CreateBackup(context.Context, *CreateB
 }
 func (UnimplementedDatabaseServiceServer) ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListBackup not implemented")
+}
+func (UnimplementedDatabaseServiceServer) ListSlowQuery(context.Context, *ListSlowQueryRequest) (*ListSlowQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQuery not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 
@@ -389,6 +404,24 @@ func _DatabaseService_ListBackup_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_ListSlowQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSlowQueryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).ListSlowQuery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_ListSlowQuery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).ListSlowQuery(ctx, req.(*ListSlowQueryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -435,6 +468,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListBackup",
 			Handler:    _DatabaseService_ListBackup_Handler,
+		},
+		{
+			MethodName: "ListSlowQuery",
+			Handler:    _DatabaseService_ListSlowQuery_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
