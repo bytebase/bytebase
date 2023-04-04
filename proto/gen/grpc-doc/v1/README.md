@@ -1563,7 +1563,7 @@ SlowQueryStatistics is the statistics of the slow query log.
 | nighty_fifth_percentile_rows_sent | [int32](#int32) |  | The nighty fifth percentile rows sent of the slow query log. |
 | average_rows_examined | [int32](#int32) |  | The average rows examined of the slow query log. |
 | nighty_fifth_percentile_rows_examined | [int32](#int32) |  | The nighty fifth percentile rows examined of the slow query log. |
-| details | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | The details of the slow query log. |
+| samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
 
