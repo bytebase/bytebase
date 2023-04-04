@@ -125,6 +125,7 @@
       :transition="batchTaskActionState.transition"
       :task-list="batchTaskActionState.taskList"
       :ok-text="batchTaskActionState.transition.buttonName"
+      :title="batchTaskActionState.title"
       @cancel="batchTaskActionState = undefined"
       @finish="batchTaskActionState = undefined"
     />
@@ -332,13 +333,6 @@ const mergedDropdownActionList = computed(() => {
 });
 
 const handleDropdownSelect = (key: string, option: ExtraActionOption) => {
-  console.log(
-    "dropdown select",
-    key,
-    option.type,
-    option.transition,
-    option.target
-  );
   if (option.type === "ISSUE") {
     tryStartIssueStatusTransition(option.transition as IssueStatusTransition);
   }

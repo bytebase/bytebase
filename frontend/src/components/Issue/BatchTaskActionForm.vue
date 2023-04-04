@@ -107,6 +107,7 @@ const props = withDefaults(
     okText?: string;
     taskList: Task[];
     transition: TaskStatusTransition;
+    title: string;
   }>(),
   {
     okText: "",
@@ -185,7 +186,6 @@ const patchTaskStatus = async (task: Task) => {
   };
   try {
     const { issue } = props;
-    await new Promise((r) => setTimeout(r, 400 + Math.random() * 1000));
     await taskStore.updateStatus({
       issueId: issue.id,
       pipelineId: issue.pipeline.id,
@@ -218,7 +218,8 @@ const handleSubmit = async () => {
       module: "bytebase",
       style:
         failedCount > 0 ? (successCount > 0 ? "WARN" : "CRITICAL") : "SUCCESS",
-      title: parts.join(", "),
+      title: props.title,
+      description: parts.join(", "),
     });
     emit("finish");
   } finally {
