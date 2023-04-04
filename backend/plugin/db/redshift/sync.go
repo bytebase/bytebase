@@ -500,8 +500,16 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := `
-		SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views
-		WHERE schemaname NOT IN ('pg_catalog', 'information_schema');`
+	SELECT
+		pgv.schemaname,
+		pgv.viewname,
+		pgv.definition,
+		obj_description(pc.oid) AS comment
+	FROM pg_catalog.pg_views AS pgv
+	JOIN pg_namespace AS pns ON pns.nspname = pgv.schemaname
+	JOIN pg_class AS pc ON pc.relname = pgv.viewname AND pns.oid = pc.relnamespace
+	WHERE pgv.schemaname NOT IN ('pg_catalog', 'information_schema');
+	`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -530,58 +538,7 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		return nil, err
 	}
 
-	for schemaName, list := range viewMap {
-		for _, view := range list {
-			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
-			}
-			view.DependentColumns = dependencies
-		}
-	}
-
 	return viewMap, nil
-}
-
-// getViewDependencies gets the dependencies of a view.
-func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependentColumn, error) {
-	var result []*storepb.DependentColumn
-
-	query := fmt.Sprintf(`
-		SELECT source_ns.nspname as source_schema,
-	  		source_table.relname as source_table,
-	  		pg_attribute.attname as column_name
-	  	FROM pg_depend 
-	  		JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
-	  		JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
-	  		JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
-	  		JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid 
-	  		    AND pg_depend.refobjsubid = pg_attribute.attnum 
-	  		JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
-	  		JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
-	  	WHERE 
-	  		dependent_ns.nspname = '%s'
-	  		AND dependent_view.relname = '%s'
-	  		AND pg_attribute.attnum > 0 
-	  	ORDER BY 1,2,3;
-	`, schemaName, viewName)
-
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		dependentColumn := &storepb.DependentColumn{}
-		if err := rows.Scan(&dependentColumn.Schema, &dependentColumn.Table, &dependentColumn.Column); err != nil {
-			return nil, err
-		}
-		result = append(result, dependentColumn)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 // getIndexes gets all indices of a database.
@@ -589,16 +546,29 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	query := `
-		SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
+	SELECT 
+		pgidx.schemaname, 
+		pgidx.tablename, 
+		pgidx.indexname, 
+		pgidx.indexdef, 
+		(
+		SELECT 1
 			FROM information_schema.table_constraints
-			WHERE constraint_schema = idx.schemaname
-			AND constraint_name = idx.indexname
-			AND table_schema = idx.schemaname
-			AND table_name = idx.tablename
-			AND constraint_type = 'PRIMARY KEY') AS primary,
-			obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment
-		FROM pg_indexes AS idx WHERE idx.schemaname NOT IN ('pg_catalog', 'information_schema')
-		ORDER BY idx.schemaname, idx.tablename, idx.indexname;`
+			WHERE 	constraint_schema = pgidx.schemaname
+					AND constraint_name = pgidx.indexname
+					AND table_schema = pgidx.schemaname
+					AND table_name = pgidx.tablename
+					AND constraint_type = 'PRIMARY KEY'
+		) AS primary,
+		obj_description(pc.oid) AS comment
+	FROM
+		pg_indexes AS pgidx 
+		JOIN pg_namespace AS pns ON pns.nspname = pgidx.schemaname
+		JOIN pg_class AS pc ON pc.relname = pgidx.indexname AND pns.oid = pc.relnamespace
+	WHERE 
+		pgidx.schemaname NOT IN ('pg_catalog', 'information_schema')
+	ORDER BY
+		pgidx.schemaname, pgidx.tablename, pgidx.indexname;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
