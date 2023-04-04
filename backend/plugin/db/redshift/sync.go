@@ -438,21 +438,24 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
 	query := `
-		SELECT
-			cols.table_schema,
-			cols.table_name,
-			cols.column_name,
-			cols.data_type,
-			cols.ordinal_position,
-			cols.column_default,
-			cols.is_nullable,
-			cols.collation_name,
-			cols.udt_schema,
-			cols.udt_name,
-			pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
-		FROM INFORMATION_SCHEMA.COLUMNS AS cols
-		WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema')
-		ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`
+	SELECT
+		cols.table_schema,
+		cols.table_name,
+		cols.column_name,
+		cols.data_type,
+		cols.ordinal_position,
+		cols.column_default,
+		cols.is_nullable,
+		cols.collation_name,
+		cols.udt_schema,
+		cols.udt_name,
+		pg_catalog.col_description(pc.oid, cols.ordinal_position::int) as column_comment
+	FROM 
+		INFORMATION_SCHEMA.COLUMNS AS cols
+		JOIN pg_namespace AS pns ON pns.nspname = cols.table_schema
+		LEFT JOIN pg_class AS pc ON pc.relname = cols.table_name AND pns.oid = pc.relnamespace
+	WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema')
+	ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
