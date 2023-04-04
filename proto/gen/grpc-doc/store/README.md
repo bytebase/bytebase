@@ -61,6 +61,10 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
+- [store/slow_query.proto](#store_slow_query-proto)
+    - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
+    - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
+  
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
   
@@ -874,6 +878,60 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 The external URL is used for: 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend. 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend. |
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_slow_query-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/slow_query.proto
+
+
+
+<a name="bytebase-store-SlowQueryDetails"></a>
+
+### SlowQueryDetails
+SlowQueryDetails is the details of a slow query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | start_time is the start time of the slow query. |
+| query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | query_time is the query time of the slow query. |
+| lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | lock_time is the lock time of the slow query. |
+| rows_sent | [int32](#int32) |  | rows_sent is the number of rows sent by the slow query. |
+| rows_examined | [int32](#int32) |  | rows_examined is the number of rows examined by the slow query. |
+| sql_text | [string](#string) |  | sql_text is the SQL text of the slow query. |
+
+
+
+
+
+
+<a name="bytebase-store-SlowQueryStatistics"></a>
+
+### SlowQueryStatistics
+SlowQueryStatistics is a summary of slow queries.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_fingerprint | [string](#string) |  | sql_fingerprint is the fingerprint of the slow query. |
+| count | [int32](#int32) |  | count is the number of slow queries with the same fingerprint. |
+| latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_log_time is the time of the latest slow query with the same fingerprint. |
+| details | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | details is the details of the slow query. |
 
 
 
