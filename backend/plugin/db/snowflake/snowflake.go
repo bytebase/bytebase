@@ -20,8 +20,6 @@ import (
 
 var (
 	bytebaseDatabase = "BYTEBASE"
-	sysAdminRole     = "SYSADMIN"
-	accountAdminRole = "ACCOUNTADMIN"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -126,14 +124,6 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (driver *Driver) useRole(ctx context.Context, role string) error {
-	query := fmt.Sprintf("USE ROLE %s", role)
-	if _, err := driver.db.ExecContext(ctx, query); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-	return nil
-}
-
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -233,9 +223,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, nil
 	}
 
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return 0, err
-	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err

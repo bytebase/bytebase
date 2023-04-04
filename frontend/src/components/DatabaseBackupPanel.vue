@@ -112,7 +112,7 @@
           />
 
           <button
-            v-if="allowEdit && disableBackupButton"
+            v-if="allowEdit && !disableBackupButton"
             type="button"
             class="btn-normal whitespace-nowrap items-center"
             @click.prevent="state.showCreateBackupModal = true"
