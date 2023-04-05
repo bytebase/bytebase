@@ -27,16 +27,17 @@
           @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
         />
       </template>
-      <template v-if="applicableIssueStatusTransitionList.length > 0">
+      <template v-if="mergedDropdownActionList.length > 0">
         <NDropdown
           trigger="click"
-          :options="issueStatusTransitionDropdownOptions"
-          @select="handleIssueStatusTransitionDropdownSelect"
+          placement="bottom-end"
+          :options="mergedDropdownActionList"
+          @select="handleDropdownSelect"
         >
           <button
             id="user-menu"
             type="button"
-            class="text-control-light"
+            class="text-control-light p-0.5 rounded hover:bg-control-bg-hover"
             aria-label="User menu"
             aria-haspopup="true"
           >
@@ -62,6 +63,25 @@
           >
             {{ $t(transition.buttonName) }}
           </button>
+        </template>
+
+        <template v-if="extraActionList.length > 0">
+          <NDropdown
+            trigger="click"
+            placement="bottom-end"
+            :options="extraActionList"
+            @select="handleDropdownSelect"
+          >
+            <button
+              id="user-menu"
+              type="button"
+              class="text-control-light p-0.5 rounded hover:bg-control-bg-hover"
+              aria-label="User menu"
+              aria-haspopup="true"
+            >
+              <heroicons-solid:dots-vertical class="w-6 h-6" />
+            </button>
+          </NDropdown>
         </template>
       </div>
     </template>
@@ -93,15 +113,34 @@
       "
     />
   </BBModal>
+
+  <BBModal
+    v-if="batchTaskActionState"
+    :title="batchTaskActionState.title"
+    class="relative overflow-hidden"
+    @close="batchTaskActionState = undefined"
+  >
+    <BatchTaskActionForm
+      :issue="(issue as Issue)"
+      :transition="batchTaskActionState.transition"
+      :task-list="batchTaskActionState.taskList"
+      :ok-text="batchTaskActionState.transition.buttonName"
+      :title="batchTaskActionState.title"
+      @cancel="batchTaskActionState = undefined"
+      @finish="batchTaskActionState = undefined"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, Ref } from "vue";
+import { computed, reactive, ref, Ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { DropdownOption, NDropdown } from "naive-ui";
 
 import {
+  activeStage,
+  canSkipTask,
   StageStatusTransition,
   taskCheckRunSummary,
   TaskStatusTransition,
@@ -130,6 +169,7 @@ import {
 import BBContextMenuButton, {
   type ButtonAction,
 } from "@/bbkit/BBContextMenuButton.vue";
+import BatchTaskActionForm from "./BatchTaskActionForm.vue";
 
 export type IssueContext = {
   currentUser: Principal;
@@ -151,14 +191,32 @@ interface UpdateStatusModalState {
   isTransiting: boolean;
 }
 
+type BatchTaskActionState = {
+  taskList: Task[];
+  transition: TaskStatusTransition;
+  title: string;
+  okText: string;
+};
+
 type TaskStatusTransitionButtonAction = ButtonAction<{
   transition: TaskStatusTransition;
   target: "TASK" | "STAGE";
 }>;
 
-type IssueStatusTransitionDropdownOption = DropdownOption & {
-  transition: IssueStatusTransition;
+type ExtraAction<T extends "ISSUE" | "TASK" | "TASK-BATCH"> = {
+  type: T;
+  transition: T extends "ISSUE" ? IssueStatusTransition : TaskStatusTransition;
+  target: T extends "ISSUE"
+    ? Issue
+    : T extends "TASK"
+    ? Task
+    : T extends "TASK-BATCH"
+    ? Task[]
+    : unknown;
 };
+
+type ExtraActionOption = DropdownOption &
+  ExtraAction<"ISSUE" | "TASK" | "TASK-BATCH">;
 
 const { t } = useI18n();
 
@@ -182,6 +240,8 @@ const updateStatusModalState = reactive<UpdateStatusModalState>({
   isTransiting: false,
 });
 
+const batchTaskActionState = ref<BatchTaskActionState>();
+
 const currentUser = useCurrentUser();
 
 const issueContext = computed((): IssueContext => {
@@ -202,18 +262,100 @@ const {
 } = useIssueTransitionLogic(issue as Ref<Issue>);
 
 const issueStatusTransitionDropdownOptions = computed(() => {
-  return applicableIssueStatusTransitionList.value.map<IssueStatusTransitionDropdownOption>(
+  return applicableIssueStatusTransitionList.value.map<ExtraActionOption>(
     (transition) => {
-      return { label: t(transition.buttonName), transition };
+      return {
+        key: transition.type,
+        label: t(transition.buttonName),
+        type: "ISSUE",
+        transition,
+        target: issue.value as Issue,
+      };
     }
   );
 });
 
-const handleIssueStatusTransitionDropdownSelect = (
-  key: string,
-  option: IssueStatusTransitionDropdownOption
+const skippableTaskList = computed(() => {
+  if (create.value) return [];
+
+  const issueEntity = issue.value as Issue;
+  if (issueEntity.status !== "OPEN") {
+    return [];
+  }
+
+  const currentStage = activeStage(issueEntity.pipeline);
+  return currentStage.taskList.filter((task) =>
+    canSkipTask(
+      task,
+      issueEntity,
+      false /* !activeOnly */,
+      true /* failedOnly */
+    )
+  );
+});
+
+const extraActionList = computed(() => {
+  const list: ExtraActionOption[] = [];
+
+  if (skippableTaskList.value.length > 0) {
+    list.push({
+      label: t("task.skip-failed-in-current-stage"),
+      key: "skip-failed-tasks-in-current-stage",
+      type: "TASK-BATCH",
+      transition: {
+        buttonType: "PRIMARY",
+        buttonName: t("task.skip"),
+        type: "SKIP",
+        to: "DONE",
+      },
+      target: skippableTaskList.value,
+    });
+  }
+
+  return list;
+});
+
+const mergedDropdownActionList = computed(() => {
+  if (applicableTaskStatusTransitionList.value.length > 0) {
+    // When there are something to do with tasks, they will be shown as big
+    // buttons.
+    // Now we display issue-level actions as a dropdown together with "extra"
+    // actions.
+    return [
+      ...issueStatusTransitionDropdownOptions.value,
+      ...extraActionList.value,
+    ];
+  } else {
+    // When we have nothing to do with tasks, show issue-level actions as big
+    // buttons. And show only "extra" actions as a dropdown.
+    return [...extraActionList.value];
+  }
+});
+
+const handleDropdownSelect = (key: string, option: ExtraActionOption) => {
+  if (option.type === "ISSUE") {
+    tryStartIssueStatusTransition(option.transition as IssueStatusTransition);
+  }
+  if (option.type === "TASK-BATCH") {
+    tryStartBatchTaskTransition(
+      option.transition as TaskStatusTransition,
+      option.target as Task[]
+    );
+  }
+};
+
+const tryStartBatchTaskTransition = (
+  transition: TaskStatusTransition,
+  taskList: Task[]
 ) => {
-  tryStartIssueStatusTransition(option.transition);
+  if (transition.type === "SKIP") {
+    batchTaskActionState.value = {
+      okText: transition.buttonName,
+      title: t("task.skip-failed-in-current-stage"),
+      transition,
+      taskList,
+    };
+  }
 };
 
 const tryStartStageOrTaskStatusTransition = (
