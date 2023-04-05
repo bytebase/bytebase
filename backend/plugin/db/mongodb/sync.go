@@ -272,7 +272,7 @@ func isAtlasUnauthorizedError(err error) bool {
 	return strings.Contains(err.Error(), "AtlasError: Unauthorized")
 }
 
-func convertEmptyInterfaceToInt64(value interface{}) (int64, error) {
+func convertEmptyInterfaceToInt64(value any) (int64, error) {
 	// NOTE: convert uint64 to int64 may cause overflow. But we don't care about it.
 	switch v := value.(type) {
 	case int:

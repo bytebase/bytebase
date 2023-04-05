@@ -367,7 +367,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 				s.MetricReporter.Report(&metricPlugin.Metric{
 					Name:  metric.APIRequestMetricName,
 					Value: 1,
-					Labels: map[string]interface{}{
+					Labels: map[string]any{
 						"path":   c.Request().URL.Path,
 						"method": c.Request().Method,
 					},

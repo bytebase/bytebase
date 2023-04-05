@@ -187,7 +187,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 }
 
 func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	set, args := []string{}, []interface{}{}
+	set, args := []string{}, []any{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -250,7 +250,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 }
 
 func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}

@@ -84,7 +84,7 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 
 // ListPipelineV2 lists pipelines.
 func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
 	}

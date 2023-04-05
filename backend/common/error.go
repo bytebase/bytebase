@@ -100,7 +100,7 @@ func ErrorMessage(err error) string {
 }
 
 // Wrapf is a helper function to wrap an Error with given code and formatted message.
-func Wrapf(err error, code Code, format string, args ...interface{}) *Error {
+func Wrapf(err error, code Code, format string, args ...any) *Error {
 	return &Error{
 		Code: code,
 		Err:  pkgerrors.Wrapf(err, format, args...),
@@ -108,7 +108,7 @@ func Wrapf(err error, code Code, format string, args ...interface{}) *Error {
 }
 
 // Errorf is a helper function to create an Error with given code and formatted message.
-func Errorf(code Code, format string, args ...interface{}) *Error {
+func Errorf(code Code, format string, args ...any) *Error {
 	return &Error{
 		Code: code,
 		Err:  pkgerrors.Errorf(format, args...),

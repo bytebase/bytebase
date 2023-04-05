@@ -35,7 +35,7 @@ func (c *sheetCountCollector) Collect(ctx context.Context) ([]*metric.Metric, er
 		res = append(res, &metric.Metric{
 			Name:  metricAPI.SheetCountMetricName,
 			Value: sheetCountMetric.Count,
-			Labels: map[string]interface{}{
+			Labels: map[string]any{
 				"row_status": string(sheetCountMetric.RowStatus),
 				"visibility": string(sheetCountMetric.Visibility),
 				"source":     string(sheetCountMetric.Source),

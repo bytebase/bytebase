@@ -136,14 +136,14 @@ func (*insertRowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func getInsertRows(res []interface{}) (int64, error) {
-	// the res struct is []interface{}{columnName, columnTable, rowDataList}
+func getInsertRows(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	rowList, ok := res[2].([]interface{})
+	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %t", res[2])
 	}
 	// mysql> explain insert into td select * from td;
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
@@ -156,9 +156,9 @@ func getInsertRows(res []interface{}) (int64, error) {
 		return 0, errors.Errorf("not found any data")
 	}
 	// We need the row 2.
-	rowTwo, ok := rowList[1].([]interface{})
+	rowTwo, ok := rowList[1].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	// MySQL EXPLAIN statement result has 12 columns.
 	if len(rowTwo) != 12 {

@@ -657,7 +657,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1"}, []interface{}{updaterID}
+	set, args := []string{"updater_id = $1"}, []any{updaterID}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -754,7 +754,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 	}
 	if len(adds) > 0 {
 		var tokens []string
-		var args []interface{}
+		var args []any
 		for i, v := range adds {
 			tokens = append(tokens, fmt.Sprintf("($%d, $%d)", 2*i+1, 2*i+2))
 			args = append(args, issueUID, v)
@@ -766,7 +766,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 	}
 	if len(deletes) > 0 {
 		var tokens []string
-		var args []interface{}
+		var args []any
 		args = append(args, issueUID)
 		for i, v := range deletes {
 			tokens = append(tokens, fmt.Sprintf("$%d", i+2))
@@ -782,7 +782,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 
 // ListIssueV2 returns the list of issues by find query.
 func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
 	}

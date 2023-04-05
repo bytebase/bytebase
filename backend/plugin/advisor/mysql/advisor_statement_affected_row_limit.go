@@ -125,21 +125,21 @@ func (*statementAffectedRowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func getRows(res []interface{}) (int64, error) {
-	// the res struct is []interface{}{columnName, columnTable, rowDataList}
+func getRows(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	rowList, ok := res[2].([]interface{})
+	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %t", res[2])
 	}
 	if len(rowList) < 1 {
 		return 0, errors.Errorf("not found any data")
 	}
-	rowOne, ok := rowList[0].([]interface{})
+	rowOne, ok := rowList[0].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	// MySQL EXPLAIN statement result has 12 columns.
 	//

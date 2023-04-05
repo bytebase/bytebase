@@ -248,7 +248,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase_migration_history `
-	paramNames, params := []string{}, []interface{}{}
+	paramNames, params := []string{}, []any{}
 	if v := find.ID; v != nil {
 		paramNames, params = append(paramNames, "id"), append(params, *v)
 	}

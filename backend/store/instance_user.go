@@ -76,7 +76,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 
 	// Delete instance users that no longer exist.
 	if len(deletes) > 0 {
-		deleteArgs := []interface{}{instanceUID}
+		deleteArgs := []any{instanceUID}
 		var deletePlaceholders []string
 		for i, d := range deletes {
 			deleteArgs = append(deleteArgs, d)
@@ -91,7 +91,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 	}
 	// Upsert instance users.
 	if len(upserts) > 0 {
-		args := []interface{}{}
+		args := []any{}
 		var placeholders []string
 		for i, instanceUser := range upserts {
 			args = append(args, api.SystemBotID, api.SystemBotID, instanceUID, instanceUser.Name, instanceUser.Grant)
@@ -148,7 +148,7 @@ func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage
 }
 
 func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 
 	where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, find.InstanceUID)
 	if v := find.Name; v != nil {

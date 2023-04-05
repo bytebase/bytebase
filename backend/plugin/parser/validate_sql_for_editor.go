@@ -85,7 +85,7 @@ func postgresValidateSQLForEditor(statement string) bool {
 
 	cteRegex := regexp.MustCompile(`^WITH\s+?`)
 	if matchResult := cteRegex.MatchString(formattedStr); matchResult {
-		var jsonData map[string]interface{}
+		var jsonData map[string]any
 
 		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
 			log.Debug("Failed to unmarshal JSON", zap.String("jsonText", jsonText), zap.Error(err))
@@ -100,7 +100,7 @@ func postgresValidateSQLForEditor(statement string) bool {
 	return false
 }
 
-func keyExistsInJSONData(jsonData map[string]interface{}, keyList []string) bool {
+func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {
 	for _, key := range keyList {
 		if _, ok := jsonData[key]; ok {
 			return true
@@ -109,13 +109,13 @@ func keyExistsInJSONData(jsonData map[string]interface{}, keyList []string) bool
 
 	for _, value := range jsonData {
 		switch v := value.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			if keyExistsInJSONData(v, keyList) {
 				return true
 			}
-		case []interface{}:
+		case []any:
 			for _, item := range v {
-				if m, ok := item.(map[string]interface{}); ok {
+				if m, ok := item.(map[string]any); ok {
 					if keyExistsInJSONData(m, keyList) {
 						return true
 					}

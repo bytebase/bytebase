@@ -37,7 +37,7 @@ func NewACLInterceptor(store *store.Store, secret string, licenseService enterpr
 }
 
 // ACLInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	user, err := in.getUser(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
@@ -133,7 +133,7 @@ func (in *ACLInterceptor) getProjectMember(ctx context.Context, user *store.User
 	return api.UnknownRole, nil
 }
 
-func getProjectIDs(req interface{}) ([]string, error) {
+func getProjectIDs(req any) ([]string, error) {
 	if request, ok := req.(*v1pb.UpdateProjectRequest); ok {
 		if request.Project == nil {
 			return nil, errors.Errorf("project not found")
@@ -162,7 +162,7 @@ func getProjectIDs(req interface{}) ([]string, error) {
 	return nil, nil
 }
 
-func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req interface{}) ([]string, error) {
+func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req any) ([]string, error) {
 	var requests []*v1pb.UpdateDatabaseRequest
 	if request, ok := req.(*v1pb.UpdateDatabaseRequest); ok {
 		requests = append(requests, request)

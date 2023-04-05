@@ -248,36 +248,36 @@ func (*MockDriver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
 }
 
 // QueryConn implements the Driver interface.
-func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *database.QueryContext) ([]interface{}, error) {
+func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *database.QueryContext) ([]any, error) {
 	switch statement {
 	// For TestStatementDMLDryRun
 	case "EXPLAIN DELETE FROM tech_book":
 		return nil, errors.Errorf("MockDriver disallows it")
 	// For TestStatementAffectedRowLimit
 	case "EXPLAIN UPDATE tech_book SET id = 1":
-		return []interface{}{
+		return []any{
 			nil,
 			nil,
-			[]interface{}{
-				[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
+			[]any{
+				[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
 			},
 		}, nil
 	// For TestInsertRowLimit
 	case "EXPLAIN INSERT INTO tech_book SELECT * FROM tech_book":
-		return []interface{}{
+		return []any{
 			nil,
 			nil,
-			[]interface{}{
+			[]any{
 				nil,
-				[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
+				[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
 			},
 		}, nil
 	}
-	return []interface{}{
+	return []any{
 		nil,
 		nil,
-		[]interface{}{
-			[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1, nil, nil},
+		[]any{
+			[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1, nil, nil},
 		},
 	}, nil
 }

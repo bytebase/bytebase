@@ -47,7 +47,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		s.MetricReporter.Report(&metric.Metric{
 			Name:  metricAPI.IssueCreateMetricName,
 			Value: 1,
-			Labels: map[string]interface{}{
+			Labels: map[string]any{
 				"type": issue.Type,
 			},
 		})
@@ -1133,7 +1133,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		}
 		defer driver.Close(ctx)
 		var lowerCaseTableNames int
-		var unused interface{}
+		var unused any
 		db, err := driver.GetDBConnection(ctx, "" /* databaseName */)
 		if err != nil {
 			log.Warn("failed to get db connection for instance %q", zap.Error(err), zap.String("instance", instance.Title))

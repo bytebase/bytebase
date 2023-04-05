@@ -237,7 +237,7 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 }
 
 func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := list.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
@@ -313,7 +313,7 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 	if update.Payload == "" {
 		update.Payload = "{}"
 	}
-	set, args := []string{"updater_id = $1"}, []interface{}{principalUID}
+	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	set, args = append(set, "payload = $2"), append(args, update.Payload)
 	args = append(args, update.ID)
 

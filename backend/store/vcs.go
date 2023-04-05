@@ -248,7 +248,7 @@ func createVCSImpl(ctx context.Context, tx *Tx, create *api.VCSCreate) (*vcsRaw,
 
 func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = $1"), append(args, *v)
 	}
@@ -299,7 +299,7 @@ func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, err
 // patchVCSImpl updates a vcs by ID. Returns the new state of the vcs after update.
 func patchVCSImpl(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*vcsRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -475,7 +475,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 // UpdateExternalVersionControlV2 updates an external version control.
 func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID int, externalVersionControlUID int, update *UpdateExternalVersionControlMessage) (*ExternalVersionControlMessage, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{principalUID}
+	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	if v := update.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -539,7 +539,7 @@ func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVers
 }
 
 func (*Store) findExternalVersionControlsImplV2(ctx context.Context, tx *Tx, find *findExternalVersionControlMessage) ([]*ExternalVersionControlMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.id; v != nil {
 		// Build WHERE clause.
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)

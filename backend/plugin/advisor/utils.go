@@ -16,7 +16,7 @@ func NormalizeStatement(statement string) string {
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.
-func Query(ctx context.Context, connection *sql.DB, statement string) ([]interface{}, error) {
+func Query(ctx context.Context, connection *sql.DB, statement string) ([]any, error) {
 	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
@@ -48,9 +48,9 @@ func Query(ctx context.Context, connection *sql.DB, statement string) ([]interfa
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data := []interface{}{}
+	data := []any{}
 	for rows.Next() {
-		scanArgs := make([]interface{}, colCount)
+		scanArgs := make([]any, colCount)
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -71,7 +71,7 @@ func Query(ctx context.Context, connection *sql.DB, statement string) ([]interfa
 			return nil, err
 		}
 
-		rowData := []interface{}{}
+		rowData := []any{}
 		for i := range columnTypes {
 			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
 				rowData = append(rowData, v.Bool)
@@ -103,5 +103,5 @@ func Query(ctx context.Context, connection *sql.DB, statement string) ([]interfa
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	return []any{columnNames, columnTypeNames, data}, nil
 }

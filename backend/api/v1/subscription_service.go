@@ -163,7 +163,7 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	s.metricReporter.Report(&metric.Metric{
 		Name:  metricAPI.SubscriptionTrialMetricName,
 		Value: 1,
-		Labels: map[string]interface{}{
+		Labels: map[string]any{
 			"trial_plan":    currentPlan.String(),
 			"from_plan":     basePlan.String(),
 			"lark_notified": false,

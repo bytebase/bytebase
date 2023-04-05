@@ -260,7 +260,7 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCr
 
 func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where = append(where, "inbox.activity_id = activity.id")
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("inbox.id = $%d", len(args)+1)), append(args, *v)
@@ -331,7 +331,7 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 // patchInboxImpl updates a inbox by ID. Returns the new state of the inbox after update.
 func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatch) (*inboxRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"status = $1"}, []interface{}{patch.Status}
+	set, args := []string{"status = $1"}, []any{patch.Status}
 	args = append(args, patch.ID)
 
 	var inboxRaw inboxRaw
