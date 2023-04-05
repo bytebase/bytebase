@@ -113,8 +113,8 @@ dependencies:
     specifier: ^1.5.1
     version: 1.5.1
   qs:
-    specifier: 6.11.0
-    version: 6.11.0
+    specifier: 6.11.1
+    version: 6.11.1
   rollup:
     specifier: 3.20.2
     version: 3.20.2
@@ -4323,8 +4323,8 @@ packages:
       yargs: 15.4.1
     dev: false
 
-  /qs@6.11.0:
-    resolution: {integrity: sha512-MvjoMCJwEarSbUYk5O+nmoSzSutSsTwF85zcHPQ9OrlFoZOYIjaqBAJIqIXjptyD5vThxGq52Xu/MaJzRkIk4Q==}
+  /qs@6.11.1:
+    resolution: {integrity: sha512-0wsrzgTz/kAVIeuxSjnpGC56rzYtr6JT/2BwEvMaPhFIoYa1aGO8LbzuU1R0uUYQkLpWBTOj0l/CLAJB64J6nQ==}
     engines: {node: '>=0.6'}
     dependencies:
       side-channel: 1.0.4
