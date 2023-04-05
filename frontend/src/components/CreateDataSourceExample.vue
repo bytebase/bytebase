@@ -121,7 +121,7 @@
       </template>
       <div class="mt-2 flex flex-row">
         <span
-          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
+          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre-line"
         >
           {{ grantStatement(props.engineType, props.dataSourceType) }}
         </span>
@@ -200,7 +200,22 @@ const grantStatement = (
       case "CLICKHOUSE":
         return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
       case "SNOWFLAKE":
-        return "CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'\nDEFAULT_ROLE = \"ACCOUNTADMIN\"\nDEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';\n\nGRANT ROLE \"ACCOUNTADMIN\" TO USER bytebase;";
+        return `-- The following privilege is the lowest privileges bytebase needed, you still need to assign the role owns the database which need managed by Bytebase to BYTEBASE role by yourself.
+CREATE OR REPLACE ROLE BYTEBASE;
+-- If using non-enterprise edition, the following command may encounter error likes 'Unsupported feature GRANT/REVOKE APPLY TAG ON ACCOUNT',
+-- you can remove the related privileges and make it works.
+GRANT CREATE DATABASE, IMPORT SHARE, APPLY MASKING POLICY, APPLY ROW ACCESS POLICY, APPLY TAG ON ACCOUNT TO ROLE BYTEBASE;
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE BYTEBASE;
+GRANT USAGE ON WAREHOUSE "YOUR_COMPUTE_WAREHOUSE" TO ROLE BYTEBASE;
+CREATE OR REPLACE USER BYTEBASE
+  PASSWORD = 'YOUR_PWD'
+  DEFAULT_ROLE = "BYTEBASE"
+  DEFAULT_WAREHOUSE = "YOUR_COMPUTE_WAREHOUSE";
+GRANT ROLE "BYTEBASE" TO USER BYTEBASE;
+GRANT ROLE "BYTEBASE" TO ROLE SYSADMIN;
+-- The database privileges, for example:
+-- GRANT ALL PRIVILEGES ON DATABASE EMPLOYEE TO ROLE BYTEBASE;
+`;
       case "POSTGRES":
         return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
       case "MONGODB":
@@ -218,7 +233,20 @@ const grantStatement = (
       case "CLICKHOUSE":
         return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SHOW TABLES, SELECT ON database.* TO bytebase;";
       case "SNOWFLAKE":
-        return "CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'\nDEFAULT_ROLE = \"ACCOUNTADMIN\"\nDEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';\n\nGRANT ROLE \"ACCOUNTADMIN\" TO USER bytebase;";
+        return `-- The following privilege is the lowest privileges bytebase needed, you still need to assign the role owns the database which need managed by Bytebase to BYTEBASE role by yourself.
+CREATE OR REPLACE ROLE BYTEBASE_READER;
+GRANT IMPORT SHARE, APPLY MASKING POLICY, APPLY ROW ACCESS POLICY, APPLY TAG ON ACCOUNT TO ROLE BYTEBASE_READER;
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE BYTEBASE_READER;
+GRANT USAGE ON WAREHOUSE "YOUR_COMPUTE_WAREHOUSE" TO ROLE BYTEBASE_READER;
+CREATE OR REPLACE USER BYTEBASE_READER
+  PASSWORD = 'YOUR_PWD'
+  DEFAULT_ROLE = "BYTEBASE_READER"
+  DEFAULT_WAREHOUSE = "YOUR_COMPUTE_WAREHOUSE";
+  GRANT ROLE "BYTEBASE_READER" TO USER BYTEBASE_READER;
+  GRANT ROLE "BYTEBASE_READER" TO ROLE SYSADMIN;
+-- The database privileges, for example:
+-- GRANT ALL PRIVILEGES ON DATABASE EMPLOYEE TO ROLE BYTEBASE_READER;
+`;
       case "POSTGRES":
         return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
       case "MONGODB":
