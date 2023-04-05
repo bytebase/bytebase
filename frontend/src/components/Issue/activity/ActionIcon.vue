@@ -4,7 +4,7 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <img class="mt-1" src="../../assets/logo-icon.svg" alt="Bytebase" />
+        <img class="mt-1" src="../../../assets/logo-icon.svg" alt="Bytebase" />
       </div>
     </div>
     <div v-else-if="icon == 'avatar'" class="relative pl-0.5">
