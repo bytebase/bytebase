@@ -208,8 +208,8 @@ devDependencies:
     specifier: 4.0.5
     version: 4.0.5
   '@types/lodash-es':
-    specifier: 4.17.6
-    version: 4.17.6
+    specifier: 4.17.7
+    version: 4.17.7
   '@types/node':
     specifier: 18.11.18
     version: 18.11.18
@@ -1055,8 +1055,8 @@ packages:
     dev: false
     optional: true
 
-  /@types/lodash-es@4.17.6:
-    resolution: {integrity: sha512-R+zTeVUKDdfoRxpAryaQNRKk3105Rrgx2CFRClIgRGaqDTdjsm8h6IYA8ir584W3ePzkZfst5xIgDwYrlh9HLg==}
+  /@types/lodash-es@4.17.7:
+    resolution: {integrity: sha512-z0ptr6UI10VlU6l5MYhGwS4mC8DZyYer2mCoyysZtSF7p26zOX8UpbrV0YpNYLGS8K4PUFIyEr62IMFFjveSiQ==}
     dependencies:
       '@types/lodash': 4.14.187
 
@@ -3620,7 +3620,7 @@ packages:
       '@css-render/plugin-bem': 0.15.11(css-render@0.15.11)
       '@css-render/vue3-ssr': 0.15.11(vue@3.2.41)
       '@types/lodash': 4.14.187
-      '@types/lodash-es': 4.17.6
+      '@types/lodash-es': 4.17.7
       async-validator: 4.2.5
       css-render: 0.15.11
       date-fns: 2.29.3

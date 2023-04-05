@@ -83,7 +83,7 @@
     "@types/dompurify": "2.4.0",
     "@types/downloadjs": "1.4.3",
     "@types/js-yaml": "4.0.5",
-    "@types/lodash-es": "4.17.6",
+    "@types/lodash-es": "4.17.7",
     "@types/node": "18.11.18",
     "@types/normalize-wheel": "^1.0.1",
     "@types/papaparse": "5.3.7",
