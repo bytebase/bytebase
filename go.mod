@@ -30,7 +30,7 @@ require (
 	github.com/labstack/echo-contrib v0.14.1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lestrrat-go/jwx/v2 v2.0.8
-	github.com/lib/pq v1.10.2
+	github.com/lib/pq v1.10.7
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/microsoft/go-mssqldb v0.21.0
 	github.com/paulmach/orb v0.9.0
