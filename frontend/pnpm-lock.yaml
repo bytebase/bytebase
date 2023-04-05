@@ -116,8 +116,8 @@ dependencies:
     specifier: 6.11.0
     version: 6.11.0
   rollup:
-    specifier: 3.2.5
-    version: 3.2.5
+    specifier: 3.20.2
+    version: 3.20.2
   scroll-into-view-if-needed:
     specifier: ^2.2.29
     version: 2.2.29
@@ -182,7 +182,7 @@ devDependencies:
     version: 2.11.7
   '@rollup/plugin-yaml':
     specifier: 4.0.1
-    version: 4.0.1(rollup@3.2.5)
+    version: 4.0.1(rollup@3.20.2)
   '@tailwindcss/forms':
     specifier: 0.5.3
     version: 0.5.3(tailwindcss@3.2.1)
@@ -317,7 +317,7 @@ devDependencies:
     version: 0.15.2(@vue/compiler-sfc@3.2.41)
   unplugin-vue-components:
     specifier: 0.22.9
-    version: 0.22.9(rollup@3.2.5)(vue@3.2.41)
+    version: 0.22.9(rollup@3.20.2)(vue@3.2.41)
   vite:
     specifier: 3.2.5
     version: 3.2.5(@types/node@18.11.18)
@@ -739,7 +739,7 @@ packages:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
     dev: true
 
-  /@rollup/plugin-yaml@4.0.1(rollup@3.2.5):
+  /@rollup/plugin-yaml@4.0.1(rollup@3.20.2):
     resolution: {integrity: sha512-eyftkLWrwaGhgad+gXmisPYXeW3hP1s+lz63mgbur+F/8aKZhPG1Bf8RFNnz0Vhnf3uBimFebZBDwwz6X4KqUQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -748,9 +748,9 @@ packages:
       rollup:
         optional: true
     dependencies:
-      '@rollup/pluginutils': 5.0.2(rollup@3.2.5)
+      '@rollup/pluginutils': 5.0.2(rollup@3.20.2)
       js-yaml: 4.1.0
-      rollup: 3.2.5
+      rollup: 3.20.2
       tosource: 2.0.0-alpha.3
     dev: true
 
@@ -762,7 +762,7 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /@rollup/pluginutils@5.0.2(rollup@3.2.5):
+  /@rollup/pluginutils@5.0.2(rollup@3.20.2):
     resolution: {integrity: sha512-pTd9rIsP92h+B6wWwFbW8RkZv4hiR/xKsqre4SIuAOaOEQRxi0lqLke9k2/7WegC85GgUs9pjmOjCUi3In4vwA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -774,7 +774,7 @@ packages:
       '@types/estree': 1.0.0
       estree-walker: 2.0.2
       picomatch: 2.3.1
-      rollup: 3.2.5
+      rollup: 3.20.2
     dev: true
 
   /@soerenmartius/vue3-clipboard@0.1.2:
@@ -4458,8 +4458,8 @@ packages:
       fsevents: 2.3.2
     dev: true
 
-  /rollup@3.2.5:
-    resolution: {integrity: sha512-/Ha7HhVVofduy+RKWOQJrxe4Qb3xyZo+chcpYiD8SoQa4AG7llhupUtyfKSSrdBM2mWJjhM8wZwmbY23NmlIYw==}
+  /rollup@3.20.2:
+    resolution: {integrity: sha512-3zwkBQl7Ai7MFYQE0y1MeQ15+9jsi7XxfrqwTb/9EK8D9C9+//EBR4M+CuA1KODRaNbFez/lWxA5vhEGZp4MUg==}
     engines: {node: '>=14.18.0', npm: '>=8.0.0'}
     hasBin: true
     optionalDependencies:
@@ -4851,7 +4851,7 @@ packages:
       - supports-color
     dev: true
 
-  /unplugin-vue-components@0.22.9(rollup@3.2.5)(vue@3.2.41):
+  /unplugin-vue-components@0.22.9(rollup@3.20.2)(vue@3.2.41):
     resolution: {integrity: sha512-qBvooq3EgpjtYicxeccRUGUBBQCCw9rJ0kHPZPOSJd8TBZViSv86vuKLTRDHPyjWtclwOIkVStZJfPdJFhYUMw==}
     engines: {node: '>=14'}
     peerDependencies:
@@ -4862,7 +4862,7 @@ packages:
         optional: true
     dependencies:
       '@antfu/utils': 0.6.2
-      '@rollup/pluginutils': 5.0.2(rollup@3.2.5)
+      '@rollup/pluginutils': 5.0.2(rollup@3.20.2)
       chokidar: 3.5.3
       debug: 4.3.4
       fast-glob: 3.2.12
