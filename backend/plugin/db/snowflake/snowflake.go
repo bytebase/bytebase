@@ -20,8 +20,6 @@ import (
 
 var (
 	bytebaseDatabase = "BYTEBASE"
-	sysAdminRole     = "SYSADMIN"
-	accountAdminRole = "ACCOUNTADMIN"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -126,14 +124,6 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (driver *Driver) useRole(ctx context.Context, role string) error {
-	query := fmt.Sprintf("USE ROLE %s", role)
-	if _, err := driver.db.ExecContext(ctx, query); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-	return nil
-}
-
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -154,10 +144,6 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 }
 
 func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
-		return nil, err
-	}
-
 	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
 	inboundDatabases := make(map[string]bool)
 	shareQuery := "SHOW SHARES"
@@ -171,8 +157,8 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	// created_on, kind, name, database_name.
-	if len(cols) < 4 {
+	// created_on, kind, name, database_name, to, owner, comment, listing_global_name.
+	if len(cols) < 8 {
 		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
@@ -237,9 +223,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, nil
 	}
 
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return 0, err
-	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
