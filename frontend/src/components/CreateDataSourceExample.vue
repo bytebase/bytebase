@@ -203,7 +203,7 @@ const grantStatement = (
         return `-- The following privilege is the lowest privileges bytebase needed, you still need to assign the role owns the database which need managed by Bytebase to BYTEBASE role by yourself.
 CREATE OR REPLACE ROLE BYTEBASE;
 -- If using non-enterprise edition, the following command may encounter error likes 'Unsupported feature GRANT/REVOKE APPLY TAG ON ACCOUNT',
--- you can remove the related privileges.
+-- you can remove the related privileges and make it works.
 GRANT CREATE DATABASE, IMPORT SHARE, APPLY MASKING POLICY, APPLY ROW ACCESS POLICY, APPLY TAG ON ACCOUNT TO ROLE BYTEBASE;
 GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE BYTEBASE;
 GRANT USAGE ON WAREHOUSE "YOUR_COMPUTE_WAREHOUSE" TO ROLE BYTEBASE;
