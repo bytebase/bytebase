@@ -51,7 +51,7 @@
     "pouchdb-find": "^8.0.1",
     "qrcode": "^1.5.1",
     "qs": "6.11.1",
-    "rollup": "3.20.2",
+    "rollup": "3.2.5",
     "scroll-into-view-if-needed": "^2.2.29",
     "scrollparent": "^2.0.1",
     "semver": "7.3.8",
