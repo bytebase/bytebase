@@ -247,8 +247,8 @@ devDependencies:
     specifier: 2.2.1
     version: 2.2.1
   '@types/uuid':
-    specifier: 8.3.4
-    version: 8.3.4
+    specifier: 9.0.1
+    version: 9.0.1
   '@typescript-eslint/eslint-plugin':
     specifier: 5.42.0
     version: 5.42.0(@typescript-eslint/parser@5.42.0)(eslint@8.26.0)(typescript@4.8.4)
@@ -1276,8 +1276,8 @@ packages:
     resolution: {integrity: sha512-F5DIZ36YVLE+PN+Zwws4kJogq47hNgX3Nx6WyDJ3kcplxyke3XIzB8uK5n/Lpm1HBsbGzd6nmGehL8cPekP+Tg==}
     dev: true
 
-  /@types/uuid@8.3.4:
-    resolution: {integrity: sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==}
+  /@types/uuid@9.0.1:
+    resolution: {integrity: sha512-rFT3ak0/2trgvp4yYZo5iKFEPsET7vKydKF+VRCxlQ9bpheehyAJH89dAkaLEq/j/RZXJIqcgsmPJKUP1Z28HA==}
     dev: true
 
   /@types/web-bluetooth@0.0.16:
