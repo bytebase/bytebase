@@ -31,7 +31,7 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/lib/pq v1.10.7
-	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/microsoft/go-mssqldb v0.21.0
 	github.com/paulmach/orb v0.9.0
 	github.com/pganalyze/pg_query_go/v2 v2.1.2
