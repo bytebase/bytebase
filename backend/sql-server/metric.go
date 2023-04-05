@@ -44,7 +44,7 @@ func metricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {
 			s.metricReporter.Report(&metric.Metric{
 				Name:  metricAPI.OpenAPIMetricName,
 				Value: 1,
-				Labels: map[string]interface{}{
+				Labels: map[string]any{
 					"latency_ns":     strconv.FormatInt(duration.Nanoseconds(), 10),
 					"request_method": requestMethod,
 					"request_path":   requestPath,

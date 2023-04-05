@@ -265,7 +265,7 @@ func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Act
 // createActivityImpl creates activities.
 func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
 	var query strings.Builder
-	var values []interface{}
+	var values []any
 	var queryValues []string
 
 	if _, err := query.WriteString(
@@ -344,7 +344,7 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 
 func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -440,7 +440,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 // patchActivityImpl updates a activity by ID. Returns the new state of the activity after update.
 func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*activityRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, api.Role(*v))
 	}

@@ -45,7 +45,7 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 		s.errorRecordRing.RWMutex.RLock()
 		defer s.errorRecordRing.RWMutex.RUnlock()
 
-		s.errorRecordRing.Ring.Do(func(p interface{}) {
+		s.errorRecordRing.Ring.Do(func(p any) {
 			if p == nil {
 				return
 			}

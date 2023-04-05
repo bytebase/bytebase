@@ -18,7 +18,7 @@ type CountInstanceMessage struct {
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.row_status = $1"}, []interface{}{api.Normal}
+	where, args := []string{"instance.row_status = $1"}, []any{api.Normal}
 	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}

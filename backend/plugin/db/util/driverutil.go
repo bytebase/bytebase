@@ -361,7 +361,7 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 
 // Query will execute a readonly / SELECT query.
 // The result is then JSON marshaled and returned to the frontend.
-func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	readOnly := queryContext.ReadOnly
 	limit := queryContext.Limit
 	if !readOnly {
@@ -443,11 +443,11 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
+	return []any{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
 }
 
 // query will execute a query.
-func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]interface{}, error) {
+func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]any, error) {
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
@@ -483,16 +483,16 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 	// queryAdmin doesn't mask the sensitive fields.
 	// Return the all false boolean slice here as the placeholder.
 	sensitiveInfo := make([]bool, len(columnNames))
-	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
+	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
-func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
+func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
 	if dbType == db.ClickHouse {
 		return readRowsForClickhouse(rows, columnTypes, columnTypeNames, fieldList)
 	}
-	data := []interface{}{}
+	data := []any{}
 	for rows.Next() {
-		scanArgs := make([]interface{}, len(columnTypes))
+		scanArgs := make([]any, len(columnTypes))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -513,7 +513,7 @@ func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, col
 			return nil, FormatError(err)
 		}
 
-		rowData := []interface{}{}
+		rowData := []any{}
 		for i := range columnTypes {
 			if len(fieldList) > 0 && fieldList[i].Sensitive {
 				rowData = append(rowData, "******")
@@ -599,7 +599,7 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
 	sqldb, err := driver.GetDBConnection(ctx, database)
@@ -757,18 +757,18 @@ func ConvertYesNo(s string) (bool, error) {
 	}
 }
 
-func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
-	data := []interface{}{}
+func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
+	data := []any{}
 
 	for rows.Next() {
-		cols := make([]interface{}, len(columnTypes))
+		cols := make([]any, len(columnTypes))
 		for i, name := range columnTypeNames {
 			// The ClickHouse driver uses *Type rather than sql.NullType to scan nullable fields
 			// as described in https://github.com/ClickHouse/clickhouse-go/issues/754
 			// TODO: remove this workaround once fixed.
 			if strings.HasPrefix(name, "TUPLE") || strings.HasPrefix(name, "ARRAY") || strings.HasPrefix(name, "MAP") {
-				// For TUPLE, ARRAY, MAP type in ClickHouse, we pass interface{} and the driver will do the rest.
-				var it interface{}
+				// For TUPLE, ARRAY, MAP type in ClickHouse, we pass any and the driver will do the rest.
+				var it any
 				cols[i] = &it
 			} else {
 				// We use ScanType to get the correct *Type and then do type assertions
@@ -781,7 +781,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			return nil, FormatError(err)
 		}
 
-		rowData := []interface{}{}
+		rowData := []any{}
 		for i := range cols {
 			if len(fieldList) > 0 && fieldList[i].Sensitive {
 				rowData = append(rowData, "******")
@@ -789,7 +789,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			}
 
 			// handle TUPLE ARRAY MAP
-			if v, ok := cols[i].(*interface{}); ok && v != nil {
+			if v, ok := cols[i].(*any); ok && v != nil {
 				rowData = append(rowData, *v)
 				continue
 			}

@@ -176,7 +176,7 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
 	fields := []string{"creator_id", "updater_id", "name", "value"}
 	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
-	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, update.Name, update.Value}
+	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []any{principalUID, principalUID, update.Name, update.Value}
 
 	if v := update.Description; v != nil {
 		fields = append(fields, "description")
@@ -238,7 +238,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 	}
 
 	fields := []string{"creator_id", "updater_id", "name", "value", "description"}
-	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []interface{}{principalUID, principalUID, create.Name, create.Value, create.Description}
+	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []any{principalUID, principalUID, create.Name, create.Value, create.Description}
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
@@ -280,7 +280,7 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 }
 
 func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

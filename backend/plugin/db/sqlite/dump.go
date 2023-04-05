@@ -119,7 +119,7 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	refs := make([]interface{}, len(cols))
+	refs := make([]any, len(cols))
 	for i := 0; i < len(cols); i++ {
 		refs[i] = &values[i]
 	}

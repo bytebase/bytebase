@@ -626,7 +626,7 @@ func (s *Store) ListBackupV2(ctx context.Context, find *FindBackupMessage) ([]*B
 // UpdateBackupV2 patches an instance of Backup.
 func (s *Store) UpdateBackupV2(ctx context.Context, patch *UpdateBackupMessage) (*BackupMessage, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
@@ -693,7 +693,7 @@ func (s *Store) UpdateBackupV2(ctx context.Context, patch *UpdateBackupMessage) 
 
 func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMessage) ([]*BackupMessage, error) {
 	// Build where clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -766,7 +766,7 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 
 func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBackupSettingMessage) ([]*BackupSettingMessage, error) {
 	// Build WHERE and JOIN clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	var join []string
 	if v := find.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("backup_setting.database_id = $%d", len(args)+1)), append(args, *v)

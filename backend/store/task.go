@@ -211,7 +211,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 // CreateTasksV2 creates a new task.
 func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) ([]*TaskMessage, error) {
 	var query strings.Builder
-	var values []interface{}
+	var values []any
 	var queryValues []string
 
 	if _, err := query.WriteString(
@@ -310,7 +310,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) (
 
 // ListTasks retrieves a list of tasks based on find.
 func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -426,7 +426,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 // UpdateTaskV2 updates an existing task.
 // Returns ENOTFOUND if task does not exist.
 func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMessage, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.DatabaseID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -578,7 +578,7 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 
 	// Updates the task
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	var payloadSet []string
 	if v := patch.Skipped; v != nil {

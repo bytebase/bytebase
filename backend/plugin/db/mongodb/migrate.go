@@ -93,11 +93,11 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to create collection %q in mongodb database %q for instance named %q", migrationHistoryDefaultCollection, migrationHistoryDefaultDatabase, driver.connectionCtx.InstanceID)
 	}
 
-	var b interface{}
+	var b any
 	if err := bson.UnmarshalExtJSON([]byte(collmodMigrationHistoryCollectionCommand), true, &b); err != nil {
 		return errors.Wrap(err, "failed to unmarshal collmod command")
 	}
-	var result interface{}
+	var result any
 	if err := database.RunCommand(context.Background(), b).Decode(&result); err != nil {
 		return errors.Wrap(err, "failed to run collmod command")
 	}
