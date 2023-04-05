@@ -149,8 +149,8 @@ dependencies:
     specifier: 3.17.3
     version: 3.17.3
   vscode-languageserver-textdocument:
-    specifier: 1.0.7
-    version: 1.0.7
+    specifier: 1.0.8
+    version: 1.0.8
   vscode-languageserver-types:
     specifier: 3.17.3
     version: 3.17.3
@@ -5003,8 +5003,8 @@ packages:
       vscode-languageserver-types: 3.17.3
     dev: false
 
-  /vscode-languageserver-textdocument@1.0.7:
-    resolution: {integrity: sha512-bFJH7UQxlXT8kKeyiyu41r22jCZXG8kuuVVA33OEJn1diWOZK5n8zBSPZFHVBOu8kXZ6h0LIRhf5UnCo61J4Hg==}
+  /vscode-languageserver-textdocument@1.0.8:
+    resolution: {integrity: sha512-1bonkGqQs5/fxGT5UchTgjGVnfysL0O8v1AYMBjqTbWQTFn721zaPGDYFkOKtfDgFiSgXM3KwaG3FMGfW4Ed9Q==}
     dev: false
 
   /vscode-languageserver-types@3.17.2:
