@@ -130,7 +130,7 @@ type WalkThroughError struct {
 	Content string
 	Line    int
 
-	Payload interface{}
+	Payload any
 }
 
 // NewParseError returns a new ErrorTypeParseError.

@@ -21,6 +21,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	mysqlMigrationStatement = `
+	CREATE TABLE book (
+		id INT PRIMARY KEY AUTO_INCREMENT,
+		name TEXT
+	);
+	`
+	mysqlGhostMigrationStatement = `
+	ALTER TABLE book ADD author VARCHAR(54)
+	`
+	mysqlQueryBookTable = `
+	SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+	WHERE table_name = 'book'
+	ORDER BY ORDINAL_POSITION
+	`
+	mysqlBookSchema1 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","UNSIGNED INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","UNSIGNED BIGINT","UNSIGNED BIGINT","UNSIGNED INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","UNSIGNED INT"],[["def","testGhostSchemaUpdate","book","id","1",null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name","2",null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null]],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]]`
+	mysqlBookSchema2 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","UNSIGNED INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","UNSIGNED BIGINT","UNSIGNED BIGINT","UNSIGNED INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","UNSIGNED INT"],[["def","testGhostSchemaUpdate","book","id","1",null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name","2",null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","author","3",null,"YES","varchar","54","216",null,null,null,"utf8mb4","utf8mb4_general_ci","varchar(54)","","","select,insert,update,references","","",null]],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]]`
+)
+
 func TestGhostParser(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -45,25 +64,7 @@ func TestGhostParser(t *testing.T) {
 }
 
 func TestGhostSchemaUpdate(t *testing.T) {
-	const (
-		databaseName            = "testGhostSchemaUpdate"
-		mysqlMigrationStatement = `
-	CREATE TABLE book (
-		id INT PRIMARY KEY AUTO_INCREMENT,
-		name TEXT
-	);
-	`
-		mysqlGhostMigrationStatement = `
-	ALTER TABLE book ADD author VARCHAR(54)
-	`
-		mysqlQueryBookTable = `
-	SELECT * FROM INFORMATION_SCHEMA.COLUMNS
-	WHERE table_name = 'book'
-	ORDER BY ORDINAL_POSITION
-	`
-		mysqlBookSchema1 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","BIGINT","BIGINT","INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","INT"],[["def","testGhostSchemaUpdate","book","id",1,null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name",2,null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null]],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]]`
-		mysqlBookSchema2 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","BIGINT","BIGINT","INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","INT"],[["def","testGhostSchemaUpdate","book","id",1,null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name",2,null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","author",3,null,"YES","varchar","54","216",null,null,null,"utf8mb4","utf8mb4_general_ci","varchar(54)","","","select,insert,update,references","","",null]],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]]`
-	)
+	const databaseName = "testGhostSchemaUpdate"
 
 	t.Parallel()
 	a := require.New(t)
@@ -202,25 +203,8 @@ func TestGhostSchemaUpdate(t *testing.T) {
 }
 
 func TestGhostTenant(t *testing.T) {
-	var (
-		databaseName            = "testGhostSchemaUpdate"
-		mysqlMigrationStatement = `
-	CREATE TABLE book (
-		id INT PRIMARY KEY AUTO_INCREMENT,
-		name TEXT
-	);
-	`
-		mysqlGhostMigrationStatement = `
-	ALTER TABLE book ADD author VARCHAR(54)
-	`
-		mysqlQueryBookTable = `
-	SELECT * FROM INFORMATION_SCHEMA.COLUMNS
-	WHERE table_name = 'book'
-	ORDER BY ORDINAL_POSITION
-	`
-		mysqlBookSchema1 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","BIGINT","BIGINT","INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","INT"],[["def","testGhostSchemaUpdate","book","id",1,null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name",2,null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null]],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]]`
-		mysqlBookSchema2 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","BIGINT","BIGINT","INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","INT"],[["def","testGhostSchemaUpdate","book","id",1,null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name",2,null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","author",3,null,"YES","varchar","54","216",null,null,null,"utf8mb4","utf8mb4_general_ci","varchar(54)","","","select,insert,update,references","","",null]],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]]`
-	)
+	const databaseName = "testGhostSchemaUpdate"
+
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()

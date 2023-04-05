@@ -136,7 +136,7 @@ func (s *Store) GetBookmarkV2(ctx context.Context, bookmarkUID int) (*BookmarkMe
 
 // DeleteBookmarkV2 try to delete a bookmark.
 func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
-	var args []interface{}
+	var args []any
 	var where []string
 	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, bookmarkUID)
 
@@ -167,7 +167,7 @@ func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
 }
 
 func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmarkMessage) ([]*BookmarkMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := list.creatorUID; v != nil {
 		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}

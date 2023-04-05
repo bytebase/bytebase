@@ -131,6 +131,6 @@ func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, stateme
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.Oracle, conn, statement, queryContext)
 }

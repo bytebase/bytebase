@@ -166,7 +166,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	s.metricReporter.Report(&metric.Metric{
 		Name:  metricAPI.PrincipalRegistrationMetricName,
 		Value: 1,
-		Labels: map[string]interface{}{
+		Labels: map[string]any{
 			"email": user.Email,
 			"name":  user.Name,
 			// We only send lark notification for the first principal registration.

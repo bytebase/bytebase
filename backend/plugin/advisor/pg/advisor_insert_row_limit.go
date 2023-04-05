@@ -134,14 +134,14 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 	return checker
 }
 
-func getAffectedRows(res []interface{}) (int64, error) {
-	// the res struct is []interface{}{columnName, columnTable, rowDataList}
+func getAffectedRows(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	rowList, ok := res[2].([]interface{})
+	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %t", res[2])
 	}
 	// test-bb=# EXPLAIN INSERT INTO t SELECT * FROM t;
 	// QUERY PLAN
@@ -153,9 +153,9 @@ func getAffectedRows(res []interface{}) (int64, error) {
 		return 0, errors.Errorf("not found any data")
 	}
 	// We need the row 2.
-	rowTwo, ok := rowList[1].([]interface{})
+	rowTwo, ok := rowList[1].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	// PostgreSQL EXPLAIN statement result has one column.
 	if len(rowTwo) != 1 {

@@ -178,7 +178,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	s.MetricReporter.Report(&metric.Metric{
 		Name:  metricAPI.SQLAdviseAPIMetricName,
 		Value: 1,
-		Labels: map[string]interface{}{
+		Labels: map[string]any{
 			"database_type": databaseType,
 			"environment":   request.EnvironmentName,
 		},
