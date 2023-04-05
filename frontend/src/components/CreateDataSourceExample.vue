@@ -200,21 +200,39 @@ const grantStatement = (
       case "CLICKHOUSE":
         return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
       case "SNOWFLAKE":
-        return `-- The following privilege is the lowest privileges bytebase needed, you still need to assign the role owns the database which need managed by Bytebase to BYTEBASE role by yourself.
+        return `-- Option 1: grant ACCOUNTADMIN role
+
+CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'
+DEFAULT_ROLE = "ACCOUNTADMIN"
+DEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';
+        
+GRANT ROLE "ACCOUNTADMIN" TO USER bytebase;
+
+-- Option 2: grant more granular privileges
+
 CREATE OR REPLACE ROLE BYTEBASE;
--- If using non-enterprise edition, the following command may encounter error likes 'Unsupported feature GRANT/REVOKE APPLY TAG ON ACCOUNT',
--- you can remove the related privileges and make it works.
+
+-- If using non-enterprise edition, the following commands may encounter error likes 'Unsupported feature GRANT/REVOKE APPLY TAG ON ACCOUNT', you can skip those unsupported GRANTs.
+-- Grant the least privileges required by Bytebase 
+
 GRANT CREATE DATABASE, IMPORT SHARE, APPLY MASKING POLICY, APPLY ROW ACCESS POLICY, APPLY TAG ON ACCOUNT TO ROLE BYTEBASE;
+
 GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE BYTEBASE;
+
 GRANT USAGE ON WAREHOUSE "YOUR_COMPUTE_WAREHOUSE" TO ROLE BYTEBASE;
+
 CREATE OR REPLACE USER BYTEBASE
   PASSWORD = 'YOUR_PWD'
   DEFAULT_ROLE = "BYTEBASE"
   DEFAULT_WAREHOUSE = "YOUR_COMPUTE_WAREHOUSE";
+
 GRANT ROLE "BYTEBASE" TO USER BYTEBASE;
+
 GRANT ROLE "BYTEBASE" TO ROLE SYSADMIN;
--- The database privileges, for example:
--- GRANT ALL PRIVILEGES ON DATABASE EMPLOYEE TO ROLE BYTEBASE;
+
+-- For each database to be managed by Bytebase, you need to grant the following privileges
+
+GRANT ALL PRIVILEGES ON DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE;
 `;
       case "POSTGRES":
         return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
@@ -233,19 +251,39 @@ GRANT ROLE "BYTEBASE" TO ROLE SYSADMIN;
       case "CLICKHOUSE":
         return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SHOW TABLES, SELECT ON database.* TO bytebase;";
       case "SNOWFLAKE":
-        return `-- The following privilege is the lowest privileges bytebase needed, you still need to assign the role owns the database which need managed by Bytebase to BYTEBASE role by yourself.
+        return `-- Option 1: grant ACCOUNTADMIN role
+
+CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'
+DEFAULT_ROLE = "ACCOUNTADMIN"
+DEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';
+        
+GRANT ROLE "ACCOUNTADMIN" TO USER bytebase;
+
+-- Option 2: grant more granular privileges
+
 CREATE OR REPLACE ROLE BYTEBASE_READER;
+
+-- If using non-enterprise edition, the following commands may encounter error likes 'Unsupported feature GRANT/REVOKE APPLY TAG ON ACCOUNT', you can skip those unsupported GRANTs.
+-- Grant the least privileges required by Bytebase 
+
 GRANT IMPORT SHARE, APPLY MASKING POLICY, APPLY ROW ACCESS POLICY, APPLY TAG ON ACCOUNT TO ROLE BYTEBASE_READER;
+
 GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE BYTEBASE_READER;
+
 GRANT USAGE ON WAREHOUSE "YOUR_COMPUTE_WAREHOUSE" TO ROLE BYTEBASE_READER;
+
 CREATE OR REPLACE USER BYTEBASE_READER
   PASSWORD = 'YOUR_PWD'
   DEFAULT_ROLE = "BYTEBASE_READER"
   DEFAULT_WAREHOUSE = "YOUR_COMPUTE_WAREHOUSE";
-  GRANT ROLE "BYTEBASE_READER" TO USER BYTEBASE_READER;
-  GRANT ROLE "BYTEBASE_READER" TO ROLE SYSADMIN;
--- The database privileges, for example:
--- GRANT ALL PRIVILEGES ON DATABASE EMPLOYEE TO ROLE BYTEBASE_READER;
+
+GRANT ROLE "BYTEBASE_READER" TO USER BYTEBASE_READER;
+
+GRANT ROLE "BYTEBASE_READER" TO ROLE SYSADMIN;
+
+-- For each database to be managed by Bytebase, you need to grant the following privileges
+
+GRANT ALL PRIVILEGES ON DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE_READER;
 `;
       case "POSTGRES":
         return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
