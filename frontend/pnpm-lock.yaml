@@ -41,8 +41,8 @@ dependencies:
     specifier: 1.11.6
     version: 1.11.6
   dompurify:
-    specifier: 2.4.0
-    version: 2.4.0
+    specifier: 2.4.5
+    version: 2.4.5
   downloadjs:
     specifier: 1.4.7
     version: 1.4.7
@@ -199,8 +199,8 @@ devDependencies:
     specifier: ^3.1.0
     version: 3.1.0
   '@types/dompurify':
-    specifier: 2.3.4
-    version: 2.3.4
+    specifier: 2.4.0
+    version: 2.4.0
   '@types/downloadjs':
     specifier: 1.4.3
     version: 1.4.3
@@ -1024,8 +1024,8 @@ packages:
       '@types/ms': 0.7.31
     dev: true
 
-  /@types/dompurify@2.3.4:
-    resolution: {integrity: sha512-EXzDatIb5EspL2eb/xPGmaC8pePcTHrkDCONjeisusLFrVfl38Pjea/R0YJGu3k9ZQadSvMqW0WXPI2hEo2Ajg==}
+  /@types/dompurify@2.4.0:
+    resolution: {integrity: sha512-IDBwO5IZhrKvHFUl+clZxgf3hn2b/lU6H1KaBShPkQyGJUQ0xwebezIPSuiyGwfz1UzJWQl4M7BDxtHtCCPlTg==}
     dependencies:
       '@types/trusted-types': 2.0.2
     dev: true
@@ -2435,8 +2435,8 @@ packages:
       esutils: 2.0.3
     dev: true
 
-  /dompurify@2.4.0:
-    resolution: {integrity: sha512-Be9tbQMZds4a3C6xTmz68NlMfeONA//4dOavl/1rNw50E+/QO0KVpbcU0PcaW0nsQxurXls9ZocqFxk8R2mWEA==}
+  /dompurify@2.4.5:
+    resolution: {integrity: sha512-jggCCd+8Iqp4Tsz0nIvpcb22InKEBrGz5dw3EQJMs8HPJDsKbFIO3STYtAvCfDx26Muevn1MHVI0XxjgFfmiSA==}
     dev: false
 
   /double-ended-queue@2.1.0-0:
