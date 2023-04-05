@@ -53,11 +53,6 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 		}
 	}
 
-	// Use ACCOUNTADMIN role to dump database;
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
-		return err
-	}
-
 	for _, dbName := range dumpableDbNames {
 		// includeCreateDatabaseStmt should be false if dumping a single database.
 		dumpSingleDatabase := len(dumpableDbNames) == 1
@@ -137,9 +132,6 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 
 // Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return nil
-	}
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
