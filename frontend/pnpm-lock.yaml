@@ -30,7 +30,7 @@ dependencies:
     version: 1.1.3
   bootstrap:
     specifier: 5.2.2
-    version: 5.2.2(@popperjs/core@2.11.6)
+    version: 5.2.2(@popperjs/core@2.11.7)
   canvas-confetti:
     specifier: 1.6.0
     version: 1.6.0
@@ -178,8 +178,8 @@ devDependencies:
     specifier: 6.0.3
     version: 6.0.3(vite@3.2.5)(vue-i18n@9.2.2)
   '@popperjs/core':
-    specifier: 2.11.6
-    version: 2.11.6
+    specifier: 2.11.7
+    version: 2.11.7
   '@rollup/plugin-yaml':
     specifier: 4.0.1
     version: 4.0.1(rollup@3.2.5)
@@ -693,8 +693,8 @@ packages:
       fastq: 1.13.0
     dev: true
 
-  /@popperjs/core@2.11.6:
-    resolution: {integrity: sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==}
+  /@popperjs/core@2.11.7:
+    resolution: {integrity: sha512-Cr4OjIkipTtcXKjAsm8agyleBuDHvxzeBoa1v543lbv1YaIwQjESsVcmjiWiPEbC1FIeHOG/Op9kdCmAmiS3Kw==}
 
   /@protobufjs/aspromise@1.1.2:
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -1813,12 +1813,12 @@ packages:
       popper.js: 1.16.1
     dev: false
 
-  /bootstrap@5.2.2(@popperjs/core@2.11.6):
+  /bootstrap@5.2.2(@popperjs/core@2.11.7):
     resolution: {integrity: sha512-dEtzMTV71n6Fhmbg4fYJzQsw1N29hJKO1js5ackCgIpDcGid2ETMGC6zwSYw09v05Y+oRdQ9loC54zB1La3hHQ==}
     peerDependencies:
       '@popperjs/core': ^2.11.6
     dependencies:
-      '@popperjs/core': 2.11.6
+      '@popperjs/core': 2.11.7
     dev: false
 
   /brace-expansion@1.1.11:
@@ -4587,7 +4587,7 @@ packages:
   /tippy.js@6.3.7:
     resolution: {integrity: sha512-E1d3oP2emgJ9dRQZdf3Kkn0qJgI6ZLpyS5z6ZkY1DF3kaQaBsGZsndEpHwx+eC+tYM41HaSNvNtLx8tU57FzTQ==}
     dependencies:
-      '@popperjs/core': 2.11.6
+      '@popperjs/core': 2.11.7
     dev: false
 
   /to-fast-properties@2.0.0:
