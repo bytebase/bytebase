@@ -77,8 +77,8 @@ dependencies:
     specifier: 0.34.1
     version: 0.34.1
   monaco-languageclient:
-    specifier: 4.0.3
-    version: 4.0.3
+    specifier: 4.0.1
+    version: 4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
   naive-ui:
     specifier: 2.33.5
     version: 2.33.5(vue@3.2.47)
@@ -3639,14 +3639,16 @@ packages:
     resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
     dev: false
 
-  /monaco-languageclient@4.0.3:
-    resolution: {integrity: sha512-1mGIUb5PFRknITBhNxgH0SnQy1/jntt9oo0cQpOl3HdhYEL/CYK2UrsZZX7Udqmz1PXKyRIzQ3tZ7dJn4mzWtA==}
+  /monaco-languageclient@4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):
+    resolution: {integrity: sha512-mUIq/7gQM/8CyOBVGv0thLRAR80vk49Ur0ROJveoh6R0/uwaUoyri+5OBslxsa5BICftLTsC8/Y+at6/iW50Ww==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
-    peerDependencies:
-      vscode: '>= npm:@codingame/monaco-vscode-api@1.69.0 < npm:@codingame/monaco-vscode-api@1.70.0'
     dependencies:
+      vscode: /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
       vscode-jsonrpc: 8.0.2
       vscode-languageclient: 8.0.2
+    transitivePeerDependencies:
+      - vscode-oniguruma
+      - vscode-textmate
     dev: false
 
   /moo@0.5.2:
