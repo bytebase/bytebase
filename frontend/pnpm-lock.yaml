@@ -101,8 +101,8 @@ dependencies:
     specifier: 1.5.0
     version: 1.5.0(jquery@3.6.1)(popper.js@1.16.1)
   pinia:
-    specifier: 2.0.23
-    version: 2.0.23(typescript@4.8.4)(vue@3.2.41)
+    specifier: 2.0.33
+    version: 2.0.33(typescript@4.8.4)(vue@3.2.41)
   pouchdb:
     specifier: ^8.0.1
     version: 8.0.1
@@ -1508,6 +1508,10 @@ packages:
 
   /@vue/devtools-api@6.4.5:
     resolution: {integrity: sha512-JD5fcdIuFxU4fQyXUu3w2KpAJHzTVdN+p4iOX2lMWSHMOoQdMAcpFLZzm9Z/2nmsoZ1a96QEhZ26e50xLBsgOQ==}
+
+  /@vue/devtools-api@6.5.0:
+    resolution: {integrity: sha512-o9KfBeaBmCKl10usN4crU53fYtC1r7jJwdGKjPT24t348rHxgfpZ0xL3Xm/gLUYnc0oTp8LAmrxOeLyu6tbk2Q==}
+    dev: false
 
   /@vue/eslint-config-typescript@11.0.2(eslint-plugin-vue@9.7.0)(eslint@8.26.0)(typescript@4.8.4):
     resolution: {integrity: sha512-EiKud1NqlWmSapBFkeSrE994qpKx7/27uCGnhdqzllYDpQZroyX/O6bwjEpeuyKamvLbsGdO6PMR2faIf+zFnw==}
@@ -3897,8 +3901,8 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /pinia@2.0.23(typescript@4.8.4)(vue@3.2.41):
-    resolution: {integrity: sha512-N15hFf4o5STrxpNrib1IEb1GOArvPYf1zPvQVRGOO1G1d74Ak0J0lVyalX/SmrzdT4Q0nlEFjbURsmBmIGUR5Q==}
+  /pinia@2.0.33(typescript@4.8.4)(vue@3.2.41):
+    resolution: {integrity: sha512-HOj1yVV2itw6rNIrR2f7+MirGNxhORjrULL8GWgRwXsGSvEqIQ+SE0MYt6cwtpegzCda3i+rVTZM+AM7CG+kRg==}
     peerDependencies:
       '@vue/composition-api': ^1.4.0
       typescript: '>=4.4.4'
@@ -3909,7 +3913,7 @@ packages:
       typescript:
         optional: true
     dependencies:
-      '@vue/devtools-api': 6.4.5
+      '@vue/devtools-api': 6.5.0
       typescript: 4.8.4
       vue: 3.2.41
       vue-demi: 0.13.11(vue@3.2.41)
