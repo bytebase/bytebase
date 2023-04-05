@@ -28,10 +28,10 @@ type SQLReviewTemplateData struct {
 
 // SQLReviewRuleData is the API message for SQL review rule update.
 type SQLReviewRuleData struct {
-	Type    SQLReviewRuleType      `yaml:"type"`
-	Level   SQLReviewRuleLevel     `yaml:"level,omitempty"`
-	Comment string                 `yaml:"comment"`
-	Payload map[string]interface{} `yaml:"payload"`
+	Type    SQLReviewRuleType  `yaml:"type"`
+	Level   SQLReviewRuleLevel `yaml:"level,omitempty"`
+	Comment string             `yaml:"comment"`
+	Payload map[string]any     `yaml:"payload"`
 }
 
 // SQLReviewConfigOverride is the API message for SQL review configuration override.

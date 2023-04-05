@@ -561,7 +561,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		s.MetricReporter.Report(&metric.Metric{
 			Name:  metricAPI.SQLEditorExecutionMetricName,
 			Value: 1,
-			Labels: map[string]interface{}{
+			Labels: map[string]any{
 				"engine":     instance.Engine,
 				"readonly":   exec.Readonly,
 				"admin_mode": false,
@@ -763,7 +763,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		s.MetricReporter.Report(&metric.Metric{
 			Name:  metricAPI.SQLEditorExecutionMetricName,
 			Value: 1,
-			Labels: map[string]interface{}{
+			Labels: map[string]any{
 				"engine":     instance.Engine,
 				"readonly":   exec.Readonly,
 				"admin_mode": true,

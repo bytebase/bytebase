@@ -146,7 +146,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 		}
 
 		claims := &Claims{}
-		accessToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+		accessToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 				return nil, pkgerrors.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 			}
@@ -206,7 +206,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 
 					// Parses token and checks if it's valid.
 					refreshTokenClaims := &Claims{}
-					refreshToken, err := jwt.ParseWithClaims(rc.Value, refreshTokenClaims, func(t *jwt.Token) (interface{}, error) {
+					refreshToken, err := jwt.ParseWithClaims(rc.Value, refreshTokenClaims, func(t *jwt.Token) (any, error) {
 						if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 							return nil, pkgerrors.Errorf("unexpected refresh token signing method=%v, expected %v", t.Header["alg"], jwt.SigningMethodHS256)
 						}

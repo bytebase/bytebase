@@ -162,7 +162,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	refs := make([]interface{}, len(cols))
+	refs := make([]any, len(cols))
 	for i := 0; i < len(cols); i++ {
 		refs[i] = &values[i]
 	}
@@ -251,6 +251,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.Snowflake, conn, statement, queryContext)
 }

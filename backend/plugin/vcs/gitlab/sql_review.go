@@ -32,14 +32,14 @@ func SetupSQLReviewCI(endpoint string) string {
 }
 
 // SetupGitLabCI will update the GitLab CI content to add or update the SQL review CI.
-func SetupGitLabCI(gitlabCI map[string]interface{}) (string, error) {
+func SetupGitLabCI(gitlabCI map[string]any) (string, error) {
 	// Add include for SQL review CI
-	var includeList []interface{}
+	var includeList []any
 	// Docs for GitLab include syntax: https://docs.gitlab.com/ee/ci/yaml/includes.html
 	switch include := gitlabCI[gitlabCIIncludeKeyword].(type) {
-	case []interface{}:
+	case []any:
 		includeList = append(includeList, include...)
-	case string, interface{}:
+	case string, any:
 		includeList = append(includeList, include)
 	}
 
@@ -56,9 +56,9 @@ func SetupGitLabCI(gitlabCI map[string]interface{}) (string, error) {
 	return string(newContent), nil
 }
 
-func findSQLReviewCI(include []interface{}) (map[string]interface{}, bool) {
+func findSQLReviewCI(include []any) (map[string]any, bool) {
 	for _, data := range include {
-		if val, ok := data.(map[string]interface{}); ok {
+		if val, ok := data.(map[string]any); ok {
 			if val[sqlReviewCIFileRelativePathKeywordInGitLabCI] == SQLReviewCIFilePath {
 				return val, true
 			}

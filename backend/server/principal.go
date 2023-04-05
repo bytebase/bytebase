@@ -91,7 +91,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		s.MetricReporter.Report(&metric.Metric{
 			Name:  metricAPI.PrincipalCreateMetricName,
 			Value: 1,
-			Labels: map[string]interface{}{
+			Labels: map[string]any{
 				"type": principal.Type,
 				"role": principal.Role,
 				"rank": count,

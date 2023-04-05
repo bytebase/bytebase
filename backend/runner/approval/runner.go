@@ -239,7 +239,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 			return nil, errors.Wrap(err, "failed to compile expression")
 		}
 
-		res, _, err := prg.Eval(map[string]interface{}{
+		res, _, err := prg.Eval(map[string]any{
 			"level":  riskLevel,
 			"source": int64(convertToSource(riskSource)),
 		})
@@ -388,7 +388,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		if err != nil {
 			return 0, false, err
 		}
-		args := map[string]interface{}{
+		args := map[string]any{
 			"environment_id": instance.EnvironmentID,
 			"project_id":     issue.Project.ResourceID,
 			"database_name":  databaseName,

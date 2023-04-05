@@ -124,7 +124,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 			if line == "" {
 				continue
 			}
-			var input []interface{}
+			var input []any
 			for _, s := range strings.Split(line, " ") {
 				input = append(input, s)
 			}
@@ -139,13 +139,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 }
 
 // QueryConn executes the statement, returns the results.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]interface{}, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]any, error) {
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
 		lines[i] = strings.Trim(lines[i], " \n\t\r")
 	}
 
-	var data []interface{}
+	var data []any
 	var cmds []*redis.Cmd
 
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
@@ -153,7 +153,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 			if line == "" {
 				continue
 			}
-			var input []interface{}
+			var input []any
 			for _, s := range strings.Split(line, " ") {
 				input = append(input, s)
 			}
@@ -167,20 +167,20 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 
 	for _, cmd := range cmds {
 		if cmd.Err() == redis.Nil {
-			data = append(data, []interface{}{"redis: nil"})
+			data = append(data, []any{"redis: nil"})
 			continue
 		}
 
 		val := cmd.Val()
-		if _, ok := val.(map[interface{}]interface{}); ok {
-			// json.Marshal cannot handle map[interface{}]interface{}
+		if _, ok := val.(map[any]any); ok {
+			// json.Marshal cannot handle map[any]any
 			val = cmd.String()
 		}
 
-		data = append(data, []interface{}{val})
+		data = append(data, []any{val})
 	}
 
-	return []interface{}{[]string{"result"}, []string{"TEXT"}, data}, nil
+	return []any{[]string{"result"}, []string{"TEXT"}, data}, nil
 }
 
 // Dump and restore

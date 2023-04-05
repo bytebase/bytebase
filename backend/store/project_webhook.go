@@ -168,7 +168,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, principalUID int, pr
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{principalUID}
+	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	if v := update.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -239,7 +239,7 @@ func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectUID int, proj
 
 func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}

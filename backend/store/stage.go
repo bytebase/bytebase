@@ -27,7 +27,7 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 	defer tx.Rollback()
 
 	var valueStr []string
-	var values []interface{}
+	var values []any
 	for i, create := range stagesCreate {
 		values = append(values,
 			creatorID,
@@ -84,7 +84,7 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 
 // ListStageV2 finds a list of stages based on find.
 func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

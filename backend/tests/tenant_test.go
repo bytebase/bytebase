@@ -207,7 +207,7 @@ func TestTenantVCS(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -215,7 +215,7 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -239,7 +239,7 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -653,7 +653,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -661,7 +661,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -685,7 +685,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -983,7 +983,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -991,7 +991,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -1015,7 +1015,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -1264,7 +1264,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -1272,7 +1272,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/dataUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -1296,7 +1296,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,

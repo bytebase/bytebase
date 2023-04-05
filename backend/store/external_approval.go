@@ -134,7 +134,7 @@ func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int)
 
 // UpdateExternalApprovalV2 updates an ExternalApproval.
 func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExternalApprovalMessage) (*ExternalApprovalMessage, error) {
-	set, args := []string{"row_status = $1"}, []interface{}{update.RowStatus}
+	set, args := []string{"row_status = $1"}, []any{update.RowStatus}
 	if v := update.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
@@ -169,7 +169,7 @@ func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExte
 }
 
 func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *listExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	if v := find.issueUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)

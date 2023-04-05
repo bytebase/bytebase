@@ -402,7 +402,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
 	if v := patch.ProjectID; v != nil {
 		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
 		if err != nil {
@@ -486,7 +486,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	defer tx.Rollback()
 
 	var wheres []string
-	args := []interface{}{project.UID, updaterID}
+	args := []any{project.UID, updaterID}
 	for i, database := range databases {
 		wheres = append(wheres, fmt.Sprintf("(environment.resource_id = $%d AND instance.resource_id = $%d AND db.name = $%d)", 3*i+3, 3*i+4, 3*i+5))
 		args = append(args, database.EnvironmentID, database.InstanceID, database.DatabaseName)
@@ -532,7 +532,7 @@ func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabas
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if !find.IncludeAllDatabase {
 		where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
 	}

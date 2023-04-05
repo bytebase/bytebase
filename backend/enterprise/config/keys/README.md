@@ -27,7 +27,7 @@ The `enterprise/config/config.go` will load keys depends on environment.
 In `enterprise/service/license.go`, we will use public key to parse JWT
 
 ```go
-token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
     if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
         return nil, errors.Errorf("unexpected signing method: %v", token.Header["alg"])
     }

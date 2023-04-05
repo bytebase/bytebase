@@ -216,7 +216,7 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
 	if err != nil {
 		return nil, err
@@ -238,8 +238,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 		field := []string{"Affected Rows"}
 		types := []string{"INT"}
-		rows := [][]interface{}{{affectedRows}}
-		return []interface{}{field, types, rows}, nil
+		rows := [][]any{{affectedRows}}
+		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
 }

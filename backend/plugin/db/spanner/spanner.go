@@ -195,7 +195,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 }
 
 // QueryConn querys statements.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
 		return nil, err
@@ -221,7 +221,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, err
 	}
 
-	data := []interface{}{}
+	data := []any{}
 	columnNames := getColumnNames(iter)
 	columnTypeNames, err := getColumnTypeNames(iter)
 	if err != nil {
@@ -247,10 +247,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	// spanner doesn't mask the sensitive fields.
 	// Return the all false boolean slice here as the placeholder.
 	sensitiveInfo := make([]bool, len(columnNames))
-	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
+	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
-func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{}, error) {
+func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]any, error) {
 	if isDDL(statement) {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
 			Database:   getDSN(d.config.Host, d.dbName),
@@ -276,8 +276,8 @@ func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{
 
 	field := []string{"Affected Rows"}
 	types := []string{"INT64"}
-	rows := [][]interface{}{{rowCount}}
-	return []interface{}{field, types, rows}, nil
+	rows := [][]any{{rowCount}}
+	return []any{field, types, rows}, nil
 }
 
 func getColumnNames(iter *spanner.RowIterator) []string {
@@ -313,8 +313,8 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 	return columnType.Code.String(), nil
 }
 
-func readRow(row *spanner.Row) ([]interface{}, error) {
-	dest := make([]interface{}, row.Size())
+func readRow(row *spanner.Row) ([]any, error) {
+	dest := make([]any, row.Size())
 	for i := 0; i < row.Size(); i++ {
 		var col spanner.GenericColumnValue
 		if err := row.Column(i, &col); err != nil {
