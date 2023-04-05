@@ -121,7 +121,7 @@
       </template>
       <div class="mt-2 flex flex-row">
         <span
-          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
+          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre-line"
         >
           {{ grantStatement(props.engineType, props.dataSourceType) }}
         </span>
