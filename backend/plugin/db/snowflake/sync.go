@@ -23,10 +23,6 @@ var (
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, err
-	}
-
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
@@ -60,10 +56,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
-	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, err
-	}
-
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
