@@ -167,8 +167,8 @@ dependencies:
     specifier: ^4.1.0
     version: 4.1.0(vue@3.2.41)
   vueuc:
-    specifier: 0.4.49
-    version: 0.4.49(vue@3.2.41)
+    specifier: 0.4.51
+    version: 0.4.51(vue@3.2.41)
 
 devDependencies:
   '@iconify/json':
@@ -3760,7 +3760,7 @@ packages:
       vdirs: 0.1.8(vue@3.2.41)
       vooks: 0.2.12(vue@3.2.41)
       vue: 3.2.41
-      vueuc: 0.4.49(vue@3.2.41)
+      vueuc: 0.4.51(vue@3.2.41)
     dev: false
 
   /nanoid@3.3.4:
@@ -5206,8 +5206,8 @@ packages:
       vue: 3.2.41
     dev: false
 
-  /vueuc@0.4.49(vue@3.2.41):
-    resolution: {integrity: sha512-WarAC44a/Yx78CxkAgROYLq+LkAeCGA/6wHidVoFmHLbzyF3SiP2nzRNGD/8zJeJInXv18EnWK6A//eGgMMq8w==}
+  /vueuc@0.4.51(vue@3.2.41):
+    resolution: {integrity: sha512-pLiMChM4f+W8czlIClGvGBYo656lc2Y0/mXFSCydcSmnCR1izlKPGMgiYBGjbY9FDkFG8a2HEVz7t0DNzBWbDw==}
     peerDependencies:
       vue: ^3.0.11
     dependencies:
