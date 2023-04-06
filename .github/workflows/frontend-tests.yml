@@ -46,6 +46,7 @@ jobs:
         working-directory: frontend
       - name: Run pnpm release build
         run: |
-          cp -r ../backend/plugin/advisor/config/ ./src/types
+          pwd
+          cp ../backend/plugin/advisor/config/* ./src/types
           pnpm release-docker
         working-directory: frontend
