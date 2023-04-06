@@ -192,18 +192,20 @@
         </div>
       </template>
 
-      <template v-if="showInstance">
-        <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          <span class="mr-1">{{ $t("common.instance") }}</span>
-          <InstanceEngineIcon :instance="instance" />
-        </h2>
-        <router-link
-          :to="`/instance/${instanceSlug(instance)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
-        >
-          {{ instanceName(instance) }}
-        </router-link>
-      </template>
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        <span class="mr-1">{{ $t("common.instance") }}</span>
+        <InstanceEngineIcon :instance="instance" />
+      </h2>
+      <router-link
+        v-if="allowManageInstance"
+        :to="`/instance/${instanceSlug(instance)}`"
+        class="col-span-2 text-sm font-medium text-main hover:underline"
+      >
+        {{ instanceName(instance) }}
+      </router-link>
+      <span v-else class="col-span-2 text-sm font-medium text-main">
+        {{ instanceName(instance) }}
+      </span>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.environment") }}
@@ -466,7 +468,7 @@ const showTaskSelect = computed((): boolean => {
   return taskList.length > 1;
 });
 
-const showInstance = computed((): boolean => {
+const allowManageInstance = computed((): boolean => {
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-instance",
     currentUser.value.role
