@@ -39,7 +39,7 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentList(["NORMAL"]);
 
 const items = computed(() => {
   const environmentItems = environmentList.value.map<EnvironmentTabFilterItem>(
