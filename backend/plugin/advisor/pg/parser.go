@@ -42,7 +42,7 @@ func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 func calculateErrorLine(statement string) int {
 	statementList, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return 1
 	}
 

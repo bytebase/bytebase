@@ -246,6 +246,9 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 				return nil
 			}
 		}
+		if err := transactionID.Err(); err != nil {
+			return err
+		}
 		payload.TransactionID = txID
 		updatedPayload, err := json.Marshal(payload)
 		if err != nil {
