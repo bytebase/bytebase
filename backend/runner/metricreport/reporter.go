@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	metricSchedulerInterval = time.Duration(1) * time.Hour
+	metricSchedulerInterval = time.Duration(1) * time.Minute
 	// identifyTraitForPlan is the trait key for subscription plan.
 	identifyTraitForPlan = "plan"
 	// identifyTraitForOrgID is the trait key for organization id.
@@ -84,7 +84,12 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
-				m.identify(ctx)
+				workspaceID, err := m.identify(ctx)
+				if err != nil {
+					log.Error("failed to report identifier", zap.Error(err))
+					return
+				}
+
 				for name, collector := range m.collectors {
 					log.Debug("Run metric collector", zap.String("collector", name))
 
@@ -99,7 +104,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					for _, metric := range metricList {
-						m.Report(ctx, metric)
+						m.report(workspaceID, metric)
 					}
 				}
 			}()
@@ -134,12 +139,21 @@ func (m *Reporter) getWorkspaceID(ctx context.Context) (string, error) {
 	return setting.Value, nil
 }
 
+func (m *Reporter) report(id string, metric *metric.Metric) {
+	if err := m.reporter.Report(id, metric); err != nil {
+		log.Error(
+			"Failed to report metric",
+			zap.String("metric", string(metric.Name)),
+			zap.Error(err),
+		)
+	}
+}
+
 // Identify will identify the workspace and update the subscription plan.
-func (m *Reporter) identify(ctx context.Context) {
+func (m *Reporter) identify(ctx context.Context) (string, error) {
 	workspaceID, err := m.getWorkspaceID(ctx)
 	if err != nil {
-		log.Error("failed to find the workspace id", zap.Error(err))
-		return
+		return "", err
 	}
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
@@ -168,8 +182,10 @@ func (m *Reporter) identify(ctx context.Context) {
 			identifyTraitForOrgName: orgName,
 		},
 	}); err != nil {
-		log.Debug("reporter identify failed", zap.Error(err))
+		return workspaceID, err
 	}
+
+	return workspaceID, nil
 }
 
 // Report will report a metric.
@@ -180,12 +196,6 @@ func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
 			log.Error("failed to find the workspace id", zap.Error(err))
 			return
 		}
-		if err := m.reporter.Report(workspaceID, metric); err != nil {
-			log.Error(
-				"Failed to report metric",
-				zap.String("metric", string(metric.Name)),
-				zap.Error(err),
-			)
-		}
+		m.report(workspaceID, metric)
 	}()
 }
