@@ -129,7 +129,7 @@ const prepareConnectionTree = async () => {
     }
     connectionTreeStore.tree.data = connectionTree;
   } else {
-    const databaseList = state.databaseList.filter((db) => {
+    const databaseList = connectionTreeStore.tree.databaseList.filter((db) => {
       return db.project.id !== DEFAULT_PROJECT_ID;
     });
     const projectList = uniqBy(
