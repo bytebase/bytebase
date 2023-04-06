@@ -9,26 +9,25 @@
         @update:value="$emit('update:value', $event)"
       />
     </div>
-    <div :class="responsive && 'hidden sm:block'">
-      <div
-        class="flex gap-x-4 w-full overflow-x-auto hide-scrollbar whitespace-nowrap"
-        aria-label="Tabs"
+    <div
+      class="gap-x-4 w-full overflow-x-auto hide-scrollbar whitespace-nowrap"
+      aria-label="Tabs"
+      :class="responsive ? 'hidden sm:flex' : 'flex'"
+    >
+      <button
+        v-for="item in items"
+        :key="item.value"
+        :disabled=" disabled"
+        class="rounded-md text-sm px-3 py-1 flex items-center disabled:cursor-not-allowed disabled:pointer-events-none transition-colors duration-150"
+        :class="[
+          value === item.value
+            ? 'bg-gray-200 text-gray-800 disabled:bg-gray-100'
+            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
+        ]"
+        @click.prevent="update(item.value)"
       >
-        <button
-          v-for="item in items"
-          :key="item.value"
-          :disabled="disabled"
-          class="rounded-md text-sm px-3 py-1 flex items-center disabled:cursor-not-allowed transition-colors duration-150"
-          :class="[
-            value === item.value
-              ? 'bg-gray-200 text-gray-800 disabled:bg-gray-100'
-              : 'text-gray-500 hover:text-gray-700',
-          ]"
-          @click.prevent="update(item.value)"
-        >
-          {{ item.label }}
-        </button>
-      </div>
+        {{ item.label }}
+      </button>
     </div>
   </div>
 </template>
