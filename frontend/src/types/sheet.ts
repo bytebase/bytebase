@@ -7,6 +7,7 @@ import {
   ProjectId,
   RowStatus,
   PrincipalId,
+  IssueId,
 } from ".";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
@@ -24,10 +25,23 @@ interface SheetVCSPayload {
   lastSyncTs: number;
 }
 
+/**
+ * Mark a link from sheets to issues if a sheet is created in an issue via
+ * "Upload SQL"
+ */
+export type SheetIssueBacktracePayload = {
+  type: "bb.sheet.issue-backtrace";
+  issueId: IssueId;
+  issueName: string;
+};
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 type SheetEmptyPayload = {};
 
-export type SheetPayload = SheetVCSPayload | SheetEmptyPayload;
+export type SheetPayload =
+  | SheetVCSPayload
+  | SheetIssueBacktracePayload
+  | SheetEmptyPayload;
 
 export interface Sheet {
   id: SheetId;

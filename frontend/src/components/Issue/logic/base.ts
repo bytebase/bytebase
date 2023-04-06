@@ -18,6 +18,7 @@ import {
   idFromSlug,
   indexFromSlug,
   issueSlug,
+  maybeSetSheetBacktracePayloadByIssue,
   stageSlug,
   taskSlug,
 } from "@/utils";
@@ -59,6 +60,7 @@ export const useBaseIssueLogic = (params: {
 
     const createdIssue = await issueStore.createIssue(issue);
     await maybeCreateBackTraceComments(createdIssue);
+    await maybeSetSheetBacktracePayloadByIssue(createdIssue);
 
     // Use replace to omit the new issue url in the navigation history.
     router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
