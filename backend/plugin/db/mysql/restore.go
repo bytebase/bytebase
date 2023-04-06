@@ -838,7 +838,7 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 	for rows.Next() {
 		var name string
 		var size int64
-		var unused interface{}
+		var unused any
 		if err := rows.Scan(&name, &size, &unused /*Encrypted column*/); err != nil {
 			return nil, err
 		}

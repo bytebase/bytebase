@@ -125,7 +125,7 @@ func (driver *Driver) Execute(_ context.Context, statement string, _ bool) (int6
 }
 
 // QueryConn querys statements and returns the result.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]any, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.
@@ -148,8 +148,8 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	}
 	field := []string{"result"}
 	types := []string{"TEXT"}
-	rows := [][]interface{}{{outContent.String()}}
-	return []interface{}{field, types, rows}, nil
+	rows := [][]any{{outContent.String()}}
+	return []any{field, types, rows}, nil
 }
 
 // Dump dumps the database.

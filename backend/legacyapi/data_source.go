@@ -52,7 +52,7 @@ func getDefaultDataSourceOptions() DataSourceOptions {
 }
 
 // Scan implements database/sql Scanner interface, converts JSONB to DataSourceOptions struct.
-func (d *DataSourceOptions) Scan(src interface{}) error {
+func (d *DataSourceOptions) Scan(src any) error {
 	if bs, ok := src.([]byte); ok {
 		if string(bs) == "{}" {
 			// handle '{}', return default values

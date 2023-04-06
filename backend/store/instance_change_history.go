@@ -83,7 +83,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		return nil, nil
 	}
 	var query strings.Builder
-	var values []interface{}
+	var values []any
 	var queryValues []string
 
 	_, _ = query.WriteString(`
@@ -295,7 +295,7 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 
 // ListInstanceChangeHistory finds the instance change history.
 func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
-	where, args := []string{"instance_id = $1"}, []interface{}{find.InstanceID}
+	where, args := []string{"instance_id = $1"}, []any{find.InstanceID}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -428,7 +428,7 @@ func (s *Store) UpdateInstanceChangeHistoryAsFailed(ctx context.Context, migrati
 // UpdateInstanceChangeHistory updates an instance change history.
 // it deprecates the old UpdateHistoryAsDone and UpdateHistoryAsFailed.
 func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateInstanceChangeHistoryMessage) error {
-	set, args := []string{}, []interface{}{}
+	set, args := []string{}, []any{}
 	if v := update.Status; v != nil {
 		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
 	}

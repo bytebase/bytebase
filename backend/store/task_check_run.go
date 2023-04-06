@@ -96,7 +96,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*Ta
 		return nil
 	}
 	var query strings.Builder
-	var values []interface{}
+	var values []any
 	var queryValues []string
 	if _, err := query.WriteString(
 		`INSERT INTO task_check_run (
@@ -139,7 +139,7 @@ func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRun
 	if patch.Result == "" {
 		patch.Result = "{}"
 	}
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	set, args = append(set, "code = $3"), append(args, patch.Code)
 	set, args = append(set, "result = $4"), append(args, patch.Result)
@@ -192,7 +192,7 @@ func (s *Store) ListTaskCheckRuns(ctx context.Context, find *TaskCheckRunFind) (
 
 func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *TaskCheckRunFind) ([]*TaskCheckRunMessage, error) {
 	joinClause := ""
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.TaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_check_run.task_id = $%d", len(args)+1)), append(args, *v)
 	}

@@ -292,7 +292,7 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) (*tidbast
 	if addColumnContext.Comment != "" {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionComment,
-			Expr: tidbast.NewValueExpr(interface{}(addColumnContext.Comment), addColumnContext.CharacterSet, addColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(any(addColumnContext.Comment), addColumnContext.CharacterSet, addColumnContext.Collation),
 		})
 	}
 	if addColumnContext.Collation != "" {
@@ -304,7 +304,7 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) (*tidbast
 	if addColumnContext.Default != nil {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionDefaultValue,
-			Expr: tidbast.NewValueExpr(interface{}(*addColumnContext.Default), addColumnContext.CharacterSet, addColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(any(*addColumnContext.Default), addColumnContext.CharacterSet, addColumnContext.Collation),
 		})
 	}
 	if !addColumnContext.Nullable {
@@ -335,7 +335,7 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 	if changeColumnContext.Comment != "" {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionComment,
-			Expr: tidbast.NewValueExpr(interface{}(changeColumnContext.Comment), changeColumnContext.CharacterSet, changeColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(any(changeColumnContext.Comment), changeColumnContext.CharacterSet, changeColumnContext.Collation),
 		})
 	}
 	if changeColumnContext.Collation != "" {
@@ -352,7 +352,7 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 	if changeColumnContext.Default != nil {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionDefaultValue,
-			Expr: tidbast.NewValueExpr(interface{}(*changeColumnContext.Default), changeColumnContext.CharacterSet, changeColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(any(*changeColumnContext.Default), changeColumnContext.CharacterSet, changeColumnContext.Collation),
 		})
 	}
 	columnDef.Options = columnOptionList

@@ -224,9 +224,6 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return "", "", err
-	}
 	_, err := driver.Execute(ctx, statement, m.CreateDatabase)
 	return "", "", err
 }
@@ -255,7 +252,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase.public.migration_history `
-	paramNames, params := []string{}, []interface{}{}
+	paramNames, params := []string{}, []any{}
 	if v := find.ID; v != nil {
 		paramNames, params = append(paramNames, "id"), append(params, *v)
 	}

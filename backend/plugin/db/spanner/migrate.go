@@ -120,7 +120,7 @@ func (d *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Migratio
 		payload
 		FROM migration_history
   `
-	params := make(map[string]interface{})
+	params := make(map[string]any)
 	var where []string
 
 	if v := find.ID; v != nil {

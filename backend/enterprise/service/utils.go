@@ -7,7 +7,7 @@ import (
 )
 
 func parseJWTToken(tokenString, expectVersion, publicKey string, claims jwt.Claims) error {
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
 		}

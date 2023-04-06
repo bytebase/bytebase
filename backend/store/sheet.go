@@ -382,7 +382,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 
 // patchSheetImpl updates a sheet's name/statement/visibility.
 func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetRaw, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
 	}
@@ -446,7 +446,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 }
 
 func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRaw, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)

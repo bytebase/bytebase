@@ -352,7 +352,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 
 func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -441,7 +441,7 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 // patchRepositoryImpl updates a repository by ID. Returns the new state of the repository after update.
 func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*repositoryRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {
 		set, args = append(set, fmt.Sprintf("branch_filter = $%d", len(args)+1)), append(args, *v)
 	}

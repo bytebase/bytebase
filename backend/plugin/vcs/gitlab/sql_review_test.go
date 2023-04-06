@@ -22,7 +22,7 @@ after_script:
 `
 
 func Test_SetupGitLabCI(t *testing.T) {
-	content := make(map[string]interface{})
+	content := make(map[string]any)
 	err := yaml.Unmarshal([]byte(mockGitLabCIContentYAMLStr), &content)
 	require.NoError(t, err)
 
@@ -37,7 +37,7 @@ func Test_SetupGitLabCI(t *testing.T) {
 	assert.NotNil(t, content["before_script"])
 	assert.NotNil(t, content["after_script"])
 
-	include, ok := content["include"].([]interface{})
+	include, ok := content["include"].([]any)
 	assert.Equal(t, ok, true)
 
 	sqlReviewCI, ok := findSQLReviewCI(include)

@@ -193,7 +193,7 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 }
 
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -269,7 +269,7 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 	}
 
 	if len(inserts.Bindings) > 0 {
-		args := []interface{}{}
+		args := []any{}
 		var placeholders []string
 		for _, binding := range inserts.Bindings {
 			for _, member := range binding.Members {
@@ -302,7 +302,7 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 		return nil
 	}
 	query := ""
-	where, deletePlaceholders, args := []string{}, []string{}, []interface{}{}
+	where, deletePlaceholders, args := []string{}, []string{}, []any{}
 	where, args = append(where, fmt.Sprintf("(project_member.project_id = $%d)", len(args)+1)), append(args, projectUID)
 	for _, id := range memberIDs {
 		deletePlaceholders = append(deletePlaceholders, fmt.Sprintf("$%d", len(args)+1))

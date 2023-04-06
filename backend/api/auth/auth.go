@@ -80,7 +80,7 @@ func New(store *store.Store, secret string, licenseService enterpriseAPI.License
 }
 
 // AuthenticationInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, request interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
@@ -109,7 +109,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 	}
 	claims := &claimsMessage{}
 	generateToken := false
-	accessToken, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+	accessToken, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 			return nil, status.Errorf(codes.Unauthenticated, "unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 		}
@@ -163,7 +163,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 		generateTokenFunc := func() error {
 			// Parses token and checks if it's valid.
 			refreshTokenClaims := &claimsMessage{}
-			refreshToken, err := jwt.ParseWithClaims(refreshTokenStr, refreshTokenClaims, func(t *jwt.Token) (interface{}, error) {
+			refreshToken, err := jwt.ParseWithClaims(refreshTokenStr, refreshTokenClaims, func(t *jwt.Token) (any, error) {
 				if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 					return nil, status.Errorf(codes.Unauthenticated, "unexpected refresh token signing method=%v, expected %v", t.Header["alg"], jwt.SigningMethodHS256)
 				}
@@ -211,7 +211,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 // GetUserIDFromMFATempToken returns the user ID from the MFA temp token.
 func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret string) (int, error) {
 	claims := &claimsMessage{}
-	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 			return nil, status.Errorf(codes.Unauthenticated, "unexpected MFA temp token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 		}

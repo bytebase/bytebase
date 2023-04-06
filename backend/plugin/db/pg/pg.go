@@ -468,7 +468,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -490,8 +490,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		}
 		field := []string{"Affected Rows"}
 		types := []string{"INT"}
-		rows := [][]interface{}{{affectedRows}}
-		return []interface{}{field, types, rows}, nil
+		rows := [][]any{{affectedRows}}
+		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
 }

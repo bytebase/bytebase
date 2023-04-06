@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border w-[850px]">
-      <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-5 gap-2">
+      <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
         <template v-for="engine in engineList" :key="engine">
           <div
             class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"

@@ -181,7 +181,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 }
 
 func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -273,7 +273,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	defer tx.Rollback()
 
 	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
-	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
+	args := []any{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
 	placeholder := []string{}
 	for index := range set {
 		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
@@ -346,7 +346,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
-	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	principalSet, principalArgs := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, strings.ToLower(*v))
 	}
@@ -365,7 +365,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	principalArgs = append(principalArgs, userID)
 
-	memberSet, memberArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	memberSet, memberArgs := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Role; v != nil {
 		memberSet, memberArgs = append(memberSet, fmt.Sprintf("role = $%d", len(memberArgs)+1)), append(memberArgs, *v)
 	}
