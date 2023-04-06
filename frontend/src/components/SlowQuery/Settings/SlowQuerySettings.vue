@@ -97,7 +97,6 @@ const prepare = async () => {
       state.instanceList = list.filter(instanceSupportSlowQuery);
     };
     const preparePolicyList = async () => {
-      await new Promise((r) => setTimeout(r, 500));
       await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
         "instance",
         "bb.policy.slow-query"
