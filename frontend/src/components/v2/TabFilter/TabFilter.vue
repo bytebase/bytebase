@@ -17,7 +17,7 @@
       <button
         v-for="item in items"
         :key="item.value"
-        :disabled=" disabled"
+        :disabled="disabled"
         class="rounded-md text-sm px-3 py-1 flex items-center disabled:cursor-not-allowed disabled:pointer-events-none transition-colors duration-150"
         :class="[
           value === item.value
@@ -26,7 +26,9 @@
         ]"
         @click.prevent="update(item.value)"
       >
-        {{ item.label }}
+        <slot name="label" :item="item">
+          {{ item.label }}
+        </slot>
       </button>
     </div>
   </div>
