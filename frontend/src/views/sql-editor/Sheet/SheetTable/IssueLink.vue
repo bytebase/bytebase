@@ -18,27 +18,16 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { isUndefined } from "lodash-es";
 import { NTooltip } from "naive-ui";
 
-import { Sheet, SheetIssueBacktracePayload } from "@/types";
-import { issueSlug } from "@/utils";
+import { Sheet } from "@/types";
+import { getSheetIssueBacktracePayload, issueSlug } from "@/utils";
 
 const props = defineProps<{
   sheet: Sheet;
 }>();
 
 const payload = computed(() => {
-  const maybePayload = (props.sheet.payload ??
-    {}) as SheetIssueBacktracePayload;
-  // if (typeof maybePayload.)
-  if (
-    !isUndefined(maybePayload.issueId) &&
-    !isUndefined(maybePayload.issueName)
-  ) {
-    return maybePayload;
-  }
-
-  return undefined;
+  return getSheetIssueBacktracePayload(props.sheet);
 });
 </script>

@@ -67,59 +67,13 @@
           </n-button>
         </div>
       </div>
-      <div class="w-full grid grid-cols-1">
-        <div
-          class="sheet-list-container text-sm text-gray-400"
-          :class="currentSubPath"
-        >
-          <span
-            v-for="header in getSheetTableHeaderLabelList()"
-            :key="header.key"
-            >{{ header.label }}</span
-          >
-        </div>
-        <div
-          v-if="state.isLoading"
-          class="w-full flex flex-col py-6 justify-start items-center"
-        >
-          <span class="text-sm leading-6 text-gray-500">{{
-            $t("sql-editor.loading-data")
-          }}</span>
-        </div>
-        <div
-          v-for="sheet in shownSheetList"
-          :key="sheet.id"
-          class="sheet-list-container text-sm cursor-pointer hover:bg-gray-100"
-          :class="currentSubPath"
-          @click="handleSheetClick(sheet)"
-        >
-          <span
-            v-for="value in getSheetTableContentValueList(sheet)"
-            :key="value.key"
-            class="truncate w-5/6"
-            >{{ value.value }}</span
-          >
-          <div class="flex flex-row justify-end items-center" @click.stop>
-            <n-dropdown
-              trigger="click"
-              :options="getSheetDropDownOptions(sheet)"
-              @select="(key: string) => handleDropDownActionBtnClick(key, sheet)"
-            >
-              <heroicons-outline:dots-horizontal
-                class="w-6 h-auto border border-gray-300 bg-white p-1 rounded outline-none shadow"
-              />
-            </n-dropdown>
-          </div>
-        </div>
-        <div
-          v-show="!state.isLoading && shownSheetList.length === 0"
-          class="w-full flex flex-col py-6 justify-start items-center"
-        >
-          <heroicons-outline:inbox class="w-12 h-auto text-gray-500" />
-          <span class="text-sm leading-6 text-gray-500">{{
-            $t("common.no-data")
-          }}</span>
-        </div>
+      <div class="w-full">
+        <SheetTable
+          :view="currentSheetViewMode"
+          :sheet-list="shownSheetList"
+          :loading="state.isLoading"
+          @refresh="fetchSheetData"
+        />
       </div>
     </div>
   </div>
@@ -133,23 +87,23 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import dayjs from "@/plugins/dayjs";
+
 import {
   hasFeature,
   useCurrentUser,
   useProjectStore,
   useSheetStore,
 } from "@/store";
-import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
+import { Sheet } from "@/types";
 import {
-  getDefaultSheetPayloadWithSource,
-  isSheetWritable,
-  sheetSlug,
-} from "@/utils";
+  type SheetViewMode,
+  SheetTable,
+  SheetViewModeList,
+} from "./sql-editor/Sheet";
 
 interface LocalState {
   isLoading: boolean;
@@ -158,7 +112,6 @@ interface LocalState {
 }
 
 const route = useRoute();
-const router = useRouter();
 const dialog = useDialog();
 const state = reactive<LocalState>({
   isLoading: true,
@@ -250,17 +203,21 @@ const shouldShowClearSearchBtn = computed(() => {
   return projectSelectorValue.value !== "" || sheetSearchValue.value !== "";
 });
 
-const currentSubPath = computed(() => {
+const currentSheetViewMode = computed((): SheetViewMode => {
   const { path } = route;
-  return last(path.split("/")) || "";
+  const subPath = (last(path.split("/")) || "my") as SheetViewMode;
+  if (SheetViewModeList.includes(subPath)) {
+    return subPath;
+  }
+  return "my";
 });
 
 const fetchSheetData = async () => {
-  if (currentSubPath.value === "my") {
+  if (currentSheetViewMode.value === "my") {
     state.sheetList = await sheetStore.fetchMySheetList();
-  } else if (currentSubPath.value === "starred") {
+  } else if (currentSheetViewMode.value === "starred") {
     state.sheetList = await sheetStore.fetchStarredSheetList();
-  } else if (currentSubPath.value === "shared") {
+  } else if (currentSheetViewMode.value === "shared") {
     state.sheetList = await sheetStore.fetchSharedSheetList();
   }
 };
@@ -279,15 +236,6 @@ watch(
     await fetchSheetData();
   }
 );
-
-const handleSheetClick = (sheet: Sheet) => {
-  router.push({
-    name: "sql-editor.share",
-    params: {
-      sheetSlug: sheetSlug(sheet),
-    },
-  });
-};
 
 const handleClearSearchBtnClick = () => {
   projectSelectorValue.value = "";
@@ -323,177 +271,10 @@ const handleSyncSheetFromVCS = () => {
     maskClosable: false,
   });
 };
-
-const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
-  if (key === "delete") {
-    const dialogInstance = dialog.create({
-      title: t("sheet.hint-tips.confirm-to-delete-this-sheet"),
-      type: "info",
-      async onPositiveClick() {
-        await sheetStore.deleteSheetById(sheet.id);
-        dialogInstance.destroy();
-      },
-      onNegativeClick() {
-        dialogInstance.destroy();
-      },
-      negativeText: t("common.cancel"),
-      positiveText: t("common.confirm"),
-      showIcon: true,
-    });
-  } else if (key === "star" || key === "unstar") {
-    const sheetOrganizerUpsert: SheetOrganizerUpsert = {
-      sheeId: sheet.id,
-    };
-
-    if (key === "star") {
-      sheetOrganizerUpsert.starred = true;
-    } else if (key === "unstar") {
-      sheetOrganizerUpsert.starred = false;
-    }
-
-    await sheetStore.upsertSheetOrganizer(sheetOrganizerUpsert);
-    await fetchSheetData();
-  } else if (key === "duplicate") {
-    const dialogInstance = dialog.create({
-      title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),
-      type: "info",
-      async onPositiveClick() {
-        const sheetCreate: SheetCreate = {
-          projectId: sheet.projectId,
-          name: sheet.name,
-          statement: sheet.statement,
-          visibility: "PRIVATE",
-          payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
-        };
-        if (sheet.databaseId) {
-          sheetCreate.databaseId = sheet.databaseId;
-        }
-        await sheetStore.createSheet(sheetCreate);
-        dialogInstance.destroy();
-      },
-      onNegativeClick() {
-        dialogInstance.destroy();
-      },
-      negativeText: t("common.cancel"),
-      positiveText: t("common.confirm"),
-      showIcon: true,
-    });
-  }
-};
-
-const getSheetDropDownOptions = (sheet: Sheet) => {
-  const options = [];
-
-  if (sheet.starred) {
-    options.push({
-      key: "unstar",
-      label: t("common.unstar"),
-    });
-  } else {
-    options.push({
-      key: "star",
-      label: t("common.star"),
-    });
-  }
-
-  if (currentSubPath.value === "my") {
-    options.push({
-      key: "delete",
-      label: t("common.delete"),
-    });
-  } else if (currentSubPath.value === "shared") {
-    const canDeleteSheet = isSheetWritable(sheet, currentUser.value);
-    if (canDeleteSheet) {
-      options.push({
-        key: "delete",
-        label: t("common.delete"),
-      });
-    }
-
-    options.push({
-      key: "duplicate",
-      label: t("common.duplicate"),
-    });
-  }
-
-  return options;
-};
-
-const getSheetTableHeaderLabelList = () => {
-  const labelList = [
-    {
-      key: "name",
-      label: t("common.name").toUpperCase(),
-    },
-    {
-      key: "project",
-      label: t("common.project").toUpperCase(),
-    },
-    {
-      key: "visibility",
-      label: t("common.visibility").toUpperCase(),
-    },
-  ];
-
-  if (currentSubPath.value === "shared" || currentSubPath.value === "starred") {
-    labelList.push({
-      key: "creator",
-      label: t("common.creator").toUpperCase(),
-    });
-  }
-
-  labelList.push({
-    key: "updated",
-    label: t("common.updated-at").toUpperCase(),
-  });
-
-  return labelList;
-};
-
-const getSheetTableContentValueList = (sheet: Sheet) => {
-  const valueList = [
-    {
-      key: "name",
-      value: sheet.name,
-    },
-    {
-      key: "project",
-      value: sheet.project.name,
-    },
-    {
-      key: "visibility",
-      value: sheet.visibility,
-    },
-  ];
-
-  if (currentSubPath.value === "shared" || currentSubPath.value === "starred") {
-    valueList.push({
-      key: "creator",
-      value: sheet.creator.name,
-    });
-  }
-
-  valueList.push({
-    key: "updated",
-    value: dayjs.duration(sheet.updatedTs * 1000 - Date.now()).humanize(true),
-  });
-
-  return valueList;
-};
 </script>
 
 <style scoped>
 .active-link {
   @apply bg-gray-100 text-accent;
-}
-.sheet-list-container {
-  @apply w-full grid py-3 px-4 border-b text-sm leading-6 select-none;
-}
-.sheet-list-container.my {
-  grid-template-columns: 2fr repeat(3, 1fr) 32px;
-}
-.sheet-list-container.shared,
-.sheet-list-container.starred {
-  grid-template-columns: 2fr repeat(4, 1fr) 32px;
 }
 </style>

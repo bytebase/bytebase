@@ -1,3 +1,4 @@
-import SheetIssueLink from "./SheetIssueLink.vue";
+import SheetTable from "./SheetTable";
 
-export { SheetIssueLink };
+export * from "./types";
+export { SheetTable };

@@ -1837,7 +1837,9 @@
       "confirm-to-sync-sheet": "确定要同步工作表?",
       "confirm-to-delete-this-sheet": "确定删除这条工作表?",
       "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
-    }
+    },
+    "linked-issue": "关联工单",
+    "from-sheet-warning": "这个工作表来自一个工单。它是只读的且只显示了部分内容。"
   },
   "engine": {
     "mysql": "MySQL",

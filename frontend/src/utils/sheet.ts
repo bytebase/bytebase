@@ -1,3 +1,5 @@
+import { isUndefined, uniq } from "lodash-es";
+
 import { useSheetStore } from "@/store";
 import {
   Issue,
@@ -14,7 +16,6 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseSchemaUpdateSDLPayload,
 } from "@/types";
-import { uniq } from "lodash-es";
 import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
@@ -53,6 +54,11 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
 };
 
 export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
+  // If the sheet is linked to an issue, it's NOT writable
+  if (getSheetIssueBacktracePayload(sheet)) {
+    return false;
+  }
+
   // writable to
   // PRIVATE: the creator only
   // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA
@@ -177,4 +183,16 @@ export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
   } catch {
     // nothing
   }
+};
+
+export const getSheetIssueBacktracePayload = (sheet: Sheet) => {
+  const maybePayload = (sheet.payload ?? {}) as SheetIssueBacktracePayload;
+  if (
+    !isUndefined(maybePayload.issueId) &&
+    !isUndefined(maybePayload.issueName)
+  ) {
+    return maybePayload;
+  }
+
+  return undefined;
 };
