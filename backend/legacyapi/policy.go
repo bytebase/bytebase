@@ -42,6 +42,8 @@ const (
 	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
 	// PolicyTypeAccessControl is the access control policy type.
 	PolicyTypeAccessControl PolicyType = "bb.policy.access-control"
+	// PolicyTypeSlowQuery is the slow query policy type.
+	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -88,6 +90,7 @@ var (
 		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
 		PolicyTypeSensitiveData:    {PolicyResourceTypeDatabase},
 		PolicyTypeAccessControl:    {PolicyResourceTypeEnvironment, PolicyResourceTypeDatabase},
+		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
 	}
 )
 
@@ -280,6 +283,29 @@ func UnmarshalAccessControlPolicy(payload string) (*AccessControlPolicy, error) 
 }
 
 func (p *AccessControlPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// SlowQueryPolicy is the policy configuration for slow query.
+type SlowQueryPolicy struct {
+	Active bool `json:"active"`
+}
+
+// UnmarshalSlowQueryPolicy will unmarshal payload to slow query policy.
+func UnmarshalSlowQueryPolicy(payload string) (*SlowQueryPolicy, error) {
+	var p SlowQueryPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal slow query policy %q", payload)
+	}
+	return &p, nil
+}
+
+// String will return the string representation of the policy.
+func (p *SlowQueryPolicy) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
