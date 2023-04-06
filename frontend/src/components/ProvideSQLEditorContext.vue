@@ -4,7 +4,7 @@
 
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
-import { reactive, onMounted, computed, watch } from "vue";
+import { onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
@@ -20,7 +20,6 @@ import {
   useSettingStore,
 } from "@/store";
 import {
-  Database,
   Connection,
   ConnectionAtom,
   ConnectionTreeMode,
@@ -41,17 +40,9 @@ import {
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
-type LocalState = {
-  databaseList: Database[];
-};
-
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
-
-const state = reactive<LocalState>({
-  databaseList: [],
-});
 
 const currentUser = useCurrentUser();
 const instanceStore = useInstanceStore();
@@ -90,7 +81,7 @@ const prepareAccessibleDatabaseList = async () => {
       currentUser.value
     )
   );
-  state.databaseList = databaseList;
+  connectionTreeStore.tree.databaseList = databaseList;
 };
 
 const prepareConnectionTree = async () => {
@@ -104,7 +95,7 @@ const prepareConnectionTree = async () => {
       connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
       return;
     }
-    const { databaseList } = state;
+    const { databaseList } = connectionTreeStore.tree;
     const instanceList = uniqBy(
       databaseList.map((db) => db.instance),
       (instance) => instance.id
@@ -138,7 +129,7 @@ const prepareConnectionTree = async () => {
     }
     connectionTreeStore.tree.data = connectionTree;
   } else {
-    const databaseList = state.databaseList.filter((db) => {
+    const databaseList = connectionTreeStore.tree.databaseList.filter((db) => {
       return db.project.id !== DEFAULT_PROJECT_ID;
     });
     const projectList = uniqBy(

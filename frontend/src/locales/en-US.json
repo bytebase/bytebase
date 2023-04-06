@@ -1838,7 +1838,9 @@
       "confirm-to-sync-sheet": "Confirm to sync sheets?",
       "confirm-to-delete-this-sheet": "Confirm to delete this sheet?",
       "confirm-to-duplicate-sheet": "Confirm to duplicate this sheet?"
-    }
+    },
+    "linked-issue": "Linked issue",
+    "from-sheet-warning": "The sheet comes from issue {issue}. It is read-only and only part of it is displayed."
   },
   "engine": {
     "mysql": "MySQL",

@@ -27,6 +27,7 @@ module.exports = {
     { pattern: /^text-yellow-/ },
     { pattern: /^text-red-/ },
     { pattern: /^grid-cols-/ },
+    { pattern: /^(uppercase|lowercase|capitalize)$/ },
   ],
   theme: {
     extend: {
