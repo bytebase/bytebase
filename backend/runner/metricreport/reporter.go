@@ -36,18 +36,17 @@ const (
 type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
 	// Version is the bytebase's version
-	version     string
-	workspaceID string
-	reporter    metric.Reporter
-	collectors  map[string]metric.Collector
-	store       *store.Store
+	version    string
+	reporter   metric.Reporter
+	collectors map[string]metric.Collector
+	store      *store.Store
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string, enabled bool) *Reporter {
+func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, enabled bool) *Reporter {
 	var r metric.Reporter
 	if enabled {
-		r = segment.NewReporter(profile.MetricConnectionKey, workspaceID)
+		r = segment.NewReporter(profile.MetricConnectionKey)
 	} else {
 		r = segment.NewMockReporter()
 	}
@@ -55,7 +54,6 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 	return &Reporter{
 		licenseService: licenseService,
 		version:        profile.Version,
-		workspaceID:    workspaceID,
 		reporter:       r,
 		collectors:     make(map[string]metric.Collector),
 		store:          store,
@@ -73,7 +71,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			func() {
+			go func() {
 				defer func() {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
@@ -101,7 +99,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					for _, metric := range metricList {
-						m.Report(metric)
+						m.Report(ctx, metric)
 					}
 				}
 			}()
@@ -121,8 +119,28 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 	m.collectors[string(metricName)] = collector
 }
 
+func (m *Reporter) getWorkspaceID(ctx context.Context) (string, error) {
+	settingName := api.SettingWorkspaceID
+	setting, err := m.store.GetSettingV2(ctx, &store.FindSettingMessage{
+		Name:    &settingName,
+		Enforce: true,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return "", errors.Errorf("cannot find setting %v", settingName)
+	}
+	return setting.Value, nil
+}
+
 // Identify will identify the workspace and update the subscription plan.
 func (m *Reporter) identify(ctx context.Context) {
+	workspaceID, err := m.getWorkspaceID(ctx)
+	if err != nil {
+		log.Error("failed to find the workspace id", zap.Error(err))
+		return
+	}
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
 	orgID := subscription.OrgID
@@ -140,7 +158,7 @@ func (m *Reporter) identify(ctx context.Context) {
 	}
 
 	if err := m.reporter.Identify(&metric.Identifier{
-		ID:    m.workspaceID,
+		ID:    workspaceID,
 		Email: email,
 		Name:  name,
 		Labels: map[string]string{
@@ -155,12 +173,19 @@ func (m *Reporter) identify(ctx context.Context) {
 }
 
 // Report will report a metric.
-func (m *Reporter) Report(metric *metric.Metric) {
-	if err := m.reporter.Report(metric); err != nil {
-		log.Error(
-			"Failed to report metric",
-			zap.String("metric", string(metric.Name)),
-			zap.Error(err),
-		)
-	}
+func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
+	go func() {
+		workspaceID, err := m.getWorkspaceID(ctx)
+		if err != nil {
+			log.Error("failed to find the workspace id", zap.Error(err))
+			return
+		}
+		if err := m.reporter.Report(workspaceID, metric); err != nil {
+			log.Error(
+				"Failed to report metric",
+				zap.String("metric", string(metric.Name)),
+				zap.Error(err),
+			)
+		}
+	}()
 }

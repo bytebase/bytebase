@@ -363,7 +363,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 					return
 				}
 				s.profile.LastActiveTs = time.Now().Unix()
-				s.MetricReporter.Report(&metricPlugin.Metric{
+				ctx := c.Request().Context()
+
+				s.MetricReporter.Report(ctx, &metricPlugin.Metric{
 					Name:  metric.APIRequestMetricName,
 					Value: 1,
 					Labels: map[string]interface{}{
@@ -391,7 +393,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
-	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, s.GetWorkspaceID(), false)
+	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
@@ -650,7 +652,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && s.profile.DemoName != "" && !s.profile.DisableMetric
-	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID, enabled)
+	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, enabled)
 	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
