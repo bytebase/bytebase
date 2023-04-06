@@ -409,6 +409,9 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 			return api.BinlogInfo{}, errors.Wrapf(err, "cannot scan row from %q query", query)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return api.BinlogInfo{}, err
+	}
 	if !scanOneRow {
 		// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
 		return api.BinlogInfo{}, nil

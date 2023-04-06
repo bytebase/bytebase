@@ -645,6 +645,9 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 			return "", err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
 	// We try to parse the version string to get the PostgreSQL version and the Redshift version, but it's not a big deal if we fail.
 	// We will just return the version string as is.
 	pgVersion, redshiftVersion, err := getPgVersionAndRedshiftVersion(version)

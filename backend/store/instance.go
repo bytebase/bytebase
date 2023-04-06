@@ -450,6 +450,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		instanceMessages = append(instanceMessages, &instanceMessage)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, instanceMessage := range instanceMessages {
 		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceMessage.ResourceID)
