@@ -502,6 +502,8 @@ export function backup_BackupStateToJSON(object: Backup_BackupState): string {
 
 /** ListSlowQueriesRequest is the request of listing slow query. */
 export interface ListSlowQueriesRequest {
+  /** Format: environments/{environment}/instances/{instance}/databases/{database} */
+  parent: string;
   /**
    * The filter of the slow query log.
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
@@ -3183,16 +3185,19 @@ export const Backup = {
 };
 
 function createBaseListSlowQueriesRequest(): ListSlowQueriesRequest {
-  return { filter: "", orderBy: "" };
+  return { parent: "", filter: "", orderBy: "" };
 }
 
 export const ListSlowQueriesRequest = {
   encode(message: ListSlowQueriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
     if (message.filter !== "") {
-      writer.uint32(10).string(message.filter);
+      writer.uint32(18).string(message.filter);
     }
     if (message.orderBy !== "") {
-      writer.uint32(18).string(message.orderBy);
+      writer.uint32(26).string(message.orderBy);
     }
     return writer;
   },
@@ -3209,10 +3214,17 @@ export const ListSlowQueriesRequest = {
             break;
           }
 
-          message.filter = reader.string();
+          message.parent = reader.string();
           continue;
         case 2:
           if (tag != 18) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
             break;
           }
 
@@ -3229,6 +3241,7 @@ export const ListSlowQueriesRequest = {
 
   fromJSON(object: any): ListSlowQueriesRequest {
     return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
       filter: isSet(object.filter) ? String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
     };
@@ -3236,6 +3249,7 @@ export const ListSlowQueriesRequest = {
 
   toJSON(message: ListSlowQueriesRequest): unknown {
     const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
     message.filter !== undefined && (obj.filter = message.filter);
     message.orderBy !== undefined && (obj.orderBy = message.orderBy);
     return obj;
@@ -3247,6 +3261,7 @@ export const ListSlowQueriesRequest = {
 
   fromPartial(object: DeepPartial<ListSlowQueriesRequest>): ListSlowQueriesRequest {
     const message = createBaseListSlowQueriesRequest();
+    message.parent = object.parent ?? "";
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
     return message;
@@ -4573,15 +4588,24 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              56,
+              65,
               18,
-              54,
+              63,
               47,
               118,
               49,
               47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
               101,
               110,
               118,
@@ -4620,6 +4644,7 @@ export const DatabaseServiceDefinition = {
               115,
               47,
               42,
+              125,
               47,
               115,
               108,

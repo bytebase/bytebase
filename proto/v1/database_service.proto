@@ -72,7 +72,8 @@ service DatabaseService {
   }
   
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
-    option (google.api.http) = {get: "/v1/environments/*/instances/*/databases/*/slowQueries"};
+    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/slowQueries"};
+    option (google.api.method_signature) = "parent";
   }
 }
 
@@ -506,6 +507,9 @@ message Backup {
 
 // ListSlowQueriesRequest is the request of listing slow query.
 message ListSlowQueriesRequest {
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
   // The filter of the slow query log.
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // Support filter by project and start_time in SlowQueryDetails for now.
@@ -516,7 +520,7 @@ message ListSlowQueriesRequest {
   //   - start_time > "2022-01-01T12:00:00.000Z"
   //   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
   //   - Currently we only support filtering down to date granularity.
-  string filter = 1;
+  string filter = 2;
 
   // The order by of the slow query log.
   // Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
@@ -525,7 +529,7 @@ message ListSlowQueriesRequest {
   //  - order by count: order_by = "count"
   //  - order by latest_log_time desc: order_by = "latest_log_time desc"
   // Default: order by nighty_fifth_percentile_query_time desc.
-  string order_by = 2;
+  string order_by = 3;
 }
 
 // ListSlowQueriesResponse is the response of listing slow query.
