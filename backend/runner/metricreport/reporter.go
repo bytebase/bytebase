@@ -104,7 +104,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					for _, metric := range metricList {
-						m.report(workspaceID, metric)
+						m.reportMetric(workspaceID, metric)
 					}
 				}
 			}()
@@ -139,7 +139,7 @@ func (m *Reporter) getWorkspaceID(ctx context.Context) (string, error) {
 	return setting.Value, nil
 }
 
-func (m *Reporter) report(id string, metric *metric.Metric) {
+func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 	if err := m.reporter.Report(id, metric); err != nil {
 		log.Error(
 			"Failed to report metric",
@@ -196,6 +196,6 @@ func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
 			log.Error("failed to find the workspace id", zap.Error(err))
 			return
 		}
-		m.report(workspaceID, metric)
+		m.reportMetric(workspaceID, metric)
 	}()
 }

@@ -439,7 +439,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
-		s.initMetricReporter(config.workspaceID)
+		s.initMetricReporter()
 	}
 
 	// Middleware
@@ -650,7 +650,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 }
 
 // initMetricReporter will initial the metric scheduler.
-func (s *Server) initMetricReporter(workspaceID string) {
+func (s *Server) initMetricReporter() {
 	enabled := s.profile.Mode == common.ReleaseModeProd && s.profile.DemoName != "" && !s.profile.DisableMetric
 	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, enabled)
 	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
