@@ -176,7 +176,6 @@ export default defineComponent({
     });
 
     const hasValidMember = computed(() => {
-      console.log("Hola!");
       return (
         state.principalId != UNKNOWN_ID && validateInviteInternal().length == 0
       );
