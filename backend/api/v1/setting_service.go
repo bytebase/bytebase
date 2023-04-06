@@ -143,6 +143,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	return convertToSettingMessage(setting), nil
 }
 
+// DeleteSettingCache deletes the setting cache by name.
 func (s *SettingService) DeleteSettingCache(ctx context.Context, request *v1pb.DeleteSettingCacheRequest) (*emptypb.Empty, error) {
 	settingName, err := getSettingName(request.Name)
 	if err != nil {
