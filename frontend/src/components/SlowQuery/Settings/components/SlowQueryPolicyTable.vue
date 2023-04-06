@@ -3,9 +3,8 @@
     :column-list="COLUMNS"
     :data-source="instanceList"
     :row-clickable="false"
-    :show-placeholder="true"
     row-key="id"
-    class="border w-[50rem] max-w-full"
+    class="border"
   >
     <template #item="{ item: instance }: { item: Instance }">
       <div class="bb-grid-cell">
@@ -49,15 +48,15 @@ const COLUMNS = computed((): BBGridColumn[] => {
   return [
     {
       title: t("common.instance"),
-      width: "minmax(auto, 18rem)",
+      width: "2fr",
     },
     {
       title: t("common.environment"),
-      width: "minmax(auto, 10rem)",
+      width: "minmax(auto, 1fr)",
     },
     {
       title: t("common.active"),
-      width: "1fr",
+      width: "minmax(auto, 6rem)",
     },
   ];
 });

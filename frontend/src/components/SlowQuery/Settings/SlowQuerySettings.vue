@@ -7,19 +7,19 @@
         @update:environment="changeEnvironment"
       />
     </div>
-    <div>
+    <div class="w-[48rem] max-w-full">
+      <SlowQueryPolicyTable
+        :instance-list="state.ready ? filteredInstanceList : []"
+        :policy-list="policyList"
+        :toggle-active="toggleActive"
+        :show-placeholder="state.ready"
+      />
       <div
         v-if="!state.ready"
-        class="relative flex flex-col h-[10rem] items-center justify-center"
+        class="relative flex flex-col h-[8rem] items-center justify-center"
       >
         <BBSpin />
       </div>
-      <SlowQueryPolicyTable
-        v-if="state.ready"
-        :instance-list="filteredInstanceList"
-        :policy-list="policyList"
-        :toggle-active="toggleActive"
-      />
     </div>
   </div>
 </template>
@@ -97,6 +97,7 @@ const prepare = async () => {
       state.instanceList = list.filter(instanceSupportSlowQuery);
     };
     const preparePolicyList = async () => {
+      await new Promise((r) => setTimeout(r, 500));
       await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
         "instance",
         "bb.policy.slow-query"
