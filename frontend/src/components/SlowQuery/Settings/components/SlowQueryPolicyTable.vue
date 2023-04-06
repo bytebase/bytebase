@@ -18,7 +18,8 @@
       <div class="bb-grid-cell">
         <SpinnerSwitch
           :value="isActive(instance)"
-          :on-toggle="(active) => handleToggle(instance, active)"
+          :disabled="!allowAdmin"
+          :on-toggle="(active) => toggleActive(instance, active)"
         />
       </div>
     </template>
@@ -32,15 +33,17 @@ import { useI18n } from "vue-i18n";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
 import type { Instance, Policy, SlowQueryPolicyPayload } from "@/types";
 import { InstanceName, EnvironmentName, SpinnerSwitch } from "@/components/v2/";
-import { useSlowQueryPolicyStore } from "@/store";
+import { useCurrentUser } from "@/store";
+import { hasWorkspacePermission } from "@/utils";
 
 const props = defineProps<{
   instanceList: Instance[];
   policyList: Policy[];
+  toggleActive: (instance: Instance, active: boolean) => Promise<void>;
 }>();
 
 const { t } = useI18n();
-const policyStore = useSlowQueryPolicyStore();
+const currentUser = useCurrentUser();
 
 const COLUMNS = computed((): BBGridColumn[] => {
   return [
@@ -59,6 +62,13 @@ const COLUMNS = computed((): BBGridColumn[] => {
   ];
 });
 
+const allowAdmin = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-slow-query",
+    currentUser.value.role
+  );
+});
+
 const isActive = (instance: Instance) => {
   const policy = props.policyList.find((policy) => {
     return policy.resourceId === instance.id;
@@ -66,23 +76,5 @@ const isActive = (instance: Instance) => {
   if (!policy) return false;
   const payload = policy.payload as SlowQueryPolicyPayload;
   return payload.active;
-};
-
-const handleToggle = async (instance: Instance, active: boolean) => {
-  try {
-    const payload: SlowQueryPolicyPayload = {
-      active,
-    };
-    await policyStore.upsertPolicyByResourceTypeAndPolicyType(
-      "instance",
-      instance.id,
-      "bb.policy.slow-query",
-      {
-        payload,
-      }
-    );
-  } catch {
-    // nothing
-  }
 };
 </script>

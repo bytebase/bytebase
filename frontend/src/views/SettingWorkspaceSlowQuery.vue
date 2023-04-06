@@ -6,10 +6,7 @@
       :description="$t('subscription.features.bb-feature-slow-query.desc')"
     />
 
-    <SlowQuerySettings v-if="state.ready" />
-    <div v-else class="w-full py-[4rem] flex justify-center items-center">
-      <BBSpin />
-    </div>
+    <SlowQuerySettings @show-feature-modal="state.showFeatureModal = true" />
   </div>
 
   <FeatureModal
@@ -20,32 +17,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 
-import { featureToRef, useCurrentUser } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { featureToRef } from "@/store";
 import { SlowQuerySettings } from "@/components/SlowQuery";
 
 interface LocalState {
-  ready: boolean;
   showFeatureModal: boolean;
 }
 
 const state = reactive<LocalState>({
-  ready: false,
   showFeatureModal: false,
 });
 const hasSlowQueryFeature = featureToRef("bb.feature.slow-query");
-
-const currentUser = useCurrentUser();
-const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
-    "bb.permission.workspace.manage-slow-query",
-    currentUser.value.role
-  );
-});
-
-setTimeout(() => {
-  state.ready = true;
-}, 500);
 </script>

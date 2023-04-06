@@ -18,6 +18,7 @@
         v-if="state.ready"
         :instance-list="filteredInstanceList"
         :policy-list="policyList"
+        :toggle-active="toggleActive"
       />
     </div>
   </div>
@@ -27,6 +28,7 @@
 import { computed, onMounted, reactive } from "vue";
 
 import {
+  featureToRef,
   useEnvironmentList,
   useInstanceStore,
   useSlowQueryPolicyStore,
@@ -36,11 +38,16 @@ import {
   EnvironmentId,
   Instance,
   Policy,
+  SlowQueryPolicyPayload,
   UNKNOWN_ID,
 } from "@/types";
 import { EnvironmentTabFilter } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
 import { instanceSupportSlowQuery } from "@/utils";
+
+const emit = defineEmits<{
+  (event: "show-feature-modal"): void;
+}>();
 
 type Filter = {
   environment: Environment | undefined;
@@ -63,6 +70,7 @@ const state = reactive<LocalState>({
 const policyStore = useSlowQueryPolicyStore();
 const instanceStore = useInstanceStore();
 const environmentList = useEnvironmentList(["NORMAL"]);
+const hasSlowQueryFeature = featureToRef("bb.feature.slow-query");
 
 const policyList = computed(() => {
   return policyStore.getPolicyListByResourceTypeAndPolicyType(
@@ -102,6 +110,29 @@ const prepare = async () => {
 
 const changeEnvironment = (id: EnvironmentId | undefined) => {
   state.filter.environment = environmentList.value.find((env) => env.id === id);
+};
+
+const toggleActive = async (instance: Instance, active: boolean) => {
+  if (!hasSlowQueryFeature.value) {
+    emit("show-feature-modal");
+    return;
+  }
+
+  try {
+    const payload: SlowQueryPolicyPayload = {
+      active,
+    };
+    await policyStore.upsertPolicyByResourceTypeAndPolicyType(
+      "instance",
+      instance.id,
+      "bb.policy.slow-query",
+      {
+        payload,
+      }
+    );
+  } catch {
+    // nothing
+  }
 };
 
 onMounted(prepare);
