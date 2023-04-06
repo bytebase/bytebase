@@ -44,3 +44,6 @@ jobs:
       - name: Run pnpm test
         run: pnpm test
         working-directory: frontend
+      - name: Run pnpm release build
+        run: pnpm release-docker
+        working-directory: frontend
