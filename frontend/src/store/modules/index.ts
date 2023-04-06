@@ -22,6 +22,7 @@ export * from "./notification";
 export * from "./oauth";
 export * from "./pipeline";
 export * from "./policy";
+export * from "./slowQueryPolicy";
 export * from "./principal";
 export * from "./project";
 export * from "./projectWebhook";

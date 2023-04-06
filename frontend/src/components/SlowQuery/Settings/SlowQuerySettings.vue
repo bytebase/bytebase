@@ -1,0 +1,108 @@
+<template>
+  <div class="space-y-4 pb-4">
+    <div>
+      <EnvironmentTabFilter
+        :environment="state.filter.environment?.id ?? UNKNOWN_ID"
+        :include-all="true"
+        @update:environment="changeEnvironment"
+      />
+    </div>
+    <div>
+      <div
+        v-if="!state.ready"
+        class="relative flex flex-col h-[10rem] items-center justify-center"
+      >
+        <BBSpin />
+      </div>
+      <SlowQueryPolicyTable
+        v-if="state.ready"
+        :instance-list="filteredInstanceList"
+        :policy-list="policyList"
+      />
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { computed, onMounted, reactive } from "vue";
+
+import {
+  useEnvironmentList,
+  useInstanceStore,
+  useSlowQueryPolicyStore,
+} from "@/store";
+import {
+  Environment,
+  EnvironmentId,
+  Instance,
+  Policy,
+  UNKNOWN_ID,
+} from "@/types";
+import { EnvironmentTabFilter } from "@/components/v2";
+import { SlowQueryPolicyTable } from "./components";
+import { instanceSupportSlowQuery } from "@/utils";
+
+type Filter = {
+  environment: Environment | undefined;
+};
+
+type LocalState = {
+  ready: boolean;
+  instanceList: Instance[];
+  filter: Filter;
+};
+
+const state = reactive<LocalState>({
+  ready: false,
+  instanceList: [],
+  filter: {
+    environment: undefined,
+  },
+});
+
+const policyStore = useSlowQueryPolicyStore();
+const instanceStore = useInstanceStore();
+const environmentList = useEnvironmentList(["NORMAL"]);
+
+const policyList = computed(() => {
+  return policyStore.getPolicyListByResourceTypeAndPolicyType(
+    "instance",
+    "bb.policy.slow-query"
+  );
+});
+
+const filteredInstanceList = computed(() => {
+  const list = state.instanceList;
+  const { environment } = state.filter;
+  if (environment && environment.id !== UNKNOWN_ID) {
+    return list.filter(
+      (instance) => instance.environment.id === environment.id
+    );
+  }
+  return list;
+});
+
+const prepare = async () => {
+  try {
+    const prepareInstanceList = async () => {
+      const list = await instanceStore.fetchInstanceList(["NORMAL"]);
+      state.instanceList = list.filter(instanceSupportSlowQuery);
+    };
+    const preparePolicyList = async () => {
+      await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
+        "instance",
+        "bb.policy.slow-query"
+      );
+    };
+    await Promise.all([prepareInstanceList(), preparePolicyList()]);
+  } finally {
+    state.ready = true;
+  }
+};
+
+const changeEnvironment = (id: EnvironmentId | undefined) => {
+  state.filter.environment = environmentList.value.find((env) => env.id === id);
+};
+
+onMounted(prepare);
+</script>
