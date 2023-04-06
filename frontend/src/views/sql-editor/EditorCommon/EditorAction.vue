@@ -5,11 +5,7 @@
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButton
-        type="primary"
-        :disabled="isEmptyStatement || isExecutingSQL"
-        @click="handleRunQuery"
-      >
+      <NButton type="primary" :disabled="!allowQuery" @click="handleRunQuery">
         <mdi:play class="h-5 w-5 -ml-1.5" />
         <span>
           {{
@@ -19,18 +15,12 @@
 
         <span class="hidden sm:inline">(⌘+⏎)</span>
       </NButton>
-      <NButton
-        :disabled="isEmptyStatement || isExecutingSQL"
-        @click="handleExplainQuery"
-      >
+      <NButton :disabled="!allowQuery" @click="handleExplainQuery">
         <mdi:play class="h-5 w-5 -ml-1.5" />
         <span>Explain</span>
         <span class="hidden sm:inline">(⌘+E)</span>
       </NButton>
-      <NButton
-        :disabled="isEmptyStatement || isExecutingSQL"
-        @click="handleFormatSQL"
-      >
+      <NButton :disabled="!allowQuery" @click="handleFormatSQL">
         <span>{{ $t("sql-editor.format") }}</span>
         <span class="hidden sm:inline">(⇧+⌥+F)</span>
       </NButton>
@@ -113,6 +103,9 @@ const webTerminalStore = useWebTerminalStore();
 
 const connection = computed(() => tabStore.currentTab.connection);
 
+const isDisconnected = computed(() => {
+  return tabStore.isDisconnected;
+});
 const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
@@ -133,6 +126,13 @@ const showRunSelected = computed(() => {
     tabStore.currentTab.mode === TabMode.ReadOnly &&
     !!tabStore.currentTab.selectedStatement
   );
+});
+
+const allowQuery = computed(() => {
+  if (isDisconnected.value) return false;
+  if (isEmptyStatement.value) return false;
+  if (isExecutingSQL.value) return false;
+  return true;
 });
 
 const allowSave = computed(() => {
