@@ -10,7 +10,7 @@
       />
     </div>
     <div
-      class="gap-x-4 w-full overflow-x-auto hide-scrollbar whitespace-nowrap"
+      class="gap-x-4 w-full overflow-x-auto hide-scrollbar whitespace-nowrap py-[3px]"
       aria-label="Tabs"
       :class="responsive ? 'hidden sm:flex' : 'flex'"
     >
