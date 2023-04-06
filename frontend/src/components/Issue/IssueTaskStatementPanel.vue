@@ -136,7 +136,7 @@ import {
   useSheetStore,
   useUIStateStore,
 } from "@/store";
-import { useIssueLogic, TaskTypeWithSheetId, sheetIdOfTask } from "./logic";
+import { useIssueLogic, TaskTypeWithSheetId } from "./logic";
 import {
   Database,
   dialectOfEngine,
@@ -148,7 +148,7 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { useInstanceEditorLanguage } from "@/utils";
+import { sheetIdOfTask, useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
 
