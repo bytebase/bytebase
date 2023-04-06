@@ -49,14 +49,12 @@ const emit = defineEmits<{
   (event: "show-feature-modal"): void;
 }>();
 
-type Filter = {
-  environment: Environment | undefined;
-};
-
 type LocalState = {
   ready: boolean;
   instanceList: Instance[];
-  filter: Filter;
+  filter: {
+    environment: Environment | undefined;
+  };
 };
 
 const state = reactive<LocalState>({
