@@ -254,6 +254,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		userMessage.MFAConfig = &mfaConfig
 		userMessages = append(userMessages, &userMessage)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return userMessages, nil
 }

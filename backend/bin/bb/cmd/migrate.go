@@ -52,7 +52,7 @@ func newMigrateCmd() *cobra.Command {
 			}
 
 			sqlReader := io.MultiReader(sqlReaders...)
-			return migrateDatabase(context.Background(), u, description, issueID, false /*createDatabase*/, sqlReader)
+			return migrateDatabase(context.Background(), u, description, issueID, false /* createDatabase */, sqlReader)
 		}}
 
 	migrateCmd.Flags().StringVar(&dsn, "dsn", "", dsnUsage)

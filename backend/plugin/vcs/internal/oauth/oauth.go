@@ -156,7 +156,7 @@ func getOAuthErrorDetails(code int, body []byte) error {
 	var oe oauthError
 	if err := json.Unmarshal(body, &oe); err != nil {
 		// If we failed to unmarshal body with oauth error, it's not oauthError and we should return nil.
-		//nolint:nilerr
+		// nolint:nilerr
 		return nil
 	}
 	// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
