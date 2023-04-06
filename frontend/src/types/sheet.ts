@@ -30,6 +30,7 @@ interface SheetVCSPayload {
  * "Upload SQL"
  */
 export type SheetIssueBacktracePayload = {
+  type: "bb.sheet.issue-backtrace";
   issueId: IssueId;
   issueName: string;
 };

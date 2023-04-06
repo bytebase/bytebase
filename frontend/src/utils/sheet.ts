@@ -169,6 +169,7 @@ export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
   const store = useSheetStore();
   const requests = uniq(sheetIdList).map((sheetId) => {
     const payload: SheetIssueBacktracePayload = {
+      type: "bb.sheet.issue-backtrace",
       issueId: issue.id,
       issueName: issue.name,
     };
@@ -188,6 +189,7 @@ export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
 export const getSheetIssueBacktracePayload = (sheet: Sheet) => {
   const maybePayload = (sheet.payload ?? {}) as SheetIssueBacktracePayload;
   if (
+    maybePayload.type === "bb.sheet.issue-backtrace" &&
     !isUndefined(maybePayload.issueId) &&
     !isUndefined(maybePayload.issueName)
   ) {
