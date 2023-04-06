@@ -229,7 +229,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
 	unsupportStmt, supportStmt, err := parser.ExtractTiDBUnsupportStmts(statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -251,7 +251,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 
 	stmts, _, err := p.Parse(supportStmt, charset, collation)
 	if err != nil {
-		//nolint: nilerr
+		// nolint: nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -264,7 +264,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	}
 
 	if err != nil {
-		//nolint: nilerr
+		// nolint: nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -344,7 +344,7 @@ func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []api.TaskCheckRe
 func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (result []api.TaskCheckResult, err error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,

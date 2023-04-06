@@ -98,7 +98,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, statement string) ([]api.TaskCheckResult, error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -115,7 +115,7 @@ func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, 
 	for _, stmt := range stmts {
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,
@@ -226,7 +226,7 @@ func getAffectedRowsCountForPostgres(res []any) (int64, error) {
 func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, statement, charset, collation string) ([]api.TaskCheckResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -259,7 +259,7 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,
@@ -283,7 +283,7 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 		}
 		affectedRows, err := getAffectedRowsForMysql(ctx, sqlDB, root[0])
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,

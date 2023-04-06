@@ -163,7 +163,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /* schemaOnly */); err != nil {
 			return "", "", FormatError(err)
 		}
 	}
@@ -181,7 +181,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+		if err := EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /* isDone */); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.String("migration_id", migrationHistoryID),
@@ -219,7 +219,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	}
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /* schemaOnly */); err != nil {
 		// We will ignore the dump error if the database is dropped.
 		if strings.Contains(err.Error(), "not found") {
 			return insertedID, "", nil
