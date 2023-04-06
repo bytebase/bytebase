@@ -2,33 +2,23 @@
   <div>
     <div v-if="responsive" class="block sm:hidden">
       <label for="tabs" class="sr-only">Select a tab</label>
-      <select
-        id="tabs"
-        name="tabs"
-        class="control block w-full"
+      <NSelect
         :disabled="disabled"
-        @change="update(($event.target as HTMLSelectElement).value)"
-      >
-        <option
-          v-for="item in items"
-          :key="item.value"
-          :value="item.value"
-          :selected="value === item.value"
-        >
-          {{ item.label }}
-        </option>
-      </select>
+        :options="items"
+        :value="value"
+        @update:value="$emit('update:value', $event)"
+      />
     </div>
     <div :class="responsive && 'hidden sm:block'">
       <div
-        class="flex space-x-4 w-full overflow-x-auto hide-scrollbar"
+        class="flex gap-x-4 w-full overflow-x-auto hide-scrollbar whitespace-nowrap"
         aria-label="Tabs"
       >
         <button
           v-for="item in items"
           :key="item.value"
           :disabled="disabled"
-          class="tab px-3 py-1 flex items-center whitespace-nowrap disabled:cursor-not-allowed"
+          class="rounded-md text-sm px-3 py-1 flex items-center disabled:cursor-not-allowed transition-colors duration-150"
           :class="[
             value === item.value
               ? 'bg-gray-200 text-gray-800 disabled:bg-gray-100'
@@ -44,6 +34,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NSelect } from "naive-ui";
 import { TabFilterItem } from "./types";
 
 type ValueType = string | number; // Use generic typed component in the future
