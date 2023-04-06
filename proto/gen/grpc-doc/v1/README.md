@@ -301,6 +301,7 @@
     - [RiskService](#bytebase-v1-RiskService)
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
+    - [DeleteSettingCacheRequest](#bytebase-v1-DeleteSettingCacheRequest)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
@@ -4568,6 +4569,21 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 
 
 
+<a name="bytebase-v1-DeleteSettingCacheRequest"></a>
+
+### DeleteSettingCacheRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the setting. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSettingRequest"></a>
 
 ### GetSettingRequest
@@ -4661,6 +4677,7 @@ The data in setting value.
 | ----------- | ------------ | ------------- | ------------|
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
 | SetSetting | [SetSettingRequest](#bytebase-v1-SetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
+| DeleteSettingCache | [DeleteSettingCacheRequest](#bytebase-v1-DeleteSettingCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

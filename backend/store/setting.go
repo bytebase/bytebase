@@ -94,6 +94,10 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 	return setting.toAPISetting(), nil
 }
 
+func (s *Store) DeleteSettingCache(name api.SettingName) {
+	s.settingCache.Delete(name)
+}
+
 // FindSettingMessage is the message for finding setting.
 type FindSettingMessage struct {
 	Name    *api.SettingName

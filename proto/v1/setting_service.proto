@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "generated-go/v1";
 
@@ -20,6 +21,18 @@ service SettingService {
       body: "setting"
     };
   }
+
+  rpc DeleteSettingCache(DeleteSettingCacheRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=settings/*}/cache"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message DeleteSettingCacheRequest {
+  // The resource name of the setting.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // The request message for getting a setting.

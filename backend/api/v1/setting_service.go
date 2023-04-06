@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
@@ -140,6 +141,20 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	}
 
 	return convertToSettingMessage(setting), nil
+}
+
+func (s *SettingService) DeleteSettingCache(ctx context.Context, request *v1pb.DeleteSettingCacheRequest) (*emptypb.Empty, error) {
+	settingName, err := getSettingName(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "setting name is invalid: %v", err)
+	}
+	if settingName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
+	}
+
+	apiSettingName := api.SettingName(settingName)
+	s.store.DeleteSettingCache(apiSettingName)
+	return &emptypb.Empty{}, nil
 }
 
 func convertToSettingMessage(setting *store.SettingMessage) *v1pb.Setting {

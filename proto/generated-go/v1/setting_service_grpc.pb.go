@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SettingService_GetSetting_FullMethodName = "/bytebase.v1.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName = "/bytebase.v1.SettingService/SetSetting"
+	SettingService_GetSetting_FullMethodName         = "/bytebase.v1.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName         = "/bytebase.v1.SettingService/SetSetting"
+	SettingService_DeleteSettingCache_FullMethodName = "/bytebase.v1.SettingService/DeleteSettingCache"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -29,6 +31,7 @@ const (
 type SettingServiceClient interface {
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
+	DeleteSettingCache(ctx context.Context, in *DeleteSettingCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type settingServiceClient struct {
@@ -57,12 +60,22 @@ func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingReq
 	return out, nil
 }
 
+func (c *settingServiceClient) DeleteSettingCache(ctx context.Context, in *DeleteSettingCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, SettingService_DeleteSettingCache_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SettingServiceServer is the server API for SettingService service.
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility
 type SettingServiceServer interface {
 	GetSetting(context.Context, *GetSettingRequest) (*Setting, error)
 	SetSetting(context.Context, *SetSettingRequest) (*Setting, error)
+	DeleteSettingCache(context.Context, *DeleteSettingCacheRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }
 
@@ -75,6 +88,9 @@ func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSetting
 }
 func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSettingRequest) (*Setting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) DeleteSettingCache(context.Context, *DeleteSettingCacheRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSettingCache not implemented")
 }
 func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
 
@@ -125,6 +141,24 @@ func _SettingService_SetSetting_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SettingService_DeleteSettingCache_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSettingCacheRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).DeleteSettingCache(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_DeleteSettingCache_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).DeleteSettingCache(ctx, req.(*DeleteSettingCacheRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +173,10 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSetting",
 			Handler:    _SettingService_SetSetting_Handler,
+		},
+		{
+			MethodName: "DeleteSettingCache",
+			Handler:    _SettingService_DeleteSettingCache_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
