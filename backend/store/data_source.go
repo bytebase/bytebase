@@ -116,6 +116,9 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return dataSourceMessages, nil
 }

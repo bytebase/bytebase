@@ -447,6 +447,10 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 
 		environments = append(environments, &environment)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return environments, nil
 }
 
