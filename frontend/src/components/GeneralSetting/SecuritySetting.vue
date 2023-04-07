@@ -118,7 +118,7 @@ const disallowSignupEnabled = computed((): boolean => {
 const handleDisallowSignupToggle = async (on: boolean) => {
   const payload: WorkspaceProfileSetting = {
     disallowSignup: on,
-    ipList: settingStore.workspaceSetting?.ipList ?? [],
+    outboundIpList: settingStore.workspaceSetting?.outboundIpList ?? [],
     externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
   };
 
