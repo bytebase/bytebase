@@ -1,10 +1,16 @@
 import { computed, watch, type Ref } from "vue";
 import type Emittery from "emittery";
 
-import type { Issue, ReviewFlow } from "@/types";
+import type { Issue, ReviewFlow, WrappedReviewStep } from "@/types";
 import { Review } from "@/types/proto/v1/review_service";
-import { useReviewStore } from "@/store";
-import { provideIssueReviewContext } from "./context";
+import {
+  candidatesOfApprovalStep,
+  extractUserEmail,
+  useAuthStore,
+  useReviewStore,
+  useUserStore,
+} from "@/store";
+import { IssueReviewContext, provideIssueReviewContext } from "./context";
 import { ApprovalTemplate } from "@/types/proto/store/approval";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 
@@ -12,16 +18,9 @@ export type ReviewEvents = {
   "issue-status-changed": boolean;
 };
 
-export const provideIssueReview = (
-  issue: Ref<Issue | undefined>,
-  events: Emittery<ReviewEvents>
-) => {
-  const store = useReviewStore();
-  const review = computed(() => {
-    return issue.value
-      ? store.getReviewByIssue(issue.value)
-      : Review.fromJSON({});
-  });
+export const extractIssueReviewContext = (
+  review: Ref<Review>
+): IssueReviewContext => {
   const ready = computed(() => {
     return review.value.approvalFindingDone ?? false;
   });
@@ -46,6 +45,26 @@ export const provideIssueReview = (
   });
   const error = computed(() => {
     return review.value.approvalFindingError;
+  });
+
+  return {
+    review,
+    ready,
+    flow,
+    done,
+    error,
+  };
+};
+
+export const provideIssueReview = (
+  issue: Ref<Issue | undefined>,
+  events: Emittery<ReviewEvents>
+) => {
+  const store = useReviewStore();
+  const review = computed(() => {
+    return issue.value
+      ? store.getReviewByIssue(issue.value)
+      : Review.fromJSON({});
   });
 
   const update = () => {
@@ -77,12 +96,53 @@ export const provideIssueReview = (
     update();
   });
 
-  provideIssueReviewContext({
-    review,
-    ready,
-    flow,
-    done,
-    error,
+  const context = extractIssueReviewContext(review);
+
+  provideIssueReviewContext(context);
+};
+
+export const useWrappedReviewSteps = (
+  issue: Ref<Issue>,
+  context: IssueReviewContext
+) => {
+  const userStore = useUserStore();
+  const currentUserName = computed(() => useAuthStore().currentUser.name);
+  return computed(() => {
+    const { flow, done } = context;
+    const steps = flow.value.template.flow?.steps;
+    const currentStepIndex = flow.value.currentStepIndex ?? -1;
+
+    const statusOfStep = (index: number) => {
+      if (done.value) return "DONE";
+      if (index < currentStepIndex) return "DONE";
+      if (index === currentStepIndex) return "CURRENT";
+      return "PENDING";
+    };
+    const approverOfStep = (index: number) => {
+      const principal = flow.value.approvers[index]?.principal;
+      if (!principal) return undefined;
+      const email = extractUserEmail(principal);
+      return userStore.getUserByEmail(email);
+    };
+    const candidatesOfStep = (index: number) => {
+      const step = steps?.[index];
+      if (!step) return [];
+      const users = candidatesOfApprovalStep(issue.value, step);
+      const idx = users.indexOf(currentUserName.value);
+      if (idx > 0) {
+        users.splice(idx, 1);
+        users.unshift(currentUserName.value);
+      }
+      return users.map((user) => userStore.getUserByName(user)!);
+    };
+
+    return steps?.map<WrappedReviewStep>((step, index) => ({
+      index,
+      step,
+      status: statusOfStep(index),
+      approver: approverOfStep(index),
+      candidates: candidatesOfStep(index),
+    }));
   });
 };
 
