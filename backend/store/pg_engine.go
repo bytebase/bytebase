@@ -116,13 +116,14 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		// The database storing metadata is the same as user name.
 		databaseName = db.connCfg.Username
 	}
+	pgDriver := d.(*pg.Driver)
 
 	if db.readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// This should be called before d.GetDBConnection because getLatestVersion would call
 		// FindMigrationHistoryList which would invalidate the existing db connection. See
 		// https://github.com/bytebase/bytebase/blame/03cd4ef4f31cb74114144ed282e06b0a00aa40d8/plugin/db/util/driverutil.go#L591
-		ver, err := getLatestVersion(ctx, d, databaseName)
+		ver, err := getLatestVersion(ctx, pgDriver, databaseName)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get current schema version")
 		}
@@ -133,7 +134,6 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		}
 		return ver, nil
 	}
-	pgDriver := d.(*pg.Driver)
 
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
@@ -142,7 +142,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		return nil, err
 	}
 
-	verBefore, err := getLatestVersion(ctx, d, databaseName)
+	verBefore, err := getLatestVersion(ctx, pgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
@@ -151,7 +151,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
-	verAfter, err := getLatestVersion(ctx, d, databaseName)
+	verAfter, err := getLatestVersion(ctx, pgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
@@ -191,7 +191,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 // getLatestVersion returns the latest schema version in semantic versioning format.
 // We expect our own migration history to use semantic versions.
 // If there's no migration history, version will be nil.
-func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (*semver.Version, error) {
+func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (*semver.Version, error) {
 	// We look back the past migration history records and return the latest successful (DONE) migration version.
 	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &database,
