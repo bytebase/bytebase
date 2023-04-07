@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { Environment, Instance } from "@/types";
+import type { Environment } from "@/types";
 import { environmentName, environmentSlug } from "@/utils";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { computed } from "vue";

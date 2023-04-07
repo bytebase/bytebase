@@ -37,7 +37,6 @@ import {
   Environment,
   EnvironmentId,
   Instance,
-  Policy,
   SlowQueryPolicyPayload,
   UNKNOWN_ID,
 } from "@/types";
