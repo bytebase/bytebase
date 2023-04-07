@@ -4,24 +4,20 @@
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
   >
-    <span>{{ environmentName(environment) }}</span>
-    <ProductionEnvironmentIcon
-      :environment="environment"
-      class="!text-current"
-    />
+    <span v-if="prefix" class="ml-1 text-gray-400">{{ prefix }}</span>
+    <span>{{ database.name }}</span>
   </component>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import type { Environment } from "@/types";
-import { environmentName, environmentSlug } from "@/utils";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import type { Database } from "@/types";
+import { databaseSlug } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    environment: Environment;
+    database: Database;
     tag?: string;
     link?: boolean;
   }>(),
@@ -34,12 +30,20 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/environment/${environmentSlug(props.environment)}`,
+      to: `/db/${databaseSlug(props.database)}`,
       onClick: (e: MouseEvent) => {
         e.stopPropagation();
       },
     };
   }
   return {};
+});
+
+const prefix = computed(() => {
+  const { database } = props;
+  if (database.instance.engine === "REDIS") {
+    return database.instance.name;
+  }
+  return "";
 });
 </script>

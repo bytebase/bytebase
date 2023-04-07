@@ -867,7 +867,8 @@
     "authentication-database": "认证数据库",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "create-gcp-credentials": "创建凭据的方法见",
-    "used-for-testing-connection": "仅作测试连接用"
+    "used-for-testing-connection": "仅作测试连接用",
+    "all": "所有实例"
   },
   "environment": {
     "id": "环境 ID",
@@ -1131,7 +1132,8 @@
     "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
     "doesnt-match-database-name-template": "不符合租户数据库名称模板",
     "doesnt-match-tenant-value": "与租户标签值不匹配",
-    "should-follow-database-name-template": "需要遵循租户数据库名称模板"
+    "should-follow-database-name-template": "需要遵循租户数据库名称模板",
+    "all": "所有数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1338,7 +1340,8 @@
       "project-member": "需要来自项目成员的 LGTM",
       "project-owner": "需要来自项目所有者的 LGTM"
     },
-    "successfully-updated-db-name-template": "成功更新数据库名称模板。"
+    "successfully-updated-db-name-template": "成功更新数据库名称模板。",
+    "all": "所有项目"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",

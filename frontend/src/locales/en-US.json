@@ -869,7 +869,8 @@
     "grants": "Grants",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "create-gcp-credentials": "To create Credentials, see",
-    "used-for-testing-connection": "Used for testing connections only"
+    "used-for-testing-connection": "Used for testing connections only",
+    "all": "All instances"
   },
   "environment": {
     "id": "Environment ID",
@@ -1133,7 +1134,8 @@
     "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "doesnt-match-database-name-template": "Doesn't match tenant database name template",
     "doesnt-match-tenant-value": "Doesn't match label value",
-    "should-follow-database-name-template": "Should follow tenant database name template"
+    "should-follow-database-name-template": "Should follow tenant database name template",
+    "all": "All databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1340,7 +1342,8 @@
       "project-member": "Require LGTM from project members",
       "project-owner": "Require LGTM from project owner"
     },
-    "successfully-updated-db-name-template": "Successfully updated database name template."
+    "successfully-updated-db-name-template": "Successfully updated database name template.",
+    "all": "All projects"
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
