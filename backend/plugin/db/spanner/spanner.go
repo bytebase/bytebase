@@ -147,8 +147,22 @@ func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	if createDatabase {
-		return 0, errors.Errorf("cannot set createDatabase to true")
+		stmts, err := sanitizeSQL(statement)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to sanitize %v", statement)
+		}
+		if len(stmts) == 0 {
+			return 0, errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
+		}
+		if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
+			return 0, errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
+		}
+		if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
+			return 0, errors.Wrap(err, "failed to create database")
+		}
+		return 0, nil
 	}
+
 	var rowCount int64
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {

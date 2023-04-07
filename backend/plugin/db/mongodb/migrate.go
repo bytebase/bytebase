@@ -44,12 +44,6 @@ type MigrationHistory struct {
 	Payload             string              `bson:"payload"`
 }
 
-// ExecuteMigration executes a migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
-	_, err := driver.Execute(ctx, statement, m.CreateDatabase)
-	return "", "", err
-}
-
 // FindMigrationHistoryList finds the migration history list.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	database := driver.client.Database(migrationHistoryDefaultDatabase)
