@@ -102,9 +102,9 @@ func (*Driver) GetType() db.Type {
 	return db.Redis
 }
 
-// GetDBConnection is not supported for redis.
-func (*Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return nil, errors.New("redis: not supported")
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
+	panic("redis: not supported")
 }
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres

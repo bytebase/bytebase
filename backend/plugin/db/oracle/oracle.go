@@ -69,9 +69,9 @@ func (*Driver) GetType() db.Type {
 	return db.Oracle
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // Execute executes a SQL statement and returns the affected rows.
