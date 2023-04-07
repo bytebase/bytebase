@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -53,6 +54,13 @@ const (
 
 	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
+
+	// SlowQueryMaxLen is the max length of slow query.
+	SlowQueryMaxLen = 2048
+	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
+	SlowQueryMaxSamplePerFingerprint = 100
+	// SlowQueryMaxSamplePerDay is the max number of slow query samples per day.
+	SlowQueryMaxSamplePerDay = 10000
 )
 
 // User is the database user.
@@ -467,6 +475,11 @@ type Driver interface {
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context, database string) (*storepb.DatabaseMetadata, error)
+
+	// Sync slow query logs
+	// SyncSlowQuery syncs the slow query logs.
+	// The returned map is keyed by database name, and the value is a map keyed by query fingerprint.
+	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error)
 
 	// Role
 	// CreateRole creates the role.

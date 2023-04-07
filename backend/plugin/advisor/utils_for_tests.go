@@ -342,6 +342,11 @@ func (*MockDriver) DeleteRole(_ context.Context, _ string) error {
 	return nil
 }
 
+// SyncSlowQuery implements the Driver interface.
+func (*MockDriver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, nil
+}
+
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
 func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 	var payload []byte
