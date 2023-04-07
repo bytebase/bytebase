@@ -162,33 +162,32 @@ func collapseUnion(query string) (string, error) {
 		}
 		if part == parts[start] {
 			continue
-		} else {
-			if i == start+1 {
-				// The i-th part is not equal to the front part.
-				if _, err := buf.WriteString(separators[i-1]); err != nil {
-					return "", err
-				}
-			} else {
-				// deal with the same parts[start, i-1] and start < i-1.
-				if _, err := buf.WriteString(" /*repeat"); err != nil {
-					return "", err
-				}
-				// Write the last separator between the same parts[start, i-1].
-				// In other words, the last separator is the separator between the i-th part and the (i-1)-th part.
-				// So the index of the last separator is (i-1)-1.
-				if _, err := buf.WriteString(separators[(i-1)-1]); err != nil {
-					return "", err
-				}
-				if _, err := buf.WriteString("*/"); err != nil {
-					return "", err
-				}
+		}
+		if i == start+1 {
+			// The i-th part is not equal to the front part.
+			if _, err := buf.WriteString(separators[i-1]); err != nil {
+				return "", err
 			}
-			start = i
-			// Don't write the sentinel node.
-			if i != len(parts)-1 {
-				if _, err := buf.WriteString(parts[start]); err != nil {
-					return "", err
-				}
+		} else {
+			// deal with the same parts[start, i-1] and start < i-1.
+			if _, err := buf.WriteString(" /*repeat"); err != nil {
+				return "", err
+			}
+			// Write the last separator between the same parts[start, i-1].
+			// In other words, the last separator is the separator between the i-th part and the (i-1)-th part.
+			// So the index of the last separator is (i-1)-1.
+			if _, err := buf.WriteString(separators[(i-1)-1]); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString("*/"); err != nil {
+				return "", err
+			}
+		}
+		start = i
+		// Don't write the sentinel node.
+		if i != len(parts)-1 {
+			if _, err := buf.WriteString(parts[start]); err != nil {
+				return "", err
 			}
 		}
 	}
