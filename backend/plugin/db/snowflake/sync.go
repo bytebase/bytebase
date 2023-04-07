@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -289,4 +292,9 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 	}
 
 	return tableMap, viewMap, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

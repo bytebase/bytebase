@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -112,4 +113,9 @@ func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
 		return 0, errors.Wrapf(err, "failed to convert to int from %v", val["databases"])
 	}
 	return count, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

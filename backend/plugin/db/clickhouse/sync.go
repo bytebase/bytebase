@@ -9,6 +9,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -174,4 +176,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		Name:    databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

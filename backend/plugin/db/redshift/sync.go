@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -714,4 +715,9 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMeta
 		return nil, err
 	}
 	return databases, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }
