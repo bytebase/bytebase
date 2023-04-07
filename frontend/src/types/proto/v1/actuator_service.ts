@@ -10,8 +10,6 @@ export interface GetActuatorInfoRequest {
 }
 
 export interface DeleteCacheRequest {
-  /** The resource name of the setting. */
-  name: string;
 }
 
 /**
@@ -88,14 +86,11 @@ export const GetActuatorInfoRequest = {
 };
 
 function createBaseDeleteCacheRequest(): DeleteCacheRequest {
-  return { name: "" };
+  return {};
 }
 
 export const DeleteCacheRequest = {
-  encode(message: DeleteCacheRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
+  encode(_: DeleteCacheRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
@@ -106,13 +101,6 @@ export const DeleteCacheRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -122,13 +110,12 @@ export const DeleteCacheRequest = {
     return message;
   },
 
-  fromJSON(object: any): DeleteCacheRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+  fromJSON(_: any): DeleteCacheRequest {
+    return {};
   },
 
-  toJSON(message: DeleteCacheRequest): unknown {
+  toJSON(_: DeleteCacheRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -136,9 +123,8 @@ export const DeleteCacheRequest = {
     return DeleteCacheRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
+  fromPartial(_: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
     const message = createBaseDeleteCacheRequest();
-    message.name = object.name ?? "";
     return message;
   },
 };
@@ -371,7 +357,6 @@ export const ActuatorServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
               20,

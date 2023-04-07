@@ -371,11 +371,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the setting. |
-
-
 
 
 
