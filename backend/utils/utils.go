@@ -525,7 +525,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 				return "", "", err
 			}
 		} else {
-			if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
+			if _, err := driver.Execute(ctx, statement, m.CreateDatabase); err != nil {
 				return "", "", err
 			}
 		}

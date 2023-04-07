@@ -8,12 +8,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
-	_, err := driver.Execute(ctx, statement, m.CreateDatabase)
-	return "", "", err
-}
-
 // FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `

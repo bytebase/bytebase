@@ -480,9 +480,6 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Execute migration will apply the statement.
-	// The migration type is determined by m.Type. Note, it can also perform data migration (DML) in addition to schema migration (DDL).
-	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (string, string, error)
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 
