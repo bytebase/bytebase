@@ -1,11 +1,17 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Empty } from "../google/protobuf/empty";
 import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
 export interface GetActuatorInfoRequest {
+}
+
+export interface DeleteCacheRequest {
+  /** The resource name of the setting. */
+  name: string;
 }
 
 /**
@@ -77,6 +83,62 @@ export const GetActuatorInfoRequest = {
 
   fromPartial(_: DeepPartial<GetActuatorInfoRequest>): GetActuatorInfoRequest {
     const message = createBaseGetActuatorInfoRequest();
+    return message;
+  },
+};
+
+function createBaseDeleteCacheRequest(): DeleteCacheRequest {
+  return { name: "" };
+}
+
+export const DeleteCacheRequest = {
+  encode(message: DeleteCacheRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteCacheRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteCacheRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteCacheRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteCacheRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
+    return DeleteCacheRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
+    const message = createBaseDeleteCacheRequest();
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -301,6 +363,43 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    deleteCache: {
+      name: "DeleteCache",
+      requestType: DeleteCacheRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              20,
+              42,
+              18,
+              47,
+              118,
+              49,
+              47,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              47,
+              99,
+              97,
+              99,
+              104,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -309,6 +408,7 @@ export interface ActuatorServiceImplementation<CallContextExt = {}> {
     request: GetActuatorInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ActuatorInfo>>;
+  deleteCache(request: DeleteCacheRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
 export interface ActuatorServiceClient<CallOptionsExt = {}> {
@@ -316,6 +416,7 @@ export interface ActuatorServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetActuatorInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ActuatorInfo>;
+  deleteCache(request: DeepPartial<DeleteCacheRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

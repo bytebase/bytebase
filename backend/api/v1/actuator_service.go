@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -32,6 +33,12 @@ func NewActuatorService(store *store.Store, profile *config.Profile) *ActuatorSe
 // GetActuatorInfo gets the actuator info.
 func (s *ActuatorService) GetActuatorInfo(ctx context.Context, _ *v1pb.GetActuatorInfoRequest) (*v1pb.ActuatorInfo, error) {
 	return s.getServerInfo(ctx)
+}
+
+// DeleteCacheCache deletes the cache.
+func (s *SettingService) DeleteCache(_ context.Context, request *v1pb.DeleteCacheRequest) (*emptypb.Empty, error) {
+	s.store.DeleteCache()
+	return &emptypb.Empty{}, nil
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {

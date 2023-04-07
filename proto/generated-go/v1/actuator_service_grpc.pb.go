@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	ActuatorService_GetActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/GetActuatorInfo"
+	ActuatorService_DeleteCache_FullMethodName     = "/bytebase.v1.ActuatorService/DeleteCache"
 )
 
 // ActuatorServiceClient is the client API for ActuatorService service.
@@ -27,6 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ActuatorServiceClient interface {
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type actuatorServiceClient struct {
@@ -46,11 +49,21 @@ func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, in *GetActu
 	return out, nil
 }
 
+func (c *actuatorServiceClient) DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ActuatorService_DeleteCache_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActuatorServiceServer is the server API for ActuatorService service.
 // All implementations must embed UnimplementedActuatorServiceServer
 // for forward compatibility
 type ActuatorServiceServer interface {
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
+	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedActuatorServiceServer()
 }
 
@@ -60,6 +73,9 @@ type UnimplementedActuatorServiceServer struct {
 
 func (UnimplementedActuatorServiceServer) GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetActuatorInfo not implemented")
+}
+func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteCache not implemented")
 }
 func (UnimplementedActuatorServiceServer) mustEmbedUnimplementedActuatorServiceServer() {}
 
@@ -92,6 +108,24 @@ func _ActuatorService_GetActuatorInfo_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActuatorService_DeleteCache_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCacheRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActuatorServiceServer).DeleteCache(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActuatorService_DeleteCache_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActuatorServiceServer).DeleteCache(ctx, req.(*DeleteCacheRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActuatorService_ServiceDesc is the grpc.ServiceDesc for ActuatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +136,10 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActuatorInfo",
 			Handler:    _ActuatorService_GetActuatorInfo_Handler,
+		},
+		{
+			MethodName: "DeleteCache",
+			Handler:    _ActuatorService_DeleteCache_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

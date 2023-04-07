@@ -21,18 +21,6 @@ service SettingService {
       body: "setting"
     };
   }
-
-  rpc DeleteSettingCache(DeleteSettingCacheRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=settings/*}/cache"
-    };
-    option (google.api.method_signature) = "name";
-  }
-}
-
-message DeleteSettingCacheRequest {
-  // The resource name of the setting.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // The request message for getting a setting.

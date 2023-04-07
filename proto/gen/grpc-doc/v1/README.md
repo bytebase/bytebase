@@ -5,6 +5,7 @@
 
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
+    - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -301,7 +302,6 @@
     - [RiskService](#bytebase-v1-RiskService)
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
-    - [DeleteSettingCacheRequest](#bytebase-v1-DeleteSettingCacheRequest)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
@@ -365,6 +365,21 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
+<a name="bytebase-v1-DeleteCacheRequest"></a>
+
+### DeleteCacheRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the setting. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetActuatorInfoRequest"></a>
 
 ### GetActuatorInfoRequest
@@ -389,6 +404,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
+| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
@@ -4569,21 +4585,6 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 
 
 
-<a name="bytebase-v1-DeleteSettingCacheRequest"></a>
-
-### DeleteSettingCacheRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the setting. |
-
-
-
-
-
-
 <a name="bytebase-v1-GetSettingRequest"></a>
 
 ### GetSettingRequest
@@ -4677,7 +4678,6 @@ The data in setting value.
 | ----------- | ------------ | ------------- | ------------|
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
 | SetSetting | [SetSettingRequest](#bytebase-v1-SetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
-| DeleteSettingCache | [DeleteSettingCacheRequest](#bytebase-v1-DeleteSettingCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

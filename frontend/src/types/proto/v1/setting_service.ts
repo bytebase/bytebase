@@ -1,14 +1,8 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { Empty } from "../google/protobuf/empty";
 
 export const protobufPackage = "bytebase.v1";
-
-export interface DeleteSettingCacheRequest {
-  /** The resource name of the setting. */
-  name: string;
-}
 
 /** The request message for getting a setting. */
 export interface GetSettingRequest {
@@ -45,62 +39,6 @@ export interface Value {
   /** Defines this value as being a string value. */
   stringValue?: string | undefined;
 }
-
-function createBaseDeleteSettingCacheRequest(): DeleteSettingCacheRequest {
-  return { name: "" };
-}
-
-export const DeleteSettingCacheRequest = {
-  encode(message: DeleteSettingCacheRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSettingCacheRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteSettingCacheRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeleteSettingCacheRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: DeleteSettingCacheRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeleteSettingCacheRequest>): DeleteSettingCacheRequest {
-    return DeleteSettingCacheRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<DeleteSettingCacheRequest>): DeleteSettingCacheRequest {
-    const message = createBaseDeleteSettingCacheRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
 
 function createBaseGetSettingRequest(): GetSettingRequest {
   return { name: "" };
@@ -502,71 +440,17 @@ export const SettingServiceDefinition = {
         },
       },
     },
-    deleteSettingCache: {
-      name: "DeleteSettingCache",
-      requestType: DeleteSettingCacheRequest,
-      requestStream: false,
-      responseType: Empty,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          578365826: [
-            new Uint8Array([
-              29,
-              42,
-              27,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              115,
-              101,
-              116,
-              116,
-              105,
-              110,
-              103,
-              115,
-              47,
-              42,
-              125,
-              47,
-              99,
-              97,
-              99,
-              104,
-              101,
-            ]),
-          ],
-        },
-      },
-    },
   },
 } as const;
 
 export interface SettingServiceImplementation<CallContextExt = {}> {
   getSetting(request: GetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
   setSetting(request: SetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
-  deleteSettingCache(
-    request: DeleteSettingCacheRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
 }
 
 export interface SettingServiceClient<CallOptionsExt = {}> {
   getSetting(request: DeepPartial<GetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
   setSetting(request: DeepPartial<SetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
-  deleteSettingCache(
-    request: DeepPartial<DeleteSettingCacheRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
