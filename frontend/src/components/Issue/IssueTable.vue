@@ -104,6 +104,9 @@
         {{ humanizeTs(issue.updatedTs) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
+        <CurrentApprover :issue="issue" />
+      </BBTableCell>
+      <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'SMALL'"
@@ -150,6 +153,7 @@ import {
 import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { useCurrentUser } from "@/store";
+import { CurrentApprover } from "./review";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -176,6 +180,9 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "issue.table.updated",
       },
       {
+        title: "issue.table.approver",
+      },
+      {
         title: "issue.table.assignee",
       },
     ],
@@ -197,6 +204,9 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
       },
       {
         title: "issue.table.updated",
+      },
+      {
+        title: "issue.table.approver",
       },
       {
         title: "issue.table.assignee",

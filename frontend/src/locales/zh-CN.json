@@ -639,7 +639,8 @@
       "db": "数据库",
       "progress": "进度",
       "updated": "更新于",
-      "assignee": "审核人"
+      "approver": "审批人",
+      "assignee": "发布人"
     },
     "stage-select": {
       "active": "{name}（活动中）"
