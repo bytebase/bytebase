@@ -55,7 +55,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		startedTs: time.Now().Unix(),
 		metricReporter: &metricReporter{
 			workspaceID: prof.WorkspaceID,
-			reporter:    segment.NewReporter(prof.MetricConnectionKey, prof.WorkspaceID),
+			reporter:    segment.NewReporter(prof.MetricConnectionKey),
 		},
 	}
 

@@ -16,7 +16,7 @@ func (*mockreporter) Close() {
 }
 
 // Report will exec all the segment reporter.
-func (*mockreporter) Report(_ *metric.Metric) error {
+func (*mockreporter) Report(_ string, _ *metric.Metric) error {
 	return nil
 }
 

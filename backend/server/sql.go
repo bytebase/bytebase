@@ -558,7 +558,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
-		s.MetricReporter.Report(&metric.Metric{
+		s.MetricReporter.Report(ctx, &metric.Metric{
 			Name:  metricAPI.SQLEditorExecutionMetricName,
 			Value: 1,
 			Labels: map[string]any{
@@ -760,7 +760,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
-		s.MetricReporter.Report(&metric.Metric{
+		s.MetricReporter.Report(ctx, &metric.Metric{
 			Name:  metricAPI.SQLEditorExecutionMetricName,
 			Value: 1,
 			Labels: map[string]any{
