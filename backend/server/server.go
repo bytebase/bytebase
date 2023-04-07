@@ -791,6 +791,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 			return nil, err
 		}
 		workspaceProfilePayload.DisallowSignup = payload.DisallowSignup
+		workspaceProfilePayload.IpList = payload.IpList
 		if s.profile.ExternalURL == "" {
 			workspaceProfilePayload.ExternalUrl = payload.ExternalUrl
 		}
