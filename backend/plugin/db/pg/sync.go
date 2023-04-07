@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -603,4 +604,9 @@ func getIndexMethodType(stmt string) string {
 		return ""
 	}
 	return matches[1]
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

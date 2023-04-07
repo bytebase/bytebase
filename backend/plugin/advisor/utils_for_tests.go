@@ -302,11 +302,6 @@ func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
 	return nil
 }
 
-// ExecuteMigration implements the Driver interface.
-func (*MockDriver) ExecuteMigration(_ context.Context, _ *database.MigrationInfo, _ string) (string, string, error) {
-	return "", "", nil
-}
-
 // FindMigrationHistoryList implements the Driver interface.
 func (*MockDriver) FindMigrationHistoryList(_ context.Context, _ *database.MigrationHistoryFind) ([]*database.MigrationHistory, error) {
 	return nil, nil
@@ -345,6 +340,11 @@ func (*MockDriver) ListRole(_ context.Context) ([]*database.DatabaseRoleMessage,
 // DeleteRole deletes the role by name.
 func (*MockDriver) DeleteRole(_ context.Context, _ string) error {
 	return nil
+}
+
+// SyncSlowQuery implements the Driver interface.
+func (*MockDriver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, nil
 }
 
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.

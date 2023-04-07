@@ -641,6 +641,7 @@
       "db": "DB",
       "progress": "Progress",
       "updated": "Updated",
+      "approver": "Approver",
       "assignee": "Assignee"
     },
     "stage-select": {

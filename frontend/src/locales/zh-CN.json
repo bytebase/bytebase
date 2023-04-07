@@ -639,7 +639,8 @@
       "db": "数据库",
       "progress": "进度",
       "updated": "更新于",
-      "assignee": "审核人"
+      "approver": "审批人",
+      "assignee": "发布人"
     },
     "stage-select": {
       "active": "{name}（活动中）"
@@ -2195,7 +2196,7 @@
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "approver": "审批人",
         "group": {
-          "WORKSPACE_OWNER": "管理员",
+          "WORKSPACE_OWNER": "工作空间所有者",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
           "PROJECT_MEMBER": "项目成员"

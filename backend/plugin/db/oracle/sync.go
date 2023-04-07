@@ -3,6 +3,7 @@ package oracle
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -326,4 +327,9 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	}
 
 	return viewMap, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

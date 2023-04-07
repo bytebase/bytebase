@@ -9,8 +9,6 @@ import (
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"go.uber.org/zap"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -32,16 +30,6 @@ func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (boo
 	return false, nil
 }
 
-// NeedsSetupMigration checks if it needs to set up migration.
-func (*Driver) NeedsSetupMigration(context.Context) (bool, error) {
-	return false, nil
-}
-
-// SetupMigrationIfNeeded sets up migration if needed.
-func (*Driver) SetupMigrationIfNeeded(context.Context) error {
-	return nil
-}
-
 func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
 	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
 		Parent:          d.config.Host,
@@ -55,36 +43,6 @@ func (d *Driver) creataDatabase(ctx context.Context, createStatement string, ext
 		return err
 	}
 	return nil
-}
-
-// ExecuteMigration executes a migration.
-// ExecuteMigration will execute the database migration.
-func (d *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (migrationHistoryID string, updatedSchema string, resErr error) {
-	if statement == "" || m.Type == db.Baseline {
-		return "", "", nil
-	}
-
-	if !m.CreateDatabase {
-		if _, err := d.Execute(ctx, statement, m.CreateDatabase); err != nil {
-			return "", "", util.FormatError(err)
-		}
-	} else {
-		stmts, err := sanitizeSQL(statement)
-		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to sanitize %v", statement)
-		}
-		if len(stmts) == 0 {
-			return "", "", errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
-		}
-		if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
-			return "", "", errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
-		}
-		if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
-			return "", "", errors.Wrap(err, "failed to create database")
-		}
-	}
-
-	return "", "", nil
 }
 
 // FindMigrationHistoryList finds the migration history list.

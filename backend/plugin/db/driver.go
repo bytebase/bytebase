@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -53,6 +54,13 @@ const (
 
 	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
+
+	// SlowQueryMaxLen is the max length of slow query.
+	SlowQueryMaxLen = 2048
+	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
+	SlowQueryMaxSamplePerFingerprint = 100
+	// SlowQueryMaxSamplePerDay is the max number of slow query samples per day.
+	SlowQueryMaxSamplePerDay = 10000
 )
 
 // User is the database user.
@@ -468,6 +476,11 @@ type Driver interface {
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context, database string) (*storepb.DatabaseMetadata, error)
 
+	// Sync slow query logs
+	// SyncSlowQuery syncs the slow query logs.
+	// The returned map is keyed by database name, and the value is a map keyed by query fingerprint.
+	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error)
+
 	// Role
 	// CreateRole creates the role.
 	CreateRole(ctx context.Context, upsert *DatabaseRoleUpsertMessage) (*DatabaseRoleMessage, error)
@@ -480,14 +493,6 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Migration related
-	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
-	NeedsSetupMigration(ctx context.Context) (bool, error)
-	// Create or upgrade migration related tables
-	SetupMigrationIfNeeded(ctx context.Context) error
-	// Execute migration will apply the statement.
-	// The migration type is determined by m.Type. Note, it can also perform data migration (DML) in addition to schema migration (DDL).
-	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (string, string, error)
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 
