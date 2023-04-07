@@ -22,8 +22,3 @@ func (d *Driver) ExecuteMigrationWithBeforeCommitTxFunc(ctx context.Context, m *
 	}
 	return "", "", nil
 }
-
-// FindMigrationHistoryList finds the migration history list and return most recent item first.
-func (*Driver) FindMigrationHistoryList(context.Context, *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return nil, errors.New("unsupported")
-}
