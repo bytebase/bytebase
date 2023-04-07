@@ -95,6 +95,7 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 	return setting.toAPISetting(), nil
 }
 
+// DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache = sync.Map{}
 }

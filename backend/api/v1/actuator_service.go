@@ -35,8 +35,8 @@ func (s *ActuatorService) GetActuatorInfo(ctx context.Context, _ *v1pb.GetActuat
 	return s.getServerInfo(ctx)
 }
 
-// DeleteCacheCache deletes the cache.
-func (s *SettingService) DeleteCache(_ context.Context, request *v1pb.DeleteCacheRequest) (*emptypb.Empty, error) {
+// DeleteCache deletes the cache.
+func (s *SettingService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequest) (*emptypb.Empty, error) {
 	s.store.DeleteCache()
 	return &emptypb.Empty{}, nil
 }
