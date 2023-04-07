@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 
@@ -125,52 +124,4 @@ func convertMigrationHistory(history MigrationHistory) (db.MigrationHistory, err
 		UseSemanticVersion:    useSemanticVersion,
 		SemanticVersionSuffix: semanticVersionSuffix,
 	}, nil
-}
-
-// FindLargestSequence finds the largest sequence, return 0 if not found.
-func (driver *Driver) FindLargestSequence(ctx context.Context, _ *sql.Tx, namespace string, baseline bool) (int, error) {
-	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
-	filter := bson.M{
-		"namespace": namespace,
-	}
-	if baseline {
-		filter["type"] = bson.M{"$in": []string{string(db.Baseline), string(db.Branch)}}
-	}
-
-	// Set up MAX(sequence) aggregation.
-	aggregation := []bson.M{
-		{
-			"$match": filter,
-		},
-		{
-			"$group": bson.M{
-				"_id":      nil,
-				"sequence": bson.M{"$max": "$sequence"},
-			},
-		},
-	}
-
-	cursor, err := collection.Aggregate(ctx, aggregation)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to aggregate migration history list to find largest sequence")
-	}
-	defer cursor.Close(ctx)
-
-	var result bson.M
-	if cursor.Next(ctx) {
-		if err := cursor.Decode(&result); err != nil {
-			return 0, errors.Wrapf(err, "failed to decode find largest sequence aggregation result")
-		}
-		if sequence, ok := result["sequence"]; ok {
-			if sequenceInt, ok := sequence.(int64); ok {
-				return int(sequenceInt), nil
-			}
-		}
-		return 0, errors.Errorf("failed to get sequence from find largest sequence aggregation result: %+v", result)
-	}
-	// If cursor contains no data, we check the err, if err is nil, it means that the query is successful, but there is no data.
-	if err := cursor.Err(); err != nil {
-		return 0, errors.Wrapf(err, "failed to find largest sequence")
-	}
-	return 0, nil
 }

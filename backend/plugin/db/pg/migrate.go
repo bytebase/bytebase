@@ -1,9 +1,12 @@
 package pg
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -11,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -19,8 +23,6 @@ import (
 var (
 	//go:embed pg_migration_schema.sql
 	migrationSchema string
-
-	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -46,7 +48,20 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		WHERE table_name = 'migration_history'
 	`
 
-	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		return false, nil
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
@@ -244,9 +259,190 @@ func (*Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationD
 // ExecuteMigrationUsingMigrationHistory will execute the migration and stores the record to migration history.
 func (driver *Driver) ExecuteMigrationUsingMigrationHistory(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
 	if driver.strictUseDb() {
-		return util.ExecuteMigration(ctx, driver, m, statement, driver.strictDatabase)
+		return driver.executeMigration(ctx, m, statement, driver.strictDatabase)
 	}
-	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
+	return driver.executeMigration(ctx, m, statement, db.BytebaseDatabase)
+}
+
+// executeMigration will execute the database migration.
+// Returns the created migration history id and the updated schema on success.
+func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID string, updatedSchema string, resErr error) {
+	var prevSchemaBuf bytes.Buffer
+	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
+	if !m.CreateDatabase {
+		// For baseline migration, we also record the live schema to detect the schema drift.
+		// See https://bytebase.com/blog/what-is-database-schema-drift
+		if _, err := driver.Dump(ctx, m.Database, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+			return "", "", err
+		}
+	}
+
+	// Phase 1 - Pre-check before executing migration
+	// Phase 2 - Record migration history as PENDING
+	insertedID, err := driver.beginMigration(ctx, m, prevSchemaBuf.String(), statement, databaseName)
+	if err != nil {
+		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
+			return insertedID, prevSchemaBuf.String(), nil
+		}
+		return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
+	}
+
+	startedNs := time.Now().UnixNano()
+
+	defer func() {
+		if err := driver.endMigration(ctx, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /* isDone */); err != nil {
+			log.Error("Failed to update migration history record",
+				zap.Error(err),
+				zap.String("migration_id", migrationHistoryID),
+			)
+		}
+	}()
+
+	// Phase 3 - Executing migration
+	// Branch migration type always has empty sql.
+	// Baseline migration type could has non-empty sql but will not execute.
+	// https://github.com/bytebase/bytebase/issues/394
+	doMigrate := true
+	if statement == "" {
+		doMigrate = false
+	}
+	if m.Type == db.Baseline {
+		doMigrate = false
+	}
+	if doMigrate {
+		// Switch to the target database only if we're NOT creating this target database.
+		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
+		if !m.CreateDatabase {
+			if _, err := driver.GetDBConnection(ctx, m.Database); err != nil {
+				return "", "", err
+			}
+		}
+		if _, err := driver.Execute(ctx, statement, m.CreateDatabase); err != nil {
+			return "", "", err
+		}
+	}
+
+	// Phase 4 - Dump the schema after migration
+	var afterSchemaBuf bytes.Buffer
+	if _, err := driver.Dump(ctx, m.Database, &afterSchemaBuf, true /* schemaOnly */); err != nil {
+		// We will ignore the dump error if the database is dropped.
+		if strings.Contains(err.Error(), "not found") {
+			return insertedID, "", nil
+		}
+		return "", "", err
+	}
+
+	return insertedID, afterSchemaBuf.String(), nil
+}
+
+// beginMigration checks before executing migration and inserts a migration history record with pending status.
+func (driver *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID string, err error) {
+	// Convert version to stored version.
+	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to convert to stored version")
+	}
+	// Phase 1 - Pre-check before executing migration
+	// Check if the same migration version has already been applied.
+	if list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+		Database: &m.Namespace,
+		Version:  &m.Version,
+	}); err != nil {
+		return "", errors.Wrap(err, "failed to check duplicate version")
+	} else if len(list) > 0 {
+		migrationHistory := list[0]
+		switch migrationHistory.Status {
+		case db.Done:
+			if migrationHistory.IssueID != m.IssueID {
+				return migrationHistory.ID, common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
+			}
+			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+		case db.Pending:
+			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return migrationHistory.ID, nil
+			}
+			return "", common.Wrap(err, common.MigrationPending)
+		case db.Failed:
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return migrationHistory.ID, nil
+			}
+			return "", common.Wrap(err, common.MigrationFailed)
+		}
+	}
+
+	// We use transaction here for the RDBMS.
+	sqldb, err := driver.GetDBConnection(ctx, databaseName)
+	if err != nil {
+		return "", err
+	}
+	// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	largestSequence, err := driver.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if there is any higher version already been applied since the last baseline or branch.
+	if version, err := driver.FindLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
+		return "", err
+	} else if version != nil && len(*version) > 0 && *version >= m.Version {
+		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
+		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
+	}
+
+	// Phase 2 - Record migration history as PENDING.
+	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
+	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
+	// update the record to DONE together with the updated schema.
+	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
+	if insertedID, err = driver.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
+		return "", err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", err
+	}
+
+	return insertedID, nil
+}
+
+// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
+func (driver *Driver) endMigration(ctx context.Context, startedNs int64, migrationHistoryID string, updatedSchema string, databaseName string, isDone bool) (err error) {
+	migrationDurationNs := time.Now().UnixNano() - startedNs
+
+	sqldb, err := driver.GetDBConnection(ctx, databaseName)
+	if err != nil {
+		return err
+	}
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if isDone {
+		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
+		err = driver.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
+	} else {
+		// Otherwise, update the migration history as 'FAILED', execution_duration.
+		err = driver.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
+	}
+
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // FindMigrationHistoryList finds the migration history.
