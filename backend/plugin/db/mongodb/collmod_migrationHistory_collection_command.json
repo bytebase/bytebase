@@ -1,0 +1,88 @@
+{
+  "collMod": "migration_history",
+  "validator": {
+    "$jsonSchema": {
+      "title": "Bytebase Migration History Object Validation",
+      "required": [
+        "_id",
+        "id",
+        "created_by",
+        "created_ts",
+        "updated_by",
+        "updated_ts",
+        "release_version",
+        "namespace",
+        "sequence",
+        "source",
+        "type",
+        "status",
+        "version",
+        "description",
+        "statement",
+        "execution_duration_ns",
+        "issue_id",
+        "payload"
+      ],
+      "properties": {
+        "_id": {
+          "bsonType": "objectId"
+        },
+        "id": {
+          "bsonType": "long",
+          "minimum": 0
+        },
+        "created_by": {
+          "bsonType": "string"
+        },
+        "created_ts": {
+          "bsonType": "timestamp"
+        },
+        "updated_by": {
+          "bsonType": "string"
+        },
+        "updated_ts": {
+          "bsonType": "timestamp"
+        },
+        "release_version": {
+          "bsonType": "string"
+        },
+        "namespace": {
+          "bsonType": "string"
+        },
+        "sequence": {
+          "bsonType": "long",
+          "minimum": 0
+        },
+        "source": {
+          "bsonType": "string"
+        },
+        "type": {
+          "bsonType": "string"
+        },
+        "status": {
+          "bsonType": "string"
+        },
+        "version": {
+          "bsonType": "string"
+        },
+        "description": {
+          "bsonType": "string"
+        },
+        "statement": {
+          "bsonType": "string"
+        },
+        "execution_duration_ns": {
+          "bsonType": "long"
+        },
+        "issue_id": {
+          "bsonType": "string"
+        },
+        "payload": {
+          "bsonType": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "writeConcern": { "w": "majority" }
+}
