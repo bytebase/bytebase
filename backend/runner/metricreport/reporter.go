@@ -127,8 +127,7 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 func (m *Reporter) getWorkspaceID(ctx context.Context) (string, error) {
 	settingName := api.SettingWorkspaceID
 	setting, err := m.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name:    &settingName,
-		Enforce: true,
+		Name: &settingName,
 	})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get setting %s", settingName)
