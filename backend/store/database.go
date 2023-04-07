@@ -620,6 +620,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 
 		databaseMessages = append(databaseMessages, &databaseMessage)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return databaseMessages, nil
 }

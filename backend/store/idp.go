@@ -301,6 +301,9 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		identityProviderMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		identityProviderMessages = append(identityProviderMessages, &identityProviderMessage)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return identityProviderMessages, nil
 }

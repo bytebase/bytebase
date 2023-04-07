@@ -897,6 +897,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		issues = append(issues, &issue)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)

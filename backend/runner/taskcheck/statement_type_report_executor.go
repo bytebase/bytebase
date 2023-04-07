@@ -79,7 +79,7 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 func reportStatementTypeForMySQL(statement, charset, collation string) ([]api.TaskCheckResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -112,7 +112,7 @@ func reportStatementTypeForMySQL(statement, charset, collation string) ([]api.Ta
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,
@@ -150,7 +150,7 @@ func reportStatementTypeForMySQL(statement, charset, collation string) ([]api.Ta
 func reportStatementTypeForPostgres(statement string) ([]api.TaskCheckResult, error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,

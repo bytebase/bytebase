@@ -227,6 +227,9 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 		}
 		roleMap[role] = append(roleMap[role], member)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	var roles []api.Role
 	for role := range roleMap {
