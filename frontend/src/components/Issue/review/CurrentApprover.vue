@@ -3,7 +3,7 @@
     <template v-if="issue.status !== 'OPEN' || done">
       <span>-</span>
     </template>
-    <template v-if="!ready">
+    <template v-else-if="!ready">
       <BBSpin />
     </template>
     <template v-else-if="currentApprover">
