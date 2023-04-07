@@ -348,7 +348,7 @@ func (*MockDriver) DeleteRole(_ context.Context, _ string) error {
 }
 
 // SyncSlowQuery implements the Driver interface.
-func (*MockDriver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+func (*MockDriver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, nil
 }
 

@@ -119,9 +119,10 @@ func getMySQLFingerprint(query string) (string, error) {
 
 	// Remove ASC sorting in SQL queries.
 	if matched, _ := regexp.MatchString(`\border by `, query); matched {
+		ascRegexp := regexp.MustCompile(`(.+?)\s+asc`)
 		for {
-			if matched, _ := regexp.MatchString(`(.+?)\s+asc`, query); matched {
-				query = regexp.MustCompile(`(.+?)\s+asc`).ReplaceAllString(query, "$1")
+			if matched := ascRegexp.MatchString(query); matched {
+				query = ascRegexp.ReplaceAllString(query, "$1")
 			} else {
 				break
 			}
