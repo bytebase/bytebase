@@ -67,3 +67,18 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase)
 }
+
+func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
+	databases, err := driver.getDatabases(ctx)
+	if err != nil {
+		return false, err
+	}
+	exist := false
+	for _, database := range databases {
+		if database == bytebaseDatabase {
+			exist = true
+			break
+		}
+	}
+	return exist, nil
+}

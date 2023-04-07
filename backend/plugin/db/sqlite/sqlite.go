@@ -116,6 +116,19 @@ func (driver *Driver) getDatabases() ([]string, error) {
 	return databases, nil
 }
 
+func (driver *Driver) hasBytebaseDatabase() (bool, error) {
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return false, err
+	}
+	for _, database := range databases {
+		if database == bytebaseDatabase {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	var remainingStmts []string
