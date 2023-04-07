@@ -179,6 +179,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 }
 
 // SyncSlowQuery syncs the slow query.
-func (_ *Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, errors.Errorf("not implemented")
 }
