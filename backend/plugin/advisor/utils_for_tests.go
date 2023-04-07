@@ -302,11 +302,6 @@ func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
 	return nil
 }
 
-// ExecuteMigration implements the Driver interface.
-func (*MockDriver) ExecuteMigration(_ context.Context, _ *database.MigrationInfo, _ string) (string, string, error) {
-	return "", "", nil
-}
-
 // FindMigrationHistoryList implements the Driver interface.
 func (*MockDriver) FindMigrationHistoryList(_ context.Context, _ *database.MigrationHistoryFind) ([]*database.MigrationHistory, error) {
 	return nil, nil
