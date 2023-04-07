@@ -6,6 +6,7 @@ import {
   RouteRecordRaw,
 } from "vue-router";
 import { useTitle } from "@vueuse/core";
+import { startCase } from "lodash-es";
 
 import BodyLayout from "../layouts/BodyLayout.vue";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
@@ -424,6 +425,14 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("custom-approval.self") },
                 component: () =>
                   import("../views/SettingWorkspaceCustomApproval.vue"),
+                props: true,
+              },
+              {
+                path: "slow-query",
+                name: "setting.workspace.slow-query",
+                meta: { title: () => startCase(t("slow-query.self")) },
+                component: () =>
+                  import("../views/SettingWorkspaceSlowQuery.vue"),
                 props: true,
               },
               {

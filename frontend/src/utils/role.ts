@@ -21,6 +21,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-sensitive-data"
   | "bb.permission.workspace.manage-access-control"
   | "bb.permission.workspace.manage-custom-approval"
+  | "bb.permission.workspace.manage-slow-query"
   | "bb.permission.workspace.manage-subscription"
   // Can execute admininstrive queries such as "SHOW PROCESSLIST"
   | "bb.permission.workspace.admin-sql-editor"
@@ -50,6 +51,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-sensitive-data", [false, true, true]],
   ["bb.permission.workspace.manage-access-control", [false, true, true]],
   ["bb.permission.workspace.manage-custom-approval", [false, true, true]],
+  ["bb.permission.workspace.manage-slow-query", [false, true, true]],
   ["bb.permission.workspace.manage-subscription", [false, false, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
   ["bb.permission.workspace.audit-log", [false, true, true]],
