@@ -15,9 +15,17 @@ service ActuatorService {
     option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
   }
+
+  rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/actuator/cache"
+    };
+  }
 }
 
 message GetActuatorInfoRequest {}
+
+message DeleteCacheRequest {}
 
 // ServerInfo is the API message for server info.
 // Actuator concept is similar to the Spring Boot Actuator.

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -92,6 +93,11 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 		return nil, errors.Wrapf(err, "failed to patch setting with [%+v]", patch)
 	}
 	return setting.toAPISetting(), nil
+}
+
+// DeleteCache deletes the cache.
+func (s *Store) DeleteCache() {
+	s.settingCache = sync.Map{}
 }
 
 // FindSettingMessage is the message for finding setting.
