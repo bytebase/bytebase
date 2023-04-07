@@ -74,11 +74,6 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return driver.db, nil
-}
-
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	return driver.executeWithBeforeCommitTxFunc(ctx, statement, createDatabase, nil)

@@ -127,11 +127,6 @@ func (*Driver) GetDB() *sql.DB {
 	panic("not implemented")
 }
 
-// GetDBConnection gets a database connection.
-func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	panic("not implemented")
-}
-
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	if createDatabase {

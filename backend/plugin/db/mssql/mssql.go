@@ -78,14 +78,6 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf(`USE "%s"`, database)); err != nil {
-		return nil, err
-	}
-	return driver.db, nil
-}
-
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	if createDatabase {

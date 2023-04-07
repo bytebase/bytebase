@@ -46,7 +46,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	driver.dir = config.Host
 
 	// If config.Database is empty, we will get a connection to in-memory database.
-	if _, err := driver.GetDBConnection(ctx, config.Database); err != nil {
+	if _, err := driver.getDBConnection(ctx, config.Database); err != nil {
 		return nil, err
 	}
 	driver.connectionCtx = connCtx
@@ -76,9 +76,9 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// GetDBConnection gets a database connection.
+// getDBConnection gets a database connection.
 // If database is empty, we will get a connect to in-memory database.
-func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
+func (driver *Driver) getDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
 			return nil, err
@@ -132,7 +132,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 			if len(parts) != 3 {
 				return errors.Errorf("invalid statement %q", stmt)
 			}
-			db, err := driver.GetDBConnection(ctx, parts[1])
+			db, err := driver.getDBConnection(ctx, parts[1])
 			if err != nil {
 				return err
 			}

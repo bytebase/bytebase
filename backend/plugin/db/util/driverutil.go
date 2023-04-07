@@ -358,14 +358,9 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, sqldb *sql.DB) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
-	// TODO(d): wtf???
-	sqldb, err := driver.GetDBConnection(ctx, database)
-	if err != nil {
-		return nil, err
-	}
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

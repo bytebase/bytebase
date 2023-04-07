@@ -111,11 +111,6 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return driver.db, nil
-}
-
 // getVersion gets the version.
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT CURRENT_VERSION()"

@@ -432,7 +432,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}, nil
 			}
 
-			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
+			sqlDB := driver.GetDB()
 			if err != nil {
 				return nil, err
 			}

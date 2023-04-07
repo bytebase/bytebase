@@ -242,11 +242,6 @@ func (*MockDriver) GetDB() *sql.DB {
 	return nil
 }
 
-// GetDBConnection implements the Driver interface.
-func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return nil, nil
-}
-
 // Execute implements the Driver interface.
 func (*MockDriver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
 	return 0, nil

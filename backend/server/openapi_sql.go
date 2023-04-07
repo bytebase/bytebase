@@ -134,10 +134,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
 		defer driver.Close(ctx)
-		connection, err = driver.GetDBConnection(ctx, database.DatabaseName)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
-		}
+		connection = driver.GetDB()
 	} else {
 		databaseType = request.DatabaseType
 		if databaseType == "" {

@@ -329,7 +329,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 					return err
 				}
 			} else if strings.HasPrefix(stmt, "\\connect ") {
-				// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
+				// For the case of `\connect "dbname";`, we need to use getDBConnection() instead of executing the statement.
 				parts := strings.Split(stmt, `"`)
 				if len(parts) != 3 {
 					return errors.Errorf("invalid statement %q", stmt)

@@ -136,11 +136,6 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return driver.db, nil
-}
-
 // getDatabases gets all databases of an instance.
 func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	var dbNames []string
