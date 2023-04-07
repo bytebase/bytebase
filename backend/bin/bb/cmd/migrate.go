@@ -70,10 +70,6 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID str
 	}
 	defer driver.Close(ctx)
 
-	if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-		return errors.Wrap(err, "failed to setup migration")
-	}
-
 	migrationCreator := "bb-unknown-creator"
 	if currentUser, err := user.Current(); err == nil {
 		migrationCreator = currentUser.Username
