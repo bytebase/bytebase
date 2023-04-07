@@ -258,6 +258,6 @@ func getViews(txn *sql.Tx) ([]*storepb.ViewMetadata, error) {
 }
 
 // SyncSlowQuery syncs the slow query.
-func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+func (_ *Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, errors.Errorf("not implemented")
 }
