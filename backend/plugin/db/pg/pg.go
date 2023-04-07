@@ -222,10 +222,29 @@ func (*Driver) GetType() db.Type {
 
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
-	if err := driver.switchDatabase(database); err != nil {
+	if driver.db != nil {
+		unregisterConnectionConfig(driver.connectionString)
+		if err := driver.db.Close(); err != nil {
+			return nil, err
+		}
+	}
+
+	dsn := driver.baseDSN + " dbname=" + database
+
+	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
+	if err != nil {
 		return nil, err
 	}
-	return driver.db, nil
+	driver.connectionString = connectionString
+
+	db, err := sql.Open(driverName, driver.connectionString)
+	if err != nil {
+		return nil, err
+	}
+	driver.db = db
+	driver.databaseName = database
+
+	return db, nil
 }
 
 // getDatabases gets all databases of an instance.
@@ -494,29 +513,4 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
-}
-
-func (driver *Driver) switchDatabase(dbName string) error {
-	if driver.db != nil {
-		unregisterConnectionConfig(driver.connectionString)
-		if err := driver.db.Close(); err != nil {
-			return err
-		}
-	}
-
-	dsn := driver.baseDSN + " dbname=" + dbName
-
-	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
-	if err != nil {
-		return err
-	}
-	driver.connectionString = connectionString
-
-	db, err := sql.Open(driverName, driver.connectionString)
-	if err != nil {
-		return err
-	}
-	driver.db = db
-	driver.databaseName = dbName
-	return nil
 }
