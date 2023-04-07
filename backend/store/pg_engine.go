@@ -133,11 +133,12 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		}
 		return ver, nil
 	}
+	pgDriver := d.(*pg.Driver)
 
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
 	// db instance does not have one yet.
-	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
+	if err := pgDriver.SetupMigrationIfNeeded(ctx); err != nil {
 		return nil, err
 	}
 
@@ -146,7 +147,6 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	pgDriver := d.(*pg.Driver)
 	if err := migrate(ctx, pgDriver, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
