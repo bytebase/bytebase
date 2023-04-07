@@ -342,7 +342,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									}
 								}
 
-								s.metricReporter.Report(&metric.Metric{
+								s.metricReporter.Report(ctx, &metric.Metric{
 									Name:  metricAPI.TaskStatusMetricName,
 									Value: 1,
 									Labels: map[string]interface{}{

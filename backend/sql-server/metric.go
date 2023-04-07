@@ -22,7 +22,7 @@ func (m *metricReporter) Report(metric *metric.Metric) {
 		return
 	}
 
-	if err := m.reporter.Report(metric); err != nil {
+	if err := m.reporter.Report(m.workspaceID, metric); err != nil {
 		log.Error(
 			"Failed to report metric",
 			zap.String("metric", string(metricAPI.OpenAPIMetricName)),
