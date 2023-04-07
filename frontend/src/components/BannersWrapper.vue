@@ -72,6 +72,6 @@ const shouldShowReadonlyBanner = computed(() => {
 });
 
 const shouldShowExternalUrlBanner = computed(() => {
-  return !isDev && needConfigureExternalUrl.value;
+  return !isDev() && needConfigureExternalUrl.value;
 });
 </script>
