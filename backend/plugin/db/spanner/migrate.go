@@ -32,16 +32,6 @@ func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (boo
 	return false, nil
 }
 
-// NeedsSetupMigration checks if it needs to set up migration.
-func (*Driver) NeedsSetupMigration(context.Context) (bool, error) {
-	return false, nil
-}
-
-// SetupMigrationIfNeeded sets up migration if needed.
-func (*Driver) SetupMigrationIfNeeded(context.Context) error {
-	return nil
-}
-
 func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
 	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
 		Parent:          d.config.Host,

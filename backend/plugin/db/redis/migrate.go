@@ -9,20 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// Migration related.
-
-// NeedsSetupMigration checks whether we need to setup migration (e.g. creating/upgrading the migration related tables).
-// No need because redis uses bytebase metaDB InstanceChangeHistory.
-func (*Driver) NeedsSetupMigration(context.Context) (bool, error) {
-	return false, nil
-}
-
-// SetupMigrationIfNeeded create or upgrade migration related tables.
-// No need for redis because it uses bytebase metaDB InstanceChangeHistory.
-func (*Driver) SetupMigrationIfNeeded(context.Context) error {
-	return nil
-}
-
 // ExecuteMigration executes a migration.
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
