@@ -12,14 +12,13 @@
         <div
           class="order-3 mt-2 flex-shrink-0 w-full sm:order-2 sm:mt-0 sm:w-auto"
         >
-          <a
-            href="https://www.bytebase.com/docs/get-started/install/external-url?source=console"
-            target="_blank"
+          <router-link
+            to="/setting/general"
             class="flex items-center justify-center pl-4 pr-2 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
             {{ $t("banner.configure-now") }}
             <heroicons-outline:wrench-screwdriver class="ml-1 w-5 h-5" />
-          </a>
+          </router-link>
         </div>
         <div class="order-2 flex-shrink-0 sm:order-3 sm:ml-3">
           <button
