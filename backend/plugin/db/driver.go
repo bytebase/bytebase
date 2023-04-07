@@ -480,9 +480,6 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Find the migration history list and return most recent item first.
-	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
-
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.
 	// The returned string is the JSON encoded metadata for the logical dump.

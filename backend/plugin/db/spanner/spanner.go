@@ -94,23 +94,6 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	return d, nil
 }
 
-func (d *Driver) switchDatabase(ctx context.Context, dbName string) error {
-	if d.dbName == dbName {
-		return nil
-	}
-	if d.client != nil {
-		d.client.Close()
-	}
-	dsn := getDSN(d.config.Host, dbName)
-	client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
-	if err != nil {
-		return err
-	}
-	d.client = client
-	d.dbName = dbName
-	return nil
-}
-
 // Close closes the driver.
 func (d *Driver) Close(_ context.Context) error {
 	if d.client != nil {
@@ -206,6 +189,21 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 		return 0, err
 	}
 	return rowCount, nil
+}
+
+func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
+	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
+		Parent:          d.config.Host,
+		CreateStatement: createStatement,
+		ExtraStatements: extraStatement,
+	})
+	if err != nil {
+		return err
+	}
+	if _, err := op.Wait(ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 // QueryConn querys statements.

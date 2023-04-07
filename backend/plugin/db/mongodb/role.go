@@ -12,6 +12,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	// bytebaseDefaultDatabase is the default database name for bytebase.
+	bytebaseDefaultDatabase = "bytebase"
+)
+
 // CreateRole creates the role.
 func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	return nil, errors.Errorf("create role for MongoDB is not implemented yet")
@@ -39,7 +44,7 @@ func (*Driver) DeleteRole(_ context.Context, _ string) error {
 
 // getUserList returns the list of users.
 func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
-	database := driver.client.Database(migrationHistoryDefaultDatabase)
+	database := driver.client.Database(bytebaseDefaultDatabase)
 	command := bson.D{{
 		Key: "usersInfo",
 		Value: bson.D{{
