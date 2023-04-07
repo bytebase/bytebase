@@ -199,8 +199,13 @@ func (*Driver) GetType() db.Type {
 	return db.Redshift
 }
 
-// GetDBConnection returns the database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
+
+// getDBConnection returns the database connection.
+func (driver *Driver) getDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
 	}
@@ -275,12 +280,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 					return err
 				}
 			} else if strings.HasPrefix(stmt, "\\connect ") {
-				// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
+				// For the case of `\connect "dbname";`, we need to use getDBConnection() instead of executing the statement.
 				parts := strings.Split(stmt, `"`)
 				if len(parts) != 3 {
 					return errors.Errorf("invalid statement %q", stmt)
 				}
-				if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
+				if _, err = driver.getDBConnection(ctx, parts[1]); err != nil {
 					return err
 				}
 				// Update current owner

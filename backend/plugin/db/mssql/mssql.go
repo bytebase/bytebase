@@ -73,12 +73,9 @@ func (*Driver) GetType() db.Type {
 	return db.MSSQL
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf(`USE "%s"`, database)); err != nil {
-		return nil, err
-	}
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // Execute executes a SQL statement and returns the affected rows.

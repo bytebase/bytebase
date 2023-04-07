@@ -342,11 +342,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
 			defer driver.Close(ctx)
-			connection, err := driver.GetDBConnection(ctx, exec.DatabaseName)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
-			}
-
+			connection := driver.GetDB()
 			adviceLevel, adviceList, err = s.sqlCheck(
 				ctx,
 				dbType,
@@ -436,7 +432,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}, nil
 			}
 
-			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
+			sqlDB := driver.GetDB()
 			if err != nil {
 				return nil, err
 			}
@@ -636,10 +632,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}, nil
 			}
 
-			sqlDB, err := driver.GetDBConnection(ctx, exec.DatabaseName)
-			if err != nil {
-				return nil, err
-			}
+			sqlDB := driver.GetDB()
 			conn, err := sqlDB.Conn(ctx)
 			if err != nil {
 				return nil, err

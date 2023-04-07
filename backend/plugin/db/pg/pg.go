@@ -220,6 +220,11 @@ func (*Driver) GetType() db.Type {
 	return db.Postgres
 }
 
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
+
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if driver.db != nil {
@@ -324,7 +329,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 					return err
 				}
 			} else if strings.HasPrefix(stmt, "\\connect ") {
-				// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
+				// For the case of `\connect "dbname";`, we need to use getDBConnection() instead of executing the statement.
 				parts := strings.Split(stmt, `"`)
 				if len(parts) != 3 {
 					return errors.Errorf("invalid statement %q", stmt)

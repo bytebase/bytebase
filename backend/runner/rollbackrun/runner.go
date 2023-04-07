@@ -151,11 +151,7 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 	}
 	defer driver.Close(ctx)
 
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection")
-	}
-
+	db := driver.GetDB()
 	// Get the undo SQL from the undo log.
 	var statements bytes.Buffer
 	rows, err := db.QueryContext(ctx, "SELECT undo_sql FROM flashback_transaction_query WHERE xid=HEXTORAW(:1)", payload.TransactionID)

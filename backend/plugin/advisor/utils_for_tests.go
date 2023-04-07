@@ -237,9 +237,9 @@ func (*MockDriver) GetType() database.Type {
 	return database.Type("MOCK")
 }
 
-// GetDBConnection implements the Driver interface.
-func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return nil, nil
+// GetDB gets the database.
+func (*MockDriver) GetDB() *sql.DB {
+	return nil
 }
 
 // Execute implements the Driver interface.
