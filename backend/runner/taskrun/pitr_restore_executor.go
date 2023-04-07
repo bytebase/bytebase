@@ -386,6 +386,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 		return nil, errors.Wrapf(err, "failed to get the OWNER of database %q", database.DatabaseName)
 	}
 
+	// TODO(d): wtf???
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
@@ -401,6 +402,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 	}
 	// Switch to the PITR database.
 	// TODO(dragonly): This is a trick, needs refactor.
+	// TODO(d): wtf???
 	if _, err := driver.GetDBConnection(ctx, pitrDatabaseName); err != nil {
 		return nil, errors.Wrapf(err, "failed to switch connection to database %q", pitrDatabaseName)
 	}

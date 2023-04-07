@@ -75,6 +75,11 @@ func (*Driver) GetType() db.Type {
 	return db.MongoDB
 }
 
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
+	panic("mongodb doesn't support GetD")
+}
+
 // GetDBConnection returns a database connection.
 // It always return nil because it has not implemented the SQL interface, and we always return error, it's caller's responsibility to
 // avoid calling this function for MongoDB.

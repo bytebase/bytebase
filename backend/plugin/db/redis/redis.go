@@ -102,6 +102,11 @@ func (*Driver) GetType() db.Type {
 	return db.Redis
 }
 
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
+	panic("redis: not supported")
+}
+
 // GetDBConnection is not supported for redis.
 func (*Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
 	return nil, errors.New("redis: not supported")

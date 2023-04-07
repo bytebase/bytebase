@@ -215,10 +215,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 }
 
 func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, issue *store.IssueMessage, databaseName string) error {
-	driverDB, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return err
-	}
+	driverDB := driver.GetDB()
 	conn, err := driverDB.Conn(ctx)
 	if err != nil {
 		return err
@@ -237,6 +234,7 @@ func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driv
 func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, issue *store.IssueMessage, databaseName string) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, issue.CreatedTime.Unix())
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(databaseName, issue.CreatedTime.Unix())
+	// TODO(d): wtf???
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return errors.Wrap(err, "failed to get connection for PostgreSQL")

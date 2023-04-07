@@ -464,6 +464,7 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	GetType() Type
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
+	GetDB() *sql.DB
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)

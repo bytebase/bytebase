@@ -71,6 +71,11 @@ func (*Driver) GetType() db.Type {
 	return db.SQLite
 }
 
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
+
 // GetDBConnection gets a database connection.
 // If database is empty, we will get a connect to in-memory database.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {

@@ -361,6 +361,7 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
+	// TODO(d): wtf???
 	sqldb, err := driver.GetDBConnection(ctx, database)
 	if err != nil {
 		return nil, err

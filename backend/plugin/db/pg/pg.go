@@ -220,6 +220,11 @@ func (*Driver) GetType() db.Type {
 	return db.Postgres
 }
 
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
+
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if driver.db != nil {

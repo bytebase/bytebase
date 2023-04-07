@@ -199,6 +199,11 @@ func (*Driver) GetType() db.Type {
 	return db.Redshift
 }
 
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
+
 // GetDBConnection returns the database connection.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {

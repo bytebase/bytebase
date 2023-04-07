@@ -106,6 +106,11 @@ func (*Driver) GetType() db.Type {
 	return db.Snowflake
 }
 
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
+
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
 	return driver.db, nil

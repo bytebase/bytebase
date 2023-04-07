@@ -122,6 +122,11 @@ func (*Driver) GetType() db.Type {
 	return db.Spanner
 }
 
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
+	panic("not implemented")
+}
+
 // GetDBConnection gets a database connection.
 func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	panic("not implemented")
