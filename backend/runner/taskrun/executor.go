@@ -284,10 +284,7 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	}
 	payload.ThreadID = connID
 
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the DB connection")
-	}
+	db := driver.GetDB()
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
@@ -323,10 +320,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	}
 
 	payload.MigrationID = migrationID
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the DB connection")
-	}
+	db := driver.GetDB()
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")

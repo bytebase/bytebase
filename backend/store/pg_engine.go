@@ -98,7 +98,7 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly 
 
 // Open opens the database connection.
 func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err error) {
-	d, err := dbdriver.Open(
+	driver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
@@ -116,7 +116,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		// The database storing metadata is the same as user name.
 		databaseName = db.connCfg.Username
 	}
-	pgDriver := d.(*pg.Driver)
+	pgDriver := driver.(*pg.Driver)
 
 	if db.readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
@@ -128,7 +128,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 			return nil, errors.Wrap(err, "failed to get current schema version")
 		}
 
-		db.db, err = d.GetDBConnection(ctx, databaseName)
+		db.db, err = pgDriver.GetDBConnection(ctx, databaseName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
 		}
@@ -157,7 +157,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	db.db, err = d.GetDBConnection(ctx, databaseName)
+	db.db, err = pgDriver.GetDBConnection(ctx, databaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
 	}

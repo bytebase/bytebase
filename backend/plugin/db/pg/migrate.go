@@ -311,7 +311,7 @@ func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo,
 	}
 	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
-		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
+		// We should not call getDBConnection() if the instance is MongoDB because it doesn't support.
 		if !m.CreateDatabase {
 			if _, err := driver.GetDBConnection(ctx, m.Database); err != nil {
 				return "", "", err
@@ -501,7 +501,11 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if driver.strictUseDb() {
 		database = driver.strictDatabase
 	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, database)
+	db, err := driver.GetDBConnection(ctx, database)
+	if err != nil {
+		return nil, err
+	}
+	return util.FindMigrationHistoryList(ctx, query, params, db)
 }
 
 func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
