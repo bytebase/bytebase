@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
+    <NetworkSetting v-if="!isSaaSMode" />
     <BrandingSetting />
     <SecuritySetting />
-    <NetworkSetting v-if="!isSaaSMode" />
     <AIAugmentationSetting />
   </div>
 </template>
