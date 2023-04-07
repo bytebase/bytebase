@@ -330,6 +330,14 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 
 // AddWebhook adds a webhook to a given project.
 func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhookRequest) (*v1pb.Project, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -473,6 +481,14 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 
 // TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebhookRequest) (*v1pb.TestWebhookResponse, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -499,11 +515,6 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	}
 	if webhook == nil {
 		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	err = webhookPlugin.Post(

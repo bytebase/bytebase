@@ -45,6 +45,15 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 	g.POST("/project/:projectID/webhook", func(c echo.Context) error {
 		ctx := c.Request().Context()
+
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace setting").SetInternal(err)
+		}
+		if setting.ExternalUrl == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url")
+		}
+
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -198,6 +207,15 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 	g.GET("/project/:projectID/webhook/:webhookID/test", func(c echo.Context) error {
 		ctx := c.Request().Context()
+
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace setting").SetInternal(err)
+		}
+		if setting.ExternalUrl == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url")
+		}
+
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -224,11 +242,6 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		if webhook == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
-		}
-
-		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
 		result := &api.ProjectWebhookTestResult{}
