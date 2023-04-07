@@ -27,6 +27,8 @@ const (
 	// greetingBanner is the greeting banner.
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
 	greetingBanner = `
+___________________________________________________________________________________________
+
 ██████╗ ██╗   ██╗████████╗███████╗██████╗  █████╗ ███████╗███████╗
 ██╔══██╗╚██╗ ██╔╝╚══██╔══╝██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝
 ██████╔╝ ╚████╔╝    ██║   █████╗  ██████╔╝███████║███████╗█████╗
@@ -35,12 +37,6 @@ const (
 ╚═════╝    ╚═╝      ╚═╝   ╚══════╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
 
 %s
-
-************* External Visiting URL (--external-url) *************
-
-%s
-
-******************************************************************
 ___________________________________________________________________________________________
 
 `
@@ -258,11 +254,7 @@ func start() {
 		return
 	}
 
-	externalAddr := profile.ExternalURL
-	if profile.ExternalURL == "" {
-		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLPlaceholder)
-	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s (schema version %v) has started on port %d", profile.Version, s.SchemaVersion, flags.port), externalAddr)
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s (schema version %v) has started on port %d", profile.Version, s.SchemaVersion, flags.port))
 
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {

@@ -58,6 +58,14 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, request *v1pb.CreateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
 	if request.IdentityProvider == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider must be set")
 	}
@@ -192,6 +200,9 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
