@@ -44,7 +44,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
 
-		s.MetricReporter.Report(&metric.Metric{
+		s.MetricReporter.Report(ctx, &metric.Metric{
 			Name:  metricAPI.IssueCreateMetricName,
 			Value: 1,
 			Labels: map[string]any{
