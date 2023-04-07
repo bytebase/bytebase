@@ -14,7 +14,8 @@ export type PolicyType =
   | "bb.policy.sql-review"
   | "bb.policy.environment-tier"
   | "bb.policy.sensitive-data"
-  | "bb.policy.access-control";
+  | "bb.policy.access-control"
+  | "bb.policy.slow-query";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -92,13 +93,18 @@ export type AccessControlPolicyPayload = {
   disallowRuleList: AccessControlRule[];
 };
 
+export type SlowQueryPolicyPayload = {
+  active: boolean;
+};
+
 export type PolicyPayload =
   | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
   | SQLReviewPolicyPayload
   | EnvironmentTierPolicyPayload
   | SensitiveDataPolicyPayload
-  | AccessControlPolicyPayload;
+  | AccessControlPolicyPayload
+  | SlowQueryPolicyPayload;
 
 export type PolicyResourceType =
   | ""

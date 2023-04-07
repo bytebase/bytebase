@@ -7,7 +7,7 @@ import {
   languageOfEngine,
   MaybeRef,
 } from "../types";
-import { isDev } from "./util";
+import { isDev, semverCompare } from "./util";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
@@ -131,4 +131,12 @@ export const instanceHasSSL = (
     "ORACLE",
     "MARIADB",
   ].includes(engine);
+};
+
+export const instanceSupportSlowQuery = (instance: Instance) => {
+  const { engine } = instance;
+  if (engine === "MYSQL") {
+    return semverCompare(instance.engineVersion, "5.7", "gte");
+  }
+  return false;
 };

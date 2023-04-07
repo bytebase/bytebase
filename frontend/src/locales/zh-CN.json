@@ -232,7 +232,8 @@
     "deleted": "已删除",
     "will-override-current-data": "将会覆盖当前数据。",
     "rollout": "发布",
-    "uploading": "上传中"
+    "uploading": "上传中",
+    "active": "开启"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1763,6 +1764,10 @@
         "title": "自定义审批",
         "desc": "为不同的任务配置安全风险等级和自定义审批流。"
       },
+      "bb-feature-slow-query": {
+        "title": "慢查询",
+        "desc": "记录与分析慢速的 SQL 查询。"
+      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
         "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
@@ -2226,5 +2231,24 @@
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单"
     }
+  },
+  "slow-query": {
+    "self": "慢查询",
+    "slow-queries": "慢查询",
+    "last-query-time": "最近执行时间",
+    "database-name": "数据库名",
+    "sql-statement": "SQL 语句",
+    "total-query-count": "总执行次数",
+    "query-time-95-percent": "执行时长（95%）",
+    "query-time-avg": "平均执行时长",
+    "rows-examined-95-percent": "扫描行数（95%）",
+    "rows-sent-95-percent": "返回行数（95%）",
+    "rows-examined-avg": "平均扫描行数",
+    "rows-sent-avg": "平均返回行数",
+    "query-start-time": "执行开始时间",
+    "rows-examined": "解析行数",
+    "rows-sent": "返回行数",
+    "lock-time": "持有锁时长",
+    "query-time": "执行时长"
   }
 }
