@@ -234,7 +234,8 @@
     "deleted": "Deleted",
     "will-override-current-data": "Will override current data.",
     "rollout": "Roll out",
-    "uploading": "Uploading"
+    "uploading": "Uploading",
+    "active": "Active"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1764,6 +1765,10 @@
         "title": "Custom approval",
         "desc": "Configure security risk level and approval flow for different tasks."
       },
+      "bb-feature-slow-query": {
+        "title": "Slow query",
+        "desc": "Logging and analyzing slow SQL queries."
+      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
         "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
@@ -2229,5 +2234,24 @@
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue"
     }
+  },
+  "slow-query": {
+    "self": "Slow query",
+    "slow-queries": "Slow queries",
+    "last-query-time": "Last query time",
+    "database-name": "Database name",
+    "sql-statement": "SQL statement",
+    "total-query-count": "Total query count",
+    "query-time-95-percent": "Query time (95%)",
+    "query-time-avg": "Query time avg.",
+    "rows-examined-95-percent": "Rows examined (95%)",
+    "rows-sent-95-percent": "Rows sent (95%)",
+    "rows-examined-avg": "Rows examined avg.",
+    "rows-sent-avg": "Rows sent avg.",
+    "query-start-time": "Query start time",
+    "rows-examined": "Rows examined",
+    "rows-sent": "Rows sent",
+    "lock-time": "Lock time",
+    "query-time": "Query time"
   }
 }

@@ -84,6 +84,11 @@
             >{{ $t("sql-review.title") }}</router-link
           >
           <router-link
+            to="/setting/slow-query"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2 capitalize"
+            >{{ $t("slow-query.self") }}</router-link
+          >
+          <router-link
             to="/setting/risk-center"
             class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
