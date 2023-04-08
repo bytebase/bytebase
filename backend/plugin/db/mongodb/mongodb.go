@@ -34,6 +34,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	client        *mongo.Client
+	databaseName  string
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -51,6 +52,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.Connection
 	driver.client = client
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
+	driver.databaseName = connCfg.Database
 	return driver, nil
 }
 

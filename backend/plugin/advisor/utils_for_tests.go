@@ -288,7 +288,7 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, 
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
+func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseMetadata, error) {
 	return nil, nil
 }
 

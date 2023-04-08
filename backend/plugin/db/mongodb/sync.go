@@ -81,20 +81,20 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
 
-	exist, err := driver.isDatabaseExist(ctx, databaseName)
+	exist, err := driver.isDatabaseExist(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
 	if !exist {
-		return nil, errors.Errorf("database %s does not exist", databaseName)
+		return nil, errors.Errorf("database %s does not exist", driver.databaseName)
 	}
 
-	database := driver.client.Database(databaseName)
+	database := driver.client.Database(driver.databaseName)
 	collectionList, err := database.ListCollectionNames(ctx, bson.M{"type": "collection"})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list collection names")
@@ -160,7 +160,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	return &storepb.DatabaseMetadata{
-		Name:    databaseName,
+		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
 }

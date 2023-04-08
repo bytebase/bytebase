@@ -46,8 +46,8 @@ type Driver struct {
 	client   *spanner.Client
 	dbClient *spannerdb.DatabaseAdminClient
 
-	// dbName is the currently connected database name.
-	dbName string
+	// databaseName is the currently connected database name.
+	databaseName string
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -65,7 +65,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	d.connCtx = connCtx
 	if config.Database == "" {
 		// try to connect to bytebase
-		d.dbName = db.BytebaseDatabase
+		d.databaseName = db.BytebaseDatabase
 		dsn := getDSN(d.config.Host, db.BytebaseDatabase)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if status.Code(err) == codes.NotFound {
@@ -76,7 +76,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 			d.client = client
 		}
 	} else {
-		d.dbName = d.config.Database
+		d.databaseName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if err != nil {
@@ -163,7 +163,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 
 	if ddl {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-			Database:   getDSN(d.config.Host, d.dbName),
+			Database:   getDSN(d.config.Host, d.databaseName),
 			Statements: stmts,
 		})
 		if err != nil {
@@ -265,7 +265,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]any, error) {
 	if isDDL(statement) {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-			Database:   getDSN(d.config.Host, d.dbName),
+			Database:   getDSN(d.config.Host, d.databaseName),
 			Statements: []string{statement},
 		})
 		if err != nil {

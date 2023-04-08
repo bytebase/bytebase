@@ -27,7 +27,8 @@ func init() {
 
 // Driver is the redis driver.
 type Driver struct {
-	rdb redis.UniversalClient
+	rdb          redis.UniversalClient
+	databaseName string
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -55,6 +56,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		}
 		db = database
 	}
+	d.databaseName = fmt.Sprintf("%d", db)
 
 	d.rdb = redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:     []string{addr},

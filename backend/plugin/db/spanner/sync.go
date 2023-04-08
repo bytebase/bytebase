@@ -59,28 +59,28 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
-	notFound, err := d.notFoundDatabase(ctx, databaseName)
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+	notFound, err := d.notFoundDatabase(ctx, d.databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to check if database exists")
 	}
 	if notFound {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
 
 	tx := d.client.ReadOnlyTransaction()
 	defer tx.Close()
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
+		Name: d.databaseName,
 	}
 	tableMap, err := getTable(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
 	viewMap, err := getView(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
 
 	schemaNameMap := make(map[string]bool)

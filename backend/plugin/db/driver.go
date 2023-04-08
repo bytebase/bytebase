@@ -474,7 +474,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*storepb.DatabaseMetadata, error)
+	SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error)
 
 	// Sync slow query logs
 	// SyncSlowQuery syncs the slow query logs.

@@ -41,6 +41,7 @@ type Driver struct {
 	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
+	databaseName  string
 	// migrationConn is used to execute migrations.
 	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
 	// So that it's easy to get the thread ID for rollback SQL.
@@ -109,6 +110,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
+	driver.databaseName = connCfg.Database
 
 	return driver, nil
 }

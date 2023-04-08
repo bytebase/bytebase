@@ -58,7 +58,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
@@ -66,24 +66,24 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
+		Name: driver.databaseName,
 	}
 	found := false
 	for _, database := range databases {
-		if database == databaseName {
+		if database == driver.databaseName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	schemaList, err := driver.getSchemaList(ctx, databaseName)
+	schemaList, err := driver.getSchemaList(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
-	tableMap, viewMap, err := driver.getTableSchema(ctx, databaseName)
+	tableMap, viewMap, err := driver.getTableSchema(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}

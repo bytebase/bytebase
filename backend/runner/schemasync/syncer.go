@@ -265,7 +265,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 	defer driver.Close(ctx)
 	// Sync database schema
-	databaseMetadata, err := driver.SyncDBSchema(ctx, database.DatabaseName)
+	databaseMetadata, err := driver.SyncDBSchema(ctx)
 	if err != nil {
 		return err
 	}
