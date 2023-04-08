@@ -153,7 +153,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 

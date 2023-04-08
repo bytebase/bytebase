@@ -303,7 +303,7 @@ func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
 }
 
 // Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
+func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 

@@ -464,8 +464,7 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	GetType() Type
 	GetDB() *sql.DB
-	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
-	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
+	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
@@ -494,10 +493,10 @@ type Driver interface {
 	DeleteRole(ctx context.Context, roleName string) error
 
 	// Dump and restore
-	// Dump the database, if dbName is empty, then dump all databases.
+	// Dump the database.
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
+	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from src, which is a full backup.
 	Restore(ctx context.Context, src io.Reader) error
 }

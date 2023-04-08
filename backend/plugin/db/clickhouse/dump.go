@@ -33,14 +33,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, _ bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return "", err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out); err != nil {
+	if err := dumpTxn(ctx, txn, driver.databaseName, out); err != nil {
 		return "", err
 	}
 
