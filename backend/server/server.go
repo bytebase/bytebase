@@ -300,7 +300,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if profile.Readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
-		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB.ConnCfg, !profile.UseEmbedDB(), profile.DemoName, profile.Version, profile.Mode)
+		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB.ConnCfg, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
 		if err != nil {
 			return nil, err
 		}

@@ -52,7 +52,7 @@ var migrationFS embed.FS
 var demoFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, strictUseDb bool, demoName, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
+func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, strictUseDb bool, pgBinDir, demoName, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
 	databaseName := connCfg.Database
 	if !strictUseDb {
 		// The database storing metadata is the same as user name.
@@ -65,7 +65,7 @@ func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, stric
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{},
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		metadataConnConfig,
 		dbdriver.ConnectionContext{},
 	)
@@ -79,7 +79,7 @@ func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, stric
 	bytebaseDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{},
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		bytebaseConnConfig,
 		dbdriver.ConnectionContext{},
 	)
