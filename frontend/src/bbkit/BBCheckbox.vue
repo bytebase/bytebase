@@ -7,10 +7,13 @@
         :class="[disabled && !value && 'bg-control-bg']"
         :disabled="disabled"
         :checked="value"
-        @input="
+        @click.prevent="
           () => {
             on = !on;
             $emit('toggle', on);
+            // Prevent dirty state.
+            // reference: https://stackoverflow.com/questions/74847997/vue3-controlling-checkbox-checked-state-by-a-component-prop
+            on = value;
           }
         "
       />
