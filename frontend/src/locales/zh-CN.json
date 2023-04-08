@@ -703,7 +703,7 @@
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。"
     },
-    "waiting-to-roll-out": "等待发布",
+    "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称"
   },
@@ -939,7 +939,7 @@
     }
   },
   "policy": {
-    "roll-out": {
+    "rollout": {
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动发布。",
