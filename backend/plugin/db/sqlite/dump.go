@@ -13,8 +13,8 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
-	if database == "" {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+	if driver.databaseName == "" {
 		return "", errors.Errorf("SQLite can dump one database only at a time")
 	}
 
@@ -25,16 +25,16 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	exist := false
 	for _, n := range databases {
-		if n == database {
+		if n == driver.databaseName {
 			exist = true
 			break
 		}
 	}
 	if !exist {
-		return "", errors.Errorf("database %s not found", database)
+		return "", errors.Errorf("database %s not found", driver.databaseName)
 	}
 
-	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {
+	if err := driver.dumpOneDatabase(ctx, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}
 
