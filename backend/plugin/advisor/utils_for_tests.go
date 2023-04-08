@@ -288,7 +288,7 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, 
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
+func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseMetadata, error) {
 	return nil, nil
 }
 
@@ -303,7 +303,7 @@ func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
 }
 
 // Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
+func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
 	if !schemaOnly {
 		return "", errors.New("Dump can only dump schemas")
 	}
@@ -19,18 +19,18 @@ func (d *Driver) Dump(ctx context.Context, database string, out io.Writer, schem
 		return "", err
 	}
 	var dumpableDbNames []string
-	if database != "" {
+	if d.databaseName != "" {
 		exist := false
 		for _, db := range instance.Databases {
-			if db.Name == database {
+			if db.Name == d.databaseName {
 				exist = true
 				break
 			}
 		}
 		if !exist {
-			return "", errors.Errorf("database %q not found", database)
+			return "", errors.Errorf("database %q not found", d.databaseName)
 		}
-		dumpableDbNames = []string{database}
+		dumpableDbNames = []string{d.databaseName}
 	} else {
 		for _, db := range instance.Databases {
 			dumpableDbNames = append(dumpableDbNames, db.Name)

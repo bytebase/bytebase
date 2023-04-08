@@ -85,7 +85,7 @@ var (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.
@@ -100,8 +100,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
-			zap.String("database", database))
-		if err := FlushTablesWithReadLock(ctx, conn, database); err != nil {
+			zap.String("database", driver.databaseName))
+		if err := FlushTablesWithReadLock(ctx, conn, driver.databaseName); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
@@ -135,8 +135,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", database), zap.Bool("schemaOnly", schemaOnly))
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+	log.Debug("begin to dump database", zap.String("database", driver.databaseName), zap.Bool("schemaOnly", schemaOnly))
+	if err := dumpTxn(ctx, txn, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}
 

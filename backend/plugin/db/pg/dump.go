@@ -16,7 +16,7 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
@@ -26,18 +26,18 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 
 	var dumpableDbNames []string
-	if database != "" {
+	if driver.databaseName != "" {
 		exist := false
 		for _, n := range databases {
-			if n.Name == database {
+			if n.Name == driver.databaseName {
 				exist = true
 				break
 			}
 		}
 		if !exist {
-			return "", errors.Errorf("database %s not found", database)
+			return "", errors.Errorf("database %s not found", driver.databaseName)
 		}
-		dumpableDbNames = []string{database}
+		dumpableDbNames = []string{driver.databaseName}
 	} else {
 		for _, n := range databases {
 			if excludedDatabaseList[n.Name] {

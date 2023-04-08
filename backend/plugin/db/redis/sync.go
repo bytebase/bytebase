@@ -53,8 +53,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context, database string) (*storepb.DatabaseMetadata, error) {
-	return &storepb.DatabaseMetadata{Name: database}, nil
+func (d *Driver) SyncDBSchema(context.Context) (*storepb.DatabaseMetadata, error) {
+	return &storepb.DatabaseMetadata{Name: d.databaseName}, nil
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {

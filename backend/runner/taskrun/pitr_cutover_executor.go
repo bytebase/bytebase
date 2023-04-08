@@ -149,7 +149,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		IssueID:        strconv.Itoa(issue.UID),
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
 		return true, nil, err
 	}
