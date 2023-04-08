@@ -149,8 +149,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	// history[0] is SchemaUpdate
-	// history[1] is CreateDatabase
-	a.Equal(2, len(history))
+	a.Equal(1, len(history))
 	latest := history[0]
 
 	err = ctl.createDatabase(project, instance, newDatabaseName, "bytebase", nil)
