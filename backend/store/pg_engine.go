@@ -99,12 +99,12 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly 
 
 // Open opens the database connection.
 func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err error) {
-	var databaseName string
-	if db.connCfg.StrictUseDb {
-		databaseName = db.connCfg.Database
-	} else {
+	databaseName := db.connCfg.Database
+	if !db.connCfg.StrictUseDb {
 		// The database storing metadata is the same as user name.
 		databaseName = db.connCfg.Username
+
+		// Create the metadata database.
 		defaultDriver, err := dbdriver.Open(
 			ctx,
 			dbdriver.Postgres,
@@ -124,22 +124,6 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		}
 	}
 
-	bytebaseConnConfig := db.connCfg
-	if !db.connCfg.StrictUseDb {
-		bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
-	}
-	bytebaseDriver, err := dbdriver.Open(
-		ctx,
-		dbdriver.Postgres,
-		dbdriver.DriverConfig{DbBinDir: db.binDir},
-		bytebaseConnConfig,
-		dbdriver.ConnectionContext{},
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer bytebaseDriver.Close(ctx)
-
 	metadataConnConfig := db.connCfg
 	if !db.connCfg.StrictUseDb {
 		metadataConnConfig.Database = databaseName
@@ -156,21 +140,6 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 	}
 	// Don't close metadataDriver.
 	db.metadataDriver = metadataDriver
-
-	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
-	if db.readonly {
-		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
-		// This should be called before d.GetDBConnection because getLatestVersion would call
-		// FindMigrationHistoryList which would invalidate the existing db connection. See
-		// https://github.com/bytebase/bytebase/blame/03cd4ef4f31cb74114144ed282e06b0a00aa40d8/plugin/db/util/driverutil.go#L591
-		ver, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get current schema version")
-		}
-
-		db.db = metadataDriver.GetDB()
-		return ver, nil
-	}
 	db.db = metadataDriver.GetDB()
 	// Set the max open connections so that we won't exceed the connection limit of metaDB.
 	// The limit is the max connections minus connections reserved for superuser.
@@ -188,9 +157,31 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 	}
 	db.db.SetMaxOpenConns(maxOpenConns)
 
+	if db.readonly {
+		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+		return nil, nil
+	}
+
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
 	// db instance does not have one yet.
+	bytebaseConnConfig := db.connCfg
+	if !db.connCfg.StrictUseDb {
+		bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
+	}
+	bytebaseDriver, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{DbBinDir: db.binDir},
+		bytebaseConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer bytebaseDriver.Close(ctx)
+	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
+
 	if err := bytebasePgDriver.SetupMigrationIfNeeded(ctx); err != nil {
 		return nil, err
 	}
