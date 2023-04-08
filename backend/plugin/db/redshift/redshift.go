@@ -206,35 +206,28 @@ func (driver *Driver) GetDB() *sql.DB {
 
 // getDBConnection returns the database connection.
 func (driver *Driver) getDBConnection(_ context.Context, database string) (*sql.DB, error) {
-	if err := driver.switchDatabase(database); err != nil {
-		return nil, err
-	}
-	return driver.db, nil
-}
-
-func (driver *Driver) switchDatabase(dbName string) error {
 	if driver.db != nil {
 		unregisterConnectionConfig(driver.connectionString)
 		if err := driver.db.Close(); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	dsn := driver.baseDSN + " dbname=" + dbName
+	dsn := driver.baseDSN + " dbname=" + database
 
 	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	driver.connectionString = connectionString
 
 	db, err := sql.Open(driverName, driver.connectionString)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	driver.db = db
-	driver.databaseName = dbName
-	return nil
+	driver.databaseName = database
+	return driver.db, nil
 }
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
