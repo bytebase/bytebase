@@ -177,14 +177,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Schema:     dumpedSchema,
 			SchemaPrev: "",
 		},
-		{
-			Database:   databaseName,
-			Source:     db.UI,
-			Type:       db.Migrate,
-			Status:     db.Done,
-			Schema:     "",
-			SchemaPrev: "",
-		},
 	}
 	a.Equal(len(wantHistories), len(histories))
 	for i, history := range histories {
@@ -237,14 +229,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Status:     db.Done,
 			Schema:     dumpedSchema,
 			SchemaPrev: dumpedSchema,
-		},
-		{
-			Database:   cloneDatabaseName,
-			Source:     db.UI,
-			Type:       db.Migrate,
-			Status:     db.Done,
-			Schema:     "",
-			SchemaPrev: "",
 		},
 	}
 	a.Equal(len(wantCloneHistories), len(histories))
@@ -718,14 +702,6 @@ func TestVCS(t *testing.T) {
 					Type:       db.Migrate,
 					Status:     db.Done,
 					Schema:     dumpedSchema,
-					SchemaPrev: "",
-				},
-				{
-					Database:   databaseName,
-					Source:     db.UI,
-					Type:       db.Migrate,
-					Status:     db.Done,
-					Schema:     "",
 					SchemaPrev: "",
 				},
 			}
@@ -2637,14 +2613,6 @@ WHERE table_schema = '%s';
 					Status:     db.Done,
 					Schema:     updatedSchema,
 					SchemaPrev: initialSchema,
-				},
-				{
-					Database:   databaseName,
-					Source:     db.UI,
-					Type:       db.Migrate,
-					Status:     db.Done,
-					Schema:     initialSchema,
-					SchemaPrev: "",
 				},
 			}
 			a.Equal(len(wantHistories), len(histories))
