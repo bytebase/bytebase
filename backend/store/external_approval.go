@@ -81,7 +81,7 @@ func (s *Store) CreateExternalApprovalV2(ctx context.Context, create *ExternalAp
 		&externalApproval.Type,
 		&externalApproval.Payload,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
@@ -159,7 +159,7 @@ func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExte
 		&externalApproval.Type,
 		&externalApproval.Payload,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -206,7 +206,7 @@ func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *list
 		externalApprovals = append(externalApprovals, &externalApproval)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return externalApprovals, nil

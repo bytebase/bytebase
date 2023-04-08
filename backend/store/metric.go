@@ -10,7 +10,7 @@ import (
 func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, FormatError(err)
+		return 0, err
 	}
 	defer tx.Rollback()
 
@@ -21,7 +21,7 @@ func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int
 	FROM principal
 	WHERE principal.type = $1`,
 		userType).Scan(&count); err != nil {
-		return 0, FormatError(err)
+		return 0, err
 	}
 
 	if err := tx.Commit(); err != nil {

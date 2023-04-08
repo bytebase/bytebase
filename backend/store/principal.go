@@ -105,7 +105,7 @@ type UserMessage struct {
 func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -115,7 +115,7 @@ func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessag
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if len(users) == 0 {
@@ -130,7 +130,7 @@ func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessag
 func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -140,7 +140,7 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	for _, user := range users {
@@ -157,7 +157,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -173,7 +173,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	}
 	user := users[0]
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.userIDCache.Store(user.ID, user)
@@ -215,7 +215,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -232,7 +232,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			&role,
 			&rowStatus,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if role.Valid {
 			userMessage.Role = api.Role(role.String)
@@ -271,7 +271,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -292,7 +292,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		`, strings.Join(set, ","), strings.Join(placeholder, ",")),
 		args...,
 	).Scan(&userID); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var count int
@@ -328,7 +328,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	user := &UserMessage{
@@ -383,7 +383,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -407,7 +407,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	mfaConfig := storepb.MFAConfig{}
 	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
@@ -431,12 +431,12 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	user.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	s.userIDCache.Store(user.ID, user)
 	return user, nil
