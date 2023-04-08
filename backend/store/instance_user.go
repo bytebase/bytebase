@@ -115,11 +115,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage) ([]string, []*InstanceUserMessage) {

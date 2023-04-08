@@ -89,10 +89,7 @@ func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *a
 	if _, err := tx.ExecContext(ctx, stmt, upsert.Enabled, upsert.EnvironmentID); err != nil {
 		return err
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }
 
 // FindBackupSettingsMatch finds a list of backup setting instances with match conditions.

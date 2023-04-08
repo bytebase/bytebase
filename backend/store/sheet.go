@@ -145,11 +145,7 @@ func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error 
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 // CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.

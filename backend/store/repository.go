@@ -141,11 +141,7 @@ func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDele
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 //

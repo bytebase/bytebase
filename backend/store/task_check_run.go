@@ -84,11 +84,7 @@ func (s *Store) CreateTaskCheckRun(ctx context.Context, creates ...*TaskCheckRun
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunMessage) error {
