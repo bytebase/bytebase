@@ -287,14 +287,38 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// Execute executes a SQL statement.
+// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
+// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+	if createDatabase {
+		databases, err := driver.getDatabases(ctx)
+		if err != nil {
+			return 0, err
+		}
+		databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
+		if err != nil {
+			return 0, err
+		}
+		exist := false
+		for _, database := range databases {
+			if database.Name == databaseName {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+				return 0, err
+			}
+		}
+		return 0, nil
+	}
+
 	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
 		return 0, err
 	}
 
-	connected := false
 	var remainingStmts []string
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
@@ -302,81 +326,26 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		// We don't use transaction for creating / altering databases in Postgres.
 		// We will execute the statement directly before "\\connect" statement.
 		// https://github.com/bytebase/bytebase/issues/202
-		if createDatabase && !connected {
-			if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-				databases, err := driver.getDatabases(ctx)
-				if err != nil {
-					return err
-				}
-				databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
-				if err != nil {
-					return err
-				}
-				exist := false
-				for _, database := range databases {
-					if database.Name == databaseName {
-						exist = true
-						break
-					}
-				}
-				if !exist {
-					if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-						return err
-					}
-				}
-			} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
-				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-					return err
-				}
-			} else if strings.HasPrefix(stmt, "\\connect ") {
-				// For the case of `\connect "dbname";`, we need to use getDBConnection() instead of executing the statement.
-				parts := strings.Split(stmt, `"`)
-				if len(parts) != 3 {
-					return errors.Errorf("invalid statement %q", stmt)
-				}
-				if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
-					return err
-				}
-				// Update current owner
-				if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
-					return err
-				}
-				connected = true
-			} else {
-				sqlResult, err := driver.db.ExecContext(ctx, stmt)
-				if err != nil {
-					return err
-				}
-				rowsAffected, err := sqlResult.RowsAffected()
-				if err != nil {
-					// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-					log.Debug("rowsAffected returns error", zap.Error(err))
-				} else {
-					totalRowsAffected += rowsAffected
-				}
+		if isSuperuserStatement(stmt) {
+			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
+			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
+			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
+			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
+			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
+				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}
-		} else {
-			if isSuperuserStatement(stmt) {
-				// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-				// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-				// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-				// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-				if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-					stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-				}
-				// Use superuser privilege to run privileged statements.
-				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE \"%s\";", stmt, owner)
-				remainingStmts = append(remainingStmts, stmt)
-			} else if isNonTransactionStatement(stmt) {
-				nonTransactionStmts = append(nonTransactionStmts, stmt)
-			} else if !isIgnoredStatement(stmt) {
-				remainingStmts = append(remainingStmts, stmt)
-			}
+			// Use superuser privilege to run privileged statements.
+			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", stmt, owner)
+			remainingStmts = append(remainingStmts, stmt)
+		} else if isNonTransactionStatement(stmt) {
+			nonTransactionStmts = append(nonTransactionStmts, stmt)
+		} else if !isIgnoredStatement(stmt) {
+			remainingStmts = append(remainingStmts, stmt)
 		}
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(parser.Redshift, strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
@@ -388,7 +357,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		defer tx.Rollback()
 
 		// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE \"%s\"", owner)); err != nil {
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
 			return 0, err
 		}
 

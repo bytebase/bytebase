@@ -34,7 +34,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		return "", errors.Errorf("database %s not found", driver.databaseName)
 	}
 
-	if err := driver.dumpOneDatabase(ctx, driver.databaseName, out, schemaOnly); err != nil {
+	if err := driver.dumpOneDatabase(ctx, out, schemaOnly); err != nil {
 		return "", err
 	}
 
@@ -47,11 +47,7 @@ type sqliteSchema struct {
 	statement  string
 }
 
-func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
-	if _, err := driver.getDBConnection(ctx, database); err != nil {
-		return err
-	}
-
+func (driver *Driver) dumpOneDatabase(ctx context.Context, out io.Writer, schemaOnly bool) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return err
