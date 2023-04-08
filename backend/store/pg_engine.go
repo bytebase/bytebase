@@ -148,7 +148,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
-		db.connCfg,
+		metadataConnConfig,
 		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
@@ -171,6 +171,22 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		db.db = metadataDriver.GetDB()
 		return ver, nil
 	}
+	db.db = metadataDriver.GetDB()
+	// Set the max open connections so that we won't exceed the connection limit of metaDB.
+	// The limit is the max connections minus connections reserved for superuser.
+	var maxConns, reservedConns int
+	if err := db.db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
+		return nil, errors.Wrap(err, "failed to get max_connections from metaDB")
+	}
+	if err := db.db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
+		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
+	}
+	maxOpenConns := maxConns - reservedConns
+	if maxOpenConns > 50 {
+		// capped to 50
+		maxOpenConns = 50
+	}
+	db.db.SetMaxOpenConns(maxOpenConns)
 
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
@@ -193,23 +209,6 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
-
-	db.db = metadataDriver.GetDB()
-	// Set the max open connections so that we won't exceed the connection limit of metaDB.
-	// The limit is the max connections minus connections reserved for superuser.
-	var maxConns, reservedConns int
-	if err := db.db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
-		return nil, errors.Wrap(err, "failed to get max_connections from metaDB")
-	}
-	if err := db.db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
-		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
-	}
-	maxOpenConns := maxConns - reservedConns
-	if maxOpenConns > 50 {
-		// capped to 50
-		maxOpenConns = 50
-	}
-	db.db.SetMaxOpenConns(maxOpenConns)
 
 	if err := db.setupDemoData(); err != nil {
 		return nil, errors.Wrapf(err, "failed to setup demo data."+
