@@ -49,6 +49,15 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+	var version string
+	if err := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
+		return "", err
+	}
+	return version, nil
+}
+
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	databases, err := driver.getDatabases()
@@ -74,11 +83,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	sqldb, err := driver.getDBConnection(ctx, driver.databaseName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", driver.databaseName)
-	}
-	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
