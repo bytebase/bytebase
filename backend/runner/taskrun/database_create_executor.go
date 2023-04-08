@@ -179,7 +179,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 		return "", "", nil
 	}
 
-	schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project)
+	schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, database)
 	if err != nil {
 		return "", "", err
 	}
@@ -277,12 +277,18 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage) (string, string, error) {
-	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (string, string, error) {
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+	}
+	var databases []*store.DatabaseMessage
+	for _, d := range allDatabases {
+		if d.UID != database.UID {
+			databases = append(databases, d)
+		}
 	}
 
 	deploymentConfig, err := stores.GetDeploymentConfigV2(ctx, project.UID)
