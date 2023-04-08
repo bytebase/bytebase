@@ -107,12 +107,14 @@ import {
   useSettingByName,
   useSettingStore,
   useActuatorStore,
+  useUserStore,
 } from "@/store";
 import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
 import { FeatureType } from "@/types";
+import { UserType } from "@/types/proto/v1/auth_service";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
@@ -121,6 +123,7 @@ const state = reactive<LocalState>({});
 const { t } = useI18n();
 const settingStore = useSettingStore();
 const currentUser = useCurrentUser();
+const userStore = useUserStore();
 const actuatorStore = useActuatorStore();
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
@@ -166,6 +169,23 @@ const handleRequire2FAToggle = async (on: boolean) => {
   if (!has2FAFeature.value) {
     state.featureNameForModal = "bb.feature.2fa";
     return;
+  }
+
+  if (on) {
+    // Only allow to enable this when all users have enabled 2FA.
+    const userList = userStore.userList
+      .filter((user) => user.userType === UserType.USER)
+      .filter((user) => !user.mfaEnabled);
+    if (userList.length > 0) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: t(
+          "settings.general.workspace.require-2fa.need-all-user-2fa-enabled"
+        ),
+      });
+      return;
+    }
   }
 
   const payload: WorkspaceProfileSetting = {
