@@ -1,4 +1,4 @@
-package store
+package migrator
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -200,9 +201,9 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 	defer bytebaseDriver.Close(ctx)
 	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
-	db := NewDB(connCfg, "", "", false, "", common.ReleaseModeDev)
-	db.db = metadataDriver.GetDB()
-	storeInstance := New(db)
+	db := store.NewDB(connCfg, "", "", false, "", common.ReleaseModeDev)
+	err = db.Open(ctx)
+	require.NoError(t, err)
 
 	err = bytebasePgDriver.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
@@ -211,7 +212,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create initial schema.
-	err = initializeSchema(ctx, storeInstance, bytebasePgDriver, releaseVersion, databaseName, db.serverVersion)
+	err = initializeSchema(ctx, metadataDriver.GetDB(), bytebasePgDriver, releaseVersion, databaseName, serverVersion)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err := bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
@@ -222,7 +223,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	err = migrate(ctx, bytebasePgDriver, db.db, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
+	err = migrate(ctx, bytebasePgDriver, metadataDriver.GetDB(), releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err = bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
@@ -232,7 +233,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Len(t, histories, 1)
 
 	// Apply migration to dev latest if there are patches.
-	err = migrate(ctx, bytebasePgDriver, db.db, releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
+	err = migrate(ctx, bytebasePgDriver, metadataDriver.GetDB(), releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
 	require.NoError(t, err)
 
 	// Check migration history.
