@@ -71,8 +71,10 @@
             :disabled="!allowEdit"
             :value="require2FAEnabled"
             @toggle="handleRequire2FAToggle"
-            :title="$t('settings.general.workspace.require-2fa.enable')"
           />
+          <span class="font-medium">{{
+            $t("settings.general.workspace.require-2fa.enable")
+          }}</span>
           <FeatureBadge feature="bb.feature.2fa" class="text-accent" />
           <span
             v-if="!allowEdit"
