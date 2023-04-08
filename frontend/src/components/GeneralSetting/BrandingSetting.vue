@@ -91,7 +91,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
 import {
@@ -132,7 +132,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-settingStore.fetchSetting().then(() => {
+watchEffect(() => {
   const brandingLogoSetting =
     settingStore.getSettingByName("bb.branding.logo")!;
   state.logoUrl = brandingLogoSetting.value;
@@ -175,7 +175,7 @@ const uploadLogo = async () => {
 
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
-    const setting = await useSettingStore().updateSettingByName({
+    const setting = await settingStore.updateSettingByName({
       name: "bb.branding.logo",
       value: fileInBase64,
     });

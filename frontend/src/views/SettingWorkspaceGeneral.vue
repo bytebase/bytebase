@@ -8,6 +8,7 @@
 </template>
 
 <script lang="ts" setup>
+import { onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import {
   BrandingSetting,
@@ -15,9 +16,12 @@ import {
   NetworkSetting,
   AIAugmentationSetting,
 } from "@/components/GeneralSetting";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useSettingStore } from "@/store";
 
 const actuatorStore = useActuatorStore();
 
+onMounted(async () => {
+  await useSettingStore().fetchSetting();
+});
 const { isSaaSMode } = storeToRefs(actuatorStore);
 </script>

@@ -112,7 +112,6 @@ import {
 import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
-import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
 import { FeatureType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 
@@ -148,15 +147,8 @@ const require2FAEnabled = computed((): boolean => {
 });
 
 const handleDisallowSignupToggle = async (on: boolean) => {
-  const payload: WorkspaceProfileSetting = {
+  await settingStore.updateWorkspaceProfile({
     disallowSignup: on,
-    externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
-    require2fa: settingStore.workspaceSetting?.require2fa ?? false,
-  };
-
-  await settingStore.updateSettingByName({
-    name: "bb.workspace.profile",
-    value: JSON.stringify(payload),
   });
   pushNotification({
     module: "bytebase",
@@ -188,14 +180,8 @@ const handleRequire2FAToggle = async (on: boolean) => {
     }
   }
 
-  const payload: WorkspaceProfileSetting = {
-    disallowSignup: settingStore.workspaceSetting?.disallowSignup || false,
-    externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
+  await settingStore.updateWorkspaceProfile({
     require2fa: on,
-  };
-  await settingStore.updateSettingByName({
-    name: "bb.workspace.profile",
-    value: JSON.stringify(payload),
   });
   pushNotification({
     module: "bytebase",
