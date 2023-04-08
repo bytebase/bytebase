@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -52,8 +53,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context, database string) (*storepb.DatabaseMetadata, error) {
-	return &storepb.DatabaseMetadata{Name: database}, nil
+func (d *Driver) SyncDBSchema(context.Context) (*storepb.DatabaseMetadata, error) {
+	return &storepb.DatabaseMetadata{Name: d.databaseName}, nil
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
@@ -112,4 +113,9 @@ func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
 		return 0, errors.Wrapf(err, "failed to convert to int from %v", val["databases"])
 	}
 	return count, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

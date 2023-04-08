@@ -487,6 +487,11 @@
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
         },
+        "require-2fa": {
+          "enable": "要求所有用户配置双重认证",
+          "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
+          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项"
+        },
         "network": "网络",
         "external-url": {
           "self": "External URL",
@@ -639,7 +644,8 @@
       "db": "数据库",
       "progress": "进度",
       "updated": "更新于",
-      "assignee": "审核人"
+      "approver": "审批人",
+      "assignee": "发布人"
     },
     "stage-select": {
       "active": "{name}（活动中）"
@@ -702,7 +708,7 @@
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。"
     },
-    "waiting-to-roll-out": "等待发布",
+    "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称"
   },
@@ -938,7 +944,7 @@
     }
   },
   "policy": {
-    "roll-out": {
+    "rollout": {
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动发布。",
@@ -2192,7 +2198,7 @@
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "approver": "审批人",
         "group": {
-          "WORKSPACE_OWNER": "管理员",
+          "WORKSPACE_OWNER": "工作空间所有者",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
           "PROJECT_MEMBER": "项目成员"

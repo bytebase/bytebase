@@ -28,7 +28,8 @@ func init() {
 
 // Driver is the Oracle driver.
 type Driver struct {
-	db *sql.DB
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -51,6 +52,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, err
 	}
 	driver.db = db
+	driver.databaseName = config.Database
 	return driver, nil
 }
 
@@ -69,9 +71,9 @@ func (*Driver) GetType() db.Type {
 	return db.Oracle
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // Execute executes a SQL statement and returns the affected rows.

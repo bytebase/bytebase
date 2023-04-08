@@ -71,7 +71,7 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -85,7 +85,7 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -96,12 +96,12 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 			&taskDAG.FromTaskID,
 			&taskDAG.ToTaskID,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		taskDAGs = append(taskDAGs, &taskDAG)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err

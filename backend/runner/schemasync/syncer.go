@@ -265,7 +265,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 	defer driver.Close(ctx)
 	// Sync database schema
-	databaseMetadata, err := driver.SyncDBSchema(ctx, database.DatabaseName)
+	databaseMetadata, err := driver.SyncDBSchema(ctx)
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *store.Data
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
 			var schemaBuf bytes.Buffer
-			if _, err := driver.Dump(ctx, database.DatabaseName, &schemaBuf, true /* schemaOnly */); err != nil {
+			if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
 				return err
 			}
 			rawDump = schemaBuf.Bytes()

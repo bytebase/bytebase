@@ -1134,11 +1134,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		defer driver.Close(ctx)
 		var lowerCaseTableNames int
 		var unused any
-		db, err := driver.GetDBConnection(ctx, "" /* databaseName */)
-		if err != nil {
-			log.Warn("failed to get db connection for instance %q", zap.Error(err), zap.String("instance", instance.Title))
-			break
-		}
+		db := driver.GetDB()
 		if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
 			log.Warn("failed to get lower_case_table_names for instance %q", zap.Error(err), zap.String("instance", instance.Title))
 			break
@@ -1305,9 +1301,9 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	case db.Spanner:
-		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	case db.Oracle:
-		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	case db.Redshift:
 		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
 			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)

@@ -4,14 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
+	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -86,7 +93,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -130,7 +137,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 			WHERE TABLE_SCHEMA = ?
 			ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
 	}
-	indexRows, err := driver.db.QueryContext(ctx, indexQuery, databaseName)
+	indexRows, err := driver.db.QueryContext(ctx, indexQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
@@ -196,7 +203,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, ORDINAL_POSITION`
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery, databaseName)
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -242,7 +249,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 			VIEW_DEFINITION
 		FROM information_schema.VIEWS
 		WHERE TABLE_SCHEMA = ?`
-	viewRows, err := driver.db.QueryContext(ctx, viewQuery, databaseName)
+	viewRows, err := driver.db.QueryContext(ctx, viewQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
@@ -263,7 +270,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	// Query foreign key info.
-	foreignKeysMap, err := driver.getForeignKeyList(ctx, databaseName)
+	foreignKeysMap, err := driver.getForeignKeyList(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +291,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery, databaseName)
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -352,7 +359,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:    databaseName,
+		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	// Query db info.
@@ -362,12 +369,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE SCHEMA_NAME = ?`
-	if err := driver.db.QueryRowContext(ctx, databaseQuery, databaseName).Scan(
+	if err := driver.db.QueryRowContext(ctx, databaseQuery, driver.databaseName).Scan(
 		&databaseMetadata.CharacterSet,
 		&databaseMetadata.Collation,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+			return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 		}
 		return nil, err
 	}
@@ -449,4 +456,135 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 	}
 
 	return foreignKeysMap, nil
+}
+
+type slowLog struct {
+	database string
+	details  *storepb.SlowQueryDetails
+}
+
+// SyncSlowQuery syncs slow query from mysql.slow_log.
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	logs := make([]*slowLog, 0, db.SlowQueryMaxSamplePerDay)
+	query := `
+		SELECT
+			start_time,
+			query_time,
+			lock_time,
+			rows_sent,
+			rows_examined,
+			db,
+			CONVERT(sql_text USING utf8) AS sql_text
+		FROM
+			mysql.slow_log
+		WHERE
+			start_time >= ?
+			AND start_time < ?
+	`
+
+	slowLogRows, err := driver.db.QueryContext(ctx, query, logDateTs.Format("2006-01-02"), logDateTs.AddDate(0, 0, 1).Format("2006-01-02"))
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer slowLogRows.Close()
+	for slowLogRows.Next() {
+		var log slowLog
+		if err := slowLogRows.Scan(
+			&log.details.StartTime,
+			&log.details.QueryTime,
+			&log.details.LockTime,
+			&log.details.RowsSent,
+			&log.details.RowsExamined,
+			&log.database,
+			&log.details.SqlText,
+		); err != nil {
+			return nil, err
+		}
+
+		// Use Reservoir Sampling to sample slow logs.
+		// See https://en.wikipedia.org/wiki/Reservoir_sampling
+		if len(logs) < db.SlowQueryMaxSamplePerDay {
+			logs = append(logs, &log)
+		} else {
+			pos := rand.Intn(len(logs))
+			logs[pos] = &log
+		}
+	}
+
+	if err := slowLogRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+
+	return analyzeSlowLog(logs)
+}
+
+func analyzeSlowLog(logs []*slowLog) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	result := make(map[string]map[string]*storepb.SlowQueryStatistics)
+
+	for _, log := range logs {
+		databaseList := extractDatabase(log.database, log.details.SqlText)
+		fingerprint, err := parser.GetSQLFingerprint(parser.MySQL, log.details.SqlText)
+		if err != nil {
+			return nil, errors.Wrapf(err, "get sql fingerprint failed, sql: %s", log.details.SqlText)
+		}
+		if len(fingerprint) > db.SlowQueryMaxLen {
+			fingerprint = fingerprint[:db.SlowQueryMaxLen]
+		}
+		if len(log.details.SqlText) > db.SlowQueryMaxLen {
+			log.details.SqlText = log.details.SqlText[:db.SlowQueryMaxLen]
+		}
+
+		for _, db := range databaseList {
+			var dbLog map[string]*storepb.SlowQueryStatistics
+			var exists bool
+			if dbLog, exists = result[db]; !exists {
+				dbLog = make(map[string]*storepb.SlowQueryStatistics)
+				result[db] = dbLog
+			}
+			dbLog[fingerprint] = mergeSlowLog(fingerprint, dbLog[fingerprint], log.details)
+		}
+	}
+	return result, nil
+}
+
+func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatistics, details *storepb.SlowQueryDetails) *storepb.SlowQueryStatistics {
+	if statistics == nil {
+		return &storepb.SlowQueryStatistics{
+			SqlFingerprint: fingerprint,
+			Count:          1,
+			LatestLogTime:  details.StartTime,
+			Samples:        []*storepb.SlowQueryDetails{details},
+		}
+	}
+	statistics.Count++
+	if statistics.LatestLogTime.AsTime().Before(details.StartTime.AsTime()) {
+		statistics.LatestLogTime = details.StartTime
+	}
+	if len(statistics.Samples) < db.SlowQueryMaxSamplePerFingerprint {
+		statistics.Samples = append(statistics.Samples, details)
+	} else {
+		// Use Reservoir Sampling to sample slow logs.
+		pos := rand.Intn(len(statistics.Samples))
+		statistics.Samples[pos] = details
+	}
+	return statistics
+}
+
+func extractDatabase(defaultDB string, sql string) []string {
+	list, err := parser.ExtractDatabaseList(parser.MySQL, sql)
+	if err != nil {
+		// If we can't extract the database, we just use the default database.
+		log.Debug("extract database failed", zap.Error(err), zap.String("sql", sql))
+		return []string{defaultDB}
+	}
+
+	var result []string
+	for _, db := range list {
+		if db == "" {
+			result = append(result, defaultDB)
+		} else {
+			result = append(result, db)
+		}
+	}
+	return result
 }

@@ -480,7 +480,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 	if !m.CreateDatabase {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if _, err := driver.Dump(ctx, m.Database, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+		if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
 			return "", "", err
 		}
 	}
@@ -525,7 +525,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 				return "", "", err
 			}
 		} else {
-			if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
+			if _, err := driver.Execute(ctx, statement, m.CreateDatabase); err != nil {
 				return "", "", err
 			}
 		}
@@ -533,7 +533,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, m.Database, &afterSchemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
 		// We will ignore the dump error if the database is dropped.
 		if strings.Contains(err.Error(), "not found") {
 			return insertedID, "", nil

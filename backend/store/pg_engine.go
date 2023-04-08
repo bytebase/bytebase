@@ -56,7 +56,8 @@ var demoFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	db *sql.DB
+	metadataDriver dbdriver.Driver
+	db             *sql.DB
 
 	// db.connCfg is the connection configuration to a Postgres database.
 	// The user has superuser privilege to the database.
@@ -98,7 +99,52 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly 
 
 // Open opens the database connection.
 func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err error) {
-	d, err := dbdriver.Open(
+	var databaseName string
+	if db.connCfg.StrictUseDb {
+		databaseName = db.connCfg.Database
+	} else {
+		// The database storing metadata is the same as user name.
+		databaseName = db.connCfg.Username
+		defaultDriver, err := dbdriver.Open(
+			ctx,
+			dbdriver.Postgres,
+			dbdriver.DriverConfig{DbBinDir: db.binDir},
+			db.connCfg,
+			dbdriver.ConnectionContext{},
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer defaultDriver.Close(ctx)
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true); err != nil {
+			return nil, err
+		}
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", dbdriver.BytebaseDatabase), true); err != nil {
+			return nil, err
+		}
+	}
+
+	bytebaseConnConfig := db.connCfg
+	if !db.connCfg.StrictUseDb {
+		bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
+	}
+	bytebaseDriver, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{DbBinDir: db.binDir},
+		bytebaseConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer bytebaseDriver.Close(ctx)
+
+	metadataConnConfig := db.connCfg
+	if !db.connCfg.StrictUseDb {
+		metadataConnConfig.Database = databaseName
+	}
+	metadataDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
@@ -108,60 +154,47 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 	if err != nil {
 		return nil, err
 	}
+	// Don't close metadataDriver.
+	db.metadataDriver = metadataDriver
 
-	var databaseName string
-	if db.connCfg.StrictUseDb {
-		databaseName = db.connCfg.Database
-	} else {
-		// The database storing metadata is the same as user name.
-		databaseName = db.connCfg.Username
-	}
-
+	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
 	if db.readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// This should be called before d.GetDBConnection because getLatestVersion would call
 		// FindMigrationHistoryList which would invalidate the existing db connection. See
 		// https://github.com/bytebase/bytebase/blame/03cd4ef4f31cb74114144ed282e06b0a00aa40d8/plugin/db/util/driverutil.go#L591
-		ver, err := getLatestVersion(ctx, d, databaseName)
+		ver, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get current schema version")
 		}
 
-		db.db, err = d.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
-		}
+		db.db = metadataDriver.GetDB()
 		return ver, nil
 	}
 
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
 	// db instance does not have one yet.
-	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
+	if err := bytebasePgDriver.SetupMigrationIfNeeded(ctx); err != nil {
 		return nil, err
 	}
 
-	verBefore, err := getLatestVersion(ctx, d, databaseName)
+	verBefore, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	pgDriver := d.(*pg.Driver)
-	if err := migrate(ctx, pgDriver, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
+	if err := migrate(ctx, bytebasePgDriver, db.metadataDriver.GetDB(), verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
-	verAfter, err := getLatestVersion(ctx, d, databaseName)
+	verAfter, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	db.db, err = d.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
-	}
-
+	db.db = metadataDriver.GetDB()
 	// Set the max open connections so that we won't exceed the connection limit of metaDB.
 	// The limit is the max connections minus connections reserved for superuser.
 	var maxConns, reservedConns int
@@ -191,7 +224,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 // getLatestVersion returns the latest schema version in semantic versioning format.
 // We expect our own migration history to use semantic versions.
 // If there's no migration history, version will be nil.
-func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (*semver.Version, error) {
+func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (*semver.Version, error) {
 	// We look back the past migration history records and return the latest successful (DONE) migration version.
 	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &database,
@@ -299,7 +332,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string) error {
+func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string) error {
 	log.Info("Apply database migration if needed...")
 	if curVer == nil {
 		log.Info("The database schema has not been setup.")
@@ -322,7 +355,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
 	// figure out whether the migration statement has already been applied.
 	if mode == common.ReleaseModeDev {
-		h, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		h, err := bytebaseDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 			Database: &databaseName,
 		})
 		if err != nil {
@@ -344,20 +377,15 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 			return errors.Wrapf(err, "failed to read latest data %q", latestSchemaPath)
 		}
 
-		var stmt string
-		var createDatabase bool
-		if strictDb {
-			// User gives only database instead of instance, we cannot create database again.
-			stmt = fmt.Sprintf("%s\n%s", buf, dataBuf)
-			createDatabase = false
-		} else {
-			// We will create the database together with initial schema and data migration.
-			stmt = fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
+		// We will create the database together with initial schema and data migration.
+		stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
+		createDatabase := false
+		if !strictDb {
 			createDatabase = true
 		}
 
 		// TODO(p0ny): migrate to instance change history
-		if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
+		if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
 			ctx,
 			&dbdriver.MigrationInfo{
 				InstanceID:            nil,
@@ -375,6 +403,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 				Force:                 true,
 			},
 			stmt,
+			metadataDB,
 		); err != nil {
 			return errors.Wrapf(err, "failed to migrate initial schema version %q", latestSchemaPath)
 		}
@@ -422,7 +451,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 				}
 				log.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				// TODO(p0ny): migrate to instance change history
-				if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
+				if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
 					ctx,
 					&dbdriver.MigrationInfo{
 						InstanceID:            nil,
@@ -439,6 +468,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 						Force:                 true,
 					},
 					string(buf),
+					metadataDB,
 				); err != nil {
 					return errors.Wrapf(err, "failed to migrate schema version %q", pv.version)
 				}
@@ -453,7 +483,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 	}
 
 	if mode == common.ReleaseModeDev {
-		if err := migrateDev(ctx, d, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
+		if err := migrateDev(ctx, bytebaseDriver, metadataDB, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
 			return errors.Wrapf(err, "failed to migrate dev schema")
 		}
 	}
@@ -491,7 +521,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 	return patchVersions[len(patchVersions)-1].version, nil
 }
 
-func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
+func migrateDev(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
 	devMigrations, err := getDevMigrations()
 	if err != nil {
 		return err
@@ -515,7 +545,7 @@ func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName s
 		log.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		// TODO(p0ny): migrate to instance change history
-		if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
+		if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
 			ctx,
 			&dbdriver.MigrationInfo{
 				InstanceID:            nil,
@@ -532,6 +562,7 @@ func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName s
 				Force:                 true,
 			},
 			m.statement,
+			metadataDB,
 		); err != nil {
 			return errors.Wrapf(err, "failed to migrate schema version %q", m.version)
 		}
@@ -678,14 +709,8 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 }
 
 // Close closes the database connection.
-func (db *DB) Close() error {
-	// Close database.
-	if db.db != nil {
-		if err := db.db.Close(); err != nil {
-			return err
-		}
-	}
-	return nil
+func (db *DB) Close(ctx context.Context) error {
+	return db.metadataDriver.Close(ctx)
 }
 
 // BeginTx starts a transaction and returns a wrapper Tx type. This type
@@ -710,58 +735,4 @@ type Tx struct {
 	*sql.Tx
 	db  *DB
 	now time.Time
-}
-
-// FormatError returns err as a Bytebase error, if possible.
-// Otherwise returns the original error.
-func FormatError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if strings.Contains(err.Error(), "unique constraint") {
-		switch {
-		case strings.Contains(err.Error(), "idx_principal_unique_email"):
-			return common.Errorf(common.Conflict, "email already exists")
-		case strings.Contains(err.Error(), "idx_setting_unique_name"):
-			return common.Errorf(common.Conflict, "setting name already exists")
-		case strings.Contains(err.Error(), "idx_member_unique_principal_id"):
-			return common.Errorf(common.Conflict, "member already exists")
-		case strings.Contains(err.Error(), "idx_environment_unique_name"):
-			return common.Errorf(common.Conflict, "environment name already exists")
-		case strings.Contains(err.Error(), "idx_policy_unique_environment_id_type"):
-			return common.Errorf(common.Conflict, "policy environment and type already exists")
-		case strings.Contains(err.Error(), "idx_project_unique_key"):
-			return common.Errorf(common.Conflict, "The project key already exists")
-		case strings.Contains(err.Error(), "idx_project_member_unique_project_id_principal_id"):
-			return common.Errorf(common.Conflict, "project member already exists")
-		case strings.Contains(err.Error(), "idx_project_webhook_unique_project_id_url"):
-			return common.Errorf(common.Conflict, "webhook url already exists")
-		case strings.Contains(err.Error(), "idx_instance_user_unique_instance_id_name"):
-			return common.Errorf(common.Conflict, "instance id and name already exists")
-		case strings.Contains(err.Error(), "idx_db_unique_instance_id_name"):
-			return common.Errorf(common.Conflict, "database name already exists")
-		case strings.Contains(err.Error(), "idx_data_source_unique_database_id_name"):
-			return common.Errorf(common.Conflict, "data source name already exists")
-		case strings.Contains(err.Error(), "idx_backup_unique_database_id_name"):
-			return common.Errorf(common.Conflict, "backup name already exists")
-		case strings.Contains(err.Error(), "idx_backup_setting_unique_database_id"):
-			return common.Errorf(common.Conflict, "database id already exists")
-		case strings.Contains(err.Error(), "idx_bookmark_unique_creator_id_link"):
-			return common.Errorf(common.Conflict, "bookmark already exists")
-		case strings.Contains(err.Error(), "idx_repository_unique_project_id"):
-			return common.Errorf(common.Conflict, "project has already linked repository")
-		case strings.Contains(err.Error(), "idx_label_key_unique_key"):
-			return common.Errorf(common.Conflict, "label key already exists")
-		case strings.Contains(err.Error(), "idx_label_value_unique_key_value"):
-			return common.Errorf(common.Conflict, "label key value already exists")
-		case strings.Contains(err.Error(), "idx_db_label_unique_database_id_key"):
-			return common.Errorf(common.Conflict, "database id and key already exists")
-		case strings.Contains(err.Error(), "idx_deployment_config_unique_project_id"):
-			return common.Errorf(common.Conflict, "project deployment configuration already exists")
-		case strings.Contains(err.Error(), "issue_subscriber_pkey"):
-			return common.Errorf(common.Conflict, "issue subscriber already exists")
-		}
-	}
-	return err
 }

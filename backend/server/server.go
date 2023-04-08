@@ -76,13 +76,13 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	"github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 
 	// Register mysql driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// Register postgres driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	// Register snowflake driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	// Register sqlite driver.
@@ -887,7 +887,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Close db connection
 	if s.store != nil {
-		if err := s.store.Close(); err != nil {
+		if err := s.store.Close(ctx); err != nil {
 			return err
 		}
 	}
@@ -1179,7 +1179,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				limit := 10
 				offset := 0
 
-				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB || instance.Engine == db.SQLite || instance.Engine == db.MSSQL {
+				if !(instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.ClickHouse) {
 					return nil
 				}
 				if instanceMigrated[instance.UID] {
@@ -1202,13 +1202,37 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				defer driver.Close(ctx)
 
 				for {
-					history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-						InstanceID: &instance.UID,
-						Limit:      &limit,
-						Offset:     &offset,
-					})
-					if err != nil {
-						return err
+					var history []*db.MigrationHistory
+					if instance.Engine == db.MySQL {
+						myDriver := driver.(*mysql.Driver)
+						history, err = myDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
+					} else if instance.Engine == db.Postgres {
+						pgDriver := driver.(*pg.Driver)
+						history, err = pgDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
+					} else if instance.Engine == db.ClickHouse {
+						cDriver := driver.(*clickhouse.Driver)
+						history, err = cDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
 					}
 					if len(history) == 0 {
 						break

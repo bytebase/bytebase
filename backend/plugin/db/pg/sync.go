@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -54,7 +55,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
@@ -63,20 +64,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 
 	var databaseMetadata *storepb.DatabaseMetadata
 	for _, database := range databases {
-		if database.Name == databaseName {
+		if database.Name == driver.databaseName {
 			databaseMetadata = database
 			break
 		}
 	}
 	if databaseMetadata == nil {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	sqldb, err := driver.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
-	}
-	txn, err := sqldb.BeginTx(ctx, nil)
+	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,19 +81,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 
 	schemaList, err := getSchemas(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
 	tableMap, err := getTables(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
 	viewMap, err := getViews(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
 	extensions, err := getExtensions(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get extensions from database %q", driver.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
@@ -603,4 +600,9 @@ func getIndexMethodType(stmt string) string {
 		return ""
 	}
 	return matches[1]
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }
