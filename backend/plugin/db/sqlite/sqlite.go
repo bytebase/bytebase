@@ -47,7 +47,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	driver.dir = config.Host
 
 	// If config.Database is empty, we will get a connection to in-memory database.
-	db, err := getDBConnection(driver.dir, config.Database)
+	db, err := createDBConnection(driver.dir, config.Database)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +80,9 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// getDBConnection gets a database connection.
+// createDBConnection gets a database connection.
 // If database is empty, we will get a connect to in-memory database.
-func getDBConnection(dir, database string) (*sql.DB, error) {
+func createDBConnection(dir, database string) (*sql.DB, error) {
 	dns := path.Join(dir, fmt.Sprintf("%s.db", database))
 	if database == "" {
 		dns = ":memory:"
@@ -116,7 +116,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		if len(parts) != 3 {
 			return 0, errors.Errorf("invalid statement %q", statement)
 		}
-		db, err := getDBConnection(driver.dir, parts[1])
+		db, err := createDBConnection(driver.dir, parts[1])
 		if err != nil {
 			return 0, err
 		}

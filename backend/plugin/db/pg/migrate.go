@@ -25,29 +25,14 @@ var (
 	migrationSchema string
 )
 
-// NeedsSetupMigration returns whether it needs to setup migration.
-func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	// Don't use `bytebase` when user gives database instead of instance.
-	if !driver.strictUseDb() {
-		exist, err := driver.hasBytebaseDatabase(ctx)
-		if err != nil {
-			return false, err
-		}
-		if !exist {
-			return true, nil
-		}
-		if _, err := driver.GetDBConnection(ctx, db.BytebaseDatabase); err != nil {
-			return false, err
-		}
-	}
-
+// needsSetupMigration returns whether it needs to setup migration.
+func (driver *Driver) needsSetupMigration(ctx context.Context) (bool, error) {
 	const query = `
 		SELECT
 		    1
 		FROM information_schema.tables
 		WHERE table_name = 'migration_history'
 	`
-
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return false, err
@@ -60,13 +45,12 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	if err := rows.Err(); err != nil {
 		return false, err
 	}
-
 	return true, nil
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
-	setup, err := driver.NeedsSetupMigration(ctx)
+	setup, err := driver.needsSetupMigration(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,40 +60,6 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentID),
 			zap.String("instance", driver.connectionCtx.InstanceID),
 		)
-
-		// Only try to create `bytebase` db when user provide an instance
-		if !driver.strictUseDb() {
-			exist, err := driver.hasBytebaseDatabase(ctx)
-			if err != nil {
-				log.Error("Failed to find database \"bytebase\".",
-					zap.Error(err),
-					zap.String("environment", driver.connectionCtx.EnvironmentID),
-					zap.String("instance", driver.connectionCtx.InstanceID),
-				)
-				return errors.Wrap(err, "failed to find database \"bytebase\"")
-			}
-
-			if !exist {
-				// Create `bytebase` database
-				if _, err := driver.db.ExecContext(ctx, createBytebaseDatabaseStmt); err != nil {
-					log.Error("Failed to create database \"bytebase\".",
-						zap.Error(err),
-						zap.String("environment", driver.connectionCtx.EnvironmentID),
-						zap.String("instance", driver.connectionCtx.InstanceID),
-					)
-					return util.FormatErrorWithQuery(err, createBytebaseDatabaseStmt)
-				}
-			}
-
-			if _, err := driver.GetDBConnection(ctx, db.BytebaseDatabase); err != nil {
-				log.Error("Failed to switch to database \"bytebase\".",
-					zap.Error(err),
-					zap.String("environment", driver.connectionCtx.EnvironmentID),
-					zap.String("instance", driver.connectionCtx.InstanceID),
-				)
-				return errors.Wrap(err, "failed to switch to database \"bytebase\"")
-			}
-		}
 
 		// Create `migration_history` table
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
@@ -257,16 +207,13 @@ func (*Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationD
 }
 
 // ExecuteMigrationUsingMigrationHistory will execute the migration and stores the record to migration history.
-func (driver *Driver) ExecuteMigrationUsingMigrationHistory(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
-	if driver.strictUseDb() {
-		return driver.executeMigration(ctx, m, statement, driver.strictDatabase)
-	}
-	return driver.executeMigration(ctx, m, statement, db.BytebaseDatabase)
+func (driver *Driver) ExecuteMigrationUsingMigrationHistory(ctx context.Context, m *db.MigrationInfo, statement string, metadataDB *sql.DB) (string, string, error) {
+	return driver.executeMigration(ctx, m, statement, metadataDB)
 }
 
 // executeMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID string, updatedSchema string, resErr error) {
+func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo, statement string, metadataDB *sql.DB) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
 	if !m.CreateDatabase {
@@ -279,7 +226,7 @@ func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo,
 
 	// Phase 1 - Pre-check before executing migration
 	// Phase 2 - Record migration history as PENDING
-	insertedID, err := driver.beginMigration(ctx, m, prevSchemaBuf.String(), statement, databaseName)
+	insertedID, err := driver.beginMigration(ctx, m, prevSchemaBuf.String(), statement)
 	if err != nil {
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
@@ -290,7 +237,7 @@ func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo,
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := driver.endMigration(ctx, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /* isDone */); err != nil {
+		if err := driver.endMigration(ctx, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.String("migration_id", migrationHistoryID),
@@ -310,14 +257,8 @@ func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo,
 		doMigrate = false
 	}
 	if doMigrate {
-		// Switch to the target database only if we're NOT creating this target database.
-		// We should not call getDBConnection() if the instance is MongoDB because it doesn't support.
-		if !m.CreateDatabase {
-			if _, err := driver.GetDBConnection(ctx, m.Database); err != nil {
-				return "", "", err
-			}
-		}
-		if _, err := driver.Execute(ctx, statement, m.CreateDatabase); err != nil {
+		//
+		if _, err := metadataDB.ExecContext(ctx, statement); err != nil {
 			return "", "", err
 		}
 	}
@@ -336,7 +277,7 @@ func (driver *Driver) executeMigration(ctx context.Context, m *db.MigrationInfo,
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func (driver *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID string, err error) {
+func (driver *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSchema string, statement string) (insertedID string, err error) {
 	// Convert version to stored version.
 	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -376,13 +317,8 @@ func (driver *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, p
 		}
 	}
 
-	// We use transaction here for the RDBMS.
-	sqldb, err := driver.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return "", err
-	}
 	// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
-	tx, err := sqldb.BeginTx(ctx, nil)
+	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -418,14 +354,10 @@ func (driver *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, p
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func (driver *Driver) endMigration(ctx context.Context, startedNs int64, migrationHistoryID string, updatedSchema string, databaseName string, isDone bool) (err error) {
+func (driver *Driver) endMigration(ctx context.Context, startedNs int64, migrationHistoryID string, updatedSchema string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := driver.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return err
-	}
-	tx, err := sqldb.BeginTx(ctx, nil)
+	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -497,30 +429,5 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	database := db.BytebaseDatabase
-	if driver.strictUseDb() {
-		database = driver.strictDatabase
-	}
-	db, err := driver.GetDBConnection(ctx, database)
-	if err != nil {
-		return nil, err
-	}
-	return util.FindMigrationHistoryList(ctx, query, params, db)
-}
-
-func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
-	databases, err := driver.getDatabases(ctx)
-	if err != nil {
-		return false, err
-	}
-	for _, database := range databases {
-		if database.Name == db.BytebaseDatabase {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (driver *Driver) strictUseDb() bool {
-	return len(driver.strictDatabase) != 0
+	return util.FindMigrationHistoryList(ctx, query, params, driver.db)
 }

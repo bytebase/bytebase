@@ -39,8 +39,6 @@ var (
 		"template1": true,
 	}
 
-	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
-
 	// driverName is the driver name that our driver dependence register, now is "pgx".
 	driverName = "pgx"
 
@@ -63,9 +61,6 @@ type Driver struct {
 	connectionString string
 	baseDSN          string
 	databaseName     string
-
-	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
-	strictDatabase string
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -107,9 +102,6 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	driver.baseDSN = dsn
 	driver.connectionCtx = connCtx
 	driver.config = config
-	if config.StrictUseDb {
-		driver.strictDatabase = config.Database
-	}
 
 	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
 	if err != nil {
@@ -223,33 +215,6 @@ func (*Driver) GetType() db.Type {
 // GetDB gets the database.
 func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
-}
-
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
-	if driver.db != nil {
-		unregisterConnectionConfig(driver.connectionString)
-		if err := driver.db.Close(); err != nil {
-			return nil, err
-		}
-	}
-
-	dsn := driver.baseDSN + " dbname=" + database
-
-	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
-	if err != nil {
-		return nil, err
-	}
-	driver.connectionString = connectionString
-
-	db, err := sql.Open(driverName, driver.connectionString)
-	if err != nil {
-		return nil, err
-	}
-	driver.db = db
-	driver.databaseName = database
-
-	return db, nil
 }
 
 // getDatabases gets all databases of an instance.
