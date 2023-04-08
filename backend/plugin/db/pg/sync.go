@@ -73,11 +73,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	sqldb, err := driver.GetDBConnection(ctx, driver.databaseName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", driver.databaseName)
-	}
-	txn, err := sqldb.BeginTx(ctx, nil)
+	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
