@@ -271,10 +271,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				break
 			}
 		}
-		if !exist {
-			if _, err := driver.db.ExecContext(ctx, statement); err != nil {
-				return 0, err
+		if exist {
+			return 0, err
+		}
+
+		f := func(stmt string) error {
+			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+				return err
 			}
+			return nil
+		}
+		if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+			return 0, err
 		}
 		return 0, nil
 	}
@@ -310,7 +318,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Redshift, strings.NewReader(statement), f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
