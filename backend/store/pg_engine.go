@@ -56,7 +56,8 @@ var demoFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	db *sql.DB
+	metadataDriver dbdriver.Driver
+	db             *sql.DB
 
 	// db.connCfg is the connection configuration to a Postgres database.
 	// The user has superuser privilege to the database.
@@ -98,7 +99,52 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly 
 
 // Open opens the database connection.
 func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err error) {
-	driver, err := dbdriver.Open(
+	var databaseName string
+	if db.connCfg.StrictUseDb {
+		databaseName = db.connCfg.Database
+	} else {
+		// The database storing metadata is the same as user name.
+		databaseName = db.connCfg.Username
+		defaultDriver, err := dbdriver.Open(
+			ctx,
+			dbdriver.Postgres,
+			dbdriver.DriverConfig{DbBinDir: db.binDir},
+			db.connCfg,
+			dbdriver.ConnectionContext{},
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer defaultDriver.Close(ctx)
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true); err != nil {
+			return nil, err
+		}
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", dbdriver.BytebaseDatabase), true); err != nil {
+			return nil, err
+		}
+	}
+
+	bytebaseConnConfig := db.connCfg
+	if !db.connCfg.StrictUseDb {
+		bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
+	}
+	bytebaseDriver, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{DbBinDir: db.binDir},
+		bytebaseConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer bytebaseDriver.Close(ctx)
+
+	metadataConnConfig := db.connCfg
+	if !db.connCfg.StrictUseDb {
+		metadataConnConfig.Database = databaseName
+	}
+	metadataDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
@@ -108,60 +154,47 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 	if err != nil {
 		return nil, err
 	}
+	// Don't close metadataDriver.
+	db.metadataDriver = metadataDriver
 
-	var databaseName string
-	if db.connCfg.StrictUseDb {
-		databaseName = db.connCfg.Database
-	} else {
-		// The database storing metadata is the same as user name.
-		databaseName = db.connCfg.Username
-	}
-	pgDriver := driver.(*pg.Driver)
-
+	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
 	if db.readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// This should be called before d.GetDBConnection because getLatestVersion would call
 		// FindMigrationHistoryList which would invalidate the existing db connection. See
 		// https://github.com/bytebase/bytebase/blame/03cd4ef4f31cb74114144ed282e06b0a00aa40d8/plugin/db/util/driverutil.go#L591
-		ver, err := getLatestVersion(ctx, pgDriver, databaseName)
+		ver, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get current schema version")
 		}
 
-		db.db, err = pgDriver.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
-		}
+		db.db = metadataDriver.GetDB()
 		return ver, nil
 	}
 
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
 	// db instance does not have one yet.
-	if err := pgDriver.SetupMigrationIfNeeded(ctx); err != nil {
+	if err := bytebasePgDriver.SetupMigrationIfNeeded(ctx); err != nil {
 		return nil, err
 	}
 
-	verBefore, err := getLatestVersion(ctx, pgDriver, databaseName)
+	verBefore, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if err := migrate(ctx, pgDriver, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
+	if err := migrate(ctx, bytebasePgDriver, db.metadataDriver.GetDB(), verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
-	verAfter, err := getLatestVersion(ctx, pgDriver, databaseName)
+	verAfter, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	db.db, err = pgDriver.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
-	}
-
+	db.db = metadataDriver.GetDB()
 	// Set the max open connections so that we won't exceed the connection limit of metaDB.
 	// The limit is the max connections minus connections reserved for superuser.
 	var maxConns, reservedConns int
@@ -299,7 +332,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string) error {
+func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string) error {
 	log.Info("Apply database migration if needed...")
 	if curVer == nil {
 		log.Info("The database schema has not been setup.")
@@ -322,7 +355,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
 	// figure out whether the migration statement has already been applied.
 	if mode == common.ReleaseModeDev {
-		h, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		h, err := bytebaseDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 			Database: &databaseName,
 		})
 		if err != nil {
@@ -344,20 +377,15 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 			return errors.Wrapf(err, "failed to read latest data %q", latestSchemaPath)
 		}
 
-		var stmt string
-		var createDatabase bool
-		if strictDb {
-			// User gives only database instead of instance, we cannot create database again.
-			stmt = fmt.Sprintf("%s\n%s", buf, dataBuf)
-			createDatabase = false
-		} else {
-			// We will create the database together with initial schema and data migration.
-			stmt = fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
+		// We will create the database together with initial schema and data migration.
+		stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
+		createDatabase := false
+		if !strictDb {
 			createDatabase = true
 		}
 
 		// TODO(p0ny): migrate to instance change history
-		if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
+		if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
 			ctx,
 			&dbdriver.MigrationInfo{
 				InstanceID:            nil,
@@ -375,6 +403,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 				Force:                 true,
 			},
 			stmt,
+			metadataDB,
 		); err != nil {
 			return errors.Wrapf(err, "failed to migrate initial schema version %q", latestSchemaPath)
 		}
@@ -422,7 +451,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 				}
 				log.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				// TODO(p0ny): migrate to instance change history
-				if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
+				if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
 					ctx,
 					&dbdriver.MigrationInfo{
 						InstanceID:            nil,
@@ -439,6 +468,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 						Force:                 true,
 					},
 					string(buf),
+					metadataDB,
 				); err != nil {
 					return errors.Wrapf(err, "failed to migrate schema version %q", pv.version)
 				}
@@ -453,7 +483,7 @@ func migrate(ctx context.Context, d *pg.Driver, curVer *semver.Version, mode com
 	}
 
 	if mode == common.ReleaseModeDev {
-		if err := migrateDev(ctx, d, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
+		if err := migrateDev(ctx, bytebaseDriver, metadataDB, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
 			return errors.Wrapf(err, "failed to migrate dev schema")
 		}
 	}
@@ -491,7 +521,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 	return patchVersions[len(patchVersions)-1].version, nil
 }
 
-func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
+func migrateDev(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
 	devMigrations, err := getDevMigrations()
 	if err != nil {
 		return err
@@ -515,7 +545,7 @@ func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName s
 		log.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		// TODO(p0ny): migrate to instance change history
-		if _, _, err := d.ExecuteMigrationUsingMigrationHistory(
+		if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
 			ctx,
 			&dbdriver.MigrationInfo{
 				InstanceID:            nil,
@@ -532,6 +562,7 @@ func migrateDev(ctx context.Context, d *pg.Driver, serverVersion, databaseName s
 				Force:                 true,
 			},
 			m.statement,
+			metadataDB,
 		); err != nil {
 			return errors.Wrapf(err, "failed to migrate schema version %q", m.version)
 		}
@@ -678,14 +709,8 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 }
 
 // Close closes the database connection.
-func (db *DB) Close() error {
-	// Close database.
-	if db.db != nil {
-		if err := db.db.Close(); err != nil {
-			return err
-		}
-	}
-	return nil
+func (db *DB) Close(ctx context.Context) error {
+	return db.metadataDriver.Close(ctx)
 }
 
 // BeginTx starts a transaction and returns a wrapper Tx type. This type

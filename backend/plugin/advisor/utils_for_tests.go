@@ -292,16 +292,6 @@ func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseMetadata, e
 	return nil, nil
 }
 
-// NeedsSetupMigration implements the Driver interface.
-func (*MockDriver) NeedsSetupMigration(_ context.Context) (bool, error) {
-	return false, nil
-}
-
-// SetupMigrationIfNeeded implements the Driver interface.
-func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
-	return nil
-}
-
 // Dump implements the Driver interface.
 func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil

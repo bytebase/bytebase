@@ -886,7 +886,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Close db connection
 	if s.store != nil {
-		if err := s.store.Close(); err != nil {
+		if err := s.store.Close(ctx); err != nil {
 			return err
 		}
 	}
