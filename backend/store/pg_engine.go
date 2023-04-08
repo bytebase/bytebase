@@ -186,12 +186,23 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 		return nil, err
 	}
 
+	storeInstance := New(db)
+	// Calculate prod cutoffSchemaVersion.
+	cutoffSchemaVersion, err := getProdCutoffVersion()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get cutoff version")
+	}
+	log.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
+	if err := initializeSchema(ctx, storeInstance, bytebasePgDriver, cutoffSchemaVersion, databaseName, db.serverVersion); err != nil {
+		return nil, err
+	}
+
 	verBefore, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if err := migrate(ctx, bytebasePgDriver, db.metadataDriver.GetDB(), verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
+	if err := migrate(ctx, bytebasePgDriver, db.metadataDriver.GetDB(), cutoffSchemaVersion, verBefore, db.mode, db.serverVersion, databaseName); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
@@ -208,22 +219,76 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help")
 	}
 
-	return verAfter, nil
+	return &verAfter, nil
+}
+
+func initializeSchema(ctx context.Context, storeInstance *Store, bytebaseDriver *pg.Driver, cutoffSchemaVersion semver.Version, databaseName, serverVersion string) error {
+	// We use instance_change_history table to determine whether we've initialized the schema.
+	var exists bool
+	if err := storeInstance.db.db.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'instance_change_history')`,
+	).Scan(&exists); err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	log.Info("The database schema has not been setup.")
+
+	latestSchemaPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestSchemaFile)
+	buf, err := migrationFS.ReadFile(latestSchemaPath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read latest schema %q", latestSchemaPath)
+	}
+	latestDataPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestDataFile)
+	dataBuf, err := migrationFS.ReadFile(latestDataPath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read latest data %q", latestSchemaPath)
+	}
+
+	// We will create the database together with initial schema and data migration.
+	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
+
+	// TODO(p0ny): migrate to instance change history
+	if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
+		ctx,
+		&dbdriver.MigrationInfo{
+			InstanceID:            nil,
+			ReleaseVersion:        serverVersion,
+			UseSemanticVersion:    true,
+			Version:               cutoffSchemaVersion.String(),
+			SemanticVersionSuffix: common.DefaultMigrationVersion(),
+			Namespace:             databaseName,
+			Database:              databaseName,
+			Environment:           "", /* unused in execute migration */
+			Source:                dbdriver.LIBRARY,
+			Type:                  dbdriver.Migrate,
+			Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
+			Force:                 true,
+		},
+		stmt,
+		storeInstance.db.db,
+	); err != nil {
+		return errors.Wrapf(err, "failed to migrate initial schema version %q", latestSchemaPath)
+	}
+	log.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
+
+	return nil
 }
 
 // getLatestVersion returns the latest schema version in semantic versioning format.
 // We expect our own migration history to use semantic versions.
 // If there's no migration history, version will be nil.
-func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (*semver.Version, error) {
+func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (semver.Version, error) {
 	// We look back the past migration history records and return the latest successful (DONE) migration version.
 	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &database,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get migration history")
+		return semver.Version{}, errors.Wrap(err, "failed to get migration history")
 	}
 	if len(history) == 0 {
-		return nil, nil
+		return semver.Version{}, errors.Errorf("migration history should exist for metadata database")
 	}
 
 	for _, h := range history {
@@ -246,12 +311,12 @@ func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (*semv
 		}
 		v, err := semver.Make(h.Version)
 		if err != nil {
-			return nil, errors.Wrapf(err, "invalid version %q", h.Version)
+			return semver.Version{}, errors.Wrapf(err, "invalid version %q", h.Version)
 		}
-		return &v, nil
+		return v, nil
 	}
 
-	return nil, errors.Errorf("failed to find a successful migration history to determine the schema version")
+	return semver.Version{}, errors.Errorf("failed to find a successful migration history to determine the schema version")
 }
 
 // setupDemoData loads the demo data.
@@ -322,24 +387,13 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string) error {
+func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) error {
 	log.Info("Apply database migration if needed...")
-	if curVer == nil {
-		log.Info("The database schema has not been setup.")
-	} else {
-		log.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
-		major := curVer.Major
-		if major != majorSchemaVersion {
-			return errors.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
-		}
+	log.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
+	major := curVer.Major
+	if major != majorSchemaVersion {
+		return errors.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
 	}
-
-	// Calculate prod cutoffSchemaVersion.
-	cutoffSchemaVersion, err := getProdCutoffVersion()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get cutoff version")
-	}
-	log.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
 
 	var histories []*dbdriver.MigrationHistory
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
@@ -354,121 +408,75 @@ func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB,
 		histories = h
 	}
 
-	if curVer == nil {
-		// Initial schema setup if not yet setup.
-		latestSchemaPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestSchemaFile)
-		buf, err := migrationFS.ReadFile(latestSchemaPath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read latest schema %q", latestSchemaPath)
-		}
-		latestDataPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestDataFile)
-		dataBuf, err := migrationFS.ReadFile(latestDataPath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read latest data %q", latestSchemaPath)
-		}
+	// Apply migrations if needed.
+	retVersion := curVer
+	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeProd))
+	if err != nil {
+		return err
+	}
 
-		// We will create the database together with initial schema and data migration.
-		stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
-		createDatabase := false
-		if !strictDb {
-			createDatabase = true
-		}
+	minorVersions, messages, err := getMinorMigrationVersions(names, curVer)
+	if err != nil {
+		return err
+	}
+	for _, message := range messages {
+		log.Info(message)
+	}
 
-		// TODO(p0ny): migrate to instance change history
-		if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
-			ctx,
-			&dbdriver.MigrationInfo{
-				InstanceID:            nil,
-				ReleaseVersion:        serverVersion,
-				UseSemanticVersion:    true,
-				Version:               cutoffSchemaVersion.String(),
-				SemanticVersionSuffix: common.DefaultMigrationVersion(),
-				Namespace:             databaseName,
-				Database:              databaseName,
-				Environment:           "", /* unused in execute migration */
-				Source:                dbdriver.LIBRARY,
-				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
-				CreateDatabase:        createDatabase,
-				Force:                 true,
-			},
-			stmt,
-			metadataDB,
-		); err != nil {
-			return errors.Wrapf(err, "failed to migrate initial schema version %q", latestSchemaPath)
+	for _, minorVersion := range minorVersions {
+		log.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
+		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeProd, minorVersion.Major, minorVersion.Minor))
+		if err != nil {
+			return err
 		}
-		log.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
-	} else {
-		// Apply migrations if needed.
-		retVersion := *curVer
-		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeProd))
+		patchVersions, err := getPatchVersions(minorVersion, curVer, names)
 		if err != nil {
 			return err
 		}
 
-		minorVersions, messages, err := getMinorMigrationVersions(names, *curVer)
-		if err != nil {
-			return err
-		}
-		for _, message := range messages {
-			log.Info(message)
-		}
-
-		for _, minorVersion := range minorVersions {
-			log.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
-			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeProd, minorVersion.Major, minorVersion.Minor))
+		for _, pv := range patchVersions {
+			buf, err := fs.ReadFile(migrationFS, pv.filename)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to read migration file %q", pv.filename)
 			}
-			patchVersions, err := getPatchVersions(minorVersion, *curVer, names)
-			if err != nil {
-				return err
+			// This happens when a migration file is moved from dev to release and we should not reapply the migration.
+			// For example,
+			//   before - prod: 1.2; dev: 123.sql, something else.
+			//   after - prod 1.3 with 123.sql; dev: something else.
+			// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-applied and most likely to fail.
+			if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
+				log.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
+				continue
 			}
-
-			for _, pv := range patchVersions {
-				buf, err := fs.ReadFile(migrationFS, pv.filename)
-				if err != nil {
-					return errors.Wrapf(err, "failed to read migration file %q", pv.filename)
-				}
-				// This happens when a migration file is moved from dev to release and we should not reapply the migration.
-				// For example,
-				//   before - prod: 1.2; dev: 123.sql, something else.
-				//   after - prod 1.3 with 123.sql; dev: something else.
-				// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-applied and most likely to fail.
-				if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
-					log.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
-					continue
-				}
-				log.Info(fmt.Sprintf("Migrating %s...", pv.version))
-				// TODO(p0ny): migrate to instance change history
-				if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
-					ctx,
-					&dbdriver.MigrationInfo{
-						InstanceID:            nil,
-						ReleaseVersion:        serverVersion,
-						UseSemanticVersion:    true,
-						Version:               pv.version.String(),
-						SemanticVersionSuffix: common.DefaultMigrationVersion(),
-						Namespace:             databaseName,
-						Database:              databaseName,
-						Environment:           "", /* unused in execute migration */
-						Source:                dbdriver.LIBRARY,
-						Type:                  dbdriver.Migrate,
-						Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
-						Force:                 true,
-					},
-					string(buf),
-					metadataDB,
-				); err != nil {
-					return errors.Wrapf(err, "failed to migrate schema version %q", pv.version)
-				}
-				retVersion = pv.version
+			log.Info(fmt.Sprintf("Migrating %s...", pv.version))
+			// TODO(p0ny): migrate to instance change history
+			if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
+				ctx,
+				&dbdriver.MigrationInfo{
+					InstanceID:            nil,
+					ReleaseVersion:        serverVersion,
+					UseSemanticVersion:    true,
+					Version:               pv.version.String(),
+					SemanticVersionSuffix: common.DefaultMigrationVersion(),
+					Namespace:             databaseName,
+					Database:              databaseName,
+					Environment:           "", /* unused in execute migration */
+					Source:                dbdriver.LIBRARY,
+					Type:                  dbdriver.Migrate,
+					Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+					Force:                 true,
+				},
+				string(buf),
+				metadataDB,
+			); err != nil {
+				return errors.Wrapf(err, "failed to migrate schema version %q", pv.version)
 			}
+			retVersion = pv.version
 		}
-		if retVersion.EQ(*curVer) {
-			log.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
+		if retVersion.EQ(curVer) {
+			log.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", curVer))
 		} else {
-			log.Info(fmt.Sprintf("Completed database migration from version %s to %s.", *curVer, retVersion))
+			log.Info(fmt.Sprintf("Completed database migration from version %s to %s.", curVer, retVersion))
 		}
 	}
 
