@@ -108,6 +108,7 @@ const updateExternalUrl = async () => {
   const payload: WorkspaceProfileSetting = {
     disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
     externalUrl: state.externalUrl,
+    require2fa: settingStore.workspaceSetting?.require2fa ?? false,
     outboundIpList: settingStore.workspaceSetting?.outboundIpList ?? [],
   };
   await settingStore.updateSettingByName({
