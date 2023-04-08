@@ -104,16 +104,8 @@ const updateExternalUrl = async () => {
   if (!allowSave.value) {
     return;
   }
-
-  const payload: WorkspaceProfileSetting = {
-    disallowSignup: settingStore.workspaceSetting?.disallowSignup ?? false,
+  await settingStore.updateWorkspaceProfile({
     externalUrl: state.externalUrl,
-    require2fa: settingStore.workspaceSetting?.require2fa ?? false,
-    outboundIpList: settingStore.workspaceSetting?.outboundIpList ?? [],
-  };
-  await settingStore.updateSettingByName({
-    name: "bb.workspace.profile",
-    value: JSON.stringify(payload),
   });
   pushNotification({
     module: "bytebase",

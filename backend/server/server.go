@@ -782,19 +782,15 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl:    s.profile.ExternalURL,
-		DisallowSignup: false,
+		ExternalUrl: s.profile.ExternalURL,
 	}
 	if workspaceProfileSetting != nil {
-		payload := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), payload); err != nil {
+		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
 			return nil, err
 		}
-		workspaceProfilePayload.DisallowSignup = payload.DisallowSignup
-		workspaceProfilePayload.OutboundIpList = payload.OutboundIpList
-		workspaceProfilePayload.Require_2Fa = payload.Require_2Fa
-		if s.profile.ExternalURL == "" {
-			workspaceProfilePayload.ExternalUrl = payload.ExternalUrl
+		if s.profile.ExternalURL != "" {
+			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
 		}
 	}
 
