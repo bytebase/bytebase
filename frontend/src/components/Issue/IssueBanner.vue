@@ -23,7 +23,7 @@
       v-else-if="showPendingRollout"
       class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
     >
-      {{ $t("issue.waiting-to-roll-out") }}
+      {{ $t("issue.waiting-to-rollout") }}
     </div>
     <div
       v-else-if="showEarliestAllowedTimeBanner"
