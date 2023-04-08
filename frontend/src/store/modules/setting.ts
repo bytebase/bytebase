@@ -75,6 +75,22 @@ export const useSettingStore = defineStore("setting", {
 
       return setting;
     },
+    async updateWorkspaceProfile(payload: object): Promise<void> {
+      if (!this.workspaceSetting) {
+        return;
+      }
+      const profileSetting: WorkspaceProfileSetting = {
+        disallowSignup: this.workspaceSetting.disallowSignup,
+        externalUrl: this.workspaceSetting.externalUrl,
+        require2fa: this.workspaceSetting.require2fa,
+        outboundIpList: this.workspaceSetting.outboundIpList,
+        ...payload,
+      };
+      await this.updateSettingByName({
+        name: "bb.workspace.profile",
+        value: JSON.stringify(profileSetting),
+      });
+    },
   },
 });
 
