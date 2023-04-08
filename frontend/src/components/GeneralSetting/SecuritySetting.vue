@@ -112,7 +112,6 @@ import {
 import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
-import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
 import { FeatureType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 
