@@ -161,7 +161,7 @@ func TestMigrationCompatibility(t *testing.T) {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", pgPort),
 	}
-	driver, err := dbdriver.Open(
+	defaultDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
@@ -169,22 +169,52 @@ func TestMigrationCompatibility(t *testing.T) {
 		dbdriver.ConnectionContext{},
 	)
 	require.NoError(t, err)
-	defer driver.Close(ctx)
-	d := driver.(*pg.Driver)
+	defer defaultDriver.Close(ctx)
+	// Create a database with release latest schema.
+	databaseName := "hidb"
+	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true)
+	require.NoError(t, err)
+	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", dbdriver.BytebaseDatabase), true)
+	require.NoError(t, err)
 
-	err = d.SetupMigrationIfNeeded(ctx)
+	metadataConnConfig := connCfg
+	metadataConnConfig.Database = databaseName
+	metadataDriver, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
+		metadataConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	require.NoError(t, err)
+
+	bytebaseConnConfig := connCfg
+	bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
+	bytebaseDriver, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
+		bytebaseConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	require.NoError(t, err)
+	defer bytebaseDriver.Close(ctx)
+	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
+	db := NewDB(connCfg, "", "", false, "", common.ReleaseModeDev)
+	db.db = metadataDriver.GetDB()
+	storeInstance := New(db)
+
+	err = bytebasePgDriver.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
 
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
-	// Create a database with release latest schema.
-	databaseName := "hidb"
-	// Passing curVers = nil will create the database.
-	err = migrate(ctx, d, d.GetDB(), nil, common.ReleaseModeProd, false /* strictDb */, serverVersion, databaseName)
+	// Create initial schema.
+	err = initializeSchema(ctx, storeInstance, bytebasePgDriver, releaseVersion, databaseName, db.serverVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+	histories, err := bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &databaseName,
 	})
 	require.NoError(t, err)
@@ -192,23 +222,23 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	err = migrate(ctx, d, d.GetDB(), &releaseVersion, common.ReleaseModeProd, false /* strictDb */, serverVersion, databaseName)
+	err = migrate(ctx, bytebasePgDriver, db.db, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+	histories, err = bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &databaseName,
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 
 	// Apply migration to dev latest if there are patches.
-	err = migrate(ctx, d, d.GetDB(), &releaseVersion, common.ReleaseModeDev, false /* strictDb */, serverVersion, databaseName)
+	err = migrate(ctx, bytebasePgDriver, db.db, releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
 	require.NoError(t, err)
 
 	// Check migration history.
 	devMigrations, err := getDevMigrations()
 	require.NoError(t, err)
-	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+	histories, err = bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &databaseName,
 	})
 	require.NoError(t, err)
