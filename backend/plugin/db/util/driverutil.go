@@ -160,7 +160,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
@@ -183,7 +183,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var columnTypeNames []string
@@ -215,12 +215,12 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var columnTypeNames []string
@@ -269,7 +269,7 @@ func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, col
 		}
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		rowData := []any{}
@@ -533,7 +533,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 		}
 
 		if err := rows.Scan(cols...); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		rowData := []any{}

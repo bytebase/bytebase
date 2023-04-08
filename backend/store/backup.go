@@ -70,7 +70,7 @@ func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *a
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
@@ -87,10 +87,10 @@ func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *a
 		);
 	`
 	if _, err := tx.ExecContext(ctx, stmt, upsert.Enabled, upsert.EnvironmentID); err != nil {
-		return FormatError(err)
+		return err
 	}
 	if err := tx.Commit(); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }
@@ -116,7 +116,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -126,7 +126,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return backupRaw, nil
@@ -202,7 +202,7 @@ func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *Tx, upsert *api.B
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return &backupSettingRaw, nil
 }
@@ -211,7 +211,7 @@ func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *Tx, upsert *api.B
 func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.BackupSettingsMatch) ([]*backupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -239,7 +239,7 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 		match.Hour, match.DayOfWeek, match.Hour, match.DayOfWeek,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -257,13 +257,13 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 			&backupSettingRaw.RetentionPeriodTs,
 			&backupSettingRaw.HookURL,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return backupSettingRawList, nil
@@ -486,7 +486,7 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 		&backupSetting.RetentionPeriodTs,
 		&backupSetting.HookURL,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -567,7 +567,7 @@ func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, datab
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
@@ -677,7 +677,7 @@ func (s *Store) UpdateBackupV2(ctx context.Context, patch *UpdateBackupMessage) 
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("backup ID not found: %d", patch.UID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -727,7 +727,7 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 			payload
 		FROM backup WHERE %s;`, strings.Join(where, " AND ")), args...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -750,7 +750,7 @@ func (*Store) listBackupImplV2(ctx context.Context, tx *Tx, find *FindBackupMess
 			&backup.DatabaseUID,
 			&payload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if err := json.Unmarshal([]byte(payload), &backup.Payload); err != nil {
 			return nil, err
@@ -793,7 +793,7 @@ func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBac
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -810,12 +810,12 @@ func (*Store) listBackupSettingImplV2(ctx context.Context, tx *Tx, find *FindBac
 			&backupSetting.RetentionPeriodTs,
 			&backupSetting.HookURL,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		backupSettingList = append(backupSettingList, &backupSetting)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return backupSettingList, nil
 }

@@ -76,7 +76,7 @@ func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
 func (s *Store) CreateTaskCheckRun(ctx context.Context, creates ...*TaskCheckRunMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
@@ -85,7 +85,7 @@ func (s *Store) CreateTaskCheckRun(ctx context.Context, creates ...*TaskCheckRun
 	}
 
 	if err := tx.Commit(); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	return nil
@@ -174,17 +174,17 @@ func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRun
 func (s *Store) ListTaskCheckRuns(ctx context.Context, find *TaskCheckRunFind) ([]*TaskCheckRunMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	list, err := s.findTaskCheckRunImpl(ctx, tx, find)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return list, nil
@@ -237,7 +237,7 @@ func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *TaskCheckR
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -258,13 +258,13 @@ func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *TaskCheckR
 			&taskCheckRun.Result,
 			&taskCheckRun.Payload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		taskCheckRuns = append(taskCheckRuns, &taskCheckRun)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return taskCheckRuns, nil

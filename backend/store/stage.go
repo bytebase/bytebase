@@ -22,7 +22,7 @@ type StageMessage struct {
 func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage, creatorID int) ([]*StageMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -54,7 +54,7 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
     `, strings.Join(valueStr, ","))
 	rows, err := tx.QueryContext(ctx, query, values...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -67,16 +67,16 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 			&stage.EnvironmentID,
 			&stage.Name,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return stages, nil
@@ -89,7 +89,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -105,7 +105,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -119,16 +119,16 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.Name,
 			&stage.Active,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return stages, nil
 }
