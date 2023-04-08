@@ -106,7 +106,7 @@ func (s *Store) BatchPatchTaskStatus(ctx context.Context, taskIDs []int, status 
 		WHERE id IN (%s);
 	`, strings.Join(ids, ","))
 	if _, err := s.db.db.ExecContext(ctx, query, status, updaterID); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }
@@ -261,14 +261,14 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) (
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	var tasks []*TaskMessage
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -290,7 +290,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) (
 			&task.Payload,
 			&task.EarliestAllowedTs,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if databaseID.Valid {
 			val := int(databaseID.Int32)
@@ -299,11 +299,11 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) (
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return tasks, nil
 }
@@ -351,7 +351,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -415,10 +415,10 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return tasks, nil
 }
@@ -472,7 +472,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -504,11 +504,11 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task not found with ID %d", patch.ID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return task, nil
@@ -526,7 +526,7 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -616,11 +616,11 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 		&updatedTask.Payload,
 		&updatedTask.EarliestAllowedTs,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return updatedTask, nil

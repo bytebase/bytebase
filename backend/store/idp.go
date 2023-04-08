@@ -61,7 +61,7 @@ type UpdateIdentityProviderMessage struct {
 func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage) (*IdentityProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -98,11 +98,11 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery("failed to create identity provider")
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
@@ -121,7 +121,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -130,7 +130,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if len(identityProviders) == 0 {
@@ -148,7 +148,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -157,7 +157,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	for _, identityProvider := range identityProviders {
@@ -170,7 +170,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -179,7 +179,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.idpCache.Store(identityProvider.ResourceID, identityProvider)
@@ -240,7 +240,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("identity provider ID not found: %s", patch.ResourceID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
@@ -275,7 +275,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -294,7 +294,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 			&identityProviderConfig,
 			&rowStatus,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
 		identityProviderMessage.Config = convertIdentityProviderConfigString(identityProviderMessage.Type, identityProviderConfig)

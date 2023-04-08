@@ -210,7 +210,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -255,7 +255,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 		&setting.Value,
 		&setting.Description,
 	); err != nil {
-		return nil, false, FormatError(err)
+		return nil, false, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -274,7 +274,7 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM setting WHERE name = $1`, name); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -298,7 +298,7 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 		FROM setting
 		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -310,12 +310,12 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 			&settingMessage.Value,
 			&settingMessage.Description,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		settingMessages = append(settingMessages, &settingMessage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return settingMessages, nil
