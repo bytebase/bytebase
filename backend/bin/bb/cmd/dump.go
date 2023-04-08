@@ -55,7 +55,7 @@ func dumpDatabase(ctx context.Context, u *dburl.URL, out io.Writer, schemaOnly b
 	}
 	defer db.Close(ctx)
 
-	if _, err := db.Dump(ctx, getDatabase(u), out, schemaOnly); err != nil {
+	if _, err := db.Dump(ctx, out, schemaOnly); err != nil {
 		return errors.Wrap(err, "failed to create dump")
 	}
 	return nil

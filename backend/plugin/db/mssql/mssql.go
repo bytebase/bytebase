@@ -30,7 +30,8 @@ func init() {
 
 // Driver is the MSSQL driver.
 type Driver struct {
-	db *sql.DB
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -55,6 +56,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, err
 	}
 	driver.db = db
+	driver.databaseName = config.Database
 	return driver, nil
 }
 

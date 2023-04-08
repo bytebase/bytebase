@@ -50,7 +50,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
@@ -60,23 +60,23 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		Name: "",
 	}
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:    databaseName,
+		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	found := false
 	for _, database := range databases {
-		if database == databaseName {
+		if database == driver.databaseName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	sqldb, err := driver.getDBConnection(ctx, databaseName)
+	sqldb, err := driver.getDBConnection(ctx, driver.databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", driver.databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {

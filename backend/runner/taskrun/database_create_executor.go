@@ -328,7 +328,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	}
 
 	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, similarDB.DatabaseName, &schemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil

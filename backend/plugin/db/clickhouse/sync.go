@@ -71,7 +71,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -90,7 +90,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		FROM system.columns
 		WHERE database = $1
 		ORDER BY table, position`
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery, databaseName)
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -131,7 +131,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		FROM system.tables
 		WHERE database = $1
 		ORDER BY name`
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery, databaseName)
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -173,7 +173,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	return &storepb.DatabaseMetadata{
-		Name:    databaseName,
+		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
 }

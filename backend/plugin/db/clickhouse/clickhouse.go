@@ -36,6 +36,7 @@ func init() {
 type Driver struct {
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
+	databaseName  string
 
 	db *sql.DB
 }
@@ -81,6 +82,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 	driver.dbType = dbType
 	driver.db = conn
+	driver.databaseName = config.Database
 	driver.connectionCtx = connCtx
 
 	return driver, nil

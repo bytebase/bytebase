@@ -127,7 +127,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		defer driver.Close(ctx)
 
 		var prevSchemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
+		if _, err := driver.Dump(ctx, &prevSchemaBuf, true); err != nil {
 			return "", "", err
 		}
 
@@ -165,7 +165,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		}
 
 		var afterSchemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, mi.Database, &afterSchemaBuf, true /* schemaOnly */); err != nil {
+		if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
 			return "", "", util.FormatError(err)
 		}
 
