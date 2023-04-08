@@ -53,6 +53,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
+	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
@@ -291,18 +292,25 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot connect metadb")
 	}
 
-	schemaVer, err := storeDB.Open(ctx)
-	if err != nil {
+	if err := storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	s.SchemaVersion = schemaVer
+	storeInstance := store.New(storeDB)
+	if profile.Readonly {
+		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+	} else {
+		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB.ConnCfg, !profile.UseEmbedDB(), profile.DemoName, profile.Version, profile.Mode)
+		if err != nil {
+			return nil, err
+		}
+		s.SchemaVersion = metadataVersion
+	}
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
 	}
-	storeInstance := store.New(storeDB)
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
