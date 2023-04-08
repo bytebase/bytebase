@@ -148,7 +148,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		startedNs := time.Now().UnixNano()
 
 		defer func() {
-			if err := utils.EndMigration(ctx, stores, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /* isDone */); err != nil {
+			if err := utils.EndMigration(ctx, stores, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
 				log.Error("failed to update migration history record",
 					zap.Error(err),
 					zap.String("migration_id", migrationHistoryID),

@@ -496,7 +496,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, store, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, store, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.String("migration_id", migrationHistoryID),
@@ -613,7 +613,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, _ string, isDone bool) error {
+func EndMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, isDone bool) error {
 	var err error
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
