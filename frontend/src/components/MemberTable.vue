@@ -118,7 +118,7 @@
           2FA
           <heroicons-solid:check
             v-if="is2FAEnabled(member)"
-            class="ml-1 w-4 h-auto inline-block text-gray-500"
+            class="ml-1 w-4 h-auto inline-block text-green-600"
           />
           <heroicons-solid:x-mark
             v-else
