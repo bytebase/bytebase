@@ -37,6 +37,10 @@
         class="w-20 table-cell"
         :title="$t(columnList[2].title)"
       />
+      <BBTableHeaderCell
+        class="w-20 table-cell"
+        :title="$t(columnList[3].title)"
+      />
     </template>
     <template #body="{ rowData: member }">
       <BBTableCell :left-padding="4" class="table-cell">
@@ -109,6 +113,19 @@
           </template>
         </div>
       </BBTableCell>
+      <BBTableCell class="whitespace-nowrap tooltip-wrapper w-auto">
+        <div class="flex flex-row items-center">
+          2FA
+          <heroicons-solid:check
+            v-if="is2FAEnabled(member)"
+            class="ml-1 w-4 h-auto inline-block text-green-600"
+          />
+          <heroicons-solid:x-mark
+            v-else
+            class="ml-1 w-4 h-auto inline-block text-gray-500"
+          />
+        </div>
+      </BBTableCell>
       <BBTableCell class="whitespace-nowrap tooltip-wrapper w-36">
         <span v-if="changeRoleTooltip(member)" class="tooltip">{{
           changeRoleTooltip(member)
@@ -163,7 +180,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import RoleSelect from "../components/RoleSelect.vue";
@@ -185,11 +202,15 @@ import {
   useMemberStore,
   usePrincipalStore,
   pushNotification,
+  useUserStore,
 } from "@/store";
 
 const columnList = computed(() => [
   {
     title: "settings.members.table.account",
+  },
+  {
+    title: "",
   },
   {
     title: "settings.members.table.role",
@@ -216,6 +237,7 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const currentUser = useCurrentUser();
+    const userStore = useUserStore();
     const memberStore = useMemberStore();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
@@ -275,6 +297,13 @@ export default defineComponent({
       );
     });
 
+    onMounted(async () => {
+      // Initial user data for each member.
+      for (const member of props.memberList) {
+        await userStore.getOrFetchUserById(member.id as number);
+      }
+    });
+
     const allowChangeRole = (member: Member) => {
       if (member.principal.id === SYSTEM_BOT_ID) {
         return false;
@@ -304,6 +333,10 @@ export default defineComponent({
       }
 
       return t("settings.members.tooltip.not-allow-remove");
+    };
+
+    const is2FAEnabled = (member: Member): boolean => {
+      return userStore.getUserById(member.id as number)?.mfaEnabled || false;
     };
 
     const allowDeactivateMember = (member: Member) => {
@@ -396,6 +429,7 @@ export default defineComponent({
       changeRoleTooltip,
       allowDeactivateMember,
       allowActivateMember,
+      is2FAEnabled,
       changeRole,
       changeRowStatus,
       copyServiceKey,

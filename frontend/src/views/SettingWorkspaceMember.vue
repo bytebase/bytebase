@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full overflow-x-hidden">
+  <div class="w-full overflow-x-hidden pb-4">
     <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
       <MemberAddOrInvite />
     </div>
