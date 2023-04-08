@@ -61,13 +61,37 @@
           {{ $t("settings.general.workspace.disallow-signup.description") }}
         </div>
       </div>
+      <!-- TODO(steven): remove release guard later -->
+      <div v-if="isDev" class="mb-7 mt-5 lg:mt-0">
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
+          <BBCheckbox
+            :disabled="!allowEdit"
+            :value="require2FAEnabled"
+            @toggle="handleRequire2FAToggle"
+            :title="$t('settings.general.workspace.require-2fa.enable')"
+          />
+          <FeatureBadge feature="bb.feature.2fa" class="text-accent" />
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
+            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+          </span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.require-2fa.description") }}
+        </div>
+      </div>
     </div>
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.watermark"
-    @cancel="state.showFeatureModal = false"
+    v-if="state.featureNameForModal"
+    :feature="state.featureNameForModal"
+    @cancel="state.featureNameForModal = undefined"
   />
 </template>
 
@@ -86,13 +110,12 @@ import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
+import { FeatureType } from "@/types";
 
 interface LocalState {
-  showFeatureModal: boolean;
+  featureNameForModal?: FeatureType;
 }
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-});
+const state = reactive<LocalState>({});
 const { t } = useI18n();
 const settingStore = useSettingStore();
 const currentUser = useCurrentUser();
@@ -101,6 +124,7 @@ const actuatorStore = useActuatorStore();
 const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const watermarkSetting = useSettingByName("bb.workspace.watermark");
+const has2FAFeature = featureToRef("bb.feature.2fa");
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermission(
@@ -114,11 +138,15 @@ const watermarkEnabled = computed((): boolean => {
 const disallowSignupEnabled = computed((): boolean => {
   return settingStore.workspaceSetting?.disallowSignup ?? false;
 });
+const require2FAEnabled = computed((): boolean => {
+  return settingStore.workspaceSetting?.require2fa ?? false;
+});
 
 const handleDisallowSignupToggle = async (on: boolean) => {
   const payload: WorkspaceProfileSetting = {
     disallowSignup: on,
     externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
+    require2fa: settingStore.workspaceSetting?.require2fa ?? false,
   };
 
   await settingStore.updateSettingByName({
@@ -131,9 +159,32 @@ const handleDisallowSignupToggle = async (on: boolean) => {
     title: t("settings.general.workspace.config-updated"),
   });
 };
+
+const handleRequire2FAToggle = async (on: boolean) => {
+  if (!has2FAFeature.value) {
+    state.featureNameForModal = "bb.feature.2fa";
+    return;
+  }
+
+  const payload: WorkspaceProfileSetting = {
+    disallowSignup: settingStore.workspaceSetting?.disallowSignup || false,
+    externalUrl: settingStore.workspaceSetting?.externalUrl ?? "",
+    require2fa: on,
+  };
+  await settingStore.updateSettingByName({
+    name: "bb.workspace.profile",
+    value: JSON.stringify(payload),
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("settings.general.workspace.config-updated"),
+  });
+};
+
 const handleWatermarkToggle = async (on: boolean) => {
   if (!hasWatermarkFeature.value) {
-    state.showFeatureModal = true;
+    state.featureNameForModal = "bb.feature.watermark";
     return;
   }
   const value = on ? "1" : "0";

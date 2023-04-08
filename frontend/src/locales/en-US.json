@@ -489,6 +489,10 @@
           "enable": "Disable self-service signup",
           "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
         },
+        "require-2fa": {
+          "enable": "Require two-factor authentication for everyone",
+          "description": "When enabled, users who do not have two-factor authentication enabled for their personal accounts will be forced to configure."
+        },
         "network": "Network",
         "external-url": {
           "self": "External URL",

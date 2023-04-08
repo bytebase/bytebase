@@ -487,6 +487,10 @@
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
         },
+        "require-2fa": {
+          "enable": "要求对所有用户配置双重认证",
+          "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。"
+        },
         "network": "网络",
         "external-url": {
           "self": "External URL",
