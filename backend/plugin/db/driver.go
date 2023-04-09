@@ -52,9 +52,6 @@ const (
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
-	// BytebaseDatabase is the database installed in the controlled database server.
-	BytebaseDatabase = "bytebase"
-
 	// SlowQueryMaxLen is the max length of slow query.
 	SlowQueryMaxLen = 2048
 	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
