@@ -239,7 +239,7 @@ func (exec *PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, instan
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, issue.CreatedTime.Unix())
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(databaseName, issue.CreatedTime.Unix())
 
-	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, db.BytebaseDatabase)
+	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return err
 	}
