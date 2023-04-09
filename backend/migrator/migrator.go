@@ -77,8 +77,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 		return nil, err
 	}
 	storeInstance := store.New(storeDB)
-	// TODO(d): backfill migration history.
-
 	// Calculate prod cutoffSchemaVersion.
 	cutoffSchemaVersion, err := getProdCutoffVersion()
 	if err != nil {
@@ -91,7 +89,8 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 
 	bytebaseConnConfig := storeDB.ConnCfg
 	if !strictUseDb {
-		bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
+		// BytebaseDatabase was the database installed in the controlled database server.
+		bytebaseConnConfig.Database = "bytebase"
 	}
 	bytebaseDriver, err := dbdriver.Open(
 		ctx,
