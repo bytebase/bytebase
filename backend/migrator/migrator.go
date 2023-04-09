@@ -147,6 +147,7 @@ func backfillHistory(ctx context.Context, storeInstance *store.Store, bytebasePg
 		return nil
 	}
 
+	log.Info("Backfilling Bytebase metadata migration history")
 	limit := 10
 	offset := 0
 	for {
