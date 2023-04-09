@@ -420,21 +420,6 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	return migrationHistoryList, nil
 }
 
-// FormatError formats schema migration errors.
-func FormatError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_version") {
-		return errors.Errorf("version has already been applied")
-	} else if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_sequence") {
-		return errors.Errorf("concurrent migration")
-	}
-
-	return err
-}
-
 // NonSemanticPrefix is the prefix for non-semantic version.
 const NonSemanticPrefix = "0000.0000.0000-"
 

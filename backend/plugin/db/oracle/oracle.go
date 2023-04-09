@@ -77,8 +77,8 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
-	return driver.executeWithBeforeCommitTxFunc(ctx, statement, createDatabase, nil)
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+	return driver.executeWithBeforeCommitTxFunc(ctx, statement, nil)
 }
 
 // executeWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
@@ -86,7 +86,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 //
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, _ bool, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
+func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")

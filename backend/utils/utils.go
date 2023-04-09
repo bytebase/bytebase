@@ -476,13 +476,11 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 // ExecuteMigration executes migration.
 func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
-	if !m.CreateDatabase {
-		// For baseline migration, we also record the live schema to detect the schema drift.
-		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
-			return "", "", err
-		}
+	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
+	// For baseline migration, we also record the live schema to detect the schema drift.
+	// See https://bytebase.com/blog/what-is-database-schema-drift
+	if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+		return "", "", err
 	}
 
 	insertedID, err := BeginMigration(ctx, store, m, prevSchemaBuf.String(), statement)
@@ -521,11 +519,11 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 			if !ok {
 				return "", "", errors.New("failed to cast driver to oracle driver")
 			}
-			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, m, statement, executeBeforeCommitTx); err != nil {
+			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, statement, executeBeforeCommitTx); err != nil {
 				return "", "", err
 			}
 		} else {
-			if _, err := driver.Execute(ctx, statement, m.CreateDatabase); err != nil {
+			if _, err := driver.Execute(ctx, statement, false /* createDatabase */); err != nil {
 				return "", "", err
 			}
 		}

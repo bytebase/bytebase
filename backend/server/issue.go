@@ -23,7 +23,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -1091,14 +1090,14 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		return nil, err
 	}
 	if c.DatabaseName == "" {
-		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
+		return nil, common.Errorf(common.Invalid, "Failed to create issue, database name missing")
 	}
 	if instance.Engine == db.Snowflake {
 		// Snowflake needs to use upper case of DatabaseName.
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
 	}
 	if instance.Engine == db.MongoDB && c.TableName == "" {
-		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB"))
+		return nil, common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB")
 	}
 	// Validate the labels. Labels are set upon task completion.
 	if _, err := convertDatabaseLabels(c.Labels); err != nil {
