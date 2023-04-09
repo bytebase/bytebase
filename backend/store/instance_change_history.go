@@ -42,13 +42,12 @@ type InstanceChangeHistoryMessage struct {
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
-	ID               *int64
-	InstanceID       *int
-	DatabaseID       *int
-	Source           *db.MigrationSource
-	Version          *string
-	Limit            *int
-	MetadataDatabase bool
+	ID         *int64
+	InstanceID *int
+	DatabaseID *int
+	Source     *db.MigrationSource
+	Version    *string
+	Limit      *int
 }
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
@@ -302,6 +301,8 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	} else {
+		where = append(where, "instance_id is NULL AND database_id is NULL")
 	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
@@ -311,9 +312,6 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 	if v := find.Version; v != nil {
 		where, args = append(where, fmt.Sprintf("version = $%d", len(args)+1)), append(args, *v)
-	}
-	if find.MetadataDatabase {
-		where = append(where, "instance_id is NULL AND database_id is NULL")
 	}
 
 	query := `

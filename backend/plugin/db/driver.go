@@ -162,6 +162,7 @@ type MigrationInfoPayload struct {
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
 	// fields for instance change history
+	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
 	IssueIDInt *int

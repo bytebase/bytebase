@@ -18,8 +18,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -52,13 +55,13 @@ var migrationFS embed.FS
 var demoFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, strictUseDb bool, pgBinDir, demoName, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
-	databaseName := connCfg.Database
+func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgBinDir, demoName, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
+	databaseName := storeDB.ConnCfg.Database
 	if !strictUseDb {
 		// The database storing metadata is the same as user name.
-		databaseName = connCfg.Username
+		databaseName = storeDB.ConnCfg.Username
 	}
-	metadataConnConfig := connCfg
+	metadataConnConfig := storeDB.ConnCfg
 	if !strictUseDb {
 		metadataConnConfig.Database = databaseName
 	}
@@ -72,27 +75,8 @@ func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, stric
 	if err != nil {
 		return nil, err
 	}
-	bytebaseConnConfig := connCfg
-	if !strictUseDb {
-		bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
-	}
-	bytebaseDriver, err := dbdriver.Open(
-		ctx,
-		dbdriver.Postgres,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		bytebaseConnConfig,
-		dbdriver.ConnectionContext{},
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer bytebaseDriver.Close(ctx)
-	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
-
+	storeInstance := store.New(storeDB)
 	// TODO(d): backfill migration history.
-	if err := bytebasePgDriver.SetupMigrationIfNeeded(ctx); err != nil {
-		return nil, err
-	}
 
 	// Calculate prod cutoffSchemaVersion.
 	cutoffSchemaVersion, err := getProdCutoffVersion()
@@ -100,20 +84,20 @@ func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, stric
 		return nil, errors.Wrapf(err, "failed to get cutoff version")
 	}
 	log.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
-	if err := initializeSchema(ctx, metadataDriver.GetDB(), bytebasePgDriver, cutoffSchemaVersion, databaseName, serverVersion); err != nil {
+	if err := initializeSchema(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, serverVersion); err != nil {
 		return nil, err
 	}
 
-	verBefore, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
+	verBefore, err := getLatestVersion(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if err := migrate(ctx, bytebasePgDriver, metadataDriver.GetDB(), cutoffSchemaVersion, verBefore, mode, serverVersion, databaseName); err != nil {
+	if err := migrate(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, verBefore, mode, serverVersion, databaseName); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
-	verAfter, err := getLatestVersion(ctx, bytebasePgDriver, databaseName)
+	verAfter, err := getLatestVersion(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
@@ -129,10 +113,10 @@ func MigrateSchema(ctx context.Context, connCfg dbdriver.ConnectionConfig, stric
 	return &verAfter, nil
 }
 
-func initializeSchema(ctx context.Context, metadataDB *sql.DB, bytebaseDriver *pg.Driver, cutoffSchemaVersion semver.Version, databaseName, serverVersion string) error {
+func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version, serverVersion string) error {
 	// We use instance_change_history table to determine whether we've initialized the schema.
 	var exists bool
-	if err := metadataDB.QueryRowContext(ctx,
+	if err := metadataDriver.GetDB().QueryRowContext(ctx,
 		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'instance_change_history')`,
 	).Scan(&exists); err != nil {
 		return err
@@ -156,49 +140,54 @@ func initializeSchema(ctx context.Context, metadataDB *sql.DB, bytebaseDriver *p
 	// We will create the database together with initial schema and data migration.
 	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
 
-	// TODO(p0ny): migrate to instance change history
-	if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
-		ctx,
-		&dbdriver.MigrationInfo{
-			InstanceID:            nil,
-			ReleaseVersion:        serverVersion,
-			UseSemanticVersion:    true,
-			Version:               cutoffSchemaVersion.String(),
-			SemanticVersionSuffix: common.DefaultMigrationVersion(),
-			Namespace:             databaseName,
-			Database:              databaseName,
-			Environment:           "", /* unused in execute migration */
-			Source:                dbdriver.LIBRARY,
-			Type:                  dbdriver.Migrate,
-			Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
-			Force:                 true,
-		},
-		stmt,
-		metadataDB,
-	); err != nil {
-		return errors.Wrapf(err, "failed to migrate initial schema version %q", latestSchemaPath)
+	storedVersion, err := util.ToStoredVersion(true /* UseSemanticVersion */, cutoffSchemaVersion.String(), common.DefaultMigrationVersion())
+	if err != nil {
+		return err
+	}
+	if _, err := metadataDriver.GetDB().ExecContext(ctx, stmt); err != nil {
+		return err
+	}
+	if _, err := storeInstance.CreateInstanceChangeHistory(ctx, &store.InstanceChangeHistoryMessage{
+		CreatorID:           api.SystemBotID,
+		InstanceID:          nil,
+		DatabaseID:          nil,
+		IssueID:             nil,
+		ReleaseVersion:      serverVersion,
+		Sequence:            0,
+		Source:              dbdriver.LIBRARY,
+		Type:                dbdriver.Migrate,
+		Status:              dbdriver.Done,
+		Version:             storedVersion,
+		Description:         fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
+		Statement:           stmt,
+		Schema:              stmt,
+		SchemaPrev:          "",
+		ExecutionDurationNs: 0,
+		Payload:             "",
+	}); err != nil {
+		return err
 	}
 	log.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
-
 	return nil
 }
 
 // getLatestVersion returns the latest schema version in semantic versioning format.
 // We expect our own migration history to use semantic versions.
 // If there's no migration history, version will be nil.
-func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (semver.Version, error) {
+func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.Version, error) {
 	// We look back the past migration history records and return the latest successful (DONE) migration version.
-	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &database,
+	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		// Metadata database has instanceID nil;
+		InstanceID: nil,
 	})
 	if err != nil {
 		return semver.Version{}, errors.Wrap(err, "failed to get migration history")
 	}
-	if len(history) == 0 {
+	if len(histories) == 0 {
 		return semver.Version{}, errors.Errorf("migration history should exist for metadata database")
 	}
 
-	for _, h := range history {
+	for _, h := range histories {
 		if h.Status != dbdriver.Done {
 			stmt := h.Statement
 			// Only print out first 200 chars.
@@ -216,7 +205,11 @@ func getLatestVersion(ctx context.Context, d *pg.Driver, database string) (semve
 			)
 			continue
 		}
-		v, err := semver.Make(h.Version)
+		_, version, _, err := util.FromStoredVersion(h.Version)
+		if err != nil {
+			return semver.Version{}, err
+		}
+		v, err := semver.Make(version)
 		if err != nil {
 			return semver.Version{}, errors.Wrapf(err, "invalid version %q", h.Version)
 		}
@@ -294,7 +287,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) error {
+func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) error {
 	log.Info("Apply database migration if needed...")
 	log.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 	major := curVer.Major
@@ -302,12 +295,13 @@ func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB,
 		return errors.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
 	}
 
-	var histories []*dbdriver.MigrationHistory
+	var histories []*store.InstanceChangeHistoryMessage
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
 	// figure out whether the migration statement has already been applied.
 	if mode == common.ReleaseModeDev {
-		h, err := bytebaseDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-			Database: &databaseName,
+		h, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+			// Metadata database has instanceID nil;
+			InstanceID: nil,
 		})
 		if err != nil {
 			return err
@@ -356,27 +350,23 @@ func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB,
 				continue
 			}
 			log.Info(fmt.Sprintf("Migrating %s...", pv.version))
-			// TODO(p0ny): migrate to instance change history
-			if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
-				ctx,
-				&dbdriver.MigrationInfo{
-					InstanceID:            nil,
-					ReleaseVersion:        serverVersion,
-					UseSemanticVersion:    true,
-					Version:               pv.version.String(),
-					SemanticVersionSuffix: common.DefaultMigrationVersion(),
-					Namespace:             databaseName,
-					Database:              databaseName,
-					Environment:           "", /* unused in execute migration */
-					Source:                dbdriver.LIBRARY,
-					Type:                  dbdriver.Migrate,
-					Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
-					Force:                 true,
-				},
-				string(buf),
-				metadataDB,
-			); err != nil {
-				return errors.Wrapf(err, "failed to migrate schema version %q", pv.version)
+			mi := &dbdriver.MigrationInfo{
+				InstanceID:            nil,
+				CreatorID:             api.SystemBotID,
+				ReleaseVersion:        serverVersion,
+				UseSemanticVersion:    true,
+				Version:               pv.version.String(),
+				SemanticVersionSuffix: common.DefaultMigrationVersion(),
+				Namespace:             databaseName,
+				Database:              databaseName,
+				Environment:           "", /* unused in execute migration */
+				Source:                dbdriver.LIBRARY,
+				Type:                  dbdriver.Migrate,
+				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+				Force:                 true,
+			}
+			if _, _, err := utils.ExecuteMigration(ctx, storeInstance, metadataDriver, mi, string(buf), nil /* executeBeforeCommitTx */); err != nil {
+				return err
 			}
 			retVersion = pv.version
 		}
@@ -388,7 +378,7 @@ func migrate(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB,
 	}
 
 	if mode == common.ReleaseModeDev {
-		if err := migrateDev(ctx, bytebaseDriver, metadataDB, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
+		if err := migrateDev(ctx, storeInstance, metadataDriver, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
 			return errors.Wrapf(err, "failed to migrate dev schema")
 		}
 	}
@@ -426,7 +416,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 	return patchVersions[len(patchVersions)-1].version, nil
 }
 
-func migrateDev(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.DB, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
+func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*store.InstanceChangeHistoryMessage) error {
 	devMigrations, err := getDevMigrations()
 	if err != nil {
 		return err
@@ -449,27 +439,23 @@ func migrateDev(ctx context.Context, bytebaseDriver *pg.Driver, metadataDB *sql.
 	for _, m := range migrations {
 		log.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
-		// TODO(p0ny): migrate to instance change history
-		if _, _, err := bytebaseDriver.ExecuteMigrationUsingMigrationHistory(
-			ctx,
-			&dbdriver.MigrationInfo{
-				InstanceID:            nil,
-				ReleaseVersion:        serverVersion,
-				UseSemanticVersion:    true,
-				Version:               cutoffSchemaVersion.String(),
-				SemanticVersionSuffix: fmt.Sprintf("dev%s", m.version),
-				Namespace:             databaseName,
-				Database:              databaseName,
-				Environment:           "", /* unused in execute migration */
-				Source:                dbdriver.LIBRARY,
-				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
-				Force:                 true,
-			},
-			m.statement,
-			metadataDB,
-		); err != nil {
-			return errors.Wrapf(err, "failed to migrate schema version %q", m.version)
+		mi := &dbdriver.MigrationInfo{
+			InstanceID:            nil,
+			CreatorID:             api.SystemBotID,
+			ReleaseVersion:        serverVersion,
+			UseSemanticVersion:    true,
+			Version:               cutoffSchemaVersion.String(),
+			SemanticVersionSuffix: fmt.Sprintf("dev%s", m.version),
+			Namespace:             databaseName,
+			Database:              databaseName,
+			Environment:           "", /* unused in execute migration */
+			Source:                dbdriver.LIBRARY,
+			Type:                  dbdriver.Migrate,
+			Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+			Force:                 true,
+		}
+		if _, _, err := utils.ExecuteMigration(ctx, storeInstance, metadataDriver, mi, m.statement, nil /* executeBeforeCommitTx */); err != nil {
+			return err
 		}
 	}
 
@@ -516,7 +502,7 @@ func getDevMigrations() ([]devMigration, error) {
 	return devMigrations, nil
 }
 
-func migrationExists(statement string, histories []*dbdriver.MigrationHistory) bool {
+func migrationExists(statement string, histories []*store.InstanceChangeHistoryMessage) bool {
 	for _, history := range histories {
 		if history.Statement == statement {
 			return true
