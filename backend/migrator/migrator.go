@@ -204,10 +204,10 @@ func backfillHistory(ctx context.Context, storeInstance *store.Store, bytebasePg
 }
 
 func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version, serverVersion string) error {
-	// We use instance_change_history table to determine whether we've initialized the schema.
+	// We use environment table to determine whether we've initialized the schema.
 	var exists bool
 	if err := metadataDriver.GetDB().QueryRowContext(ctx,
-		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'instance_change_history')`,
+		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'environment')`,
 	).Scan(&exists); err != nil {
 		return err
 	}
