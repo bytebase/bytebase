@@ -80,9 +80,6 @@ func (db *DB) Open(ctx context.Context) error {
 		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true); err != nil {
 			return err
 		}
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", dbdriver.BytebaseDatabase), true); err != nil {
-			return err
-		}
 	}
 
 	metadataConnConfig := db.ConnCfg
