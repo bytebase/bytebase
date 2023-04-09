@@ -11,18 +11,14 @@ import (
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
-	"go.uber.org/zap"
 
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var (
@@ -55,27 +51,14 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens a Spanner driver. It must connect to a specific database.
-// If database isn't provided, the driver tries to connect to "bytebase" database.
-// If connecting to "bytebase" also fails, part of the driver cannot function.
+// If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if config.Host == "" {
 		return nil, errors.New("host cannot be empty")
 	}
 	d.config = config
 	d.connCtx = connCtx
-	if config.Database == "" {
-		// try to connect to bytebase
-		d.databaseName = db.BytebaseDatabase
-		dsn := getDSN(d.config.Host, db.BytebaseDatabase)
-		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
-		if status.Code(err) == codes.NotFound {
-			log.Debug(`spanner driver: no database provided, try connecting to "bytebase" database which is not found`, zap.Error(err))
-		} else if err != nil {
-			return nil, err
-		} else {
-			d.client = client
-		}
-	} else {
+	if config.Database != "" {
 		d.databaseName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
