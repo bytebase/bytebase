@@ -37,7 +37,7 @@ const props = withDefaults(
     allowedEngineTypeList?: readonly EngineType[];
     allowedSyncStatusList?: DatabaseSyncStatus[];
     includeAll?: boolean;
-    invalidateSelectionIfNeeded?: boolean;
+    autoReset?: boolean;
     filter?: (database: Database, index: number) => boolean;
   }>(),
   {
@@ -47,7 +47,7 @@ const props = withDefaults(
     allowedEngineTypeList: () => EngineTypeList,
     allowedSyncStatusList: () => ["OK", "NOT_FOUND"],
     includeAll: false,
-    invalidateSelectionIfNeeded: true,
+    autoReset: true,
     filter: undefined,
   }
 );
@@ -113,8 +113,8 @@ const options = computed(() => {
 // The database list might change if environment changes, and the previous selected id
 // might not exist in the new list. In such case, we need to invalidate the selection
 // and emit the event.
-const invalidateSelectionIfNeeded = () => {
-  if (!props.invalidateSelectionIfNeeded) return;
+const resetInvalidSelection = () => {
+  if (!props.autoReset) return;
   if (
     props.database &&
     !combinedDatabaseList.value.find((item) => item.id === props.database)
@@ -123,9 +123,7 @@ const invalidateSelectionIfNeeded = () => {
   }
 };
 
-watch(
-  [() => props.database, combinedDatabaseList],
-  invalidateSelectionIfNeeded,
-  { immediate: true }
-);
+watch([() => props.database, combinedDatabaseList], resetInvalidSelection, {
+  immediate: true,
+});
 </script>
