@@ -113,6 +113,7 @@ import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
@@ -165,14 +166,19 @@ const handleRequire2FAToggle = async (on: boolean) => {
   if (on) {
     // Only allow to enable this when all users have enabled 2FA.
     const userList = userStore.userList
-      .filter((user) => user.userType === UserType.USER)
+      .filter(
+        (user) => user.userType === UserType.USER && user.state === State.ACTIVE
+      )
       .filter((user) => !user.mfaEnabled);
     if (userList.length > 0) {
       pushNotification({
         module: "bytebase",
         style: "WARN",
         title: t(
-          "settings.general.workspace.require-2fa.need-all-user-2fa-enabled"
+          "settings.general.workspace.require-2fa.need-all-user-2fa-enabled",
+          {
+            count: userList.length,
+          }
         ),
       });
       return;
