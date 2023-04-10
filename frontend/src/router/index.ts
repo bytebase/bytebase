@@ -42,6 +42,7 @@ import {
   useProjectStore,
   useSheetStore,
   useAuthStore,
+  useActuatorStore,
   useDatabaseStore,
   useEnvironmentStore,
   useInstanceStore,
@@ -54,6 +55,7 @@ import {
   useIdentityProviderStore,
   useCurrentUser,
   useSubscriptionStore,
+  useUserStore,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -129,6 +131,15 @@ const routes: Array<RouteRecordRaw> = [
     path: "/oidc/callback",
     name: "oidc-callback",
     component: () => import("../views/OAuthCallback.vue"),
+  },
+  {
+    path: "/2fa/setup",
+    name: "2fa.setup",
+    meta: {
+      title: () => t("two-factor.self"),
+    },
+    component: () => import("../views/TwoFactorRequired.vue"),
+    props: true,
   },
   {
     path: "/",
@@ -1116,6 +1127,27 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (to.name === "2fa.setup") {
+    next();
+    return;
+  }
+
+  const userStore = useUserStore();
+  const currentUser = useCurrentUser();
+  const serverInfo = useActuatorStore().serverInfo;
+
+  // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
+  if (serverInfo?.require2fa && currentUser.value) {
+    const user = userStore.getUserById(currentUser.value.id as number);
+    if (user && !user.mfaEnabled) {
+      next({
+        name: "2fa.setup",
+        replace: true,
+      });
+      return;
+    }
+  }
+
   if (to.name === SQL_EDITOR_HOME_MODULE) {
     const onboardingStateStore = useOnboardingStateStore();
     if (onboardingStateStore.getStateByKey("sql-editor")) {
@@ -1128,8 +1160,6 @@ router.beforeEach((to, from, next) => {
       return;
     }
   }
-
-  const currentUser = useCurrentUser();
 
   if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
     if (

@@ -2076,7 +2076,8 @@
     "messages": {
       "2fa-enabled": "Two-factor authentication is enabled.",
       "2fa-disabled": "Two-factor authentication is disabled.",
-      "recovery-codes-regenerated": "Recovery codes are regenerated."
+      "recovery-codes-regenerated": "Recovery codes are regenerated.",
+      "2fa-required": "Two-factor authentication is required in your workspace. Please enable it before you can continue."
     }
   },
   "plugin": {
