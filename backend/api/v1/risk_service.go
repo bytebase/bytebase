@@ -110,13 +110,13 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 	patch := &store.UpdateRiskMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "risk.title":
+		case "title":
 			patch.Name = &request.Risk.Title
-		case "risk.active":
+		case "active":
 			patch.Active = &request.Risk.Active
-		case "risk.level":
+		case "level":
 			patch.Level = &request.Risk.Level
-		case "risk.expression":
+		case "expression":
 			if err := validateRiskExpression(request.Risk.Expression); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
 			}
