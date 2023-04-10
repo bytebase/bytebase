@@ -44,6 +44,21 @@
         {{ $t("common.issue") }}
       </p>
 
+      <WaitingForMyApprovalIssueTable
+        :issue-find="{
+          statusList: ['OPEN'],
+          projectId: project.id,
+        }"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTable
+            :show-placeholder="!loading"
+            :title="$t('issue.waiting-for-my-approval')"
+            :issue-list="issueList"
+          />
+        </template>
+      </WaitingForMyApprovalIssueTable>
+
       <!-- show OPEN issues with pageSize=10 -->
       <div>
         <PagedIssueTable
@@ -111,7 +126,7 @@ import ActivityTable from "../components/ActivityTable.vue";
 import { IssueTable } from "../components/Issue";
 import { Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
+import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import PagedActivityTableVue from "./PagedActivityTable.vue";
 
 // Show at most 5 activity
