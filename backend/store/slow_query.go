@@ -20,7 +20,7 @@ type UpsertSlowLogMessage struct {
 
 	InstanceUID int
 	LogDate     time.Time
-	SlowLog     *storepb.SlowQueryStatisticsList
+	SlowLog     *storepb.SlowQueryStatistics
 
 	UpdaterID int
 }

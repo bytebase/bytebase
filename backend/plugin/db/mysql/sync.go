@@ -466,7 +466,7 @@ type slowLog struct {
 }
 
 // SyncSlowQuery syncs slow query from mysql.slow_log.
-func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatisticsList, error) {
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	logs := make([]*slowLog, 0, db.SlowQueryMaxSamplePerDay)
 	query := `
 		SELECT
@@ -553,8 +553,8 @@ func parseDuration(s string) (time.Duration, error) {
 	return time.ParseDuration(duration)
 }
 
-func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatisticsList, error) {
-	logMap := make(map[string]map[string]*storepb.SlowQueryStatistics)
+func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, error) {
+	logMap := make(map[string]map[string]*storepb.SlowQueryStatisticsItem)
 
 	for _, log := range logs {
 		databaseList := extractDatabase(log.database, log.details.SqlText)
@@ -570,22 +570,22 @@ func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatisticsLis
 		}
 
 		for _, db := range databaseList {
-			var dbLog map[string]*storepb.SlowQueryStatistics
+			var dbLog map[string]*storepb.SlowQueryStatisticsItem
 			var exists bool
 			if dbLog, exists = logMap[db]; !exists {
-				dbLog = make(map[string]*storepb.SlowQueryStatistics)
+				dbLog = make(map[string]*storepb.SlowQueryStatisticsItem)
 				logMap[db] = dbLog
 			}
 			dbLog[fingerprint] = mergeSlowLog(fingerprint, dbLog[fingerprint], log.details)
 		}
 	}
 
-	var result = make(map[string]*storepb.SlowQueryStatisticsList)
+	var result = make(map[string]*storepb.SlowQueryStatistics)
 
 	for db, dblog := range logMap {
-		var statisticsList storepb.SlowQueryStatisticsList
+		var statisticsList storepb.SlowQueryStatistics
 		for _, statistics := range dblog {
-			statisticsList.SlowQueryStatisticsList = append(statisticsList.SlowQueryStatisticsList, statistics)
+			statisticsList.Items = append(statisticsList.Items, statistics)
 		}
 		result[db] = &statisticsList
 	}
@@ -593,9 +593,9 @@ func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatisticsLis
 	return result, nil
 }
 
-func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatistics, details *storepb.SlowQueryDetails) *storepb.SlowQueryStatistics {
+func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsItem, details *storepb.SlowQueryDetails) *storepb.SlowQueryStatisticsItem {
 	if statistics == nil {
-		return &storepb.SlowQueryStatistics{
+		return &storepb.SlowQueryStatisticsItem{
 			SqlFingerprint: fingerprint,
 			Count:          1,
 			LatestLogTime:  details.StartTime,

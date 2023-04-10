@@ -64,7 +64,7 @@
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
-    - [SlowQueryStatisticsList](#bytebase-store-SlowQueryStatisticsList)
+    - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
@@ -926,7 +926,22 @@ SlowQueryDetails is the details of a slow query.
 <a name="bytebase-store-SlowQueryStatistics"></a>
 
 ### SlowQueryStatistics
-SlowQueryStatistics is a summary of slow queries.
+SlowQueryStatistics is the slow query statistics.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem) | repeated | Items is the list of slow query statistics. |
+
+
+
+
+
+
+<a name="bytebase-store-SlowQueryStatisticsItem"></a>
+
+### SlowQueryStatisticsItem
+SlowQueryStatisticsItem is the item of slow query statistics.
 
 
 | Field | Type | Label | Description |
@@ -935,21 +950,6 @@ SlowQueryStatistics is a summary of slow queries.
 | count | [int32](#int32) |  | count is the number of slow queries with the same fingerprint. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_log_time is the time of the latest slow query with the same fingerprint. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
-
-
-
-
-
-
-<a name="bytebase-store-SlowQueryStatisticsList"></a>
-
-### SlowQueryStatisticsList
-SlowQueryStatisticsList is a list of slow query statistics.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| slow_query_statistics_list | [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics) | repeated | slow_query_statistics_list is the list of slow query statistics. |
 
 
 
