@@ -44,7 +44,7 @@ type Syncer struct {
 
 // Run will run the slow query syncer.
 func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(schemaSyncInterval)
+	ticker := time.NewTicker(slowQuerySyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", schemaSyncInterval.String()))
