@@ -103,6 +103,13 @@ interface LocalState {
   recoveryCodesDownloaded: boolean;
 }
 
+const props = withDefaults(
+  defineProps<{
+    cancelAction?: () => void;
+  }>(),
+  {}
+);
+
 const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -170,9 +177,13 @@ const verifyTOPCode = async () => {
 };
 
 const cancelSetup = () => {
-  router.replace({
-    name: "setting.profile",
-  });
+  if (props.cancelAction) {
+    props.cancelAction();
+  } else {
+    router.replace({
+      name: "setting.profile",
+    });
+  }
 };
 
 const tryChangeStep = async (
