@@ -1150,6 +1150,8 @@ CREATE TABLE slow_query (
 -- The slow query log is aggregated by day and database and we usually query the slow query log by day and database.
 CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON slow_query (database_id, log_date_ts);
 
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON slow_query (instance_id, log_date_ts);
+
 ALTER SEQUENCE slow_query_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_slow_query_updated_ts
