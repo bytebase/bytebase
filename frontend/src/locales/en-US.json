@@ -2146,6 +2146,14 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Create Database"
+        },
+        "factor": {
+          "affected_rows": "Affected rows",
+          "environment_id": "Environment ID",
+          "project_id": "Project ID",
+          "database_name": "Database name",
+          "db_engine": "DB engine",
+          "sql_type": "SQL type"
         }
       },
       "condition": {

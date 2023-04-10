@@ -21,7 +21,7 @@
       >
         <BBContextMenuButton
           data-label="bb-issue-status-transition-button"
-          default-action-key="APPROVE-STAGE"
+          default-action-key="ROLLOUT-STAGE"
           :disabled="!allowApplyTaskTransition(transition)"
           :action-list="getButtonActionList(transition)"
           @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
