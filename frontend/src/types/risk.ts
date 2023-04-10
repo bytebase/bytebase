@@ -11,6 +11,8 @@ export const PresetRiskLevelList = [
   { name: "LOW", level: PresetRiskLevel.LOW },
 ];
 
+export const DEFAULT_RISK_LEVEL = 0;
+
 export const SupportedSourceList = [
   Risk_Source.DDL,
   Risk_Source.DML,
