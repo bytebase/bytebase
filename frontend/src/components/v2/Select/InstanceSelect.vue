@@ -116,7 +116,7 @@ const options = computed(() => {
 // The instance list might change if environment changes, and the previous selected id
 // might not exist in the new list. In such case, we need to reset the selection
 // and emit the event.
-const resetSelectionIfNeeded = () => {
+const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
     props.instance &&
@@ -126,7 +126,7 @@ const resetSelectionIfNeeded = () => {
   }
 };
 
-watch([() => props.instance, combinedInstanceList], resetSelectionIfNeeded, {
+watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
   immediate: true,
 });
 </script>
