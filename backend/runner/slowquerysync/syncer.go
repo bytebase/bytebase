@@ -47,7 +47,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(slowQuerySyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", schemaSyncInterval.String()))
+	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", slowQuerySyncInterval.String()))
 	for {
 		select {
 		case <-ctx.Done():
