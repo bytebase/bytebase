@@ -490,7 +490,7 @@
         "require-2fa": {
           "enable": "要求所有用户配置双重认证",
           "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
-          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项"
+          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项。还有 {count} 个用户没有配置 2FA：{users}"
         },
         "network": "网络",
         "external-url": {
@@ -2040,6 +2040,7 @@
   "two-factor": {
     "self": "双重认证",
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
+    "enabled": "2FA 已开启",
     "setup-steps": {
       "setup-auth-app": {
         "self": "设置认证器应用程序",

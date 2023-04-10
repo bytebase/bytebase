@@ -286,6 +286,13 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 					RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 				}
 			} else {
+				setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+				}
+				if setting.Require_2Fa {
+					return nil, status.Errorf(codes.InvalidArgument, "2FA is required and cannot be disabled")
+				}
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
 		}

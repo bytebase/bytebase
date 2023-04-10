@@ -64,6 +64,7 @@
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
+    - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
@@ -925,7 +926,22 @@ SlowQueryDetails is the details of a slow query.
 <a name="bytebase-store-SlowQueryStatistics"></a>
 
 ### SlowQueryStatistics
-SlowQueryStatistics is a summary of slow queries.
+SlowQueryStatistics is the slow query statistics.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem) | repeated | Items is the list of slow query statistics. |
+
+
+
+
+
+
+<a name="bytebase-store-SlowQueryStatisticsItem"></a>
+
+### SlowQueryStatisticsItem
+SlowQueryStatisticsItem is the item of slow query statistics.
 
 
 | Field | Type | Label | Description |
