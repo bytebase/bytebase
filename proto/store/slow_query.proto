@@ -7,6 +7,12 @@ import "google/protobuf/duration.proto";
 
 option go_package = "generated-go/store";
 
+// SlowQueryStatisticsList is a list of slow query statistics.
+message SlowQueryStatisticsList {
+  // slow_query_statistics_list is the list of slow query statistics.
+  repeated SlowQueryStatistics slow_query_statistics_list = 1;
+}
+
 // SlowQueryStatistics is a summary of slow queries.
 message SlowQueryStatistics {
   // sql_fingerprint is the fingerprint of the slow query.

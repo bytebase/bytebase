@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/pkg/errors"
@@ -464,7 +466,7 @@ type slowLog struct {
 }
 
 // SyncSlowQuery syncs slow query from mysql.slow_log.
-func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatisticsList, error) {
 	logs := make([]*slowLog, 0, db.SlowQueryMaxSamplePerDay)
 	query := `
 		SELECT
@@ -488,11 +490,14 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 	}
 	defer slowLogRows.Close()
 	for slowLogRows.Next() {
-		var log slowLog
+		log := slowLog{
+			details: &storepb.SlowQueryDetails{},
+		}
+		var startTime, queryTime, lockTime string
 		if err := slowLogRows.Scan(
-			&log.details.StartTime,
-			&log.details.QueryTime,
-			&log.details.LockTime,
+			&startTime,
+			&queryTime,
+			&lockTime,
 			&log.details.RowsSent,
 			&log.details.RowsExamined,
 			&log.database,
@@ -500,6 +505,24 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 		); err != nil {
 			return nil, err
 		}
+
+		startTimeTs, err := time.Parse("2006-01-02 15:04:05.999999", startTime)
+		if err != nil {
+			return nil, err
+		}
+		log.details.StartTime = timestamppb.New(startTimeTs)
+
+		queryTimeDuration, err := parseDuration(queryTime)
+		if err != nil {
+			return nil, err
+		}
+		log.details.QueryTime = durationpb.New(queryTimeDuration)
+
+		lockTimeDuration, err := parseDuration(lockTime)
+		if err != nil {
+			return nil, err
+		}
+		log.details.LockTime = durationpb.New(lockTimeDuration)
 
 		// Use Reservoir Sampling to sample slow logs.
 		// See https://en.wikipedia.org/wiki/Reservoir_sampling
@@ -518,8 +541,20 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 	return analyzeSlowLog(logs)
 }
 
-func analyzeSlowLog(logs []*slowLog) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
-	result := make(map[string]map[string]*storepb.SlowQueryStatistics)
+func parseDuration(s string) (time.Duration, error) {
+	if s == "" {
+		return 0, nil
+	}
+	list := strings.Split(s, ":")
+	if len(list) != 3 {
+		return 0, errors.Errorf("invalid duration: %s", s)
+	}
+	duration := fmt.Sprintf("%sh%sm%ss", list[0], list[1], list[2])
+	return time.ParseDuration(duration)
+}
+
+func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatisticsList, error) {
+	logMap := make(map[string]map[string]*storepb.SlowQueryStatistics)
 
 	for _, log := range logs {
 		databaseList := extractDatabase(log.database, log.details.SqlText)
@@ -537,13 +572,24 @@ func analyzeSlowLog(logs []*slowLog) (map[string]map[string]*storepb.SlowQuerySt
 		for _, db := range databaseList {
 			var dbLog map[string]*storepb.SlowQueryStatistics
 			var exists bool
-			if dbLog, exists = result[db]; !exists {
+			if dbLog, exists = logMap[db]; !exists {
 				dbLog = make(map[string]*storepb.SlowQueryStatistics)
-				result[db] = dbLog
+				logMap[db] = dbLog
 			}
 			dbLog[fingerprint] = mergeSlowLog(fingerprint, dbLog[fingerprint], log.details)
 		}
 	}
+
+	var result = make(map[string]*storepb.SlowQueryStatisticsList)
+
+	for db, dblog := range logMap {
+		var statisticsList storepb.SlowQueryStatisticsList
+		for _, statistics := range dblog {
+			statisticsList.SlowQueryStatisticsList = append(statisticsList.SlowQueryStatisticsList, statistics)
+		}
+		result[db] = &statisticsList
+	}
+
 	return result, nil
 }
 
@@ -585,6 +631,9 @@ func extractDatabase(defaultDB string, sql string) []string {
 		} else {
 			result = append(result, db)
 		}
+	}
+	if len(result) == 0 {
+		result = append(result, defaultDB)
 	}
 	return result
 }
