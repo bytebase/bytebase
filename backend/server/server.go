@@ -1200,7 +1200,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					nameToDatabase[db.DatabaseName] = databaseList[i]
 				}
 
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "bytebase")
 				if err != nil {
 					return err
 				}
