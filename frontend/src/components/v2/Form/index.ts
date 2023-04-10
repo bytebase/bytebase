@@ -1,3 +1,4 @@
 import SpinnerSwitch from "./SpinnerSwitch.vue";
+import SearchBox from "./SearchBox.vue";
 
-export { SpinnerSwitch };
+export { SpinnerSwitch, SearchBox };
