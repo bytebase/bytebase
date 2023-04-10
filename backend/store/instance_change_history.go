@@ -36,7 +36,7 @@ type InstanceChangeHistoryMessage struct {
 	Payload             string
 
 	// Output only
-	ID      int64
+	ID      string
 	Deleted bool
 }
 
@@ -52,7 +52,7 @@ type FindInstanceChangeHistoryMessage struct {
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
 type UpdateInstanceChangeHistoryMessage struct {
-	ID int64
+	ID string
 
 	Status              *db.MigrationStatus
 	ExecutionDurationNs *int64
@@ -169,7 +169,8 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 
 	i := 0
 	for rows.Next() {
-		var id, createdTs int64
+		var id string
+		var createdTs int64
 		if err := rows.Scan(&id, &createdTs); err != nil {
 			return nil, err
 		}
@@ -219,7 +220,7 @@ func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistor
 	}
 
 	return &db.MigrationHistory{
-		ID:                    strconv.FormatInt(change.ID, 10),
+		ID:                    change.ID,
 		Creator:               "",
 		CreatedTs:             change.CreatedTs,
 		Updater:               "",
@@ -412,37 +413,6 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	return list, nil
 }
 
-// UpdateInstanceChangeHistoryAsDone updates a change history to done.
-func (s *Store) UpdateInstanceChangeHistoryAsDone(ctx context.Context, migrationDurationNs int64, updatedSchema string, insertedID string) error {
-	status := db.Done
-	id, err := strconv.ParseInt(insertedID, 10, 64)
-	if err != nil {
-		return err
-	}
-	update := &UpdateInstanceChangeHistoryMessage{
-		ID:                  id,
-		ExecutionDurationNs: &migrationDurationNs,
-		Status:              &status,
-		Schema:              &updatedSchema,
-	}
-	return s.UpdateInstanceChangeHistory(ctx, update)
-}
-
-// UpdateInstanceChangeHistoryAsFailed updates a change history to failed.
-func (s *Store) UpdateInstanceChangeHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID string) error {
-	status := db.Failed
-	id, err := strconv.ParseInt(insertedID, 10, 64)
-	if err != nil {
-		return err
-	}
-	update := &UpdateInstanceChangeHistoryMessage{
-		ID:                  id,
-		ExecutionDurationNs: &migrationDurationNs,
-		Status:              &status,
-	}
-	return s.UpdateInstanceChangeHistory(ctx, update)
-}
-
 // UpdateInstanceChangeHistory updates an instance change history.
 // it deprecates the old UpdateHistoryAsDone and UpdateHistoryAsFailed.
 func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateInstanceChangeHistoryMessage) error {
@@ -553,7 +523,7 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 	where, args = append(where, fmt.Sprintf("sequence >= $%d", len(args)+1)), append(args, sequence)
 
 	query := `
-  	SELECT
+		SELECT
 			MAX(version)
 		FROM instance_change_history
 		WHERE ` + strings.Join(where, " AND ")
@@ -609,7 +579,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 		return "", err
 	}
 
-	return fmt.Sprintf("%d", list[0].ID), nil
+	return list[0].ID, nil
 }
 
 // ListInstanceHavingInstanceChangeHistory finds the instance id lists that have instance change history.
