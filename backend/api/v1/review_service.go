@@ -176,7 +176,7 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 
 	patch := &store.UpdateIssueMessage{}
 	for _, path := range request.UpdateMask.Paths {
-		if path == "review.approval_finding_done" {
+		if path == "approval_finding_done" {
 			if request.Review.ApprovalFindingDone {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot set approval_finding_done to true")
 			}

@@ -121,15 +121,15 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "policy.inherit_from_parent":
+		case "inherit_from_parent":
 			patch.InheritFromParent = &request.Policy.InheritFromParent
-		case "policy.payload":
+		case "payload":
 			payloadStr, err := convertPolicyPayloadToString(request.Policy)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
 			}
 			patch.Payload = &payloadStr
-		case "policy.enforce":
+		case "enforce":
 			patch.Enforce = &request.Policy.Enforce
 		}
 	}

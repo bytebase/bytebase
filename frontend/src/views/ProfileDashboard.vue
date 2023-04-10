@@ -433,7 +433,7 @@ const handleDisable2FA = async () => {
         name: user.name,
         mfaEnabled: false,
       },
-      updateMask: ["user.mfa_enabled"],
+      updateMask: ["mfa_enabled"],
     })
   );
   await authStore.refreshUserIfNeeded(user.name);
