@@ -318,10 +318,12 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:         user.MFAConfig.OtpSecret,
 			TempOtpSecret:     tempSecret,
-			RecoveryCodes:     user.MFAConfig.RecoveryCodes,
 			TempRecoveryCodes: tempRecoveryCodes,
+		}
+		if user.MFAConfig != nil {
+			patch.MFAConfig.OtpSecret = user.MFAConfig.OtpSecret
+			patch.MFAConfig.RecoveryCodes = user.MFAConfig.RecoveryCodes
 		}
 	}
 	// This flag will update user's recovery codes with temp recovery codes.

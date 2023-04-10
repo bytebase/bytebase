@@ -10,7 +10,10 @@
       <TransferSourceSelector
         :project="project"
         :transfer-source="state.transferSource"
+        :instance-filter="state.instanceFilter"
+        :search-text="state.searchText"
         @change="state.transferSource = $event"
+        @select-instance="state.instanceFilter = $event"
         @search-text-change="state.searchText = $event"
       />
     </template>
@@ -37,6 +40,8 @@ import {
   ProjectId,
   DEFAULT_PROJECT_ID,
   DatabaseLabel,
+  Instance,
+  UNKNOWN_ID,
 } from "../types";
 import {
   buildDatabaseNameRegExpByTemplate,
@@ -54,6 +59,7 @@ import {
 
 interface LocalState {
   transferSource: TransferSource;
+  instanceFilter: Instance | undefined;
   searchText: string;
   loading: boolean;
 }
@@ -75,6 +81,7 @@ const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
   transferSource: props.projectId === DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
+  instanceFilter: undefined,
   searchText: "",
   loading: false,
 });
@@ -117,6 +124,10 @@ const databaseList = computed(() => {
       "environment",
     ])
   );
+
+  if (state.instanceFilter && state.instanceFilter.id !== UNKNOWN_ID) {
+    list = list.filter((db) => db.instance.id === state.instanceFilter?.id);
+  }
 
   return sortDatabaseList(list, environmentList.value);
 });

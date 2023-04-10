@@ -2078,7 +2078,9 @@
     "messages": {
       "2fa-enabled": "Two-factor authentication is enabled.",
       "2fa-disabled": "Two-factor authentication is disabled.",
-      "recovery-codes-regenerated": "Recovery codes are regenerated."
+      "recovery-codes-regenerated": "Recovery codes are regenerated.",
+      "2fa-required": "Two-factor authentication is required in your workspace. Please enable it before you can continue.",
+      "cannot-disable": "You cannot disable two-factor authentication because your admin requires it in the workspace."
     }
   },
   "plugin": {
@@ -2135,6 +2137,7 @@
         "self": "Risk",
         "select": "Select risk",
         "risk-level": {
+          "0": "Default",
           "100": "Low",
           "200": "Moderate",
           "300": "High"

@@ -32,22 +32,36 @@
           </label>
         </template>
       </div>
-      <div>
-        <BBTableSearch
-          class="m-px"
+      <NInputGroup style="width: auto">
+        <InstanceSelect
+          :instance="instanceFilter?.id ?? UNKNOWN_ID"
+          :include-all="true"
+          @update:instance="changeInstanceFilter"
+        />
+        <SearchBox
           :value="searchText"
           :placeholder="$t('database.search-database')"
-          @change-text="(text: string) => $emit('search-text-change', text)"
+          @update:value="$emit('search-text-change', $event)"
         />
-      </div>
+      </NInputGroup>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, watch } from "vue";
+import { PropType, reactive, watch, watchEffect } from "vue";
+import { NInputGroup } from "naive-ui";
+
 import { TransferSource } from "./utils";
-import { Project, DEFAULT_PROJECT_ID } from "@/types";
+import {
+  type Project,
+  type Instance,
+  DEFAULT_PROJECT_ID,
+  UNKNOWN_ID,
+  InstanceId,
+} from "@/types";
+import { InstanceSelect, SearchBox } from "@/components/v2";
+import { useInstanceStore } from "@/store";
 
 interface LocalState {
   transferSource: TransferSource;
@@ -62,6 +76,10 @@ const props = defineProps({
     type: String as PropType<TransferSource>,
     required: true,
   },
+  instanceFilter: {
+    type: Object as PropType<Instance>,
+    default: undefined,
+  },
   searchText: {
     type: String,
     default: "",
@@ -70,12 +88,24 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (event: "change", src: TransferSource): void;
+  (event: "select-instance", instance: Instance | undefined): void;
   (event: "search-text-change", searchText: string): void;
 }>();
 
 const state = reactive<LocalState>({
   transferSource: props.transferSource,
 });
+
+const prepare = () => {
+  useInstanceStore().fetchInstanceList();
+};
+
+const changeInstanceFilter = (instanceId: InstanceId | undefined) => {
+  if (!instanceId || instanceId === UNKNOWN_ID) {
+    return emit("select-instance", undefined);
+  }
+  emit("select-instance", useInstanceStore().getInstanceById(instanceId));
+};
 
 watch(
   () => props.transferSource,
@@ -90,4 +120,6 @@ watch(
     }
   }
 );
+
+watchEffect(prepare);
 </script>

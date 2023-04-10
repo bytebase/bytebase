@@ -32,6 +32,7 @@ import {
   SheetId,
   MigrationContext,
   dialectOfEngine,
+  languageOfEngine,
 } from "@/types";
 import { useIssueLogic } from "./index";
 import { isDev, isTaskTriggeredByVCS, taskCheckRunSummary } from "@/utils";
@@ -291,6 +292,10 @@ export const maybeFormatStatementOnSave = (
     return statement;
   }
 
+  const language = languageOfEngine(database?.instance.engine);
+  if (language !== "sql") {
+    return statement;
+  }
   const dialect = dialectOfEngine(database?.instance.engine);
 
   const result = formatSQL(statement, dialect);

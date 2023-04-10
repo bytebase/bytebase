@@ -32,7 +32,7 @@ const props = withDefaults(
     allowedEngineTypeList?: readonly EngineType[];
     includeAll?: boolean;
     includeArchived?: boolean;
-    invalidateSelectionIfNeeded?: boolean;
+    autoReset?: boolean;
     filter?: (instance: Instance, index: number) => boolean;
   }>(),
   {
@@ -40,7 +40,7 @@ const props = withDefaults(
     allowedEngineTypeList: () => EngineTypeList,
     includeAll: false,
     includeArchived: false,
-    invalidateSelectionIfNeeded: true,
+    autoReset: true,
     filter: undefined,
   }
 );
@@ -114,10 +114,10 @@ const options = computed(() => {
 });
 
 // The instance list might change if environment changes, and the previous selected id
-// might not exist in the new list. In such case, we need to invalidate the selection
+// might not exist in the new list. In such case, we need to reset the selection
 // and emit the event.
-const invalidateSelectionIfNeeded = () => {
-  if (!props.invalidateSelectionIfNeeded) return;
+const resetInvalidSelection = () => {
+  if (!props.autoReset) return;
   if (
     props.instance &&
     !combinedInstanceList.value.find((item) => item.id === props.instance)
@@ -126,9 +126,7 @@ const invalidateSelectionIfNeeded = () => {
   }
 };
 
-watch(
-  [() => props.instance, combinedInstanceList],
-  invalidateSelectionIfNeeded,
-  { immediate: true }
-);
+watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
+  immediate: true,
+});
 </script>

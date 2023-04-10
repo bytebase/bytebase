@@ -346,6 +346,9 @@ const formatEditorContent = () => {
   if (readOnly.value) {
     return;
   }
+  if (props.language !== "sql") {
+    return;
+  }
   monacoInstanceRef.value?.formatContent(
     editorInstanceRef.value!,
     dialect.value

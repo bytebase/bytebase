@@ -114,7 +114,11 @@
         </div>
       </BBTableCell>
       <BBTableCell class="whitespace-nowrap tooltip-wrapper w-auto">
-        <div class="flex flex-row items-center">
+        <!-- Only show 2FA flag for users -->
+        <div
+          v-if="member.principal.type === 'END_USER'"
+          class="flex flex-row items-center"
+        >
           2FA
           <heroicons-solid:check
             v-if="is2FAEnabled(member)"

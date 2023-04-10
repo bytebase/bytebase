@@ -24,7 +24,7 @@ export type BBTableColumn = {
 };
 
 export type BBGridColumn = {
-  title: string;
+  title?: string;
   width: ColumnWidth;
   class?: VueClass;
 };
@@ -99,5 +99,7 @@ export type BBNotificationItem = {
 export type BBAlertStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
 
 export type BBAttentionStyle = "INFO" | "WARN" | "CRITICAL";
+
+export type BBAttentionSide = "BETWEEN" | "CENTER";
 
 export type BBAvatarSizeType = "SMALL" | "NORMAL" | "LARGE" | "HUGE";

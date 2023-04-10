@@ -2,6 +2,7 @@ import { cloneDeep, isNumber } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  DEFAULT_RISK_LEVEL,
   ParsedApprovalRule,
   SYSTEM_BOT_ID,
   UNKNOWN_ID,
@@ -180,8 +181,11 @@ const resolveLevelExpr = (expr: SimpleExpr): number => {
   if (factor !== "level") return Number.NaN;
   const level = args[1];
   if (!isNumber(level)) return Number.NaN;
-  if (!PresetRiskLevelList.find((item) => item.level === level))
-    return Number.NaN;
+  const supportedRiskLevelList = [
+    ...PresetRiskLevelList.map((item) => item.level),
+    DEFAULT_RISK_LEVEL,
+  ];
+  if (!supportedRiskLevelList.includes(level)) return Number.NaN;
   return level;
 };
 
