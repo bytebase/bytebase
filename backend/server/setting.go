@@ -75,11 +75,13 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if err := protojson.Unmarshal([]byte(settingPatch.Value), payload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal setting value").SetInternal(err)
 			}
-			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid external url").SetInternal(err)
+			if payload.ExternalUrl != "" {
+				externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Invalid external url").SetInternal(err)
+				}
+				payload.ExternalUrl = externalURL
 			}
-			payload.ExternalUrl = externalURL
 			bytes, err := protojson.Marshal(payload)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting value").SetInternal(err)
