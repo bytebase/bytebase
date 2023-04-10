@@ -14,10 +14,10 @@
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <BBCheckbox
+          <NCheckbox
             :disabled="!allowEdit"
-            :value="watermarkEnabled"
-            @toggle="handleWatermarkToggle"
+            :checked="watermarkEnabled"
+            @update:checked="handleWatermarkToggle"
           />
           <span class="font-medium">{{
             $t("settings.general.workspace.watermark.enable")
@@ -41,10 +41,10 @@
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <BBCheckbox
+          <NCheckbox
             :disabled="!allowEdit"
-            :value="disallowSignupEnabled"
-            @toggle="handleDisallowSignupToggle"
+            :checked="disallowSignupEnabled"
+            @update:checked="handleDisallowSignupToggle"
           />
           <span class="font-medium">{{
             $t("settings.general.workspace.disallow-signup.enable")
@@ -66,10 +66,10 @@
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <BBCheckbox
+          <NCheckbox
             :disabled="!allowEdit"
-            :value="require2FAEnabled"
-            @toggle="handleRequire2FAToggle"
+            :checked="require2FAEnabled"
+            @update:checked="handleRequire2FAToggle"
           />
           <span class="font-medium">{{
             $t("settings.general.workspace.require-2fa.enable")
@@ -99,6 +99,7 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { storeToRefs } from "pinia";
+import { NCheckbox } from "naive-ui";
 import {
   featureToRef,
   pushNotification,
@@ -108,7 +109,6 @@ import {
   useActuatorStore,
   useUserStore,
 } from "@/store";
-import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
