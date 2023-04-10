@@ -611,18 +611,23 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, isDone bool) error {
-	var err error
+func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema string, isDone bool) error {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
-
+	update := &store.UpdateInstanceChangeHistoryMessage{
+		ID:                  insertedID,
+		ExecutionDurationNs: &migrationDurationNs,
+	}
 	if isDone {
-		err = store.UpdateInstanceChangeHistoryAsDone(ctx, migrationDurationNs, updatedSchema, insertedID)
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
+		status := db.Done
+		update.Status = &status
+		update.Schema = &updatedSchema
 	} else {
 		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		err = store.UpdateInstanceChangeHistoryAsFailed(ctx, migrationDurationNs, insertedID)
+		status := db.Failed
+		update.Status = &status
 	}
-	return err
+	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
 }
 
 // FindNextPendingStep finds the next pending step in the approval flow.
