@@ -1,7 +1,7 @@
-import { computed, watch, type Ref } from "vue";
+import { computed, watch, type ComputedRef, unref } from "vue";
 import type Emittery from "emittery";
 
-import type { Issue, ReviewFlow, WrappedReviewStep } from "@/types";
+import type { Issue, MaybeRef, ReviewFlow, WrappedReviewStep } from "@/types";
 import { Review } from "@/types/proto/v1/review_service";
 import {
   candidatesOfApprovalStep,
@@ -19,7 +19,7 @@ export type ReviewEvents = {
 };
 
 export const extractIssueReviewContext = (
-  review: Ref<Review>
+  review: ComputedRef<Review>
 ): IssueReviewContext => {
   const ready = computed(() => {
     return review.value.approvalFindingDone ?? false;
@@ -57,7 +57,7 @@ export const extractIssueReviewContext = (
 };
 
 export const provideIssueReview = (
-  issue: Ref<Issue | undefined>,
+  issue: ComputedRef<Issue | undefined>,
   events: Emittery<ReviewEvents>
 ) => {
   const store = useReviewStore();
@@ -102,7 +102,7 @@ export const provideIssueReview = (
 };
 
 export const useWrappedReviewSteps = (
-  issue: Ref<Issue>,
+  issue: MaybeRef<Issue>,
   context: IssueReviewContext
 ) => {
   const userStore = useUserStore();
@@ -127,7 +127,7 @@ export const useWrappedReviewSteps = (
     const candidatesOfStep = (index: number) => {
       const step = steps?.[index];
       if (!step) return [];
-      const users = candidatesOfApprovalStep(issue.value, step);
+      const users = candidatesOfApprovalStep(unref(issue), step);
       const idx = users.indexOf(currentUserName.value);
       if (idx > 0) {
         users.splice(idx, 1);
