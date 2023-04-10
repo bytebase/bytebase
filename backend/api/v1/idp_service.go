@@ -115,14 +115,14 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "identity_provider.title":
+		case "title":
 			patch.Title = &request.IdentityProvider.Title
-		case "identity_provider.domain":
+		case "domain":
 			if strings.ToLower(request.IdentityProvider.Domain) != request.IdentityProvider.Domain {
 				return nil, status.Errorf(codes.InvalidArgument, "domain name must use lower-case")
 			}
 			patch.Domain = &request.IdentityProvider.Domain
-		case "identity_provider.config":
+		case "config":
 			patch.Config = convertIdentityProviderConfigToStore(request.IdentityProvider.Config)
 		}
 	}

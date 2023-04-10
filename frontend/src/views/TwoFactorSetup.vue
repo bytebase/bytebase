@@ -208,7 +208,7 @@ const tryFinishSetup = async () => {
         name: currentUser.value.name,
         mfaEnabled: true,
       },
-      updateMask: ["user.mfa_enabled"],
+      updateMask: ["mfa_enabled"],
     })
   );
   await authStore.refreshUserIfNeeded(currentUser.value.name);

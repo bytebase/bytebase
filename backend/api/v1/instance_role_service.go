@@ -175,15 +175,15 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "role.role_name":
+		case "role_name":
 			upsert.Name = request.Role.RoleName
-		case "role.password":
+		case "password":
 			upsert.Password = request.Role.Password
-		case "role.connection_limit":
+		case "connection_limit":
 			upsert.ConnectionLimit = request.Role.ConnectionLimit
-		case "role.valid_until":
+		case "valid_until":
 			upsert.ValidUntil = request.Role.ValidUntil
-		case "role.attribute":
+		case "attribute":
 			upsert.Attribute = request.Role.Attribute
 		}
 	}
