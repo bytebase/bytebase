@@ -178,6 +178,7 @@ const handleRequire2FAToggle = async (on: boolean) => {
           "settings.general.workspace.require-2fa.need-all-user-2fa-enabled",
           {
             count: userList.length,
+            users: userList.map((user) => user.email).join(", "),
           }
         ),
       });

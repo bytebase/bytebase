@@ -492,7 +492,7 @@
         "require-2fa": {
           "enable": "Require two-factor authentication for all users",
           "description": "When enabled, users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
-          "need-all-user-2fa-enabled": "Requires all users to enable 2FA first. There are still {count} users who have not enabled 2FA."
+          "need-all-user-2fa-enabled": "Requires all users to enable 2FA first. There are still {count} users who have not enabled 2FA: {users}"
         },
         "network": "Network",
         "external-url": {
