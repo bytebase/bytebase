@@ -95,4 +95,6 @@ export type BBAlertStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
 
 export type BBAttentionStyle = "INFO" | "WARN" | "CRITICAL";
 
+export type BBAttentionSide = "BETWEEN" | "CENTER";
+
 export type BBAvatarSizeType = "SMALL" | "NORMAL" | "LARGE" | "HUGE";
