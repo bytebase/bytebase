@@ -876,7 +876,8 @@
     "grants": "Grants",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "create-gcp-credentials": "To create Credentials, see",
-    "used-for-testing-connection": "Used for testing connections only"
+    "used-for-testing-connection": "Used for testing connections only",
+    "all": "All instances"
   },
   "environment": {
     "id": "Environment ID",
