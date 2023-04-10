@@ -5,8 +5,14 @@ import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.store";
 
-/** SlowQueryStatistics is a summary of slow queries. */
+/** SlowQueryStatistics is the slow query statistics. */
 export interface SlowQueryStatistics {
+  /** Items is the list of slow query statistics. */
+  items: SlowQueryStatisticsItem[];
+}
+
+/** SlowQueryStatisticsItem is the item of slow query statistics. */
+export interface SlowQueryStatisticsItem {
   /** sql_fingerprint is the fingerprint of the slow query. */
   sqlFingerprint: string;
   /** count is the number of slow queries with the same fingerprint. */
@@ -34,11 +40,73 @@ export interface SlowQueryDetails {
 }
 
 function createBaseSlowQueryStatistics(): SlowQueryStatistics {
-  return { sqlFingerprint: "", count: 0, latestLogTime: undefined, samples: [] };
+  return { items: [] };
 }
 
 export const SlowQueryStatistics = {
   encode(message: SlowQueryStatistics, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.items) {
+      SlowQueryStatisticsItem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryStatistics {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSlowQueryStatistics();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.items.push(SlowQueryStatisticsItem.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SlowQueryStatistics {
+    return {
+      items: Array.isArray(object?.items) ? object.items.map((e: any) => SlowQueryStatisticsItem.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: SlowQueryStatistics): unknown {
+    const obj: any = {};
+    if (message.items) {
+      obj.items = message.items.map((e) => e ? SlowQueryStatisticsItem.toJSON(e) : undefined);
+    } else {
+      obj.items = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
+    return SlowQueryStatistics.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
+    const message = createBaseSlowQueryStatistics();
+    message.items = object.items?.map((e) => SlowQueryStatisticsItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSlowQueryStatisticsItem(): SlowQueryStatisticsItem {
+  return { sqlFingerprint: "", count: 0, latestLogTime: undefined, samples: [] };
+}
+
+export const SlowQueryStatisticsItem = {
+  encode(message: SlowQueryStatisticsItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.sqlFingerprint !== "") {
       writer.uint32(10).string(message.sqlFingerprint);
     }
@@ -54,10 +122,10 @@ export const SlowQueryStatistics = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryStatistics {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryStatisticsItem {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSlowQueryStatistics();
+    const message = createBaseSlowQueryStatisticsItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -98,7 +166,7 @@ export const SlowQueryStatistics = {
     return message;
   },
 
-  fromJSON(object: any): SlowQueryStatistics {
+  fromJSON(object: any): SlowQueryStatisticsItem {
     return {
       sqlFingerprint: isSet(object.sqlFingerprint) ? String(object.sqlFingerprint) : "",
       count: isSet(object.count) ? Number(object.count) : 0,
@@ -107,7 +175,7 @@ export const SlowQueryStatistics = {
     };
   },
 
-  toJSON(message: SlowQueryStatistics): unknown {
+  toJSON(message: SlowQueryStatisticsItem): unknown {
     const obj: any = {};
     message.sqlFingerprint !== undefined && (obj.sqlFingerprint = message.sqlFingerprint);
     message.count !== undefined && (obj.count = Math.round(message.count));
@@ -120,12 +188,12 @@ export const SlowQueryStatistics = {
     return obj;
   },
 
-  create(base?: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
-    return SlowQueryStatistics.fromPartial(base ?? {});
+  create(base?: DeepPartial<SlowQueryStatisticsItem>): SlowQueryStatisticsItem {
+    return SlowQueryStatisticsItem.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
-    const message = createBaseSlowQueryStatistics();
+  fromPartial(object: DeepPartial<SlowQueryStatisticsItem>): SlowQueryStatisticsItem {
+    const message = createBaseSlowQueryStatisticsItem();
     message.sqlFingerprint = object.sqlFingerprint ?? "";
     message.count = object.count ?? 0;
     message.latestLogTime = object.latestLogTime ?? undefined;
