@@ -98,6 +98,9 @@
   .bb-grid-row.clickable:hover > .bb-grid-cell {
     @apply cursor-pointer bg-gray-100;
   }
+  .bb-grid.hide-header .bb-grid-row:first-child .bb-grid-cell {
+    @apply border-t-0;
+  }
 }
 
 .btn-primary {
