@@ -61,6 +61,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		NeedAdminSetup: count == 0,
 		ExternalUrl:    setting.ExternalUrl,
 		DisallowSignup: setting.DisallowSignup,
+		Require_2Fa:    setting.Require_2Fa,
 		LastActiveTime: timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
 	}
 
