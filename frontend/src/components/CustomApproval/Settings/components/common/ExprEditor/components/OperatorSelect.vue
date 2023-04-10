@@ -56,7 +56,7 @@ const options = computed(() => {
   const operators = getOperatorListByFactor(factor.value);
 
   const mapOption = (op: Operator): SelectOption => {
-    const label = OPERATOR_DICT.get(op) ?? op;
+    const label = OPERATOR_DICT.get(op) ?? op.replace(/^@/g, "");
     return {
       label,
       value: op,

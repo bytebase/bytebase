@@ -23,6 +23,7 @@ import {
 } from "@/plugins/cel";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { useExprEditorContext } from "../context";
+import { factorText } from "../../utils";
 
 const props = defineProps<{
   expr: ConditionExpr;
@@ -63,7 +64,7 @@ const factorList = computed((): Factor[] => {
 
 const options = computed(() => {
   return factorList.value.map<SelectOption>((v) => ({
-    label: v,
+    label: factorText(v),
     value: v,
   }));
 });
