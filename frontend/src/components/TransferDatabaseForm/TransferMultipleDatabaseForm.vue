@@ -22,7 +22,7 @@
           <label class="flex items-center gap-x-2" @click.stop="">
             <input
               type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-0.5"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent ml-0.5"
               v-bind="
                 getAllSelectionStateForEnvironment(
                   environment,
@@ -60,48 +60,42 @@
           </div>
         </template>
 
-        <div class="relative bg-white rounded-md -space-y-px px-2">
-          <template
-            v-for="(database, dbIndex) in databaseListInEnvironment"
-            :key="dbIndex"
-          >
-            <label
-              class="border-control-border relative border p-3 flex flex-col gap-y-2 md:flex-row md:pl-4 md:pr-6"
-              :class="
-                database.syncStatus == 'OK'
-                  ? 'cursor-pointer'
-                  : 'cursor-not-allowed'
-              "
-            >
-              <div class="radio text-sm flex justify-start md:flex-1">
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                  :checked="
-                    isDatabaseSelectedForEnvironment(
-                      database.id,
-                      environment.id
-                    )
-                  "
-                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
-                />
-                <span
-                  class="font-medium ml-2 text-main"
-                  :class="database.syncStatus !== 'OK' && 'opacity-40'"
-                  >{{ database.name }}</span
-                >
-              </div>
-              <div
-                class="flex items-center gap-x-1 textinfolabel ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
+        <BBGrid
+          class="relative bg-white border"
+          :column-list="gridColumnList"
+          :show-header="false"
+          :data-source="databaseListInEnvironment"
+          row-key="id"
+          @click-row="handleClickRow"
+        >
+          <template #item="{ item: database }: { item: Database }">
+            <div class="bb-grid-cell gap-x-2 !pl-[23px]">
+              <input
+                type="checkbox"
+                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
+                :checked="
+                  isDatabaseSelectedForEnvironment(database.id, environment.id)
+                "
+                @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
+                @click.stop=""
+              />
+              <span
+                class="font-medium text-main"
+                :class="database.syncStatus !== 'OK' && 'opacity-40'"
+                >{{ database.name }}</span
               >
-                <InstanceEngineIcon :instance="database.instance" />
-                <span class="flex-1 whitespace-pre-wrap">
-                  {{ instanceName(database.instance) }}
-                </span>
-              </div>
-            </label>
+            </div>
+            <div v-if="showProjectColumn" class="bb-grid-cell">
+              {{ database.project.name }}
+            </div>
+            <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
+              <InstanceEngineIcon :instance="database.instance" />
+              <span class="whitespace-pre-wrap">
+                {{ instanceName(database.instance) }}
+              </span>
+            </div>
           </template>
-        </div>
+        </BBGrid>
       </NCollapseItem>
     </NCollapse>
 
@@ -144,6 +138,7 @@
 import { computed, PropType, reactive, watch } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
+import { type BBGridColumn, BBGrid } from "@/bbkit";
 import { Database, DatabaseId, Environment, EnvironmentId } from "@/types";
 import { TransferSource } from "./utils";
 import { useDatabaseStore, useEnvironmentList } from "@/store";
@@ -173,6 +168,25 @@ const environmentList = useEnvironmentList();
 
 const state = reactive<LocalState>({
   selectedDatabaseIdListForEnvironment: new Map(),
+});
+
+const showProjectColumn = computed(() => {
+  return props.transferSource === "OTHER";
+});
+
+const gridColumnList = computed((): BBGridColumn[] => {
+  const DB_NAME: BBGridColumn = {
+    width: "1fr",
+  };
+  const PROJECT: BBGridColumn = {
+    width: "8rem",
+  };
+  const INSTANCE: BBGridColumn = {
+    width: "14rem",
+  };
+  return showProjectColumn.value
+    ? [DB_NAME, PROJECT, INSTANCE]
+    : [DB_NAME, INSTANCE];
 });
 
 const databaseListGroupByEnvironment = computed(() => {
@@ -264,6 +278,14 @@ const getSelectionStateSummaryForEnvironment = (
   const total = databaseList.length;
 
   return { selected, total };
+};
+
+const handleClickRow = (db: Database) => {
+  toggleDatabaseIdForEnvironment(
+    db.id,
+    db.instance.environment.id,
+    !isDatabaseSelectedForEnvironment(db.id, db.instance.environment.id)
+  );
 };
 
 const allowTransfer = computed(
