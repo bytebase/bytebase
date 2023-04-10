@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-4 pb-4">
     <div>
+      <BBAttention :style="'WARN'" :description="attentionDescription" />
+    </div>
+    <div>
       <EnvironmentTabFilter
         :environment="state.filter.environment?.id ?? UNKNOWN_ID"
         :include-all="true"
@@ -27,6 +30,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 
+import { BBAttention } from "@/bbkit";
 import {
   featureToRef,
   useEnvironmentList,
@@ -43,6 +47,7 @@ import {
 import { EnvironmentTabFilter } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
 import { instanceSupportSlowQuery } from "@/utils";
+import { useI18n } from "vue-i18n";
 
 const emit = defineEmits<{
   (event: "show-feature-modal"): void;
@@ -64,6 +69,7 @@ const state = reactive<LocalState>({
   },
 });
 
+const { t } = useI18n();
 const policyStore = useSlowQueryPolicyStore();
 const instanceStore = useInstanceStore();
 const environmentList = useEnvironmentList(["NORMAL"]);
@@ -133,4 +139,12 @@ const toggleActive = async (instance: Instance, active: boolean) => {
 };
 
 onMounted(prepare);
+
+const attentionDescription = computed(() => {
+  const versions = `MySQL >= 5.7`;
+
+  return t("slow-query.attention-description", {
+    versions,
+  });
+});
 </script>
