@@ -103,12 +103,9 @@ interface LocalState {
   recoveryCodesDownloaded: boolean;
 }
 
-const props = withDefaults(
-  defineProps<{
-    cancelAction?: () => void;
-  }>(),
-  {}
-);
+const props = defineProps<{
+  cancelAction?: () => void;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();

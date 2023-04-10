@@ -490,7 +490,7 @@
         "require-2fa": {
           "enable": "要求所有用户配置双重认证",
           "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
-          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项"
+          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项。还有 {count} 个用户没有配置 2FA。"
         },
         "network": "网络",
         "external-url": {
