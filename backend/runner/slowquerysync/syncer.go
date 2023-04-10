@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	schemaSyncInterval = 12 * time.Hour
+	slowQuerySyncInterval = 12 * time.Hour
 	// retentionCycle is the number of days to keep slow query logs.
 	retentionCycle = 30
 )
