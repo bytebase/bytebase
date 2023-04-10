@@ -71,6 +71,9 @@ import {
   emptyConnection,
   getDefaultTabNameFromConnection,
   hasWorkspacePermission,
+  instanceHasAlterSchema,
+  instanceHasReadonlyMode,
+  instanceOfConnectionAtom,
   isDescendantOf,
   isSimilarTab,
 } from "@/utils";
@@ -124,11 +127,14 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
 
     const items: DropdownOptionWithConnectionAtom[] = [];
     if (isConnectableAtom(atom)) {
-      items.push({
-        key: "connect",
-        label: t("sql-editor.connect"),
-        item: atom,
-      });
+      const instance = instanceOfConnectionAtom(atom);
+      if (instance && instanceHasReadonlyMode(instance)) {
+        items.push({
+          key: "connect",
+          label: t("sql-editor.connect"),
+          item: atom,
+        });
+      }
       if (allowAdmin.value) {
         items.push({
           key: "connect-in-admin-mode",
@@ -138,11 +144,14 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
       }
     }
     if (atom.type === "database") {
-      items.push({
-        key: "alter-schema",
-        label: t("database.alter-schema"),
-        item: atom,
-      });
+      const database = databaseStore.getDatabaseById(atom.id);
+      if (instanceHasAlterSchema(database.instance)) {
+        items.push({
+          key: "alter-schema",
+          label: t("database.alter-schema"),
+          item: atom,
+        });
+      }
     }
     return items;
   }

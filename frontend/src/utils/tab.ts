@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
 import { t } from "../plugins/i18n";
-import type { Connection, CoreTabInfo, TabInfo } from "@/types";
+import type { Connection, ConnectionAtom, CoreTabInfo, TabInfo } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
 import { useDatabaseStore, useInstanceStore } from "@/store";
 
@@ -61,4 +61,14 @@ export const getDefaultTabNameFromConnection = (conn: Connection) => {
     return `${instance.name}`;
   }
   return defaultTabName.value;
+};
+
+export const instanceOfConnectionAtom = (atom: ConnectionAtom) => {
+  if (atom.type === "instance") {
+    return useInstanceStore().getInstanceById(atom.id);
+  }
+  if (atom.type === "database") {
+    return useDatabaseStore().getDatabaseById(atom.id).instance;
+  }
+  return undefined;
 };
