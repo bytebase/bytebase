@@ -24,7 +24,7 @@ export type BBTableColumn = {
 };
 
 export type BBGridColumn = {
-  title: string;
+  title?: string;
   width: ColumnWidth;
   class?: VueClass;
 };

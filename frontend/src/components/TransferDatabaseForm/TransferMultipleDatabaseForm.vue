@@ -1,50 +1,114 @@
 <template>
-  <div class="px-4 space-y-6 w-[60rem]">
+  <div class="px-4 w-[60rem]">
     <slot name="transfer-source-selector" />
 
-    <DatabaseTable
+    <NCollapse
       class="overflow-y-auto"
-      style="max-height: calc(100vh - 400px)"
-      table-class="border"
-      :mode="transferSource === 'DEFAULT' ? 'PROJECT_SHORT' : 'ALL_SHORT'"
-      :custom-click="true"
-      :database-list="databaseList"
-      :show-selection-column="true"
-      @select-database="
-        (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
+      style="max-height: calc(100vh - 380px)"
+      arrow-placement="left"
+      :default-expanded-names="
+        databaseListGroupByEnvironment.map((group) => group.environment.id)
       "
     >
-      <template #selection-all="{ databaseList: renderedDatabaseList }">
-        <input
-          v-if="renderedDatabaseList.length > 0"
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          v-bind="getAllSelectionState(renderedDatabaseList)"
-          @input="
-            toggleAllDatabasesSelection(
-              renderedDatabaseList,
-              ($event.target as HTMLInputElement).checked
-            )
-          "
-        />
-      </template>
-      <template #selection="{ database }">
-        <input
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          :checked="isDatabaseSelected(database)"
-          @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
-        />
-      </template>
-    </DatabaseTable>
+      <NCollapseItem
+        v-for="{
+          environment,
+          databaseList: databaseListInEnvironment,
+        } in databaseListGroupByEnvironment"
+        :key="environment.id"
+        :name="environment.id"
+      >
+        <template #header>
+          <label class="flex items-center gap-x-2" @click.stop="">
+            <input
+              type="checkbox"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent ml-0.5"
+              v-bind="
+                getAllSelectionStateForEnvironment(
+                  environment,
+                  databaseListInEnvironment
+                )
+              "
+              @click.stop=""
+              @input="
+                toggleAllDatabasesSelectionForEnvironment(
+                  environment,
+                  databaseListInEnvironment,
+                  ($event.target as HTMLInputElement).checked
+                )
+              "
+            />
+            <div>{{ environment.name }}</div>
+            <ProductionEnvironmentIcon
+              class="w-4 h-4 -ml-1"
+              :environment="environment"
+            />
+          </label>
+        </template>
+
+        <template #header-extra>
+          <div class="flex items-center text-xs text-gray-500 mr-2">
+            {{
+              $t(
+                "database.n-selected-m-in-total",
+                getSelectionStateSummaryForEnvironment(
+                  environment,
+                  databaseListInEnvironment
+                )
+              )
+            }}
+          </div>
+        </template>
+
+        <BBGrid
+          class="relative bg-white border"
+          :column-list="gridColumnList"
+          :show-header="false"
+          :data-source="databaseListInEnvironment"
+          row-key="id"
+          @click-row="handleClickRow"
+        >
+          <template #item="{ item: database }: { item: Database }">
+            <div class="bb-grid-cell gap-x-2 !pl-[23px]">
+              <input
+                type="checkbox"
+                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
+                :checked="
+                  isDatabaseSelectedForEnvironment(database.id, environment.id)
+                "
+                @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
+                @click.stop=""
+              />
+              <span
+                class="font-medium text-main"
+                :class="database.syncStatus !== 'OK' && 'opacity-40'"
+                >{{ database.name }}</span
+              >
+            </div>
+            <div v-if="showProjectColumn" class="bb-grid-cell">
+              {{ database.project.name }}
+            </div>
+            <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
+              <InstanceEngineIcon :instance="database.instance" />
+              <span class="whitespace-pre-wrap">
+                {{ instanceName(database.instance) }}
+              </span>
+            </div>
+          </template>
+        </BBGrid>
+      </NCollapseItem>
+    </NCollapse>
 
     <!-- Update button group -->
-    <div class="pt-4 border-t border-block-border flex justify-between">
+    <div class="mt-4 pt-4 border-t border-block-border flex justify-between">
       <div>
-        <div v-if="state.selectedDatabaseIdList.size > 0" class="textinfolabel">
+        <div
+          v-if="combinedSelectedDatabaseIdList.length > 0"
+          class="textinfolabel"
+        >
           {{
             $t("database.selected-n-databases", {
-              n: state.selectedDatabaseIdList.size,
+              n: combinedSelectedDatabaseIdList.length,
             })
           }}
         </div>
@@ -72,12 +136,15 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
-import { Database, DatabaseId } from "@/types";
+import { NCollapse, NCollapseItem } from "naive-ui";
+
+import { type BBGridColumn, BBGrid } from "@/bbkit";
+import { Database, DatabaseId, Environment, EnvironmentId } from "@/types";
 import { TransferSource } from "./utils";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseStore, useEnvironmentList } from "@/store";
 
 type LocalState = {
-  selectedDatabaseIdList: Set<DatabaseId>;
+  selectedDatabaseIdListForEnvironment: Map<EnvironmentId, Set<DatabaseId>>;
 };
 
 const props = defineProps({
@@ -97,36 +164,91 @@ const emit = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseStore();
+const environmentList = useEnvironmentList();
 
 const state = reactive<LocalState>({
-  selectedDatabaseIdList: new Set(),
+  selectedDatabaseIdListForEnvironment: new Map(),
+});
+
+const showProjectColumn = computed(() => {
+  return props.transferSource === "OTHER";
+});
+
+const gridColumnList = computed((): BBGridColumn[] => {
+  const DB_NAME: BBGridColumn = {
+    width: "1fr",
+  };
+  const PROJECT: BBGridColumn = {
+    width: "8rem",
+  };
+  const INSTANCE: BBGridColumn = {
+    width: "14rem",
+  };
+  return showProjectColumn.value
+    ? [DB_NAME, PROJECT, INSTANCE]
+    : [DB_NAME, INSTANCE];
+});
+
+const databaseListGroupByEnvironment = computed(() => {
+  const listByEnv = environmentList.value.map((environment) => {
+    const databaseList = props.databaseList.filter(
+      (db) => db.instance.environment.id === environment.id
+    );
+    return {
+      environment,
+      databaseList,
+    };
+  });
+
+  return listByEnv.filter((group) => group.databaseList.length > 0);
 });
 
 watch(
   () => props.transferSource,
   () => {
     // Clear selected database ID list when transferSource changed.
-    state.selectedDatabaseIdList.clear();
+    state.selectedDatabaseIdListForEnvironment.clear();
   }
 );
 
-const isDatabaseSelected = (database: Database): boolean => {
-  return state.selectedDatabaseIdList.has(database.id);
-};
-
-const toggleDatabaseSelection = (database: Database, on: boolean) => {
-  if (on) {
-    state.selectedDatabaseIdList.add(database.id);
-  } else {
-    state.selectedDatabaseIdList.delete(database.id);
+const combinedSelectedDatabaseIdList = computed(() => {
+  const list: DatabaseId[] = [];
+  for (const listForEnv of state.selectedDatabaseIdListForEnvironment.values()) {
+    list.push(...listForEnv);
   }
+  return list;
+});
+
+const isDatabaseSelectedForEnvironment = (
+  databaseId: DatabaseId,
+  environmentId: EnvironmentId
+) => {
+  const map = state.selectedDatabaseIdListForEnvironment;
+  const set = map.get(environmentId) || new Set();
+  return set.has(databaseId);
 };
 
-const getAllSelectionState = (
+const toggleDatabaseIdForEnvironment = (
+  databaseId: DatabaseId,
+  environmentId: EnvironmentId,
+  selected: boolean
+) => {
+  const map = state.selectedDatabaseIdListForEnvironment;
+  const set = map.get(environmentId) || new Set();
+  if (selected) {
+    set.add(databaseId);
+  } else {
+    set.delete(databaseId);
+  }
+  map.set(environmentId, set);
+};
+
+const getAllSelectionStateForEnvironment = (
+  environment: Environment,
   databaseList: Database[]
 ): { checked: boolean; indeterminate: boolean } => {
-  const set = state.selectedDatabaseIdList;
-
+  const set =
+    state.selectedDatabaseIdListForEnvironment.get(environment.id) ?? new Set();
   const checked = databaseList.every((db) => set.has(db.id));
   const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
 
@@ -136,30 +258,46 @@ const getAllSelectionState = (
   };
 };
 
-const toggleAllDatabasesSelection = (
+const toggleAllDatabasesSelectionForEnvironment = (
+  environment: Environment,
   databaseList: Database[],
   on: boolean
-): void => {
-  const set = state.selectedDatabaseIdList;
-  if (on) {
-    databaseList.forEach((db) => {
-      set.add(db.id);
-    });
-  } else {
-    databaseList.forEach((db) => {
-      set.delete(db.id);
-    });
-  }
+) => {
+  databaseList.forEach((db) =>
+    toggleDatabaseIdForEnvironment(db.id, environment.id, on)
+  );
 };
 
-const allowTransfer = computed(() => state.selectedDatabaseIdList.size > 0);
+const getSelectionStateSummaryForEnvironment = (
+  environment: Environment,
+  databaseList: Database[]
+) => {
+  const set =
+    state.selectedDatabaseIdListForEnvironment.get(environment.id) || new Set();
+  const selected = databaseList.filter((db) => set.has(db.id)).length;
+  const total = databaseList.length;
+
+  return { selected, total };
+};
+
+const handleClickRow = (db: Database) => {
+  toggleDatabaseIdForEnvironment(
+    db.id,
+    db.instance.environment.id,
+    !isDatabaseSelectedForEnvironment(db.id, db.instance.environment.id)
+  );
+};
+
+const allowTransfer = computed(
+  () => combinedSelectedDatabaseIdList.value.length > 0
+);
 
 const transferDatabase = () => {
-  if (state.selectedDatabaseIdList.size === 0) return;
+  if (combinedSelectedDatabaseIdList.value.length === 0) return;
 
   // If a database can be selected, it must be fetched already.
   // So it's safe that we won't get <<Unknown database>> here.
-  const databaseList = [...state.selectedDatabaseIdList.values()].map((id) =>
+  const databaseList = combinedSelectedDatabaseIdList.value.map((id) =>
     databaseStore.getDatabaseById(id)
   );
   emit("submit", databaseList);

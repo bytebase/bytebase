@@ -109,10 +109,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, err
 	}
 	defer driver.Close(ctx)
-	connection, err := driver.GetDBConnection(ctx, database.DatabaseName)
-	if err != nil {
-		return nil, err
-	}
+	connection := driver.GetDB()
 
 	adviceList, err := advisor.SQLReviewCheck(payload.Statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbSchema.Metadata.CharacterSet,

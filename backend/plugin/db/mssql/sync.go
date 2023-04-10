@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -46,7 +47,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -55,15 +56,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 
 	schemaNames, err := getSchemas(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
 	tableMap, err := getTables(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
 	viewMap, err := getViews(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
@@ -71,7 +72,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
+		Name: driver.databaseName,
 	}
 	for _, schemaName := range schemaNames {
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
@@ -310,4 +311,9 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	}
 
 	return viewMap, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

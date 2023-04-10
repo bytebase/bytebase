@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -72,22 +71,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		return true, nil, err
 	}
 
-	var driver db.Driver
-	if instance.Engine == db.MongoDB {
-		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
-		// And run the create collection statement later.
-		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, payload.DatabaseName)
-		if err != nil {
-			return true, nil, err
-		}
-	} else {
-		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err != nil {
-			return true, nil, err
-		}
-	}
-	defer driver.Close(ctx)
-
 	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &payload.ProjectID})
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
@@ -96,51 +79,133 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		return true, nil, errors.Errorf("project not found with ID %d", payload.ProjectID)
 	}
 
-	var schemaVersion string
-	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	if project.TenantMode == api.TenantModeTenant {
-		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project)
-		if err != nil {
-			return true, nil, err
-		}
-		schemaVersion = sv
-		if instance.Engine == db.Spanner {
-			statement = fmt.Sprintf("%s;%s", statement, schema)
-		} else {
-			connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
-			if err != nil {
-				return true, nil, err
-			}
-			if !strings.Contains(payload.Statement, connectionStmt) {
-				statement = fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, schema)
-			}
-		}
-	}
-	if schemaVersion == "" {
-		schemaVersion = common.DefaultMigrationVersion()
-	}
-
+	// Create database.
 	log.Debug("Start creating database...",
 		zap.String("instance", instance.Title),
 		zap.String("database", payload.DatabaseName),
-		zap.String("schemaVersion", schemaVersion),
 		zap.String("statement", statement),
 	)
+	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	if err != nil {
+		return true, nil, err
+	}
+	defer defaultDBDriver.Close(ctx)
+	if _, err := defaultDBDriver.Execute(ctx, statement, true /* createDatabase */); err != nil {
+		return true, nil, err
+	}
+	// Upsert first because we need database id in instance change history.
+	// The sync status is NOT_FOUND, which will be updated to OK if succeeds.
+	labels := make(map[string]string)
+	if payload.Labels != "" {
+		var databaseLabels []*api.DatabaseLabel
+		if err := json.Unmarshal([]byte(payload.Labels), &databaseLabels); err != nil {
+			return true, nil, err
+		}
+		for _, databaseLabel := range databaseLabels {
+			labels[databaseLabel.Key] = databaseLabel.Value
+		}
+	}
+	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:            project.ResourceID,
+		EnvironmentID:        environment.ResourceID,
+		InstanceID:           instance.ResourceID,
+		DatabaseName:         payload.DatabaseName,
+		SyncState:            api.NotFound,
+		SuccessfulSyncTimeTs: time.Now().Unix(),
+		Labels:               labels,
+	})
+	if err != nil {
+		return true, nil, err
+	}
 
-	// Create a migrate migration history upon creating the database.
+	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+	peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, environment, instance, project, task, database)
+	if err != nil {
+		return true, nil, err
+	}
+
+	syncStatus := api.OK
+	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		EnvironmentID: environment.ResourceID,
+		InstanceID:    instance.ResourceID,
+		DatabaseName:  payload.DatabaseName,
+		SyncState:     &syncStatus,
+		SchemaVersion: &peerSchemaVersion,
+	}, api.SystemBotID); err != nil {
+		return true, nil, err
+	}
+
+	// After the task related database entry created successfully,
+	// we need to update task's database_id and statement with the newly created database immediately.
+	// Here is the main reason:
+	// The task database_id represents its related database entry both for creating and patching,
+	// so we should sync its value right here when the related database entry created.
+	// The new statement should include the schema from peer tenant database.
+	taskDatabaseIDPatch := &api.TaskPatch{
+		ID:         task.ID,
+		UpdaterID:  api.SystemBotID,
+		DatabaseID: &database.UID,
+	}
+	if peerSchema != "" {
+		// Better displaying schema in the task.
+		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
+		if err != nil {
+			return true, nil, err
+		}
+		fullSchema := fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, peerSchema)
+		taskDatabaseIDPatch.Statement = &fullSchema
+	}
+	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
+		return true, nil, err
+	}
+
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instanceName", instance.ResourceID),
+			zap.String("databaseName", database.DatabaseName),
+			zap.Error(err),
+		)
+	}
+
+	return true, &api.TaskRunResultPayload{
+		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
+		MigrationID: "",
+		Version:     peerSchemaVersion,
+	}, nil
+}
+
+func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, database *store.DatabaseMessage) (string, string, error) {
+	if project.TenantMode != api.TenantModeTenant {
+		return "", "", nil
+	}
+
+	schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, database)
+	if err != nil {
+		return "", "", err
+	}
+	if schema == "" {
+		return "", "", nil
+	}
+
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	if err != nil {
+		return "", "", err
+	}
+	defer driver.Close(ctx)
+
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
 		InstanceID:     &task.InstanceID,
 		CreatorID:      task.CreatorID,
 		ReleaseVersion: exec.profile.Version,
 		Version:        schemaVersion,
-		Namespace:      payload.DatabaseName,
-		Database:       payload.DatabaseName,
+		Namespace:      database.DatabaseName,
+		Database:       database.DatabaseName,
+		DatabaseID:     &database.UID,
 		Environment:    environment.ResourceID,
 		Source:         db.UI,
 		Type:           db.Migrate,
 		Description:    "Create database",
-		CreateDatabase: true,
 		Force:          true,
 	}
 	creator, err := exec.store.GetUserByID(ctx, task.CreatorID)
@@ -174,78 +239,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		mi.IssueIDInt = &issue.UID
 	}
 
-	// Upsert first because we need database id in instance change history.
-	// The sync status is NOT_FOUND, which will be updated to OK if succeeds.
-	labels := make(map[string]string)
-	if payload.Labels != "" {
-		var databaseLabels []*api.DatabaseLabel
-		if err := json.Unmarshal([]byte(payload.Labels), &databaseLabels); err != nil {
-			return true, nil, err
-		}
-		for _, databaseLabel := range databaseLabels {
-			labels[databaseLabel.Key] = databaseLabel.Value
-		}
+	if _, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, schema, nil /* executeBeforeCommitTx */); err != nil {
+		return "", "", err
 	}
-	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
-		ProjectID:            project.ResourceID,
-		EnvironmentID:        environment.ResourceID,
-		InstanceID:           instance.ResourceID,
-		DatabaseName:         payload.DatabaseName,
-		SyncState:            api.NotFound,
-		SuccessfulSyncTimeTs: time.Now().Unix(),
-		SchemaVersion:        schemaVersion,
-		Labels:               labels,
-	})
-	if err != nil {
-		return true, nil, err
-	}
-
-	mi.DatabaseID = &database.UID
-
-	migrationID, _, err := utils.ExecuteMigration(ctx, exec.store, driver, mi, statement, nil /* executeBeforeCommitTx */)
-	if err != nil {
-		return true, nil, err
-	}
-
-	syncStatus := api.OK
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID: environment.ResourceID,
-		InstanceID:    instance.ResourceID,
-		DatabaseName:  payload.DatabaseName,
-		SyncState:     &syncStatus,
-	}, api.SystemBotID); err != nil {
-		return true, nil, err
-	}
-
-	// After the task related database entry created successfully,
-	// we need to update task's database_id and statement with the newly created database immediately.
-	// Here is the main reason:
-	// The task database_id represents its related database entry both for creating and patching,
-	// so we should sync its value right here when the related database entry created.
-	// The new statement should include the schema from peer tenant database.
-	taskDatabaseIDPatch := &api.TaskPatch{
-		ID:         task.ID,
-		UpdaterID:  api.SystemBotID,
-		DatabaseID: &database.UID,
-		Statement:  &statement,
-	}
-	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
-		return true, nil, err
-	}
-
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
-		)
-	}
-
-	return true, &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
-		MigrationID: migrationID,
-		Version:     mi.Version,
-	}, nil
+	return schemaVersion, schema, nil
 }
 
 func getConnectionStatement(dbType db.Type, databaseName string) (string, error) {
@@ -268,6 +265,8 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 		return "", nil
 	case db.Redshift:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
+	case db.Spanner:
+		return "", nil
 	}
 
 	return "", errors.Errorf("unsupported database type %s", dbType)
@@ -277,12 +276,18 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage) (string, string, error) {
-	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (string, string, error) {
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+	}
+	var databases []*store.DatabaseMessage
+	for _, d := range allDatabases {
+		if d.UID != database.UID {
+			databases = append(databases, d)
+		}
 	}
 
 	deploymentConfig, err := stores.GetDeploymentConfigV2(ctx, project.UID)
@@ -322,7 +327,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	}
 
 	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, similarDB.DatabaseName, &schemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil

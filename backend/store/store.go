@@ -2,6 +2,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -42,8 +43,8 @@ func New(db *DB) *Store {
 }
 
 // Close closes underlying db.
-func (s *Store) Close() error {
-	return s.db.Close()
+func (s *Store) Close(ctx context.Context) error {
+	return s.db.Close(ctx)
 }
 
 func getInstanceCacheKey(environmentID, instanceID string) string {

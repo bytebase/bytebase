@@ -147,7 +147,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 			// Return default deployment config.
 			return s.getDefaultDeploymentConfigV2(ctx)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {

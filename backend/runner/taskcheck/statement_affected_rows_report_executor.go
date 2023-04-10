@@ -78,11 +78,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	}
 	defer driver.Close(ctx)
 
-	sqlDB, err := driver.GetDBConnection(ctx, database.DatabaseName)
-	if err != nil {
-		return nil, err
-	}
-
+	sqlDB := driver.GetDB()
 	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, payload.Statement)

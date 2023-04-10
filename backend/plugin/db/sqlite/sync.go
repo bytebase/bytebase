@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -48,8 +49,17 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+	var version string
+	if err := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
+		return "", err
+	}
+	return version, nil
+}
+
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
@@ -59,25 +69,21 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		Name: "",
 	}
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:    databaseName,
+		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	found := false
 	for _, database := range databases {
-		if database == databaseName {
+		if database == driver.databaseName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	sqldb, err := driver.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
-	}
-	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -254,4 +260,9 @@ func getViews(txn *sql.Tx) ([]*storepb.ViewMetadata, error) {
 	}
 
 	return views, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

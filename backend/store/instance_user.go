@@ -41,7 +41,7 @@ func (s *Store) GetInstanceUser(ctx context.Context, find *FindInstanceUserMessa
 func (s *Store) ListInstanceUsers(ctx context.Context, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -51,7 +51,7 @@ func (s *Store) ListInstanceUsers(ctx context.Context, find *FindInstanceUserMes
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return instanceUsers, nil
@@ -115,11 +115,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage) ([]string, []*InstanceUserMessage) {
@@ -166,7 +162,7 @@ func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMe
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -175,12 +171,12 @@ func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMe
 			&instanceUser.Name,
 			&instanceUser.Grant,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		instanceUsers = append(instanceUsers, &instanceUser)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return instanceUsers, nil
 }

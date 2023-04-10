@@ -1,4 +1,4 @@
-package store
+package migrator
 
 import (
 	"context"
@@ -13,8 +13,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -161,7 +163,7 @@ func TestMigrationCompatibility(t *testing.T) {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", pgPort),
 	}
-	driver, err := dbdriver.Open(
+	defaultDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
@@ -169,47 +171,64 @@ func TestMigrationCompatibility(t *testing.T) {
 		dbdriver.ConnectionContext{},
 	)
 	require.NoError(t, err)
-	defer driver.Close(ctx)
-	d := driver.(*pg.Driver)
-
-	err = d.SetupMigrationIfNeeded(ctx)
+	defer defaultDriver.Close(ctx)
+	// Create a database with release latest schema.
+	databaseName := "hidb"
+	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true)
 	require.NoError(t, err)
+
+	metadataConnConfig := connCfg
+	metadataConnConfig.Database = databaseName
+	metadataConnConfig.StrictUseDb = true
+	metadataDriver, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
+		metadataConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	require.NoError(t, err)
+
+	db := store.NewDB(metadataConnConfig, pgBinDir, "", false, "", common.ReleaseModeDev)
+	err = db.Open(ctx)
+	require.NoError(t, err)
+	storeInstance := store.New(db)
 
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
-	// Create a database with release latest schema.
-	databaseName := "hidb"
-	// Passing curVers = nil will create the database.
-	err = migrate(ctx, d, nil, common.ReleaseModeProd, false /* strictDb */, serverVersion, databaseName)
+	// Create initial schema.
+	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &databaseName,
+	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: nil,
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
-	require.Equal(t, histories[0].Version, releaseVersion.String())
+	_, version, _, err := util.FromStoredVersion(histories[0].Version)
+	require.NoError(t, err)
+	require.Equal(t, version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeProd, false /* strictDb */, serverVersion, databaseName)
+	err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &databaseName,
+	histories, err = storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: nil,
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 
 	// Apply migration to dev latest if there are patches.
-	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, false /* strictDb */, serverVersion, databaseName)
+	err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
 	require.NoError(t, err)
 
 	// Check migration history.
 	devMigrations, err := getDevMigrations()
 	require.NoError(t, err)
-	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &databaseName,
+	histories, err = storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: nil,
 	})
 	require.NoError(t, err)
 	// The extra one is for the initial schema setup.

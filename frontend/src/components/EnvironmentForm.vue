@@ -66,13 +66,13 @@
       </div>
       <div class="col-span-1 mt-6">
         <label class="textlabel">
-          {{ $t("policy.roll-out.name") }}
+          {{ $t("policy.rollout.name") }}
         </label>
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
-          $t("policy.roll-out.tip")
+          $t("policy.rollout.tip")
         }}</span>
         <div class="mt-1 textinfolabel">
-          {{ $t("policy.roll-out.info") }}
+          {{ $t("policy.rollout.info") }}
         </div>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
@@ -87,10 +87,10 @@
             />
             <div class="-mt-0.5">
               <div class="textlabel">
-                {{ $t("policy.roll-out.manual") }}
+                {{ $t("policy.rollout.manual") }}
               </div>
               <div class="mt-1 textinfolabel">
-                {{ $t("policy.roll-out.manual-info") }}
+                {{ $t("policy.rollout.manual-info") }}
               </div>
             </div>
           </div>
@@ -116,14 +116,14 @@
             />
             <div class="-mt-0.5">
               <div class="textlabel flex">
-                {{ $t("policy.roll-out.auto") }}
+                {{ $t("policy.rollout.auto") }}
                 <FeatureBadge
                   feature="bb.feature.approval-policy"
                   class="text-accent"
                 />
               </div>
               <div class="mt-1 textinfolabel">
-                {{ $t("policy.roll-out.auto-info") }}
+                {{ $t("policy.rollout.auto-info") }}
               </div>
             </div>
           </div>

@@ -3,10 +3,13 @@ package spanner
 import (
 	"context"
 	"sort"
+	"time"
 
 	"cloud.google.com/go/spanner"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/pkg/errors"
@@ -56,28 +59,28 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
-	notFound, err := d.notFoundDatabase(ctx, databaseName)
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+	notFound, err := d.notFoundDatabase(ctx, d.databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to check if database exists")
 	}
 	if notFound {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
 
 	tx := d.client.ReadOnlyTransaction()
 	defer tx.Close()
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
+		Name: d.databaseName,
 	}
 	tableMap, err := getTable(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
 	viewMap, err := getView(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
 
 	schemaNameMap := make(map[string]bool)
@@ -101,6 +104,18 @@ func (d *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storep
 	}
 
 	return databaseMetadata, err
+}
+
+func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (bool, error) {
+	dsn := getDSN(d.config.Host, databaseName)
+	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: dsn})
+	if status.Code(err) == codes.NotFound {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[string][]*storepb.TableMetadata, error) {
@@ -353,4 +368,9 @@ func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[string][
 		})
 	}
 	return viewMap, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

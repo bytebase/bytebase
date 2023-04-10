@@ -124,13 +124,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		return true, nil, err
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-	if err != nil {
-		return true, nil, err
-	}
-	defer driver.Close(ctx)
-
-	if err := exec.doCutover(ctx, driver, instance, issue, database.DatabaseName); err != nil {
+	if err := exec.doCutover(ctx, instance, issue, database.DatabaseName); err != nil {
 		return true, nil, err
 	}
 
@@ -155,7 +149,12 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		IssueID:        strconv.Itoa(issue.UID),
 	}
 
-	if _, _, err := utils.ExecuteMigration(ctx, exec.store, driver, m, "/* pitr cutover */", nil /* executeBeforeCommitTx */); err != nil {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	if err != nil {
+		return true, nil, err
+	}
+	defer driver.Close(ctx)
+	if _, _, err := utils.ExecuteMigration(ctx, exec.store, driver, m, "" /* pitr cutover */, nil /* executeBeforeCommitTx */); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
@@ -180,7 +179,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}, nil
 }
 
-func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
+func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
 	switch instance.Engine {
 	case db.Postgres:
 		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
@@ -192,7 +191,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 			select {
 			case <-ticker.C:
 				retry++
-				if err := exec.pitrCutoverPostgres(ctx, driver, issue, databaseName); err != nil {
+				if err := exec.pitrCutoverPostgres(ctx, instance, issue, databaseName); err != nil {
 					if retry == maxRetry {
 						return errors.Wrapf(err, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
 					}
@@ -205,7 +204,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 			}
 		}
 	case db.MySQL, db.MariaDB:
-		if err := exec.pitrCutoverMySQL(ctx, driver, issue, databaseName); err != nil {
+		if err := exec.pitrCutoverMySQL(ctx, instance, issue, databaseName); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}
 		return nil
@@ -214,11 +213,13 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver
 	}
 }
 
-func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, issue *store.IssueMessage, databaseName string) error {
-	driverDB, err := driver.GetDBConnection(ctx, "")
+func (exec *PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		return err
 	}
+	defer driver.Close(ctx)
+	driverDB := driver.GetDB()
 	conn, err := driverDB.Conn(ctx)
 	if err != nil {
 		return err
@@ -234,13 +235,15 @@ func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driv
 	return nil
 }
 
-func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, issue *store.IssueMessage, databaseName string) error {
+func (exec *PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, issue.CreatedTime.Unix())
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(databaseName, issue.CreatedTime.Unix())
-	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+
+	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
-		return errors.Wrap(err, "failed to get connection for PostgreSQL")
+		return err
 	}
+	db := defaultDBDriver.GetDB()
 
 	// The original database may not exist.
 	// This is possible if there's a former task execution which successfully renamed original -> _del database and failed.

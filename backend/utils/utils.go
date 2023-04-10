@@ -476,13 +476,11 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 // ExecuteMigration executes migration.
 func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
-	if !m.CreateDatabase {
-		// For baseline migration, we also record the live schema to detect the schema drift.
-		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if _, err := driver.Dump(ctx, m.Database, &prevSchemaBuf, true /* schemaOnly */); err != nil {
-			return "", "", err
-		}
+	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
+	// For baseline migration, we also record the live schema to detect the schema drift.
+	// See https://bytebase.com/blog/what-is-database-schema-drift
+	if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+		return "", "", err
 	}
 
 	insertedID, err := BeginMigration(ctx, store, m, prevSchemaBuf.String(), statement)
@@ -496,7 +494,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, store, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, store, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.String("migration_id", migrationHistoryID),
@@ -521,11 +519,11 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 			if !ok {
 				return "", "", errors.New("failed to cast driver to oracle driver")
 			}
-			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, m, statement, executeBeforeCommitTx); err != nil {
+			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, statement, executeBeforeCommitTx); err != nil {
 				return "", "", err
 			}
 		} else {
-			if _, _, err := driver.ExecuteMigration(ctx, m, statement); err != nil {
+			if _, err := driver.Execute(ctx, statement, false /* createDatabase */); err != nil {
 				return "", "", err
 			}
 		}
@@ -533,7 +531,7 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, m.Database, &afterSchemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
 		// We will ignore the dump error if the database is dropped.
 		if strings.Contains(err.Error(), "not found") {
 			return insertedID, "", nil
@@ -613,18 +611,23 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, store *store.Store, startedNs int64, insertedID string, updatedSchema string, _ string, isDone bool) error {
-	var err error
+func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema string, isDone bool) error {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
-
+	update := &store.UpdateInstanceChangeHistoryMessage{
+		ID:                  insertedID,
+		ExecutionDurationNs: &migrationDurationNs,
+	}
 	if isDone {
-		err = store.UpdateInstanceChangeHistoryAsDone(ctx, migrationDurationNs, updatedSchema, insertedID)
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
+		status := db.Done
+		update.Status = &status
+		update.Schema = &updatedSchema
 	} else {
 		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		err = store.UpdateInstanceChangeHistoryAsFailed(ctx, migrationDurationNs, insertedID)
+		status := db.Failed
+		update.Status = &status
 	}
-	return err
+	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
 }
 
 // FindNextPendingStep finds the next pending step in the approval flow.

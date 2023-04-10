@@ -178,13 +178,19 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		}
 		task = updatedTask
 	}
+
+	var executeBeforeCommitTx func(tx *sql.Tx) error
+	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
+		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
+		executeBeforeCommitTx = getSetOracleTransactionIDFunc(ctx, task, stores)
+	}
+	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, executeBeforeCommitTx)
+	if err != nil {
+		return "", "", err
+	}
+
 	// If the migration is a data migration, enable the rollback SQL generation and the type of the driver is Oracle, we need to get the rollback SQL before the transaction is committed.
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
-		migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, getSetOracleTransactionIDFunc(ctx, task, stores))
-		if err != nil {
-			return "", "", err
-		}
-		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
 		updatedTask, err := stores.GetTaskV2ByID(ctx, task.ID)
 		if err != nil {
 			return "", "", errors.Wrapf(err, "cannot get task by id %d", task.ID)
@@ -197,12 +203,6 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 			// The runner will periodically scan the map to generate rollback SQL asynchronously.
 			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
 		}
-		return migrationID, schema, nil
-	}
-
-	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, nil /* executeBeforeCommitTx */)
-	if err != nil {
-		return "", "", err
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
@@ -284,10 +284,7 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	}
 	payload.ThreadID = connID
 
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the DB connection")
-	}
+	db := driver.GetDB()
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
@@ -323,10 +320,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	}
 
 	payload.MigrationID = migrationID
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the DB connection")
-	}
+	db := driver.GetDB()
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")

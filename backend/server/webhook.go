@@ -552,11 +552,7 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
-		connection, err := driver.GetDBConnection(ctx, database.DatabaseName)
-		if err != nil {
-			return nil, err
-		}
-
+		connection := driver.GetDB()
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return nil, err

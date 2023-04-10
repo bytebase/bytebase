@@ -2,13 +2,17 @@
   <div
     role="table"
     class="bb-grid border-block-border"
-    :class="gridClass"
+    :class="[showHeader ? 'show-header' : 'hide-header', gridClass]"
     v-bind="$attrs"
   >
     <template v-if="customHeader">
       <slot name="header" />
     </template>
-    <div v-else role="table-row" class="bb-grid-row bb-grid-header-row group">
+    <div
+      v-else-if="showHeader"
+      role="table-row"
+      class="bb-grid-row bb-grid-header-row group"
+    >
       <div
         v-for="(column, row) in columnList"
         :key="row"
