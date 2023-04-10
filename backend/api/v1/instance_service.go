@@ -128,11 +128,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "instance.title":
+		case "title":
 			patch.Title = &request.Instance.Title
-		case "instance.external_link":
+		case "external_link":
 			patch.ExternalLink = &request.Instance.ExternalLink
-		case "instance.data_sources":
+		case "data_sources":
 			datasourceList, err := s.convertToDataSourceMessages(request.Instance.DataSources)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())

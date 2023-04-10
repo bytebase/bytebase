@@ -99,19 +99,19 @@ export const getUpdateMaskFromUsers = (
 ): string[] => {
   const updateMask: string[] = [];
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
-    updateMask.push("user.title");
+    updateMask.push("title");
   }
   if (!isUndefined(update.email) && !isEqual(origin.email, update.email)) {
-    updateMask.push("user.email");
+    updateMask.push("email");
   }
   if (!isUndefined(update.password)) {
-    updateMask.push("user.password");
+    updateMask.push("password");
   }
   if (
     !isUndefined(update.userRole) &&
     !isEqual(origin.userRole, update.userRole)
   ) {
-    updateMask.push("user.role");
+    updateMask.push("role");
   }
   return updateMask;
 };

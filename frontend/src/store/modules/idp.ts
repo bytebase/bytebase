@@ -120,13 +120,13 @@ const getUpdateMaskFromIdentityProviders = (
 ): string[] => {
   const updateMask: string[] = [];
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
-    updateMask.push("identity_provider.title");
+    updateMask.push("title");
   }
   if (!isUndefined(update.domain) && !isEqual(origin.domain, update.domain)) {
-    updateMask.push("identity_provider.domain");
+    updateMask.push("domain");
   }
   if (!isUndefined(update.config) && !isEqual(origin.config, update.config)) {
-    updateMask.push("identity_provider.config");
+    updateMask.push("config");
   }
   return updateMask;
 };
