@@ -3,6 +3,7 @@ import {
   Risk_Source,
   risk_SourceToJSON,
 } from "@/types/proto/v1/risk_service";
+import type { Factor } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 
 export const sourceText = (source: Risk_Source) => {
@@ -30,4 +31,12 @@ export const orderByLevelDesc = (a: Risk, b: Risk): number => {
   if (a.level !== b.level) return -(a.level - b.level);
   if (a.name === b.name) return 0;
   return a.name < b.name ? -1 : 1;
+};
+
+export const factorText = (factor: Factor) => {
+  const keypath = `custom-approval.security-rule.risk.factor.${factor}`;
+  if (te(keypath)) {
+    return t(keypath);
+  }
+  return factor;
 };
