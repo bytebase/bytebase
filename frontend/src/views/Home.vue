@@ -13,6 +13,23 @@
       />
     </div>
 
+    <WaitingForMyApprovalIssueTable
+      :issue-find="{
+        statusList: ['OPEN'],
+      }"
+    >
+      <template #table="{ issueList, loading }">
+        <IssueTable
+          :left-bordered="false"
+          :right-bordered="false"
+          :bottom-bordered="loading"
+          :show-placeholder="!loading"
+          :title="$t('issue.waiting-for-my-approval')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+        />
+      </template>
+    </WaitingForMyApprovalIssueTable>
+
     <!-- show OPEN Assigned issues with pageSize=10 -->
     <PagedIssueTable
       session-key="home-assigned"
@@ -171,7 +188,6 @@
 import { onMounted, reactive, ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
-import { IssueTable } from "../components/Issue";
 import { activeEnvironment } from "../utils";
 import { Environment, Issue, planTypeToString } from "../types";
 import {
@@ -180,7 +196,11 @@ import {
   useSubscriptionStore,
   useOnboardingStateStore,
 } from "@/store";
-import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
+import {
+  IssueTable,
+  PagedIssueTable,
+  WaitingForMyApprovalIssueTable,
+} from "@/components/Issue/table";
 
 interface LocalState {
   searchText: string;

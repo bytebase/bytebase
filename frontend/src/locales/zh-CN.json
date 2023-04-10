@@ -710,7 +710,8 @@
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
-    "issue-name": "工单名称"
+    "issue-name": "工单名称",
+    "waiting-for-my-approval": "等待我审批"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
