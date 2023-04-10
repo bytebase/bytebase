@@ -14,6 +14,8 @@ const InstanceMaximumConnectionNumber = 20
 type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
 	InstanceDatabaseSyncChan chan *api.Instance
+	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
+	InstanceSlowQuerySyncChan chan *api.Instance
 
 	// RollbackGenerate is the set of tasks for generating rollback statements.
 	RollbackGenerate sync.Map // map[task.ID]*store.TaskMessage

@@ -475,7 +475,7 @@ type Driver interface {
 	// Sync slow query logs
 	// SyncSlowQuery syncs the slow query logs.
 	// The returned map is keyed by database name, and the value is a map keyed by query fingerprint.
-	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]map[string]*storepb.SlowQueryStatistics, error)
+	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error)
 
 	// Role
 	// CreateRole creates the role.
