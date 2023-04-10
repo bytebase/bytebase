@@ -2075,7 +2075,9 @@
     "messages": {
       "2fa-enabled": "双重认证开启成功",
       "2fa-disabled": "双重认证禁用成功",
-      "recovery-codes-regenerated": "恢复码已经重新生成"
+      "recovery-codes-regenerated": "恢复码已经重新生成",
+      "2fa-required": "您的管理员要求所有用户配置双重认证。请先配置双重认证，才能继续使用。",
+      "cannot-disable": "您的管理员要求所有用户配置双重认证。您无法禁用双重认证。"
     }
   },
   "plugin": {

@@ -61,8 +61,7 @@
           {{ $t("settings.general.workspace.disallow-signup.description") }}
         </div>
       </div>
-      <!-- TODO(steven): remove release guard later -->
-      <div v-if="isDev" class="mb-7 mt-5 lg:mt-0">
+      <div class="mb-7 mt-5 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
