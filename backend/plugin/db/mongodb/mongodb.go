@@ -34,6 +34,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	client        *mongo.Client
+	databaseName  string
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -51,6 +52,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.Connection
 	driver.client = client
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
+	driver.databaseName = connCfg.Database
 	return driver, nil
 }
 
@@ -75,11 +77,9 @@ func (*Driver) GetType() db.Type {
 	return db.MongoDB
 }
 
-// GetDBConnection returns a database connection.
-// It always return nil because it has not implemented the SQL interface, and we always return error, it's caller's responsibility to
-// avoid calling this function for MongoDB.
-func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return nil, errors.New("mongodb doesn't support GetDBConnection")
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
+	panic("mongodb doesn't support GetD")
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
@@ -153,7 +153,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 

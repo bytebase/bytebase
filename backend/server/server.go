@@ -53,6 +53,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
+	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
@@ -76,13 +77,13 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	"github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 
 	// Register mysql driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// Register postgres driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	// Register snowflake driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	// Register sqlite driver.
@@ -291,18 +292,25 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot connect metadb")
 	}
 
-	schemaVer, err := storeDB.Open(ctx)
-	if err != nil {
+	if err := storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	s.SchemaVersion = schemaVer
+	storeInstance := store.New(storeDB)
+	if profile.Readonly {
+		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+	} else {
+		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
+		if err != nil {
+			return nil, err
+		}
+		s.SchemaVersion = metadataVersion
+	}
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
 	}
-	storeInstance := store.New(storeDB)
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
@@ -782,17 +790,15 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl:    s.profile.ExternalURL,
-		DisallowSignup: false,
+		ExternalUrl: s.profile.ExternalURL,
 	}
 	if workspaceProfileSetting != nil {
-		payload := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), payload); err != nil {
+		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
 			return nil, err
 		}
-		workspaceProfilePayload.DisallowSignup = payload.DisallowSignup
-		if s.profile.ExternalURL == "" {
-			workspaceProfilePayload.ExternalUrl = payload.ExternalUrl
+		if s.profile.ExternalURL != "" {
+			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
 		}
 	}
 
@@ -886,7 +892,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Close db connection
 	if s.store != nil {
-		if err := s.store.Close(); err != nil {
+		if err := s.store.Close(ctx); err != nil {
 			return err
 		}
 	}
@@ -1178,7 +1184,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				limit := 10
 				offset := 0
 
-				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB || instance.Engine == db.SQLite || instance.Engine == db.MSSQL {
+				if !(instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.ClickHouse) {
 					return nil
 				}
 				if instanceMigrated[instance.UID] {
@@ -1201,13 +1207,37 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				defer driver.Close(ctx)
 
 				for {
-					history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-						InstanceID: &instance.UID,
-						Limit:      &limit,
-						Offset:     &offset,
-					})
-					if err != nil {
-						return err
+					var history []*db.MigrationHistory
+					if instance.Engine == db.MySQL {
+						myDriver := driver.(*mysql.Driver)
+						history, err = myDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
+					} else if instance.Engine == db.Postgres {
+						pgDriver := driver.(*pg.Driver)
+						history, err = pgDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
+					} else if instance.Engine == db.ClickHouse {
+						cDriver := driver.(*clickhouse.Driver)
+						history, err = cDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
 					}
 					if len(history) == 0 {
 						break

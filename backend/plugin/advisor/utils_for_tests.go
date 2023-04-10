@@ -237,9 +237,9 @@ func (*MockDriver) GetType() database.Type {
 	return database.Type("MOCK")
 }
 
-// GetDBConnection implements the Driver interface.
-func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return nil, nil
+// GetDB gets the database.
+func (*MockDriver) GetDB() *sql.DB {
+	return nil
 }
 
 // Execute implements the Driver interface.
@@ -288,27 +288,12 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, 
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
-	return nil, nil
-}
-
-// NeedsSetupMigration implements the Driver interface.
-func (*MockDriver) NeedsSetupMigration(_ context.Context) (bool, error) {
-	return false, nil
-}
-
-// SetupMigrationIfNeeded implements the Driver interface.
-func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
-	return nil
-}
-
-// FindMigrationHistoryList implements the Driver interface.
-func (*MockDriver) FindMigrationHistoryList(_ context.Context, _ *database.MigrationHistoryFind) ([]*database.MigrationHistory, error) {
+func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseMetadata, error) {
 	return nil, nil
 }
 
 // Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
+func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 

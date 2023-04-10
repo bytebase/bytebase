@@ -190,7 +190,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -203,7 +203,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.environmentCache.Store(environment.ResourceID, environment)
@@ -215,7 +215,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) ([]*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -225,7 +225,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	for _, environment := range environments {
@@ -239,7 +239,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMessage, creatorID int) (*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -263,7 +263,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	).Scan(
 		&uid,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	value := api.EnvironmentTierValueUnprotected
@@ -286,7 +286,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	environment := &EnvironmentMessage{
@@ -322,7 +322,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -340,7 +340,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	// TODO(d): consider moving tier to environment table to simplify things.
@@ -366,7 +366,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	// Invalid the cache and read the value again.
 	s.environmentCache.Delete(environmentID)
@@ -419,7 +419,7 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -434,7 +434,7 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 			&rowStatus,
 			&tierPayload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		environment.Deleted = convertRowStatusToDeleted(rowStatus)
 		if tierPayload.Valid {

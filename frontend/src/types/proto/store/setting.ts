@@ -16,6 +16,10 @@ export interface WorkspaceProfileSetting {
   externalUrl: string;
   /** Disallow self-service signup, users can only be invited by the owner. */
   disallowSignup: boolean;
+  /** Require 2FA for all users. */
+  require2fa: boolean;
+  /** outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. */
+  outboundIpList: string[];
 }
 
 export interface AgentPluginSetting {
@@ -35,7 +39,7 @@ export interface WorkspaceApprovalSetting_Rule {
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
-  return { externalUrl: "", disallowSignup: false };
+  return { externalUrl: "", disallowSignup: false, require2fa: false, outboundIpList: [] };
 }
 
 export const WorkspaceProfileSetting = {
@@ -45,6 +49,12 @@ export const WorkspaceProfileSetting = {
     }
     if (message.disallowSignup === true) {
       writer.uint32(16).bool(message.disallowSignup);
+    }
+    if (message.require2fa === true) {
+      writer.uint32(24).bool(message.require2fa);
+    }
+    for (const v of message.outboundIpList) {
+      writer.uint32(34).string(v!);
     }
     return writer;
   },
@@ -70,6 +80,20 @@ export const WorkspaceProfileSetting = {
 
           message.disallowSignup = reader.bool();
           continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.require2fa = reader.bool();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.outboundIpList.push(reader.string());
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -83,6 +107,8 @@ export const WorkspaceProfileSetting = {
     return {
       externalUrl: isSet(object.externalUrl) ? String(object.externalUrl) : "",
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
+      require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
+      outboundIpList: Array.isArray(object?.outboundIpList) ? object.outboundIpList.map((e: any) => String(e)) : [],
     };
   },
 
@@ -90,6 +116,12 @@ export const WorkspaceProfileSetting = {
     const obj: any = {};
     message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
+    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
+    if (message.outboundIpList) {
+      obj.outboundIpList = message.outboundIpList.map((e) => e);
+    } else {
+      obj.outboundIpList = [];
+    }
     return obj;
   },
 
@@ -101,6 +133,8 @@ export const WorkspaceProfileSetting = {
     const message = createBaseWorkspaceProfileSetting();
     message.externalUrl = object.externalUrl ?? "";
     message.disallowSignup = object.disallowSignup ?? false;
+    message.require2fa = object.require2fa ?? false;
+    message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
     return message;
   },
 };

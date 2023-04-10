@@ -160,7 +160,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
@@ -183,7 +183,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var columnTypeNames []string
@@ -215,12 +215,12 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var columnTypeNames []string
@@ -269,7 +269,7 @@ func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, col
 		}
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		rowData := []any{}
@@ -358,13 +358,9 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, sqldb *sql.DB) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
-	sqldb, err := driver.GetDBConnection(ctx, database)
-	if err != nil {
-		return nil, err
-	}
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -422,21 +418,6 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	}
 
 	return migrationHistoryList, nil
-}
-
-// FormatError formats schema migration errors.
-func FormatError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_version") {
-		return errors.Errorf("version has already been applied")
-	} else if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_sequence") {
-		return errors.Errorf("concurrent migration")
-	}
-
-	return err
 }
 
 // NonSemanticPrefix is the prefix for non-semantic version.
@@ -537,7 +518,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 		}
 
 		if err := rows.Scan(cols...); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		rowData := []any{}

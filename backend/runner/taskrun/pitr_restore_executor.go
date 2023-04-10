@@ -386,10 +386,12 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 		return nil, errors.Wrapf(err, "failed to get the OWNER of database %q", database.DatabaseName)
 	}
 
-	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+	defaultDBDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
+		return nil, err
 	}
+	defer defaultDBDriver.Close(ctx)
+	db := defaultDBDriver.GetDB()
 	pitrDatabaseName := util.GetPITRDatabaseName(database.DatabaseName, issue.CreatedTime.Unix())
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
@@ -399,12 +401,13 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s WITH OWNER %s;", pitrDatabaseName, originalOwner)); err != nil {
 		return nil, errors.Wrapf(err, "failed to create the PITR database %q", pitrDatabaseName)
 	}
-	// Switch to the PITR database.
-	// TODO(dragonly): This is a trick, needs refactor.
-	if _, err := driver.GetDBConnection(ctx, pitrDatabaseName); err != nil {
-		return nil, errors.Wrapf(err, "failed to switch connection to database %q", pitrDatabaseName)
+
+	pitrDBDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	if err != nil {
+		return nil, err
 	}
-	if err := driver.Restore(ctx, backupFile); err != nil {
+	defer pitrDBDriver.Close(ctx)
+	if err := pitrDBDriver.Restore(ctx, backupFile); err != nil {
 		return nil, errors.Wrapf(err, "failed to restore backup to the PITR database %q", pitrDatabaseName)
 	}
 	return &api.TaskRunResultPayload{

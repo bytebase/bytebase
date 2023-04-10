@@ -27,7 +27,8 @@ func init() {
 
 // Driver is the redis driver.
 type Driver struct {
-	rdb redis.UniversalClient
+	rdb          redis.UniversalClient
+	databaseName string
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -55,6 +56,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 		}
 		db = database
 	}
+	d.databaseName = fmt.Sprintf("%d", db)
 
 	d.rdb = redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:     []string{addr},
@@ -102,9 +104,9 @@ func (*Driver) GetType() db.Type {
 	return db.Redis
 }
 
-// GetDBConnection is not supported for redis.
-func (*Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return nil, errors.New("redis: not supported")
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
+	panic("redis: not supported")
 }
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
@@ -186,7 +188,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, schemaOnly bool) (string, error) {
+func (*Driver) Dump(_ context.Context, _ io.Writer, schemaOnly bool) (string, error) {
 	if !schemaOnly {
 		return "", errors.New("redis: not supported")
 	}

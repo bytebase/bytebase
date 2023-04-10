@@ -295,9 +295,14 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 
 // ListInstanceChangeHistory finds the instance change history.
 func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
-	where, args := []string{"instance_id = $1"}, []any{find.InstanceID}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	} else {
+		where = append(where, "instance_id is NULL AND database_id is NULL")
 	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
@@ -354,6 +359,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
 		var rowStatus string
+		var instanceID, databaseID, issueID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.ID,
 			&rowStatus,
@@ -361,9 +367,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.CreatedTs,
 			&changeHistory.UpdaterID,
 			&changeHistory.UpdatedTs,
-			&changeHistory.InstanceID,
-			&changeHistory.DatabaseID,
-			&changeHistory.IssueID,
+			&instanceID,
+			&databaseID,
+			&issueID,
 			&changeHistory.ReleaseVersion,
 			&changeHistory.Sequence,
 			&changeHistory.Source,
@@ -378,6 +384,18 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.Payload,
 		); err != nil {
 			return nil, err
+		}
+		if instanceID.Valid {
+			n := int(instanceID.Int32)
+			changeHistory.InstanceID = &n
+		}
+		if databaseID.Valid {
+			n := int(databaseID.Int32)
+			changeHistory.DatabaseID = &n
+		}
+		if issueID.Valid {
+			n := int(issueID.Int32)
+			changeHistory.IssueID = &n
 		}
 
 		changeHistory.Deleted = convertRowStatusToDeleted(rowStatus)
@@ -461,16 +479,24 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 }
 
 func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, tx *Tx, instanceID *int, databaseID *int, baseline bool) (int64, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if instanceID != nil && databaseID != nil {
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *instanceID)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *databaseID)
+	} else {
+		where = append(where, "instance_id is NULL AND database_id is NULL")
+	}
+
 	query := `
-	SELECT
-		MAX(sequence)
-	FROM instance_change_history
-	WHERE instance_id = $1 AND database_id = $2`
+		SELECT
+			MAX(sequence)
+		FROM instance_change_history
+		WHERE ` + strings.Join(where, " AND ")
 	if baseline {
 		query += fmt.Sprintf(" AND (type = '%s' OR type = '%s')", db.Baseline, db.Branch)
 	}
 	var sequence sql.NullInt64
-	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID).Scan(&sequence); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&sequence); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
 		}
@@ -517,14 +543,23 @@ func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.
 		return nil, err
 	}
 
+	where, args := []string{"TRUE"}, []any{}
+	if instanceID != nil && databaseID != nil {
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *instanceID)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *databaseID)
+	} else {
+		where = append(where, "instance_id is NULL AND database_id is NULL")
+	}
+	where, args = append(where, fmt.Sprintf("sequence >= $%d", len(args)+1)), append(args, sequence)
+
 	query := `
   	SELECT
-		MAX(version)
-	FROM instance_change_history
-	WHERE instance_id = $1 AND database_id = $2 AND sequence >= $3`
+			MAX(version)
+		FROM instance_change_history
+		WHERE ` + strings.Join(where, " AND ")
 
 	var version sql.NullString
-	if err := tx.QueryRowContext(ctx, query, instanceID, databaseID, sequence).Scan(&version); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&version); err != nil {
 		return nil, err
 	}
 
@@ -583,6 +618,7 @@ func (s *Store) ListInstanceHavingInstanceChangeHistory(ctx context.Context) ([]
 	SELECT DISTINCT
 		instance_id
 	FROM instance_change_history
+	WHERE instance_id IS NOT NULL
 	`
 	rows, err := s.db.db.QueryContext(ctx, query)
 	if err != nil {

@@ -138,15 +138,15 @@ func getAvailableFSSpace(path string) (uint64, error) {
 	return stat.Bavail * uint64(stat.Bsize), nil
 }
 
-func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupFilePath string) (string, error) {
+func dumpBackupFile(ctx context.Context, driver db.Driver, backupFilePath string) (string, error) {
 	backupFile, err := os.Create(backupFilePath)
 	if err != nil {
 		return "", errors.Errorf("failed to open backup path %q", backupFilePath)
 	}
 	defer backupFile.Close()
-	payload, err := driver.Dump(ctx, databaseName, backupFile, false /* schemaOnly */)
+	payload, err := driver.Dump(ctx, backupFile, false /* schemaOnly */)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to dump database %q to local backup file %q", databaseName, backupFilePath)
+		return "", errors.Wrapf(err, "failed to dump database to local backup file %q", backupFilePath)
 	}
 	return payload, nil
 }
@@ -160,7 +160,7 @@ func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *db
 	defer driver.Close(ctx)
 
 	backupFilePathLocal := filepath.Join(profile.DataDir, backup.Path)
-	payload, err := dumpBackupFile(ctx, driver, databaseName, backupFilePathLocal)
+	payload, err := dumpBackupFile(ctx, driver, backupFilePathLocal)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to dump backup file %q", backupFilePathLocal)
 	}

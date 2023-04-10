@@ -38,7 +38,7 @@ func (raw *sheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
 func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrganizerUpsert) (*api.SheetOrganizer, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -48,7 +48,7 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	sheetOrganizer := sheetOrganizerRaw.toSheetOrganizer()
@@ -60,7 +60,7 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizerFind) (*api.SheetOrganizer, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -110,7 +110,7 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *Tx, upsert *api.SheetOrga
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return &sheetOrganizerRaw, nil
 }
@@ -132,7 +132,7 @@ func findSheetOrganizerListImpl(ctx context.Context, tx *Tx, find *api.SheetOrga
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -146,12 +146,12 @@ func findSheetOrganizerListImpl(ctx context.Context, tx *Tx, find *api.SheetOrga
 			&sheetOrganizerRaw.Starred,
 			&sheetOrganizerRaw.Pinned,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		sheetOrganizerRawList = append(sheetOrganizerRawList, &sheetOrganizerRaw)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return sheetOrganizerRawList, nil
