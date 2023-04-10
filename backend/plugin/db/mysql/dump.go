@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 )
@@ -136,7 +137,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	defer txn.Rollback()
 
 	log.Debug("begin to dump database", zap.String("database", driver.databaseName), zap.Bool("schemaOnly", schemaOnly))
-	if err := driver.dumpTxn(ctx, txn, driver.databaseName, out, schemaOnly); err != nil {
+	if err := dumpTxn(ctx, txn, driver.dbType, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}
 
@@ -183,7 +184,7 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	return txn.Commit()
 }
 
-func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
@@ -300,7 +301,7 @@ func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, database string,
 		}
 
 		// Procedure and function (routine) statements.
-		routines, err := getRoutines(txn, dbName)
+		routines, err := getRoutines(txn, dbType, dbName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get routines of database %q", dbName)
 		}
@@ -311,7 +312,7 @@ func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, database string,
 		}
 
 		// OceanBase doesn't support "Event Scheduler"
-		if driver.dbType != "OCEANBASE" {
+		if dbType != "OCEANBASE" {
 			// Event statements.
 			events, err := getEvents(txn, dbName)
 			if err != nil {
@@ -625,11 +626,16 @@ func isNumeric(t string) bool {
 }
 
 // getRoutines gets all routines of a database.
-func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
+func getRoutines(txn *sql.Tx, dbType db.Type, dbName string) ([]*routineSchema, error) {
 	var routines []*routineSchema
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
 		if err := func() error {
-			query := fmt.Sprintf("SHOW %s STATUS FROM %s;", routineType, dbName)
+			var query string
+			if dbType == "OCEANBASE" {
+				query = fmt.Sprintf("SHOW %s STATUS FROM %s;", routineType, dbName)
+			} else {
+				query = fmt.Sprintf("SHOW %s STATUS WHERE Db = %s;", routineType, dbName)
+			}
 			rows, err := txn.Query(query)
 			if err != nil {
 				return err
