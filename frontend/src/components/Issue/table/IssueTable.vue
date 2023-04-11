@@ -141,8 +141,8 @@ import type {
   BBTableSectionDataSource,
 } from "@/bbkit/types";
 import type { Issue, IssueId, Task } from "@/types";
-import IssueStatusIcon from "./IssueStatusIcon.vue";
-import BatchIssueActions from "./BatchIssueActions.vue";
+import IssueStatusIcon from "@/components/Issue/IssueStatusIcon.vue";
+import BatchIssueActions from "@/components/Issue/BatchIssueActions.vue";
 import {
   issueSlug,
   activeEnvironment,
@@ -150,10 +150,10 @@ import {
   stageSlug,
   activeTaskInStage,
 } from "@/utils";
-import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
+import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { useCurrentUser } from "@/store";
-import { CurrentApprover } from "./review";
+import { CurrentApprover } from "../review";
 
 type Mode = "ALL" | "PROJECT";
 
