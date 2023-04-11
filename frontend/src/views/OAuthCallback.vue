@@ -97,11 +97,11 @@ const triggerAuthCallback = async () => {
           name: "auth.mfa",
           query: {
             mfaTempToken,
-            redirect: "",
+            redirect: ssoConfig.redirect || "",
           },
         });
       } else {
-        router.push("/");
+        router.push(ssoConfig.redirect || "/");
       }
     }
   } else if (
