@@ -2275,6 +2275,6 @@
     "rows-sent": "返回行数",
     "lock-time": "持有锁时长",
     "query-time": "执行时长",
-    "attention-description": "为 {versions} 记录和分析慢查询。"
+    "attention-description": "为 {versions} 记录和分析慢查询。\nBytebase 会定期从实例上同步慢查询日志。"
   }
 }

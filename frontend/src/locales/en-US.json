@@ -2278,6 +2278,6 @@
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Logging and analyzing slow queires for {versions}."
+    "attention-description": "Logging and analyzing slow queires for {versions}.\nBytebase will periodically sync slow query logs from instances."
   }
 }
