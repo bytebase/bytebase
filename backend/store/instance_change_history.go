@@ -459,7 +459,7 @@ func (*Store) getNextInstanceChangeHistorySequence(ctx context.Context, tx *Tx, 
 
 	query := `
 		SELECT
-			CASE WHEN MAX(sequence)+1 IS NOT NULL THEN MAX(sequence) ELSE 1 END 
+			COALESCE(MAX(sequence), 0)+1
 		FROM instance_change_history
 		WHERE ` + strings.Join(where, " AND ")
 	var sequence int64
