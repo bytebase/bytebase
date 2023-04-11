@@ -79,6 +79,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentStore,
+  useInstanceList,
   useInstanceStore,
   useProjectStore,
 } from "@/store";
@@ -105,6 +106,7 @@ const emit = defineEmits<{
 
 const currentUser = useCurrentUser();
 const mode = shallowRef<FilterMode>("environment");
+useInstanceList(["NORMAL"]);
 
 const allowFilterByEnvironment = computed(() => {
   if (!props.filterTypes.includes("mode")) {
