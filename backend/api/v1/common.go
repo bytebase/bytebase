@@ -436,30 +436,28 @@ func normalizeFilter(filter string) (string, []string, error) {
 				lastQuoteIndex = i
 			}
 			inQuotes = !inQuotes
-		} else {
-			if !inQuotes {
-				// If we are not in quotes, we need to normalize the filter.
-				// We need to add space before and after the comparator.
-				// For example, "a>b" should be normalized to "a > b".
-				switch s {
-				case '!':
+		} else if !inQuotes {
+			// If we are not in quotes, we need to normalize the filter.
+			// We need to add space before and after the comparator.
+			// For example, "a>b" should be normalized to "a > b".
+			switch s {
+			case '!':
+				normalizedFilter += " "
+				normalizedFilter += string(s)
+			case '<', '>':
+				normalizedFilter += " "
+				normalizedFilter += string(s)
+				if i+1 < len(filter) && filter[i+1] != '=' {
 					normalizedFilter += " "
-					normalizedFilter += string(s)
-				case '<', '>':
-					normalizedFilter += " "
-					normalizedFilter += string(s)
-					if i+1 < len(filter) && filter[i+1] != '=' {
-						normalizedFilter += " "
-					}
-				case '=':
-					if i > 0 && (filter[i-1] != '!' && filter[i-1] != '<' && filter[i-1] != '>') {
-						normalizedFilter += " "
-					}
-					normalizedFilter += string(s)
-					normalizedFilter += " "
-				default:
-					normalizedFilter += string(s)
 				}
+			case '=':
+				if i > 0 && (filter[i-1] != '!' && filter[i-1] != '<' && filter[i-1] != '>') {
+					normalizedFilter += " "
+				}
+				normalizedFilter += string(s)
+				normalizedFilter += " "
+			default:
+				normalizedFilter += string(s)
 			}
 		}
 	}

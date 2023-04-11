@@ -546,7 +546,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
-				t.AddDate(0, 0, 1)
+				t = t.AddDate(0, 0, 1)
 				startLogDate = &t
 			case comparatorTypeGreaterEqual:
 				if startLogDate != nil {
@@ -574,7 +574,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
-				t.AddDate(0, 0, 1)
+				t = t.AddDate(0, 0, 1)
 				endLogDate = &t
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.comparator, expr.value)
@@ -626,6 +626,9 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	}
 
 	result, err = sortSlowQueryLogResponse(result, orderByKeys)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to sort slow query logs %q", err.Error())
+	}
 
 	return result, nil
 }
@@ -651,65 +654,57 @@ func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKey
 				if response.SlowQueryLogs[i].Statistics.Count != response.SlowQueryLogs[j].Statistics.Count {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.Count < response.SlowQueryLogs[j].Statistics.Count
-					} else {
-						return response.SlowQueryLogs[i].Statistics.Count > response.SlowQueryLogs[j].Statistics.Count
 					}
+					return response.SlowQueryLogs[i].Statistics.Count > response.SlowQueryLogs[j].Statistics.Count
 				}
 			case orderByKeyLatestLogTime:
 				if response.SlowQueryLogs[i].Statistics.LatestLogTime != response.SlowQueryLogs[j].Statistics.LatestLogTime {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.LatestLogTime.AsTime().Before(response.SlowQueryLogs[j].Statistics.LatestLogTime.AsTime())
-					} else {
-						return response.SlowQueryLogs[i].Statistics.LatestLogTime.AsTime().After(response.SlowQueryLogs[j].Statistics.LatestLogTime.AsTime())
 					}
+					return response.SlowQueryLogs[i].Statistics.LatestLogTime.AsTime().After(response.SlowQueryLogs[j].Statistics.LatestLogTime.AsTime())
 				}
 			case orderByKeyAverageQueryTime:
 				if response.SlowQueryLogs[i].Statistics.AverageQueryTime != response.SlowQueryLogs[j].Statistics.AverageQueryTime {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.AverageQueryTime.AsDuration() < response.SlowQueryLogs[j].Statistics.AverageQueryTime.AsDuration()
-					} else {
-						return response.SlowQueryLogs[i].Statistics.AverageQueryTime.AsDuration() > response.SlowQueryLogs[j].Statistics.AverageQueryTime.AsDuration()
 					}
+					return response.SlowQueryLogs[i].Statistics.AverageQueryTime.AsDuration() > response.SlowQueryLogs[j].Statistics.AverageQueryTime.AsDuration()
 				}
 			case orderByKeyNightyFifthPercentileQueryTime:
 				if response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime != response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime.AsDuration() < response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime.AsDuration()
-					} else {
-						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime.AsDuration() > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime.AsDuration()
 					}
+					return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime.AsDuration() > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime.AsDuration()
 				}
 			case orderByKeyAverageRowsSent:
 				if response.SlowQueryLogs[i].Statistics.AverageRowsSent != response.SlowQueryLogs[j].Statistics.AverageRowsSent {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.AverageRowsSent < response.SlowQueryLogs[j].Statistics.AverageRowsSent
-					} else {
-						return response.SlowQueryLogs[i].Statistics.AverageRowsSent > response.SlowQueryLogs[j].Statistics.AverageRowsSent
 					}
+					return response.SlowQueryLogs[i].Statistics.AverageRowsSent > response.SlowQueryLogs[j].Statistics.AverageRowsSent
 				}
 			case orderByKeyNightyFifthPercentileRowsSent:
 				if response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent != response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent < response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent
-					} else {
-						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent
 					}
+					return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent
 				}
 			case orderByKeyAverageRowsExamined:
 				if response.SlowQueryLogs[i].Statistics.AverageRowsExamined != response.SlowQueryLogs[j].Statistics.AverageRowsExamined {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.AverageRowsExamined < response.SlowQueryLogs[j].Statistics.AverageRowsExamined
-					} else {
-						return response.SlowQueryLogs[i].Statistics.AverageRowsExamined > response.SlowQueryLogs[j].Statistics.AverageRowsExamined
 					}
+					return response.SlowQueryLogs[i].Statistics.AverageRowsExamined > response.SlowQueryLogs[j].Statistics.AverageRowsExamined
 				}
 			case orderByKeyNightyFifthPercentileRowsExamined:
 				if response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined != response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined {
 					if key.isAscend {
 						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined < response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined
-					} else {
-						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined
 					}
+					return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined
 				}
 			}
 		}
@@ -727,7 +722,7 @@ func validSlowQueryOrderByKey(keys []orderByKey) error {
 		case orderByKeyCount, orderByKeyLatestLogTime, orderByKeyAverageQueryTime, orderByKeyNightyFifthPercentileQueryTime,
 			orderByKeyAverageRowsSent, orderByKeyNightyFifthPercentileRowsSent, orderByKeyAverageRowsExamined, orderByKeyNightyFifthPercentileRowsExamined:
 		default:
-			return fmt.Errorf("invalid order_by key %q", key.key)
+			return errors.Errorf("invalid order_by key %q", key.key)
 		}
 	}
 	return nil
