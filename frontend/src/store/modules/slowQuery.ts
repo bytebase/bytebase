@@ -6,7 +6,7 @@ import {
   ListSlowQueriesRequest,
   SlowQueryLog,
 } from "@/types/proto/v1/database_service";
-import { ComposedSlowQueryLog, Instance, unknown } from "@/types";
+import { ComposedSlowQueryLog, Instance, unknown, UNKNOWN_ID } from "@/types";
 import { useDatabaseStore } from "./database";
 
 export const useSlowQueryStore = defineStore("slow-query", () => {
@@ -38,14 +38,19 @@ const composeSlowQueryLogDatabase = async (
   slowQueryLogList: SlowQueryLog[]
 ) => {
   const databaseNameList = uniq(slowQueryLogList.map((log) => log.resource));
+  databaseNameList.push("not existed");
   const databaseIdList = await Promise.all(
     databaseNameList.map((name) => {
-      return databaseServiceClient.getDatabase({ name }).then((db) => db.uid);
+      return databaseServiceClient.getDatabase({ name }).then(
+        (db) => parseInt(db.uid, 10),
+        () => UNKNOWN_ID // fallback for robustness
+      );
     })
   );
   const databaseList = await Promise.all(
     databaseIdList.map((id) => {
-      return useDatabaseStore().fetchDatabaseById(id);
+      if (id === UNKNOWN_ID) return unknown("DATABASE");
+      return useDatabaseStore().getOrFetchDatabaseById(id);
     })
   );
   const databaseMap = new Map(
