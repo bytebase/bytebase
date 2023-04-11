@@ -14,6 +14,7 @@
     </div>
 
     <WaitingForMyApprovalIssueTable
+      v-if="hasCustomApprovalFeature"
       :issue-find="{
         statusList: ['OPEN'],
       }"
@@ -195,6 +196,7 @@ import {
   useEnvironmentStore,
   useSubscriptionStore,
   useOnboardingStateStore,
+  featureToRef,
 } from "@/store";
 import {
   IssueTable,
@@ -226,6 +228,7 @@ const state = reactive<LocalState>({
 });
 
 const currentUser = useCurrentUser();
+const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const onTrialingModalClose = () => {
   state.showTrialStartModal = false;
