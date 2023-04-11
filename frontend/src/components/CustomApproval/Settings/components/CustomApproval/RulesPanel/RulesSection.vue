@@ -23,6 +23,7 @@
               :link="true"
               :on-update="(rule) => updateRow(row, rule)"
             />
+            <RiskTips :level="row.level" :source="source" :rule="row.rule" />
           </div>
         </template>
       </BBGrid>
