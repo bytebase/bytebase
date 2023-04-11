@@ -11,6 +11,15 @@ WHERE
 UPDATE setting SET creator_id = 1, updater_id = 1 WHERE name = 'bb.enterprise.license';
 
 DELETE FROM
+    instance_change_history;
+
+DELETE FROM
+    risk;
+
+DELETE FROM
+    slow_query;
+
+DELETE FROM
     anomaly;
 
 DELETE FROM
