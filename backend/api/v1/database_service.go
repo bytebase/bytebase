@@ -530,7 +530,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	for _, expr := range filters {
 		switch expr.key {
 		case filterKeyProject:
-			reg := regexp.MustCompile(`^projects/(\w+)`)
+			reg := regexp.MustCompile(`^projects/(.+)`)
 			match := reg.FindStringSubmatch(expr.value)
 			if len(match) != 2 {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid project filter %q", expr.value)
