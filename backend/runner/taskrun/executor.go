@@ -184,7 +184,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
 		executeBeforeCommitTx = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
-	migrationID, schema, err = utils.ExecuteMigration(ctx, stores, driver, mi, statement, executeBeforeCommitTx)
+	migrationID, schema, err = utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, executeBeforeCommitTx)
 	if err != nil {
 		return "", "", err
 	}
