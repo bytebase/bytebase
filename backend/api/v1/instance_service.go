@@ -155,6 +155,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	return convertToInstance(ins), nil
 }
 
+// SyncSlowQueries syncs slow queries for an instance.
 func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
