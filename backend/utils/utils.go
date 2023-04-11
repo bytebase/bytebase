@@ -473,8 +473,29 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 	return true, nil
 }
 
-// ExecuteMigration executes migration.
-func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+// ExecuteMigrationDefault executes migration.
+func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+	execFunc := func() error {
+		if driver.GetType() == db.Oracle && executeBeforeCommitTx != nil {
+			oracleDriver, ok := driver.(*oracle.Driver)
+			if !ok {
+				return errors.New("failed to cast driver to oracle driver")
+			}
+			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, statement, executeBeforeCommitTx); err != nil {
+				return err
+			}
+		} else {
+			if _, err := driver.Execute(ctx, statement, false /* createDatabase */); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return ExecuteMigrationWithFunc(ctx, store, driver, mi, statement, execFunc)
+}
+
+// ExecuteMigrationWithFunc executes the migration with custom migration function.
+func ExecuteMigrationWithFunc(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, execFunc func() error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
@@ -507,25 +528,12 @@ func ExecuteMigration(ctx context.Context, store *store.Store, driver db.Driver,
 	// Baseline migration type could has non-empty sql but will not execute.
 	// https://github.com/bytebase/bytebase/issues/394
 	doMigrate := true
-	if statement == "" {
-		doMigrate = false
-	}
-	if m.Type == db.Baseline {
+	if statement == "" || m.Type == db.Baseline {
 		doMigrate = false
 	}
 	if doMigrate {
-		if driver.GetType() == db.Oracle && executeBeforeCommitTx != nil {
-			oracleDriver, ok := driver.(*oracle.Driver)
-			if !ok {
-				return "", "", errors.New("failed to cast driver to oracle driver")
-			}
-			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, statement, executeBeforeCommitTx); err != nil {
-				return "", "", err
-			}
-		} else {
-			if _, err := driver.Execute(ctx, statement, false /* createDatabase */); err != nil {
-				return "", "", err
-			}
+		if err := execFunc(); err != nil {
+			return "", "", err
 		}
 	}
 
