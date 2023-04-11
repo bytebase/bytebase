@@ -599,7 +599,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database %q not found", exec.DatabaseName))
 		}
 		// Admin API always executes with read-only off.
-		exec.Readonly = true
+		exec.Readonly = false
 		start := time.Now().UnixNano()
 
 		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
