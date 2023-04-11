@@ -89,10 +89,10 @@ const state = reactive<LocalState>({
 });
 
 const mfaTempToken = computed(() => {
-  return String(route.query.mfaTempToken);
+  return route.query.mfaTempToken as string;
 });
 const redirectUrl = computed(() => {
-  return String(route.query.redirect) || "/";
+  return route.query.redirect as string;
 });
 
 const challengeDescription = computed(() => {
@@ -117,6 +117,6 @@ const challenge = async () => {
     mfaTempToken: mfaTempToken.value,
     ...mfaContext,
   });
-  router.replace(redirectUrl.value);
+  router.replace(redirectUrl.value || "/");
 };
 </script>
