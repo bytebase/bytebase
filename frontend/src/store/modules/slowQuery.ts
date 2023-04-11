@@ -6,7 +6,13 @@ import {
   ListSlowQueriesRequest,
   SlowQueryLog,
 } from "@/types/proto/v1/database_service";
-import { ComposedSlowQueryLog, Instance, unknown, UNKNOWN_ID } from "@/types";
+import {
+  ComposedSlowQueryLog,
+  Database,
+  Instance,
+  unknown,
+  UNKNOWN_ID,
+} from "@/types";
 import { useDatabaseStore } from "./database";
 
 export const useSlowQueryStore = defineStore("slow-query", () => {
@@ -52,12 +58,13 @@ const composeSlowQueryLogDatabase = async (
       return useDatabaseStore().getOrFetchDatabaseById(id);
     })
   );
-  const databaseMap = new Map(
-    databaseList.map((db) => [
-      `environments/${db.instance.environment.resourceId}/instances/${db.instance.resourceId}/databases/${db.name}`,
-      db,
-    ])
-  );
+  const databaseMap = databaseList.reduce((map, db) => {
+    if (db.id !== UNKNOWN_ID) {
+      const resource = `environments/${db.instance.environment.resourceId}/instances/${db.instance.resourceId}/databases/${db.name}`;
+      map.set(resource, db);
+    }
+    return map;
+  }, new Map<string, Database>());
 
   return slowQueryLogList.map<ComposedSlowQueryLog>((log) => ({
     log,
