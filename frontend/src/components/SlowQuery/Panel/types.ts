@@ -62,5 +62,7 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
   if (query.length > 0) {
     request.filter = query.join(" && ");
   }
+
+  request.orderBy = "count desc";
   return ListSlowQueriesRequest.fromJSON(request);
 };
