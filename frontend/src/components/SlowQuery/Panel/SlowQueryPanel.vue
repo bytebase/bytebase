@@ -33,8 +33,8 @@
 <script lang="ts" setup>
 import { computed, shallowRef, watch } from "vue";
 
+import type { ComposedSlowQueryLog } from "@/types";
 import { useSlowQueryStore } from "@/store";
-import type { SlowQueryLog } from "@/types/proto/v1/database_service";
 import {
   type FilterType,
   type SlowQueryFilterParams,
@@ -61,8 +61,8 @@ defineEmits<{
 
 const slowQueryStore = useSlowQueryStore();
 const loading = shallowRef(false);
-const slowQueryLogList = shallowRef<SlowQueryLog[]>([]);
-const selectedSlowQueryLog = shallowRef<SlowQueryLog>();
+const slowQueryLogList = shallowRef<ComposedSlowQueryLog[]>([]);
+const selectedSlowQueryLog = shallowRef<ComposedSlowQueryLog>();
 
 const params = computed(() => {
   return buildListSlowQueriesRequest(props.filter);

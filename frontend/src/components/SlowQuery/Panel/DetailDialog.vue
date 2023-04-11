@@ -26,16 +26,14 @@
           <div
             class="col-start-2 md:col-span-3 max-h-[8rem] overflow-auto border p-1 text-xs"
           >
-            <HighlightCodeBlock
-              :code="slowQueryLog.statistics?.sqlFingerprint ?? ''"
-            />
+            <HighlightCodeBlock :code="log.statistics?.sqlFingerprint ?? ''" />
           </div>
         </div>
       </div>
       <div class="flex-1 overflow-auto border">
         <BBGrid
           :column-list="columns"
-          :data-source="slowQueryLog.statistics?.samples"
+          :data-source="log.statistics?.samples"
           :row-clickable="false"
           class="compact"
           header-class="capitalize"
@@ -68,19 +66,15 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { type BBGridColumn, type BBGridRow, BBModal, BBGrid } from "@/bbkit";
-import type {
-  SlowQueryDetails,
-  SlowQueryLog,
-} from "@/types/proto/v1/database_service";
-import { extractDatabaseIdFromSlowQueryLogDatabaseResourceName } from "@/utils";
-import { useDatabaseStore } from "@/store";
+import type { ComposedSlowQueryLog } from "@/types";
+import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
 import { DatabaseName, InstanceName } from "@/components/v2";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
 export type SlowQueryDetailsRow = BBGridRow<SlowQueryDetails>;
 
 const props = defineProps<{
-  slowQueryLog: SlowQueryLog;
+  slowQueryLog: ComposedSlowQueryLog;
 }>();
 
 defineEmits<{
@@ -114,11 +108,6 @@ const columns = computed(() => {
   ];
   return columns;
 });
-
-const database = computed(() => {
-  const id = extractDatabaseIdFromSlowQueryLogDatabaseResourceName(
-    props.slowQueryLog.resource
-  );
-  return useDatabaseStore().getDatabaseById(id);
-});
+const log = computed(() => props.slowQueryLog.log);
+const database = computed(() => props.slowQueryLog.database);
 </script>

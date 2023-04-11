@@ -42,7 +42,7 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
 
   request.parent = "environments/-/instances/-/databases/-";
   if (database && database.id !== UNKNOWN_ID) {
-    request.parent = `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.id}`;
+    request.parent = `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`;
   } else if (instance && instance.id !== UNKNOWN_ID) {
     request.parent = `environments/${instance.environment.resourceId}/instances/${instance.resourceId}/databases/-`;
   } else if (environment && environment.id !== UNKNOWN_ID) {

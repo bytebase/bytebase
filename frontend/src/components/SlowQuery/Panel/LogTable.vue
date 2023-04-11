@@ -5,15 +5,15 @@
     :show-placeholder="showPlaceholder"
     class="border compact w-auto overflow-x-auto"
     header-class="capitalize"
-    @click-row="(log: SlowQueryLog) => $emit('select', log)"
+    @click-row="(log: ComposedSlowQueryLog) => $emit('select', log)"
   >
-    <template #item="{ item: log }: SlowQueryLogRow">
+    <template #item="{ item: { log, database } }: SlowQueryLogRow">
       <template v-if="log.statistics">
         <div class="bb-grid-cell">
           <HumanizeTs :ts="dateToTS(log.statistics.latestLogTime)" />
         </div>
         <div class="bb-grid-cell">
-          <DatabaseName :database="databaseOfLog(log)" />
+          <DatabaseName :database="database" />
         </div>
         <div class="bb-grid-cell text-xs font-mono">
           <div class="truncate">
@@ -53,17 +53,15 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import type { SlowQueryLog } from "@/types/proto/v1/database_service";
+import type { ComposedSlowQueryLog } from "@/types";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { DatabaseName } from "@/components/v2";
-import { extractDatabaseIdFromSlowQueryLogDatabaseResourceName } from "@/utils";
-import { useDatabaseStore } from "@/store";
 
-export type SlowQueryLogRow = BBGridRow<SlowQueryLog>;
+export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;
 
 withDefaults(
   defineProps<{
-    slowQueryLogList?: SlowQueryLog[];
+    slowQueryLogList?: ComposedSlowQueryLog[];
     showPlaceholder?: boolean;
   }>(),
   {
@@ -73,7 +71,7 @@ withDefaults(
 );
 
 defineEmits<{
-  (event: "select", log: SlowQueryLog): void;
+  (event: "select", log: ComposedSlowQueryLog): void;
 }>();
 
 const { t } = useI18n();
@@ -123,13 +121,6 @@ const columns = computed(() => {
   ];
   return columns;
 });
-
-const databaseOfLog = (log: SlowQueryLog) => {
-  const id = extractDatabaseIdFromSlowQueryLogDatabaseResourceName(
-    log.resource
-  );
-  return useDatabaseStore().getDatabaseById(id);
-};
 
 const dateToTS = (date: Date | undefined) => {
   if (!date) return 0;
