@@ -38,7 +38,6 @@ const composeSlowQueryLogDatabase = async (
   slowQueryLogList: SlowQueryLog[]
 ) => {
   const databaseNameList = uniq(slowQueryLogList.map((log) => log.resource));
-  databaseNameList.push("not existed");
   const databaseIdList = await Promise.all(
     databaseNameList.map((name) => {
       return databaseServiceClient.getDatabase({ name }).then(
