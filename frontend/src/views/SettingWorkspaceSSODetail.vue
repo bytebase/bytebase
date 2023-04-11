@@ -50,7 +50,7 @@ const identityProviderStore = useIdentityProviderStore();
 
 const currentIdentityProvider = computed(() => {
   return identityProviderStore.getIdentityProviderByName(
-    String(route.params.ssoName)
+    (route.params.ssoName as string) || ""
   );
 });
 
