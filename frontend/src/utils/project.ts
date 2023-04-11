@@ -1,4 +1,4 @@
-import { DEFAULT_PROJECT_ID, type Project } from "../types";
+import { DEFAULT_PROJECT_ID, Principal, type Project } from "../types";
 
 export function projectName(project: Project) {
   if (project.id === DEFAULT_PROJECT_ID) {
@@ -11,3 +11,7 @@ export function projectName(project: Project) {
   }
   return name;
 }
+
+export const memberInProject = (project: Project, user: Principal) => {
+  return project.memberList.find((member) => member.principal.id === user.id);
+};
