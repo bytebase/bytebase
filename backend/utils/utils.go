@@ -585,24 +585,12 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 		}
 	}
 
-	largestSequence, err := store.GetLargestInstanceChangeHistorySequence(ctx, m.InstanceID, m.DatabaseID, false /* baseline */)
-	if err != nil {
-		return "", err
-	}
-
-	// Check if there is any higher version already been applied since the last baseline or branch.
-	if version, err := store.GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx, m.InstanceID, m.DatabaseID); err != nil {
-		return "", err
-	} else if version != nil && len(*version) > 0 && *version >= m.Version {
-		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
-	}
-
 	// Phase 2 - Record migration history as PENDING.
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord)
+	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord)
 	if err != nil {
 		return "", err
 	}
