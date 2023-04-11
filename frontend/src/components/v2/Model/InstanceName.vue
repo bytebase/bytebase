@@ -1,6 +1,7 @@
 <template>
   <component
     :is="link ? 'router-link' : tag"
+    v-bind="bindings"
     :to="link && `/instance/${instance.id}`"
     class="inline-flex items-center gap-x-1"
     @click.stop=""
@@ -20,11 +21,13 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+
 import type { Instance } from "@/types";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
-import { instanceName } from "@/utils";
+import { instanceName, instanceSlug } from "@/utils";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     instance: Instance;
     tag?: string;
@@ -39,4 +42,18 @@ withDefaults(
     iconPosition: "prefix",
   }
 );
+
+const bindings = computed(() => {
+  if (props.link) {
+    return {
+      to: `/instance/${instanceSlug(props.instance)}`,
+      activeClass: "",
+      exactActiveClass: "",
+      onClick: (e: MouseEvent) => {
+        e.stopPropagation();
+      },
+    };
+  }
+  return {};
+});
 </script>
