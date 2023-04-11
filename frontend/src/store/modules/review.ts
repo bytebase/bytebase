@@ -64,7 +64,7 @@ export const useReviewStore = defineStore("review", () => {
         name: reviewName(issue),
         approvalFindingDone: false,
       },
-      updateMask: ["review.approval_finding_done"],
+      updateMask: ["approval_finding_done"],
     });
     await setReviewByIssue(issue, review);
   };

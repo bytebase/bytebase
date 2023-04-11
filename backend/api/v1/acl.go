@@ -173,7 +173,7 @@ func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req
 
 	projectIDMap := make(map[string]bool)
 	for _, request := range requests {
-		if !hasPath(request.UpdateMask, "database.project") || request.Database == nil {
+		if !hasPath(request.UpdateMask, "project") || request.Database == nil {
 			continue
 		}
 		environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Database.Name)

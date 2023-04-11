@@ -490,7 +490,7 @@
         "require-2fa": {
           "enable": "要求所有用户配置双重认证",
           "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
-          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项。还有 {count} 个用户没有配置 2FA：{users}"
+          "need-all-user-2fa-enabled": "需要所有用户都配置双重认证后才能开启此项。还有 {count} 个用户没有配置双重认证：{users}"
         },
         "network": "网络",
         "external-url": {
@@ -710,7 +710,8 @@
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
-    "issue-name": "工单名称"
+    "issue-name": "工单名称",
+    "waiting-for-my-approval": "等待我审批"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2040,11 +2041,11 @@
   "two-factor": {
     "self": "双重认证",
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
-    "enabled": "2FA 已开启",
+    "enabled": "双重认证已开启",
     "setup-steps": {
       "setup-auth-app": {
         "self": "设置认证器应用程序",
-        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行 2FA 认证操作。",
+        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行双重认证操作。",
         "scan-qr-code": {
           "self": "扫描二维码",
           "description": "使用您手机中的认证器应用程序进行扫描。如果您无法扫描，可以{action}。",
