@@ -204,12 +204,10 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 // Report will report a metric.
 func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
-	go func() {
-		workspaceID, err := m.getWorkspaceID(ctx)
-		if err != nil {
-			log.Error("failed to find the workspace id", zap.Error(err))
-			return
-		}
-		m.reportMetric(workspaceID, metric)
-	}()
+	workspaceID, err := m.getWorkspaceID(ctx)
+	if err != nil {
+		log.Error("failed to find the workspace id", zap.Error(err))
+		return
+	}
+	m.reportMetric(workspaceID, metric)
 }
