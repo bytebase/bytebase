@@ -23,6 +23,7 @@
               :link="true"
               :on-update="(rule) => updateRow(row, rule)"
             />
+            <RiskTips :level="row.level" :source="source" :rule="row.rule" />
           </div>
         </template>
       </BBGrid>
@@ -35,7 +36,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { ParsedApprovalRule, PresetRiskLevelList } from "@/types";
+import {
+  DEFAULT_RISK_LEVEL,
+  ParsedApprovalRule,
+  PresetRiskLevelList,
+} from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { levelText, sourceText, useRiskFilter } from "../../common";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
@@ -86,7 +91,7 @@ const rows = computed(() => {
   filteredLevelList.sort((a, b) => -(a - b)); // by level DESC
   const displayLevelList =
     filteredLevelList.length === 0
-      ? PresetRiskLevelList.map((item) => item.level)
+      ? [...PresetRiskLevelList.map((item) => item.level), DEFAULT_RISK_LEVEL]
       : filteredLevelList;
 
   return displayLevelList.map<Row>((level) => ({

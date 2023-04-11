@@ -490,7 +490,7 @@
         "require-2fa": {
           "enable": "要求所有用户配置双重认证",
           "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
-          "need-all-user-2fa-enabled": "需要所有用户都配置 2FA 后才能开启此项"
+          "need-all-user-2fa-enabled": "需要所有用户都配置双重认证后才能开启此项。还有 {count} 个用户没有配置双重认证：{users}"
         },
         "network": "网络",
         "external-url": {
@@ -710,7 +710,8 @@
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
-    "issue-name": "工单名称"
+    "issue-name": "工单名称",
+    "waiting-for-my-approval": "等待我审批"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -874,7 +875,8 @@
     "authentication-database": "认证数据库",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "create-gcp-credentials": "创建凭据的方法见",
-    "used-for-testing-connection": "仅作测试连接用"
+    "used-for-testing-connection": "仅作测试连接用",
+    "all": "所有实例"
   },
   "environment": {
     "id": "环境 ID",
@@ -2037,10 +2039,11 @@
   "two-factor": {
     "self": "双重认证",
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
+    "enabled": "双重认证已开启",
     "setup-steps": {
       "setup-auth-app": {
         "self": "设置认证器应用程序",
-        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行 2FA 认证操作。",
+        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行双重认证操作。",
         "scan-qr-code": {
           "self": "扫描二维码",
           "description": "使用您手机中的认证器应用程序进行扫描。如果您无法扫描，可以{action}。",
@@ -2074,7 +2077,9 @@
     "messages": {
       "2fa-enabled": "双重认证开启成功",
       "2fa-disabled": "双重认证禁用成功",
-      "recovery-codes-regenerated": "恢复码已经重新生成"
+      "recovery-codes-regenerated": "恢复码已经重新生成",
+      "2fa-required": "您的管理员要求所有用户配置双重认证。请先配置双重认证，才能继续使用。",
+      "cannot-disable": "您的管理员要求所有用户配置双重认证。您无法禁用双重认证。"
     }
   },
   "plugin": {
@@ -2129,6 +2134,7 @@
         "self": "风险",
         "select": "选择风险",
         "risk-level": {
+          "0": "默认",
           "100": "低",
           "200": "中",
           "300": "高"
@@ -2137,6 +2143,14 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "创建数据库"
+        },
+        "factor": {
+          "affected_rows": "影响行数",
+          "environment_id": "环境 ID",
+          "project_id": "项目 ID",
+          "database_name": "数据库名称",
+          "db_engine": "数据库引擎",
+          "sql_type": "SQL 类型"
         }
       },
       "condition": {
@@ -2216,7 +2230,9 @@
         "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
       },
       "view-approval-flow": "查看审批流",
-      "skip": "跳过人工审批"
+      "skip": "跳过人工审批",
+      "risk-not-configured-tips": "确保你已经定义了{link}。",
+      "the-related-risk-rules": "相关的风险规则"
     },
     "risk": {
       "self": "风险",

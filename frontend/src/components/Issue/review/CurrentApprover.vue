@@ -24,7 +24,6 @@ import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
-import { toRef } from "vue";
 import { useAuthStore } from "@/store";
 
 const props = defineProps<{
@@ -42,8 +41,8 @@ const review = computed(() => {
 const context = extractIssueReviewContext(review);
 const { ready, done } = context;
 const currentUserName = computed(() => useAuthStore().currentUser.name);
-
-const wrappedSteps = useWrappedReviewSteps(toRef(props, "issue"), context);
+const issue = computed(() => props.issue);
+const wrappedSteps = useWrappedReviewSteps(issue, context);
 
 const currentStep = computed(() => {
   return wrappedSteps.value?.find((step) => step.status === "CURRENT");

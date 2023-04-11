@@ -235,7 +235,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	patch := &store.UpdateUserMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "user.email":
+		case "email":
 			if err := validateEmail(request.User.Email); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 			}
@@ -250,14 +250,14 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 			}
 			patch.Email = &request.User.Email
-		case "user.title":
+		case "title":
 			patch.Name = &request.User.Title
-		case "user.password":
+		case "password":
 			if user.Type != api.EndUser {
 				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
 			}
 			passwordPatch = &request.User.Password
-		case "user.service_key":
+		case "service_key":
 			if user.Type != api.ServiceAccount {
 				return nil, status.Errorf(codes.InvalidArgument, "service key can be mutated for service accounts only")
 			}
@@ -267,7 +267,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password
-		case "user.role":
+		case "role":
 			if role != api.Owner {
 				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
 			}
@@ -276,7 +276,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
 			}
 			patch.Role = &userRole
-		case "user.mfa_enabled":
+		case "mfa_enabled":
 			if request.User.MfaEnabled {
 				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
 					return nil, status.Errorf(codes.InvalidArgument, "MFA is not setup yet")
@@ -286,6 +286,13 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 					RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
 				}
 			} else {
+				setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+				}
+				if setting.Require_2Fa {
+					return nil, status.Errorf(codes.InvalidArgument, "2FA is required and cannot be disabled")
+				}
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
 		}
@@ -318,10 +325,12 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			return nil, status.Errorf(codes.Internal, "failed to generate recovery codes, error: %v", err)
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:         user.MFAConfig.OtpSecret,
 			TempOtpSecret:     tempSecret,
-			RecoveryCodes:     user.MFAConfig.RecoveryCodes,
 			TempRecoveryCodes: tempRecoveryCodes,
+		}
+		if user.MFAConfig != nil {
+			patch.MFAConfig.OtpSecret = user.MFAConfig.OtpSecret
+			patch.MFAConfig.RecoveryCodes = user.MFAConfig.RecoveryCodes
 		}
 	}
 	// This flag will update user's recovery codes with temp recovery codes.

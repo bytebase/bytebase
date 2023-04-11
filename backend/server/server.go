@@ -302,7 +302,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if profile.Readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
-		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB.ConnCfg, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
+		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -1206,7 +1206,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					nameToDatabase[db.DatabaseName] = databaseList[i]
 				}
 
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "bytebase")
 				if err != nil {
 					return err
 				}

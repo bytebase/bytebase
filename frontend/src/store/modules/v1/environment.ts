@@ -96,13 +96,13 @@ const getUpdateMaskFromEnvironments = (
 ): string[] => {
   const updateMask: string[] = [];
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
-    updateMask.push("environment.title");
+    updateMask.push("title");
   }
   if (!isUndefined(update.order) && !isEqual(origin.order, update.order)) {
-    updateMask.push("environment.order");
+    updateMask.push("order");
   }
   if (!isUndefined(update.tier) && !isEqual(origin.tier, update.tier)) {
-    updateMask.push("environment.tier");
+    updateMask.push("tier");
   }
   return updateMask;
 };

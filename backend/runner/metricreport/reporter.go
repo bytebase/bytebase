@@ -28,15 +28,23 @@ const (
 	identifyTraitForOrgID = "org_id"
 	// identifyTraitForOrgName is the trait key for organization name.
 	identifyTraitForOrgName = "org_name"
+	// identifyTraitForMode is the trait key for Bytebase service mode.
+	identifyTraitForMode = "mode"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
+	// bytebaseServiceModeSaaS is the mode for Bytebase SaaS.
+	bytebaseServiceModeSaaS = "saas"
+	// bytebaseServiceModeSelfhost is the mode for Bytebase self-host.
+	bytebaseServiceModeSelfhost = "self-host"
 )
 
 // Reporter is the metric reporter.
 type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
 	// Version is the bytebase's version
-	version    string
+	version string
+	// mode is the Bytebase service mode, could be self-host or saas.
+	mode       string
 	reporter   metric.Reporter
 	collectors map[string]metric.Collector
 	store      *store.Store
@@ -51,9 +59,15 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 		r = segment.NewMockReporter()
 	}
 
+	mode := bytebaseServiceModeSelfhost
+	if profile.SaaS {
+		mode = bytebaseServiceModeSaaS
+	}
+
 	return &Reporter{
 		licenseService: licenseService,
 		version:        profile.Version,
+		mode:           mode,
 		reporter:       r,
 		collectors:     make(map[string]metric.Collector),
 		store:          store,
@@ -179,6 +193,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 			identifyTraitForVersion: m.version,
 			identifyTraitForOrgID:   orgID,
 			identifyTraitForOrgName: orgName,
+			identifyTraitForMode:    m.mode,
 		},
 	}); err != nil {
 		return workspaceID, err
@@ -189,12 +204,10 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 // Report will report a metric.
 func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
-	go func() {
-		workspaceID, err := m.getWorkspaceID(ctx)
-		if err != nil {
-			log.Error("failed to find the workspace id", zap.Error(err))
-			return
-		}
-		m.reportMetric(workspaceID, metric)
-	}()
+	workspaceID, err := m.getWorkspaceID(ctx)
+	if err != nil {
+		log.Error("failed to find the workspace id", zap.Error(err))
+		return
+	}
+	m.reportMetric(workspaceID, metric)
 }

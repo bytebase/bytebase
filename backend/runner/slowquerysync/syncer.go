@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	schemaSyncInterval = 12 * time.Hour
+	slowQuerySyncInterval = 12 * time.Hour
 	// retentionCycle is the number of days to keep slow query logs.
 	retentionCycle = 30
 )
@@ -44,10 +44,10 @@ type Syncer struct {
 
 // Run will run the slow query syncer.
 func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(schemaSyncInterval)
+	ticker := time.NewTicker(slowQuerySyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", schemaSyncInterval.String()))
+	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", slowQuerySyncInterval.String()))
 	for {
 		select {
 		case <-ctx.Done():

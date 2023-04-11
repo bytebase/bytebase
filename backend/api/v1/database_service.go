@@ -142,7 +142,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	patch := &store.UpdateDatabaseMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "database.project":
+		case "project":
 			projectID, err := getProjectID(request.Database.Project)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -161,7 +161,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
 			}
 			patch.ProjectID = &project.ResourceID
-		case "database.labels":
+		case "labels":
 			patch.Labels = &request.Database.Labels
 		}
 	}

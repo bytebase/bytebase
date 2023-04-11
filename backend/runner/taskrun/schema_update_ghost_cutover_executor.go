@@ -22,7 +22,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -166,7 +165,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 
 		var afterSchemaBuf bytes.Buffer
 		if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
-			return "", "", util.FormatError(err)
+			return "", "", err
 		}
 
 		return insertedID, afterSchemaBuf.String(), nil

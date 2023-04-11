@@ -13,7 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -175,11 +176,10 @@ func TestMigrationCompatibility(t *testing.T) {
 	databaseName := "hidb"
 	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true)
 	require.NoError(t, err)
-	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", dbdriver.BytebaseDatabase), true)
-	require.NoError(t, err)
 
 	metadataConnConfig := connCfg
 	metadataConnConfig.Database = databaseName
+	metadataConnConfig.StrictUseDb = true
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
@@ -189,58 +189,46 @@ func TestMigrationCompatibility(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	bytebaseConnConfig := connCfg
-	bytebaseConnConfig.Database = dbdriver.BytebaseDatabase
-	bytebaseDriver, err := dbdriver.Open(
-		ctx,
-		dbdriver.Postgres,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		bytebaseConnConfig,
-		dbdriver.ConnectionContext{},
-	)
-	require.NoError(t, err)
-	defer bytebaseDriver.Close(ctx)
-	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
-	db := store.NewDB(connCfg, "", "", false, "", common.ReleaseModeDev)
+	db := store.NewDB(metadataConnConfig, pgBinDir, "", false, "", common.ReleaseModeDev)
 	err = db.Open(ctx)
 	require.NoError(t, err)
-
-	err = bytebasePgDriver.SetupMigrationIfNeeded(ctx)
-	require.NoError(t, err)
+	storeInstance := store.New(db)
 
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
 	// Create initial schema.
-	err = initializeSchema(ctx, metadataDriver.GetDB(), bytebasePgDriver, releaseVersion, databaseName, serverVersion)
+	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &databaseName,
+	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: nil,
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
-	require.Equal(t, histories[0].Version, releaseVersion.String())
+	_, version, _, err := util.FromStoredVersion(histories[0].Version)
+	require.NoError(t, err)
+	require.Equal(t, version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	err = migrate(ctx, bytebasePgDriver, metadataDriver.GetDB(), releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
+	err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &databaseName,
+	histories, err = storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: nil,
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 
 	// Apply migration to dev latest if there are patches.
-	err = migrate(ctx, bytebasePgDriver, metadataDriver.GetDB(), releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
+	err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
 	require.NoError(t, err)
 
 	// Check migration history.
 	devMigrations, err := getDevMigrations()
 	require.NoError(t, err)
-	histories, err = bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &databaseName,
+	histories, err = storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: nil,
 	})
 	require.NoError(t, err)
 	// The extra one is for the initial schema setup.
@@ -253,5 +241,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.15.5"), releaseVersion)
+	require.Equal(t, semver.MustParse("1.16.0"), releaseVersion)
 }

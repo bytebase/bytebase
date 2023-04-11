@@ -141,7 +141,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
@@ -158,10 +158,11 @@ interface LocalState {
   showPassword: boolean;
 }
 
+const router = useRouter();
+const route = useRoute();
 const actuatorStore = useActuatorStore();
 const authStore = useAuthStore();
 const identityProviderStore = useIdentityProviderStore();
-const router = useRouter();
 
 const state = reactive<LocalState>({
   email: "",
@@ -215,7 +216,7 @@ const trySignin = async () => {
       name: "auth.mfa",
       query: {
         mfaTempToken,
-        redirect: "",
+        redirect: route.query.redirect as string,
       },
     });
   } else {
@@ -226,6 +227,10 @@ const trySignin = async () => {
 const trySigninWithIdentityProvider = async (
   identityProvider: IdentityProvider
 ) => {
-  await openWindowForSSO(identityProvider, false);
+  await openWindowForSSO(
+    identityProvider,
+    false,
+    route.query.redirect as string
+  );
 };
 </script>

@@ -114,17 +114,13 @@
         </div>
       </BBTableCell>
       <BBTableCell class="whitespace-nowrap tooltip-wrapper w-auto">
-        <div class="flex flex-row items-center">
-          2FA
-          <heroicons-solid:check
-            v-if="is2FAEnabled(member)"
-            class="ml-1 w-4 h-auto inline-block text-green-600"
-          />
-          <heroicons-solid:x-mark
-            v-else
-            class="ml-1 w-4 h-auto inline-block text-gray-500"
-          />
-        </div>
+        <span
+          v-if="is2FAEnabled(member)"
+          class="text-xs p-1 px-2 rounded-lg bg-green-600 text-white"
+          :class="is2FAEnabled(member)"
+        >
+          {{ $t("two-factor.enabled") }}
+        </span>
       </BBTableCell>
       <BBTableCell class="whitespace-nowrap tooltip-wrapper w-36">
         <span v-if="changeRoleTooltip(member)" class="tooltip">{{

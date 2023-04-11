@@ -52,9 +52,6 @@ const (
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
-	// BytebaseDatabase is the database installed in the controlled database server.
-	BytebaseDatabase = "bytebase"
-
 	// SlowQueryMaxLen is the max length of slow query.
 	SlowQueryMaxLen = 2048
 	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
@@ -162,6 +159,7 @@ type MigrationInfoPayload struct {
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
 	// fields for instance change history
+	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
 	IssueIDInt *int
@@ -179,8 +177,7 @@ type MigrationInfo struct {
 	Creator        string
 	IssueID        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
-	Payload        string
-	CreateDatabase bool
+	Payload string
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
 	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".

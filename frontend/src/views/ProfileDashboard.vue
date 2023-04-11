@@ -182,10 +182,18 @@
           {{ $t("two-factor.self") }}
           <FeatureBadge :feature="'bb.feature.2fa'" class="ml-2 text-accent" />
         </span>
-        <BBSwitch
-          :value="isMFAEnabled"
-          @toggle="handle2FAEnableStatusChanged"
-        />
+        <div class="space-x-2">
+          <button class="btn btn-normal" @click="enable2FA">
+            {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
+          </button>
+          <button
+            v-if="isMFAEnabled"
+            class="btn btn-normal"
+            @click="disable2FA"
+          >
+            {{ $t("common.disable") }}
+          </button>
+        </div>
       </div>
       <p class="mt-4 text-sm text-gray-500">
         {{ $t("two-factor.description") }}
@@ -258,12 +266,12 @@ import { hasWorkspacePermission } from "../utils";
 import {
   featureToRef,
   pushNotification,
+  useActuatorStore,
   useAuthStore,
   useCurrentUser,
   usePrincipalStore,
   useUserStore,
 } from "@/store";
-import { BBSwitch } from "@/bbkit";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { useRouter } from "vue-router";
@@ -286,6 +294,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const actuatorStore = useActuatorStore();
 const authStore = useAuthStore();
 const currentUser = useCurrentUser();
 const userStore = useUserStore();
@@ -396,13 +405,21 @@ const saveEdit = async () => {
   state.editing = false;
 };
 
-const handle2FAEnableStatusChanged = (enabled: boolean) => {
+const enable2FA = () => {
   if (!has2FAFeature.value) {
     state.showFeatureModal = true;
     return;
   }
-  if (enabled) {
-    router.push({ name: "setting.profile.two-factor" });
+  router.push({ name: "setting.profile.two-factor" });
+};
+
+const disable2FA = () => {
+  if (actuatorStore.serverInfo?.require2fa) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("two-factor.messages.cannot-disable"),
+    });
   } else {
     state.showDisable2FAConfirmModal = true;
   }
@@ -416,7 +433,7 @@ const handleDisable2FA = async () => {
         name: user.name,
         mfaEnabled: false,
       },
-      updateMask: ["user.mfa_enabled"],
+      updateMask: ["mfa_enabled"],
     })
   );
   await authStore.refreshUserIfNeeded(user.name);

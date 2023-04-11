@@ -14,10 +14,10 @@
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <BBCheckbox
+          <NCheckbox
             :disabled="!allowEdit"
-            :value="watermarkEnabled"
-            @toggle="handleWatermarkToggle"
+            :checked="watermarkEnabled"
+            @update:checked="handleWatermarkToggle"
           />
           <span class="font-medium">{{
             $t("settings.general.workspace.watermark.enable")
@@ -41,10 +41,10 @@
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <BBCheckbox
+          <NCheckbox
             :disabled="!allowEdit"
-            :value="disallowSignupEnabled"
-            @toggle="handleDisallowSignupToggle"
+            :checked="disallowSignupEnabled"
+            @update:checked="handleDisallowSignupToggle"
           />
           <span class="font-medium">{{
             $t("settings.general.workspace.disallow-signup.enable")
@@ -61,16 +61,15 @@
           {{ $t("settings.general.workspace.disallow-signup.description") }}
         </div>
       </div>
-      <!-- TODO(steven): remove release guard later -->
-      <div v-if="isDev" class="mb-7 mt-5 lg:mt-0">
+      <div class="mb-7 mt-5 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <BBCheckbox
+          <NCheckbox
             :disabled="!allowEdit"
-            :value="require2FAEnabled"
-            @toggle="handleRequire2FAToggle"
+            :checked="require2FAEnabled"
+            @update:checked="handleRequire2FAToggle"
           />
           <span class="font-medium">{{
             $t("settings.general.workspace.require-2fa.enable")
@@ -100,6 +99,7 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { storeToRefs } from "pinia";
+import { NCheckbox } from "naive-ui";
 import {
   featureToRef,
   pushNotification,
@@ -109,11 +109,11 @@ import {
   useActuatorStore,
   useUserStore,
 } from "@/store";
-import { BBCheckbox } from "@/bbkit";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
@@ -166,14 +166,20 @@ const handleRequire2FAToggle = async (on: boolean) => {
   if (on) {
     // Only allow to enable this when all users have enabled 2FA.
     const userList = userStore.userList
-      .filter((user) => user.userType === UserType.USER)
+      .filter(
+        (user) => user.userType === UserType.USER && user.state === State.ACTIVE
+      )
       .filter((user) => !user.mfaEnabled);
     if (userList.length > 0) {
       pushNotification({
         module: "bytebase",
         style: "WARN",
         title: t(
-          "settings.general.workspace.require-2fa.need-all-user-2fa-enabled"
+          "settings.general.workspace.require-2fa.need-all-user-2fa-enabled",
+          {
+            count: userList.length,
+            users: userList.map((user) => user.email).join(", "),
+          }
         ),
       });
       return;
