@@ -26,7 +26,10 @@
           <div
             class="col-start-2 md:col-span-3 max-h-[8rem] overflow-auto border p-1 text-xs"
           >
-            <HighlightCodeBlock :code="log.statistics?.sqlFingerprint ?? ''" />
+            <HighlightCodeBlock
+              :code="log.statistics?.sqlFingerprint ?? ''"
+              class="whitespace-pre-wrap"
+            />
           </div>
         </div>
       </div>
