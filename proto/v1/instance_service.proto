@@ -70,6 +70,13 @@ service InstanceService {
       body: "*"
     };
   }
+  
+  rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/{instance=environments/*/instances/*}:syncSlowQueries"
+      body: "*"
+    };
+  }
 }
 
 message GetInstanceRequest {
@@ -179,6 +186,12 @@ message UpdateDataSourceRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 3;
+}
+
+message SyncSlowQueriesRequest {
+  // The name of the instance to sync slow queries.
+  // Format: environments/{environment}/instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Instance {
