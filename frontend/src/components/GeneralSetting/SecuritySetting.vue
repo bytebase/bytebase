@@ -165,7 +165,7 @@ const handleRequire2FAToggle = async (on: boolean) => {
 
   if (on) {
     // Only allow to enable this when all users have enabled 2FA.
-    const userList = userStore.userList
+    const userList = (await userStore.fetchUserList())
       .filter(
         (user) => user.userType === UserType.USER && user.state === State.ACTIVE
       )
