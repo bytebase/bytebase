@@ -32,18 +32,14 @@
 
 <script lang="ts" setup>
 import { computed, shallowRef, watch } from "vue";
-import dayjs from "dayjs";
 
 import { useSlowQueryStore } from "@/store";
-import type {
-  ListSlowQueriesRequest,
-  SlowQueryLog,
-} from "@/types/proto/v1/database_service";
-import { UNKNOWN_ID } from "@/types";
+import type { SlowQueryLog } from "@/types/proto/v1/database_service";
 import {
   type FilterType,
   type SlowQueryFilterParams,
   FilterTypeList,
+  buildListSlowQueriesRequest,
 } from "./types";
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
@@ -69,32 +65,7 @@ const slowQueryLogList = shallowRef<SlowQueryLog[]>([]);
 const selectedSlowQueryLog = shallowRef<SlowQueryLog>();
 
 const params = computed(() => {
-  const request = {} as Partial<ListSlowQueriesRequest>;
-  const query: string[] = [];
-  const { filter } = props;
-  const { project, environment, instance, database, timeRange } = filter;
-
-  if (database && database.id !== UNKNOWN_ID) {
-    request.parent = `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.id}`;
-  } else if (instance && instance.id !== UNKNOWN_ID) {
-    request.parent = `environments/${instance.environment.resourceId}/instances/${instance.resourceId}/databases/-`;
-  } else if (environment && environment.id !== UNKNOWN_ID) {
-    request.parent = `environments/${environment.resourceId}/instances/-/databases/-`;
-  }
-
-  if (project) {
-    query.push(`project = projects/${project.resourceId}`);
-  }
-  if (timeRange) {
-    const start = dayjs(timeRange[0]).startOf("day").toISOString();
-    const end = dayjs(timeRange[1]).endOf("day").toISOString();
-    query.push(`start_time >= ${start}`);
-    query.push(`start_time <= ${end}`);
-  }
-  if (query.length > 0) {
-    request.filter = query.join(" && ");
-  }
-  return request;
+  return buildListSlowQueriesRequest(props.filter);
 });
 
 const fetchSlowQueryLogList = async () => {

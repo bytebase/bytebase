@@ -1,5 +1,6 @@
-import type { Environment, Instance, Database, Project } from "@/types";
 import dayjs from "dayjs";
+import { Environment, Instance, Database, Project, UNKNOWN_ID } from "@/types";
+import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
 
 export type SlowQueryFilterParams = {
   project: Project | undefined; // undefined to "All"
@@ -33,4 +34,33 @@ export const defaultSlowQueryFilterParams = (): SlowQueryFilterParams => {
     database: undefined,
     timeRange: recentWeek,
   };
+};
+
+export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
+  const request = {} as Partial<ListSlowQueriesRequest>;
+  const { project, environment, instance, database, timeRange } = filter;
+
+  request.parent = "environments/-/instances/-/databases/-";
+  if (database && database.id !== UNKNOWN_ID) {
+    request.parent = `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.id}`;
+  } else if (instance && instance.id !== UNKNOWN_ID) {
+    request.parent = `environments/${instance.environment.resourceId}/instances/${instance.resourceId}/databases/-`;
+  } else if (environment && environment.id !== UNKNOWN_ID) {
+    request.parent = `environments/${environment.resourceId}/instances/-/databases/-`;
+  }
+
+  const query: string[] = [];
+  if (project) {
+    query.push(`project = "projects/${project.resourceId}"`);
+  }
+  if (timeRange) {
+    const start = dayjs(timeRange[0]).startOf("day").toISOString();
+    const end = dayjs(timeRange[1]).endOf("day").toISOString();
+    query.push(`start_time >= "${start}"`);
+    query.push(`start_time <= "${end}"`);
+  }
+  if (query.length > 0) {
+    request.filter = query.join(" && ");
+  }
+  return ListSlowQueriesRequest.fromJSON(request);
 };
