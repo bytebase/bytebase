@@ -31,6 +31,8 @@ const bindings = computed(() => {
   if (props.link) {
     return {
       to: `/db/${databaseSlug(props.database)}`,
+      activeClass: "",
+      exactActiveClass: "",
       onClick: (e: MouseEvent) => {
         e.stopPropagation();
       },

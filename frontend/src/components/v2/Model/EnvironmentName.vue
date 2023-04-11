@@ -35,6 +35,8 @@ const bindings = computed(() => {
   if (props.link) {
     return {
       to: `/environment/${environmentSlug(props.environment)}`,
+      activeClass: "",
+      exactActiveClass: "",
       onClick: (e: MouseEvent) => {
         e.stopPropagation();
       },
