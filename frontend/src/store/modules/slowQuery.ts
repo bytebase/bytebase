@@ -20,13 +20,12 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
     console.log(
       `fetchSlowQueryLogList(${JSON.stringify(request, null, "  ")})`
     );
-    // await sleep(500);
     try {
-      const _res = await databaseServiceClient.listSlowQueries(request);
+      const response = await databaseServiceClient.listSlowQueries(request);
+      return response.slowQueryLogs;
     } catch (ex) {
-      // console.log("listSlowQueries", ex);
+      return [];
     }
-    return generateMockSlowQueryList();
   };
 
   return { fetchSlowQueryLogList };
