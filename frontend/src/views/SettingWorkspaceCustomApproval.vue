@@ -22,6 +22,7 @@ import {
   featureToRef,
   useWorkspaceApprovalSettingStore,
   useCurrentUser,
+  useRiskStore,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import {
@@ -37,7 +38,6 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const store = useWorkspaceApprovalSettingStore();
 const state = reactive<LocalState>({
   ready: false,
   showFeatureModal: false,
@@ -64,7 +64,10 @@ provideCustomApprovalContext({
 
 onMounted(async () => {
   try {
-    await Promise.all([store.fetchConfig()]);
+    await Promise.all([
+      useWorkspaceApprovalSettingStore().fetchConfig(),
+      useRiskStore().fetchRiskList(),
+    ]);
     state.ready = true;
   } catch {
     // nothing
