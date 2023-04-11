@@ -45,6 +45,7 @@
       </p>
 
       <WaitingForMyApprovalIssueTable
+        v-if="hasCustomApprovalFeature"
         :issue-find="{
           statusList: ['OPEN'],
           projectId: project.id,
@@ -128,6 +129,7 @@ import { Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import PagedActivityTableVue from "./PagedActivityTable.vue";
+import { featureToRef } from "@/store";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
@@ -168,6 +170,7 @@ export default defineComponent({
       xAxisLabel: "bb.environment",
       yAxisLabel: undefined,
     });
+    const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
     const isTenantProject = computed((): boolean => {
       return props.project.tenantMode === "TENANT";
@@ -193,6 +196,7 @@ export default defineComponent({
 
     return {
       state,
+      hasCustomApprovalFeature,
       isTenantProject,
       filteredDatabaseList,
       excludedKeyList,
