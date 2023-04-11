@@ -13,6 +13,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+type comparatorType string
+
 const (
 	projectNamePrefix            = "projects/"
 	environmentNamePrefix        = "environments/"
@@ -35,6 +37,13 @@ const (
 	metadataSuffix         = "/metadata"
 
 	setupExternalURLError = "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url"
+
+	comparatorTypeEqual        comparatorType = "="
+	comparatorTypeLess         comparatorType = "<"
+	comparatorTypeLessEqual    comparatorType = "<="
+	comparatorTypeGreater      comparatorType = ">"
+	comparatorTypeGreaterEqual comparatorType = ">="
+	comparatorTypeNotEqual     comparatorType = "!="
 )
 
 var (
@@ -291,6 +300,173 @@ func getEBNFTokens(filter, filterKey string) ([]string, error) {
 	default:
 		return nil, errors.Errorf("invalid filter %q", filter)
 	}
+}
+
+type orderByKey struct {
+	key      string
+	isAscend bool
+}
+
+func parseOrderBy(orderBy string) ([]orderByKey, error) {
+	if orderBy == "" {
+		return nil, nil
+	}
+
+	var result []orderByKey
+	re := regexp.MustCompile(`(\w+)\s*(asc|desc)?`)
+	matches := re.FindAllStringSubmatch(orderBy, -1)
+	for _, match := range matches {
+		if len(match) > 3 {
+			return nil, errors.Errorf("invalid order by %q", orderBy)
+		}
+		key := orderByKey{
+			key:      match[1],
+			isAscend: true,
+		}
+		if len(match) == 3 && match[2] == "desc" {
+			key.isAscend = false
+		}
+		result = append(result, key)
+	}
+	return result, nil
+}
+
+type expression struct {
+	key        string
+	comparator comparatorType
+	value      string
+}
+
+// parseFilter will parse the simple filter.
+// TODO(rebelice): support more complex filter.
+// Currently we support the following syntax:
+//  1. for single expression:
+//     i.   defined as `key comparator "val"`.
+//     ii.  Comparator can be `=`, `!=`, `>`, `>=`, `<`, `<=`.
+//     iii. If val doesn't contain space, we can omit the double quotes.
+//  2. for multiple expressions:
+//     i.  We only support && currently.
+//     ii. defined as `key comparator "val" && key comparator "val" && ...`.
+func parseFilter(filter string) ([]expression, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	normalized, quotedString, err := normalizeFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []expression
+	nextStringPos := 0
+
+	// Split the normalized filter by " && " to get the list of expressions.
+	expressions := strings.Split(normalized, " && ")
+	for _, expressionString := range expressions {
+		expr, err := parseExpression(expressionString)
+		if err != nil {
+			return nil, err
+		}
+		if expr.value == "?" {
+			if nextStringPos >= len(quotedString) {
+				return nil, errors.Errorf("invalid filter %q", filter)
+			}
+			expr.value = quotedString[nextStringPos]
+			nextStringPos++
+		}
+		result = append(result, expr)
+	}
+
+	return result, nil
+}
+
+func parseExpression(expr string) (expression, error) {
+	// Split the expression by " " to get the key, comparator and val.
+	re := regexp.MustCompile(`\s+`)
+	words := re.Split(strings.TrimSpace(expr), -1)
+	if len(words) != 3 {
+		return expression{}, errors.Errorf("invalid expression %q", expr)
+	}
+
+	comparator, err := getComparatorType(words[1])
+	if err != nil {
+		return expression{}, err
+	}
+
+	return expression{
+		key:        words[0],
+		comparator: comparator,
+		value:      words[2],
+	}, nil
+}
+
+func getComparatorType(op string) (comparatorType, error) {
+	switch op {
+	case "=":
+		return comparatorTypeEqual, nil
+	case "!=":
+		return comparatorTypeNotEqual, nil
+	case ">":
+		return comparatorTypeGreater, nil
+	case ">=":
+		return comparatorTypeGreaterEqual, nil
+	case "<":
+		return comparatorTypeLess, nil
+	case "<=":
+		return comparatorTypeLessEqual, nil
+	default:
+		return comparatorTypeEqual, errors.Errorf("invalid comparator %q", op)
+	}
+}
+
+// normalizeFilter will replace all quoted string with ? and return the list of quoted strings.
+func normalizeFilter(filter string) (string, []string, error) {
+	var (
+		normalizedFilter string
+		quotedStrings    []string
+	)
+	inQuotes := false
+	lastQuoteIndex := 0
+	for i, s := range filter {
+		if s == '"' {
+			if inQuotes {
+				quotedStrings = append(quotedStrings, filter[lastQuoteIndex+1:i])
+				normalizedFilter += "?"
+			} else {
+				lastQuoteIndex = i
+			}
+			inQuotes = !inQuotes
+		} else if !inQuotes {
+			// If we are not in quotes, we need to normalize the filter.
+			// We need to add space before and after the comparator.
+			// For example, "a>b" should be normalized to "a > b".
+			switch s {
+			case '!':
+				normalizedFilter += " "
+				normalizedFilter += string(s)
+			case '<', '>':
+				normalizedFilter += " "
+				normalizedFilter += string(s)
+				if i+1 < len(filter) && filter[i+1] != '=' {
+					normalizedFilter += " "
+				}
+			case '=':
+				if i > 0 && (filter[i-1] != '!' && filter[i-1] != '<' && filter[i-1] != '>') {
+					normalizedFilter += " "
+				}
+				normalizedFilter += string(s)
+				normalizedFilter += " "
+			default:
+				normalizedFilter += string(s)
+			}
+		}
+	}
+
+	if inQuotes {
+		return "", nil, errors.Errorf("invalid filter %q", filter)
+	}
+
+	return normalizedFilter, quotedStrings, nil
 }
 
 func convertToEngine(engine db.Type) v1pb.Engine {

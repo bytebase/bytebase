@@ -181,3 +181,102 @@ func TestGetEBNFTokens(t *testing.T) {
 		}
 	}
 }
+
+func TestParseFilter(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  []expression
+		err   error
+	}{
+		{
+			input: `resource="environments/e1/instances/i2"`,
+			want: []expression{
+				{
+					key:        "resource",
+					comparator: comparatorTypeEqual,
+					value:      "environments/e1/instances/i2",
+				},
+			},
+		},
+		{
+			input: `project = "p1" && start_time>="2020-01-01T00:00:00Z" && start_time<2020-01-02T00:00:00Z`,
+			want: []expression{
+				{
+					key:        "project",
+					comparator: comparatorTypeEqual,
+					value:      "p1",
+				},
+				{
+					key:        "start_time",
+					comparator: comparatorTypeGreaterEqual,
+					value:      "2020-01-01T00:00:00Z",
+				},
+				{
+					key:        "start_time",
+					comparator: comparatorTypeLess,
+					value:      "2020-01-02T00:00:00Z",
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		got, err := parseFilter(test.input)
+		if test.err != nil {
+			require.EqualError(t, err, test.err.Error())
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, test.want, got)
+		}
+	}
+}
+
+func TestParseOrderBy(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  []orderByKey
+		err   error
+	}{
+		{
+			input: "start_time",
+			want: []orderByKey{
+				{
+					key:      "start_time",
+					isAscend: true,
+				},
+			},
+		},
+		{
+			input: "start_time desc",
+			want: []orderByKey{
+				{
+					key:      "start_time",
+					isAscend: false,
+				},
+			},
+		},
+		{
+			input: "start_time desc, count",
+			want: []orderByKey{
+				{
+					key:      "start_time",
+					isAscend: false,
+				},
+				{
+					key:      "count",
+					isAscend: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		got, err := parseOrderBy(test.input)
+		if test.err != nil {
+			require.EqualError(t, err, test.err.Error())
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, test.want, got)
+		}
+	}
+}
