@@ -87,27 +87,27 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 	var queryValues []string
 
 	_, _ = query.WriteString(`
-	INSERT INTO instance_change_history (
-		creator_id,
-		updater_id,
-		instance_id,
-		database_id,
-		issue_id,
-		release_version,
-		sequence,
-		source,
-		type,
-		status,
-		version,
-		description,
-		statement,
-		"schema",
-		schema_prev,
-		execution_duration_ns,
-		payload,
-		created_ts,
-		updated_ts
-	) VALUES `)
+		INSERT INTO instance_change_history (
+			creator_id,
+			updater_id,
+			instance_id,
+			database_id,
+			issue_id,
+			release_version,
+			sequence,
+			source,
+			type,
+			status,
+			version,
+			description,
+			statement,
+			"schema",
+			schema_prev,
+			execution_duration_ns,
+			payload,
+			created_ts,
+			updated_ts
+		) VALUES `)
 
 	count := 1
 	for _, create := range creates {
@@ -316,30 +316,30 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 
 	query := `
-	SELECT
-		id,
-		row_status,
-		creator_id,
-		created_ts,
-		updater_id,
-		updated_ts,
-		instance_id,
-		database_id,
-		issue_id,
-		release_version,
-		sequence,
-		source,
-		type,
-		status,
-		version,
-		description,
-		statement,
-		schema,
-		schema_prev,
-		execution_duration_ns,
-		payload
-	FROM instance_change_history
-	WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_id, database_id, sequence DESC`
+		SELECT
+			id,
+			row_status,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			instance_id,
+			database_id,
+			issue_id,
+			release_version,
+			sequence,
+			source,
+			type,
+			status,
+			version,
+			description,
+			statement,
+			schema,
+			schema_prev,
+			execution_duration_ns,
+			payload
+		FROM instance_change_history
+		WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_id, database_id, sequence DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -430,9 +430,9 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 		return nil
 	}
 	query := `
-	UPDATE instance_change_history
-	SET ` + strings.Join(set, ", ") + `
-	WHERE ` + fmt.Sprintf("id = $%d", len(args)+1)
+		UPDATE instance_change_history
+		SET ` + strings.Join(set, ", ") + `
+		WHERE ` + fmt.Sprintf("id = $%d", len(args)+1)
 	args = append(args, update.ID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -448,7 +448,7 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	return tx.Commit()
 }
 
-func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, tx *Tx, instanceID *int, databaseID *int, baseline bool) (int64, error) {
+func (*Store) getNextInstanceChangeHistorySequence(ctx context.Context, tx *Tx, instanceID *int, databaseID *int) (int64, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if instanceID != nil && databaseID != nil {
 		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *instanceID)
@@ -459,107 +459,36 @@ func (*Store) getLargestInstanceChangeHistorySequenceImpl(ctx context.Context, t
 
 	query := `
 		SELECT
-			MAX(sequence)
+			COALESCE(MAX(sequence), 0)+1
 		FROM instance_change_history
 		WHERE ` + strings.Join(where, " AND ")
-	if baseline {
-		query += fmt.Sprintf(" AND (type = '%s' OR type = '%s')", db.Baseline, db.Branch)
-	}
-	var sequence sql.NullInt64
+	var sequence int64
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(&sequence); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, nil
-		}
-		return -1, util.FormatErrorWithQuery(err, query)
+		return 0, err
 	}
-
-	if sequence.Valid {
-		return sequence.Int64, nil
-	}
-
-	return 0, nil
-}
-
-// GetLargestInstanceChangeHistorySequence will get the largest sequence number.
-func (s *Store) GetLargestInstanceChangeHistorySequence(ctx context.Context, instanceID *int, databaseID *int, baseline bool) (int64, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return -1, err
-	}
-	defer tx.Rollback()
-
-	sequence, err := s.getLargestInstanceChangeHistorySequenceImpl(ctx, tx, instanceID, databaseID, baseline)
-	if err != nil {
-		return -1, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return -1, err
-	}
-
 	return sequence, nil
-}
-
-// GetLargestInstanceChangeHistoryVersionSinceBaseline will get the largest version since last baseline or branch.
-func (s *Store) GetLargestInstanceChangeHistoryVersionSinceBaseline(ctx context.Context, instanceID *int, databaseID *int) (*string, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	sequence, err := s.getLargestInstanceChangeHistorySequenceImpl(ctx, tx, instanceID, databaseID, true /* baseline */)
-	if err != nil {
-		return nil, err
-	}
-
-	where, args := []string{"TRUE"}, []any{}
-	if instanceID != nil && databaseID != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *instanceID)
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *databaseID)
-	} else {
-		where = append(where, "instance_id is NULL AND database_id is NULL")
-	}
-	where, args = append(where, fmt.Sprintf("sequence >= $%d", len(args)+1)), append(args, sequence)
-
-	query := `
-		SELECT
-			MAX(version)
-		FROM instance_change_history
-		WHERE ` + strings.Join(where, " AND ")
-
-	var version sql.NullString
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&version); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	if version.Valid {
-		return &version.String, nil
-	}
-
-	return nil, nil
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
 // it deprecates the old InsertPendingHistory.
-func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence int64, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
 	}
 	defer tx.Rollback()
 
+	nextSequence, err := s.getNextInstanceChangeHistorySequence(ctx, tx, m.InstanceID, m.DatabaseID)
+	if err != nil {
+		return "", err
+	}
 	list, err := s.createInstanceChangeHistoryImpl(ctx, tx, &InstanceChangeHistoryMessage{
 		CreatorID:           m.CreatorID,
 		InstanceID:          m.InstanceID,
 		DatabaseID:          m.DatabaseID,
 		IssueID:             m.IssueIDInt,
 		ReleaseVersion:      m.ReleaseVersion,
-		Sequence:            sequence,
+		Sequence:            nextSequence,
 		Source:              m.Source,
 		Type:                m.Type,
 		Status:              db.Pending,
@@ -585,10 +514,10 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, sequence
 // ListInstanceHavingInstanceChangeHistory finds the instance id lists that have instance change history.
 func (s *Store) ListInstanceHavingInstanceChangeHistory(ctx context.Context) ([]int, error) {
 	query := `
-	SELECT DISTINCT
-		instance_id
-	FROM instance_change_history
-	WHERE instance_id IS NOT NULL
+		SELECT DISTINCT
+			instance_id
+		FROM instance_change_history
+		WHERE instance_id IS NOT NULL
 	`
 	rows, err := s.db.db.QueryContext(ctx, query)
 	if err != nil {
