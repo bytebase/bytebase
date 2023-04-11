@@ -303,6 +303,7 @@ import { computed, onMounted, reactive, watch, ref } from "vue";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
+import { startCase } from "lodash-es";
 
 import ProjectSelect from "@/components/ProjectSelect.vue";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
@@ -381,7 +382,7 @@ const databaseTabItemList = computed((): DatabaseTabItem[] => {
     { name: t("common.overview"), hash: "overview" },
     { name: t("change-history.self"), hash: "change-history" },
     { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
-    { name: t("slow-query.slow-queries"), hash: "slow-query" },
+    { name: startCase(t("slow-query.slow-queries")), hash: "slow-query" },
   ];
 });
 
