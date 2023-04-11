@@ -199,7 +199,7 @@ func TestParseFilter(t *testing.T) {
 			},
 		},
 		{
-			input: `project = "p1" AND start_time>="2020-01-01T00:00:00Z" AND start_time<2020-01-02T00:00:00Z`,
+			input: `project = "p1" && start_time>="2020-01-01T00:00:00Z" && start_time<2020-01-02T00:00:00Z`,
 			want: []expression{
 				{
 					key:        "project",

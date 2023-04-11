@@ -345,8 +345,8 @@ type expression struct {
 //     ii.  Comparator can be `=`, `!=`, `>`, `>=`, `<`, `<=`.
 //     iii. If val doesn't contain space, we can omit the double quotes.
 //  2. for multiple expressions:
-//     i.  We only support AND currently.
-//     ii. defined as `key comparator "val" AND key comparator "val" AND ...`.
+//     i.  We only support && currently.
+//     ii. defined as `key comparator "val" && key comparator "val" && ...`.
 func parseFilter(filter string) ([]expression, error) {
 	if filter == "" {
 		return nil, nil
@@ -360,8 +360,8 @@ func parseFilter(filter string) ([]expression, error) {
 	var result []expression
 	nextStringPos := 0
 
-	// Split the normalized filter by " AND " to get the list of expressions.
-	expressions := strings.Split(normalized, " AND ")
+	// Split the normalized filter by " && " to get the list of expressions.
+	expressions := strings.Split(normalized, " && ")
 	for _, expressionString := range expressions {
 		expr, err := parseExpression(expressionString)
 		if err != nil {
