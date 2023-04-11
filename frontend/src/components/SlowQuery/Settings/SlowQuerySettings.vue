@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 pb-4">
+  <div class="space-y-4 pb-4 w-[48rem] max-w-full">
     <div>
       <BBAttention :style="'WARN'" :description="attentionDescription" />
     </div>
@@ -10,7 +10,7 @@
         @update:environment="changeEnvironment"
       />
     </div>
-    <div class="w-[48rem] max-w-full">
+    <div>
       <SlowQueryPolicyTable
         :instance-list="state.ready ? filteredInstanceList : []"
         :policy-list="policyList"
@@ -33,9 +33,11 @@ import { computed, onMounted, reactive } from "vue";
 import { BBAttention } from "@/bbkit";
 import {
   featureToRef,
+  pushNotification,
   useEnvironmentList,
   useInstanceStore,
   useSlowQueryPolicyStore,
+  useSlowQueryStore,
 } from "@/store";
 import {
   Environment,
@@ -71,6 +73,7 @@ const state = reactive<LocalState>({
 
 const { t } = useI18n();
 const policyStore = useSlowQueryPolicyStore();
+const slowQueryStore = useSlowQueryStore();
 const instanceStore = useInstanceStore();
 const environmentList = useEnvironmentList(["NORMAL"]);
 const hasSlowQueryFeature = featureToRef("bb.feature.slow-query");
@@ -133,6 +136,16 @@ const toggleActive = async (instance: Instance, active: boolean) => {
         payload,
       }
     );
+    if (active) {
+      // When turning ON an instance's slow query, call the corresponding
+      // API endpoint to sync slow queries from the instance immediately.
+      await slowQueryStore.syncSlowQueriesByInstance(instance);
+    }
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   } catch {
     // nothing
   }
