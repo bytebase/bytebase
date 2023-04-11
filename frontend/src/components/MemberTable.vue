@@ -117,7 +117,6 @@
         <span
           v-if="is2FAEnabled(member)"
           class="text-xs p-1 px-2 rounded-lg bg-green-600 text-white"
-          :class="is2FAEnabled(member)"
         >
           {{ $t("two-factor.enabled") }}
         </span>

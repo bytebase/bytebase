@@ -610,7 +610,7 @@ const selectedTemplate = ref<IdentityProviderTemplate>();
 
 const currentIdentityProvider = computed(() => {
   return identityProviderStore.getIdentityProviderByName(
-    String(props.identityProviderName)
+    props.identityProviderName || ""
   );
 });
 

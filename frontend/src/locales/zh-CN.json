@@ -2232,7 +2232,9 @@
         "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
       },
       "view-approval-flow": "查看审批流",
-      "skip": "跳过人工审批"
+      "skip": "跳过人工审批",
+      "risk-not-configured-tips": "确保你已经定义了{link}。",
+      "the-related-risk-rules": "相关的风险规则"
     },
     "risk": {
       "self": "风险",

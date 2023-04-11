@@ -13,7 +13,8 @@ const defaultOIDCScopes = ["openid", "profile", "email"];
 
 export async function openWindowForSSO(
   identityProvider: IdentityProvider,
-  openAsPopup = true
+  openAsPopup = true,
+  redirect = ""
 ) {
   const stateQueryParameter = `bb.oauth.signin.${identityProvider.name}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
@@ -23,6 +24,7 @@ export async function openWindowForSSO(
     JSON.stringify({
       identityProviderName: identityProvider.name,
       openAsPopup,
+      redirect,
     })
   );
 
