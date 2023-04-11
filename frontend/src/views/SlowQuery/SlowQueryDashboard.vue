@@ -7,13 +7,13 @@
 <script lang="ts" setup>
 import { shallowRef } from "vue";
 
-import { SlowQueryPanel, SlowQueryFilterParams } from "@/components/SlowQuery";
+import {
+  SlowQueryPanel,
+  SlowQueryFilterParams,
+  defaultSlowQueryFilterParams,
+} from "@/components/SlowQuery";
 
 const filter = shallowRef<SlowQueryFilterParams>({
-  project: undefined,
-  environment: undefined,
-  instance: undefined,
-  database: undefined,
-  timeRange: undefined,
+  ...defaultSlowQueryFilterParams(),
 });
 </script>

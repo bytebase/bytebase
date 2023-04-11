@@ -1,4 +1,5 @@
 import type { Environment, Instance, Database, Project } from "@/types";
+import dayjs from "dayjs";
 
 export type SlowQueryFilterParams = {
   project: Project | undefined; // undefined to "All"
@@ -18,3 +19,18 @@ export const FilterTypeList = [
 ] as const;
 
 export type FilterType = typeof FilterTypeList[number];
+
+export const defaultSlowQueryFilterParams = (): SlowQueryFilterParams => {
+  const now = dayjs();
+  const recentWeek: [number, number] = [
+    now.subtract(7, "days").startOf("day").valueOf(),
+    now.endOf("day").valueOf(),
+  ];
+  return {
+    project: undefined,
+    environment: undefined,
+    instance: undefined,
+    database: undefined,
+    timeRange: recentWeek,
+  };
+};

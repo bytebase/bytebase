@@ -15,6 +15,7 @@ import type { Database } from "@/types";
 import {
   type SlowQueryFilterParams,
   SlowQueryPanel,
+  defaultSlowQueryFilterParams,
 } from "@/components/SlowQuery";
 
 const props = defineProps<{
@@ -22,11 +23,10 @@ const props = defineProps<{
 }>();
 
 const filter = shallowRef<SlowQueryFilterParams>({
-  project: undefined,
+  ...defaultSlowQueryFilterParams(),
   environment: props.database.instance.environment,
   instance: props.database.instance,
   database: props.database,
-  timeRange: undefined,
 });
 
 watch(

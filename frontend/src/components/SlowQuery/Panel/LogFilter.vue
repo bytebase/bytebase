@@ -5,6 +5,7 @@
         v-if="allowFilterByEnvironment"
         v-model:value="mode"
         :disabled="loading"
+        class="ml-1"
       >
         <NRadio value="environment">{{ $t("common.environment") }}</NRadio>
         <NRadio value="project">{{ $t("common.project") }}</NRadio>
@@ -43,7 +44,6 @@
           v-if="filterTypes.includes('time-range')"
           :value="params.timeRange"
           :disabled="loading"
-          :default-value="defaultTimeRange"
           :is-date-disabled="isDateDisabled"
           type="daterange"
           clearable
@@ -105,14 +105,6 @@ const emit = defineEmits<{
 
 const currentUser = useCurrentUser();
 const mode = shallowRef<FilterMode>("environment");
-
-const defaultTimeRange = computed((): [number, number] => {
-  const now = dayjs();
-  return [
-    now.subtract(7, "days").startOf("day").valueOf(),
-    now.endOf("day").valueOf(),
-  ];
-});
 
 const allowFilterByEnvironment = computed(() => {
   if (!props.filterTypes.includes("mode")) {
