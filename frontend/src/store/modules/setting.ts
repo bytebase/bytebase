@@ -4,6 +4,7 @@ import axios from "axios";
 import { MaybeRef, ResourceObject, SettingState } from "@/types";
 import { Setting, SettingName } from "@/types/setting";
 import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
+import { useActuatorStore } from "./actuator";
 
 function convert(
   setting: ResourceObject,
@@ -90,6 +91,8 @@ export const useSettingStore = defineStore("setting", {
         name: "bb.workspace.profile",
         value: JSON.stringify(profileSetting),
       });
+      // Fetch the latest server info.
+      await useActuatorStore().fetchServerInfo();
     },
   },
 });
