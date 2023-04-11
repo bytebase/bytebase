@@ -1142,7 +1142,8 @@
     "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "doesnt-match-database-name-template": "Doesn't match tenant database name template",
     "doesnt-match-tenant-value": "Doesn't match label value",
-    "should-follow-database-name-template": "Should follow tenant database name template"
+    "should-follow-database-name-template": "Should follow tenant database name template",
+    "all": "All databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1349,7 +1350,8 @@
       "project-member": "Require LGTM from project members",
       "project-owner": "Require LGTM from project owner"
     },
-    "successfully-updated-db-name-template": "Successfully updated database name template."
+    "successfully-updated-db-name-template": "Successfully updated database name template.",
+    "all": "All projects"
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -2275,6 +2277,7 @@
     "rows-examined": "Rows examined",
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
-    "query-time": "Query time"
+    "query-time": "Query time",
+    "attention-description": "Logging and analyzing slow queires for {versions}.\nBytebase will periodically sync slow query logs from instances."
   }
 }

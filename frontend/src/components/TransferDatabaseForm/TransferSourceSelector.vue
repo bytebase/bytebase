@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, watch, watchEffect } from "vue";
+import { PropType, reactive, watch } from "vue";
 import { NInputGroup } from "naive-ui";
 
 import { TransferSource } from "./utils";
@@ -96,10 +96,6 @@ const state = reactive<LocalState>({
   transferSource: props.transferSource,
 });
 
-const prepare = () => {
-  useInstanceStore().fetchInstanceList();
-};
-
 const changeInstanceFilter = (instanceId: InstanceId | undefined) => {
   if (!instanceId || instanceId === UNKNOWN_ID) {
     return emit("select-instance", undefined);
@@ -120,6 +116,4 @@ watch(
     }
   }
 );
-
-watchEffect(prepare);
 </script>
