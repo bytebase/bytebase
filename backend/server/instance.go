@@ -15,7 +15,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -103,6 +105,14 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			// Sync all databases in the instance asynchronously.
 			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
 		}
+
+		s.MetricReporter.Report(ctx, &metric.Metric{
+			Name:  metricAPI.InstanceCreateMetricName,
+			Value: 1,
+			Labels: map[string]any{
+				"engine": composedInstance.Engine,
+			},
+		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstance); err != nil {
