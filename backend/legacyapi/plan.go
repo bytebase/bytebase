@@ -271,9 +271,9 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSQLReview:        {false, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	// VCS Integration
-	FeatureVCSSchemaWriteBack:   {false, false, true},
-	FeatureVCSSheetSync:         {false, false, true},
-	FeatureVCSSQLReviewWorkflow: {false, false, true},
+	FeatureVCSSchemaWriteBack:   {false, true, true},
+	FeatureVCSSheetSync:         {false, true, true},
+	FeatureVCSSQLReviewWorkflow: {true, true, true},
 	// Database management
 	FeaturePITR:                  {false, true, true},
 	FeatureReadReplicaConnection: {false, false, true},
