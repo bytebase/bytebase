@@ -157,12 +157,14 @@ export const calcApplicableIssueStatusTransitionList = (
       return;
     }
     if (type === "RESOLVE") {
-      // Don't display the Resolve action if the last task is NOT in DONE status.
       if (transition.type === "RESOLVE" && flattenTaskList.length > 0) {
         const lastTask = flattenTaskList[flattenTaskList.length - 1];
+        // Don't display the RESOLVE action if the pipeline doesn't reach the
+        // last task
         if (lastTask.id !== currentTask.id) {
           return;
         }
+        // Don't display the RESOLVE action if the last task is not DONE.
         if (currentTask.status !== "DONE") {
           return;
         }
