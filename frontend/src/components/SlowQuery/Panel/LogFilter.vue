@@ -2,7 +2,7 @@
   <div class="mb-2 space-y-2">
     <div class="flex items-center gap-x-4 h-[34px]">
       <NRadioGroup
-        v-if="allowFilterByEnvironment"
+        v-if="filterTypes.includes('mode')"
         v-model:value="mode"
         :disabled="loading"
         class="ml-1"
@@ -12,14 +12,6 @@
       </NRadioGroup>
 
       <NInputGroup style="width: auto">
-        <ProjectSelect
-          v-if="mode === 'project' && filterTypes.includes('project')"
-          :project="params.project?.id ?? UNKNOWN_ID"
-          :include-default-project="false"
-          :include-all="true"
-          :disabled="loading"
-          @update:project="changeProjectId"
-        />
         <InstanceSelect
           v-if="mode === 'environment' && filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"
@@ -57,12 +49,27 @@
       </div>
     </div>
 
-    <div v-if="filterTypes.includes('environment')">
+    <div
+      v-if="
+        (mode === 'environment' && filterTypes.includes('environment')) ||
+        (mode === 'project' && filterTypes.includes('project'))
+      "
+    >
       <EnvironmentTabFilter
+        v-if="mode === 'environment' && filterTypes.includes('environment')"
         :environment="params.environment?.id ?? UNKNOWN_ID"
         :include-all="true"
         :disabled="loading"
         @update:environment="changeEnvironmentId"
+      />
+
+      <ProjectSelect
+        v-if="mode === 'project' && filterTypes.includes('project')"
+        :project="params.project?.id ?? UNKNOWN_ID"
+        :include-default-project="false"
+        :include-all="true"
+        :disabled="loading"
+        @update:project="changeProjectId"
       />
     </div>
   </div>
@@ -111,9 +118,6 @@ const currentUser = useCurrentUser();
 const mode = shallowRef<FilterMode>("environment");
 
 const allowFilterByEnvironment = computed(() => {
-  if (!props.filterTypes.includes("mode")) {
-    return false;
-  }
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-database",
     currentUser.value.role
