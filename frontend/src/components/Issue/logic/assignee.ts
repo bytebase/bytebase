@@ -86,19 +86,19 @@ export const allowUserToBeAssignee = (
   policy: PipelineApprovalPolicyValue,
   assigneeGroup: AssigneeGroupValue | undefined
 ): boolean => {
-  const isWorkspaceOwnerOrDBA = hasWorkspacePermission(
+  const hasWorkspaceIssueManagementPermission = hasWorkspacePermission(
     "bb.permission.workspace.manage-issue",
     user.role
   );
 
   if (policy === "MANUAL_APPROVAL_NEVER") {
     // DBA / workspace owner
-    return isWorkspaceOwnerOrDBA;
+    return hasWorkspaceIssueManagementPermission;
   }
 
   if (assigneeGroup === "WORKSPACE_OWNER_OR_DBA") {
     // DBA / workspace owner
-    return isWorkspaceOwnerOrDBA;
+    return hasWorkspaceIssueManagementPermission;
   }
 
   if (assigneeGroup === "PROJECT_OWNER") {
