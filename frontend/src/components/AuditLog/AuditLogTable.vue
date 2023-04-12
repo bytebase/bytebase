@@ -100,7 +100,7 @@ const columnList = computed(() => [
     title: t("audit-log.table.type"),
   },
   {
-    title: t("audit-log.table.creator"),
+    title: t("audit-log.table.actor"),
   },
   {
     title: t("audit-log.table.comment"),
