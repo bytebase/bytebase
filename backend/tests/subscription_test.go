@@ -13,7 +13,6 @@ import (
 )
 
 type trial struct {
-	seat                int32
 	instanceCount       int32
 	expectInstanceCount int32
 	plan                v1pb.PlanType
@@ -41,7 +40,6 @@ func TestSubscription(t *testing.T) {
 	trialList := []trial{
 		{
 			// Test trial the TEAM plan.
-			seat:                10,
 			instanceCount:       20,
 			expectInstanceCount: 20,
 			plan:                v1pb.PlanType_TEAM,
@@ -50,7 +48,6 @@ func TestSubscription(t *testing.T) {
 		},
 		{
 			// Test trial the ENTERPRISE plan.
-			seat:                10,
 			instanceCount:       10,
 			expectInstanceCount: 10,
 			plan:                v1pb.PlanType_ENTERPRISE,
@@ -59,7 +56,6 @@ func TestSubscription(t *testing.T) {
 		},
 		{
 			// Downgrade should be ignored.
-			seat:                10,
 			instanceCount:       99,
 			expectInstanceCount: 10,
 			plan:                v1pb.PlanType_TEAM,
@@ -70,7 +66,6 @@ func TestSubscription(t *testing.T) {
 
 	for _, trial := range trialList {
 		err = ctl.trialPlan(&v1pb.TrialSubscription{
-			Seat:          trial.seat,
 			InstanceCount: trial.instanceCount,
 			Plan:          trial.plan,
 			Days:          trial.Days,

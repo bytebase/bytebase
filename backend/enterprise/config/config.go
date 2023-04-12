@@ -35,8 +35,6 @@ const (
 	issuer = "bytebase"
 	// audience is the license token audience.
 	audience = "bb.license"
-	// MaximumSeatForFreePlan is the maximum seat limit for the FREE plan.
-	MaximumSeatForFreePlan = 10
 	// MaximumInstanceForFreePlan is the maximum instance limit for the FREE plan.
 	MaximumInstanceForFreePlan = 10
 )

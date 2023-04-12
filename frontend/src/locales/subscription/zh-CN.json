@@ -1,6 +1,5 @@
 {
   "current": "当前版本",
-  "seat-count": "席位数",
   "unlimited": "无限制",
   "instance-count": "实例数",
   "expires-at": "过期时间",
@@ -16,9 +15,8 @@
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
-  "per-seat": "每个席位",
-  "free-price-intro": "最多 10 个席位，10 个实例",
-  "team-price-intro": "最多 10 个席位，10 个实例（含 3 个免费实例）",
+  "free-price-intro": "最多 10 个实例",
+  "team-price-intro": "最多 10 个实例（含 3 个免费实例）",
   "enterprise-price-intro": "自定义席位和实例，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
@@ -103,9 +101,6 @@
     "collaboration": {
       "title": "团队协作",
       "features": {
-        "seat-count": "席位",
-        "seat-maximum-10": "不超过 10 个",
-        "seat-customized": "自定义",
         "ui-based-sql-review": "基于 UI 的 SQL 审查",
         "gitops-workflow": "GitOps 工作流",
         "shared-sql-script": "共享 SQL 脚本",
