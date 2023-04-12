@@ -13,6 +13,9 @@
           <HumanizeTs :ts="dateToTS(log.statistics.latestLogTime)" />
         </div>
         <div class="bb-grid-cell">
+          <InstanceName :instance="database.instance" />
+        </div>
+        <div class="bb-grid-cell">
           <DatabaseName :database="database" />
         </div>
         <div class="bb-grid-cell text-xs font-mono">
@@ -55,7 +58,7 @@ import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { DatabaseName } from "@/components/v2";
+import { DatabaseName, InstanceName } from "@/components/v2";
 
 export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;
 
@@ -83,7 +86,11 @@ const columns = computed(() => {
       width: "minmax(8rem, auto)",
     },
     {
-      title: t("slow-query.database-name"),
+      title: t("common.instance"),
+      width: "minmax(12rem, 18rem)",
+    },
+    {
+      title: t("common.database"),
       width: "minmax(12rem, 18rem)",
     },
     {
