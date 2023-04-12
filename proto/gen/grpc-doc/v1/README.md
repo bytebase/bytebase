@@ -4796,7 +4796,6 @@ The data in setting value.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| seat | [int32](#int32) |  |  |
 | instance_count | [int32](#int32) |  |  |
 | expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -4820,7 +4819,6 @@ The data in setting value.
 | ----- | ---- | ----- | ----------- |
 | plan | [PlanType](#bytebase-v1-PlanType) |  |  |
 | days | [int32](#int32) |  |  |
-| seat | [int32](#int32) |  |  |
 | instance_count | [int32](#int32) |  |  |
 
 
