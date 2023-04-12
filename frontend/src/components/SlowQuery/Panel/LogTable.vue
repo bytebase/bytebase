@@ -9,15 +9,6 @@
   >
     <template #item="{ item: { log, database } }: SlowQueryLogRow">
       <template v-if="log.statistics">
-        <div class="bb-grid-cell">
-          <HumanizeTs :ts="dateToTS(log.statistics.latestLogTime)" />
-        </div>
-        <div class="bb-grid-cell">
-          <InstanceName :instance="database.instance" />
-        </div>
-        <div class="bb-grid-cell">
-          <DatabaseName :database="database" />
-        </div>
         <div class="bb-grid-cell text-xs font-mono">
           <div class="truncate">
             {{ log.statistics.sqlFingerprint }}
@@ -46,6 +37,23 @@
         <div class="bb-grid-cell">
           {{ log.statistics.averageRowsSent }}
         </div>
+        <div v-if="showEnvironmentColumn" class="bb-grid-cell">
+          <EnvironmentName
+            :environment="database.instance.environment"
+            :link="false"
+          />
+        </div>
+        <div v-if="showInstanceColumn" class="bb-grid-cell">
+          <InstanceName :instance="database.instance" :link="false" />
+        </div>
+        <div class="bb-grid-cell">
+          <DatabaseName :database="database" :link="false" />
+        </div>
+        <div class="bb-grid-cell whitespace-nowrap !pr-4">
+          {{
+            dayjs(log.statistics.latestLogTime).format("YYYY-MM-DD HH:mm:ss")
+          }}
+        </div>
       </template>
     </template>
   </BBGrid>
@@ -57,19 +65,22 @@ import { useI18n } from "vue-i18n";
 
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
-import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { DatabaseName, InstanceName } from "@/components/v2";
+import { DatabaseName, InstanceName, EnvironmentName } from "@/components/v2";
 
 export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     slowQueryLogList?: ComposedSlowQueryLog[];
     showPlaceholder?: boolean;
+    showEnvironmentColumn?: boolean;
+    showInstanceColumn?: boolean;
   }>(),
   {
     slowQueryLogList: () => [],
     showPlaceholder: true,
+    showEnvironmentColumn: true,
+    showInstanceColumn: true,
   }
 );
 
@@ -80,19 +91,7 @@ defineEmits<{
 const { t } = useI18n();
 
 const columns = computed(() => {
-  const columns: BBGridColumn[] = [
-    {
-      title: t("slow-query.last-query-time"),
-      width: "minmax(8rem, auto)",
-    },
-    {
-      title: t("common.instance"),
-      width: "minmax(12rem, 18rem)",
-    },
-    {
-      title: t("common.database"),
-      width: "minmax(12rem, 18rem)",
-    },
+  const columns = [
     {
       title: t("slow-query.sql-statement"),
       width: "minmax(20rem, 1fr)",
@@ -114,23 +113,34 @@ const columns = computed(() => {
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.rows-sent-95-percent"),
+      title: t("slow-query.rows-examined-avg"),
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.rows-examined-avg"),
+      title: t("slow-query.rows-sent-95-percent"),
       width: "minmax(6rem, auto)",
     },
     {
       title: t("slow-query.rows-sent-avg"),
       width: "minmax(6rem, auto)",
     },
-  ];
+    props.showEnvironmentColumn && {
+      title: t("common.environment"),
+      width: "minmax(6rem, auto)",
+    },
+    props.showInstanceColumn && {
+      title: t("common.instance"),
+      width: "minmax(12rem, 18rem)",
+    },
+    {
+      title: t("common.database"),
+      width: "minmax(12rem, 18rem)",
+    },
+    {
+      title: t("slow-query.last-query-time"),
+      width: "auto",
+    },
+  ].filter((col) => !!col) as BBGridColumn[];
   return columns;
 });
-
-const dateToTS = (date: Date | undefined) => {
-  if (!date) return 0;
-  return Math.floor(date.getTime() / 1000);
-};
 </script>
