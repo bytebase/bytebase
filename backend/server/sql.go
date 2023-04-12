@@ -393,10 +393,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, exec.DatabaseName)
 			if err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get sensitive schema info: %s", exec.Statement)).SetInternal(err)
 			}
 		case db.Postgres:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{exec.DatabaseName}, exec.DatabaseName)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get sensitive schema info: %s", exec.Statement)).SetInternal(err)
+			}
 		}
 
 		start := time.Now().UnixNano()
