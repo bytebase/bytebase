@@ -1776,10 +1776,6 @@
         "title": "Custom approval",
         "desc": "Configure security risk level and approval flow for different tasks."
       },
-      "bb-feature-slow-query": {
-        "title": "Slow query",
-        "desc": "Logging and analyzing slow SQL queries."
-      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
         "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."

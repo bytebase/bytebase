@@ -1775,10 +1775,6 @@
         "title": "自定义审批",
         "desc": "为不同的任务配置安全风险等级和自定义审批流。"
       },
-      "bb-feature-slow-query": {
-        "title": "慢查询",
-        "desc": "记录与分析慢速的 SQL 查询。"
-      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
         "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
