@@ -127,7 +127,7 @@ const syncNow = async () => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("slow-query.sync-job-queued"),
+      title: t("slow-query.sync-job-started"),
     });
   } finally {
     syncing.value = false;
