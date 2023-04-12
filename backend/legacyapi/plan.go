@@ -285,7 +285,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
-	FeatureSlowQuery:             {false, false, true},
+	FeatureSlowQuery:             {true, true, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
 }
