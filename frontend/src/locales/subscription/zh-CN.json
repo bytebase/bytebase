@@ -107,7 +107,7 @@
         "seat-maximum-10": "不超过 10 个",
         "seat-customized": "自定义",
         "ui-based-sql-review": "基于 UI 的 SQL 审查",
-        "vsc-workflow": "GitOps 工作流",
+        "gitops-workflow": "GitOps 工作流",
         "shared-sql-script": "共享 SQL 脚本",
         "webhook-integration": "IM 集成",
         "webhook-integration-basic": "基础",
@@ -115,9 +115,10 @@
         "webhook-integration-advanced": "高级",
         "webhook-integration-advanced-tooltip": "基础版功能 + IM 审批",
         "inbox-notification": "站内信通知",
-        "vsc-workflow-basic": "基础",
-        "vsc-workflow-advanced": "高级",
-        "vsc-workflow-advanced-tooltip": "基础版功能 + 回写最新 Schema 快照，SQL 脚本同步，SQL 审核 CI"
+        "gitops-workflow-basic": "基础",
+        "gitops-workflow-basic-tooltip": "GitOps CI/CD，SQL 审核 CI",
+        "gitops-workflow-advanced": "高级",
+        "gitops-workflow-advanced-tooltip": "基础版功能 + 回写最新 Schema 快照，SQL 脚本同步，SQL 审核 CI"
       }
     },
     "data-security-and-governance": {
