@@ -44,7 +44,7 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   });
 };
 
-const extractRollOutPolicyValue = (
+export const extractRollOutPolicyValue = (
   policy: Policy | undefined,
   issueType: IssueType
 ): {

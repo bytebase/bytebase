@@ -1,4 +1,4 @@
-import type { IssueCreate, PipelineApprovalPolicyPayload } from "@/types";
+import type { IssueCreate } from "@/types";
 import {
   useInstanceStore,
   useMemberStore,
@@ -6,6 +6,7 @@ import {
   useProjectStore,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
+import { extractRollOutPolicyValue } from "@/components/Issue/logic";
 
 export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   const firstTask = issueCreate.pipeline?.stageList[0]?.taskList[0];
@@ -21,21 +22,19 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
     type: "bb.policy.pipeline-approval",
   });
 
-  const payload = policy.payload as PipelineApprovalPolicyPayload;
+  const rollOutPolicy = extractRollOutPolicyValue(policy, issueCreate.type);
 
-  if (payload.value === "MANUAL_APPROVAL_NEVER") {
+  if (rollOutPolicy.policy === "MANUAL_APPROVAL_NEVER") {
     // We don't need to approve manually.
     // But we still set the workspace owner or DBA as the default assignee.
     // Just to notify the project owner.
     assignToWorkspaceOwnerOrDBA(issueCreate);
     return;
   }
-  if (payload.value === "MANUAL_APPROVAL_ALWAYS") {
-    const assigneeGroup = payload.assigneeGroupList.find(
-      (group) => group.issueType === issueCreate.type
-    );
+  if (rollOutPolicy.policy === "MANUAL_APPROVAL_ALWAYS") {
+    const { assigneeGroup } = rollOutPolicy;
 
-    if (assigneeGroup && assigneeGroup.value === "PROJECT_OWNER") {
+    if (assigneeGroup === "PROJECT_OWNER") {
       // Assign to the project owner if needed.
       assignToProjectOwner(issueCreate);
       return;
