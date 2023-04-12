@@ -51,6 +51,10 @@
           @update:value="changeTimeRange"
         />
       </NInputGroup>
+
+      <div class="flex-1 flex items-center justify-end">
+        <slot name="suffix" />
+      </div>
     </div>
 
     <div v-if="filterTypes.includes('environment')">
