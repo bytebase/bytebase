@@ -256,7 +256,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	FeatureSSO:       {false, false, true},
 	Feature2FA:       {false, false, true},
-	FeatureRBAC:      {false, true, true},
+	FeatureRBAC:      {true, true, true},
 	FeatureWatermark: {false, false, true},
 	FeatureAuditLog:  {false, false, true},
 	// Branding
