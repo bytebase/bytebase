@@ -120,7 +120,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -149,7 +149,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          fmt.Sprintf("update data for database %q", databaseName),
 		Type:          api.IssueDatabaseDataUpdate,
 		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -603,7 +603,7 @@ func TestVCS(t *testing.T) {
 			// simulate retrying the failed task.
 			_, err = ctl.patchTaskStatus(api.TaskStatusPatch{
 				ID:        task.ID,
-				UpdaterID: api.SystemBotID,
+				UpdaterID: ownerID,
 				Status:    api.TaskPendingApproval,
 			}, issue.PipelineID, task.ID)
 			a.NoError(err)
@@ -641,7 +641,7 @@ func TestVCS(t *testing.T) {
 				Name:          fmt.Sprintf("update schema for database %q", databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-				AssigneeID:    api.SystemBotID,
+				AssigneeID:    ownerID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -2149,7 +2149,7 @@ CREATE TABLE public.book (
 				Name:          fmt.Sprintf("update schema for database %q", test.databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
-				AssigneeID:    api.SystemBotID,
+				AssigneeID:    ownerID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -2260,7 +2260,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
