@@ -452,7 +452,8 @@ export default defineComponent({
       return (
         instance.engine !== "MONGODB" &&
         instance.engine !== "CLICKHOUSE" &&
-        instance.engine !== "SNOWFLAKE"
+        instance.engine !== "SNOWFLAKE" &&
+        instance.engine !== "REDSHIFT"
       );
     });
 
