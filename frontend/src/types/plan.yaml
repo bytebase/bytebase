@@ -54,13 +54,11 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
-    freeInstanceCount: 10
-    maximumInstanceCount: 3
-    pricePerInstancePerMonth: 79
+    pricePerInstancePerMonth: 0
     featureList:
       # Change Management
       - type: instance-count
-        content: instance-maximum-10
+        content: instance-maximum-20
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
@@ -116,16 +114,14 @@ planList:
   - type: 1
     title: team
     trialDays: 14
-    unitPrice: 19
+    unitPrice: 100
     trialPrice: 0
-    freeInstanceCount: 3
-    maximumInstanceCount: 10
-    pricePerInstancePerMonth: 79
+    pricePerInstancePerMonth: 100
     featureList:
       # Change Management
       - type: instance-count
-        content: instance-maximum-10
-        tooltip: instance-maximum-10-tooltip
+        content: instance-maximum-20
+        tooltip: instance-maximum-20-tooltip
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
@@ -183,11 +179,9 @@ planList:
   - type: 2
     title: enterprise
     trialDays: 0
-    unitPrice: 90
+    unitPrice: 250
     trialPrice: 0
-    freeInstanceCount: 5
-    maximumInstanceCount: -1
-    pricePerInstancePerMonth: 79
+    pricePerInstancePerMonth: 250
     featureList:
       # Change Management
       - type: instance-count

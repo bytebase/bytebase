@@ -70,9 +70,7 @@ export interface Plan {
   // Plan meta data
   type: PlanType;
   trialDays: number;
-  unitPrice: number;
   trialPrice: number;
-  freeInstanceCount: number;
   // Plan desc and feature
   title: string;
   featureList: PlanFeature[];
