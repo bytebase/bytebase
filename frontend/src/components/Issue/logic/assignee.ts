@@ -91,8 +91,6 @@ export const allowUserToBeAssignee = (
     user.role
   );
 
-  console.log(user.name, user.role, policy, assigneeGroup);
-
   if (policy === "MANUAL_APPROVAL_NEVER") {
     // DBA / workspace owner
     return isWorkspaceOwnerOrDBA;
