@@ -119,6 +119,25 @@ func (s *Store) GetAccessControlPolicy(ctx context.Context, resourceType api.Pol
 	return accessControlPolicy, policy.InheritFromParent, nil
 }
 
+// GetSlowQueryPolicy will get the slow query policy for instance ID.
+func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.SlowQueryPolicy, error) {
+	pType := api.PolicyTypeSlowQuery
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &resourceID,
+		Type:         &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if policy == nil {
+		return &api.SlowQueryPolicy{Active: false}, nil
+	}
+
+	return api.UnmarshalSlowQueryPolicy(policy.Payload)
+}
+
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
 	ResourceUID       int

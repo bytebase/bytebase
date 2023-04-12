@@ -70,6 +70,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
+	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -139,6 +140,7 @@ type Server struct {
 	TaskCheckScheduler *taskcheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
+	SlowQuerySyncer    *slowquerysync.Syncer
 	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
 	ApplicationRunner  *apprun.Runner
@@ -309,6 +311,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
+		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
 	}
 	s.store = storeInstance
@@ -405,6 +408,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
@@ -552,7 +556,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.MetricReporter,
 		s.licenseService))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
-	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
+	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(
+		s.store,
+		s.licenseService,
+		s.secret,
+		s.stateCfg))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
@@ -832,6 +840,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.SlowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
