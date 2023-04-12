@@ -35,8 +35,7 @@
       </div>
     </div>
 
-    <DetailDialog
-      v-if="selectedSlowQueryLog"
+    <DetailPanel
       :slow-query-log="selectedSlowQueryLog"
       @close="selectedSlowQueryLog = undefined"
     />
@@ -63,7 +62,7 @@ import {
 } from "./types";
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
-import DetailDialog from "./DetailDialog.vue";
+import DetailPanel from "./DetailPanel.vue";
 
 const props = withDefaults(
   defineProps<{
