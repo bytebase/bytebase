@@ -86,6 +86,7 @@ func TestRollback(t *testing.T) {
 		a.NoError(err)
 		records = append(records, r)
 	}
+	a.NoError(rows.Err())
 	want := []record{
 		{1, "alice\nalice", 90},
 		{2, "bob", 110},
@@ -210,6 +211,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		a.NoError(err)
 		records1 = append(records1, r)
 	}
+	a.NoError(rows1.Err())
 	want1 := []record{{2, "unknown\nunknown"}, {3, "unknown\nunknown"}}
 	a.Equal(want1, records1)
 
@@ -292,6 +294,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		a.NoError(err)
 		records2 = append(records2, r)
 	}
+	a.NoError(rows2.Err())
 	want2 := []record{{1, "1\n1"}, {2, "2\n2"}, {3, "3\n3"}}
 	a.Equal(want2, records2)
 }
@@ -421,6 +424,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		a.NoError(err)
 		records1 = append(records1, r)
 	}
+	a.NoError(rows1.Err())
 	want1 := []record{{2, "unknown\nunknown"}, {3, "unknown\nunknown"}}
 	a.Equal(want1, records1)
 
@@ -503,6 +507,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		a.NoError(err)
 		records2 = append(records2, r)
 	}
+	a.NoError(rows2.Err())
 	want2 := []record{{1, "1\n1"}, {2, "2\n2"}, {3, "3\n3"}}
 	a.Equal(want2, records2)
 }
@@ -632,6 +637,7 @@ func TestRollbackCanceled(t *testing.T) {
 		a.NoError(err)
 		records1 = append(records1, r)
 	}
+	a.NoError(rows1.Err())
 	want1 := []record{{2, "unknown\nunknown"}, {3, "unknown\nunknown"}}
 	a.Equal(want1, records1)
 

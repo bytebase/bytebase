@@ -22,12 +22,12 @@ type StageMessage struct {
 func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage, creatorID int) ([]*StageMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	var valueStr []string
-	var values []interface{}
+	var values []any
 	for i, create := range stagesCreate {
 		values = append(values,
 			creatorID,
@@ -54,7 +54,7 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
     `, strings.Join(valueStr, ","))
 	rows, err := tx.QueryContext(ctx, query, values...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -67,16 +67,16 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 			&stage.EnvironmentID,
 			&stage.Name,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return stages, nil
@@ -84,12 +84,12 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 
 // ListStageV2 finds a list of stages based on find.
 func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -105,7 +105,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -119,16 +119,16 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.Name,
 			&stage.Active,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return stages, nil
 }

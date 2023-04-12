@@ -13,8 +13,7 @@ var _ metric.Reporter = (*reporter)(nil)
 
 // reporter is the metrics collector https://segment.com/.
 type reporter struct {
-	identifier string
-	client     analytics.Client
+	client analytics.Client
 }
 
 const (
@@ -23,12 +22,11 @@ const (
 )
 
 // NewReporter creates a new instance of segment.
-func NewReporter(key string, identifier string) metric.Reporter {
+func NewReporter(key string) metric.Reporter {
 	client := analytics.New(key)
 
 	return &reporter{
-		identifier: identifier,
-		client:     client,
+		client: client,
 	}
 }
 
@@ -38,7 +36,7 @@ func (r *reporter) Close() {
 }
 
 // Report will exec all the segment reporter.
-func (r *reporter) Report(metric *metric.Metric) error {
+func (r *reporter) Report(id string, metric *metric.Metric) error {
 	properties := analytics.NewProperties().
 		Set(metricValueField, metric.Value)
 
@@ -48,7 +46,7 @@ func (r *reporter) Report(metric *metric.Metric) error {
 
 	return r.client.Enqueue(analytics.Track{
 		Event:      string(metric.Name),
-		UserId:     r.identifier,
+		UserId:     id,
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),
 	})
@@ -64,7 +62,7 @@ func (r *reporter) Identify(identifier *metric.Identifier) error {
 	}
 
 	return r.client.Enqueue(analytics.Identify{
-		UserId:    r.identifier,
+		UserId:    identifier.ID,
 		Traits:    traits,
 		Timestamp: time.Now().UTC(),
 	})

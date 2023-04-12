@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -80,20 +81,20 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
 
-	exist, err := driver.isDatabaseExist(ctx, databaseName)
+	exist, err := driver.isDatabaseExist(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
 	if !exist {
-		return nil, errors.Errorf("database %s does not exist", databaseName)
+		return nil, errors.Errorf("database %s does not exist", driver.databaseName)
 	}
 
-	database := driver.client.Database(databaseName)
+	database := driver.client.Database(driver.databaseName)
 	collectionList, err := database.ListCollectionNames(ctx, bson.M{"type": "collection"})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list collection names")
@@ -159,7 +160,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	return &storepb.DatabaseMetadata{
-		Name:    databaseName,
+		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
@@ -219,7 +220,7 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 
 // getVersion returns the version of mongod or mongos instance.
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	database := driver.client.Database(migrationHistoryDefaultDatabase)
+	database := driver.client.Database(bytebaseDefaultDatabase)
 	var commandResult bson.M
 	command := bson.D{{Key: "buildInfo", Value: 1}}
 	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
@@ -272,7 +273,7 @@ func isAtlasUnauthorizedError(err error) bool {
 	return strings.Contains(err.Error(), "AtlasError: Unauthorized")
 }
 
-func convertEmptyInterfaceToInt64(value interface{}) (int64, error) {
+func convertEmptyInterfaceToInt64(value any) (int64, error) {
 	// NOTE: convert uint64 to int64 may cause overflow. But we don't care about it.
 	switch v := value.(type) {
 	case int:
@@ -302,4 +303,9 @@ func convertEmptyInterfaceToInt64(value interface{}) (int64, error) {
 	default:
 		return 0, errors.Errorf("cannot convert %v to int64", value)
 	}
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

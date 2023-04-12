@@ -27,7 +27,7 @@ func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Ad
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
 	_, supportStmt, err := parser.ExtractTiDBUnsupportStmts(statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []advisor.Advice{
 			{
 				Status:  advisor.Error,
@@ -41,7 +41,7 @@ func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Ad
 
 	_, warns, err := p.Parse(supportStmt, ctx.Charset, ctx.Collation)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []advisor.Advice{
 			{
 				Status:  advisor.Error,
@@ -55,7 +55,7 @@ func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Ad
 
 	if ctx.SyntaxMode == advisor.SyntaxModeSDL {
 		if line, err := transform.CheckFormat(parser.MySQL, statement); err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []advisor.Advice{
 				{
 					Status:  advisor.Error,
@@ -116,7 +116,7 @@ func getWarnWithLine(statement string, charset string, collation string) []advis
 func calculateErrorLine(statement string, charset string, collation string) int {
 	list, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return 1
 	}
 

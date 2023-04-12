@@ -174,6 +174,14 @@ export interface UpdateDataSourceRequest {
   updateMask?: string[];
 }
 
+export interface SyncSlowQueriesRequest {
+  /**
+   * The name of the instance to sync slow queries.
+   * Format: environments/{environment}/instances/{instance}
+   */
+  instance: string;
+}
+
 export interface Instance {
   /**
    * The name of the instance.
@@ -938,6 +946,62 @@ export const UpdateDataSourceRequest = {
       ? DataSource.fromPartial(object.dataSources)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseSyncSlowQueriesRequest(): SyncSlowQueriesRequest {
+  return { instance: "" };
+}
+
+export const SyncSlowQueriesRequest = {
+  encode(message: SyncSlowQueriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.instance !== "") {
+      writer.uint32(10).string(message.instance);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SyncSlowQueriesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncSlowQueriesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.instance = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncSlowQueriesRequest {
+    return { instance: isSet(object.instance) ? String(object.instance) : "" };
+  },
+
+  toJSON(message: SyncSlowQueriesRequest): unknown {
+    const obj: any = {};
+    message.instance !== undefined && (obj.instance = message.instance);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
+    return SyncSlowQueriesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
+    const message = createBaseSyncSlowQueriesRequest();
+    message.instance = object.instance ?? "";
     return message;
   },
 };
@@ -1963,6 +2027,84 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    syncSlowQueries: {
+      name: "SyncSlowQueries",
+      requestType: SyncSlowQueriesRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              62,
+              58,
+              1,
+              42,
+              34,
+              57,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              121,
+              110,
+              99,
+              83,
+              108,
+              111,
+              119,
+              81,
+              117,
+              101,
+              114,
+              105,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -1988,6 +2130,7 @@ export interface InstanceServiceImplementation<CallContextExt = {}> {
     request: UpdateDataSourceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Instance>>;
+  syncSlowQueries(request: SyncSlowQueriesRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
 export interface InstanceServiceClient<CallOptionsExt = {}> {
@@ -2018,6 +2161,7 @@ export interface InstanceServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateDataSourceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Instance>;
+  syncSlowQueries(request: DeepPartial<SyncSlowQueriesRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

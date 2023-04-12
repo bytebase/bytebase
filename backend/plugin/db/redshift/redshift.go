@@ -199,48 +199,51 @@ func (*Driver) GetType() db.Type {
 	return db.Redshift
 }
 
-// GetDBConnection returns the database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
-	if err := driver.switchDatabase(database); err != nil {
-		return nil, err
-	}
-	return driver.db, nil
-}
-
-func (driver *Driver) switchDatabase(dbName string) error {
-	if driver.db != nil {
-		unregisterConnectionConfig(driver.connectionString)
-		if err := driver.db.Close(); err != nil {
-			return err
-		}
-	}
-
-	dsn := driver.baseDSN + " dbname=" + dbName
-
-	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
-	if err != nil {
-		return err
-	}
-	driver.connectionString = connectionString
-
-	db, err := sql.Open(driverName, driver.connectionString)
-	if err != nil {
-		return err
-	}
-	driver.db = db
-	driver.databaseName = dbName
-	return nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+	if createDatabase {
+		databases, err := driver.getDatabases(ctx)
+		if err != nil {
+			return 0, err
+		}
+		databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
+		if err != nil {
+			return 0, err
+		}
+		exist := false
+		for _, database := range databases {
+			if database.Name == databaseName {
+				exist = true
+				break
+			}
+		}
+		if exist {
+			return 0, err
+		}
+
+		f := func(stmt string) error {
+			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+				return err
+			}
+			return nil
+		}
+		if _, err := parser.SplitMultiSQLStream(parser.Redshift, strings.NewReader(statement), f); err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
+
 	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
 		return 0, err
 	}
 
-	connected := false
 	var remainingStmts []string
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
@@ -248,76 +251,21 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		// We don't use transaction for creating / altering databases in Postgres.
 		// We will execute the statement directly before "\\connect" statement.
 		// https://github.com/bytebase/bytebase/issues/202
-		if createDatabase && !connected {
-			if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-				databases, err := driver.getDatabases(ctx)
-				if err != nil {
-					return err
-				}
-				databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
-				if err != nil {
-					return err
-				}
-				exist := false
-				for _, database := range databases {
-					if database.Name == databaseName {
-						exist = true
-						break
-					}
-				}
-				if !exist {
-					if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-						return err
-					}
-				}
-			} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
-				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-					return err
-				}
-			} else if strings.HasPrefix(stmt, "\\connect ") {
-				// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
-				parts := strings.Split(stmt, `"`)
-				if len(parts) != 3 {
-					return errors.Errorf("invalid statement %q", stmt)
-				}
-				if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
-					return err
-				}
-				// Update current owner
-				if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
-					return err
-				}
-				connected = true
-			} else {
-				sqlResult, err := driver.db.ExecContext(ctx, stmt)
-				if err != nil {
-					return err
-				}
-				rowsAffected, err := sqlResult.RowsAffected()
-				if err != nil {
-					// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-					log.Debug("rowsAffected returns error", zap.Error(err))
-				} else {
-					totalRowsAffected += rowsAffected
-				}
+		if isSuperuserStatement(stmt) {
+			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
+			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
+			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
+			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
+			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
+				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}
-		} else {
-			if isSuperuserStatement(stmt) {
-				// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-				// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-				// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-				// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-				if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-					stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-				}
-				// Use superuser privilege to run privileged statements.
-				stmt = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", stmt, owner)
-				remainingStmts = append(remainingStmts, stmt)
-			} else if isNonTransactionStatement(stmt) {
-				nonTransactionStmts = append(nonTransactionStmts, stmt)
-			} else if !isIgnoredStatement(stmt) {
-				remainingStmts = append(remainingStmts, stmt)
-			}
+			// Use superuser privilege to run privileged statements.
+			stmt = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", stmt, owner)
+			remainingStmts = append(remainingStmts, stmt)
+		} else if isNonTransactionStatement(stmt) {
+			nonTransactionStmts = append(nonTransactionStmts, stmt)
+		} else if !isIgnoredStatement(stmt) {
+			remainingStmts = append(remainingStmts, stmt)
 		}
 		return nil
 	}
@@ -343,7 +291,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			return 0, err
 		}
 		// Restore the current transaction role to the current user.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION DEFAULT")); err != nil {
+		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
 			log.Warn("Failed to restore the current transaction role to the current user", zap.Error(err))
 		}
 
@@ -410,7 +358,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // QueryConn will query the database using the provided connection, it is useful for keeping the context of the connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -432,8 +380,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		}
 		field := []string{"Affected Rows"}
 		types := []string{"INT"}
-		rows := [][]interface{}{{affectedRows}}
-		return []interface{}{field, types, rows}, nil
+		rows := [][]any{{affectedRows}}
+		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
 }

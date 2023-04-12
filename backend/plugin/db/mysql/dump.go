@@ -85,7 +85,7 @@ var (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.
@@ -100,8 +100,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
-			zap.String("database", database))
-		if err := FlushTablesWithReadLock(ctx, conn, database); err != nil {
+			zap.String("database", driver.databaseName))
+		if err := FlushTablesWithReadLock(ctx, conn, driver.databaseName); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
@@ -135,8 +135,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", database), zap.Bool("schemaOnly", schemaOnly))
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+	log.Debug("begin to dump database", zap.String("database", driver.databaseName), zap.Bool("schemaOnly", schemaOnly))
+	if err := dumpTxn(ctx, txn, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}
 
@@ -360,7 +360,7 @@ func excludeSchemaAutoIncrementValue(s string) string {
 func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 	query := "SHOW MASTER STATUS"
 	binlogInfo := api.BinlogInfo{}
-	var unused interface{}
+	var unused any
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return api.BinlogInfo{}, errors.Wrapf(err, "cannot execute %q query", query)
@@ -391,7 +391,7 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 		if scanOneRow {
 			return api.BinlogInfo{}, errors.Errorf("unexpected multiple rows returned from %q query", query)
 		}
-		cols := make([]interface{}, len(columns))
+		cols := make([]any, len(columns))
 		scanOneRow = true
 		// The query SHOW MASTER STATUS returns uncertain number of columns, especially for the RDS, which may returns 4 columns.
 		// So we have to dynamically scan the columns, and return the error if we cannot find the File and Position columns.
@@ -408,6 +408,9 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 		if err := rows.Scan(cols...); err != nil {
 			return api.BinlogInfo{}, errors.Wrapf(err, "cannot scan row from %q query", query)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return api.BinlogInfo{}, err
 	}
 	if !scanOneRow {
 		// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
@@ -575,7 +578,7 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	refs := make([]interface{}, len(cols))
+	refs := make([]any, len(cols))
 	for i := 0; i < len(cols); i++ {
 		refs[i] = &values[i]
 	}
@@ -634,17 +637,17 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 			if err != nil {
 				return err
 			}
-			var values []interface{}
+			var values []any
 			for i := 0; i < len(cols); i++ {
-				values = append(values, new(interface{}))
+				values = append(values, new(any))
 			}
 			for rows.Next() {
 				var r routineSchema
 				if err := rows.Scan(values...); err != nil {
 					return err
 				}
-				r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
-				r.routineType = fmt.Sprintf("%s", *values[2].(*interface{}))
+				r.name = fmt.Sprintf("%s", *values[1].(*any))
+				r.routineType = fmt.Sprintf("%s", *values[2].(*any))
 
 				routines = append(routines, &r)
 			}
@@ -710,16 +713,16 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 	if err != nil {
 		return nil, err
 	}
-	var values []interface{}
+	var values []any
 	for i := 0; i < len(cols); i++ {
-		values = append(values, new(interface{}))
+		values = append(values, new(any))
 	}
 	for rows.Next() {
 		var r eventSchema
 		if err := rows.Scan(values...); err != nil {
 			return nil, err
 		}
-		r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
+		r.name = fmt.Sprintf("%s", *values[1].(*any))
 		events = append(events, &r)
 	}
 	if err := rows.Err(); err != nil {
@@ -763,16 +766,16 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 	if err != nil {
 		return nil, err
 	}
-	var values []interface{}
+	var values []any
 	for i := 0; i < len(cols); i++ {
-		values = append(values, new(interface{}))
+		values = append(values, new(any))
 	}
 	for rows.Next() {
 		var tr triggerSchema
 		if err := rows.Scan(values...); err != nil {
 			return nil, err
 		}
-		tr.name = fmt.Sprintf("%s", *values[0].(*interface{}))
+		tr.name = fmt.Sprintf("%s", *values[0].(*any))
 		triggers = append(triggers, &tr)
 	}
 	if err := rows.Err(); err != nil {

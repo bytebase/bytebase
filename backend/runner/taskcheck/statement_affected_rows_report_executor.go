@@ -78,11 +78,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	}
 	defer driver.Close(ctx)
 
-	sqlDB, err := driver.GetDBConnection(ctx, database.DatabaseName)
-	if err != nil {
-		return nil, err
-	}
-
+	sqlDB := driver.GetDB()
 	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, payload.Statement)
@@ -98,7 +94,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, statement string) ([]api.TaskCheckResult, error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -115,7 +111,7 @@ func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, 
 	for _, stmt := range stmts {
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,
@@ -176,14 +172,14 @@ func getUpdateOrDeleteAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB
 	return rowCount, nil
 }
 
-func getAffectedRowsCountForPostgres(res []interface{}) (int64, error) {
-	// the res struct is []interface{}{columnName, columnTable, rowDataList}
+func getAffectedRowsCountForPostgres(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	rowList, ok := res[2].([]interface{})
+	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %t", res[2])
 	}
 	// test-bb=# EXPLAIN INSERT INTO t SELECT * FROM t;
 	// QUERY PLAN
@@ -195,9 +191,9 @@ func getAffectedRowsCountForPostgres(res []interface{}) (int64, error) {
 		return 0, errors.Errorf("not found any data")
 	}
 	// We need the row 2.
-	rowTwo, ok := rowList[1].([]interface{})
+	rowTwo, ok := rowList[1].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	// PostgreSQL EXPLAIN statement result has one column.
 	if len(rowTwo) != 1 {
@@ -226,7 +222,7 @@ func getAffectedRowsCountForPostgres(res []interface{}) (int64, error) {
 func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, statement, charset, collation string) ([]api.TaskCheckResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
-		//nolint:nilerr
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -259,7 +255,7 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,
@@ -283,7 +279,7 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 		}
 		affectedRows, err := getAffectedRowsForMysql(ctx, sqlDB, root[0])
 		if err != nil {
-			//nolint:nilerr
+			// nolint:nilerr
 			return []api.TaskCheckResult{
 				{
 					Status:    api.TaskCheckStatusError,
@@ -344,21 +340,21 @@ func getUpdateOrDeleteAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, n
 	return rowCount, nil
 }
 
-func getUpdateOrDeleteAffectedRowsCountForMysql(res []interface{}) (int64, error) {
-	// the res struct is []interface{}{columnName, columnTable, rowDataList}
+func getUpdateOrDeleteAffectedRowsCountForMysql(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	rowList, ok := res[2].([]interface{})
+	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %t", res[2])
 	}
 	if len(rowList) < 1 {
 		return 0, errors.Errorf("not found any data")
 	}
-	rowOne, ok := rowList[0].([]interface{})
+	rowOne, ok := rowList[0].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	// MySQL EXPLAIN statement result has 12 columns.
 	//
@@ -388,14 +384,14 @@ func getUpdateOrDeleteAffectedRowsCountForMysql(res []interface{}) (int64, error
 	}
 }
 
-func getInsertAffectedRowsCountForMysql(res []interface{}) (int64, error) {
-	// the res struct is []interface{}{columnName, columnTable, rowDataList}
+func getInsertAffectedRowsCountForMysql(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	rowList, ok := res[2].([]interface{})
+	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %t", res[2])
 	}
 	// mysql> explain insert into td select * from td;
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
@@ -408,9 +404,9 @@ func getInsertAffectedRowsCountForMysql(res []interface{}) (int64, error) {
 		return 0, errors.Errorf("not found any data")
 	}
 	// We need the row 2.
-	rowTwo, ok := rowList[1].([]interface{})
+	rowTwo, ok := rowList[1].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface{} but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	// MySQL EXPLAIN statement result has 12 columns.
 	if len(rowTwo) != 12 {
@@ -434,7 +430,7 @@ func getInsertAffectedRowsCountForMysql(res []interface{}) (int64, error) {
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.
-func query(ctx context.Context, connection *sql.DB, statement string) ([]interface{}, error) {
+func query(ctx context.Context, connection *sql.DB, statement string) ([]any, error) {
 	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
@@ -466,9 +462,9 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]interfa
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data := []interface{}{}
+	data := []any{}
 	for rows.Next() {
-		scanArgs := make([]interface{}, colCount)
+		scanArgs := make([]any, colCount)
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -489,7 +485,7 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]interfa
 			return nil, err
 		}
 
-		rowData := []interface{}{}
+		rowData := []any{}
 		for i := range columnTypes {
 			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
 				rowData = append(rowData, v.Bool)
@@ -521,5 +517,5 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]interfa
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	return []any{columnNames, columnTypeNames, data}, nil
 }

@@ -69,7 +69,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
     }
   }
 
-  return {
+  const result = {
     ...(issue.attributes as Omit<
       Issue,
       "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
@@ -91,6 +91,13 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
     pipeline,
     subscriberList: subscriberList,
   };
+  try {
+    result.payload = JSON.parse(issue.attributes.payload as string);
+  } catch {
+    result.payload = {};
+  }
+
+  return result;
 }
 
 function getIssueFromIncludedList(

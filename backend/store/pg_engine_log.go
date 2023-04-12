@@ -28,19 +28,19 @@ func (tx *Tx) PrepareContext(ctx context.Context, query string) (*sql.Stmt, erro
 }
 
 // ExecContext overrides sql.Tx ExecContext.
-func (tx *Tx) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	log.Debug("ExecContext", zap.String("query", cleanQuery(query)))
 	return tx.Tx.ExecContext(ctx, query, args...)
 }
 
 // QueryContext overrides sql.Tx QueryContext.
-func (tx *Tx) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	log.Debug("QueryContext", zap.String("query", cleanQuery(query)))
 	return tx.Tx.QueryContext(ctx, query, args...)
 }
 
 // QueryRowContext overrides sql.Tx QueryRowContext.
-func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	log.Debug("QueryRowContext", zap.String("query", cleanQuery(query)))
 	return tx.Tx.QueryRowContext(ctx, query, args...)
 }

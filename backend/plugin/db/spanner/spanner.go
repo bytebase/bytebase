@@ -11,18 +11,14 @@ import (
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
-	"go.uber.org/zap"
 
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var (
@@ -46,8 +42,8 @@ type Driver struct {
 	client   *spanner.Client
 	dbClient *spannerdb.DatabaseAdminClient
 
-	// dbName is the currently connected database name.
-	dbName string
+	// databaseName is the currently connected database name.
+	databaseName string
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -55,28 +51,15 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens a Spanner driver. It must connect to a specific database.
-// If database isn't provided, the driver tries to connect to "bytebase" database.
-// If connecting to "bytebase" also fails, part of the driver cannot function.
+// If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if config.Host == "" {
 		return nil, errors.New("host cannot be empty")
 	}
 	d.config = config
 	d.connCtx = connCtx
-	if config.Database == "" {
-		// try to connect to bytebase
-		d.dbName = db.BytebaseDatabase
-		dsn := getDSN(d.config.Host, db.BytebaseDatabase)
-		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
-		if status.Code(err) == codes.NotFound {
-			log.Debug(`spanner driver: no database provided, try connecting to "bytebase" database which is not found`, zap.Error(err))
-		} else if err != nil {
-			return nil, err
-		} else {
-			d.client = client
-		}
-	} else {
-		d.dbName = d.config.Database
+	if config.Database != "" {
+		d.databaseName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if err != nil {
@@ -92,23 +75,6 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 
 	d.dbClient = dbClient
 	return d, nil
-}
-
-func (d *Driver) switchDatabase(ctx context.Context, dbName string) error {
-	if d.dbName == dbName {
-		return nil
-	}
-	if d.client != nil {
-		d.client.Close()
-	}
-	dsn := getDSN(d.config.Host, dbName)
-	client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
-	if err != nil {
-		return err
-	}
-	d.client = client
-	d.dbName = dbName
-	return nil
 }
 
 // Close closes the driver.
@@ -139,16 +105,30 @@ func (*Driver) GetType() db.Type {
 	return db.Spanner
 }
 
-// GetDBConnection gets a database connection.
-func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
+// GetDB gets the database.
+func (*Driver) GetDB() *sql.DB {
 	panic("not implemented")
 }
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	if createDatabase {
-		return 0, errors.Errorf("cannot set createDatabase to true")
+		stmts, err := sanitizeSQL(statement)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to sanitize %v", statement)
+		}
+		if len(stmts) == 0 {
+			return 0, errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
+		}
+		if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
+			return 0, errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
+		}
+		if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
+			return 0, errors.Wrap(err, "failed to create database")
+		}
+		return 0, nil
 	}
+
 	var rowCount int64
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
@@ -166,7 +146,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 
 	if ddl {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-			Database:   getDSN(d.config.Host, d.dbName),
+			Database:   getDSN(d.config.Host, d.databaseName),
 			Statements: stmts,
 		})
 		if err != nil {
@@ -194,8 +174,23 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 	return rowCount, nil
 }
 
+func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
+	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
+		Parent:          d.config.Host,
+		CreateStatement: createStatement,
+		ExtraStatements: extraStatement,
+	})
+	if err != nil {
+		return err
+	}
+	if _, err := op.Wait(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 // QueryConn querys statements.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
 		return nil, err
@@ -221,7 +216,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, err
 	}
 
-	data := []interface{}{}
+	data := []any{}
 	columnNames := getColumnNames(iter)
 	columnTypeNames, err := getColumnTypeNames(iter)
 	if err != nil {
@@ -247,13 +242,13 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	// spanner doesn't mask the sensitive fields.
 	// Return the all false boolean slice here as the placeholder.
 	sensitiveInfo := make([]bool, len(columnNames))
-	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
+	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
-func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{}, error) {
+func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]any, error) {
 	if isDDL(statement) {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-			Database:   getDSN(d.config.Host, d.dbName),
+			Database:   getDSN(d.config.Host, d.databaseName),
 			Statements: []string{statement},
 		})
 		if err != nil {
@@ -276,8 +271,8 @@ func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{
 
 	field := []string{"Affected Rows"}
 	types := []string{"INT64"}
-	rows := [][]interface{}{{rowCount}}
-	return []interface{}{field, types, rows}, nil
+	rows := [][]any{{rowCount}}
+	return []any{field, types, rows}, nil
 }
 
 func getColumnNames(iter *spanner.RowIterator) []string {
@@ -313,8 +308,8 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 	return columnType.Code.String(), nil
 }
 
-func readRow(row *spanner.Row) ([]interface{}, error) {
-	dest := make([]interface{}, row.Size())
+func readRow(row *spanner.Row) ([]any, error) {
+	dest := make([]any, row.Size())
 	for i := 0; i < row.Size(); i++ {
 		var col spanner.GenericColumnValue
 		if err := row.Column(i, &col); err != nil {

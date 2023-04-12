@@ -342,10 +342,10 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									}
 								}
 
-								s.metricReporter.Report(&metric.Metric{
+								s.metricReporter.Report(ctx, &metric.Metric{
 									Name:  metricAPI.TaskStatusMetricName,
 									Value: 1,
-									Labels: map[string]interface{}{
+									Labels: map[string]any{
 										"type":  task.Type,
 										"value": taskStatusPatch.Status,
 									},
@@ -1222,12 +1222,12 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 		return err
 	}
 	var taskStage, nextStage *store.StageMessage
-	for _, stage := range stages {
+	for i, stage := range stages {
 		if stage.ID == taskPatched.StageID {
-			taskStage = stage
-		}
-		if taskStage != nil {
-			nextStage = stage
+			taskStage = stages[i]
+			if i+1 < len(stages) {
+				nextStage = stages[i+1]
+			}
 			break
 		}
 	}

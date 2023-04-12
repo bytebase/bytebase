@@ -88,10 +88,10 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			// it's okay to ignore the error to avoid workflow broken.
 			log.Debug("failed to count end users", zap.Error(err))
 		}
-		s.MetricReporter.Report(&metric.Metric{
+		s.MetricReporter.Report(ctx, &metric.Metric{
 			Name:  metricAPI.PrincipalCreateMetricName,
 			Value: 1,
-			Labels: map[string]interface{}{
+			Labels: map[string]any{
 				"type": principal.Type,
 				"role": principal.Role,
 				"rank": count,

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +25,22 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+const (
+	filterKeyProject   = "project"
+	filterKeyStartTime = "start_time"
+
+	// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
+	// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+	orderByKeyCount                             = "count"
+	orderByKeyLatestLogTime                     = "latest_log_time"
+	orderByKeyAverageQueryTime                  = "average_query_time"
+	orderByKeyNightyFifthPercentileQueryTime    = "nighty_fifth_percentile_query_time"
+	orderByKeyAverageRowsSent                   = "average_rows_sent"
+	orderByKeyNightyFifthPercentileRowsSent     = "nighty_fifth_percentile_rows_sent"
+	orderByKeyAverageRowsExamined               = "average_rows_examined"
+	orderByKeyNightyFifthPercentileRowsExamined = "nighty_fifth_percentile_rows_examined"
 )
 
 // DatabaseService implements the database service.
@@ -124,7 +142,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	patch := &store.UpdateDatabaseMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "database.project":
+		case "project":
 			projectID, err := getProjectID(request.Database.Project)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -143,7 +161,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
 			}
 			patch.ProjectID = &project.ResourceID
-		case "database.labels":
+		case "labels":
 			patch.Labels = &request.Database.Labels
 		}
 	}
@@ -484,6 +502,238 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return convertToBackup(backup, environmentID, instanceID, databaseName), nil
+}
+
+// ListSlowQueries lists the slow queries.
+func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
+	findDatabase := &store.FindDatabaseMessage{}
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if environmentID != "-" {
+		findDatabase.EnvironmentID = &environmentID
+	}
+	if instanceID != "-" {
+		findDatabase.InstanceID = &instanceID
+	}
+	if databaseName != "-" {
+		findDatabase.DatabaseName = &databaseName
+	}
+
+	filters, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	var startLogDate, endLogDate *time.Time
+	for _, expr := range filters {
+		switch expr.key {
+		case filterKeyProject:
+			reg := regexp.MustCompile(`^projects/(.+)`)
+			match := reg.FindStringSubmatch(expr.value)
+			if len(match) != 2 {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid project filter %q", expr.value)
+			}
+			findDatabase.ProjectID = &match[1]
+		case filterKeyStartTime:
+			switch expr.comparator {
+			case comparatorTypeGreater:
+				if startLogDate != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
+				}
+				t, err := time.Parse(time.RFC3339, expr.value)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
+				}
+				t = t.AddDate(0, 0, 1)
+				startLogDate = &t
+			case comparatorTypeGreaterEqual:
+				if startLogDate != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
+				}
+				t, err := time.Parse(time.RFC3339, expr.value)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
+				}
+				startLogDate = &t
+			case comparatorTypeLess:
+				if endLogDate != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
+				}
+				t, err := time.Parse(time.RFC3339, expr.value)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
+				}
+				endLogDate = &t
+			case comparatorTypeLessEqual:
+				if endLogDate != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
+				}
+				t, err := time.Parse(time.RFC3339, expr.value)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
+				}
+				t = t.AddDate(0, 0, 1)
+				endLogDate = &t
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.comparator, expr.value)
+			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.key)
+		}
+	}
+
+	orderByKeys, err := parseOrderBy(request.OrderBy)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if err := validSlowQueryOrderByKey(orderByKeys); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	databases, err := s.store.ListDatabases(ctx, findDatabase)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find database list %q", err.Error())
+	}
+
+	result := &v1pb.ListSlowQueriesResponse{}
+
+	for _, database := range databases {
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &database.InstanceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find instance %q", err.Error())
+		}
+		if instance == nil {
+			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
+		}
+		listSlowQuery := &store.ListSlowQueryMessage{
+			InstanceUID:  &instance.UID,
+			DatabaseUID:  &database.UID,
+			StartLogDate: startLogDate,
+			EndLogDate:   endLogDate,
+		}
+		logs, err := s.store.ListSlowQuery(ctx, listSlowQuery)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find slow query %q", err.Error())
+		}
+
+		for _, log := range logs {
+			result.SlowQueryLogs = append(result.SlowQueryLogs, convertToSlowQueryLog(database.EnvironmentID, database.InstanceID, database.DatabaseName, database.ProjectID, log))
+		}
+	}
+
+	result, err = sortSlowQueryLogResponse(result, orderByKeys)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to sort slow query logs %q", err.Error())
+	}
+
+	return result, nil
+}
+
+func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKeys []orderByKey) (*v1pb.ListSlowQueriesResponse, error) {
+	if len(orderByKeys) == 0 {
+		orderByKeys = []orderByKey{
+			{
+				key:      orderByKeyNightyFifthPercentileQueryTime,
+				isAscend: false,
+			},
+		}
+	}
+
+	if err := validSlowQueryOrderByKey(orderByKeys); err != nil {
+		return nil, err
+	}
+
+	sort.Slice(response.SlowQueryLogs, func(i, j int) bool {
+		for _, key := range orderByKeys {
+			switch key.key {
+			case orderByKeyCount:
+				if response.SlowQueryLogs[i].Statistics.Count != response.SlowQueryLogs[j].Statistics.Count {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.Count < response.SlowQueryLogs[j].Statistics.Count
+					}
+					return response.SlowQueryLogs[i].Statistics.Count > response.SlowQueryLogs[j].Statistics.Count
+				}
+			case orderByKeyLatestLogTime:
+				if response.SlowQueryLogs[i].Statistics.LatestLogTime != response.SlowQueryLogs[j].Statistics.LatestLogTime {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.LatestLogTime.AsTime().Before(response.SlowQueryLogs[j].Statistics.LatestLogTime.AsTime())
+					}
+					return response.SlowQueryLogs[i].Statistics.LatestLogTime.AsTime().After(response.SlowQueryLogs[j].Statistics.LatestLogTime.AsTime())
+				}
+			case orderByKeyAverageQueryTime:
+				if response.SlowQueryLogs[i].Statistics.AverageQueryTime != response.SlowQueryLogs[j].Statistics.AverageQueryTime {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.AverageQueryTime.AsDuration() < response.SlowQueryLogs[j].Statistics.AverageQueryTime.AsDuration()
+					}
+					return response.SlowQueryLogs[i].Statistics.AverageQueryTime.AsDuration() > response.SlowQueryLogs[j].Statistics.AverageQueryTime.AsDuration()
+				}
+			case orderByKeyNightyFifthPercentileQueryTime:
+				if response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime != response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime.AsDuration() < response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime.AsDuration()
+					}
+					return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileQueryTime.AsDuration() > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileQueryTime.AsDuration()
+				}
+			case orderByKeyAverageRowsSent:
+				if response.SlowQueryLogs[i].Statistics.AverageRowsSent != response.SlowQueryLogs[j].Statistics.AverageRowsSent {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.AverageRowsSent < response.SlowQueryLogs[j].Statistics.AverageRowsSent
+					}
+					return response.SlowQueryLogs[i].Statistics.AverageRowsSent > response.SlowQueryLogs[j].Statistics.AverageRowsSent
+				}
+			case orderByKeyNightyFifthPercentileRowsSent:
+				if response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent != response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent < response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent
+					}
+					return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsSent > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsSent
+				}
+			case orderByKeyAverageRowsExamined:
+				if response.SlowQueryLogs[i].Statistics.AverageRowsExamined != response.SlowQueryLogs[j].Statistics.AverageRowsExamined {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.AverageRowsExamined < response.SlowQueryLogs[j].Statistics.AverageRowsExamined
+					}
+					return response.SlowQueryLogs[i].Statistics.AverageRowsExamined > response.SlowQueryLogs[j].Statistics.AverageRowsExamined
+				}
+			case orderByKeyNightyFifthPercentileRowsExamined:
+				if response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined != response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined {
+					if key.isAscend {
+						return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined < response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined
+					}
+					return response.SlowQueryLogs[i].Statistics.NightyFifthPercentileRowsExamined > response.SlowQueryLogs[j].Statistics.NightyFifthPercentileRowsExamined
+				}
+			}
+		}
+		return false
+	})
+
+	return response, nil
+}
+
+func validSlowQueryOrderByKey(keys []orderByKey) error {
+	for _, key := range keys {
+		switch key.key {
+		// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
+		// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+		case orderByKeyCount, orderByKeyLatestLogTime, orderByKeyAverageQueryTime, orderByKeyNightyFifthPercentileQueryTime,
+			orderByKeyAverageRowsSent, orderByKeyNightyFifthPercentileRowsSent, orderByKeyAverageRowsExamined, orderByKeyNightyFifthPercentileRowsExamined:
+		default:
+			return errors.Errorf("invalid order_by key %q", key.key)
+		}
+	}
+	return nil
+}
+
+func convertToSlowQueryLog(environmentID string, instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
+	return &v1pb.SlowQueryLog{
+		Resource:   fmt.Sprintf("%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName),
+		Project:    fmt.Sprintf("%s%s", projectNamePrefix, projectID),
+		Statistics: log.Statistics,
+	}
 }
 
 func convertToBackup(backup *store.BackupMessage, enviromentID string, instanceID string, databaseName string) *v1pb.Backup {

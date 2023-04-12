@@ -98,7 +98,7 @@ func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inb
 func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -108,7 +108,7 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if inboxSummary.HasUnread {
@@ -117,7 +117,7 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 			if err == sql.ErrNoRows {
 				return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 			}
-			return nil, FormatError(err)
+			return nil, err
 		}
 	} else {
 		inboxSummary.HasUnreadError = false
@@ -147,7 +147,7 @@ func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, er
 func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*inboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -157,7 +157,7 @@ func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*i
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return inbox, nil
@@ -167,7 +167,7 @@ func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*i
 func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -184,7 +184,7 @@ func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inbox
 func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -206,17 +206,17 @@ func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inbo
 func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	inbox, err := s.patchInboxImpl(ctx, tx, patch)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return inbox, nil
@@ -248,11 +248,11 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCr
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	activityRaw, err := s.getActivityRawByID(ctx, activityID)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	inboxRaw.ActivityRaw = activityRaw
 	return &inboxRaw, nil
@@ -260,7 +260,7 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCr
 
 func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where = append(where, "inbox.activity_id = activity.id")
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("inbox.id = $%d", len(args)+1)), append(args, *v)
@@ -293,7 +293,7 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -317,12 +317,12 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 			&inboxRaw.ActivityRaw.Comment,
 			&inboxRaw.ActivityRaw.Payload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		inboxRawList = append(inboxRawList, &inboxRaw)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return inboxRawList, nil
@@ -331,7 +331,7 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 // patchInboxImpl updates a inbox by ID. Returns the new state of the inbox after update.
 func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatch) (*inboxRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"status = $1"}, []interface{}{patch.Status}
+	set, args := []string{"status = $1"}, []any{patch.Status}
 	args = append(args, patch.ID)
 
 	var inboxRaw inboxRaw
@@ -353,11 +353,11 @@ func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatc
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("inbox ID not found: %d", patch.ID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	activityRaw, err := s.getActivityRawByID(ctx, activityID)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	inboxRaw.ActivityRaw = activityRaw
 	return &inboxRaw, nil

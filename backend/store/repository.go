@@ -133,19 +133,15 @@ func (s *Store) PatchRepository(ctx context.Context, patch *api.RepositoryPatch)
 func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
 	if err := s.deleteRepositoryImpl(ctx, tx, delete); err != nil {
-		return FormatError(err)
+		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 //
@@ -178,7 +174,7 @@ func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api
 func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryCreate) (*repositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -188,7 +184,7 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return repository, nil
@@ -198,7 +194,7 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind) ([]*repositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -215,7 +211,7 @@ func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind)
 func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) (*repositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -237,17 +233,17 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPatch) (*repositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	repository, err := s.patchRepositoryImpl(ctx, tx, patch)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return repository, nil
@@ -345,14 +341,14 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return &repository, nil
 }
 
 func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -396,7 +392,7 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -426,13 +422,13 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 			&repository.ExpiresTs,
 			&repository.RefreshToken,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		repoRawList = append(repoRawList, &repository)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return repoRawList, nil
@@ -441,7 +437,7 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 // patchRepositoryImpl updates a repository by ID. Returns the new state of the repository after update.
 func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*repositoryRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {
 		set, args = append(set, fmt.Sprintf("branch_filter = $%d", len(args)+1)), append(args, *v)
 	}
@@ -514,7 +510,7 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("repository ID not found: %d", patch.ID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return &repository, nil
 }
@@ -534,7 +530,7 @@ func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *Tx, delete *api.Re
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = $1`, delete.ProjectID); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }

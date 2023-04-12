@@ -81,7 +81,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		instanceID,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -102,7 +102,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			&dataSourceMessage.Database,
 			&protoBytes,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		var dataSourceOptions storepb.DataSourceOptions
 		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
@@ -115,6 +115,9 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.ServiceName = dataSourceOptions.ServiceName
 
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return dataSourceMessages, nil
@@ -163,7 +166,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environ
 		DELETE FROM data_source WHERE data_source.instance_id = $1 AND data_source.type = $2;
 	`, instanceUID, dataSourceTp)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -185,7 +188,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environ
 
 // UpdateDataSourceV2 updates a data source and returns the instance.
 func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
-	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", patch.UpdaterID)}
 
 	if v := patch.Username; v != nil {
 		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
@@ -243,7 +246,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		` AND type = ` + fmt.Sprintf(`'%s'`, patch.Type)
 	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -300,7 +303,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
 		protoBytes, dataSource.Database,
 	); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	return nil
@@ -309,7 +312,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 // clearDataSourceImpl deletes dataSources by instance id and database id.
 func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, databaseID int) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE instance_id = $1 AND database_id = $2`, instanceID, databaseID); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }

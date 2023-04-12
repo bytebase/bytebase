@@ -13,8 +13,8 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
-	if database == "" {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+	if driver.databaseName == "" {
 		return "", errors.Errorf("SQLite can dump one database only at a time")
 	}
 
@@ -25,16 +25,16 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	exist := false
 	for _, n := range databases {
-		if n == database {
+		if n == driver.databaseName {
 			exist = true
 			break
 		}
 	}
 	if !exist {
-		return "", errors.Errorf("database %s not found", database)
+		return "", errors.Errorf("database %s not found", driver.databaseName)
 	}
 
-	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {
+	if err := driver.dumpOneDatabase(ctx, out, schemaOnly); err != nil {
 		return "", err
 	}
 
@@ -47,11 +47,7 @@ type sqliteSchema struct {
 	statement  string
 }
 
-func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
-	if _, err := driver.GetDBConnection(ctx, database); err != nil {
-		return err
-	}
-
+func (driver *Driver) dumpOneDatabase(ctx context.Context, out io.Writer, schemaOnly bool) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return err
@@ -119,7 +115,7 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	refs := make([]interface{}, len(cols))
+	refs := make([]any, len(cols))
 	for i := 0; i < len(cols); i++ {
 		refs[i] = &values[i]
 	}

@@ -24,12 +24,12 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, databaseID)
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -49,10 +49,10 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var databaseSchema storepb.DatabaseMetadata
@@ -89,7 +89,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
@@ -101,10 +101,10 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(dbSchema.Schema),
 	); err != nil {
-		return FormatError(err)
+		return err
 	}
 	if err := tx.Commit(); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	s.dbSchemaCache.Store(databaseID, dbSchema)

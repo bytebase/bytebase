@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -23,10 +26,6 @@ var (
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, err
-	}
-
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
@@ -59,11 +58,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
-	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, err
-	}
-
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
@@ -71,24 +66,24 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
+		Name: driver.databaseName,
 	}
 	found := false
 	for _, database := range databases {
-		if database == databaseName {
+		if database == driver.databaseName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	schemaList, err := driver.getSchemaList(ctx, databaseName)
+	schemaList, err := driver.getSchemaList(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
-	tableMap, viewMap, err := driver.getTableSchema(ctx, databaseName)
+	tableMap, viewMap, err := driver.getTableSchema(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -155,6 +150,9 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 			return nil, err
 		}
 		result = append(result, schemaName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -294,4 +292,9 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 	}
 
 	return tableMap, viewMap, nil
+}
+
+// SyncSlowQuery syncs the slow query.
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
+	return nil, errors.Errorf("not implemented")
 }

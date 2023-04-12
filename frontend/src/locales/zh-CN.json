@@ -232,7 +232,8 @@
     "deleted": "已删除",
     "will-override-current-data": "将会覆盖当前数据。",
     "rollout": "发布",
-    "uploading": "上传中"
+    "uploading": "上传中",
+    "active": "开启"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -486,9 +487,14 @@
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
         },
+        "require-2fa": {
+          "enable": "要求所有用户配置双重认证",
+          "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
+          "need-all-user-2fa-enabled": "需要所有用户都配置双重认证后才能开启此项。还有 {count} 个用户没有配置双重认证：{users}"
+        },
         "network": "网络",
         "external-url": {
-          "self": "外部链接",
+          "self": "External URL",
           "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。{viewDoc}"
         },
         "config-updated": "配置已更新",
@@ -638,7 +644,8 @@
       "db": "数据库",
       "progress": "进度",
       "updated": "更新于",
-      "assignee": "审核人"
+      "approver": "审批人",
+      "assignee": "发布人"
     },
     "stage-select": {
       "active": "{name}（活动中）"
@@ -701,9 +708,10 @@
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。"
     },
-    "waiting-to-roll-out": "等待发布",
+    "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
-    "issue-name": "工单名称"
+    "issue-name": "工单名称",
+    "waiting-for-my-approval": "等待我审批"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -814,6 +822,7 @@
       "console": {
         "snowflake": "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
       },
+      "outbound-ip-list": "如果您的数据库使用了入站 IP 白名单，请将以下 IP 加入白名单以允许 Bytebase Cloud 的连接。",
       "create-admin-user": "这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。",
       "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
       "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
@@ -866,7 +875,8 @@
     "authentication-database": "认证数据库",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "create-gcp-credentials": "创建凭据的方法见",
-    "used-for-testing-connection": "仅作测试连接用"
+    "used-for-testing-connection": "仅作测试连接用",
+    "all": "所有实例"
   },
   "environment": {
     "id": "环境 ID",
@@ -937,7 +947,7 @@
     }
   },
   "policy": {
-    "roll-out": {
+    "rollout": {
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动发布。",
@@ -1130,7 +1140,8 @@
     "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
     "doesnt-match-database-name-template": "不符合租户数据库名称模板",
     "doesnt-match-tenant-value": "与租户标签值不匹配",
-    "should-follow-database-name-template": "需要遵循租户数据库名称模板"
+    "should-follow-database-name-template": "需要遵循租户数据库名称模板",
+    "all": "所有数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1337,7 +1348,8 @@
       "project-member": "需要来自项目成员的 LGTM",
       "project-owner": "需要来自项目所有者的 LGTM"
     },
-    "successfully-updated-db-name-template": "成功更新数据库名称模板。"
+    "successfully-updated-db-name-template": "成功更新数据库名称模板。",
+    "all": "所有项目"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
@@ -1763,6 +1775,10 @@
         "title": "自定义审批",
         "desc": "为不同的任务配置安全风险等级和自定义审批流。"
       },
+      "bb-feature-slow-query": {
+        "title": "慢查询",
+        "desc": "记录与分析慢速的 SQL 查询。"
+      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
         "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
@@ -1837,7 +1853,9 @@
       "confirm-to-sync-sheet": "确定要同步工作表?",
       "confirm-to-delete-this-sheet": "确定删除这条工作表?",
       "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
-    }
+    },
+    "linked-issue": "关联工单",
+    "from-sheet-warning": "这个工作表来自工单 {issue}。它是只读的且只显示了部分内容。"
   },
   "engine": {
     "mysql": "MySQL",
@@ -1931,7 +1949,7 @@
       "created-ts": "时间",
       "created-time": "创建时间",
       "updated-time": "更新时间",
-      "creator": "操作者",
+      "actor": "操作者",
       "type": "事件类型",
       "level": "事件等级",
       "comment": "评论",
@@ -2023,10 +2041,11 @@
   "two-factor": {
     "self": "双重认证",
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
+    "enabled": "双重认证已开启",
     "setup-steps": {
       "setup-auth-app": {
         "self": "设置认证器应用程序",
-        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行 2FA 认证操作。",
+        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行双重认证操作。",
         "scan-qr-code": {
           "self": "扫描二维码",
           "description": "使用您手机中的认证器应用程序进行扫描。如果您无法扫描，可以{action}。",
@@ -2060,7 +2079,9 @@
     "messages": {
       "2fa-enabled": "双重认证开启成功",
       "2fa-disabled": "双重认证禁用成功",
-      "recovery-codes-regenerated": "恢复码已经重新生成"
+      "recovery-codes-regenerated": "恢复码已经重新生成",
+      "2fa-required": "您的管理员要求所有用户配置双重认证。请先配置双重认证，才能继续使用。",
+      "cannot-disable": "您的管理员要求所有用户配置双重认证。您无法禁用双重认证。"
     }
   },
   "plugin": {
@@ -2115,6 +2136,7 @@
         "self": "风险",
         "select": "选择风险",
         "risk-level": {
+          "0": "默认",
           "100": "低",
           "200": "中",
           "300": "高"
@@ -2123,6 +2145,14 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "创建数据库"
+        },
+        "factor": {
+          "affected_rows": "影响行数",
+          "environment_id": "环境 ID",
+          "project_id": "项目 ID",
+          "database_name": "数据库名称",
+          "db_engine": "数据库引擎",
+          "sql_type": "SQL 类型"
         }
       },
       "condition": {
@@ -2185,7 +2215,7 @@
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "approver": "审批人",
         "group": {
-          "WORKSPACE_OWNER": "管理员",
+          "WORKSPACE_OWNER": "工作空间所有者",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
           "PROJECT_MEMBER": "项目成员"
@@ -2202,7 +2232,9 @@
         "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
       },
       "view-approval-flow": "查看审批流",
-      "skip": "跳过人工审批"
+      "skip": "跳过人工审批",
+      "risk-not-configured-tips": "确保你已经定义了{link}。",
+      "the-related-risk-rules": "相关的风险规则"
     },
     "risk": {
       "self": "风险",
@@ -2224,5 +2256,25 @@
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单"
     }
+  },
+  "slow-query": {
+    "self": "慢查询",
+    "slow-queries": "慢查询",
+    "last-query-time": "最近执行时间",
+    "database-name": "数据库名",
+    "sql-statement": "SQL 语句",
+    "total-query-count": "总执行次数",
+    "query-time-95-percent": "执行时长（95%）",
+    "query-time-avg": "平均执行时长",
+    "rows-examined-95-percent": "扫描行数（95%）",
+    "rows-sent-95-percent": "返回行数（95%）",
+    "rows-examined-avg": "平均扫描行数",
+    "rows-sent-avg": "平均返回行数",
+    "query-start-time": "执行开始时间",
+    "rows-examined": "解析行数",
+    "rows-sent": "返回行数",
+    "lock-time": "持有锁时长",
+    "query-time": "执行时长",
+    "attention-description": "为 {versions} 记录和分析慢查询。\nBytebase 会定期从实例上同步慢查询日志。"
   }
 }

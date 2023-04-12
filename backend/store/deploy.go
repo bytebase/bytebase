@@ -122,7 +122,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 	if deploymentConfig, ok := s.projectIDDeploymentConfigCache.Load(projectUID); ok {
 		return deploymentConfig.(*DeploymentConfigMessage), nil
 	}
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
 
 	var deploymentConfig DeploymentConfigMessage
@@ -147,7 +147,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 			// Return default deployment config.
 			return s.getDefaultDeploymentConfigV2(ctx)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {

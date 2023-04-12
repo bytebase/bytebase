@@ -1,7 +1,7 @@
 <template>
   <div
-    class="rounded-md p-4 flex flex-col md:flex-row justify-between"
-    :class="`bg-${color}-50`"
+    class="rounded-md p-4 flex flex-col md:flex-row md:items-center"
+    :class="`bg-${color}-50 ${additionalSideClasses}`"
   >
     <div class="flex">
       <div class="flex-shrink-0">
@@ -52,7 +52,7 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { BBAttentionStyle } from "./types";
+import { BBAttentionSide, BBAttentionStyle } from "./types";
 
 const props = withDefaults(
   defineProps<{
@@ -60,12 +60,14 @@ const props = withDefaults(
     title?: string;
     description?: string;
     actionText?: string;
+    side?: BBAttentionSide;
   }>(),
   {
     style: "INFO",
     title: "bbkit.attention.default",
     description: "",
     actionText: "",
+    side: "BETWEEN",
   }
 );
 
@@ -82,6 +84,17 @@ const color = computed(() => {
       return "yellow";
     case "CRITICAL":
       return "red";
+  }
+});
+
+const additionalSideClasses = computed(() => {
+  switch (props.side) {
+    case "BETWEEN":
+      return "justify-between";
+    case "CENTER":
+      return "justify-center";
+    default:
+      return "";
   }
 });
 </script>

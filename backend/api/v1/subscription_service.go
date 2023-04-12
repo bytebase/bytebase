@@ -160,10 +160,10 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	s.licenseService.RefreshCache(ctx)
 	subscription = s.licenseService.LoadSubscription(ctx)
 	currentPlan := subscription.Plan
-	s.metricReporter.Report(&metric.Metric{
+	s.metricReporter.Report(ctx, &metric.Metric{
 		Name:  metricAPI.SubscriptionTrialMetricName,
 		Value: 1,
-		Labels: map[string]interface{}{
+		Labels: map[string]any{
 			"trial_plan":    currentPlan.String(),
 			"from_plan":     basePlan.String(),
 			"lark_notified": false,

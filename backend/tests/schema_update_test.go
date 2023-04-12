@@ -177,14 +177,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Schema:     dumpedSchema,
 			SchemaPrev: "",
 		},
-		{
-			Database:   databaseName,
-			Source:     db.UI,
-			Type:       db.Migrate,
-			Status:     db.Done,
-			Schema:     "",
-			SchemaPrev: "",
-		},
 	}
 	a.Equal(len(wantHistories), len(histories))
 	for i, history := range histories {
@@ -238,14 +230,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Schema:     dumpedSchema,
 			SchemaPrev: dumpedSchema,
 		},
-		{
-			Database:   cloneDatabaseName,
-			Source:     db.UI,
-			Type:       db.Migrate,
-			Status:     db.Done,
-			Schema:     "",
-			SchemaPrev: "",
-		},
 	}
 	a.Equal(len(wantCloneHistories), len(histories))
 	for i, history := range histories {
@@ -282,7 +266,7 @@ func TestVCS(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(added, modified [][]string, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(added, modified [][]string, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -290,7 +274,7 @@ func TestVCS(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
 				var commitList []gitlab.WebhookCommit
 				for i := range added {
 					commitList = append(commitList, gitlab.WebhookCommit{
@@ -317,7 +301,7 @@ func TestVCS(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
 				var commits []github.WebhookCommit
 				for i := range added {
 					commits = append(commits, github.WebhookCommit{
@@ -356,7 +340,7 @@ func TestVCS(t *testing.T) {
 			vcsType:            vcs.Bitbucket,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added, _ [][]string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, _ [][]string, beforeSHA, afterSHA string) any {
 				var commits []bitbucket.WebhookCommit
 				for range added {
 					commits = append(commits, bitbucket.WebhookCommit{
@@ -720,14 +704,6 @@ func TestVCS(t *testing.T) {
 					Schema:     dumpedSchema,
 					SchemaPrev: "",
 				},
-				{
-					Database:   databaseName,
-					Source:     db.UI,
-					Type:       db.Migrate,
-					Status:     db.Done,
-					Schema:     "",
-					SchemaPrev: "",
-				},
 			}
 			a.Equal(len(wantHistories), len(histories))
 
@@ -760,7 +736,7 @@ func TestVCS_SDL(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -768,7 +744,7 @@ func TestVCS_SDL(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -793,7 +769,7 @@ func TestVCS_SDL(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -1147,7 +1123,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	externalID := "121"
 	repoFullPath := "test/wildcard"
 
-	defaultNewWebhookPushEvent := func(added []string, beforeSHA, afterSHA string) interface{} {
+	defaultNewWebhookPushEvent := func(added []string, beforeSHA, afterSHA string) any {
 		return gitlab.WebhookPushEvent{
 			ObjectKind: gitlab.WebhookPush,
 			Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
@@ -1174,7 +1150,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		commitNewFileNames    []string
 		commitNewFileContents []string
 		expect                []bool
-		newWebhookPushEvent   func(added []string, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent   func(added []string, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "singleAsterisk",
@@ -2324,7 +2300,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -2332,7 +2308,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -2357,7 +2333,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -2637,14 +2613,6 @@ WHERE table_schema = '%s';
 					Status:     db.Done,
 					Schema:     updatedSchema,
 					SchemaPrev: initialSchema,
-				},
-				{
-					Database:   databaseName,
-					Source:     db.UI,
-					Type:       db.Migrate,
-					Status:     db.Done,
-					Schema:     initialSchema,
-					SchemaPrev: "",
 				},
 			}
 			a.Equal(len(wantHistories), len(histories))

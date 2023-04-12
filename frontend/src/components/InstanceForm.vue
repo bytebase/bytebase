@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border w-[850px]">
-      <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-5 gap-2">
+      <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
         <template v-for="engine in engineList" :key="engine">
           <div
             class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
@@ -464,6 +464,14 @@
         </div>
       </div>
 
+      <BBAttention
+        v-if="outboundIpList && actuatorStore.isSaaSMode"
+        class="my-5 border-none"
+        :style="'INFO'"
+        :title="$t('instance.sentence.outbound-ip-list')"
+        :description="outboundIpList"
+      />
+
       <div class="mt-6 pt-0 border-none">
         <div class="flex flex-row space-x-2">
           <button
@@ -582,6 +590,8 @@ import {
   useDataSourceStore,
   useEnvironmentStore,
   useInstanceStore,
+  useSettingStore,
+  useActuatorStore,
   useSQLStore,
 } from "@/store";
 import { useRouter } from "vue-router";
@@ -647,6 +657,8 @@ const environmentStore = useEnvironmentStore();
 const dataSourceStore = useDataSourceStore();
 const currentUser = useCurrentUser();
 const sqlStore = useSQLStore();
+const settingStore = useSettingStore();
+const actuatorStore = useActuatorStore();
 
 const state = reactive<LocalState>({
   currentDataSourceType: "ADMIN",
@@ -711,12 +723,13 @@ const getDefaultPort = (engine: EngineType) => {
 
 const isCreating = computed(() => props.instance === undefined);
 
-onMounted(() => {
+onMounted(async () => {
   if (isCreating.value) {
     adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
     adminDataSource.value.options.srv = false;
     adminDataSource.value.options.authenticationDatabase = "";
   }
+  await settingStore.fetchSetting();
 });
 
 watch(
@@ -735,6 +748,13 @@ watch(
 
 const engineList = computed(() => {
   return supportedEngineList();
+});
+
+const outboundIpList = computed(() => {
+  if (!settingStore.workspaceSetting) {
+    return "";
+  }
+  return settingStore.workspaceSetting.outboundIpList.join(",");
 });
 
 const EngineIconPath = {

@@ -17,6 +17,6 @@ func (e *ConvertError) Error() string {
 }
 
 // NewConvertErrorf returns the new conversion error.
-func NewConvertErrorf(format string, a ...interface{}) *ConvertError {
+func NewConvertErrorf(format string, a ...any) *ConvertError {
 	return &ConvertError{err: errors.Errorf(format, a...)}
 }

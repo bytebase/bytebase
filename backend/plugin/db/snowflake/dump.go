@@ -21,14 +21,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, _ bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return "", err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out); err != nil {
+	if err := dumpTxn(ctx, txn, driver.databaseName, out); err != nil {
 		return "", err
 	}
 
@@ -51,11 +51,6 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 		if err != nil {
 			return errors.Wrap(err, "failed to get databases")
 		}
-	}
-
-	// Use ACCOUNTADMIN role to dump database;
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
-		return err
 	}
 
 	for _, dbName := range dumpableDbNames {
@@ -137,9 +132,6 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 
 // Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return nil
-	}
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

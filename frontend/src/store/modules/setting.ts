@@ -4,6 +4,7 @@ import axios from "axios";
 import { MaybeRef, ResourceObject, SettingState } from "@/types";
 import { Setting, SettingName } from "@/types/setting";
 import { WorkspaceProfileSetting } from "@/types/proto/store/setting";
+import { useActuatorStore } from "./actuator";
 
 function convert(
   setting: ResourceObject,
@@ -74,6 +75,24 @@ export const useSettingStore = defineStore("setting", {
       this.setSettingByName({ name: setting.name, setting });
 
       return setting;
+    },
+    async updateWorkspaceProfile(payload: object): Promise<void> {
+      if (!this.workspaceSetting) {
+        return;
+      }
+      const profileSetting: WorkspaceProfileSetting = {
+        disallowSignup: this.workspaceSetting.disallowSignup,
+        externalUrl: this.workspaceSetting.externalUrl,
+        require2fa: this.workspaceSetting.require2fa,
+        outboundIpList: this.workspaceSetting.outboundIpList,
+        ...payload,
+      };
+      await this.updateSettingByName({
+        name: "bb.workspace.profile",
+        value: JSON.stringify(profileSetting),
+      });
+      // Fetch the latest server info.
+      await useActuatorStore().fetchServerInfo();
     },
   },
 });

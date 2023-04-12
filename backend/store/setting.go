@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -94,6 +95,11 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 	return setting.toAPISetting(), nil
 }
 
+// DeleteCache deletes the cache.
+func (s *Store) DeleteCache() {
+	s.settingCache = sync.Map{}
+}
+
 // FindSettingMessage is the message for finding setting.
 type FindSettingMessage struct {
 	Name    *api.SettingName
@@ -176,7 +182,7 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
 	fields := []string{"creator_id", "updater_id", "name", "value"}
 	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
-	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []interface{}{principalUID, principalUID, update.Name, update.Value}
+	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []any{principalUID, principalUID, update.Name, update.Value}
 
 	if v := update.Description; v != nil {
 		fields = append(fields, "description")
@@ -204,7 +210,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -238,7 +244,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 	}
 
 	fields := []string{"creator_id", "updater_id", "name", "value", "description"}
-	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []interface{}{principalUID, principalUID, create.Name, create.Value, create.Description}
+	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []any{principalUID, principalUID, create.Name, create.Value, create.Description}
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
@@ -249,7 +255,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 		&setting.Value,
 		&setting.Description,
 	); err != nil {
-		return nil, false, FormatError(err)
+		return nil, false, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -268,7 +274,7 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM setting WHERE name = $1`, name); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -280,7 +286,7 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 }
 
 func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -292,7 +298,7 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 		FROM setting
 		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -304,12 +310,12 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 			&settingMessage.Value,
 			&settingMessage.Description,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		settingMessages = append(settingMessages, &settingMessage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return settingMessages, nil

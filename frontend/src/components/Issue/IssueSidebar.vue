@@ -42,7 +42,7 @@
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
-          :selectedId="create ? (issue as IssueCreate).assigneeId : (issue as Issue).assignee?.id"
+          :selected-id="assigneeId as number"
           :custom-filter="filterPrincipal"
           data-label="bb-assignee-select"
           @select-principal-id="
@@ -93,7 +93,7 @@
         <div class="col-span-2">
           <StageSelect
             :pipeline="(issue as Issue).pipeline"
-            :selected-id="(selectedStage as Stage).id"
+            :selected-id="(selectedStage as Stage).id as number"
             @select-stage-id="(stageId) => selectStageOrTask(stageId)"
           />
         </div>
@@ -192,18 +192,20 @@
         </div>
       </template>
 
-      <template v-if="showInstance">
-        <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          <span class="mr-1">{{ $t("common.instance") }}</span>
-          <InstanceEngineIcon :instance="instance" />
-        </h2>
-        <router-link
-          :to="`/instance/${instanceSlug(instance)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
-        >
-          {{ instanceName(instance) }}
-        </router-link>
-      </template>
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        <span class="mr-1">{{ $t("common.instance") }}</span>
+        <InstanceEngineIcon :instance="instance" />
+      </h2>
+      <router-link
+        v-if="allowManageInstance"
+        :to="`/instance/${instanceSlug(instance)}`"
+        class="col-span-2 text-sm font-medium text-main hover:underline"
+      >
+        {{ instanceName(instance) }}
+      </router-link>
+      <span v-else class="col-span-2 text-sm font-medium text-main">
+        {{ instanceName(instance) }}
+      </span>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.environment") }}
@@ -330,7 +332,6 @@ import {
   hasWorkspacePermission,
   hidePrefix,
   taskSlug,
-  isOwnerOfProject,
   extractDatabaseNameFromTask,
   PRESET_LABEL_KEYS,
 } from "@/utils";
@@ -342,9 +343,11 @@ import {
   useProjectStore,
 } from "@/store";
 import {
+  allowUserToBeAssignee,
+  allowUserToChangeAssignee,
+  useCurrentRollOutPolicyForActiveEnvironment,
   useExtraIssueLogic,
   useIssueLogic,
-  useAllowProjectOwnerToApprove,
 } from "./logic";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
@@ -441,6 +444,13 @@ const project = computed((): Project => {
   return (issue.value as Issue).project;
 });
 
+const assigneeId = computed(() => {
+  if (create.value) {
+    return (issue.value as IssueCreate).assigneeId;
+  }
+  return (issue.value as Issue).assignee.id;
+});
+
 const databaseEntity = ref<Database>();
 
 const visibleLabelList = computed((): DatabaseLabel[] => {
@@ -466,7 +476,7 @@ const showTaskSelect = computed((): boolean => {
   return taskList.length > 1;
 });
 
-const showInstance = computed((): boolean => {
+const allowManageInstance = computed((): boolean => {
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-instance",
     currentUser.value.role
@@ -477,30 +487,7 @@ const allowEditAssignee = computed(() => {
   if (create.value) {
     return true;
   }
-  const issueEntity = issue.value as Issue;
-  if (issueEntity.status !== "OPEN") {
-    return false;
-  }
-
-  // Who can re-assign the issue?
-  // - The issue creator
-  // - The current assignee
-  // - Workspace owners and DBAs (they always have the highest privileges)
-  if (currentUser.value.id === issueEntity.creator.id) {
-    return true;
-  }
-  if (currentUser.value.id === issueEntity.assignee.id) {
-    return true;
-  }
-  if (
-    hasWorkspacePermission(
-      "bb.permission.workspace.manage-issue",
-      currentUser.value.role
-    )
-  ) {
-    return true;
-  }
-  return false;
+  return allowUserToChangeAssignee(currentUser.value, issue.value as Issue);
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -618,17 +605,15 @@ const selectTaskId = (taskId: TaskId) => {
   if (!task) return;
   const slug = taskSlug(task.name, task.id);
   const stage = selectedStage.value as Stage;
-  selectStageOrTask(stage.id, slug);
+  selectStageOrTask(stage.id as number, slug);
 };
-
-const allowProjectOwnerToApprove = useAllowProjectOwnerToApprove();
+const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 const filterPrincipal = (principal: Principal): boolean => {
-  if (allowProjectOwnerToApprove.value) {
-    return isOwnerOfProject(principal, project.value);
-  }
-  return hasWorkspacePermission(
-    "bb.permission.workspace.manage-issue",
-    principal.role
+  return allowUserToBeAssignee(
+    principal,
+    project.value,
+    rollOutPolicy.value.policy,
+    rollOutPolicy.value.assigneeGroup
   );
 };
 </script>

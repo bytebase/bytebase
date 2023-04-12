@@ -212,7 +212,7 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage, creatorID int
 
 // UpdateRisk updates a risk.
 func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int64, updaterID int) (*RiskMessage, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{updaterID}
+	set, args := []string{"updater_id = $1"}, []any{updaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

@@ -18,14 +18,14 @@ type CountInstanceMessage struct {
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.row_status = $1"}, []interface{}{api.Normal}
+	where, args := []string{"instance.row_status = $1"}, []any{api.Normal}
 	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, FormatError(err)
+		return 0, err
 	}
 	defer tx.Rollback()
 
@@ -41,7 +41,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return 0, FormatError(err)
+		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, err
@@ -53,7 +53,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -76,7 +76,7 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 		GROUP BY database_backup_policy.payload, database_backup_setting.enabled
 		`)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -86,13 +86,13 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 		var optionalEnabled sql.NullBool
 		var count int
 		if err := rows.Scan(&optionalPayload, &optionalEnabled, &count); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		var backupPlanPolicySchedule *api.BackupPlanPolicySchedule
 		if optionalPayload.Valid {
 			backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(optionalPayload.String)
 			if err != nil {
-				return nil, FormatError(err)
+				return nil, err
 			}
 			backupPlanPolicySchedule = &backupPlanPolicy.Schedule
 		}
@@ -107,7 +107,7 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 		})
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.MemberCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -131,7 +131,7 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 		GROUP BY role, status, member.row_status, principal.type`,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -145,12 +145,12 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 			&metric.Type,
 			&metric.Count,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -173,7 +173,7 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 		GROUP BY tenant_mode, workflow_type, row_status`,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -181,12 +181,12 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	for rows.Next() {
 		var metric metric.ProjectCountMetric
 		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.IssueCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -210,7 +210,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 		GROUP BY type, status`,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -219,12 +219,12 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	for rows.Next() {
 		var metric metric.IssueCountMetric
 		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -237,7 +237,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -248,7 +248,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 		GROUP BY engine, environment_id, row_status`,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -256,12 +256,12 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
 		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.TaskCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -285,7 +285,7 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 		GROUP BY type, status`,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -293,12 +293,12 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	for rows.Next() {
 		var metric metric.TaskCountMetric
 		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return res, nil
 }

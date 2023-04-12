@@ -5,15 +5,11 @@ import (
 	"context"
 	"io"
 	"os"
-	"os/user"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
-
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 func newMigrateCmd() *cobra.Command {
@@ -52,7 +48,7 @@ func newMigrateCmd() *cobra.Command {
 			}
 
 			sqlReader := io.MultiReader(sqlReaders...)
-			return migrateDatabase(context.Background(), u, description, issueID, false /*createDatabase*/, sqlReader)
+			return migrateDatabase(context.Background(), u, sqlReader)
 		}}
 
 	migrateCmd.Flags().StringVar(&dsn, "dsn", "", dsnUsage)
@@ -63,38 +59,18 @@ func newMigrateCmd() *cobra.Command {
 	return migrateCmd
 }
 
-func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID string, createDatabase bool, sqlReader io.Reader) error {
+func migrateDatabase(ctx context.Context, u *dburl.URL, sqlReader io.Reader) error {
 	driver, err := open(ctx, u)
 	if err != nil {
 		return err
 	}
 	defer driver.Close(ctx)
 
-	if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-		return errors.Wrap(err, "failed to setup migration")
-	}
-
-	migrationCreator := "bb-unknown-creator"
-	if currentUser, err := user.Current(); err == nil {
-		migrationCreator = currentUser.Username
-	}
-
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, sqlReader); err != nil {
 		return errors.Wrap(err, "failed to read sql file")
 	}
-	// TODO(d): support semantic versioning.
-	if _, _, err := driver.ExecuteMigration(ctx, &db.MigrationInfo{
-		ReleaseVersion: version,
-		Version:        common.DefaultMigrationVersion(),
-		Database:       getDatabase(u),
-		Source:         db.LIBRARY,
-		Type:           db.Migrate,
-		Description:    description,
-		Creator:        migrationCreator,
-		IssueID:        issueID,
-		CreateDatabase: createDatabase,
-	}, buf.String()); err != nil {
+	if _, err := driver.Execute(ctx, buf.String(), false /* createDatabase */); err != nil {
 		return errors.Wrap(err, "failed to migrate database")
 	}
 	return nil

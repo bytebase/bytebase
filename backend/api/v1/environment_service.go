@@ -112,11 +112,11 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	patch := &store.UpdateEnvironmentMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "environment.title":
+		case "title":
 			patch.Name = &request.Environment.Title
-		case "environment.order":
+		case "order":
 			patch.Order = &request.Environment.Order
-		case "environment.tier":
+		case "tier":
 			protected := request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED
 			patch.Protected = &protected
 		}

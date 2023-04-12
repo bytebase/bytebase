@@ -233,8 +233,9 @@
     "will-lose-unsaved-data": "Will lose any unsaved data.",
     "deleted": "Deleted",
     "will-override-current-data": "Will override current data.",
-    "rollout": "Roll out",
-    "uploading": "Uploading"
+    "rollout": "Rollout",
+    "uploading": "Uploading",
+    "active": "Active"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -471,7 +472,7 @@
         "branding": "Branding",
         "only-owner-can-edit": "Only workspace owner can update the settings.",
         "logo": "Logo",
-        "logo-aspect": "The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).",
+        "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
@@ -487,6 +488,11 @@
         "disallow-signup": {
           "enable": "Disable self-service signup",
           "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
+        },
+        "require-2fa": {
+          "enable": "Require two-factor authentication for all users",
+          "description": "When enabled, users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
+          "need-all-user-2fa-enabled": "Requires all users to enable 2FA first. There are still {count} users who have not enabled 2FA: {users}"
         },
         "network": "Network",
         "external-url": {
@@ -640,6 +646,7 @@
       "db": "DB",
       "progress": "Progress",
       "updated": "Updated",
+      "approver": "Approver",
       "assignee": "Assignee"
     },
     "stage-select": {
@@ -698,14 +705,15 @@
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "Allow the assignee to roll out the issue once the approval flow has been passed.",
+    "assignee-tooltip": "Allow the assignee to rollout the issue once the approval flow has been passed.",
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk."
     },
-    "waiting-to-roll-out": "Waiting to roll out",
+    "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
-    "issue-name": "Issue name"
+    "issue-name": "Issue name",
+    "waiting-for-my-approval": "Waiting for my approval"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -817,6 +825,7 @@
       "console": {
         "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
       },
+      "outbound-ip-list": "If you make use of inbound firewall rules for your database instance, please include the following IP addresses in its allowlist to allow access by Bytebase Cloud.",
       "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
       "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
       "create-admin-user-non-sql": "This is the connection user used by Bytebase to perform write and admin operations.",
@@ -868,7 +877,8 @@
     "grants": "Grants",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "create-gcp-credentials": "To create Credentials, see",
-    "used-for-testing-connection": "Used for testing connections only"
+    "used-for-testing-connection": "Used for testing connections only",
+    "all": "All instances"
   },
   "environment": {
     "id": "Environment ID",
@@ -939,8 +949,8 @@
     }
   },
   "policy": {
-    "roll-out": {
-      "name": "Roll out policy",
+    "rollout": {
+      "name": "Rollout policy",
       "tip": "The policy is applied to issues retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual rolling out",
@@ -1132,7 +1142,8 @@
     "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "doesnt-match-database-name-template": "Doesn't match tenant database name template",
     "doesnt-match-tenant-value": "Doesn't match label value",
-    "should-follow-database-name-template": "Should follow tenant database name template"
+    "should-follow-database-name-template": "Should follow tenant database name template",
+    "all": "All databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1339,7 +1350,8 @@
       "project-member": "Require LGTM from project members",
       "project-owner": "Require LGTM from project owner"
     },
-    "successfully-updated-db-name-template": "Successfully updated database name template."
+    "successfully-updated-db-name-template": "Successfully updated database name template.",
+    "all": "All projects"
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1729,8 +1741,8 @@
         "desc": "Intelligent database management for tenants using identical schemas."
       },
       "bb-feature-approval-policy": {
-        "title": "Roll out policy",
-        "desc": "Roll out policy controls whether the schema change task requires manual rolling out."
+        "title": "Rollout policy",
+        "desc": "Rollout policy controls whether the schema change task requires manual rolling out."
       },
       "bb-feature-backup-policy": {
         "title": "Backup policy",
@@ -1763,6 +1775,10 @@
       "bb-feature-custom-approval": {
         "title": "Custom approval",
         "desc": "Configure security risk level and approval flow for different tasks."
+      },
+      "bb-feature-slow-query": {
+        "title": "Slow query",
+        "desc": "Logging and analyzing slow SQL queries."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
@@ -1838,7 +1854,9 @@
       "confirm-to-sync-sheet": "Confirm to sync sheets?",
       "confirm-to-delete-this-sheet": "Confirm to delete this sheet?",
       "confirm-to-duplicate-sheet": "Confirm to duplicate this sheet?"
-    }
+    },
+    "linked-issue": "Linked issue",
+    "from-sheet-warning": "The sheet comes from issue {issue}. It is read-only and only part of it is displayed."
   },
   "engine": {
     "mysql": "MySQL",
@@ -1932,7 +1950,7 @@
       "created-ts": "Time",
       "created-time": "Created Time",
       "updated-time": "Updated Time",
-      "creator": "Creator",
+      "actor": "Actor",
       "type": "Audit Type",
       "level": "Audit Level",
       "comment": "Comment",
@@ -2024,6 +2042,7 @@
   "two-factor": {
     "self": "Two-factor authentication",
     "description": "Two-factor authentication provides an extra layer of security for member accounts. When signing in, you will be required to enter the security code generated by your Authenticator App.",
+    "enabled": "2FA Enabled",
     "setup-steps": {
       "setup-auth-app": {
         "self": "Setup authenticator app",
@@ -2061,7 +2080,9 @@
     "messages": {
       "2fa-enabled": "Two-factor authentication is enabled.",
       "2fa-disabled": "Two-factor authentication is disabled.",
-      "recovery-codes-regenerated": "Recovery codes are regenerated."
+      "recovery-codes-regenerated": "Recovery codes are regenerated.",
+      "2fa-required": "Two-factor authentication is required in your workspace. Please enable it before you can continue.",
+      "cannot-disable": "You cannot disable two-factor authentication because your admin requires it in the workspace."
     }
   },
   "plugin": {
@@ -2118,6 +2139,7 @@
         "self": "Risk",
         "select": "Select risk",
         "risk-level": {
+          "0": "Default",
           "100": "Low",
           "200": "Moderate",
           "300": "High"
@@ -2126,6 +2148,14 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Create Database"
+        },
+        "factor": {
+          "affected_rows": "Affected rows",
+          "environment_id": "Environment ID",
+          "project_id": "Project ID",
+          "database_name": "Database name",
+          "db_engine": "DB engine",
+          "sql_type": "SQL type"
         }
       },
       "condition": {
@@ -2205,7 +2235,9 @@
         "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
       },
       "view-approval-flow": "View approval flow",
-      "skip": "Skip manual approval"
+      "skip": "Skip manual approval",
+      "risk-not-configured-tips": "Make sure you have defined {link}.",
+      "the-related-risk-rules": "the related risk rules"
     },
     "risk": {
       "self": "Risk",
@@ -2227,5 +2259,25 @@
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue"
     }
+  },
+  "slow-query": {
+    "self": "Slow query",
+    "slow-queries": "Slow queries",
+    "last-query-time": "Last query time",
+    "database-name": "Database name",
+    "sql-statement": "SQL statement",
+    "total-query-count": "Total query count",
+    "query-time-95-percent": "Query time (95%)",
+    "query-time-avg": "Query time avg.",
+    "rows-examined-95-percent": "Rows examined (95%)",
+    "rows-sent-95-percent": "Rows sent (95%)",
+    "rows-examined-avg": "Rows examined avg.",
+    "rows-sent-avg": "Rows sent avg.",
+    "query-start-time": "Query start time",
+    "rows-examined": "Rows examined",
+    "rows-sent": "Rows sent",
+    "lock-time": "Lock time",
+    "query-time": "Query time",
+    "attention-description": "Logging and analyzing slow queires for {versions}.\nBytebase will periodically sync slow query logs from instances."
   }
 }

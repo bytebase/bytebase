@@ -101,7 +101,7 @@ func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -111,7 +111,7 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return vcs, nil
@@ -121,7 +121,7 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -138,7 +138,7 @@ func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, e
 func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -163,17 +163,17 @@ func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 func (s *Store) patchVCSRaw(ctx context.Context, patch *api.VCSPatch) (*vcsRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	vcs, err := patchVCSImpl(ctx, tx, patch)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return vcs, nil
@@ -183,19 +183,15 @@ func (s *Store) patchVCSRaw(ctx context.Context, patch *api.VCSPatch) (*vcsRaw, 
 func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
 	if err := s.deleteVCSImpl(ctx, tx, delete); err != nil {
-		return FormatError(err)
+		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 //
@@ -241,14 +237,14 @@ func createVCSImpl(ctx context.Context, tx *Tx, create *api.VCSCreate) (*vcsRaw,
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return &vcs, nil
 }
 
 func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = $1"), append(args, *v)
 	}
@@ -267,7 +263,7 @@ func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, err
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -284,13 +280,13 @@ func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, err
 			&vcs.ApplicationID,
 			&vcs.Secret,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		list = append(list, &vcs)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return list, nil
@@ -299,7 +295,7 @@ func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, err
 // patchVCSImpl updates a vcs by ID. Returns the new state of the vcs after update.
 func patchVCSImpl(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*vcsRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -332,7 +328,7 @@ func patchVCSImpl(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*vcsRaw, er
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", patch.ID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return &vcs, nil
 }
@@ -341,7 +337,7 @@ func patchVCSImpl(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*vcsRaw, er
 func (*Store) deleteVCSImpl(ctx context.Context, tx *Tx, delete *api.VCSDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, delete.ID); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }
@@ -463,7 +459,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -475,7 +471,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 // UpdateExternalVersionControlV2 updates an external version control.
 func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID int, externalVersionControlUID int, update *UpdateExternalVersionControlMessage) (*ExternalVersionControlMessage, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{principalUID}
+	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	if v := update.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -513,7 +509,7 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", externalVersionControlUID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -529,7 +525,7 @@ func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVers
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, externalVersionControlUID); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -539,7 +535,7 @@ func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVers
 }
 
 func (*Store) findExternalVersionControlsImplV2(ctx context.Context, tx *Tx, find *findExternalVersionControlMessage) ([]*ExternalVersionControlMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.id; v != nil {
 		// Build WHERE clause.
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
@@ -559,7 +555,7 @@ func (*Store) findExternalVersionControlsImplV2(ctx context.Context, tx *Tx, fin
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	var externalVersionControls []*ExternalVersionControlMessage
@@ -574,12 +570,12 @@ func (*Store) findExternalVersionControlsImplV2(ctx context.Context, tx *Tx, fin
 			&externalVersionControl.ApplicationID,
 			&externalVersionControl.Secret,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		externalVersionControls = append(externalVersionControls, &externalVersionControl)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return externalVersionControls, nil
 }

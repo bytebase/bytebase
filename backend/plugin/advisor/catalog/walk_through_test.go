@@ -105,7 +105,7 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 	}
 }
 
-func convertInterfaceSliceToStringSlice(slice []interface{}) []string {
+func convertInterfaceSliceToStringSlice(slice []any) []string {
 	var res []string
 	for _, item := range slice {
 		res = append(res, item.(string))
@@ -146,7 +146,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 				if err.Payload != nil {
 					actualPayloadText, yes := err.Payload.([]string)
 					require.True(t, yes)
-					expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]interface{}))
+					expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
 					err.Payload = nil
 					test.Err.Payload = nil
 					require.Equal(t, test.Err, err)

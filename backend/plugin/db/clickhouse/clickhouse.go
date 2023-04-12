@@ -36,6 +36,7 @@ func init() {
 type Driver struct {
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
+	databaseName  string
 
 	db *sql.DB
 }
@@ -81,6 +82,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 	driver.dbType = dbType
 	driver.db = conn
+	driver.databaseName = config.Database
 	driver.connectionCtx = connCtx
 
 	return driver, nil
@@ -101,9 +103,9 @@ func (*Driver) GetType() db.Type {
 	return db.ClickHouse
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // getVersion gets the version.
@@ -156,6 +158,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
 }

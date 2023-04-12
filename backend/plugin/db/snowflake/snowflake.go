@@ -20,8 +20,6 @@ import (
 
 var (
 	bytebaseDatabase = "BYTEBASE"
-	sysAdminRole     = "SYSADMIN"
-	accountAdminRole = "ACCOUNTADMIN"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -34,8 +32,8 @@ func init() {
 type Driver struct {
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
-
-	db *sql.DB
+	db            *sql.DB
+	databaseName  string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -89,6 +87,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	driver.dbType = dbType
 	driver.db = db
 	driver.connectionCtx = connCtx
+	driver.databaseName = config.Database
 
 	return driver, nil
 }
@@ -108,9 +107,9 @@ func (*Driver) GetType() db.Type {
 	return db.Snowflake
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // getVersion gets the version.
@@ -124,14 +123,6 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return version, nil
-}
-
-func (driver *Driver) useRole(ctx context.Context, role string) error {
-	query := fmt.Sprintf("USE ROLE %s", role)
-	if _, err := driver.db.ExecContext(ctx, query); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-	return nil
 }
 
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
@@ -154,10 +145,6 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 }
 
 func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
-		return nil, err
-	}
-
 	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
 	inboundDatabases := make(map[string]bool)
 	shareQuery := "SHOW SHARES"
@@ -171,12 +158,12 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	// created_on, kind, name, database_name.
-	if len(cols) < 4 {
+	// created_on, kind, name, database_name, to, owner, comment, listing_global_name.
+	if len(cols) < 8 {
 		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	refs := make([]interface{}, len(cols))
+	refs := make([]any, len(cols))
 	for i := 0; i < len(cols); i++ {
 		refs[i] = &values[i]
 	}
@@ -237,9 +224,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, nil
 	}
 
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return 0, err
-	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -268,6 +252,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.Snowflake, conn, statement, queryContext)
 }

@@ -53,6 +53,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
+	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
@@ -69,6 +70,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
+	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -76,13 +78,13 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	"github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 
 	// Register mysql driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// Register postgres driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	// Register snowflake driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	// Register sqlite driver.
@@ -138,6 +140,7 @@ type Server struct {
 	TaskCheckScheduler *taskcheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
+	SlowQuerySyncer    *slowquerysync.Syncer
 	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
 	ApplicationRunner  *apprun.Runner
@@ -291,18 +294,26 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot connect metadb")
 	}
 
-	schemaVer, err := storeDB.Open(ctx)
-	if err != nil {
+	if err := storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	s.SchemaVersion = schemaVer
+	storeInstance := store.New(storeDB)
+	if profile.Readonly {
+		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+	} else {
+		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
+		if err != nil {
+			return nil, err
+		}
+		s.SchemaVersion = metadataVersion
+	}
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
+		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
 	}
-	storeInstance := store.New(storeDB)
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
@@ -364,10 +375,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 					return
 				}
 				s.profile.LastActiveTs = time.Now().Unix()
-				s.MetricReporter.Report(&metricPlugin.Metric{
+				ctx := c.Request().Context()
+
+				s.MetricReporter.Report(ctx, &metricPlugin.Metric{
 					Name:  metric.APIRequestMetricName,
 					Value: 1,
-					Labels: map[string]interface{}{
+					Labels: map[string]any{
 						"path":   c.Request().URL.Path,
 						"method": c.Request().Method,
 					},
@@ -392,9 +405,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
-	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, s.GetWorkspaceID(), false)
+	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
@@ -438,7 +452,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
-		s.initMetricReporter(config.workspaceID)
+		s.initMetricReporter()
 	}
 
 	// Middleware
@@ -542,7 +556,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.MetricReporter,
 		s.licenseService))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
-	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService, s.secret))
+	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(
+		s.store,
+		s.licenseService,
+		s.secret,
+		s.stateCfg))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
@@ -649,9 +667,9 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 }
 
 // initMetricReporter will initial the metric scheduler.
-func (s *Server) initMetricReporter(workspaceID string) {
+func (s *Server) initMetricReporter() {
 	enabled := s.profile.Mode == common.ReleaseModeProd && s.profile.DemoName != "" && !s.profile.DisableMetric
-	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID, enabled)
+	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, enabled)
 	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
@@ -780,17 +798,15 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	}
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl:    s.profile.ExternalURL,
-		DisallowSignup: false,
+		ExternalUrl: s.profile.ExternalURL,
 	}
 	if workspaceProfileSetting != nil {
-		payload := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), payload); err != nil {
+		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
 			return nil, err
 		}
-		workspaceProfilePayload.DisallowSignup = payload.DisallowSignup
-		if s.profile.ExternalURL == "" {
-			workspaceProfilePayload.ExternalUrl = payload.ExternalUrl
+		if s.profile.ExternalURL != "" {
+			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
 		}
 	}
 
@@ -824,6 +840,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.SlowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
@@ -884,7 +902,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Close db connection
 	if s.store != nil {
-		if err := s.store.Close(); err != nil {
+		if err := s.store.Close(ctx); err != nil {
 			return err
 		}
 	}
@@ -970,7 +988,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	instance, err := s.store.CreateInstanceV2(ctx, api.DefaultProdEnvironmentID, &store.InstanceMessage{
-		ResourceID:   "postgres-sample",
+		ResourceID:   postgres.SampleInstanceResourceID,
 		Title:        "Postgres Sample Instance",
 		Engine:       db.Postgres,
 		ExternalLink: "",
@@ -1176,7 +1194,7 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				limit := 10
 				offset := 0
 
-				if instance.Engine == db.Redis || instance.Engine == db.Oracle || instance.Engine == db.Spanner || instance.Engine == db.MongoDB || instance.Engine == db.SQLite || instance.Engine == db.MSSQL {
+				if !(instance.Engine == db.MySQL || instance.Engine == db.Postgres || instance.Engine == db.ClickHouse) {
 					return nil
 				}
 				if instanceMigrated[instance.UID] {
@@ -1192,20 +1210,49 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 					nameToDatabase[db.DatabaseName] = databaseList[i]
 				}
 
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "bytebase")
 				if err != nil {
+					// Sample instance may not have the "bytebase" database in the old version,
+					// unless user has performed a migration.
+					if instance.ResourceID == postgres.SampleInstanceResourceID {
+						return nil
+					}
 					return err
 				}
 				defer driver.Close(ctx)
 
 				for {
-					history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-						InstanceID: &instance.UID,
-						Limit:      &limit,
-						Offset:     &offset,
-					})
-					if err != nil {
-						return err
+					var history []*db.MigrationHistory
+					if instance.Engine == db.MySQL {
+						myDriver := driver.(*mysql.Driver)
+						history, err = myDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
+					} else if instance.Engine == db.Postgres {
+						pgDriver := driver.(*pg.Driver)
+						history, err = pgDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
+					} else if instance.Engine == db.ClickHouse {
+						cDriver := driver.(*clickhouse.Driver)
+						history, err = cDriver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+							InstanceID: &instance.UID,
+							Limit:      &limit,
+							Offset:     &offset,
+						})
+						if err != nil {
+							return err
+						}
 					}
 					if len(history) == 0 {
 						break

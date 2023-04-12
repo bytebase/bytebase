@@ -242,7 +242,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 			return
 		}
 		var schemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, database.DatabaseName, &schemaBuf, true /*schemaOnly*/); err != nil {
+		if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				log.Debug("Failed to check anomaly",
 					zap.String("instance", instance.ResourceID),

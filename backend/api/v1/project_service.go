@@ -113,25 +113,25 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "project.title":
+		case "title":
 			patch.Title = &request.Project.Title
-		case "project.key":
+		case "key":
 			patch.Key = &request.Project.Key
-		case "project.workflow":
+		case "workflow":
 			workflow, err := convertToProjectWorkflowType(request.Project.Workflow)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			patch.Workflow = &workflow
-		case "project.tenant_mode":
+		case "tenant_mode":
 			tenantMode, err := convertToProjectTenantMode(request.Project.TenantMode)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			patch.TenantMode = &tenantMode
-		case "project.db_name_template":
+		case "db_name_template":
 			patch.DBNameTemplate = &request.Project.DbNameTemplate
-		case "project.schema_change":
+		case "schema_change":
 			schemaChange, err := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -330,6 +330,14 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 
 // AddWebhook adds a webhook to a given project.
 func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhookRequest) (*v1pb.Project, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -398,13 +406,13 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 	update := &store.UpdateProjectWebhookMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "webhook.type":
+		case "type":
 			return nil, status.Errorf(codes.InvalidArgument, "type cannot be updated")
-		case "webhook.title":
+		case "title":
 			update.Title = &request.Webhook.Title
-		case "webhook.url":
+		case "url":
 			update.URL = &request.Webhook.Url
-		case "webhook.notification_type":
+		case "notification_type":
 			types, err := convertToActivityTypeStrings(request.Webhook.NotificationTypes)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -473,6 +481,14 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 
 // TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebhookRequest) (*v1pb.TestWebhookResponse, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
 	projectID, err := getProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -499,11 +515,6 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	}
 	if webhook == nil {
 		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	err = webhookPlugin.Post(

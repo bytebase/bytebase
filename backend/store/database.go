@@ -207,7 +207,7 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -224,7 +224,7 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 	database := databases[0]
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.databaseCache.Store(getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName), database)
@@ -236,7 +236,7 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -246,7 +246,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	for _, database := range databases {
@@ -268,7 +268,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
@@ -278,7 +278,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 
 	if err := tx.Commit(); err != nil {
-		return FormatError(err)
+		return err
 	}
 
 	// Invalidate an update the cache.
@@ -321,7 +321,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 	).Scan(
 		&databaseUID,
 	); err != nil {
-		return 0, FormatError(err)
+		return 0, err
 	}
 	return databaseUID, nil
 }
@@ -380,7 +380,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	).Scan(
 		&databaseUID,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := s.setDatabaseLabels(ctx, tx, databaseUID, create.Labels, api.SystemBotID); err != nil {
 		return nil, err
@@ -402,7 +402,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
 	if v := patch.ProjectID; v != nil {
 		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
 		if err != nil {
@@ -423,7 +423,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 	var databaseUID int
@@ -437,7 +437,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	).Scan(
 		&databaseUID,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if patch.Labels != nil {
 		if err := s.setDatabaseLabels(ctx, tx, databaseUID, *(patch.Labels), updaterID); err != nil {
@@ -463,7 +463,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	// Invalidate and update the cache.
@@ -481,12 +481,12 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	var wheres []string
-	args := []interface{}{project.UID, updaterID}
+	args := []any{project.UID, updaterID}
 	for i, database := range databases {
 		wheres = append(wheres, fmt.Sprintf("(environment.resource_id = $%d AND instance.resource_id = $%d AND db.name = $%d)", 3*i+3, 3*i+4, 3*i+5))
 		args = append(args, database.EnvironmentID, database.InstanceID, database.DatabaseName)
@@ -498,11 +498,11 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 			WHERE db.instance_id = instance.id AND (%s);`, strings.Join(wheres, " OR ")),
 		args...,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var updatedDatabases []*DatabaseMessage
@@ -532,7 +532,7 @@ func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabas
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if !find.IncludeAllDatabase {
 		where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
 	}
@@ -583,7 +583,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -603,7 +603,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			pq.Array(&keys),
 			pq.Array(&values),
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if len(keys) != len(values) {
 			return nil, errors.Errorf("invalid length of database label keys and values")
@@ -619,6 +619,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EnvironmentID
 
 		databaseMessages = append(databaseMessages, &databaseMessage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return databaseMessages, nil
@@ -709,7 +712,7 @@ func (*Store) getDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int) (m
 		databaseUID,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -718,12 +721,12 @@ func (*Store) getDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int) (m
 			&key,
 			&value,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		labels[key] = value
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return labels, nil
 }

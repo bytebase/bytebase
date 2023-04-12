@@ -1,11 +1,15 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Empty } from "../google/protobuf/empty";
 import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
 export interface GetActuatorInfoRequest {
+}
+
+export interface DeleteCacheRequest {
 }
 
 /**
@@ -35,6 +39,8 @@ export interface ActuatorInfo {
   disallowSignup: boolean;
   /** last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. */
   lastActiveTime?: Date;
+  /** require_2fa is the flag to require 2FA for all users. */
+  require2fa: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -81,6 +87,50 @@ export const GetActuatorInfoRequest = {
   },
 };
 
+function createBaseDeleteCacheRequest(): DeleteCacheRequest {
+  return {};
+}
+
+export const DeleteCacheRequest = {
+  encode(_: DeleteCacheRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteCacheRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteCacheRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DeleteCacheRequest {
+    return {};
+  },
+
+  toJSON(_: DeleteCacheRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
+    return DeleteCacheRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
+    const message = createBaseDeleteCacheRequest();
+    return message;
+  },
+};
+
 function createBaseActuatorInfo(): ActuatorInfo {
   return {
     version: "",
@@ -94,6 +144,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     needAdminSetup: false,
     disallowSignup: false,
     lastActiveTime: undefined,
+    require2fa: false,
   };
 }
 
@@ -131,6 +182,9 @@ export const ActuatorInfo = {
     }
     if (message.lastActiveTime !== undefined) {
       Timestamp.encode(toTimestamp(message.lastActiveTime), writer.uint32(90).fork()).ldelim();
+    }
+    if (message.require2fa === true) {
+      writer.uint32(96).bool(message.require2fa);
     }
     return writer;
   },
@@ -219,6 +273,13 @@ export const ActuatorInfo = {
 
           message.lastActiveTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 12:
+          if (tag != 96) {
+            break;
+          }
+
+          message.require2fa = reader.bool();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -241,6 +302,7 @@ export const ActuatorInfo = {
       needAdminSetup: isSet(object.needAdminSetup) ? Boolean(object.needAdminSetup) : false,
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
       lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
+      require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
     };
   },
 
@@ -257,6 +319,7 @@ export const ActuatorInfo = {
     message.needAdminSetup !== undefined && (obj.needAdminSetup = message.needAdminSetup);
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
     message.lastActiveTime !== undefined && (obj.lastActiveTime = message.lastActiveTime.toISOString());
+    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
     return obj;
   },
 
@@ -277,6 +340,7 @@ export const ActuatorInfo = {
     message.needAdminSetup = object.needAdminSetup ?? false;
     message.disallowSignup = object.disallowSignup ?? false;
     message.lastActiveTime = object.lastActiveTime ?? undefined;
+    message.require2fa = object.require2fa ?? false;
     return message;
   },
 };
@@ -301,6 +365,42 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    deleteCache: {
+      name: "DeleteCache",
+      requestType: DeleteCacheRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              20,
+              42,
+              18,
+              47,
+              118,
+              49,
+              47,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              47,
+              99,
+              97,
+              99,
+              104,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -309,6 +409,7 @@ export interface ActuatorServiceImplementation<CallContextExt = {}> {
     request: GetActuatorInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ActuatorInfo>>;
+  deleteCache(request: DeleteCacheRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
 export interface ActuatorServiceClient<CallOptionsExt = {}> {
@@ -316,6 +417,7 @@ export interface ActuatorServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetActuatorInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ActuatorInfo>;
+  deleteCache(request: DeepPartial<DeleteCacheRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

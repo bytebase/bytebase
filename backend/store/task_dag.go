@@ -57,7 +57,7 @@ func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) err
 // ListTaskDags lists task dags.
 func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAGMessage, error) {
 	joinClause := ""
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.StageID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -71,7 +71,7 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -85,7 +85,7 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -96,12 +96,12 @@ func (s *Store) ListTaskDags(ctx context.Context, find *TaskDAGFind) ([]*TaskDAG
 			&taskDAG.FromTaskID,
 			&taskDAG.ToTaskID,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		taskDAGs = append(taskDAGs, &taskDAG)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err

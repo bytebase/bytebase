@@ -56,17 +56,17 @@ func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, p
 
 	rows, err := tx.QueryContext(ctx, query, projectID, principalID)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		if err := rows.Scan(&projectMember.ID, &projectMember.ProjectID, &projectMember.PrincipalID); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -93,17 +93,17 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, projectMemberID int) (
 
 	rows, err := tx.QueryContext(ctx, query, projectMemberID)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		if err := rows.Scan(&projectMember.ID, &projectMember.ProjectID, &projectMember.PrincipalID); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -145,7 +145,7 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -155,7 +155,7 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.projectPolicyCache.Store(project.ResourceID, projectPolicy)
@@ -175,7 +175,7 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -193,7 +193,7 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 }
 
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -213,7 +213,7 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -223,9 +223,12 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 			&member.ID,
 			&role,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		roleMap[role] = append(roleMap[role], member)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	var roles []api.Role
@@ -269,7 +272,7 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 	}
 
 	if len(inserts.Bindings) > 0 {
-		args := []interface{}{}
+		args := []any{}
 		var placeholders []string
 		for _, binding := range inserts.Bindings {
 			for _, member := range binding.Members {
@@ -291,7 +294,7 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 			principal_id
 		) VALUES %s`, strings.Join(placeholders, ", "))
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return FormatError(err)
+			return err
 		}
 	}
 	return nil
@@ -302,7 +305,7 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 		return nil
 	}
 	query := ""
-	where, deletePlaceholders, args := []string{}, []string{}, []interface{}{}
+	where, deletePlaceholders, args := []string{}, []string{}, []any{}
 	where, args = append(where, fmt.Sprintf("(project_member.project_id = $%d)", len(args)+1)), append(args, projectUID)
 	for _, id := range memberIDs {
 		deletePlaceholders = append(deletePlaceholders, fmt.Sprintf("$%d", len(args)+1))
@@ -311,7 +314,7 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 	where = append(where, fmt.Sprintf("(project_member.principal_id IN (%s))", strings.Join(deletePlaceholders, ", ")))
 	query = `DELETE FROM project_member WHERE ` + strings.Join(where, " AND ")
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }

@@ -25,10 +25,10 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { ServerInfo } from "@/types";
 import { pushNotification, useActuatorStore } from "@/store";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
+import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
 
 export default defineComponent({
   name: "DashboardLayout",
@@ -40,7 +40,7 @@ export default defineComponent({
     const actuatorStore = useActuatorStore();
 
     const ping = () => {
-      actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
+      actuatorStore.fetchServerInfo().then((info: ActuatorInfo) => {
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

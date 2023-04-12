@@ -1,7 +1,6 @@
 package taskrun
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -22,7 +20,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -114,65 +111,33 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 	if err != nil {
 		return true, nil, err
 	}
+	// wait for heartbeat lag.
+	// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
+	cancelled := waitForCutover(ctx, migrationContext)
+	if cancelled {
+		return true, nil, errors.Errorf("cutover poller cancelled")
+	}
 
 	mi, err := preMigration(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := func() (migrationHistoryID string, updatedSchema string, resErr error) {
-		driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
-		if err != nil {
-			return "", "", err
-		}
-		defer driver.Close(ctx)
 
-		executor := driver.(util.MigrationExecutor)
-
-		var prevSchemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
-			return "", "", err
-		}
-
-		// wait for heartbeat lag.
-		// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
-		cancelled := waitForCutover(ctx, migrationContext)
-		if cancelled {
-			return "", "", errors.Errorf("cutover poller cancelled")
-		}
-
-		insertedID, err := utils.BeginMigration(ctx, stores, mi, prevSchemaBuf.String(), statement)
-		if err != nil {
-			if common.ErrorCode(err) == common.MigrationAlreadyApplied {
-				return insertedID, prevSchemaBuf.String(), nil
-			}
-			return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", mi.IssueID)
-		}
-		startedNs := time.Now().UnixNano()
-
-		defer func() {
-			if err := utils.EndMigration(ctx, stores, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
-				log.Error("failed to update migration history record",
-					zap.Error(err),
-					zap.String("migration_id", migrationHistoryID),
-				)
-			}
-		}()
-
+	execFunc := func() error {
 		if err := os.Remove(postponeFilename); err != nil {
-			return "", "", errors.Wrap(err, "failed to remove postpone flag file")
+			return errors.Wrap(err, "failed to remove postpone flag file")
 		}
-
 		if migrationErr := <-errCh; migrationErr != nil {
-			return "", "", errors.Wrapf(migrationErr, "failed to run gh-ost migration")
+			return errors.Wrapf(migrationErr, "failed to run gh-ost migration")
 		}
-
-		var afterSchemaBuf bytes.Buffer
-		if _, err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-			return "", "", util.FormatError(err)
-		}
-
-		return insertedID, afterSchemaBuf.String(), nil
-	}()
+		return nil
+	}
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	if err != nil {
+		return true, nil, err
+	}
+	defer driver.Close(ctx)
+	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, stores, driver, mi, statement, execFunc)
 	if err != nil {
 		return true, nil, err
 	}

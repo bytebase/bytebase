@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -34,6 +35,12 @@ func (s *ActuatorService) GetActuatorInfo(ctx context.Context, _ *v1pb.GetActuat
 	return s.getServerInfo(ctx)
 }
 
+// DeleteCache deletes the cache.
+func (s *SettingService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequest) (*emptypb.Empty, error) {
+	s.store.DeleteCache()
+	return &emptypb.Empty{}, nil
+}
+
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
 	count, err := s.store.CountUsers(ctx, api.EndUser)
 	if err != nil {
@@ -54,6 +61,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		NeedAdminSetup: count == 0,
 		ExternalUrl:    setting.ExternalUrl,
 		DisallowSignup: setting.DisallowSignup,
+		Require_2Fa:    setting.Require_2Fa,
 		LastActiveTime: timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
 	}
 

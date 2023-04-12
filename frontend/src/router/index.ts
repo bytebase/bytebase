@@ -6,6 +6,7 @@ import {
   RouteRecordRaw,
 } from "vue-router";
 import { useTitle } from "@vueuse/core";
+import { startCase } from "lodash-es";
 
 import BodyLayout from "../layouts/BodyLayout.vue";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
@@ -41,6 +42,7 @@ import {
   useProjectStore,
   useSheetStore,
   useAuthStore,
+  useActuatorStore,
   useDatabaseStore,
   useEnvironmentStore,
   useInstanceStore,
@@ -53,6 +55,7 @@ import {
   useIdentityProviderStore,
   useCurrentUser,
   useSubscriptionStore,
+  useUserStore,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -128,6 +131,15 @@ const routes: Array<RouteRecordRaw> = [
     path: "/oidc/callback",
     name: "oidc-callback",
     component: () => import("../views/OAuthCallback.vue"),
+  },
+  {
+    path: "/2fa/setup",
+    name: "2fa.setup",
+    meta: {
+      title: () => t("two-factor.self"),
+    },
+    component: () => import("../views/TwoFactorRequired.vue"),
+    props: true,
   },
   {
     path: "/",
@@ -233,6 +245,20 @@ const routes: Array<RouteRecordRaw> = [
             meta: { title: () => t("common.inbox") },
             components: {
               content: () => import("../views/Inbox.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
+            path: "slow-query",
+            name: "workspace.slow-query",
+            meta: { title: () => startCase(t("slow-query.slow-queries")) },
+            components: {
+              content: () =>
+                import("../views/SlowQuery/SlowQueryDashboard.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -424,6 +450,14 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("custom-approval.self") },
                 component: () =>
                   import("../views/SettingWorkspaceCustomApproval.vue"),
+                props: true,
+              },
+              {
+                path: "slow-query",
+                name: "setting.workspace.slow-query",
+                meta: { title: () => startCase(t("slow-query.self")) },
+                component: () =>
+                  import("../views/SettingWorkspaceSlowQuery.vue"),
                 props: true,
               },
               {
@@ -1107,6 +1141,27 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (to.name === "2fa.setup") {
+    next();
+    return;
+  }
+
+  const userStore = useUserStore();
+  const currentUser = useCurrentUser();
+  const serverInfo = useActuatorStore().serverInfo;
+
+  // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
+  if (serverInfo?.require2fa && currentUser.value) {
+    const user = userStore.getUserById(currentUser.value.id as number);
+    if (user && !user.mfaEnabled) {
+      next({
+        name: "2fa.setup",
+        replace: true,
+      });
+      return;
+    }
+  }
+
   if (to.name === SQL_EDITOR_HOME_MODULE) {
     const onboardingStateStore = useOnboardingStateStore();
     if (onboardingStateStore.getStateByKey("sql-editor")) {
@@ -1119,8 +1174,6 @@ router.beforeEach((to, from, next) => {
       return;
     }
   }
-
-  const currentUser = useCurrentUser();
 
   if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
     if (
@@ -1249,6 +1302,7 @@ router.beforeEach((to, from, next) => {
     to.name === "error.500" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
+    to.name === "workspace.slow-query" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||

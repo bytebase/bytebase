@@ -27,11 +27,7 @@
     :responsive="false"
     :tab-item-list="tabItemList"
     :selected-index="state.selectedIndex"
-    @select-index="
-      (index: number) => {
-        selectTab(index);
-      }
-    "
+    @select-index="selectTab"
   />
 
   <div class="py-6 px-6">
@@ -46,6 +42,8 @@
 <script lang="ts">
 import { computed, defineComponent, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
+import { startCase } from "lodash-es";
+
 import {
   idFromSlug,
   hasProjectPermission,
@@ -104,6 +102,8 @@ export default defineComponent({
         isTenantProject.value
           ? null // Hide "Change History" tab for tenant projects
           : { name: t("common.change-history"), hash: "change-history" },
+
+        { name: startCase(t("slow-query.slow-queries")), hash: "slow-query" },
 
         { name: t("common.activities"), hash: "activity" },
         { name: t("common.gitops"), hash: "gitops" },

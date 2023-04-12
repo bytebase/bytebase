@@ -267,10 +267,7 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
 	stmt := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`; CREATE DATABASE `%s`;", pitrDatabaseName, pitrDatabaseName)
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return errors.Wrapf(err, "failed to get connection to restore backup")
-	}
+	db := driver.GetDB()
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return errors.Wrapf(err, "failed to create the PITR database %s", pitrDatabaseName)
 	}
@@ -822,11 +819,7 @@ func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileNam
 
 // GetSortedBinlogFilesOnServer returns the information of binlog files in ascending order by their numeric extension.
 func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]BinlogFile, error) {
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-
+	db := driver.GetDB()
 	query := "SHOW BINARY LOGS"
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
@@ -838,8 +831,8 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 	for rows.Next() {
 		var name string
 		var size int64
-		var unused interface{}
-		if err := rows.Scan(&name, &size, &unused /*Encrypted column*/); err != nil {
+		var unused any
+		if err := rows.Scan(&name, &size, &unused /* encrypted column */); err != nil {
 			return nil, err
 		}
 		binlogFile, err := newBinlogFile(name, size)
@@ -1100,11 +1093,7 @@ func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
 func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return err
-	}
-
+	db := driver.GetDB()
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html
 	query := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
 	rows, err := db.QueryContext(ctx, query)
@@ -1132,11 +1121,7 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 }
 
 func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return "", err
-	}
-
+	db := driver.GetDB()
 	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
 	var varNameFound, value string
 	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {

@@ -34,6 +34,7 @@ type Driver struct {
 	dir           string
 	db            *sql.DB
 	connectionCtx db.ConnectionContext
+	databaseName  string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -41,15 +42,18 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a SQLite driver.
-func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
 	driver.dir = config.Host
 
 	// If config.Database is empty, we will get a connection to in-memory database.
-	if _, err := driver.GetDBConnection(ctx, config.Database); err != nil {
+	db, err := createDBConnection(driver.dir, config.Database)
+	if err != nil {
 		return nil, err
 	}
+	driver.db = db
 	driver.connectionCtx = connCtx
+	driver.databaseName = config.Database
 	return driver, nil
 }
 
@@ -71,16 +75,15 @@ func (*Driver) GetType() db.Type {
 	return db.SQLite
 }
 
-// GetDBConnection gets a database connection.
-// If database is empty, we will get a connect to in-memory database.
-func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
-	if driver.db != nil {
-		if err := driver.db.Close(); err != nil {
-			return nil, err
-		}
-	}
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
+}
 
-	dns := path.Join(driver.dir, fmt.Sprintf("%s.db", database))
+// createDBConnection gets a database connection.
+// If database is empty, we will get a connect to in-memory database.
+func createDBConnection(dir, database string) (*sql.DB, error) {
+	dns := path.Join(dir, fmt.Sprintf("%s.db", database))
 	if database == "" {
 		dns = ":memory:"
 	}
@@ -88,17 +91,7 @@ func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
 	return db, nil
-}
-
-// getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	var version string
-	if err := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
-		return "", err
-	}
-	return version, nil
 }
 
 func (driver *Driver) getDatabases() ([]string, error) {
@@ -116,49 +109,22 @@ func (driver *Driver) getDatabases() ([]string, error) {
 	return databases, nil
 }
 
-func (driver *Driver) hasBytebaseDatabase() (bool, error) {
-	databases, err := driver.getDatabases()
-	if err != nil {
-		return false, err
-	}
-	for _, database := range databases {
-		if database == bytebaseDatabase {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
-	var remainingStmts []string
-	f := func(stmt string) error {
-		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
-		stmt = strings.TrimLeft(stmt, " \t")
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-			parts := strings.Split(stmt, `'`)
-			if len(parts) != 3 {
-				return errors.Errorf("invalid statement %q", stmt)
-			}
-			db, err := driver.GetDBConnection(ctx, parts[1])
-			if err != nil {
-				return err
-			}
-			// We need to query to persist the database file.
-			if _, err := db.ExecContext(ctx, "SELECT 1;"); err != nil {
-				return err
-			}
-		} else if !strings.HasPrefix(stmt, "USE ") { // ignore the fake use database statement.
-			remainingStmts = append(remainingStmts, stmt)
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+	if createDatabase {
+		parts := strings.Split(statement, `'`)
+		if len(parts) != 3 {
+			return 0, errors.Errorf("invalid statement %q", statement)
 		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return 0, err
-	}
-
-	if len(remainingStmts) == 0 {
+		db, err := createDBConnection(driver.dir, parts[1])
+		if err != nil {
+			return 0, err
+		}
+		defer db.Close()
+		// We need to query to persist the database file.
+		if _, err := db.ExecContext(ctx, "SELECT 1;"); err != nil {
+			return 0, err
+		}
 		return 0, nil
 	}
 
@@ -168,7 +134,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	}
 	defer tx.Rollback()
 
-	sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
+	sqlResult, err := tx.ExecContext(ctx, statement)
 	if err != nil {
 		return 0, err
 	}
@@ -186,6 +152,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.SQLite, conn, statement, queryContext)
 }

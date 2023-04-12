@@ -3,7 +3,6 @@ package util
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -21,10 +20,8 @@ import (
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -121,247 +118,9 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	return nil
 }
 
-// NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.
-func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string) (bool, error) {
-	rows, err := sqldb.QueryContext(ctx, query)
-	if err != nil {
-		return false, FormatErrorWithQuery(err, query)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return false, nil
-	}
-	if err := rows.Err(); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-// MigrationExecutor is an adapter for ExecuteMigration().
-type MigrationExecutor interface {
-	db.Driver
-	// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
-	FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error)
-	// FindLargestSequence will return the largest sequence number.
-	// Returns 0 if we haven't applied any migration for this namespace.
-	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
-	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID string, err error)
-	// UpdateHistoryAsDone will update the migration record as done.
-	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID string) error
-	// UpdateHistoryAsFailed will update the migration record as failed.
-	UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID string) error
-}
-
-// ExecuteMigration will execute the database migration.
-// Returns the created migration history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID string, updatedSchema string, resErr error) {
-	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
-	if !m.CreateDatabase && executor.GetType() != db.MongoDB {
-		// For baseline migration, we also record the live schema to detect the schema drift.
-		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
-			return "", "", FormatError(err)
-		}
-	}
-
-	// Phase 1 - Pre-check before executing migration
-	// Phase 2 - Record migration history as PENDING
-	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
-	if err != nil {
-		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
-			return insertedID, prevSchemaBuf.String(), nil
-		}
-		return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
-	}
-
-	startedNs := time.Now().UnixNano()
-
-	defer func() {
-		if err := EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
-			log.Error("Failed to update migration history record",
-				zap.Error(err),
-				zap.String("migration_id", migrationHistoryID),
-			)
-		}
-	}()
-
-	// Phase 3 - Executing migration
-	// Branch migration type always has empty sql.
-	// Baseline migration type could has non-empty sql but will not execute.
-	// https://github.com/bytebase/bytebase/issues/394
-	doMigrate := true
-	if statement == "" {
-		doMigrate = false
-	}
-	if m.Type == db.Baseline {
-		doMigrate = false
-	}
-	if doMigrate {
-		// Switch to the target database only if we're NOT creating this target database.
-		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
-		if !m.CreateDatabase && executor.GetType() != db.MongoDB {
-			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
-				return "", "", err
-			}
-		}
-		if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
-			return "", "", FormatError(err)
-		}
-	}
-
-	if executor.GetType() == db.MongoDB {
-		// Skip schema dump for MongoDB because it's schemaless.
-		return insertedID, "", nil
-	}
-	// Phase 4 - Dump the schema after migration
-	var afterSchemaBuf bytes.Buffer
-	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		// We will ignore the dump error if the database is dropped.
-		if strings.Contains(err.Error(), "not found") {
-			return insertedID, "", nil
-		}
-		return "", "", FormatError(err)
-	}
-
-	return insertedID, afterSchemaBuf.String(), nil
-}
-
-// BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID string, err error) {
-	// Convert version to stored version.
-	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to convert to stored version")
-	}
-	// Phase 1 - Pre-check before executing migration
-	// Check if the same migration version has already been applied.
-	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-		Database: &m.Namespace,
-		Version:  &m.Version,
-	}); err != nil {
-		return "", errors.Wrap(err, "failed to check duplicate version")
-	} else if len(list) > 0 {
-		migrationHistory := list[0]
-		switch migrationHistory.Status {
-		case db.Done:
-			if migrationHistory.IssueID != m.IssueID {
-				return migrationHistory.ID, common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
-			}
-			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
-		case db.Pending:
-			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
-			log.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			if m.Force {
-				return migrationHistory.ID, nil
-			}
-			return "", common.Wrap(err, common.MigrationPending)
-		case db.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
-			log.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			if m.Force {
-				return migrationHistory.ID, nil
-			}
-			return "", common.Wrap(err, common.MigrationFailed)
-		}
-	}
-
-	var tx *sql.Tx
-	// We don't use transaction for MongoDB for the following reasons:
-	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
-	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
-	// 2. We use mongodb driver, it has not implemented the SQL interface. So we can't use the same code.
-	if executor.GetType() != db.MongoDB {
-		// We use transaction here for the RDBMS.
-		sqldb, err := executor.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return "", err
-		}
-		// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
-		tx, err = sqldb.BeginTx(ctx, nil)
-		if err != nil {
-			return "", err
-		}
-		defer tx.Rollback()
-	}
-
-	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
-	if err != nil {
-		return "", err
-	}
-
-	// Check if there is any higher version already been applied since the last baseline or branch.
-	if version, err := executor.FindLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
-		return "", err
-	} else if version != nil && len(*version) > 0 && *version >= m.Version {
-		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
-		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
-	}
-
-	// Phase 2 - Record migration history as PENDING.
-	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
-	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
-	// update the record to DONE together with the updated schema.
-	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
-		return "", err
-	}
-
-	if executor.GetType() != db.MongoDB {
-		if err := tx.Commit(); err != nil {
-			return "", err
-		}
-	}
-
-	return insertedID, nil
-}
-
-// EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID string, updatedSchema string, databaseName string, isDone bool) (err error) {
-	migrationDurationNs := time.Now().UnixNano() - startedNs
-
-	var tx *sql.Tx
-	// We don't use transaction for MongoDB for the following reasons:
-	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
-	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
-	// 2. We use mongodb driver, it had not implment the sql interface. So we can't use the same code.
-	if executor.GetType() != db.MongoDB {
-		sqldb, err := executor.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return err
-		}
-		tx, err = sqldb.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-	}
-
-	if isDone {
-		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
-	} else {
-		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
-	}
-
-	if err != nil {
-		return err
-	}
-	if executor.GetType() != db.MongoDB {
-		return tx.Commit()
-	}
-	return nil
-}
-
 // Query will execute a readonly / SELECT query.
 // The result is then JSON marshaled and returned to the frontend.
-func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	readOnly := queryContext.ReadOnly
 	limit := queryContext.Limit
 	if !readOnly {
@@ -401,7 +160,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
@@ -424,7 +183,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var columnTypeNames []string
@@ -443,11 +202,11 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		return nil, err
 	}
 
-	return []interface{}{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
+	return []any{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
 }
 
 // query will execute a query.
-func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]interface{}, error) {
+func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]any, error) {
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
@@ -456,12 +215,12 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	var columnTypeNames []string
@@ -483,16 +242,16 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 	// queryAdmin doesn't mask the sensitive fields.
 	// Return the all false boolean slice here as the placeholder.
 	sensitiveInfo := make([]bool, len(columnNames))
-	return []interface{}{columnNames, columnTypeNames, data, sensitiveInfo}, nil
+	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
 }
 
-func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
+func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
 	if dbType == db.ClickHouse {
 		return readRowsForClickhouse(rows, columnTypes, columnTypeNames, fieldList)
 	}
-	data := []interface{}{}
+	data := []any{}
 	for rows.Next() {
-		scanArgs := make([]interface{}, len(columnTypes))
+		scanArgs := make([]any, len(columnTypes))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -510,10 +269,10 @@ func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, col
 		}
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
-		rowData := []interface{}{}
+		rowData := []any{}
 		for i := range columnTypes {
 			if len(fieldList) > 0 && fieldList[i].Sensitive {
 				rowData = append(rowData, "******")
@@ -599,13 +358,9 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, sqldb *sql.DB) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
-	sqldb, err := driver.GetDBConnection(ctx, database)
-	if err != nil {
-		return nil, err
-	}
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -663,21 +418,6 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	}
 
 	return migrationHistoryList, nil
-}
-
-// FormatError formats schema migration errors.
-func FormatError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_version") {
-		return errors.Errorf("version has already been applied")
-	} else if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_sequence") {
-		return errors.Errorf("concurrent migration")
-	}
-
-	return err
 }
 
 // NonSemanticPrefix is the prefix for non-semantic version.
@@ -757,18 +497,18 @@ func ConvertYesNo(s string) (bool, error) {
 	}
 }
 
-func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
-	data := []interface{}{}
+func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
+	data := []any{}
 
 	for rows.Next() {
-		cols := make([]interface{}, len(columnTypes))
+		cols := make([]any, len(columnTypes))
 		for i, name := range columnTypeNames {
 			// The ClickHouse driver uses *Type rather than sql.NullType to scan nullable fields
 			// as described in https://github.com/ClickHouse/clickhouse-go/issues/754
 			// TODO: remove this workaround once fixed.
 			if strings.HasPrefix(name, "TUPLE") || strings.HasPrefix(name, "ARRAY") || strings.HasPrefix(name, "MAP") {
-				// For TUPLE, ARRAY, MAP type in ClickHouse, we pass interface{} and the driver will do the rest.
-				var it interface{}
+				// For TUPLE, ARRAY, MAP type in ClickHouse, we pass any and the driver will do the rest.
+				var it any
 				cols[i] = &it
 			} else {
 				// We use ScanType to get the correct *Type and then do type assertions
@@ -778,10 +518,10 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 		}
 
 		if err := rows.Scan(cols...); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
-		rowData := []interface{}{}
+		rowData := []any{}
 		for i := range cols {
 			if len(fieldList) > 0 && fieldList[i].Sensitive {
 				rowData = append(rowData, "******")
@@ -789,7 +529,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			}
 
 			// handle TUPLE ARRAY MAP
-			if v, ok := cols[i].(*interface{}); ok && v != nil {
+			if v, ok := cols[i].(*any); ok && v != nil {
 				rowData = append(rowData, *v)
 				continue
 			}

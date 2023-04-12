@@ -70,7 +70,7 @@ type updateAnomalyMessage struct {
 func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, upsert *AnomalyMessage) (*AnomalyMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -111,7 +111,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return anomaly, nil
@@ -162,7 +162,7 @@ func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMes
 			archive.Type,
 		)
 		if err != nil {
-			return FormatError(err)
+			return err
 		}
 
 		if rows, _ := result.RowsAffected(); rows == 0 {
@@ -176,7 +176,7 @@ func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMes
 			archive.Type,
 		)
 		if err != nil {
-			return FormatError(err)
+			return err
 		}
 
 		if rows, _ := result.RowsAffected(); rows == 0 {
@@ -226,7 +226,7 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if databaseUID.Valid {
 		value := int(databaseUID.Int32)
@@ -237,7 +237,7 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 }
 
 func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := list.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
@@ -274,7 +274,7 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -292,7 +292,7 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 			&anomaly.Type,
 			&anomaly.Payload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if databaseID.Valid {
 			value := int(databaseID.Int32)
@@ -301,7 +301,7 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 		anomalies = append(anomalies, &anomaly)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return anomalies, nil
@@ -313,7 +313,7 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 	if update.Payload == "" {
 		update.Payload = "{}"
 	}
-	set, args := []string{"updater_id = $1"}, []interface{}{principalUID}
+	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	set, args = append(set, "payload = $2"), append(args, update.Payload)
 	args = append(args, update.ID)
 
@@ -338,7 +338,7 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if databaseID.Valid {
 		value := int(databaseID.Int32)

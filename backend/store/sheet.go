@@ -137,26 +137,22 @@ func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.She
 func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
 	if err := deleteSheet(ctx, tx, delete); err != nil {
-		return FormatError(err)
+		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 // CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
 func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -165,7 +161,7 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 		FROM sheet
 		GROUP BY row_status, visibility, source, type`)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -179,12 +175,12 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 			&sheetCount.Type,
 			&sheetCount.Count,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		res = append(res, &sheetCount)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -242,7 +238,7 @@ func (s *Store) composeSheet(ctx context.Context, raw *sheetRaw, currentPrincipa
 func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*sheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -252,7 +248,7 @@ func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*s
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return sheet, nil
@@ -262,7 +258,7 @@ func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*s
 func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*sheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -272,7 +268,7 @@ func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*shee
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return sheet, nil
@@ -282,7 +278,7 @@ func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*shee
 func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -299,7 +295,7 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -371,7 +367,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
@@ -382,7 +378,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 
 // patchSheetImpl updates a sheet's name/statement/visibility.
 func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetRaw, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
 	}
@@ -436,7 +432,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.ID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
@@ -446,7 +442,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 }
 
 func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRaw, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
@@ -512,7 +508,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -537,7 +533,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			&sheetRaw.Payload,
 			&sheetRaw.Size,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 
 		if databaseID.Valid {
@@ -548,7 +544,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 		sheetRawList = append(sheetRawList, &sheetRaw)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return sheetRawList, nil
@@ -557,7 +553,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 // deleteSheet permanently deletes a sheet by ID.
 func deleteSheet(ctx context.Context, tx *Tx, delete *api.SheetDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = $1`, delete.ID); err != nil {
-		return FormatError(err)
+		return err
 	}
 	return nil
 }

@@ -95,7 +95,7 @@ import {
   projectSlug,
 } from "../utils";
 import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
-import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
+import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 
 interface LocalState {
   searchText: string;

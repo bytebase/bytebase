@@ -19,11 +19,12 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 			requestMethod := c.Request().Method
 			requestPath := c.Path()
 			responseCode := c.Response().Status
+			ctx := c.Request().Context()
 
-			s.MetricReporter.Report(&metric.Metric{
+			s.MetricReporter.Report(ctx, &metric.Metric{
 				Name:  metricAPI.OpenAPIMetricName,
 				Value: 1,
-				Labels: map[string]interface{}{
+				Labels: map[string]any{
 					"latency_ns":     strconv.FormatInt(duration.Nanoseconds(), 10),
 					"request_method": requestMethod,
 					"request_path":   requestPath,

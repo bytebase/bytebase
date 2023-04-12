@@ -30,7 +30,8 @@ func init() {
 
 // Driver is the MSSQL driver.
 type Driver struct {
-	db *sql.DB
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -55,6 +56,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, err
 	}
 	driver.db = db
+	driver.databaseName = config.Database
 	return driver, nil
 }
 
@@ -73,12 +75,9 @@ func (*Driver) GetType() db.Type {
 	return db.MSSQL
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf(`USE "%s"`, database)); err != nil {
-		return nil, err
-	}
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // Execute executes a SQL statement and returns the affected rows.
@@ -122,6 +121,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.MSSQL, conn, statement, queryContext)
 }

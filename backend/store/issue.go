@@ -610,7 +610,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -634,7 +634,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	create.CreatedTime = time.Unix(create.createdTs, 0)
 	create.UpdatedTime = time.Unix(create.updatedTs, 0)
@@ -642,7 +642,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	create.Updater = creator
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	s.issueCache.Store(create.UID, create)
@@ -657,7 +657,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1"}, []interface{}{updaterID}
+	set, args := []string{"updater_id = $1"}, []any{updaterID}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -680,7 +680,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -690,7 +690,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		WHERE id = $%d`, len(args)),
 		args...,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if patch.Subscribers != nil {
@@ -700,7 +700,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	// Invalid the cache and read the value again.
@@ -754,7 +754,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 	}
 	if len(adds) > 0 {
 		var tokens []string
-		var args []interface{}
+		var args []any
 		for i, v := range adds {
 			tokens = append(tokens, fmt.Sprintf("($%d, $%d)", 2*i+1, 2*i+2))
 			args = append(args, issueUID, v)
@@ -766,7 +766,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 	}
 	if len(deletes) > 0 {
 		var tokens []string
-		var args []interface{}
+		var args []any
 		args = append(args, issueUID)
 		for i, v := range deletes {
 			tokens = append(tokens, fmt.Sprintf("$%d", i+2))
@@ -782,7 +782,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 
 // ListIssueV2 returns the list of issues by find query.
 func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -832,7 +832,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	var issues []*IssueMessage
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -864,7 +864,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -887,7 +887,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.Payload,
 			pq.Array(&subscribers),
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		for _, subscriber := range subscribers {
 			if !subscriber.Valid {
@@ -897,9 +897,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		issues = append(issues, &issue)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	// Populate from internal fields.

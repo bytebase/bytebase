@@ -185,18 +185,14 @@ func TestTenant(t *testing.T) {
 	instances = append(instances, testInstances...)
 	instances = append(instances, prodInstances...)
 	hm1 := map[string]bool{}
-	hm2 := map[string]bool{}
 	for _, instance := range instances {
 		histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{Database: &databaseName})
 		a.NoError(err)
-		a.Equal(2, len(histories))
+		a.Equal(1, len(histories))
 		a.NotEqual(histories[0].Version, "")
-		a.NotEqual(histories[1].Version, "")
 		hm1[histories[0].Version] = true
-		hm2[histories[1].Version] = true
 	}
 	a.Equal(1, len(hm1))
-	a.Equal(1, len(hm2))
 }
 
 func TestTenantVCS(t *testing.T) {
@@ -207,7 +203,7 @@ func TestTenantVCS(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -215,7 +211,7 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -239,7 +235,7 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -478,7 +474,6 @@ func TestTenantVCS(t *testing.T) {
 			instances = append(instances, testInstances...)
 			instances = append(instances, prodInstances...)
 			hm1 := map[string]bool{}
-			hm2 := map[string]bool{}
 			for _, instance := range instances {
 				histories, err := ctl.getInstanceMigrationHistory(
 					instance.ID,
@@ -487,14 +482,11 @@ func TestTenantVCS(t *testing.T) {
 					},
 				)
 				a.NoError(err)
-				a.Len(histories, 2)
+				a.Len(histories, 1)
 				a.Equal(histories[0].Version, "ver1")
-				a.NotEqual(histories[1].Version, "")
 				hm1[histories[0].Version] = true
-				hm2[histories[1].Version] = true
 			}
 			a.Len(hm1, 1)
-			a.Len(hm2, 1)
 		})
 	}
 }
@@ -653,7 +645,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -661,7 +653,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -685,7 +677,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -940,9 +932,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					},
 				)
 				a.NoError(err)
-				a.Len(histories, 2)
+				a.Len(histories, 1)
 				a.Equal(histories[0].Version, "ver1")
-				a.NotEqual(histories[1].Version, "")
 				hm1[histories[0].Version] = true
 			}
 			for i, instance := range prodInstances {
@@ -955,9 +946,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					},
 				)
 				a.NoError(err)
-				a.Len(histories, 2)
+				a.Len(histories, 1)
 				a.Equal("ver1", histories[0].Version)
-				a.NotEqual("", histories[1].Version)
 				hm2[histories[0].Version] = true
 			}
 
@@ -983,7 +973,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -991,7 +981,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -1015,7 +1005,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -1244,9 +1234,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 					},
 				)
 				a.NoError(err)
-				a.Len(histories, 2)
+				a.Len(histories, 1)
 				a.Equal(histories[0].Version, "ver1")
-				a.NotEqual(histories[1].Version, "")
 				hm[histories[0].Version] = true
 			}
 
@@ -1264,7 +1253,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -1272,7 +1261,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			vcsType:            vcs.GitLab,
 			externalID:         "121",
 			repositoryFullPath: "test/dataUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -1296,7 +1285,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			vcsType:            vcs.GitHub,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -1542,7 +1531,7 @@ statement: |
 				},
 			)
 			require.NoError(t, err)
-			require.Len(t, histories, 3)
+			require.Len(t, histories, 2)
 			require.Equal(t, histories[0].Version, "ver2")
 
 			histories, err = ctl.getInstanceMigrationHistory(
@@ -1552,7 +1541,7 @@ statement: |
 				},
 			)
 			require.NoError(t, err)
-			require.Len(t, histories, 2)
+			require.Len(t, histories, 1)
 			require.Equal(t, histories[0].Version, "ver1")
 		})
 	}

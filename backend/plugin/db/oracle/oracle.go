@@ -28,7 +28,8 @@ func init() {
 
 // Driver is the Oracle driver.
 type Driver struct {
-	db *sql.DB
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -51,6 +52,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, err
 	}
 	driver.db = db
+	driver.databaseName = config.Database
 	return driver, nil
 }
 
@@ -69,14 +71,14 @@ func (*Driver) GetType() db.Type {
 	return db.Oracle
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
-	return driver.executeWithBeforeCommitTxFunc(ctx, statement, createDatabase, nil)
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+	return driver.executeWithBeforeCommitTxFunc(ctx, statement, nil)
 }
 
 // executeWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
@@ -84,7 +86,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 //
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, _ bool, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
+func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
@@ -131,6 +133,6 @@ func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, stateme
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.Oracle, conn, statement, queryContext)
 }

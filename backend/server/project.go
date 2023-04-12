@@ -224,6 +224,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	// When we link the repository with the project, we will also change the project workflow type to VCS
 	g.POST("/project/:projectID/repository", func(c echo.Context) error {
 		ctx := c.Request().Context()
+
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace setting").SetInternal(err)
+		}
+		if setting.ExternalUrl == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url")
+		}
+
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -237,11 +246,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if project.Deleted {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
-		}
-
-		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
 		repositoryCreate := &api.RepositoryCreate{
@@ -1136,7 +1140,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
-		content := make(map[string]interface{})
+		content := make(map[string]any)
 
 		if fileMeta != nil {
 			ciFileContent, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(

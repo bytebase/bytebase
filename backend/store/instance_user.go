@@ -41,7 +41,7 @@ func (s *Store) GetInstanceUser(ctx context.Context, find *FindInstanceUserMessa
 func (s *Store) ListInstanceUsers(ctx context.Context, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -51,7 +51,7 @@ func (s *Store) ListInstanceUsers(ctx context.Context, find *FindInstanceUserMes
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return instanceUsers, nil
@@ -76,7 +76,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 
 	// Delete instance users that no longer exist.
 	if len(deletes) > 0 {
-		deleteArgs := []interface{}{instanceUID}
+		deleteArgs := []any{instanceUID}
 		var deletePlaceholders []string
 		for i, d := range deletes {
 			deleteArgs = append(deleteArgs, d)
@@ -91,7 +91,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 	}
 	// Upsert instance users.
 	if len(upserts) > 0 {
-		args := []interface{}{}
+		args := []any{}
 		var placeholders []string
 		for i, instanceUser := range upserts {
 			args = append(args, api.SystemBotID, api.SystemBotID, instanceUID, instanceUser.Name, instanceUser.Grant)
@@ -115,11 +115,7 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage) ([]string, []*InstanceUserMessage) {
@@ -148,7 +144,7 @@ func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage
 }
 
 func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 
 	where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, find.InstanceUID)
 	if v := find.Name; v != nil {
@@ -166,7 +162,7 @@ func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMe
 		args...,
 	)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -175,12 +171,12 @@ func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMe
 			&instanceUser.Name,
 			&instanceUser.Grant,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		instanceUsers = append(instanceUsers, &instanceUser)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return instanceUsers, nil
 }

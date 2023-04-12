@@ -5,7 +5,9 @@
 
       <ConnectionPathBar />
 
-      <template v-if="!tabStore.isDisconnected">
+      <SheetForIssueTipsBar />
+
+      <template v-if="!tabStore.isDisconnected || sheetBacktracePayload">
         <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
       </template>
       <template v-else>
@@ -25,10 +27,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
-import { useCurrentTab, useInstanceStore, useTabStore } from "@/store";
+import {
+  useCurrentTab,
+  useInstanceStore,
+  useSheetStore,
+  useTabStore,
+} from "@/store";
 import SQLEditor from "./SQLEditor.vue";
 import {
   EditorAction,
@@ -37,12 +44,22 @@ import {
   ExecutingHintModal,
   SaveSheetModal,
 } from "../EditorCommon";
+import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
+import { getSheetIssueBacktracePayload } from "@/utils";
 
 const tabStore = useTabStore();
+const sheetStore = useSheetStore();
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 const tab = useCurrentTab();
+
+const sheetBacktracePayload = computed(() => {
+  const sheetId = tabStore.currentTab.sheetId;
+  if (!sheetId) return undefined;
+  const sheet = sheetStore.getSheetById(sheetId);
+  return getSheetIssueBacktracePayload(sheet);
+});
 
 const { execute } = useExecuteSQL();
 

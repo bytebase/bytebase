@@ -44,3 +44,8 @@ jobs:
       - name: Run pnpm test
         run: pnpm test
         working-directory: frontend
+      - name: Run pnpm release build
+        run: |
+          cp ../backend/plugin/advisor/config/* ./src/types
+          pnpm release-docker
+        working-directory: frontend

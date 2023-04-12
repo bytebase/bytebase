@@ -64,6 +64,7 @@
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
+    - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
@@ -878,6 +879,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 The external URL is used for: 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend. 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend. |
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
+| require_2fa | [bool](#bool) |  | Require 2FA for all users. |
+| outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 
 
 
@@ -923,7 +926,22 @@ SlowQueryDetails is the details of a slow query.
 <a name="bytebase-store-SlowQueryStatistics"></a>
 
 ### SlowQueryStatistics
-SlowQueryStatistics is a summary of slow queries.
+SlowQueryStatistics is the slow query statistics.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem) | repeated | Items is the list of slow query statistics. |
+
+
+
+
+
+
+<a name="bytebase-store-SlowQueryStatisticsItem"></a>
+
+### SlowQueryStatisticsItem
+SlowQueryStatisticsItem is the item of slow query statistics.
 
 
 | Field | Type | Label | Description |

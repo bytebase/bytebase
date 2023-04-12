@@ -41,6 +41,7 @@ type Driver struct {
 	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
+	databaseName  string
 	// migrationConn is used to execute migrations.
 	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
 	// So that it's easy to get the thread ID for rollback SQL.
@@ -109,6 +110,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
+	driver.databaseName = connCfg.Database
 
 	return driver, nil
 }
@@ -131,9 +133,9 @@ func (driver *Driver) GetType() db.Type {
 	return driver.dbType
 }
 
-// GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return driver.db, nil
+// GetDB gets the database.
+func (driver *Driver) GetDB() *sql.DB {
+	return driver.db
 }
 
 // getDatabases gets all databases of an instance.
@@ -216,7 +218,7 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
 	if err != nil {
 		return nil, err
@@ -238,8 +240,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 		field := []string{"Affected Rows"}
 		types := []string{"INT"}
-		rows := [][]interface{}{{affectedRows}}
-		return []interface{}{field, types, rows}, nil
+		rows := [][]any{{affectedRows}}
+		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
 }

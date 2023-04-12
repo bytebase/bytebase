@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -51,8 +52,12 @@ const (
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
-	// BytebaseDatabase is the database installed in the controlled database server.
-	BytebaseDatabase = "bytebase"
+	// SlowQueryMaxLen is the max length of slow query.
+	SlowQueryMaxLen = 2048
+	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
+	SlowQueryMaxSamplePerFingerprint = 100
+	// SlowQueryMaxSamplePerDay is the max number of slow query samples per day.
+	SlowQueryMaxSamplePerDay = 10000
 )
 
 // User is the database user.
@@ -154,6 +159,7 @@ type MigrationInfoPayload struct {
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
 	// fields for instance change history
+	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
 	IssueIDInt *int
@@ -171,8 +177,7 @@ type MigrationInfo struct {
 	Creator        string
 	IssueID        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
-	Payload        string
-	CreateDatabase bool
+	Payload string
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
 	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
@@ -455,18 +460,22 @@ type Driver interface {
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
 	GetType() Type
-	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
-	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
-	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
+	GetDB() *sql.DB
+	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]interface{}, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*storepb.DatabaseMetadata, error)
+	SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error)
+
+	// Sync slow query logs
+	// SyncSlowQuery syncs the slow query logs.
+	// The returned map is keyed by database name, and the value is a map keyed by query fingerprint.
+	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error)
 
 	// Role
 	// CreateRole creates the role.
@@ -480,22 +489,11 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Migration related
-	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
-	NeedsSetupMigration(ctx context.Context) (bool, error)
-	// Create or upgrade migration related tables
-	SetupMigrationIfNeeded(ctx context.Context) error
-	// Execute migration will apply the statement.
-	// The migration type is determined by m.Type. Note, it can also perform data migration (DML) in addition to schema migration (DDL).
-	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (string, string, error)
-	// Find the migration history list and return most recent item first.
-	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
-
 	// Dump and restore
-	// Dump the database, if dbName is empty, then dump all databases.
+	// Dump the database.
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
+	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from src, which is a full backup.
 	Restore(ctx context.Context, src io.Reader) error
 }

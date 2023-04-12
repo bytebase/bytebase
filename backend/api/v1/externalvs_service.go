@@ -86,17 +86,17 @@ func (s *ExternalVersionControlService) UpdateExternalVersionControl(ctx context
 	update := &store.UpdateExternalVersionControlMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "external_version_control.title":
+		case "title":
 			if request.ExternalVersionControl.Title == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "title should not be empty")
 			}
 			update.Name = &request.ExternalVersionControl.Title
-		case "external_version_control.application_id":
+		case "application_id":
 			if request.ExternalVersionControl.ApplicationId == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "application_id should not be empty")
 			}
 			update.ApplicationID = &request.ExternalVersionControl.ApplicationId
-		case "external_version_control.secret":
+		case "secret":
 			if request.ExternalVersionControl.Secret == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "secret should not be empty")
 			}

@@ -15,9 +15,17 @@ service ActuatorService {
     option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
   }
+
+  rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/actuator/cache"
+    };
+  }
 }
 
 message GetActuatorInfoRequest {}
+
+message DeleteCacheRequest {}
 
 // ServerInfo is the API message for server info.
 // Actuator concept is similar to the Spring Boot Actuator.
@@ -54,4 +62,7 @@ message ActuatorInfo {
 
   // last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value.
   google.protobuf.Timestamp last_active_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // require_2fa is the flag to require 2FA for all users.
+  bool require_2fa = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

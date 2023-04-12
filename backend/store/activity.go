@@ -144,7 +144,7 @@ func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*a
 func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.ActivityCreate) ([]*activityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -154,7 +154,7 @@ func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.Activ
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return activityRawList, nil
@@ -164,7 +164,7 @@ func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.Activ
 func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -178,7 +178,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return activityRawList[0], nil
@@ -188,7 +188,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]*activityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -206,7 +206,7 @@ func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, e
 	find := &api.ActivityFind{ID: &id}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -228,17 +228,17 @@ func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, e
 func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) (*activityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	activity, err := patchActivityImpl(ctx, tx, patch)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return activity, nil
@@ -265,7 +265,7 @@ func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Act
 // createActivityImpl creates activities.
 func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
 	var query strings.Builder
-	var values []interface{}
+	var values []any
 	var queryValues []string
 
 	if _, err := query.WriteString(
@@ -311,7 +311,7 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 	var activityRawList []*activityRaw
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -329,7 +329,7 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 			&activityRaw.Comment,
 			&protoPayload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
 			return nil, err
@@ -337,14 +337,14 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 		activityRawList = append(activityRawList, &activityRaw)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	return activityRawList, nil
 }
 
 func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -402,7 +402,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -423,7 +423,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 			&activity.Comment,
 			&protoPayload,
 		); err != nil {
-			return nil, FormatError(err)
+			return nil, err
 		}
 		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
 			return nil, err
@@ -431,7 +431,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 		activityRawList = append(activityRawList, &activity)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 
 	return activityRawList, nil
@@ -440,7 +440,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 // patchActivityImpl updates a activity by ID. Returns the new state of the activity after update.
 func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*activityRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
@@ -475,7 +475,7 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("activity ID not found: %d", patch.ID)}
 		}
-		return nil, FormatError(err)
+		return nil, err
 	}
 	var err error
 	if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {

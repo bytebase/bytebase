@@ -103,6 +103,10 @@ interface LocalState {
   recoveryCodesDownloaded: boolean;
 }
 
+const props = defineProps<{
+  cancelAction?: () => void;
+}>();
+
 const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -170,9 +174,13 @@ const verifyTOPCode = async () => {
 };
 
 const cancelSetup = () => {
-  router.replace({
-    name: "setting.profile",
-  });
+  if (props.cancelAction) {
+    props.cancelAction();
+  } else {
+    router.replace({
+      name: "setting.profile",
+    });
+  }
 };
 
 const tryChangeStep = async (
@@ -197,7 +205,7 @@ const tryFinishSetup = async () => {
         name: currentUser.value.name,
         mfaEnabled: true,
       },
-      updateMask: ["user.mfa_enabled"],
+      updateMask: ["mfa_enabled"],
     })
   );
   await authStore.refreshUserIfNeeded(currentUser.value.name);
