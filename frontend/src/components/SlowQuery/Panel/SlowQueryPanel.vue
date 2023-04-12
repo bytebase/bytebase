@@ -12,6 +12,8 @@
       <LogTable
         :slow-query-log-list="slowQueryLogList"
         :show-placeholder="!loading"
+        :show-environment-column="showEnvironmentColumn"
+        :show-instance-column="showInstanceColumn"
         @select="selectedSlowQueryLog = $event"
       />
       <div
@@ -49,9 +51,13 @@ const props = withDefaults(
   defineProps<{
     filter: SlowQueryFilterParams;
     filterTypes?: readonly FilterType[];
+    showEnvironmentColumn?: boolean;
+    showInstanceColumn?: boolean;
   }>(),
   {
     filterTypes: () => FilterTypeList,
+    showEnvironmentColumn: true,
+    showInstanceColumn: true,
   }
 );
 
