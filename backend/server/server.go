@@ -1317,6 +1317,10 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				return nil
 			}(instance)
 			if err != nil {
+				// New instances may not have the "bytebase" database.
+				if strings.Contains(err.Error(), "database \"bytebase\" does not exist") {
+					return nil
+				}
 				errList = multierr.Append(errList, err)
 			}
 		}
