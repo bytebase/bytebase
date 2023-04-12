@@ -156,8 +156,6 @@ const (
 	// FeatureCustomApproval enables custom risk level definition and custom
 	// approval chain definition.
 	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
-	// FeatureSlowQuery enables slow query logging and analyzing.
-	FeatureSlowQuery FeatureType = "bb.feature.slow-query"
 
 	// FeaturePluginOpenAI enables AI features powered by OpenAI.
 	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
@@ -224,8 +222,6 @@ func (e FeatureType) Name() string {
 		return "Access Control"
 	case FeatureCustomApproval:
 		return "Custom Approval"
-	case FeatureSlowQuery:
-		return "Slow Query"
 	// Plugins
 	case FeaturePluginOpenAI:
 		return "OpenAI"
@@ -285,7 +281,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
-	FeatureSlowQuery:             {true, true, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
 }
