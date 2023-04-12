@@ -367,6 +367,11 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		}
 
 		role := user.Role
+		// If admin feature is not enabled, then we treat all user as OWNER.
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+			role = api.Owner
+		}
+
 		// Performs the ACL check.
 		pass, err := ce.Enforce(string(role), path, method)
 		if err != nil {
