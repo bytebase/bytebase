@@ -14,7 +14,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
+	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -24,15 +27,17 @@ type InstanceService struct {
 	v1pb.UnimplementedInstanceServiceServer
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
+	metricReporter *metricreport.Reporter
 	secret         string
 	stateCfg       *state.State
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, secret string, stateCfg *state.State) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
+		metricReporter: metricReporter,
 		secret:         secret,
 		stateCfg:       stateCfg,
 	}
@@ -103,6 +108,14 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	s.metricReporter.Report(ctx, &metric.Metric{
+		Name:  metricAPI.InstanceCreateMetricName,
+		Value: 1,
+		Labels: map[string]any{
+			"engine": instance.Engine,
+		},
+	})
 
 	// TODO(d): sync instance databases.
 	return convertToInstance(instance), nil
