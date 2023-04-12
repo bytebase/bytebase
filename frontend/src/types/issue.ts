@@ -204,16 +204,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
 
 // The first transition in the list is the primary action and the rests are
 // the normal action. For now there are at most 1 primary 1 normal action.
-export const CREATOR_APPLICABLE_ACTION_LIST: Map<
-  IssueStatus,
-  IssueStatusTransitionType[]
-> = new Map([
-  ["OPEN", ["CANCEL"]],
-  ["DONE", ["REOPEN"]],
-  ["CANCELED", ["REOPEN"]],
-]);
-
-export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
+export const APPLICABLE_ISSUE_ACTION_LIST: Map<
   IssueStatus,
   IssueStatusTransitionType[]
 > = new Map([
