@@ -1213,11 +1213,6 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 
 				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "bytebase")
 				if err != nil {
-					// Sample instance may not have the "bytebase" database in the old version,
-					// unless user has performed a migration.
-					if instance.ResourceID == postgres.SampleInstanceResourceID {
-						return nil
-					}
 					return err
 				}
 				defer driver.Close(ctx)
@@ -1322,6 +1317,10 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 				return nil
 			}(instance)
 			if err != nil {
+				// New instances may not have the "bytebase" database.
+				if strings.Contains(err.Error(), "database \"bytebase\" does not exist") {
+					return nil
+				}
 				errList = multierr.Append(errList, err)
 			}
 		}
