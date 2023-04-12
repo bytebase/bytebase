@@ -1304,24 +1304,19 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 	case db.Oracle:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	case db.Redshift:
+		options := make(map[string]string)
 		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
-			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
+			options["OWNER"] = fmt.Sprintf("%q", createDatabaseContext.Owner)
 		}
-		if createDatabaseContext.Collation == "" {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING '%s';", stmt, databaseName, createDatabaseContext.CharacterSet)
-		} else {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING '%s' LC_COLLATE '%s';", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
+		stmt := fmt.Sprintf("CREATE DATABASE \"%s\"", databaseName)
+		if len(options) > 0 {
+			list := make([]string, 0, len(options))
+			for k, v := range options {
+				list = append(list, fmt.Sprintf("%s=%s", k, v))
+			}
+			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
-		// Set the database owner.
-		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
-		// However, people can still use ALTER DATABASE to change the owner afterwards.
-		// Error string below:
-		// query: CREATE DATABASE h1 WITH OWNER hello;
-		// ERROR:  must be member of role "hello"
-		//
-		// For tenant project, the schema for the newly created database will belong to the same owner.
-		// TODO(d): alter schema "public" owner to the database owner.
-		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, createDatabaseContext.Owner), nil
+		return fmt.Sprintf("%s;", stmt), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
