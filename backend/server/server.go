@@ -989,7 +989,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	instance, err := s.store.CreateInstanceV2(ctx, api.DefaultProdEnvironmentID, &store.InstanceMessage{
-		ResourceID:   "postgres-sample",
+		ResourceID:   postgres.SampleInstanceResourceID,
 		Title:        "Postgres Sample Instance",
 		Engine:       db.Postgres,
 		ExternalLink: "",
@@ -1213,6 +1213,11 @@ func (s *Server) backfillInstanceChangeHistory(ctx context.Context) {
 
 				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "bytebase")
 				if err != nil {
+					// Sample instance may not have the "bytebase" database in the old version,
+					// unless user has performed a migration.
+					if instance.ResourceID == postgres.SampleInstanceResourceID {
+						return nil
+					}
 					return err
 				}
 				defer driver.Close(ctx)

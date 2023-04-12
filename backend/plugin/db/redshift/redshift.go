@@ -260,7 +260,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}
 			// Use superuser privilege to run privileged statements.
-			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", stmt, owner)
+			stmt = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", stmt, owner)
 			remainingStmts = append(remainingStmts, stmt)
 		} else if isNonTransactionStatement(stmt) {
 			nonTransactionStmts = append(nonTransactionStmts, stmt)
@@ -282,7 +282,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		defer tx.Rollback()
 
 		// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
 			return 0, err
 		}
 
@@ -290,6 +290,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		if err != nil {
 			return 0, err
 		}
+		// Restore the current transaction role to the current user.
+		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
+			log.Warn("Failed to restore the current transaction role to the current user", zap.Error(err))
+		}
+
 		if err := tx.Commit(); err != nil {
 			return 0, err
 		}
