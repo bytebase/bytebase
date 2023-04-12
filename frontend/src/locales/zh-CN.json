@@ -1947,7 +1947,7 @@
       "created-ts": "时间",
       "created-time": "创建时间",
       "updated-time": "更新时间",
-      "creator": "操作者",
+      "actor": "操作者",
       "type": "事件类型",
       "level": "事件等级",
       "comment": "评论",

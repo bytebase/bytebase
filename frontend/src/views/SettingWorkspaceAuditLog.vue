@@ -127,7 +127,7 @@ const logKeyMap = {
   createdTs: t("audit-log.table.created-time"),
   level: t("audit-log.table.level"),
   type: t("audit-log.table.type"),
-  creator: t("audit-log.table.creator"),
+  creator: t("audit-log.table.actor"),
   comment: t("audit-log.table.comment"),
   payload: t("audit-log.table.payload"),
 };
