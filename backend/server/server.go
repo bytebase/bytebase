@@ -559,6 +559,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(
 		s.store,
 		s.licenseService,
+		s.MetricReporter,
 		s.secret,
 		s.stateCfg))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
