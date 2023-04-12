@@ -60,14 +60,10 @@ message TrialSubscription {
 
   int32 days = 2;
 
-  int32 seat = 3;
-
   int32 instance_count = 4;
 }
 
 message Subscription {
-  int32 seat = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   int32 instance_count = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp expires_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

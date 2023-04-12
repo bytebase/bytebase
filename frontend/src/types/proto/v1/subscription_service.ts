@@ -68,12 +68,10 @@ export interface PatchSubscription {
 export interface TrialSubscription {
   plan: PlanType;
   days: number;
-  seat: number;
   instanceCount: number;
 }
 
 export interface Subscription {
-  seat: number;
   instanceCount: number;
   expiresTime?: Date;
   startedTime?: Date;
@@ -300,7 +298,7 @@ export const PatchSubscription = {
 };
 
 function createBaseTrialSubscription(): TrialSubscription {
-  return { plan: 0, days: 0, seat: 0, instanceCount: 0 };
+  return { plan: 0, days: 0, instanceCount: 0 };
 }
 
 export const TrialSubscription = {
@@ -310,9 +308,6 @@ export const TrialSubscription = {
     }
     if (message.days !== 0) {
       writer.uint32(16).int32(message.days);
-    }
-    if (message.seat !== 0) {
-      writer.uint32(24).int32(message.seat);
     }
     if (message.instanceCount !== 0) {
       writer.uint32(32).int32(message.instanceCount);
@@ -341,13 +336,6 @@ export const TrialSubscription = {
 
           message.days = reader.int32();
           continue;
-        case 3:
-          if (tag != 24) {
-            break;
-          }
-
-          message.seat = reader.int32();
-          continue;
         case 4:
           if (tag != 32) {
             break;
@@ -368,7 +356,6 @@ export const TrialSubscription = {
     return {
       plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : 0,
       days: isSet(object.days) ? Number(object.days) : 0,
-      seat: isSet(object.seat) ? Number(object.seat) : 0,
       instanceCount: isSet(object.instanceCount) ? Number(object.instanceCount) : 0,
     };
   },
@@ -377,7 +364,6 @@ export const TrialSubscription = {
     const obj: any = {};
     message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
     message.days !== undefined && (obj.days = Math.round(message.days));
-    message.seat !== undefined && (obj.seat = Math.round(message.seat));
     message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
     return obj;
   },
@@ -390,7 +376,6 @@ export const TrialSubscription = {
     const message = createBaseTrialSubscription();
     message.plan = object.plan ?? 0;
     message.days = object.days ?? 0;
-    message.seat = object.seat ?? 0;
     message.instanceCount = object.instanceCount ?? 0;
     return message;
   },
@@ -398,7 +383,6 @@ export const TrialSubscription = {
 
 function createBaseSubscription(): Subscription {
   return {
-    seat: 0,
     instanceCount: 0,
     expiresTime: undefined,
     startedTime: undefined,
@@ -411,9 +395,6 @@ function createBaseSubscription(): Subscription {
 
 export const Subscription = {
   encode(message: Subscription, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.seat !== 0) {
-      writer.uint32(8).int32(message.seat);
-    }
     if (message.instanceCount !== 0) {
       writer.uint32(16).int32(message.instanceCount);
     }
@@ -445,13 +426,6 @@ export const Subscription = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag != 8) {
-            break;
-          }
-
-          message.seat = reader.int32();
-          continue;
         case 2:
           if (tag != 16) {
             break;
@@ -512,7 +486,6 @@ export const Subscription = {
 
   fromJSON(object: any): Subscription {
     return {
-      seat: isSet(object.seat) ? Number(object.seat) : 0,
       instanceCount: isSet(object.instanceCount) ? Number(object.instanceCount) : 0,
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
       startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
@@ -525,7 +498,6 @@ export const Subscription = {
 
   toJSON(message: Subscription): unknown {
     const obj: any = {};
-    message.seat !== undefined && (obj.seat = Math.round(message.seat));
     message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
     message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
     message.startedTime !== undefined && (obj.startedTime = message.startedTime.toISOString());
@@ -542,7 +514,6 @@ export const Subscription = {
 
   fromPartial(object: DeepPartial<Subscription>): Subscription {
     const message = createBaseSubscription();
-    message.seat = object.seat ?? 0;
     message.instanceCount = object.instanceCount ?? 0;
     message.expiresTime = object.expiresTime ?? undefined;
     message.startedTime = object.startedTime ?? undefined;

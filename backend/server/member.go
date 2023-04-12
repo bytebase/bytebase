@@ -128,10 +128,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if ownerCount == 1 {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Cannot archive the only remaining owner in workspace").SetInternal(err)
 				}
-			} else if *status == string(api.Normal) {
-				if err := s.seatCountGuard(ctx); err != nil {
-					return err
-				}
 			}
 		}
 
