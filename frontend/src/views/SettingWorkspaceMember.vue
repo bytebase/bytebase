@@ -62,7 +62,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { hasWorkspacePermission } from "../utils";
@@ -72,7 +71,6 @@ import {
   useCurrentUser,
   useMemberList,
   usePrincipalStore,
-  useSubscriptionStore,
 } from "@/store";
 
 type LocalState = {
@@ -90,9 +88,6 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
-    const subscriptionStore = useSubscriptionStore();
-    const { t } = useI18n();
-
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const memberList = useMemberList();
