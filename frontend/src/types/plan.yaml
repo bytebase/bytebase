@@ -106,6 +106,7 @@ planList:
       - type: anomaly-detection
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
+      - type: rbac
       # Bespoke
       - type: support
         content: support-community
