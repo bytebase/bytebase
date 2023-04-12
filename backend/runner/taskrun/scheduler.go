@@ -1110,17 +1110,10 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 		if user == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 		}
-		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
-			user.Role = api.Owner
-		}
 		if user.Role == api.Owner || user.Role == api.DBA {
 			return true, nil
 		}
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		// the assignee group is the project owner.
-		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
-			return true, nil
-		}
 		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 		if err != nil {
 			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", projectID)
