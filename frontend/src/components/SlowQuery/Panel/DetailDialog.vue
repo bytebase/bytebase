@@ -4,8 +4,14 @@
       class="max-h-[calc(100vh-12rem)] w-[calc(100vw-8rem)] lg:max-w-[56rem] flex flex-col gap-y-4 text-sm"
     >
       <div
-        class="grid grid-cols-[minmax(auto,7rem)_1fr] md:grid-cols-[minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr] gap-x-2 gap-y-4"
+        class="grid grid-cols-[auto_1fr] md:grid-cols-[minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr] gap-x-2 gap-y-4"
       >
+        <div class="contents">
+          <label class="font-medium">{{ $t("common.environment") }}</label>
+
+          <EnvironmentName :environment="database.instance.environment" />
+        </div>
+
         <div class="contents">
           <label class="font-medium">{{ $t("common.instance") }}</label>
 
@@ -24,7 +30,7 @@
           </label>
 
           <div
-            class="col-start-2 md:col-span-3 max-h-[8rem] overflow-auto border p-1 text-xs"
+            class="col-start-2 md:col-span-5 max-h-[8rem] overflow-auto py-0.5 text-xs"
           >
             <HighlightCodeBlock
               :code="log.statistics?.sqlFingerprint ?? ''"
@@ -41,8 +47,11 @@
           class="compact"
           header-class="capitalize"
         >
-          <template #item="{ item: detail }: SlowQueryDetailsRow">
-            <div class="bb-grid-cell">
+          <template #item="{ item: detail, row }: SlowQueryDetailsRow">
+            <div class="bb-grid-cell whitespace-nowrap !pl-4 !pr-2">
+              {{ row + 1 }}
+            </div>
+            <div class="bb-grid-cell whitespace-nowrap !pr-4">
               {{ dayjs(detail.startTime).format("YYYY-MM-DD HH:mm:ss") }}
             </div>
             <div class="bb-grid-cell">
@@ -71,7 +80,7 @@ import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBModal, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { DatabaseName, InstanceName } from "@/components/v2";
+import { DatabaseName, InstanceName, EnvironmentName } from "@/components/v2";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
 export type SlowQueryDetailsRow = BBGridRow<SlowQueryDetails>;
@@ -89,8 +98,11 @@ const { t } = useI18n();
 const columns = computed(() => {
   const columns: BBGridColumn[] = [
     {
+      width: "auto",
+    },
+    {
       title: t("slow-query.query-start-time"),
-      width: "minmax(auto, 2fr)",
+      width: "auto",
     },
     {
       title: t("slow-query.query-time"),
