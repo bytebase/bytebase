@@ -32,6 +32,8 @@ const (
 	SubscriptionTrialMetricName metric.Name = "bb.subscription.trial"
 	// PrincipalRegistrationMetricName is the metric name for the principal registration event.
 	PrincipalRegistrationMetricName metric.Name = "bb.principal.registration"
+	// PrincipalLoginMetricName is the metric name for principal login event.
+	PrincipalLoginMetricName metric.Name = "bb.principal.login"
 	// IssueCreateMetricName is the metric name for issue creation event.
 	IssueCreateMetricName metric.Name = "bb.issue.create"
 	// TaskStatusMetricName is the metric name for task status update event.
@@ -42,6 +44,8 @@ const (
 	PrincipalCreateMetricName metric.Name = "bb.principal.create"
 	// APIRequestMetricName is the metric name for api request.
 	APIRequestMetricName metric.Name = "bb.api.request"
+	// InstanceCreateMetricName is the metric name for instance creation event.
+	InstanceCreateMetricName metric.Name = "bb.instance.create"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count.

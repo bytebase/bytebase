@@ -578,6 +578,14 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
 	}
+
+	s.metricReporter.Report(ctx, &metric.Metric{
+		Name:  metricAPI.PrincipalLoginMetricName,
+		Value: 1,
+		Labels: map[string]any{
+			"email": loginUser.Email,
+		},
+	})
 	return &v1pb.LoginResponse{
 		Token: accessToken,
 	}, nil
