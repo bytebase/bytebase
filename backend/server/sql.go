@@ -672,7 +672,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}
 			} else {
 				if err := util.ApplyMultiStatements(strings.NewReader(exec.Statement), func(statement string) error {
-					rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
+					rowSet, err := driver.QueryConn(ctx, conn, statement, &db.QueryContext{
 						Limit:               exec.Limit,
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,
