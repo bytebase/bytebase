@@ -165,7 +165,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
 	}
 
 	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
