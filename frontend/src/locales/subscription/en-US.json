@@ -102,7 +102,7 @@
       "title": "Collaboration",
       "features": {
         "ui-based-sql-review": "UI based SQL review",
-        "vsc-workflow": "GitOps Workflow",
+        "gitops-workflow": "GitOps Workflow",
         "shared-sql-script": "Shared SQL script",
         "webhook-integration": "Webhook integration",
         "webhook-integration-basic": "Basic",
@@ -110,9 +110,10 @@
         "webhook-integration-advanced": "Advanced",
         "webhook-integration-advanced-tooltip": "Basic + IM Approval",
         "inbox-notification": "Inbox notification",
-        "vsc-workflow-basic": "Basic",
-        "vsc-workflow-advanced": "Advanced",
-        "vsc-workflow-advanced-tooltip": "Basic + Latest Schema Write-back, SQL Scripts Sync, SQL Review CI"
+        "gitops-workflow-basic": "Basic",
+        "gitops-workflow-basic-tooltip": "GitOps CI/CD, SQL Review CI",
+        "gitops-workflow-advanced": "Advanced",
+        "gitops-workflow-advanced-tooltip": "Basic + Latest Schema Write-back, SQL Scripts Sync"
       }
     },
     "data-security-and-governance": {
