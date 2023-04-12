@@ -1,6 +1,9 @@
 import { useI18n } from "vue-i18n";
 import planData from "./plan.yaml";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import {
+  PlanType,
+  planTypeFromJSON,
+} from "@/types/proto/v1/subscription_service";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
@@ -80,7 +83,10 @@ export interface Plan {
 export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
   planData.categoryList;
 
-export const PLANS: Plan[] = planData.planList;
+export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
+  ...raw,
+  type: planTypeFromJSON(raw.type + 1),
+}));
 
 export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
   const { t } = useI18n();
