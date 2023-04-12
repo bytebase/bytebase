@@ -13,7 +13,7 @@ import { computed, watch, h } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { useInstanceStore } from "@/store";
+import { useInstanceList, useInstanceStore } from "@/store";
 import {
   InstanceId,
   EnvironmentId,
@@ -51,6 +51,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const instanceStore = useInstanceStore();
+useInstanceList();
 
 const rawInstanceList = computed(() => {
   let list: Instance[] = [];

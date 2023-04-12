@@ -253,6 +253,20 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "slow-query",
+            name: "workspace.slow-query",
+            meta: { title: () => startCase(t("slow-query.slow-queries")) },
+            components: {
+              content: () =>
+                import("../views/SlowQuery/SlowQueryDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             path: "anomaly-center",
             name: "workspace.anomaly-center",
             meta: { title: () => t("anomaly-center") },
@@ -1288,6 +1302,7 @@ router.beforeEach((to, from, next) => {
     to.name === "error.500" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
+    to.name === "workspace.slow-query" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||
