@@ -25,7 +25,7 @@ categoryList:
     featureList:
       - inbox-notification
       - ui-based-sql-review
-      - vsc-workflow
+      - gitops-workflow
       - shared-sql-script
       - webhook-integration
   - type: data-security-and-governance
@@ -89,8 +89,9 @@ planList:
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
-      - type: vsc-workflow
-        content: vsc-workflow-basic
+      - type: gitops-workflow
+        content: gitops-workflow-basic
+        tooltip: gitops-workflow-basic-tooltip
       - type: shared-sql-script
       - type: webhook-integration
         content: webhook-integration-basic
@@ -154,8 +155,9 @@ planList:
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
-      - type: vsc-workflow
-        content: vsc-workflow-basic
+      - type: gitops-workflow
+        content: gitops-workflow-advanced
+        tooltip: gitops-workflow-advanced-tooltip
       - type: shared-sql-script
       - type: webhook-integration
         content: webhook-integration-basic
@@ -220,9 +222,9 @@ planList:
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
-      - type: vsc-workflow
-        content: vsc-workflow-advanced
-        tooltip: vsc-workflow-advanced-tooltip
+      - type: gitops-workflow
+        content: gitops-workflow-advanced
+        tooltip: gitops-workflow-advanced-tooltip
       - type: shared-sql-script
       - type: webhook-integration
         content: webhook-integration-advanced
