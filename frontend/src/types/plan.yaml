@@ -23,7 +23,6 @@ categoryList:
       - saved-sql-script
   - type: collaboration
     featureList:
-      - seat-count
       - inbox-notification
       - ui-based-sql-review
       - vsc-workflow
@@ -56,10 +55,7 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeInstanceCount: 10
-    freeSeatCount: 10
     maximumInstanceCount: 3
-    maximumSeatCount: 10
-    pricePerSeatPerMonth: 19
     pricePerInstancePerMonth: 79
     featureList:
       # Change Management
@@ -91,8 +87,6 @@ planList:
       - type: saved-sql-script
         content: saved-sql-script-basic
       # Collaboration
-      - type: seat-count
-        content: seat-maximum-10
       - type: inbox-notification
       - type: ui-based-sql-review
       - type: vsc-workflow
@@ -123,10 +117,7 @@ planList:
     unitPrice: 19
     trialPrice: 0
     freeInstanceCount: 3
-    freeSeatCount: 1
     maximumInstanceCount: 10
-    maximumSeatCount: 10
-    pricePerSeatPerMonth: 19
     pricePerInstancePerMonth: 79
     featureList:
       # Change Management
@@ -160,8 +151,6 @@ planList:
       - type: saved-sql-script
         content: saved-sql-script-basic
       # Collaboration
-      - type: seat-count
-        content: seat-maximum-10
       - type: inbox-notification
       - type: ui-based-sql-review
       - type: vsc-workflow
@@ -194,10 +183,7 @@ planList:
     unitPrice: 90
     trialPrice: 0
     freeInstanceCount: 5
-    freeSeatCount: 1
     maximumInstanceCount: -1
-    maximumSeatCount: -1
-    pricePerSeatPerMonth: 19
     pricePerInstancePerMonth: 79
     featureList:
       # Change Management
@@ -231,8 +217,6 @@ planList:
         content: saved-sql-script-advanced
         tooltip: saved-sql-script-advanced-tooltip
       # Collaboration
-      - type: seat-count
-        content: seat-customized
       - type: inbox-notification
       - type: ui-based-sql-review
       - type: vsc-workflow

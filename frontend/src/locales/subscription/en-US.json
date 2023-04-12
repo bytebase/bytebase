@@ -1,6 +1,5 @@
 {
   "current": "Current plan",
-  "seat-count": "Seat count",
   "unlimited": "Unlimited",
   "instance-count": "Instance count",
   "expires-at": "Expires at",
@@ -16,9 +15,8 @@
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
   "per-instance": "Per instance",
-  "per-seat": "Per seat",
-  "free-price-intro": "Up to 10 seats and 10 instances",
-  "team-price-intro": "Up to 10 seats and 10 instances (first 3 FREE)",
+  "free-price-intro": "Up to 10 instances",
+  "team-price-intro": "Up to 10 instances (first 3 FREE)",
   "enterprise-price-intro": "Customized, billed annually",
   "deploy": "Deploy",
   "contact-us": "Contact us",
@@ -103,9 +101,6 @@
     "collaboration": {
       "title": "Collaboration",
       "features": {
-        "seat-count": "Seat count",
-        "seat-maximum-10": "Up to 10",
-        "seat-customized": "Customized",
         "ui-based-sql-review": "UI based SQL review",
         "vsc-workflow": "GitOps Workflow",
         "shared-sql-script": "Shared SQL script",
