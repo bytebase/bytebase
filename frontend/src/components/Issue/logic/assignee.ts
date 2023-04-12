@@ -1,16 +1,23 @@
 import { computed } from "vue";
 import {
+  AssigneeGroupValue,
   EnvironmentId,
+  Issue,
   IssueCreate,
   IssueType,
   Pipeline,
   PipelineApprovalPolicyPayload,
+  PipelineApprovalPolicyValue,
   Policy,
+  Principal,
+  Project,
+  SYSTEM_BOT_ID,
 } from "@/types";
 import { useIssueLogic } from ".";
 import { usePolicyByEnvironmentAndType } from "@/store";
+import { hasWorkspacePermission, isOwnerOfProject } from "@/utils";
 
-export const useAllowProjectOwnerToApprove = () => {
+export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();
 
   const activeEnvironmentId = computed((): EnvironmentId => {
@@ -31,14 +38,88 @@ export const useAllowProjectOwnerToApprove = () => {
     }))
   );
 
-  const allowProjectOwnerAsAssignee = computed((): boolean => {
+  return computed(() => {
     const policy = activeEnvironmentApprovalPolicy.value;
-    if (!policy) return false;
-
-    return allowProjectOwnerToApprove(policy, issue.value.type);
+    return extractRollOutPolicyValue(policy, issue.value.type);
   });
+};
 
-  return allowProjectOwnerAsAssignee;
+const extractRollOutPolicyValue = (
+  policy: Policy | undefined,
+  issueType: IssueType
+): {
+  policy: PipelineApprovalPolicyValue;
+  assigneeGroup?: AssigneeGroupValue;
+} => {
+  if (!policy) {
+    return {
+      policy: "MANUAL_APPROVAL_ALWAYS",
+      assigneeGroup: "WORKSPACE_OWNER_OR_DBA",
+    };
+  }
+
+  const payload = policy.payload as PipelineApprovalPolicyPayload;
+  if (payload.value === "MANUAL_APPROVAL_NEVER") {
+    return { policy: "MANUAL_APPROVAL_NEVER" };
+  }
+
+  const assigneeGroup = payload.assigneeGroupList.find(
+    (group) => group.issueType === issueType
+  );
+
+  if (!assigneeGroup || assigneeGroup.value === "WORKSPACE_OWNER_OR_DBA") {
+    return {
+      policy: "MANUAL_APPROVAL_ALWAYS",
+      assigneeGroup: "WORKSPACE_OWNER_OR_DBA",
+    };
+  }
+
+  return {
+    policy: "MANUAL_APPROVAL_ALWAYS",
+    assigneeGroup: "PROJECT_OWNER",
+  };
+};
+
+export const allowUserToBeAssignee = (
+  user: Principal,
+  project: Project,
+  policy: PipelineApprovalPolicyValue,
+  assigneeGroup: AssigneeGroupValue | undefined
+): boolean => {
+  const isWorkspaceOwnerOrDBA = hasWorkspacePermission(
+    "bb.permission.workspace.manage-issue",
+    user.role
+  );
+
+  console.log(user.name, user.role, policy, assigneeGroup);
+
+  if (policy === "MANUAL_APPROVAL_NEVER") {
+    // DBA / workspace owner
+    return isWorkspaceOwnerOrDBA;
+  }
+
+  if (assigneeGroup === "WORKSPACE_OWNER_OR_DBA") {
+    // DBA / workspace owner
+    return isWorkspaceOwnerOrDBA;
+  }
+
+  if (assigneeGroup === "PROJECT_OWNER") {
+    // Project owner
+    return isOwnerOfProject(user, project);
+  }
+
+  console.assert(false, "should never reach this line");
+  return false;
+};
+
+export const allowUserToChangeAssignee = (user: Principal, issue: Issue) => {
+  if (issue.status !== "OPEN") {
+    return false;
+  }
+  if (issue.assignee.id === SYSTEM_BOT_ID) {
+    return user.id === issue.creator.id;
+  }
+  return user.id === issue.assignee.id;
 };
 
 export const allowProjectOwnerToApprove = (
