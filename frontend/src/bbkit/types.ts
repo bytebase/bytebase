@@ -29,6 +29,11 @@ export type BBGridColumn = {
   class?: VueClass;
 };
 
+export type BBGridRow<T = any> = {
+  item: T;
+  row: number;
+};
+
 export type BBTableSectionDataSource<T> = {
   title: string;
   link?: string;
