@@ -1948,7 +1948,7 @@
       "created-ts": "Time",
       "created-time": "Created Time",
       "updated-time": "Updated Time",
-      "creator": "Creator",
+      "actor": "Actor",
       "type": "Audit Type",
       "level": "Audit Level",
       "comment": "Comment",
