@@ -9,12 +9,6 @@
       feature="bb.feature.rbac"
       :description="$t('subscription.features.bb-feature-rbac.desc')"
     />
-    <FeatureAttention
-      v-if="remainingSeatCount <= 2"
-      custom-class="my-5"
-      feature="bb.feature.seat-count"
-      :description="seatCountAttention"
-    />
     <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">
         <p class="text-lg font-medium leading-7 text-main">
@@ -140,34 +134,6 @@ export default defineComponent({
       return list;
     });
 
-    const seatQuota = computed((): number => {
-      return subscriptionStore.seatCount;
-    });
-
-    const remainingSeatCount = computed((): number => {
-      const activeEndUserList = activeMemberList.value.filter(
-        (m) => m.principal.type === "END_USER"
-      );
-      return Math.max(0, seatQuota.value - activeEndUserList.length);
-    });
-
-    const seatCountAttention = computed((): string => {
-      const upgrade = t("subscription.features.bb-feature-seat-count.upgrade");
-      let status = "";
-      if (remainingSeatCount.value > 0) {
-        status = t("subscription.features.bb-feature-seat-count.remaining", {
-          total: seatQuota.value,
-          count: remainingSeatCount.value,
-        });
-      } else {
-        status = t("subscription.features.bb-feature-seat-count.runoutof", {
-          total: seatQuota.value,
-        });
-      }
-
-      return `${status} ${upgrade}`;
-    });
-
     const allowAddOrInvite = computed(() => {
       // TODO(tianzhou): Implement invite mode for DBA and developer
       // If current user has manage user permission, MemberAddOrInvite is in Add mode.
@@ -195,8 +161,6 @@ export default defineComponent({
       allowAddOrInvite,
       showUpgradeInfo,
       hasRBACFeature,
-      remainingSeatCount,
-      seatCountAttention,
     };
   },
 });
