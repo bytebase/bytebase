@@ -274,6 +274,7 @@ import {
 } from "../types";
 import {
   hasWorkspacePermission,
+  instanceHasCollationAndCharacterSet,
   instanceHasCreateDatabase,
   issueSlug,
 } from "../utils";
@@ -446,15 +447,7 @@ export default defineComponent({
 
     const showCollationAndCharacterSet = computed((): boolean => {
       const instance = selectedInstance.value;
-      if (instance.id === UNKNOWN_ID) {
-        return true;
-      }
-      return (
-        instance.engine !== "MONGODB" &&
-        instance.engine !== "CLICKHOUSE" &&
-        instance.engine !== "SNOWFLAKE" &&
-        instance.engine !== "REDSHIFT"
-      );
+      return instanceHasCollationAndCharacterSet(instance);
     });
 
     const requireDatabaseOwnerName = computed((): boolean => {
