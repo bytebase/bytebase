@@ -57,6 +57,11 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
+    freeSeatCount: -1
+    freeInstanceCount: -1
+    maximumInstanceCount: -1
+    maximumSeatCount: -1
+    pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 0
     featureList:
       # Change Management
@@ -119,6 +124,11 @@ planList:
     trialDays: 14
     unitPrice: 100
     trialPrice: 0
+    freeSeatCount: -1
+    freeInstanceCount: 0
+    maximumInstanceCount: 20
+    maximumSeatCount: -1
+    pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 100
     featureList:
       # Change Management
@@ -183,9 +193,14 @@ planList:
   - type: 2
     title: enterprise
     trialDays: 0
-    unitPrice: 250
+    unitPrice: 0
     trialPrice: 0
-    pricePerInstancePerMonth: 250
+    freeSeatCount: -1
+    freeInstanceCount: 0
+    maximumInstanceCount: -1
+    maximumSeatCount: -1
+    pricePerSeatPerMonth: 0
+    pricePerInstancePerMonth: 300
     featureList:
       # Change Management
       - type: user-count
