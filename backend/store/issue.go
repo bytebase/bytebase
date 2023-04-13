@@ -449,7 +449,8 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 }
 
 func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
+	// Strip the task payload statement to reduce the response size.
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID, StripPayload: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", pipeline.ID)
 	}
@@ -547,6 +548,8 @@ type FindIssueMessage struct {
 	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
+
+	Stripped bool
 }
 
 // GetIssueV2 gets issue by issue UID.
