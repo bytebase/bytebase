@@ -114,8 +114,9 @@ planList:
     mainFeatureList:
       - community-support
       - review-workflow
-      - batch-change-multi-environment
       - gitops
+      - rbac
+      - batch-change-multi-environment
       - sql-editor
       - database-backup-restore
       - webhook-integration
@@ -185,7 +186,6 @@ planList:
     mainFeatureList:
       - email-support
       - everything-in-free-plan
-      - rbac
       - sql-check-anomaly-detection
       - approval-and-backup-policy
       - online-schema-migration
