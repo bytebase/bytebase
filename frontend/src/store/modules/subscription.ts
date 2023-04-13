@@ -124,7 +124,7 @@ export const useSubscriptionStore = defineStore("subscription", {
 
       for (let i = 0; i < matrix.length; i++) {
         if (matrix[i]) {
-          return i as PlanType;
+          return (i + 1) as PlanType;
         }
       }
       return PlanType.FREE;
