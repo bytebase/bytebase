@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a int,
@@ -16,6 +17,7 @@
       title: column.require-default
       content: Column `t`.`a` doesn't have DEFAULT.
       line: 2
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
@@ -26,8 +28,10 @@
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
       line: 2
+      details: ""
     - status: WARN
       code: 420
       title: column.require-default
       content: Column `tech_book`.`a` doesn't have DEFAULT.
       line: 3
+      details: ""

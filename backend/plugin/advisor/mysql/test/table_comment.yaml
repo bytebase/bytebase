@@ -5,6 +5,7 @@
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       line: 1
+      details: ""
 - statement: CREATE TABLE t(a int)
   want:
     - status: WARN
@@ -12,6 +13,7 @@
       title: table.comment
       content: Table `t` requires comments
       line: 1
+      details: ""
 - statement: CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue'
   want:
     - status: WARN
@@ -19,3 +21,4 @@
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       line: 1
+      details: ""

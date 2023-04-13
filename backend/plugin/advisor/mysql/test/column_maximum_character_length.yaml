@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(name varchar(225));
   want:
     - status: SUCCESS
@@ -12,6 +13,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(name char(225));
   want:
     - status: WARN
@@ -19,6 +21,7 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
       line: 1
+      details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN name_2 char(225)
   want:
     - status: WARN
@@ -26,6 +29,7 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead
       line: 1
+      details: ""
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name char(225)
   want:
     - status: WARN
@@ -33,6 +37,7 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
       line: 1
+      details: ""
 - statement: ALTER TABLE tech_book MODIFY COLUMN name char(225)
   want:
     - status: WARN
@@ -40,3 +45,4 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
       line: 1
+      details: ""
