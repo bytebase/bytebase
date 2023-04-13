@@ -1151,7 +1151,11 @@ router.beforeEach((to, from, next) => {
   const serverInfo = useActuatorStore().serverInfo;
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
-  if (serverInfo?.require2fa && currentUser.value) {
+  if (
+    hasFeature("bb.feature.2fa") &&
+    serverInfo?.require2fa &&
+    currentUser.value
+  ) {
     const user = userStore.getUserById(currentUser.value.id as number);
     if (user && !user.mfaEnabled) {
       next({
