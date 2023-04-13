@@ -1,17 +1,18 @@
 categoryList:
   - type: change-management
     featureList:
-      - instance-count
+      - user-count
       - environment-count
+      - instance-count
       - state-based-change
       - migration-based-change
       - sql-check
-      - disaster-recovery
-      - batch-change
       - change-history
-      - sync-schema
       - terraform-provider
       - schedule-change
+      - disaster-recovery
+      - sync-schema
+      - batch-change
   - type: sql-editor
     featureList:
       - auto-complete
@@ -19,21 +20,22 @@ categoryList:
       - schema-diagram
       - export
       - admin-mode
-      - read-replica
       - saved-sql-script
+      - read-replica
   - type: collaboration
     featureList:
       - inbox-notification
       - ui-based-sql-review
-      - gitops-workflow
       - shared-sql-script
+      - gitops-workflow
       - webhook-integration
   - type: data-security-and-governance
     featureList:
-      - archiving
-      - anomaly-detection
       - rbac
+      - slow-query
+      - archiving
       - approval-and-backup-policy
+      - custom-approval
       - sso
       - 2fa
       - dba-workflow
@@ -42,6 +44,7 @@ categoryList:
       - database-access-control
       - watermark
       - audit-log
+      - anomaly-detection
   - type: bespoke
     featureList:
       - support
@@ -62,6 +65,8 @@ planList:
     pricePerInstancePerMonth: 0
     featureList:
       # Change Management
+      - type: user-count
+        content: user-unlimited
       - type: instance-count
         content: instance-maximum-20
       - type: environment-count
@@ -69,8 +74,6 @@ planList:
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
-        content: sql-check-basic
-        tooltip: sql-check-basic-tooltip
       - type: disaster-recovery
         content: disaster-recovery-basic
         tooltip: disaster-recovery-basic-tooltip
@@ -79,6 +82,8 @@ planList:
         tooltip: batch-change-basic-tooltip
       - type: change-history
       - type: sync-schema
+        content: sync-schema-basic
+        tooltip: sync-schema-basic-tooltip
       - type: terraform-provider
       # SQL Editor
       - type: auto-complete
@@ -86,9 +91,7 @@ planList:
       - type: schema-diagram
       - type: export
       - type: admin-mode
-      - type: read-replica
       - type: saved-sql-script
-        content: saved-sql-script-basic
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
@@ -99,6 +102,7 @@ planList:
         content: webhook-integration-basic
         tooltip: webhook-integration-basic-tooltip
       # Data Security and Governance
+      - type: slow-query
       - type: archiving
       - type: anomaly-detection
         content: anomaly-detection-basic
@@ -128,6 +132,8 @@ planList:
     pricePerInstancePerMonth: 100
     featureList:
       # Change Management
+      - type: user-count
+        content: user-unlimited
       - type: instance-count
         content: instance-maximum-20
         tooltip: instance-maximum-20-tooltip
@@ -136,8 +142,6 @@ planList:
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
-        content: sql-check-advanced
-        tooltip: sql-check-advanced-tooltip
       - type: disaster-recovery
         content: disaster-recovery-advanced
         tooltip: disaster-recovery-advanced-tooltip
@@ -146,6 +150,8 @@ planList:
         tooltip: batch-change-basic-tooltip
       - type: change-history
       - type: sync-schema
+        content: sync-schema-advanced
+        tooltip: sync-schema-advanced-tooltip
       - type: terraform-provider
       - type: schedule-change
       # SQL Editor
@@ -154,9 +160,7 @@ planList:
       - type: schema-diagram
       - type: export
       - type: admin-mode
-      - type: read-replica
       - type: saved-sql-script
-        content: saved-sql-script-basic
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
@@ -168,6 +172,7 @@ planList:
         content: webhook-integration-basic
         tooltip: webhook-integration-basic-tooltip
       # Data Security and Governance
+      - type: slow-query
       - type: archiving
       - type: anomaly-detection
         content: anomaly-detection-basic
@@ -198,6 +203,8 @@ planList:
     pricePerInstancePerMonth: 300
     featureList:
       # Change Management
+      - type: user-count
+        content: user-unlimited
       - type: instance-count
         content: instance-customized
       - type: environment-count
@@ -205,8 +212,6 @@ planList:
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
-        content: sql-check-advanced
-        tooltip: sql-check-advanced-tooltip
       - type: disaster-recovery
         content: disaster-recovery-advanced
         tooltip: disaster-recovery-advanced-tooltip
@@ -215,6 +220,8 @@ planList:
         tooltip: batch-change-advanced-tooltip
       - type: change-history
       - type: sync-schema
+        content: sync-schema-advanced
+        tooltip: sync-schema-advanced-tooltip
       - type: terraform-provider
       - type: schedule-change
       # SQL Editor
@@ -225,8 +232,6 @@ planList:
       - type: admin-mode
       - type: read-replica
       - type: saved-sql-script
-        content: saved-sql-script-advanced
-        tooltip: saved-sql-script-advanced-tooltip
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
@@ -238,6 +243,7 @@ planList:
         content: webhook-integration-advanced
         tooltip: webhook-integration-advanced-tooltip
       # Data Security and Governance
+      - type: slow-query
       - type: archiving
       - type: anomaly-detection
         content: anomaly-detection-advanced
@@ -246,6 +252,7 @@ planList:
       - type: approval-and-backup-policy
       - type: sso
       - type: 2fa
+      - type: custom-approval
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
@@ -264,7 +271,7 @@ planList:
       - everything-in-team-plan
       - sso
       - batch-change-multi-tenancy
-      - read-replica
+      - custom-approval
       - dba-workflow
       - environment-tier
       - sensitive-data
