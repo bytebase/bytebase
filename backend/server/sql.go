@@ -934,6 +934,11 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database %q in instance %q", databaseName, instance.Title))
 		}
+		if len(policy.SensitiveDataList) == 0 {
+			// If there is no sensitive data policy, return nil to skip mask sensitive data.
+			return nil, nil
+		}
+
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
 				Schema: data.Schema,
