@@ -4,13 +4,6 @@ package bytebase.store;
 
 option go_package = "github.com/bytebase/bytebase/api/proto/store";
 
-message ActivityPayload {
-  oneof payload {
-    ActivityIssueCreatePayload issue_create_payload = 1;
-    ActivityIssueCommentCreatePayload issue_comment_create_payload = 2;
-  }
-}
-
 // ActivityIssueCreatePayload is the payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
