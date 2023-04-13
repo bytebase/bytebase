@@ -177,7 +177,9 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 			log.Debug("failed to fetch license", zap.Error(err))
 		}
 	}
-
+	if license == nil {
+		return nil
+	}
 	if err := license.Valid(); err != nil {
 		log.Debug("license is invalid", zap.Error(err))
 		return nil
