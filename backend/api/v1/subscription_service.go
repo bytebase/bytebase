@@ -86,7 +86,6 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 
 	license := &enterpriseAPI.License{
 		InstanceCount: int(request.Trial.InstanceCount),
-		Seat:          int(request.Trial.Seat),
 		ExpiresTs:     time.Now().AddDate(0, 0, int(request.Trial.Days)).Unix(),
 		IssuedTs:      time.Now().Unix(),
 		Plan:          planType,
@@ -187,7 +186,6 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 	}
 
 	subscription := &v1pb.Subscription{
-		Seat:          int32(sub.Seat),
 		InstanceCount: int32(sub.InstanceCount),
 		Plan:          plan,
 		Trialing:      sub.Trialing,
