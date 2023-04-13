@@ -323,6 +323,9 @@ type TaskFind struct {
 	Payload         string
 	NoBlockingStage bool
 	NonRollbackTask bool
+
+	// Strip the task payload statement.
+	StripPayload bool
 }
 
 func (find *TaskFind) String() string {
