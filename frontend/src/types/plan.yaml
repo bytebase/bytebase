@@ -122,7 +122,7 @@ planList:
   - type: 1
     title: team
     trialDays: 14
-    unitPrice: 100
+    unitPrice: 0
     trialPrice: 0
     freeSeatCount: -1
     freeInstanceCount: 0
