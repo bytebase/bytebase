@@ -681,17 +681,9 @@ export const getRuleLocalization = (
   };
 };
 
-const availableRulesForFreePlan: RuleType[] = [
-  "statement.where.require",
-  "column.no-null",
-];
-
 export const ruleIsAvailableInSubscription = (
   ruleType: RuleType,
   subscriptionPlan: PlanType
 ): boolean => {
-  if (subscriptionPlan === PlanType.FREE) {
-    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
-  }
   return true;
 };
