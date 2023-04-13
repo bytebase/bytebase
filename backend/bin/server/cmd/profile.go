@@ -29,7 +29,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
-		DisableMetric:        flags.disableMetric,
 		BackupStorageBackend: backupStorageBackend,
 		BackupRegion:         flags.backupRegion,
 		BackupBucket:         flags.backupBucket,
