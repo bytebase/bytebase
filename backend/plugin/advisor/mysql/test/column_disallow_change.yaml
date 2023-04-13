@@ -7,6 +7,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a int
@@ -16,3 +17,4 @@
       title: column.disallow-change
       content: '"ALTER TABLE t CHANGE COLUMN b a int" contains CHANGE COLUMN statement'
       line: 2
+      details: ""

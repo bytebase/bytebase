@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(a varchar(255) AUTO_INCREMENT)
   want:
     - status: WARN
@@ -12,6 +13,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       line: 1
+      details: ""
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT
@@ -21,6 +23,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT
@@ -30,6 +33,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT
@@ -39,3 +43,4 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       line: 2
+      details: ""

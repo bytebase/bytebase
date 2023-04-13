@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(a varchar(255))
   want:
     - status: SUCCESS
@@ -12,6 +13,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(a int) CHARSET ascii
   want:
     - status: WARN
@@ -19,6 +21,7 @@
       title: system.charset.allowlist
       content: '"CREATE TABLE t(a int) CHARSET ascii" used disabled charset ''ascii'''
       line: 1
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHARSET ascii
@@ -28,6 +31,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t CHARSET ascii" used disabled charset ''ascii'''
       line: 2
+      details: ""
 - statement: ALTER DATABASE test CHARSET ascii
   want:
     - status: WARN
@@ -35,6 +39,7 @@
       title: system.charset.allowlist
       content: '"ALTER DATABASE test CHARSET ascii" used disabled charset ''ascii'''
       line: 1
+      details: ""
 - statement: CREATE TABLE t(a varchar(255) CHARSET ascii)
   want:
     - status: WARN
@@ -42,6 +47,7 @@
       title: system.charset.allowlist
       content: '"CREATE TABLE t(a varchar(255) CHARSET ascii)" used disabled charset ''ascii'''
       line: 1
+      details: ""
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii
@@ -51,6 +57,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii
@@ -60,6 +67,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii
@@ -69,6 +77,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       line: 2
+      details: ""
 - statement: /* this is a comment */
   want:
     - status: SUCCESS
@@ -76,3 +85,4 @@
       title: OK
       content: ""
       line: 0
+      details: ""

@@ -8,6 +8,7 @@
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       line: 3
+      details: ""
 - statement: |-
     START TRANSACTION;
     CREATE TABLE techBook(id int, name varchar(255));
@@ -22,8 +23,10 @@
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       line: 3
+      details: ""
     - status: WARN
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       line: 7
+      details: ""

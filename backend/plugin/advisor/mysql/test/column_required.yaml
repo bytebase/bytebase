@@ -5,6 +5,7 @@
       title: column.required
       content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
       line: 1
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -18,6 +19,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -32,6 +34,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       line: 7
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -46,6 +49,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -60,6 +64,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       line: 7
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -74,6 +79,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -88,6 +94,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       line: 7
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -103,6 +110,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -116,6 +124,7 @@
       title: column.required
       content: 'Table `book` requires columns: updater_id'
       line: 5
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -130,6 +139,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -146,11 +156,13 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       line: 5
+      details: ""
     - status: WARN
       code: 401
       title: column.required
       content: 'Table `student` requires columns: creator_id, updater_id'
       line: 9
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -165,3 +177,4 @@
       title: OK
       content: ""
       line: 0
+      details: ""
