@@ -669,8 +669,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter() {
-	enabled := s.profile.Mode == common.ReleaseModeProd && s.profile.DemoName == "" && !s.profile.DisableMetric
-	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, enabled)
+	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, s.profile.EnableMetric)
 	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
