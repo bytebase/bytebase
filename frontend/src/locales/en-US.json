@@ -1776,10 +1776,6 @@
         "title": "Custom approval",
         "desc": "Configure security risk level and approval flow for different tasks."
       },
-      "bb-feature-slow-query": {
-        "title": "Slow query",
-        "desc": "Logging and analyzing slow SQL queries."
-      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
         "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
@@ -2278,6 +2274,7 @@
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Logging and analyzing slow queires for {versions}.\nBytebase will periodically sync slow query logs from instances."
+    "attention-description": "Logging and analyzing slow queries for {versions}.\nBytebase will periodically sync slow query logs from instances.",
+    "sync-job-started": "Sync jobs started. Please wait for the jobs to complete."
   }
 }

@@ -32,7 +32,6 @@ import { computed, onMounted, reactive } from "vue";
 
 import { BBAttention } from "@/bbkit";
 import {
-  featureToRef,
   pushNotification,
   useEnvironmentList,
   useInstanceStore,
@@ -50,10 +49,6 @@ import { EnvironmentTabFilter } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
 import { instanceSupportSlowQuery } from "@/utils";
 import { useI18n } from "vue-i18n";
-
-const emit = defineEmits<{
-  (event: "show-feature-modal"): void;
-}>();
 
 type LocalState = {
   ready: boolean;
@@ -76,7 +71,6 @@ const policyStore = useSlowQueryPolicyStore();
 const slowQueryStore = useSlowQueryStore();
 const instanceStore = useInstanceStore();
 const environmentList = useEnvironmentList(["NORMAL"]);
-const hasSlowQueryFeature = featureToRef("bb.feature.slow-query");
 
 const policyList = computed(() => {
   return policyStore.getPolicyListByResourceTypeAndPolicyType(
@@ -119,11 +113,6 @@ const changeEnvironment = (id: EnvironmentId | undefined) => {
 };
 
 const toggleActive = async (instance: Instance, active: boolean) => {
-  if (!hasSlowQueryFeature.value) {
-    emit("show-feature-modal");
-    return;
-  }
-
   try {
     const payload: SlowQueryPolicyPayload = {
       active,
