@@ -274,7 +274,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureMultiTenancy:     {false, false, true},
 	FeatureOnlineMigration:  {false, true, true},
 	FeatureSchemaDrift:      {false, false, true},
-	FeatureSQLReview:        {false, true, true},
+	FeatureSQLReview:        {true, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	// VCS Integration
 	FeatureVCSSchemaWriteBack:   {false, true, true},
@@ -283,7 +283,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Database management
 	FeaturePITR:                  {false, true, true},
 	FeatureReadReplicaConnection: {false, false, true},
-	FeatureSyncSchemaAllVersions: {false, false, true},
+	FeatureSyncSchemaAllVersions: {false, true, true},
 	// Policy Control
 	FeatureApprovalPolicy:        {false, true, true},
 	FeatureBackupPolicy:          {false, true, true},
