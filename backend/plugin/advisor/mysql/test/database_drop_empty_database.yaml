@@ -5,3 +5,4 @@
       title: database.drop-empty-database
       content: Database `test` is not allowed to drop if not empty
       line: 1
+      details: ""

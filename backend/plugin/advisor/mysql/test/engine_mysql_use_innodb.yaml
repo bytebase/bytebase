@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE book(id int)
   want:
     - status: SUCCESS
@@ -12,6 +13,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE book(id int) ENGINE = CSV
   want:
     - status: WARN
@@ -19,6 +21,7 @@
       title: engine.mysql.use-innodb
       content: '"CREATE TABLE book(id int) ENGINE = CSV" doesn''t use InnoDB engine'
       line: 1
+      details: ""
 - statement: ALTER TABLE tech_book ENGINE = INNODB
   want:
     - status: SUCCESS
@@ -26,6 +29,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: ALTER TABLE tech_book ENGINE = CSV
   want:
     - status: WARN
@@ -33,6 +37,7 @@
       title: engine.mysql.use-innodb
       content: '"ALTER TABLE tech_book ENGINE = CSV" doesn''t use InnoDB engine'
       line: 1
+      details: ""
 - statement: SET default_storage_engine=INNODB
   want:
     - status: SUCCESS
@@ -40,6 +45,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: SET default_storage_engine=CSV
   want:
     - status: WARN
@@ -47,3 +53,4 @@
       title: engine.mysql.use-innodb
       content: '"SET default_storage_engine=CSV" doesn''t use InnoDB engine'
       line: 1
+      details: ""

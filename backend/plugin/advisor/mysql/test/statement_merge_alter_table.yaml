@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a int;
     ALTER TABLE tech_book ADD COLUMN b int;
@@ -14,6 +15,7 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE tech_book ADD COLUMN a int;
@@ -25,11 +27,13 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
       line: 3
+      details: ""
     - status: WARN
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
       line: 4
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE tech_book ADD COLUMN a int;
@@ -41,8 +45,10 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
       line: 3
+      details: ""
     - status: WARN
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
       line: 4
+      details: ""
