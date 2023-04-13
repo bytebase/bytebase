@@ -71,6 +71,10 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 
 // LoadSubscription will load subscription.
 func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
+	if s.cachedSubscription != nil && s.cachedSubscription.IsExpired() {
+		// refresh expired subscription
+		s.cachedSubscription = nil
+	}
 	if s.cachedSubscription != nil {
 		return *s.cachedSubscription
 	}
@@ -139,7 +143,49 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 }
 
 // loadLicense will load license and validate it.
+<<<<<<< HEAD
 func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+=======
+func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
+	license, err := s.findEnterpriseLicense(ctx)
+	if err != nil {
+		log.Debug("failed to load enterprise license", zap.Error(err))
+	}
+	if license == nil {
+		license, err = s.findTrialingLicense(ctx)
+		if err != nil {
+			log.Debug("failed to load trialing license", zap.Error(err))
+		}
+	}
+
+	if license == nil {
+		license, err = s.fetchLicense(ctx)
+		if err != nil {
+			log.Debug("failed to fetch license", zap.Error(err))
+		}
+	}
+	if license == nil {
+		return nil
+	}
+	if err := license.Valid(); err != nil {
+		log.Debug("license is invalid", zap.Error(err))
+		return nil
+	}
+
+	return license
+}
+
+func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
+	claims := &Claims{}
+	if err := parseJWTToken(license, s.config.Version, s.config.PublicKey, claims); err != nil {
+		return nil, common.Wrap(err, common.Invalid)
+	}
+
+	return s.parseClaims(claims)
+}
+
+func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+>>>>>>> 82369aac6 (fix: refresh expired license (#5546))
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
 	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
@@ -249,10 +295,6 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		Subject:       claims.Subject,
 		Trialing:      claims.Trialing,
 		OrgName:       claims.OrgName,
-	}
-
-	if err := license.Valid(); err != nil {
-		return nil, common.Wrap(err, common.Invalid)
 	}
 
 	return license, nil
