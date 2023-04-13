@@ -90,7 +90,6 @@ planList:
       - type: gitops-workflow
         content: gitops-workflow-basic
         tooltip: gitops-workflow-basic-tooltip
-      - type: shared-sql-script
       - type: webhook-integration
         content: webhook-integration-basic
         tooltip: webhook-integration-basic-tooltip

@@ -40,6 +40,8 @@ export type FeatureType =
   | "bb.feature.sensitive-data"
   | "bb.feature.access-control"
   | "bb.feature.custom-approval"
+  // Collaboration
+  | "bb.feature.shared-sql-script"
   // Plugins
   | "bb.feature.plugin.openai";
 
