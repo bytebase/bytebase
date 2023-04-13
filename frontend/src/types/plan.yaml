@@ -150,10 +150,10 @@ planList:
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
+      - type: shared-sql-script
       - type: gitops-workflow
         content: gitops-workflow-advanced
         tooltip: gitops-workflow-advanced-tooltip
-      - type: shared-sql-script
       - type: webhook-integration
         content: webhook-integration-basic
         tooltip: webhook-integration-basic-tooltip
@@ -215,10 +215,10 @@ planList:
       # Collaboration
       - type: inbox-notification
       - type: ui-based-sql-review
+      - type: shared-sql-script
       - type: gitops-workflow
         content: gitops-workflow-advanced
         tooltip: gitops-workflow-advanced-tooltip
-      - type: shared-sql-script
       - type: webhook-integration
         content: webhook-integration-advanced
         tooltip: webhook-integration-advanced-tooltip
