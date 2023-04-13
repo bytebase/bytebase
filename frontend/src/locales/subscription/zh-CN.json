@@ -14,9 +14,9 @@
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
-  "free-price-intro": "不限实例和席位",
-  "team-price-intro": "不限席位，最多 20 个实例",
-  "enterprise-price-intro": "自定义席位和实例，按年付费",
+  "free-price-intro": "无限用户数，环境数和实例数",
+  "team-price-intro": "最多 20 个实例",
+  "enterprise-price-intro": "自定义，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
   "start-trial": "免费试用",
@@ -33,12 +33,12 @@
     "free": {
       "title": "免费版",
       "label": "",
-      "desc": "个人或小团队，无专职 DBA"
+      "desc": "包含团队中心化管理数据库生命周期的核心能力"
     },
     "team": {
-      "title": "团队版",
+      "title": "专业版",
       "label": "",
-      "desc": "中型团队，有专职 DBA 或 TL 以提高工程速度"
+      "desc": "更多协同和管控能力，进阶的数据库生命周期管理"
     },
     "enterprise": {
       "title": "企业版",
@@ -50,6 +50,8 @@
     "change-management": {
       "title": "变更管理",
       "features": {
+        "user-count": "用户数",
+        "user-unlimited": "无限制",
         "instance-count": "实例数",
         "instance-customized": "自定义",
         "instance-maximum-20": "不超过 20 个",
@@ -70,13 +72,13 @@
         "disaster-recovery-basic-tooltip": "数据库备份和恢复",
         "disaster-recovery-advanced": "高级",
         "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
-        "sql-check": "SQL 自动检查",
-        "sql-check-basic": "基础",
-        "sql-check-basic-tooltip": "语法检查、数据库连接检查",
-        "sql-check-advanced": "高级",
-        "sql-check-advanced-tooltip": "基础版功能 + 自定义 SQL 审核规则",
+        "sql-check": "100+ SQL 自动检查",
         "schedule-change": "设定任务执行时间",
         "sync-schema": "库表同步",
+        "sync-schema-basic": "基础",
+        "sync-schema-basic-tooltip": "同步最新的 schema 版本",
+        "sync-schema-advanced": "高级",
+        "sync-schema-advanced-tooltip": "同步任意的 schema 版本",
         "terraform-provider": "Terraform 集成"
       }
     },
@@ -88,9 +90,6 @@
         "schema-diagram": "Schema 关系图",
         "export": "CSV / JSON 导出",
         "saved-sql-script": "保存 SQL 脚本",
-        "saved-sql-script-basic": "基础",
-        "saved-sql-script-advanced": "高级",
-        "saved-sql-script-advanced-tooltip": "基础 + 从 VCS 同步脚本",
         "admin-mode": "管理员模式",
         "read-replica": "为只读操作提供单独连接"
       }
@@ -118,9 +117,11 @@
       "features": {
         "audit-log": "审计日志",
         "rbac": "RBAC 权限管理",
+        "slow-query": "慢查询",
         "watermark": "水印",
         "sso": "SSO 单点登录",
         "2fa": "双重认证 (2FA)",
+        "custom-approval": "自定义审批",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",

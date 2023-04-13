@@ -14,7 +14,7 @@
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
   "per-instance": "Per instance",
-  "free-price-intro": "Unlimited instances and seats",
+  "free-price-intro": "Unlimited users, environments and instances",
   "team-price-intro": "Up to 20 instances",
   "enterprise-price-intro": "Customized, billed annually",
   "deploy": "Deploy",
@@ -33,23 +33,25 @@
     "free": {
       "title": "Free Plan",
       "label": "",
-      "desc": "Personal project or small team, no DBA"
+      "desc": "Team essentials to centralize database lifecycle management"
     },
     "team": {
-      "title": "Team Plan",
+      "title": "Pro Plan",
       "label": "",
-      "desc": "Medium size team, has dedicated DBA or TL for engineering velocity"
+      "desc": "More collaboration and control policies for advanced database lifecycle management"
     },
     "enterprise": {
       "title": "Enterprise Plan",
       "label": "",
-      "desc": "Large organization, has dedicated DBA group to manage database fleet"
+      "desc": "Large organization, has dedicated DBA group to manage database fleet with custom requirements"
     }
   },
   "feature-sections": {
     "change-management": {
       "title": "Change Management",
       "features": {
+        "user-count": "User count",
+        "user-unlimited": "Unlimited",
         "instance-count": "Instance count",
         "instance-customized": "Customized",
         "instance-maximum-20": "Up to 20",
@@ -70,13 +72,13 @@
         "disaster-recovery-basic-tooltip": "Database backup / restore",
         "disaster-recovery-advanced": "Advanced",
         "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
-        "sql-check": "Automated SQL check",
-        "sql-check-basic": "Basic",
-        "sql-check-basic-tooltip": "Syntax check, connection check",
-        "sql-check-advanced": "Advanced",
-        "sql-check-advanced-tooltip": "Basic + Customized SQL review rules",
+        "sql-check": "100+ Automated SQL check",
         "schedule-change": "Scheduled change at specific time",
         "sync-schema": "Synchronize schema between databases",
+        "sync-schema-basic": "Basic",
+        "sync-schema-basic-tooltip": "Sync from the latest schema version",
+        "sync-schema-advanced": "Advanced",
+        "sync-schema-advanced-tooltip": "Sync from arbitrary schema version",
         "terraform-provider": "Terraform Integration"
       }
     },
@@ -88,9 +90,6 @@
         "schema-diagram": "Schema Diagram",
         "export": "CSV / JSON export",
         "saved-sql-script": "Saved SQL script",
-        "saved-sql-script-basic": "Basic",
-        "saved-sql-script-advanced": "Advanced",
-        "saved-sql-script-advanced-tooltip": "Basic + Sync scripts from VCS",
         "admin-mode": "Admin Mode",
         "read-replica": "Separate connection for read-only operations"
       }
@@ -118,9 +117,11 @@
       "features": {
         "audit-log": "Audit log",
         "rbac": "RBAC (Owner, DBA, Developer role)",
+        "slow-query": "Slow query",
         "watermark": "Watermark",
         "sso": "Single Sign-On (SSO)",
         "2fa": "Two-Factor Authentication (2FA)",
+        "custom-approval": "Custom approval",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
