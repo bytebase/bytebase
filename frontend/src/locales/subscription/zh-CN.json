@@ -176,6 +176,7 @@
     "roadmap": "Roadmap 优先考虑",
     "custom-contract": "定制化 MSA 和 BAA",
     "sso": "单点登录 (SSO)",
-    "2fa": "双重认证 (2FA)"
+    "2fa": "双重认证 (2FA)",
+    "custom-approval": "自定义审批"
   }
 }
