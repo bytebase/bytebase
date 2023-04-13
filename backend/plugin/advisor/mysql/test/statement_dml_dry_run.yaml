@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: DELETE FROM tech_book
   want:
     - status: SUCCESS
@@ -12,3 +13,4 @@
       title: OK
       content: ""
       line: 0
+      details: ""
