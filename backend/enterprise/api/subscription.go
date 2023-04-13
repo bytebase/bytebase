@@ -25,7 +25,7 @@ type Subscription struct {
 
 // IsExpired returns if the subscription is expired.
 func (s *Subscription) IsExpired() bool {
-	if s.Plan == api.FREE {
+	if s.Plan == api.FREE || s.ExpiresTs < 0 {
 		return false
 	}
 	return time.Unix(s.ExpiresTs, 0).Before(time.Now())
