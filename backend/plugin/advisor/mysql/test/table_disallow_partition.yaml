@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
@@ -20,6 +21,7 @@
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
       line: 4
+      details: ""
 - statement: |-
     ALTER TABLE tech_book PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
@@ -35,3 +37,4 @@
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
       line: 4
+      details: ""

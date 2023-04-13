@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a timestamp default now(),
@@ -17,6 +18,7 @@
       title: column.current-time-count-limit
       content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
       line: 5
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a timestamp default now() on update localtime,
@@ -28,6 +30,7 @@
       title: column.current-time-count-limit
       content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       line: 4
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
     ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
@@ -37,3 +40,4 @@
       title: column.current-time-count-limit
       content: Table `tech_book` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       line: 2
+      details: ""

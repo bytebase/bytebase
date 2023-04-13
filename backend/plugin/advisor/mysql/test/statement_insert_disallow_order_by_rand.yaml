@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand()
   want:
     - status: WARN
@@ -12,3 +13,4 @@
       title: statement.insert.disallow-order-by-rand
       content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand()" uses ORDER BY RAND in the INSERT statement'
       line: 1
+      details: ""
