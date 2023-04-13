@@ -71,6 +71,10 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 
 // LoadSubscription will load subscription.
 func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
+	if s.cachedSubscription != nil && s.cachedSubscription.IsExpired() {
+		// refresh expired subscription
+		s.cachedSubscription = nil
+	}
 	if s.cachedSubscription != nil {
 		return *s.cachedSubscription
 	}
@@ -174,6 +178,11 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 		}
 	}
 
+	if err := license.Valid(); err != nil {
+		log.Debug("license is invalid", zap.Error(err))
+		return nil
+	}
+
 	return license
 }
 
@@ -258,10 +267,6 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		Subject:       claims.Subject,
 		Trialing:      claims.Trialing,
 		OrgName:       claims.OrgName,
-	}
-
-	if err := license.Valid(); err != nil {
-		return nil, common.Wrap(err, common.Invalid)
 	}
 
 	return license, nil
