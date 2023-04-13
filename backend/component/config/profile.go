@@ -63,8 +63,8 @@ type Profile struct {
 	PgURL string
 	// MetricConnectionKey is the connection key for metric.
 	MetricConnectionKey string
-	// DisableMetric will disable the metric collector.
-	DisableMetric bool
+	// EnableMetric will enable the metric collector.
+	EnableMetric bool
 
 	// Test only flag to skip generating onboarding data.
 	TestOnlySkipOnboardingData bool
