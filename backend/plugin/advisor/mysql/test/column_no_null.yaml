@@ -8,11 +8,13 @@
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
       line: 2
+      details: ""
     - status: WARN
       code: 402
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       line: 3
+      details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
   want:
     - status: WARN
@@ -20,6 +22,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       line: 1
+      details: ""
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
   want:
     - status: WARN
@@ -27,6 +30,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       line: 1
+      details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
   want:
     - status: SUCCESS
@@ -34,6 +38,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL);
@@ -43,6 +48,7 @@
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL);
@@ -52,6 +58,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255);
@@ -61,6 +68,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL;
@@ -70,3 +78,4 @@
       title: OK
       content: ""
       line: 0
+      details: ""
