@@ -16,6 +16,8 @@ func activeProfile(dataDir string) config.Profile {
 	p.PgUser = "bbdev"
 	p.BackupRunnerInterval = 10 * time.Second
 	p.AppRunnerInterval = 30 * time.Second
-	p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"
+	p.EnableMetric = false
+	// Metric collection is disabled in dev mode.
+	// p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"
 	return p
 }
