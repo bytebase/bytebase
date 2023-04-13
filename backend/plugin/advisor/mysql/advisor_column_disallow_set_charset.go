@@ -74,7 +74,7 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 	case *ast.CreateTableStmt:
 		for _, column := range node.Cols {
 			charset := getColumnCharset(column)
-			if charset != "" {
+			if !checkCharset(charset) {
 				code = advisor.SetColumnCharset
 				break
 			}
@@ -85,13 +85,13 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
 					charset := getColumnCharset(column)
-					if charset != "" {
+					if !checkCharset(charset) {
 						code = advisor.SetColumnCharset
 					}
 				}
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
 				charset := getColumnCharset(spec.NewColumns[0])
-				if charset != "" {
+				if !checkCharset(charset) {
 					code = advisor.SetColumnCharset
 				}
 			}
@@ -117,4 +117,14 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 // Leave implements the ast.Visitor interface.
 func (*columnDisallowSetCharsetChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
+}
+
+func checkCharset(charset string) bool {
+	switch charset {
+	// empty charset or binary for JSON.
+	case "", "binary":
+		return true
+	default:
+		return false
+	}
 }

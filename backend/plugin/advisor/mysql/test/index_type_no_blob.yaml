@@ -5,6 +5,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 1
+      details: ""
 - statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id INT, PRIMARY KEY(b(1), mb(2), lb(3), id))
   want:
     - status: WARN
@@ -12,16 +13,19 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 1
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       line: 1
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 1
+      details: ""
 - statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id INT, UNIQUE INDEX(b(1), mb(2), lb(3), id))
   want:
     - status: WARN
@@ -29,16 +33,19 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 1
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       line: 1
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 1
+      details: ""
 - statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id iNT, INDEX(b(1), mb(2), lb(3), id))
   want:
     - status: WARN
@@ -46,16 +53,19 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 1
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       line: 1
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 1
+      details: ""
 - statement: CREATE TABLE t(id INT, PRIMARY KEY(id))
   want:
     - status: SUCCESS
@@ -63,6 +73,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)
@@ -72,6 +83,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD UNIQUE INDEX(b(1), mb(2), lb(3), id)
@@ -81,16 +93,19 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 2
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       line: 2
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(b(1), mb(2), lb(3), id)
@@ -100,16 +115,19 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 2
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       line: 2
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)
@@ -119,6 +137,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
             CREATE INDEX idx_b ON t(b(5));
@@ -131,16 +150,19 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 2
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       line: 3
+      details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 4
+      details: ""
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
             CREATE INDEX idx_id ON t(id);
@@ -150,3 +172,4 @@
       title: OK
       content: ""
       line: 0
+      details: ""

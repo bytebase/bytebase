@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
   want:
     - status: SUCCESS
@@ -12,6 +13,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(id INT)
   want:
     - status: WARN
@@ -19,6 +21,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 1
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT);
                 DROP TABLE t
@@ -28,6 +31,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id)
@@ -37,6 +41,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
                 ALTER TABLE t DROP PRIMARY KEY
@@ -46,6 +51,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP INDEX `PRIMARY`
@@ -55,6 +61,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY
@@ -64,6 +71,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY
@@ -73,6 +81,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: ALTER TABLE tech_book CHANGE COLUMN id uid INT
   want:
     - status: SUCCESS
@@ -80,6 +89,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY
@@ -89,6 +99,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: ALTER TABLE tech_book MODIFY COLUMN id INT
   want:
     - status: SUCCESS
@@ -96,6 +107,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), PRIMARY KEY(id, name));
                 ALTER TABLE t DROP COLUMN id
@@ -105,6 +117,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), comment varchar(255), PRIMARY KEY(id, name));
                 ALTER TABLE t DROP COLUMN id, DROP COLUMN name
@@ -114,6 +127,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       line: 2
+      details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name
   want:
     - status: WARN
@@ -121,6 +135,7 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       line: 1
+      details: ""
 - statement: ALTER TABLE tech_book DROP COLUMN name
   want:
     - status: SUCCESS
@@ -128,6 +143,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book CHANGE COLUMN id uid int;
                 ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name
@@ -137,3 +153,4 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       line: 2
+      details: ""
