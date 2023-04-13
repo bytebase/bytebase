@@ -3,13 +3,12 @@
     <div class="py-2 flex justify-between items-center">
       <div class="flex justify-start items-center gap-x-2">
         <BBAttention
-          class="px-0"
-          style="INFO"
+          :style="'INFO'"
           :title="$t('setting.project.description')"
         />
       </div>
 
-      <div class="flex justify-end items-center px-2 gap-x-2">
+      <div class="flex justify-end items-center gap-x-2">
         <BBTableSearch
           ref="searchField"
           :placeholder="$t('project.dashboard.search-bar-placeholder')"

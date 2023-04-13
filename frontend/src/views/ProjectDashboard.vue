@@ -7,7 +7,11 @@
         @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
-    <ProjectTable :project-list="filteredList(state.projectList)" />
+    <ProjectTable
+      :project-list="filteredList(state.projectList)"
+      :left-bordered="false"
+      :right-bordered="false"
+    />
   </div>
 </template>
 
