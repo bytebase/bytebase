@@ -1831,7 +1831,7 @@
       },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
-        "desc": "Share your SQL scripts with teammates or make them public to the internet."
+        "desc": "Share your SQL scripts with project teammates or make them public to all."
       }
     }
   },
