@@ -73,6 +73,9 @@ export interface Plan {
   type: PlanType;
   trialDays: number;
   trialPrice: number;
+  unitPrice: number;
+  pricePerSeatPerMonth: number;
+  pricePerInstancePerMonth: number;
   // Plan desc and feature
   title: string;
   featureList: PlanFeature[];
