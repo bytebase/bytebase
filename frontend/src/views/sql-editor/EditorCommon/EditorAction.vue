@@ -50,7 +50,12 @@
           <span class="ml-1">{{ $t("common.save") }}</span>
           <span class="hidden sm:inline ml-1">(⌘+S)</span>
         </NButton>
-        <NPopover trigger="click" placement="bottom-end" :show-arrow="false">
+        <NPopover
+          trigger="click"
+          placement="bottom-end"
+          :show-arrow="false"
+          :disabled="!hasSharedSQLScriptFeature"
+        >
           <template #trigger>
             <NButton
               :disabled="
@@ -58,8 +63,13 @@
                 tabStore.isDisconnected ||
                 !tabStore.currentTab.isSaved
               "
+              @click="handleShareButtonClick"
             >
               <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
+              <FeatureBadge
+                :feature="'bb.feature.shared-sql-script'"
+                class="ml-2 text-accent"
+              />
             </NButton>
           </template>
           <template #default>
@@ -69,21 +79,32 @@
       </template>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.requiredFeatureName"
+    :feature="state.requiredFeatureName"
+    @cancel="state.requiredFeatureName = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits } from "vue";
+import { computed, defineEmits, reactive } from "vue";
 import {
   useInstanceStore,
   useTabStore,
   useSQLEditorStore,
   useInstanceById,
   useWebTerminalStore,
+  featureToRef,
 } from "@/store";
-import type { ExecuteConfig, ExecuteOption } from "@/types";
+import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import SharePopover from "./SharePopover.vue";
 import AdminModeButton from "./AdminModeButton.vue";
+
+interface LocalState {
+  requiredFeatureName?: FeatureType;
+}
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -96,10 +117,12 @@ const emit = defineEmits<{
   (e: "clear-screen"): void;
 }>();
 
+const state = reactive<LocalState>({});
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const webTerminalStore = useWebTerminalStore();
+const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 
 const connection = computed(() => tabStore.currentTab.connection);
 
@@ -189,5 +212,11 @@ const handleFormatSQL = () => {
 
 const handleClearScreen = () => {
   emit("clear-screen");
+};
+
+const handleShareButtonClick = () => {
+  if (!hasSharedSQLScriptFeature.value) {
+    state.requiredFeatureName = "bb.feature.shared-sql-script";
+  }
 };
 </script>

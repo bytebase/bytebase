@@ -157,6 +157,13 @@ const (
 	// approval chain definition.
 	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
 
+	// Collaboration.
+
+	// FeatureSharedSQLScript enables sharing sql script.
+	FeatureSharedSQLScript FeatureType = "bb.feature.shared-sql-script"
+
+	// Plugins.
+
 	// FeaturePluginOpenAI enables AI features powered by OpenAI.
 	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
 )
@@ -222,6 +229,9 @@ func (e FeatureType) Name() string {
 		return "Access Control"
 	case FeatureCustomApproval:
 		return "Custom Approval"
+	// Collaboration
+	case FeatureSharedSQLScript:
+		return "Shared SQL script"
 	// Plugins
 	case FeaturePluginOpenAI:
 		return "OpenAI"
@@ -281,6 +291,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
+	// Collaboration
+	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
 }
