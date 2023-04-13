@@ -1828,6 +1828,10 @@
       "bb-feature-plugin-openai": {
         "title": "AI Augmentation",
         "desc": "AI augmented SQL Editor features powered by OpenAI."
+      },
+      "bb-feature-shared-sql-script": {
+        "title": "Shared SQL script",
+        "desc": "Share your SQL scripts with teammates or make them public to the internet."
       }
     }
   },
