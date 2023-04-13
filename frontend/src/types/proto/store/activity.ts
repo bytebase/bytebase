@@ -4,11 +4,6 @@ import * as _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
-export interface ActivityPayload {
-  issueCreatePayload?: ActivityIssueCreatePayload | undefined;
-  issueCommentCreatePayload?: ActivityIssueCommentCreatePayload | undefined;
-}
-
 /**
  * ActivityIssueCreatePayload is the payloads for creating issues.
  * These payload types are only used when marshalling to the json format for saving into the database.
@@ -176,91 +171,6 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
       return "UNRECOGNIZED";
   }
 }
-
-function createBaseActivityPayload(): ActivityPayload {
-  return { issueCreatePayload: undefined, issueCommentCreatePayload: undefined };
-}
-
-export const ActivityPayload = {
-  encode(message: ActivityPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.issueCreatePayload !== undefined) {
-      ActivityIssueCreatePayload.encode(message.issueCreatePayload, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.issueCommentCreatePayload !== undefined) {
-      ActivityIssueCommentCreatePayload.encode(message.issueCommentCreatePayload, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ActivityPayload {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseActivityPayload();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.issueCreatePayload = ActivityIssueCreatePayload.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag != 18) {
-            break;
-          }
-
-          message.issueCommentCreatePayload = ActivityIssueCommentCreatePayload.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ActivityPayload {
-    return {
-      issueCreatePayload: isSet(object.issueCreatePayload)
-        ? ActivityIssueCreatePayload.fromJSON(object.issueCreatePayload)
-        : undefined,
-      issueCommentCreatePayload: isSet(object.issueCommentCreatePayload)
-        ? ActivityIssueCommentCreatePayload.fromJSON(object.issueCommentCreatePayload)
-        : undefined,
-    };
-  },
-
-  toJSON(message: ActivityPayload): unknown {
-    const obj: any = {};
-    message.issueCreatePayload !== undefined && (obj.issueCreatePayload = message.issueCreatePayload
-      ? ActivityIssueCreatePayload.toJSON(message.issueCreatePayload)
-      : undefined);
-    message.issueCommentCreatePayload !== undefined &&
-      (obj.issueCommentCreatePayload = message.issueCommentCreatePayload
-        ? ActivityIssueCommentCreatePayload.toJSON(message.issueCommentCreatePayload)
-        : undefined);
-    return obj;
-  },
-
-  create(base?: DeepPartial<ActivityPayload>): ActivityPayload {
-    return ActivityPayload.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<ActivityPayload>): ActivityPayload {
-    const message = createBaseActivityPayload();
-    message.issueCreatePayload = (object.issueCreatePayload !== undefined && object.issueCreatePayload !== null)
-      ? ActivityIssueCreatePayload.fromPartial(object.issueCreatePayload)
-      : undefined;
-    message.issueCommentCreatePayload =
-      (object.issueCommentCreatePayload !== undefined && object.issueCommentCreatePayload !== null)
-        ? ActivityIssueCommentCreatePayload.fromPartial(object.issueCommentCreatePayload)
-        : undefined;
-    return message;
-  },
-};
 
 function createBaseActivityIssueCreatePayload(): ActivityIssueCreatePayload {
   return { issueName: "" };
