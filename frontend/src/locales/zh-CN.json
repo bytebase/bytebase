@@ -1775,10 +1775,6 @@
         "title": "自定义审批",
         "desc": "为不同的任务配置安全风险等级和自定义审批流。"
       },
-      "bb-feature-slow-query": {
-        "title": "慢查询",
-        "desc": "记录与分析慢速的 SQL 查询。"
-      },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
         "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
@@ -2275,6 +2271,7 @@
     "rows-sent": "返回行数",
     "lock-time": "持有锁时长",
     "query-time": "执行时长",
-    "attention-description": "为 {versions} 记录和分析慢查询。\nBytebase 会定期从实例上同步慢查询日志。"
+    "attention-description": "为 {versions} 记录和分析慢查询。\nBytebase 会定期从实例上同步慢查询日志。",
+    "sync-job-started": "同步作业已启动。请等待同步完成。"
   }
 }
