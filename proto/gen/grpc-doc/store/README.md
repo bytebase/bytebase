@@ -9,7 +9,6 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
     - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
     - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
-    - [ActivityPayload](#bytebase-store-ActivityPayload)
   
     - [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
@@ -162,22 +161,6 @@ convert to the expected struct there.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityPayload"></a>
-
-### ActivityPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_create_payload | [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload) |  |  |
-| issue_comment_create_payload | [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload) |  |  |
 
 
 
