@@ -8,6 +8,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
             id int PRIMARY KEY
@@ -18,6 +19,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
             id int NOT NULL
@@ -28,6 +30,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE book(
             id int,
@@ -39,6 +42,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE book(a int);
     ALTER TABLE book ADD COLUMN id int PRIMARY KEY
@@ -48,6 +52,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(a int);
     ALTER TABLE book ADD COLUMN id int NOT NULL
@@ -57,6 +62,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE book(id int);
     ALTER TABLE book MODIFY COLUMN id int NOT NULL
@@ -66,6 +72,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 2
+      details: ""
 - statement: |-
     CREATE TABLE book(id int);
     ALTER TABLE book MODIFY COLUMN id int PRIMARY KEY
@@ -75,6 +82,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(uid int);
     ALTER TABLE book CHANGE COLUMN uid id int PRIMARY KEY
@@ -84,6 +92,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(uid int);
     ALTER TABLE book CHANGE COLUMN uid id int NOT NULL
@@ -93,6 +102,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 2
+      details: ""
 - statement: "\n\t\t\t\tCREATE TABLE book(uid int, id int);\n\t\t\t\tALTER TABLE book \n\t\t\t\t\tCHANGE COLUMN uid uid int NOT NULL DEFAULT 0,\n\t\t\t\t\tMODIFY COLUMN id int PRIMARY KEY DEFAULT 0,\n\t\t\t\t\tADD COLUMN name varchar(20) NOT NULL DEFAULT ''\n\t\t\t\t"
   want:
     - status: SUCCESS
@@ -100,3 +110,4 @@
       title: OK
       content: ""
       line: 0
+      details: ""

@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: UPDATE tech_book SET name = 'my name' ORDER BY id
   want:
     - status: WARN
@@ -12,6 +13,7 @@
       title: statement.disallow-order-by
       content: ORDER BY clause is forbidden in DELETE and UPDATE statements, but "UPDATE tech_book SET name = 'my name' ORDER BY id" uses
       line: 1
+      details: ""
 - statement: DELETE FROM tech_book ORDER BY id
   want:
     - status: WARN
@@ -19,3 +21,4 @@
       title: statement.disallow-order-by
       content: ORDER BY clause is forbidden in DELETE and UPDATE statements, but "DELETE FROM tech_book ORDER BY id" uses
       line: 1
+      details: ""
