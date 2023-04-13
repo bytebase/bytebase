@@ -47,12 +47,6 @@
       </div>
       <div class="my-3">
         <dt class="text-gray-400">
-          {{ $t("subscription.seat-count") }}
-        </dt>
-        <dd class="mt-1 text-4xl">{{ seatCount }}</dd>
-      </div>
-      <div class="my-3">
-        <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
         </dt>
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
@@ -165,14 +159,6 @@ export default defineComponent({
       return t("subscription.unlimited");
     });
 
-    const seatCount = computed((): string => {
-      const seat = subscription.value?.seat ?? 2;
-      if (seat > 0) {
-        return `${seat}`;
-      }
-      return t("subscription.unlimited");
-    });
-
     const currentPlan = computed((): string => {
       const plan = subscriptionStore.currentPlan;
       switch (plan) {
@@ -207,7 +193,6 @@ export default defineComponent({
       expireAt,
       isTrialing,
       isExpired,
-      seatCount,
       currentPlan,
       instanceCount,
       uploadLicense,
