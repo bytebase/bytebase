@@ -58,7 +58,7 @@ planList:
     featureList:
       # Change Management
       - type: instance-count
-        content: instance-maximum-20
+        content: instance-unlimited
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
@@ -185,7 +185,7 @@ planList:
     featureList:
       # Change Management
       - type: instance-count
-        content: instance-customized
+        content: instance-unlimited
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
