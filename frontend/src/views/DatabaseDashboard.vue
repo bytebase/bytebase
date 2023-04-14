@@ -28,12 +28,21 @@
             {{ $t("quick-action.default-db-hint") }}
           </div>
         </NTooltip>
-        <SearchBox
-          :value="state.searchText"
-          :placeholder="$t('database.search-database')"
-          :autofocus="true"
-          @update:value="changeSearchText($event)"
-        />
+
+        <NInputGroup style="width: auto">
+          <InstanceSelect
+            :instance="state.instanceFilter"
+            :include-all="true"
+            :environment="selectedEnvironment?.id"
+            @update:instance="state.instanceFilter = $event ?? UNKNOWN_ID"
+          />
+          <SearchBox
+            :value="state.searchText"
+            :placeholder="$t('database.search-database')"
+            :autofocus="true"
+            @update:value="changeSearchText($event)"
+          />
+        </NInputGroup>
       </div>
     </div>
 
@@ -51,16 +60,21 @@
 <script lang="ts" setup>
 import { computed, watchEffect, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NTooltip } from "naive-ui";
+import { NInputGroup, NTooltip } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
-import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
+import {
+  EnvironmentTabFilter,
+  InstanceSelect,
+  SearchBox,
+} from "@/components/v2";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import {
   type Database,
   type EnvironmentId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
+  InstanceId,
 } from "../types";
 import {
   filterDatabaseByKeyword,
@@ -75,6 +89,7 @@ import {
 } from "@/store";
 
 interface LocalState {
+  instanceFilter: InstanceId;
   searchText: string;
   databaseList: Database[];
   loading: boolean;
@@ -86,6 +101,7 @@ const router = useRouter();
 const route = useRoute();
 
 const state = reactive<LocalState>({
+  instanceFilter: UNKNOWN_ID,
   searchText: "",
   databaseList: [],
   loading: false,
@@ -157,6 +173,9 @@ const filteredList = computed(() => {
   const environment = selectedEnvironment.value;
   if (environment && environment.id !== UNKNOWN_ID) {
     list = list.filter((db) => db.instance.environment.id === environment.id);
+  }
+  if (state.instanceFilter !== UNKNOWN_ID) {
+    list = list.filter((db) => db.instance.id === state.instanceFilter);
   }
   list = list.filter((db) =>
     filterDatabaseByKeyword(db, searchText, [
