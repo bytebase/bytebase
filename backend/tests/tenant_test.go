@@ -451,6 +451,10 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
+			issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
+				AssigneeID: &ownerID,
+			})
+			a.NoError(err)
 
 			// Test pipeline stage patch status.
 			status, err := ctl.waitIssuePipelineWithStageApproval(issue.ID)
@@ -1530,6 +1534,11 @@ statement: |
 
 			// Get data update issues.
 			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			require.NoError(t, err)
+			require.Len(t, issues, 1)
+			_, err = ctl.patchIssue(issues[0].ID, api.IssuePatch{
+				AssigneeID: &ownerID,
+			})
 			require.NoError(t, err)
 			status, err = ctl.waitIssuePipeline(issues[0].ID)
 			require.NoError(t, err)
