@@ -4,18 +4,20 @@ DECLARE
   row_data RECORD;
   first_user RECORD;
 BEGIN
-  FOR row_data IN (SELECT
-	email,
-	id
-FROM (
-	SELECT
-		email,
-		id,
-		ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn
-	FROM
-		principal) AS temp
-WHERE
-	temp.rn > 1) 
+FOR row_data IN (
+  SELECT
+    email,
+    id
+  FROM (
+    SELECT
+      email,
+      id,
+      ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn
+    FROM
+      principal) AS temp
+  WHERE
+    temp.rn > 1
+)
 LOOP
   SELECT * INTO first_user FROM principal WHERE email = row_data.email ORDER BY id LIMIT 1;
   UPDATE setting SET creator_id = first_user.id WHERE creator_id = row_data.id;
