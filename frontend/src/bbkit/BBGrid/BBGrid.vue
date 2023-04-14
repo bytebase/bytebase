@@ -24,18 +24,33 @@
       </div>
     </div>
 
-    <div
+    <template
       v-for="(item, row) in dataSource"
       :key="rowKey ? item[rowKey] : row"
-      row="table-row"
-      class="bb-grid-row group"
-      :class="{
-        clickable: rowClickable,
-      }"
-      @click="handleClick(item, 0, row, $event)"
     >
-      <slot name="item" :item="item" :row="row" />
-    </div>
+      <div
+        row="table-row"
+        class="bb-grid-row group"
+        :class="{
+          clickable: rowClickable,
+        }"
+        @click="handleClick(item, 0, row, $event)"
+      >
+        <slot name="item" :item="item" :row="row" />
+      </div>
+      <div v-if="isRowExpanded(item, row)" row="table-row" class="bb-grid-row">
+        <div
+          class="bb-grid-cell"
+          :style="{
+            gridColumnStart: 1,
+            gridColumnEnd: columnList.length + 1,
+          }"
+        >
+          <slot name="expanded-item" :item="item" :row="row" />
+        </div>
+      </div>
+    </template>
+
     <slot name="placeholder">
       <div
         v-if="dataSource.length === 0 && showPlaceholder"
@@ -54,6 +69,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+
 import { VueClass } from "@/utils";
 import { BBGridColumn } from "../types";
 import { useResponsiveGridColumns } from "./useResponsiveGridColumns";
@@ -80,6 +96,7 @@ const props = withDefaults(
     headerClass?: VueClass;
     rowClickable?: boolean;
     showPlaceholder?: boolean;
+    isRowExpanded?: (item: DataType, row: number) => boolean;
   }>(),
   {
     columnList: () => [],
@@ -90,6 +107,7 @@ const props = withDefaults(
     headerClass: undefined,
     rowClickable: true,
     showPlaceholder: false,
+    isRowExpanded: () => false,
   }
 );
 

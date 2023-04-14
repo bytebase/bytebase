@@ -42,13 +42,13 @@ const { t } = useI18n();
 const environmentList = useEnvironmentList(["NORMAL"]);
 
 const items = computed(() => {
-  const environmentItems = environmentList.value.map<EnvironmentTabFilterItem>(
-    (env) => ({
+  const reversedEnvironmentList = [...environmentList.value].reverse();
+  const environmentItems =
+    reversedEnvironmentList.map<EnvironmentTabFilterItem>((env) => ({
       value: env.id,
       label: env.name,
       environment: env,
-    })
-  );
+    }));
   if (props.environment === UNKNOWN_ID || props.includeAll) {
     environmentItems.unshift({
       value: UNKNOWN_ID,

@@ -37,6 +37,9 @@
         <div class="bb-grid-cell">
           {{ log.statistics.averageRowsSent }}
         </div>
+        <div v-if="showProjectColumn" class="bb-grid-cell">
+          <ProjectName :project="database.project" :link="false" />
+        </div>
         <div v-if="showEnvironmentColumn" class="bb-grid-cell">
           <EnvironmentName
             :environment="database.instance.environment"
@@ -46,7 +49,7 @@
         <div v-if="showInstanceColumn" class="bb-grid-cell">
           <InstanceName :instance="database.instance" :link="false" />
         </div>
-        <div class="bb-grid-cell">
+        <div v-if="showDatabaseColumn" class="bb-grid-cell">
           <DatabaseName :database="database" :link="false" />
         </div>
         <div class="bb-grid-cell whitespace-nowrap !pr-4">
@@ -73,14 +76,18 @@ const props = withDefaults(
   defineProps<{
     slowQueryLogList?: ComposedSlowQueryLog[];
     showPlaceholder?: boolean;
+    showProjectColumn?: boolean;
     showEnvironmentColumn?: boolean;
     showInstanceColumn?: boolean;
+    showDatabaseColumn?: boolean;
   }>(),
   {
     slowQueryLogList: () => [],
     showPlaceholder: true,
+    showProjectColumn: true,
     showEnvironmentColumn: true,
     showInstanceColumn: true,
+    showDatabaseColumn: true,
   }
 );
 
@@ -124,6 +131,10 @@ const columns = computed(() => {
       title: t("slow-query.rows-sent-avg"),
       width: "minmax(6rem, auto)",
     },
+    props.showProjectColumn && {
+      title: t("common.project"),
+      width: "minmax(6rem, auto)",
+    },
     props.showEnvironmentColumn && {
       title: t("common.environment"),
       width: "minmax(6rem, auto)",
@@ -132,7 +143,7 @@ const columns = computed(() => {
       title: t("common.instance"),
       width: "minmax(12rem, 18rem)",
     },
-    {
+    props.showDatabaseColumn && {
       title: t("common.database"),
       width: "minmax(12rem, 18rem)",
     },

@@ -8,12 +8,7 @@
         @update:params="$emit('update:filter', $event)"
       >
         <template #suffix>
-          <NButton
-            type="primary"
-            :quaternary="true"
-            :loading="syncing"
-            @click="syncNow"
-          >
+          <NButton type="default" :loading="syncing" @click="syncNow">
             {{ $t("common.sync-now") }}
           </NButton>
         </template>
@@ -23,8 +18,10 @@
       <LogTable
         :slow-query-log-list="slowQueryLogList"
         :show-placeholder="!loading"
+        :show-project-column="showProjectColumn"
         :show-environment-column="showEnvironmentColumn"
         :show-instance-column="showInstanceColumn"
+        :show-database-column="showDatabaseColumn"
         @select="selectedSlowQueryLog = $event"
       />
       <div
@@ -68,13 +65,17 @@ const props = withDefaults(
   defineProps<{
     filter: SlowQueryFilterParams;
     filterTypes?: readonly FilterType[];
+    showProjectColumn?: boolean;
     showEnvironmentColumn?: boolean;
     showInstanceColumn?: boolean;
+    showDatabaseColumn?: boolean;
   }>(),
   {
     filterTypes: () => FilterTypeList,
+    showProjectColumn: true,
     showEnvironmentColumn: true,
     showInstanceColumn: true,
+    showDatabaseColumn: true,
   }
 );
 
