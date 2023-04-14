@@ -3,8 +3,7 @@
     <div
       class="text-lg font-medium leading-7 text-main flex items-center justify-between"
     >
-      <div class="flex items-center gap-x-6">
-        <h3>{{ $t("common.database") }}</h3>
+      <div class="flex items-center">
         <EnvironmentTabFilter
           :environment="state.environment"
           :include-all="true"
