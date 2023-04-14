@@ -70,7 +70,7 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/backups"};
     option (google.api.method_signature) = "parent";
   }
-  
+
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
@@ -535,7 +535,7 @@ message ListSlowQueriesRequest {
 // ListSlowQueriesResponse is the response of listing slow query.
 message ListSlowQueriesResponse {
   // The slow query logs.
-  repeated SlowQueryLog slow_query_logs = 1; 
+  repeated SlowQueryLog slow_query_logs = 1;
 }
 
 // SlowQueryLog is the slow query log.
@@ -543,26 +543,26 @@ message SlowQueryLog {
   // The resource of the slow query log.
   // The format is "environments/{environment}/instances/{instance}/databases/{database}".
   string resource = 1 [(google.api.field_behavior) = REQUIRED];
-  
+
   // The project of the slow query log.
   // The format is "projects/{project}".
   string project = 2;
-  
+
   // The statistics of the slow query log.
-  SlowQueryStatistics statistics = 3; 
+  SlowQueryStatistics statistics = 3;
 }
 
 // SlowQueryStatistics is the statistics of the slow query log.
 message SlowQueryStatistics {
   // The fingerprint of the slow query log.
   string sql_fingerprint = 1;
-  
+
   // The count of the slow query log.
   int32 count = 2;
-  
+
   // The latest log time of the slow query log.
   google.protobuf.Timestamp latest_log_time = 3;
-  
+
   // The average query time of the slow query log.
   google.protobuf.Duration average_query_time = 4;
   
@@ -589,19 +589,19 @@ message SlowQueryStatistics {
 message SlowQueryDetails {
   // The start time of the slow query log.
   google.protobuf.Timestamp start_time = 1;
-  
+
   // The query time of the slow query log.
   google.protobuf.Duration query_time = 2;
-  
+
   // The lock time of the slow query log.
   google.protobuf.Duration lock_time = 3;
-  
+
   // The rows sent of the slow query log.
   int32 rows_sent = 4;
-  
+
   // The rows examined of the slow query log.
   int32 rows_examined = 5;
-  
+
   // The sql text of the slow query log.
   string sql_text = 6;
 }

@@ -133,6 +133,9 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 		return err
 	}
 	defer driver.Close(ctx)
+	if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
+		return err
+	}
 
 	for date := latestSlowLogDate.Truncate(24 * time.Hour); !date.After(today); date = date.AddDate(0, 0, 1) {
 		logs, err := driver.SyncSlowQuery(ctx, date)

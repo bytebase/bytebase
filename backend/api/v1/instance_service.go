@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -30,16 +31,18 @@ type InstanceService struct {
 	metricReporter *metricreport.Reporter
 	secret         string
 	stateCfg       *state.State
+	dbFactory      *dbfactory.DBFactory
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
 		metricReporter: metricReporter,
 		secret:         secret,
 		stateCfg:       stateCfg,
+		dbFactory:      dbFactory,
 	}
 }
 
@@ -184,6 +187,15 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 	}
 	if composedInstance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+	}
+
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+	if err != nil {
+		return nil, err
+	}
+	defer driver.Close(ctx)
+	if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", err.Error())
 	}
 
 	if instance.Engine == db.MySQL {

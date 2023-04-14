@@ -637,3 +637,47 @@ func extractDatabase(defaultDB string, sql string) []string {
 	}
 	return result
 }
+
+// CheckSlowQueryLogEnabled checks whether the slow query log is enabled.
+func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
+	showSlowQueryLog := "SHOW GLOBAL VARIABLES LIKE 'slow_query_log'"
+
+	slowQueryLogRows, err := driver.db.QueryContext(ctx, showSlowQueryLog)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, showSlowQueryLog)
+	}
+	defer slowQueryLogRows.Close()
+	for slowQueryLogRows.Next() {
+		var name, value string
+		if err := slowQueryLogRows.Scan(&name, &value); err != nil {
+			return err
+		}
+		if value != "ON" {
+			return errors.New("slow query log is not enabled: slow_query_log = " + value)
+		}
+	}
+	if err := slowQueryLogRows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, showSlowQueryLog)
+	}
+
+	showLogOutput := "SHOW GLOBAL VARIABLES LIKE 'log_output'"
+	logOutputRows, err := driver.db.QueryContext(ctx, showLogOutput)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, showLogOutput)
+	}
+	defer logOutputRows.Close()
+	for logOutputRows.Next() {
+		var name, value string
+		if err := logOutputRows.Scan(&name, &value); err != nil {
+			return err
+		}
+		if !strings.Contains(value, "TABLE") {
+			return errors.New("slow query log is not contained in TABLE: log_output = " + value)
+		}
+	}
+	if err := logOutputRows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, showLogOutput)
+	}
+
+	return nil
+}
