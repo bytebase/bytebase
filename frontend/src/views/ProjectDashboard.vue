@@ -69,14 +69,15 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredList = (list: Project[]) => {
-  if (!state.searchText) {
+  const keyword = state.searchText.trim().toLowerCase();
+  if (!keyword) {
     // Select "All"
     return list;
   }
-  return list.filter((issue) => {
+  return list.filter((project) => {
     return (
-      !state.searchText ||
-      issue.name.toLowerCase().includes(state.searchText.toLowerCase())
+      project.name.toLowerCase().includes(keyword) ||
+      project.key.toLowerCase().includes(keyword)
     );
   });
 };
