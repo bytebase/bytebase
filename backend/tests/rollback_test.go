@@ -185,7 +185,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -262,7 +262,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "rollback",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(rollbackCreateContext),
 	})
 	a.NoError(err)
@@ -390,7 +390,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -475,7 +475,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "rollback",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(rollbackCreateContext),
 	})
 	a.NoError(err)
@@ -603,7 +603,7 @@ func TestRollbackCanceled(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
