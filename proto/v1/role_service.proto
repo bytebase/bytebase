@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/http.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
@@ -29,7 +30,7 @@ service role_service {
     };
     option (google.api.method_signature) = "role,update_mask";
   }
-  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.empty) {
+  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=roles/*}"};
     option (google.api.method_signature) = "name";
   }
