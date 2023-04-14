@@ -231,12 +231,10 @@ import {
   useActuatorStore,
   useAuthStore,
   useOnboardingStateStore,
-  useSubscriptionStore,
 } from "@/store";
 import { SignupInfo, TEXT_VALIDATION_DELAY } from "@/types";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   email: string;
@@ -255,7 +253,6 @@ export default defineComponent({
   components: { AuthFooter },
   setup() {
     const actuatorStore = useActuatorStore();
-    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -362,14 +359,7 @@ export default defineComponent({
         };
         await useAuthStore().signup(signupInfo);
         if (needAdminSetup.value) {
-          await Promise.all([
-            actuatorStore.fetchServerInfo(),
-            (async function () {
-              if (subscriptionStore.canTrial) {
-                await subscriptionStore.trialSubscription(PlanType.ENTERPRISE);
-              }
-            })(),
-          ]);
+          await actuatorStore.fetchServerInfo();
           // When the first time we created an end user, the server-side will
           // generate onboarding data.
           // We write a flag here to indicate that the workspace is just created

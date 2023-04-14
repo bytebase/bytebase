@@ -2,7 +2,8 @@
   <div>
     <SlowQueryPanel
       v-model:filter="filter"
-      :filter-types="['environment', 'database', 'time-range']"
+      :filter-types="['environment', 'instance', 'database', 'time-range']"
+      :show-project-column="false"
     />
   </div>
 </template>

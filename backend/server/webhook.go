@@ -338,6 +338,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
 		}
 
+		workspaceID, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
 		filter := func(repo *api.Repository) (bool, error) {
 			if !repo.EnableSQLReviewCI {
 				log.Debug("Skip repository as the SQL review CI is not enabled.",
@@ -357,7 +362,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 			token := c.Request().Header.Get("X-SQL-Review-Token")
 			// We will use workspace id as token in integration test for skipping the check.
-			if token == s.workspaceID {
+			if token == workspaceID {
 				return true, nil
 			}
 

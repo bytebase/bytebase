@@ -332,6 +332,11 @@ func (*MockDriver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*st
 	return nil, nil
 }
 
+// CheckSlowQueryLogEnabled checks if slow query log is enabled.
+func (*MockDriver) CheckSlowQueryLogEnabled(_ context.Context) error {
+	return nil
+}
+
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
 func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 	var payload []byte

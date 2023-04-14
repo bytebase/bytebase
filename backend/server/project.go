@@ -324,7 +324,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bytebase must start with --external-url to configure GitOps workflow, docs: %s", common.ExternalURLPlaceholder))
 			}
 
-			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", s.workspaceID, time.Now().Unix())
+			workspaceID, err := s.store.GetWorkspaceID(ctx)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", workspaceID, time.Now().Unix())
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for VCS").SetInternal(err)

@@ -3,8 +3,8 @@
     :column-list="columnList"
     :data-source="projectList"
     :show-header="true"
-    :left-bordered="false"
-    :right-bordered="false"
+    :left-bordered="leftBordered"
+    :right-bordered="rightBordered"
     @click-row="clickProject"
   >
     <template #header>
@@ -59,6 +59,14 @@ export default defineComponent({
     projectList: {
       required: true,
       type: Object as PropType<Project[]>,
+    },
+    leftBordered: {
+      default: true,
+      type: Boolean,
+    },
+    rightBordered: {
+      default: true,
+      type: Boolean,
     },
   },
 

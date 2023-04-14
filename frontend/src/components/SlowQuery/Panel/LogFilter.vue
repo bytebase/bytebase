@@ -1,23 +1,21 @@
 <template>
   <div class="mb-2 space-y-2">
     <div class="flex items-center gap-x-4 h-[34px]">
-      <NRadioGroup
-        v-if="filterTypes.includes('mode')"
-        v-model:value="mode"
-        :disabled="loading"
-        class="ml-1"
-      >
-        <NRadio value="environment">{{ $t("common.environment") }}</NRadio>
-        <NRadio value="project">{{ $t("common.project") }}</NRadio>
-      </NRadioGroup>
-
       <NInputGroup style="width: auto">
+        <ProjectSelect
+          v-if="filterTypes.includes('project')"
+          :project="params.project?.id ?? UNKNOWN_ID"
+          :include-default-project="canVisitDefaultProject"
+          :include-all="true"
+          :disabled="loading"
+          @update:project="changeProjectId"
+        />
         <InstanceSelect
-          v-if="mode === 'environment' && filterTypes.includes('instance')"
+          v-if="filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"
           :environment="params.environment?.id"
           :include-all="true"
-          :filter="instanceSupportSlowQuery"
+          :filter="instanceFilter"
           :disabled="loading"
           @update:instance="changeInstanceId"
         />
@@ -28,7 +26,7 @@
           :instance="params.instance?.id"
           :project="params.project?.id"
           :include-all="true"
-          :filter="(db) => instanceSupportSlowQuery(db.instance)"
+          :filter="(db) => instanceFilter(db.instance)"
           :disabled="loading"
           @update:database="changeDatabaseId"
         />
@@ -49,34 +47,19 @@
       </div>
     </div>
 
-    <div
-      v-if="
-        (mode === 'environment' && filterTypes.includes('environment')) ||
-        (mode === 'project' && filterTypes.includes('project'))
-      "
-    >
+    <div v-if="filterTypes.includes('environment')">
       <EnvironmentTabFilter
-        v-if="mode === 'environment' && filterTypes.includes('environment')"
         :environment="params.environment?.id ?? UNKNOWN_ID"
         :include-all="true"
         :disabled="loading"
         @update:environment="changeEnvironmentId"
       />
-
-      <ProjectSelect
-        v-if="mode === 'project' && filterTypes.includes('project')"
-        :project="params.project?.id ?? UNKNOWN_ID"
-        :include-default-project="false"
-        :include-all="true"
-        :disabled="loading"
-        @update:project="changeProjectId"
-      />
     </div>
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, shallowRef, watch } from "vue";
-import { NDatePicker, NInputGroup, NRadio, NRadioGroup } from "naive-ui";
+import { computed } from "vue";
+import { NDatePicker, NInputGroup } from "naive-ui";
 import dayjs from "dayjs";
 
 import {
@@ -85,6 +68,8 @@ import {
   type InstanceId,
   type ProjectId,
   UNKNOWN_ID,
+  Instance,
+  SlowQueryPolicyPayload,
 } from "@/types";
 import {
   useCurrentUser,
@@ -92,6 +77,7 @@ import {
   useEnvironmentStore,
   useInstanceStore,
   useProjectStore,
+  useSlowQueryPolicyList,
 } from "@/store";
 import { hasWorkspacePermission, instanceSupportSlowQuery } from "@/utils";
 import type { FilterType, SlowQueryFilterParams } from "./types";
@@ -101,8 +87,6 @@ import {
   EnvironmentTabFilter,
   DatabaseSelect,
 } from "@/components/v2";
-
-type FilterMode = "environment" | "project";
 
 const props = defineProps<{
   params: SlowQueryFilterParams;
@@ -115,9 +99,9 @@ const emit = defineEmits<{
 }>();
 
 const currentUser = useCurrentUser();
-const mode = shallowRef<FilterMode>("environment");
+const policyList = useSlowQueryPolicyList();
 
-const allowFilterByEnvironment = computed(() => {
+const canVisitDefaultProject = computed(() => {
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-database",
     currentUser.value.role
@@ -167,36 +151,19 @@ const update = (params: Partial<SlowQueryFilterParams>) => {
   });
 };
 
-// Clear unused filter params when mode changed
-watch(mode, (mode) => {
-  if (!props.filterTypes.includes("mode")) {
-    return;
+const instanceFilter = (instance: Instance) => {
+  if (!instanceSupportSlowQuery(instance)) {
+    return false;
   }
-
-  if (mode === "environment") {
-    if (props.params.project) {
-      update({ project: undefined, instance: undefined, database: undefined });
-    }
-  } else if (mode === "project") {
-    if (props.params.environment) {
-      update({
-        environment: undefined,
-        instance: undefined,
-        database: undefined,
-      });
-    }
+  const policy = policyList.value.find(
+    (policy) => policy.resourceId === instance.id
+  );
+  if (!policy) {
+    return false;
   }
-});
-
-watch(
-  allowFilterByEnvironment,
-  (allowed) => {
-    if (!allowed) {
-      mode.value = "project";
-    }
-  },
-  { immediate: true }
-);
+  const payload = policy.payload as SlowQueryPolicyPayload;
+  return payload.active;
+};
 
 const isDateDisabled = (date: number) => {
   return date > dayjs().endOf("day").valueOf();

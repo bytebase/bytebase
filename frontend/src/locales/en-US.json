@@ -2272,6 +2272,7 @@
     "lock-time": "Lock time",
     "query-time": "Query time",
     "attention-description": "Logging and analyzing slow queries for {versions}.\nBytebase will periodically sync slow query logs from instances.",
-    "sync-job-started": "Sync jobs started. Please wait for the jobs to complete."
+    "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
+    "detail": "Slow Query Detail"
   }
 }

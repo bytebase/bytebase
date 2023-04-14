@@ -1,4 +1,6 @@
 import { defineStore } from "pinia";
+import { ref } from "vue";
+import { uniq, uniqBy } from "lodash-es";
 
 import { Issue } from "@/types";
 import {
@@ -7,10 +9,8 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/review_service";
-import { ref } from "vue";
 import { extractUserEmail, useUserStore } from "./user";
 import { useMemberStore } from "./member";
-import { uniq, uniqBy } from "lodash-es";
 import { reviewServiceClient } from "@/grpcweb";
 import { User } from "@/types/proto/v1/auth_service";
 
@@ -116,12 +116,14 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
     if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
       return memberStore.memberList
         .filter((member) => member.role === "DBA")
-        .map((member) => member.principal);
+        .map((member) => member.principal)
+        .filter((user) => user.type === "END_USER");
     }
     if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
       return memberStore.memberList
         .filter((member) => member.role === "OWNER")
-        .map((member) => member.principal);
+        .map((member) => member.principal)
+        .filter((user) => user.type === "END_USER");
     }
     return [];
   });

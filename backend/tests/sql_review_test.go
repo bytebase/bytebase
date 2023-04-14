@@ -434,7 +434,7 @@ func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller,
 		Name:          "update schema for database",
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   "This updates the schema of database",
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)

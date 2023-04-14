@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import axios from "axios";
-import { IdType, ResourceObject, unknown } from "@/types";
+import { IdType, ResourceObject, unknown, UNKNOWN_ID } from "@/types";
 import {
   PipelineApprovalPolicyPayload,
   Policy,
@@ -10,6 +10,7 @@ import {
   PolicyUpsert,
   SensitiveDataPolicyPayload,
 } from "@/types/policy";
+import { useCurrentUser } from "./auth";
 
 function convert(
   resourceType: PolicyResourceType,
@@ -170,3 +171,23 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
     deletePolicyByResourceTypeAndPolicyType,
   };
 });
+
+export const useSlowQueryPolicyList = () => {
+  const store = useSlowQueryPolicyStore();
+  const currentUser = useCurrentUser();
+  watchEffect(() => {
+    if (currentUser.value.id === UNKNOWN_ID) return;
+
+    store.fetchPolicyListByResourceTypeAndPolicyType(
+      "instance",
+      "bb.policy.slow-query"
+    );
+  });
+
+  return computed(() => {
+    return store.getPolicyListByResourceTypeAndPolicyType(
+      "instance",
+      "bb.policy.slow-query"
+    );
+  });
+};

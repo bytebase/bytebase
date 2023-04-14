@@ -63,6 +63,21 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 	return payload, nil
 }
 
+// GetWorkspaceID finds the workspace id in setting bb.workspace.id.
+func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
+	settingName := api.SettingWorkspaceID
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return "", errors.Errorf("cannot find setting %v", settingName)
+	}
+	return setting.Value, nil
+}
+
 // GetWorkspaceApprovalSetting gets the workspace approval setting.
 func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.WorkspaceApprovalSetting, error) {
 	settingName := api.SettingWorkspaceApproval
