@@ -403,7 +403,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
-	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
+	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
@@ -666,7 +666,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter() {
-	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, s.profile.EnableMetric)
+	metricReporter := metricreport.NewReporter(s.store, s.licenseService, &s.profile, s.profile.EnableMetric)
 	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))

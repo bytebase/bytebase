@@ -30,6 +30,8 @@ const (
 	identifyTraitForOrgName = "org_name"
 	// identifyTraitForMode is the trait key for Bytebase service mode.
 	identifyTraitForMode = "mode"
+	// identifyTraitForLastActiveTime is the trait key for Bytebase last active time.
+	identifyTraitForLastActiveTime = "last_active"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
 	// bytebaseServiceModeSaaS is the mode for Bytebase SaaS.
@@ -41,17 +43,14 @@ const (
 // Reporter is the metric reporter.
 type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
-	// Version is the bytebase's version
-	version string
-	// mode is the Bytebase service mode, could be self-host or saas.
-	mode       string
-	reporter   metric.Reporter
-	collectors map[string]metric.Collector
-	store      *store.Store
+	profile        *config.Profile
+	reporter       metric.Reporter
+	collectors     map[string]metric.Collector
+	store          *store.Store
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, enabled bool) *Reporter {
+func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile *config.Profile, enabled bool) *Reporter {
 	var r metric.Reporter
 	if enabled {
 		r = segment.NewReporter(profile.MetricConnectionKey)
@@ -59,15 +58,9 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 		r = segment.NewMockReporter()
 	}
 
-	mode := bytebaseServiceModeSelfhost
-	if profile.SaaS {
-		mode = bytebaseServiceModeSaaS
-	}
-
 	return &Reporter{
 		licenseService: licenseService,
-		version:        profile.Version,
-		mode:           mode,
+		profile:        profile,
 		reporter:       r,
 		collectors:     make(map[string]metric.Collector),
 		store:          store,
@@ -170,16 +163,22 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 		name = user.Name
 	}
 
+	mode := bytebaseServiceModeSelfhost
+	if m.profile.SaaS {
+		mode = bytebaseServiceModeSaaS
+	}
+
 	if err := m.reporter.Identify(&metric.Identifier{
 		ID:    workspaceID,
 		Email: email,
 		Name:  name,
 		Labels: map[string]string{
-			identifyTraitForPlan:    plan,
-			identifyTraitForVersion: m.version,
-			identifyTraitForOrgID:   orgID,
-			identifyTraitForOrgName: orgName,
-			identifyTraitForMode:    m.mode,
+			identifyTraitForPlan:           plan,
+			identifyTraitForVersion:        m.profile.Version,
+			identifyTraitForOrgID:          orgID,
+			identifyTraitForOrgName:        orgName,
+			identifyTraitForMode:           mode,
+			identifyTraitForLastActiveTime: time.Unix(m.profile.LastActiveTs, 0).String(),
 		},
 	}); err != nil {
 		return workspaceID, err
