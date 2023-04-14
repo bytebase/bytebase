@@ -52,6 +52,11 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
 	}
 
+	workspaceID, err := s.store.GetWorkspaceID(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	serverInfo := v1pb.ActuatorInfo{
 		Version:        s.profile.Version,
 		GitCommit:      s.profile.GitCommit,
@@ -63,6 +68,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		DisallowSignup: setting.DisallowSignup,
 		Require_2Fa:    setting.Require_2Fa,
 		LastActiveTime: timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
+		WorkspaceId:    workspaceID,
 	}
 
 	return &serverInfo, nil
