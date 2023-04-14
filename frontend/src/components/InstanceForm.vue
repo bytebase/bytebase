@@ -717,6 +717,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "1521";
   } else if (engine === "MSSQL") {
     return "1433";
+  } else if (engine === "REDSHIFT") {
+    return "5439";
   }
   return "3306";
 };
