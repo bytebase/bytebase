@@ -11,7 +11,6 @@ export type SlowQueryFilterParams = {
 };
 
 export const FilterTypeList = [
-  "mode",
   "project",
   "environment",
   "instance",
