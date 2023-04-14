@@ -20,6 +20,8 @@
     <ProjectTable
       v-if="state.selectedIndex == PROJECT_TAB"
       :project-list="filteredProjectList(projectList)"
+      :left-bordered="false"
+      :right-bordered="false"
     />
     <InstanceTable
       v-else-if="state.selectedIndex == INSTANCE_TAB"
