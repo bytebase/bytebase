@@ -298,3 +298,8 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, errors.Errorf("not implemented")
 }
+
+// CheckSlowQueryLogEnabled checks if slow query log is enabled.
+func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
+	return errors.Errorf("not implemented")
+}
