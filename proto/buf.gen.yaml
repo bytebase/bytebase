@@ -1,13 +1,13 @@
 version: v1
 plugins:
-  - name: go
+  - plugin: buf.build/protocolbuffers/go
     out: generated-go
     opt: paths=source_relative
-  - name: go-grpc
+  - plugin: buf.build/grpc/go
     out: generated-go
     opt:
       - paths=source_relative
-  - name: grpc-gateway
+  - plugin: buf.build/grpc-ecosystem/gateway
     out: generated-go
     opt:
       - paths=source_relative
