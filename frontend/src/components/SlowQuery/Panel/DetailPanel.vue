@@ -6,22 +6,20 @@
     @update:show="(show) => !show && $emit('close')"
   >
     <NDrawerContent
-      :title="$t('common.detail')"
+      :title="$t('slow-query.detail')"
       :closable="true"
       class="w-[calc(100vw-2rem)] lg:max-w-[64rem] xl:max-w-[72rem]"
     >
       <div v-if="slowQueryLog" class="max-h-full flex flex-col gap-y-4 text-sm">
         <div
-          class="grid grid-cols-[auto_1fr] md:grid-cols-[minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr] gap-x-2 gap-y-4"
+          class="grid grid-cols-[auto_1fr] md:grid-cols-[minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr] gap-x-2 gap-y-4"
         >
           <div class="contents">
             <label class="font-medium capitalize">
               {{ $t("common.project") }}
             </label>
 
-            <div class="col-start-2 md:col-span-5">
-              <ProjectName :project="database.project" />
-            </div>
+            <ProjectName :project="database.project" />
           </div>
 
           <div class="contents">
@@ -54,7 +52,7 @@
             </label>
 
             <div
-              class="col-start-2 md:col-span-5 max-h-[8rem] overflow-auto py-0.5 text-xs"
+              class="col-start-2 md:col-span-3 max-h-[8rem] overflow-auto py-0.5 text-xs"
             >
               <HighlightCodeBlock
                 :code="log.statistics?.sqlFingerprint ?? ''"
