@@ -49,7 +49,7 @@
         <div v-if="showInstanceColumn" class="bb-grid-cell">
           <InstanceName :instance="database.instance" :link="false" />
         </div>
-        <div class="bb-grid-cell">
+        <div v-if="showDatabaseColumn" class="bb-grid-cell">
           <DatabaseName :database="database" :link="false" />
         </div>
         <div class="bb-grid-cell whitespace-nowrap !pr-4">
@@ -79,6 +79,7 @@ const props = withDefaults(
     showProjectColumn?: boolean;
     showEnvironmentColumn?: boolean;
     showInstanceColumn?: boolean;
+    showDatabaseColumn?: boolean;
   }>(),
   {
     slowQueryLogList: () => [],
@@ -86,6 +87,7 @@ const props = withDefaults(
     showProjectColumn: true,
     showEnvironmentColumn: true,
     showInstanceColumn: true,
+    showDatabaseColumn: true,
   }
 );
 
@@ -141,7 +143,7 @@ const columns = computed(() => {
       title: t("common.instance"),
       width: "minmax(12rem, 18rem)",
     },
-    {
+    props.showDatabaseColumn && {
       title: t("common.database"),
       width: "minmax(12rem, 18rem)",
     },

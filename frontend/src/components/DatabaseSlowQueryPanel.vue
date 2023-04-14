@@ -7,6 +7,7 @@
       :show-project-column="false"
       :show-environment-column="false"
       :show-instance-column="false"
+      :show-database-column="false"
     />
   </div>
 </template>

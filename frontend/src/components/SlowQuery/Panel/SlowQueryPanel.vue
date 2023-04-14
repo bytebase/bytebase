@@ -21,6 +21,7 @@
         :show-project-column="showProjectColumn"
         :show-environment-column="showEnvironmentColumn"
         :show-instance-column="showInstanceColumn"
+        :show-database-column="showDatabaseColumn"
         @select="selectedSlowQueryLog = $event"
       />
       <div
@@ -67,12 +68,14 @@ const props = withDefaults(
     showProjectColumn?: boolean;
     showEnvironmentColumn?: boolean;
     showInstanceColumn?: boolean;
+    showDatabaseColumn?: boolean;
   }>(),
   {
     filterTypes: () => FilterTypeList,
     showProjectColumn: true,
     showEnvironmentColumn: true,
     showInstanceColumn: true,
+    showDatabaseColumn: true,
   }
 );
 
