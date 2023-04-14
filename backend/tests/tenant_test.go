@@ -899,6 +899,10 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
+			issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
+				AssigneeID: &ownerID,
+			})
+			a.NoError(err)
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
@@ -1209,6 +1213,10 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
+			issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
+				AssigneeID: &ownerID,
+			})
+			a.NoError(err)
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
@@ -1487,6 +1495,10 @@ func TestTenantVCS_YAML(t *testing.T) {
 			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
 			require.Len(t, issues, 1)
+			_, err = ctl.patchIssue(issues[0].ID, api.IssuePatch{
+				AssigneeID: &ownerID,
+			})
+			require.NoError(t, err)
 			status, err := ctl.waitIssuePipeline(issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
