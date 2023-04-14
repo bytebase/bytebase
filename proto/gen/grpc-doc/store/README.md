@@ -56,9 +56,13 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
+    - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
+  
+    - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
+    - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
@@ -819,6 +823,30 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
+<a name="bytebase-store-SMTPMailDeliverySetting"></a>
+
+### SMTPMailDeliverySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| server | [string](#string) |  | The SMTP server address. |
+| port | [int32](#int32) |  | The SMTP server port. |
+| encryption | [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption) |  | The SMTP server encryption. |
+| ca | [string](#string) |  | The CA, KEY, and CERT for the SMTP server. |
+| key | [string](#string) |  |  |
+| cert | [string](#string) |  |  |
+| authentication | [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication) |  |  |
+| username | [string](#string) |  |  |
+| password | [string](#string) | optional |  |
+| from | [string](#string) |  | The sender email address. |
+
+
+
+
+
+
 <a name="bytebase-store-WorkspaceApprovalSetting"></a>
 
 ### WorkspaceApprovalSetting
@@ -870,6 +898,35 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 
 
  
+
+
+<a name="bytebase-store-SMTPMailDeliverySetting-Authentication"></a>
+
+### SMTPMailDeliverySetting.Authentication
+We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| AUTHENTICATION_NONE | 1 |  |
+| AUTHENTICATION_PLAIN | 2 |  |
+| AUTHENTICATION_LOGIN | 3 |  |
+| AUTHENTICATION_CRAM_MD5 | 4 |  |
+
+
+
+<a name="bytebase-store-SMTPMailDeliverySetting-Encryption"></a>
+
+### SMTPMailDeliverySetting.Encryption
+We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENCRYPTION_UNSPECIFIED | 0 |  |
+| ENCRYPTION_NONE | 1 |  |
+| ENCRYPTION_STARTTLS | 2 |  |
+| ENCRYPTION_SSL_TLS | 3 |  |
+
 
  
 
