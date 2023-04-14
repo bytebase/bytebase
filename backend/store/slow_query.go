@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +48,13 @@ func (s *Store) ListSlowQuery(ctx context.Context, list *ListSlowQueryMessage) (
 	return slowQueryLog, nil
 }
 
+type slowQueryLogValue struct {
+	log               *v1pb.SlowQueryLog
+	totalQueryTime    time.Duration
+	totalRowsSent     int64
+	totalRowsExamined int64
+}
+
 func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQueryMessage) ([]*v1pb.SlowQueryLog, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := list.InstanceUID; v != nil {
@@ -80,7 +86,7 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 	}
 	defer rows.Close()
 
-	logMap := make(map[string]*v1pb.SlowQueryLog)
+	logMap := make(map[string]*slowQueryLogValue)
 	for rows.Next() {
 		var instanceUID int
 		var databaseUID sql.NullInt32
@@ -101,10 +107,13 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 		}
 
 		for _, item := range slowLog.Items {
-			if log, exists := logMap[item.SqlFingerprint]; exists {
-				log.Statistics.Count += item.Count
-				if log.Statistics.LatestLogTime.AsTime().Before(item.LatestLogTime.AsTime()) {
-					log.Statistics.LatestLogTime = item.LatestLogTime
+			if value, exists := logMap[item.SqlFingerprint]; exists {
+				value.log.Statistics.Count += item.Count
+				value.totalQueryTime += item.TotalQueryTime.AsDuration()
+				value.totalRowsSent += item.TotalRowsSent
+				value.totalRowsExamined += item.TotalRowsExamined
+				if value.log.Statistics.LatestLogTime.AsTime().Before(item.LatestLogTime.AsTime()) {
+					value.log.Statistics.LatestLogTime = item.LatestLogTime
 				}
 				for _, sample := range item.Samples {
 					details := &v1pb.SlowQueryDetails{
@@ -116,35 +125,43 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 						SqlText:      sample.SqlText,
 					}
 
-					if len(log.Statistics.Samples) < db.SlowQueryMaxSamplePerFingerprint {
-						log.Statistics.Samples = append(log.Statistics.Samples, details)
+					if len(value.log.Statistics.Samples) < db.SlowQueryMaxSamplePerFingerprint {
+						value.log.Statistics.Samples = append(value.log.Statistics.Samples, details)
 					} else {
 						// Use Reservoir Sampling to sample slow logs.
-						pos := rand.Intn(len(log.Statistics.Samples))
-						log.Statistics.Samples[pos] = details
+						pos := rand.Intn(len(value.log.Statistics.Samples))
+						value.log.Statistics.Samples[pos] = details
 					}
 				}
 			} else {
-				logMap[item.SqlFingerprint] = &v1pb.SlowQueryLog{
-					Statistics: &v1pb.SlowQueryStatistics{
-						SqlFingerprint: item.SqlFingerprint,
-						Count:          item.Count,
-						LatestLogTime:  item.LatestLogTime,
-						Samples: func() []*v1pb.SlowQueryDetails {
-							var details []*v1pb.SlowQueryDetails
-							for _, sample := range item.Samples {
-								details = append(details, &v1pb.SlowQueryDetails{
-									StartTime:    sample.StartTime,
-									QueryTime:    sample.QueryTime,
-									LockTime:     sample.LockTime,
-									RowsSent:     sample.RowsSent,
-									RowsExamined: sample.RowsExamined,
-									SqlText:      sample.SqlText,
-								})
-							}
-							return details
-						}(),
+				logMap[item.SqlFingerprint] = &slowQueryLogValue{
+					log: &v1pb.SlowQueryLog{
+						Statistics: &v1pb.SlowQueryStatistics{
+							SqlFingerprint:      item.SqlFingerprint,
+							Count:               item.Count,
+							LatestLogTime:       item.LatestLogTime,
+							MaximumQueryTime:    item.MaximumQueryTime,
+							MaximumRowsSent:     item.MaximumRowsSent,
+							MaximumRowsExamined: item.MaximumRowsExamined,
+							Samples: func() []*v1pb.SlowQueryDetails {
+								var details []*v1pb.SlowQueryDetails
+								for _, sample := range item.Samples {
+									details = append(details, &v1pb.SlowQueryDetails{
+										StartTime:    sample.StartTime,
+										QueryTime:    sample.QueryTime,
+										LockTime:     sample.LockTime,
+										RowsSent:     sample.RowsSent,
+										RowsExamined: sample.RowsExamined,
+										SqlText:      sample.SqlText,
+									})
+								}
+								return details
+							}(),
+						},
 					},
+					totalQueryTime:    item.TotalQueryTime.AsDuration(),
+					totalRowsSent:     item.TotalRowsSent,
+					totalRowsExamined: item.TotalRowsExamined,
 				}
 			}
 		}
@@ -162,38 +179,12 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 	return result, nil
 }
 
-func calculateStatistics(log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
-	var totalQueryTime time.Duration
-	var totalSent, totalExamined int64
-
-	for _, sample := range log.Statistics.Samples {
-		totalQueryTime += sample.QueryTime.AsDuration()
-		totalSent += int64(sample.RowsSent)
-		totalExamined += int64(sample.RowsExamined)
-	}
-
-	log.Statistics.AverageQueryTime = durationpb.New(totalQueryTime / time.Duration(len(log.Statistics.Samples)))
-	log.Statistics.AverageRowsSent = int32(totalSent / int64(len(log.Statistics.Samples)))
-	log.Statistics.AverageRowsExamined = int32(totalExamined / int64(len(log.Statistics.Samples)))
-
-	nightyFifthPos := int(float64(len(log.Statistics.Samples)) * 0.95)
-
-	sort.Slice(log.Statistics.Samples, func(i, j int) bool {
-		return log.Statistics.Samples[i].RowsSent < log.Statistics.Samples[j].RowsSent
-	})
-	log.Statistics.NightyFifthPercentileRowsSent = log.Statistics.Samples[nightyFifthPos].RowsSent
-
-	sort.Slice(log.Statistics.Samples, func(i, j int) bool {
-		return log.Statistics.Samples[i].RowsExamined < log.Statistics.Samples[j].RowsExamined
-	})
-	log.Statistics.NightyFifthPercentileRowsExamined = log.Statistics.Samples[nightyFifthPos].RowsExamined
-
-	sort.Slice(log.Statistics.Samples, func(i, j int) bool {
-		return log.Statistics.Samples[i].QueryTime.AsDuration() < log.Statistics.Samples[j].QueryTime.AsDuration()
-	})
-	log.Statistics.NightyFifthPercentileQueryTime = log.Statistics.Samples[nightyFifthPos].QueryTime
-
-	return log
+func calculateStatistics(value *slowQueryLogValue) *v1pb.SlowQueryLog {
+	result := value.log
+	result.Statistics.AverageQueryTime = durationpb.New(value.totalQueryTime / time.Duration(result.Statistics.Count))
+	result.Statistics.AverageRowsSent = int32(value.totalRowsSent / int64(result.Statistics.Count))
+	result.Statistics.AverageRowsExamined = int32(value.totalRowsExamined / int64(result.Statistics.Count))
+	return result
 }
 
 // UpsertSlowLogMessage is the message to upsert slow query logs.
