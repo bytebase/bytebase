@@ -9,7 +9,6 @@ $ helm repo add bytebase-repo https://bytebase.github.io/bytebase
 $ helm repo update
 $ helm -n <YOUR_NAMESPACE> \
 --set "bytebase.option.port"={PORT} \
---set "bytebase.option.external-url"={EXTERNAL_URL} \
 --set "bytebase.option.pg"={PGDSN} \
 --set "bytebase.version"={VERSION} \
 install <RELEASE_NAME> bytebase-repo/bytebase
