@@ -41,7 +41,7 @@ export interface ActuatorInfo {
   lastActiveTime?: Date;
   /** require_2fa is the flag to require 2FA for all users. */
   require2fa: boolean;
-  /** workspace_id the identifier for the workspace. */
+  /** workspace_id is the identifier for the workspace. */
   workspaceId: string;
 }
 

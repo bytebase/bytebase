@@ -130,7 +130,7 @@ type ActuatorInfo struct {
 	LastActiveTime *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=last_active_time,json=lastActiveTime,proto3" json:"last_active_time,omitempty"`
 	// require_2fa is the flag to require 2FA for all users.
 	Require_2Fa bool `protobuf:"varint,12,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
-	// workspace_id the identifier for the workspace.
+	// workspace_id is the identifier for the workspace.
 	WorkspaceId string `protobuf:"bytes,13,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 }
 
