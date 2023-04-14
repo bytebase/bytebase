@@ -6,7 +6,7 @@ import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
 
-export interface GetRoleRequest {
+export interface GetInstanceRoleRequest {
   /**
    * The name of the role to retrieve.
    * Format: environments/{environment}/instances/{instance}/roles/{role name}
@@ -15,7 +15,7 @@ export interface GetRoleRequest {
   name: string;
 }
 
-export interface ListRolesRequest {
+export interface ListInstanceRolesRequest {
   /**
    * The parent, which owns this collection of roles.
    * Format: environments/{environment}/instances/{instance}
@@ -38,7 +38,7 @@ export interface ListRolesRequest {
   pageToken: string;
 }
 
-export interface ListRolesResponse {
+export interface ListInstanceRolesResponse {
   /** The roles from the specified request. */
   roles: InstanceRole[];
   /**
@@ -48,7 +48,7 @@ export interface ListRolesResponse {
   nextPageToken: string;
 }
 
-export interface CreateRoleRequest {
+export interface CreateInstanceRoleRequest {
   /**
    * The parent resource where this role will be created.
    * Format: environments/{environment}/instances/{instance}
@@ -58,7 +58,7 @@ export interface CreateRoleRequest {
   role?: InstanceRole;
 }
 
-export interface UpdateRoleRequest {
+export interface UpdateInstanceRoleRequest {
   /**
    * The role to update.
    *
@@ -70,7 +70,7 @@ export interface UpdateRoleRequest {
   updateMask?: string[];
 }
 
-export interface DeleteRoleRequest {
+export interface DeleteInstanceRoleRequest {
   /**
    * The name of the role to delete.
    * Format: environments/{environment}/instances/{instance}/roles/{role name}
@@ -78,7 +78,7 @@ export interface DeleteRoleRequest {
   name: string;
 }
 
-export interface UndeleteRoleRequest {
+export interface UndeleteInstanceRoleRequest {
   /**
    * The name of the deleted role.
    * Format: environments/{environment}/instances/{instance}/roles/{role name}
@@ -116,22 +116,22 @@ export interface InstanceRole {
   attribute?: string | undefined;
 }
 
-function createBaseGetRoleRequest(): GetRoleRequest {
+function createBaseGetInstanceRoleRequest(): GetInstanceRoleRequest {
   return { name: "" };
 }
 
-export const GetRoleRequest = {
-  encode(message: GetRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GetInstanceRoleRequest = {
+  encode(message: GetInstanceRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetRoleRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetInstanceRoleRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetRoleRequest();
+    const message = createBaseGetInstanceRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -151,33 +151,33 @@ export const GetRoleRequest = {
     return message;
   },
 
-  fromJSON(object: any): GetRoleRequest {
+  fromJSON(object: any): GetInstanceRoleRequest {
     return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: GetRoleRequest): unknown {
+  toJSON(message: GetInstanceRoleRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create(base?: DeepPartial<GetRoleRequest>): GetRoleRequest {
-    return GetRoleRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<GetInstanceRoleRequest>): GetInstanceRoleRequest {
+    return GetInstanceRoleRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<GetRoleRequest>): GetRoleRequest {
-    const message = createBaseGetRoleRequest();
+  fromPartial(object: DeepPartial<GetInstanceRoleRequest>): GetInstanceRoleRequest {
+    const message = createBaseGetInstanceRoleRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseListRolesRequest(): ListRolesRequest {
+function createBaseListInstanceRolesRequest(): ListInstanceRolesRequest {
   return { parent: "", pageSize: 0, pageToken: "" };
 }
 
-export const ListRolesRequest = {
-  encode(message: ListRolesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListInstanceRolesRequest = {
+  encode(message: ListInstanceRolesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -190,10 +190,10 @@ export const ListRolesRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListRolesRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListInstanceRolesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListRolesRequest();
+    const message = createBaseListInstanceRolesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -227,7 +227,7 @@ export const ListRolesRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListRolesRequest {
+  fromJSON(object: any): ListInstanceRolesRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
@@ -235,7 +235,7 @@ export const ListRolesRequest = {
     };
   },
 
-  toJSON(message: ListRolesRequest): unknown {
+  toJSON(message: ListInstanceRolesRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
@@ -243,12 +243,12 @@ export const ListRolesRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListRolesRequest>): ListRolesRequest {
-    return ListRolesRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListInstanceRolesRequest>): ListInstanceRolesRequest {
+    return ListInstanceRolesRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListRolesRequest>): ListRolesRequest {
-    const message = createBaseListRolesRequest();
+  fromPartial(object: DeepPartial<ListInstanceRolesRequest>): ListInstanceRolesRequest {
+    const message = createBaseListInstanceRolesRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -256,12 +256,12 @@ export const ListRolesRequest = {
   },
 };
 
-function createBaseListRolesResponse(): ListRolesResponse {
+function createBaseListInstanceRolesResponse(): ListInstanceRolesResponse {
   return { roles: [], nextPageToken: "" };
 }
 
-export const ListRolesResponse = {
-  encode(message: ListRolesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListInstanceRolesResponse = {
+  encode(message: ListInstanceRolesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.roles) {
       InstanceRole.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -271,10 +271,10 @@ export const ListRolesResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListRolesResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListInstanceRolesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListRolesResponse();
+    const message = createBaseListInstanceRolesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -301,14 +301,14 @@ export const ListRolesResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListRolesResponse {
+  fromJSON(object: any): ListInstanceRolesResponse {
     return {
       roles: Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
 
-  toJSON(message: ListRolesResponse): unknown {
+  toJSON(message: ListInstanceRolesResponse): unknown {
     const obj: any = {};
     if (message.roles) {
       obj.roles = message.roles.map((e) => e ? InstanceRole.toJSON(e) : undefined);
@@ -319,24 +319,24 @@ export const ListRolesResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListRolesResponse>): ListRolesResponse {
-    return ListRolesResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListInstanceRolesResponse>): ListInstanceRolesResponse {
+    return ListInstanceRolesResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListRolesResponse>): ListRolesResponse {
-    const message = createBaseListRolesResponse();
+  fromPartial(object: DeepPartial<ListInstanceRolesResponse>): ListInstanceRolesResponse {
+    const message = createBaseListInstanceRolesResponse();
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
 
-function createBaseCreateRoleRequest(): CreateRoleRequest {
+function createBaseCreateInstanceRoleRequest(): CreateInstanceRoleRequest {
   return { parent: "", role: undefined };
 }
 
-export const CreateRoleRequest = {
-  encode(message: CreateRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const CreateInstanceRoleRequest = {
+  encode(message: CreateInstanceRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -346,10 +346,10 @@ export const CreateRoleRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateRoleRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateInstanceRoleRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateRoleRequest();
+    const message = createBaseCreateInstanceRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -376,26 +376,26 @@ export const CreateRoleRequest = {
     return message;
   },
 
-  fromJSON(object: any): CreateRoleRequest {
+  fromJSON(object: any): CreateInstanceRoleRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       role: isSet(object.role) ? InstanceRole.fromJSON(object.role) : undefined,
     };
   },
 
-  toJSON(message: CreateRoleRequest): unknown {
+  toJSON(message: CreateInstanceRoleRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
     return obj;
   },
 
-  create(base?: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
-    return CreateRoleRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<CreateInstanceRoleRequest>): CreateInstanceRoleRequest {
+    return CreateInstanceRoleRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
-    const message = createBaseCreateRoleRequest();
+  fromPartial(object: DeepPartial<CreateInstanceRoleRequest>): CreateInstanceRoleRequest {
+    const message = createBaseCreateInstanceRoleRequest();
     message.parent = object.parent ?? "";
     message.role = (object.role !== undefined && object.role !== null)
       ? InstanceRole.fromPartial(object.role)
@@ -404,12 +404,12 @@ export const CreateRoleRequest = {
   },
 };
 
-function createBaseUpdateRoleRequest(): UpdateRoleRequest {
+function createBaseUpdateInstanceRoleRequest(): UpdateInstanceRoleRequest {
   return { role: undefined, updateMask: undefined };
 }
 
-export const UpdateRoleRequest = {
-  encode(message: UpdateRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateInstanceRoleRequest = {
+  encode(message: UpdateInstanceRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.role !== undefined) {
       InstanceRole.encode(message.role, writer.uint32(10).fork()).ldelim();
     }
@@ -419,10 +419,10 @@ export const UpdateRoleRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateRoleRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateInstanceRoleRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateRoleRequest();
+    const message = createBaseUpdateInstanceRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -449,26 +449,26 @@ export const UpdateRoleRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateRoleRequest {
+  fromJSON(object: any): UpdateInstanceRoleRequest {
     return {
       role: isSet(object.role) ? InstanceRole.fromJSON(object.role) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
-  toJSON(message: UpdateRoleRequest): unknown {
+  toJSON(message: UpdateInstanceRoleRequest): unknown {
     const obj: any = {};
     message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
-  create(base?: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
-    return UpdateRoleRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateInstanceRoleRequest>): UpdateInstanceRoleRequest {
+    return UpdateInstanceRoleRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
-    const message = createBaseUpdateRoleRequest();
+  fromPartial(object: DeepPartial<UpdateInstanceRoleRequest>): UpdateInstanceRoleRequest {
+    const message = createBaseUpdateInstanceRoleRequest();
     message.role = (object.role !== undefined && object.role !== null)
       ? InstanceRole.fromPartial(object.role)
       : undefined;
@@ -477,22 +477,22 @@ export const UpdateRoleRequest = {
   },
 };
 
-function createBaseDeleteRoleRequest(): DeleteRoleRequest {
+function createBaseDeleteInstanceRoleRequest(): DeleteInstanceRoleRequest {
   return { name: "" };
 }
 
-export const DeleteRoleRequest = {
-  encode(message: DeleteRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DeleteInstanceRoleRequest = {
+  encode(message: DeleteInstanceRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteRoleRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteInstanceRoleRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteRoleRequest();
+    const message = createBaseDeleteInstanceRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -512,43 +512,43 @@ export const DeleteRoleRequest = {
     return message;
   },
 
-  fromJSON(object: any): DeleteRoleRequest {
+  fromJSON(object: any): DeleteInstanceRoleRequest {
     return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: DeleteRoleRequest): unknown {
+  toJSON(message: DeleteInstanceRoleRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create(base?: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
-    return DeleteRoleRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<DeleteInstanceRoleRequest>): DeleteInstanceRoleRequest {
+    return DeleteInstanceRoleRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
-    const message = createBaseDeleteRoleRequest();
+  fromPartial(object: DeepPartial<DeleteInstanceRoleRequest>): DeleteInstanceRoleRequest {
+    const message = createBaseDeleteInstanceRoleRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseUndeleteRoleRequest(): UndeleteRoleRequest {
+function createBaseUndeleteInstanceRoleRequest(): UndeleteInstanceRoleRequest {
   return { name: "" };
 }
 
-export const UndeleteRoleRequest = {
-  encode(message: UndeleteRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UndeleteInstanceRoleRequest = {
+  encode(message: UndeleteInstanceRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteRoleRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteInstanceRoleRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUndeleteRoleRequest();
+    const message = createBaseUndeleteInstanceRoleRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -568,22 +568,22 @@ export const UndeleteRoleRequest = {
     return message;
   },
 
-  fromJSON(object: any): UndeleteRoleRequest {
+  fromJSON(object: any): UndeleteInstanceRoleRequest {
     return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: UndeleteRoleRequest): unknown {
+  toJSON(message: UndeleteInstanceRoleRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create(base?: DeepPartial<UndeleteRoleRequest>): UndeleteRoleRequest {
-    return UndeleteRoleRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UndeleteInstanceRoleRequest>): UndeleteInstanceRoleRequest {
+    return UndeleteInstanceRoleRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<UndeleteRoleRequest>): UndeleteRoleRequest {
-    const message = createBaseUndeleteRoleRequest();
+  fromPartial(object: DeepPartial<UndeleteInstanceRoleRequest>): UndeleteInstanceRoleRequest {
+    const message = createBaseUndeleteInstanceRoleRequest();
     message.name = object.name ?? "";
     return message;
   },
@@ -724,9 +724,9 @@ export const InstanceRoleServiceDefinition = {
   name: "InstanceRoleService",
   fullName: "bytebase.v1.InstanceRoleService",
   methods: {
-    getRole: {
-      name: "GetRole",
-      requestType: GetRoleRequest,
+    getInstanceRole: {
+      name: "GetInstanceRole",
+      requestType: GetInstanceRoleRequest,
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
@@ -788,11 +788,11 @@ export const InstanceRoleServiceDefinition = {
         },
       },
     },
-    listRoles: {
-      name: "ListRoles",
-      requestType: ListRolesRequest,
+    listInstanceRoles: {
+      name: "ListInstanceRoles",
+      requestType: ListInstanceRolesRequest,
       requestStream: false,
-      responseType: ListRolesResponse,
+      responseType: ListInstanceRolesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -852,9 +852,9 @@ export const InstanceRoleServiceDefinition = {
         },
       },
     },
-    createRole: {
-      name: "CreateRole",
-      requestType: CreateRoleRequest,
+    createInstanceRole: {
+      name: "CreateInstanceRole",
+      requestType: CreateInstanceRoleRequest,
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
@@ -922,9 +922,9 @@ export const InstanceRoleServiceDefinition = {
         },
       },
     },
-    updateRole: {
-      name: "UpdateRole",
-      requestType: UpdateRoleRequest,
+    updateInstanceRole: {
+      name: "UpdateInstanceRole",
+      requestType: UpdateInstanceRoleRequest,
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
@@ -997,9 +997,9 @@ export const InstanceRoleServiceDefinition = {
         },
       },
     },
-    deleteRole: {
-      name: "DeleteRole",
-      requestType: DeleteRoleRequest,
+    deleteInstanceRole: {
+      name: "DeleteInstanceRole",
+      requestType: DeleteInstanceRoleRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
@@ -1061,9 +1061,9 @@ export const InstanceRoleServiceDefinition = {
         },
       },
     },
-    undeleteRole: {
-      name: "UndeleteRole",
-      requestType: UndeleteRoleRequest,
+    undeleteInstanceRole: {
+      name: "UndeleteInstanceRole",
+      requestType: UndeleteInstanceRoleRequest,
       requestStream: false,
       responseType: InstanceRole,
       responseStream: false,
@@ -1140,22 +1140,55 @@ export const InstanceRoleServiceDefinition = {
 } as const;
 
 export interface InstanceRoleServiceImplementation<CallContextExt = {}> {
-  getRole(request: GetRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
-  listRoles(request: ListRolesRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRolesResponse>>;
-  createRole(request: CreateRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
-  updateRole(request: UpdateRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
-  deleteRole(request: DeleteRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeleteRole(request: UndeleteRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
+  getInstanceRole(
+    request: GetInstanceRoleRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<InstanceRole>>;
+  listInstanceRoles(
+    request: ListInstanceRolesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListInstanceRolesResponse>>;
+  createInstanceRole(
+    request: CreateInstanceRoleRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<InstanceRole>>;
+  updateInstanceRole(
+    request: UpdateInstanceRoleRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<InstanceRole>>;
+  deleteInstanceRole(
+    request: DeleteInstanceRoleRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
+  undeleteInstanceRole(
+    request: UndeleteInstanceRoleRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<InstanceRole>>;
 }
 
 export interface InstanceRoleServiceClient<CallOptionsExt = {}> {
-  getRole(request: DeepPartial<GetRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<InstanceRole>;
-  listRoles(request: DeepPartial<ListRolesRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRolesResponse>;
-  createRole(request: DeepPartial<CreateRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<InstanceRole>;
-  updateRole(request: DeepPartial<UpdateRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<InstanceRole>;
-  deleteRole(request: DeepPartial<DeleteRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeleteRole(
-    request: DeepPartial<UndeleteRoleRequest>,
+  getInstanceRole(
+    request: DeepPartial<GetInstanceRoleRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<InstanceRole>;
+  listInstanceRoles(
+    request: DeepPartial<ListInstanceRolesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListInstanceRolesResponse>;
+  createInstanceRole(
+    request: DeepPartial<CreateInstanceRoleRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<InstanceRole>;
+  updateInstanceRole(
+    request: DeepPartial<UpdateInstanceRoleRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<InstanceRole>;
+  deleteInstanceRole(
+    request: DeepPartial<DeleteInstanceRoleRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
+  undeleteInstanceRole(
+    request: DeepPartial<UndeleteInstanceRoleRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<InstanceRole>;
 }

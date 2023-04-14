@@ -32,8 +32,8 @@ func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) 
 	}
 }
 
-// GetRole gets an role.
-func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest) (*v1pb.InstanceRole, error) {
+// GetInstanceRole gets an role.
+func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb.GetInstanceRoleRequest) (*v1pb.InstanceRole, error) {
 	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -65,11 +65,11 @@ func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRole
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToRole(role, instance), nil
+	return convertToInstanceRole(role, instance), nil
 }
 
-// ListRoles lists all roles in an instance.
-func (s *InstanceRoleService) ListRoles(ctx context.Context, request *v1pb.ListRolesRequest) (*v1pb.ListRolesResponse, error) {
+// ListInstanceRoles lists all roles in an instance.
+func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
 	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -98,15 +98,15 @@ func (s *InstanceRoleService) ListRoles(ctx context.Context, request *v1pb.ListR
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	response := &v1pb.ListRolesResponse{}
+	response := &v1pb.ListInstanceRolesResponse{}
 	for _, role := range roleList {
-		response.Roles = append(response.Roles, convertToRole(role, instance))
+		response.Roles = append(response.Roles, convertToInstanceRole(role, instance))
 	}
 	return response, nil
 }
 
-// CreateRole creates an role.
-func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.InstanceRole, error) {
+// CreateInstanceRole creates an role.
+func (s *InstanceRoleService) CreateInstanceRole(ctx context.Context, request *v1pb.CreateInstanceRoleRequest) (*v1pb.InstanceRole, error) {
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
@@ -148,11 +148,11 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToRole(role, instance), nil
+	return convertToInstanceRole(role, instance), nil
 }
 
-// UpdateRole updates an role.
-func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.InstanceRole, error) {
+// UpdateInstanceRole updates an role.
+func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v1pb.UpdateInstanceRoleRequest) (*v1pb.InstanceRole, error) {
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
@@ -212,11 +212,11 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToRole(role, instance), nil
+	return convertToInstanceRole(role, instance), nil
 }
 
-// DeleteRole deletes an role.
-func (s *InstanceRoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRequest) (*emptypb.Empty, error) {
+// DeleteInstanceRole deletes an role.
+func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v1pb.DeleteInstanceRoleRequest) (*emptypb.Empty, error) {
 	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -242,8 +242,8 @@ func (s *InstanceRoleService) DeleteRole(ctx context.Context, request *v1pb.Dele
 	return &emptypb.Empty{}, nil
 }
 
-// UndeleteRole undeletes an role.
-func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRoleRequest) (*v1pb.InstanceRole, error) {
+// UndeleteInstanceRole undeletes an role.
+func (*InstanceRoleService) UndeleteInstanceRole(_ context.Context, _ *v1pb.UndeleteInstanceRoleRequest) (*v1pb.InstanceRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "Undelete role is not supported")
 }
 
@@ -265,7 +265,7 @@ func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, environmen
 	return instance, nil
 }
 
-func convertToRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage) *v1pb.InstanceRole {
+func convertToInstanceRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage) *v1pb.InstanceRole {
 	return &v1pb.InstanceRole{
 		Name:            fmt.Sprintf("environments/%s/instances/%s/roles/%s", instance.EnvironmentID, instance.ResourceID, role.Name),
 		RoleName:        role.Name,
