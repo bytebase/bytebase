@@ -7,7 +7,7 @@ import {
   languageOfEngine,
   MaybeRef,
 } from "../types";
-import { isDev, semverCompare } from "./util";
+import { semverCompare } from "./util";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
@@ -22,10 +22,8 @@ export const supportedEngineList = () => {
     "ORACLE",
     "MSSQL",
     "MARIADB",
+    "REDSHIFT",
   ];
-  if (isDev()) {
-    engines.push("REDSHIFT");
-  }
   return engines;
 };
 
