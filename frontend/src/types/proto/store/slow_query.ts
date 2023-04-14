@@ -1,4 +1,5 @@
 /* eslint-disable */
+import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -19,6 +20,18 @@ export interface SlowQueryStatisticsItem {
   count: number;
   /** latest_log_time is the time of the latest slow query with the same fingerprint. */
   latestLogTime?: Date;
+  /** The total query time of the slow query log. */
+  totalQueryTime?: Duration;
+  /** The maximum query time of the slow query log. */
+  maximumQueryTime?: Duration;
+  /** The total rows sent of the slow query log. */
+  totalRowsSent: number;
+  /** The maximum rows sent of the slow query log. */
+  maximumRowsSent: number;
+  /** The total rows examined of the slow query log. */
+  totalRowsExamined: number;
+  /** The maximum rows examined of the slow query log. */
+  maximumRowsExamined: number;
   /** samples are the details of the sample slow queries with the same fingerprint. */
   samples: SlowQueryDetails[];
 }
@@ -102,7 +115,18 @@ export const SlowQueryStatistics = {
 };
 
 function createBaseSlowQueryStatisticsItem(): SlowQueryStatisticsItem {
-  return { sqlFingerprint: "", count: 0, latestLogTime: undefined, samples: [] };
+  return {
+    sqlFingerprint: "",
+    count: 0,
+    latestLogTime: undefined,
+    totalQueryTime: undefined,
+    maximumQueryTime: undefined,
+    totalRowsSent: 0,
+    maximumRowsSent: 0,
+    totalRowsExamined: 0,
+    maximumRowsExamined: 0,
+    samples: [],
+  };
 }
 
 export const SlowQueryStatisticsItem = {
@@ -116,8 +140,26 @@ export const SlowQueryStatisticsItem = {
     if (message.latestLogTime !== undefined) {
       Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
     }
+    if (message.totalQueryTime !== undefined) {
+      Duration.encode(message.totalQueryTime, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.maximumQueryTime !== undefined) {
+      Duration.encode(message.maximumQueryTime, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.totalRowsSent !== 0) {
+      writer.uint32(48).int64(message.totalRowsSent);
+    }
+    if (message.maximumRowsSent !== 0) {
+      writer.uint32(56).int32(message.maximumRowsSent);
+    }
+    if (message.totalRowsExamined !== 0) {
+      writer.uint32(64).int64(message.totalRowsExamined);
+    }
+    if (message.maximumRowsExamined !== 0) {
+      writer.uint32(72).int32(message.maximumRowsExamined);
+    }
     for (const v of message.samples) {
-      SlowQueryDetails.encode(v!, writer.uint32(34).fork()).ldelim();
+      SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -155,6 +197,48 @@ export const SlowQueryStatisticsItem = {
             break;
           }
 
+          message.totalQueryTime = Duration.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.maximumQueryTime = Duration.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag != 48) {
+            break;
+          }
+
+          message.totalRowsSent = longToNumber(reader.int64() as Long);
+          continue;
+        case 7:
+          if (tag != 56) {
+            break;
+          }
+
+          message.maximumRowsSent = reader.int32();
+          continue;
+        case 8:
+          if (tag != 64) {
+            break;
+          }
+
+          message.totalRowsExamined = longToNumber(reader.int64() as Long);
+          continue;
+        case 9:
+          if (tag != 72) {
+            break;
+          }
+
+          message.maximumRowsExamined = reader.int32();
+          continue;
+        case 10:
+          if (tag != 82) {
+            break;
+          }
+
           message.samples.push(SlowQueryDetails.decode(reader, reader.uint32()));
           continue;
       }
@@ -171,6 +255,12 @@ export const SlowQueryStatisticsItem = {
       sqlFingerprint: isSet(object.sqlFingerprint) ? String(object.sqlFingerprint) : "",
       count: isSet(object.count) ? Number(object.count) : 0,
       latestLogTime: isSet(object.latestLogTime) ? fromJsonTimestamp(object.latestLogTime) : undefined,
+      totalQueryTime: isSet(object.totalQueryTime) ? Duration.fromJSON(object.totalQueryTime) : undefined,
+      maximumQueryTime: isSet(object.maximumQueryTime) ? Duration.fromJSON(object.maximumQueryTime) : undefined,
+      totalRowsSent: isSet(object.totalRowsSent) ? Number(object.totalRowsSent) : 0,
+      maximumRowsSent: isSet(object.maximumRowsSent) ? Number(object.maximumRowsSent) : 0,
+      totalRowsExamined: isSet(object.totalRowsExamined) ? Number(object.totalRowsExamined) : 0,
+      maximumRowsExamined: isSet(object.maximumRowsExamined) ? Number(object.maximumRowsExamined) : 0,
       samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
@@ -180,6 +270,14 @@ export const SlowQueryStatisticsItem = {
     message.sqlFingerprint !== undefined && (obj.sqlFingerprint = message.sqlFingerprint);
     message.count !== undefined && (obj.count = Math.round(message.count));
     message.latestLogTime !== undefined && (obj.latestLogTime = message.latestLogTime.toISOString());
+    message.totalQueryTime !== undefined &&
+      (obj.totalQueryTime = message.totalQueryTime ? Duration.toJSON(message.totalQueryTime) : undefined);
+    message.maximumQueryTime !== undefined &&
+      (obj.maximumQueryTime = message.maximumQueryTime ? Duration.toJSON(message.maximumQueryTime) : undefined);
+    message.totalRowsSent !== undefined && (obj.totalRowsSent = Math.round(message.totalRowsSent));
+    message.maximumRowsSent !== undefined && (obj.maximumRowsSent = Math.round(message.maximumRowsSent));
+    message.totalRowsExamined !== undefined && (obj.totalRowsExamined = Math.round(message.totalRowsExamined));
+    message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
     if (message.samples) {
       obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
@@ -197,6 +295,16 @@ export const SlowQueryStatisticsItem = {
     message.sqlFingerprint = object.sqlFingerprint ?? "";
     message.count = object.count ?? 0;
     message.latestLogTime = object.latestLogTime ?? undefined;
+    message.totalQueryTime = (object.totalQueryTime !== undefined && object.totalQueryTime !== null)
+      ? Duration.fromPartial(object.totalQueryTime)
+      : undefined;
+    message.maximumQueryTime = (object.maximumQueryTime !== undefined && object.maximumQueryTime !== null)
+      ? Duration.fromPartial(object.maximumQueryTime)
+      : undefined;
+    message.totalRowsSent = object.totalRowsSent ?? 0;
+    message.maximumRowsSent = object.maximumRowsSent ?? 0;
+    message.totalRowsExamined = object.totalRowsExamined ?? 0;
+    message.maximumRowsExamined = object.maximumRowsExamined ?? 0;
     message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },
@@ -330,6 +438,25 @@ export const SlowQueryDetails = {
   },
 };
 
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -357,6 +484,20 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {

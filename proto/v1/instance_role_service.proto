@@ -12,17 +12,17 @@ import "v1/common.proto";
 option go_package = "generated-go/v1";
 
 service InstanceRoleService {
-  rpc GetRole(GetRoleRequest) returns (InstanceRole) {
+  rpc GetInstanceRole(GetInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/roles/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+  rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
     option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*}/roles"};
     option (google.api.method_signature) = "parent";
   }
 
-  rpc CreateRole(CreateRoleRequest) returns (InstanceRole) {
+  rpc CreateInstanceRole(CreateInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {
       post: "/v1/{parent=environments/*/instances/*}/roles"
       body: "role"
@@ -30,7 +30,7 @@ service InstanceRoleService {
     option (google.api.method_signature) = "parent,role";
   }
 
-  rpc UpdateRole(UpdateRoleRequest) returns (InstanceRole) {
+  rpc UpdateInstanceRole(UpdateInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {
       patch: "/v1/{role.name=environments/*/instances/*/roles/*}"
       body: "role"
@@ -38,12 +38,12 @@ service InstanceRoleService {
     option (google.api.method_signature) = "role,update_mask";
   }
 
-  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
+  rpc DeleteInstanceRole(DeleteInstanceRoleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*/roles/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc UndeleteRole(UndeleteRoleRequest) returns (InstanceRole) {
+  rpc UndeleteInstanceRole(UndeleteInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {
       post: "/v1/{name=environments/*/instances/*/roles/*}:undelete"
       body: "*"
@@ -51,14 +51,14 @@ service InstanceRoleService {
   }
 }
 
-message GetRoleRequest {
+message GetInstanceRoleRequest {
   // The name of the role to retrieve.
   // Format: environments/{environment}/instances/{instance}/roles/{role name}
   // The role name is the unique name for the role.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListRolesRequest {
+message ListInstanceRolesRequest {
   // The parent, which owns this collection of roles.
   // Format: environments/{environment}/instances/{instance}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
@@ -77,7 +77,7 @@ message ListRolesRequest {
   string page_token = 3;
 }
 
-message ListRolesResponse {
+message ListInstanceRolesResponse {
   // The roles from the specified request.
   repeated InstanceRole roles = 1;
 
@@ -86,7 +86,7 @@ message ListRolesResponse {
   string next_page_token = 2;
 }
 
-message CreateRoleRequest {
+message CreateInstanceRoleRequest {
   // The parent resource where this role will be created.
   // Format: environments/{environment}/instances/{instance}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
@@ -95,7 +95,7 @@ message CreateRoleRequest {
   InstanceRole role = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UpdateRoleRequest {
+message UpdateInstanceRoleRequest {
   // The role to update.
   //
   // The role's `name`, `environment` and `instance` field is used to identify the role to update.
@@ -106,13 +106,13 @@ message UpdateRoleRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message DeleteRoleRequest {
+message DeleteInstanceRoleRequest {
   // The name of the role to delete.
   // Format: environments/{environment}/instances/{instance}/roles/{role name}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UndeleteRoleRequest {
+message UndeleteInstanceRoleRequest {
   // The name of the deleted role.
   // Format: environments/{environment}/instances/{instance}/roles/{role name}
   string name = 1 [(google.api.field_behavior) = REQUIRED];

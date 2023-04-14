@@ -17,9 +17,7 @@ service ActuatorService {
   }
 
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/actuator/cache"
-    };
+    option (google.api.http) = {delete: "/v1/actuator/cache"};
   }
 }
 
@@ -65,4 +63,7 @@ message ActuatorInfo {
 
   // require_2fa is the flag to require 2FA for all users.
   bool require_2fa = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // workspace_id is the identifier for the workspace.
+  string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

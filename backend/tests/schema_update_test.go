@@ -33,6 +33,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -120,7 +121,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -149,7 +150,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          fmt.Sprintf("update data for database %q", databaseName),
 		Type:          api.IssueDatabaseDataUpdate,
 		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -603,7 +604,7 @@ func TestVCS(t *testing.T) {
 			// simulate retrying the failed task.
 			_, err = ctl.patchTaskStatus(api.TaskStatusPatch{
 				ID:        task.ID,
-				UpdaterID: api.SystemBotID,
+				UpdaterID: ownerID,
 				Status:    api.TaskPendingApproval,
 			}, issue.PipelineID, task.ID)
 			a.NoError(err)
@@ -641,7 +642,7 @@ func TestVCS(t *testing.T) {
 				Name:          fmt.Sprintf("update schema for database %q", databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-				AssigneeID:    api.SystemBotID,
+				AssigneeID:    ownerID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -1904,6 +1905,22 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 	}
 }
 
+func getWorkspaceID(ctl *controller) (string, error) {
+	body, err := ctl.getOpenAPI("/actuator/info", nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	actuatorInfo := new(v1pb.ActuatorInfo)
+	if err = protojson.Unmarshal(bs, actuatorInfo); err != nil {
+		return "", errors.Wrap(err, "fail to unmarshal get actuator response")
+	}
+	return actuatorInfo.WorkspaceId, nil
+}
+
 // postVCSSQLReview will create the VCS SQL review and get the response.
 func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, repo.WebhookEndpointID)
@@ -1916,7 +1933,12 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
 	}
-	req.Header.Set("X-SQL-Review-Token", ctl.server.GetWorkspaceID())
+
+	workspaceID, err := getWorkspaceID(ctl)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-SQL-Review-Token", workspaceID)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -2149,7 +2171,7 @@ CREATE TABLE public.book (
 				Name:          fmt.Sprintf("update schema for database %q", test.databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
-				AssigneeID:    api.SystemBotID,
+				AssigneeID:    ownerID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -2260,7 +2282,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
+		AssigneeID:    ownerID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)

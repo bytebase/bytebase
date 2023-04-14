@@ -2,7 +2,7 @@
 title: What is 'project' ?
 ---
 
-- Bytebase project is similar to the project concept in other common dev tools.
+- Bytebase project is similar to the project concept in other common dev tools such as GitLab, Jira.
 
 - A project has its own members, and every issue and database always belongs to a single project.
 

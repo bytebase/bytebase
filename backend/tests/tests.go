@@ -37,6 +37,7 @@ import (
 )
 
 var (
+	ownerID            = 101
 	migrationStatement = `
 	CREATE TABLE book (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
