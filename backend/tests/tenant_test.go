@@ -1535,12 +1535,12 @@ statement: |
 			// Get data update issues.
 			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
-			require.Len(t, issues, 1)
-			_, err = ctl.patchIssue(issues[0].ID, api.IssuePatch{
+			require.Len(t, issues, 2)
+			_, err = ctl.patchIssue(issues[1].ID, api.IssuePatch{
 				AssigneeID: &ownerID,
 			})
 			require.NoError(t, err)
-			status, err = ctl.waitIssuePipeline(issues[0].ID)
+			status, err = ctl.waitIssuePipeline(issues[1].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
 
