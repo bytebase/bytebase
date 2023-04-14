@@ -8,32 +8,48 @@
     <NDrawerContent
       :title="$t('common.detail')"
       :closable="true"
-      class="w-[calc(100vw-8rem)] lg:max-w-[56rem]"
+      class="w-[calc(100vw-2rem)] lg:max-w-[64rem] xl:max-w-[72rem]"
     >
       <div v-if="slowQueryLog" class="max-h-full flex flex-col gap-y-4 text-sm">
         <div
           class="grid grid-cols-[auto_1fr] md:grid-cols-[minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr_minmax(auto,7rem)_1fr] gap-x-2 gap-y-4"
         >
           <div class="contents">
-            <label class="font-medium">{{ $t("common.environment") }}</label>
+            <label class="font-medium capitalize">
+              {{ $t("common.project") }}
+            </label>
+
+            <div class="col-start-2 md:col-span-5">
+              <ProjectName :project="database.project" />
+            </div>
+          </div>
+
+          <div class="contents">
+            <label class="font-medium capitalize">
+              {{ $t("common.environment") }}
+            </label>
 
             <EnvironmentName :environment="database.instance.environment" />
           </div>
 
           <div class="contents">
-            <label class="font-medium">{{ $t("common.instance") }}</label>
+            <label class="font-medium capitalize">
+              {{ $t("common.instance") }}
+            </label>
 
             <InstanceName :instance="database.instance" />
           </div>
 
           <div class="contents">
-            <label class="font-medium">{{ $t("common.database") }}</label>
+            <label class="font-medium capitalize">
+              {{ $t("common.database") }}
+            </label>
 
             <DatabaseName :database="database" />
           </div>
 
           <div class="contents">
-            <label class="font-medium whitespace-nowrap">
+            <label class="font-medium capitalize whitespace-nowrap">
               {{ $t("common.sql-statement") }}
             </label>
 
@@ -52,15 +68,26 @@
             :column-list="columns"
             :data-source="log.statistics?.samples"
             :row-clickable="false"
+            :is-row-expanded="isSelectedRow"
             class="compact"
             header-class="capitalize"
           >
-            <template #item="{ item: detail, row }: SlowQueryDetailsRow">
-              <div class="bb-grid-cell whitespace-nowrap !pl-4 !pr-2">
-                {{ row + 1 }}
+            <template #item="{ item: detail }: SlowQueryDetailsRow">
+              <div class="bb-grid-cell whitespace-nowrap !pl-1 !pr-1">
+                <NButton quaternary size="tiny" @click="selectRow(detail)">
+                  <heroicons:chevron-right
+                    class="w-4 h-4 transition-transform duration-150 cursor-pointer"
+                    :class="[isSelectedRow(detail) && 'rotate-90']"
+                  />
+                </NButton>
               </div>
               <div class="bb-grid-cell whitespace-nowrap !pr-4">
                 {{ dayjs(detail.startTime).format("YYYY-MM-DD HH:mm:ss") }}
+              </div>
+              <div class="bb-grid-cell text-xs font-mono">
+                <div class="truncate">
+                  {{ detail.sqlText }}
+                </div>
               </div>
               <div class="bb-grid-cell">
                 {{ detail.queryTime?.seconds.toFixed(6) }}
@@ -75,6 +102,15 @@
                 {{ detail.rowsSent }}
               </div>
             </template>
+
+            <template #expanded-item="{ item: detail }: SlowQueryDetailsRow">
+              <div class="w-full max-h-[20rem] overflow-auto text-xs pl-2">
+                <HighlightCodeBlock
+                  :code="detail.sqlText"
+                  class="whitespace-pre-wrap"
+                />
+              </div>
+            </template>
           </BBGrid>
         </div>
       </div>
@@ -83,14 +119,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NDrawer, NDrawerContent } from "naive-ui";
+import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { DatabaseName, InstanceName, EnvironmentName } from "@/components/v2";
+import {
+  DatabaseName,
+  InstanceName,
+  EnvironmentName,
+  ProjectName,
+} from "@/components/v2";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
 export type SlowQueryDetailsRow = BBGridRow<SlowQueryDetails>;
@@ -115,6 +156,10 @@ const columns = computed(() => {
       width: "auto",
     },
     {
+      title: t("common.sql-statement"),
+      width: "minmax(6rem, 3fr)",
+    },
+    {
       title: t("slow-query.query-time"),
       width: "minmax(auto, 1fr)",
     },
@@ -133,6 +178,28 @@ const columns = computed(() => {
   ];
   return columns;
 });
+
 const log = computed(() => props.slowQueryLog!.log);
 const database = computed(() => props.slowQueryLog!.database);
+const selectedDetail = shallowRef<SlowQueryDetails>();
+
+const isSelectedRow = (item: SlowQueryDetails) => {
+  return selectedDetail.value === item;
+};
+
+const selectRow = (item: SlowQueryDetails) => {
+  if (selectedDetail.value === item) {
+    selectedDetail.value = undefined;
+  } else {
+    selectedDetail.value = item;
+  }
+};
+
+watch(
+  () => props.slowQueryLog,
+  () => {
+    selectedDetail.value = undefined;
+  },
+  { immediate: true }
+);
 </script>
