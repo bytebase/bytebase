@@ -163,7 +163,6 @@ type Server struct {
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
-	workspaceID     string
 	errorRecordRing api.ErrorRecordRing
 
 	// MySQL utility binaries
@@ -327,7 +326,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
-	s.workspaceID = config.workspaceID
 
 	s.ActivityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
@@ -550,7 +548,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}))
 	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile))
 	v1pb.RegisterSubscriptionServiceServer(s.grpcServer, v1.NewSubscriptionService(
-		s.workspaceID,
 		s.store,
 		&s.profile,
 		s.MetricReporter,
@@ -924,11 +921,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // GetEcho returns the echo server.
 func (s *Server) GetEcho() *echo.Echo {
 	return s.e
-}
-
-// GetWorkspaceID returns the workspace id.
-func (s *Server) GetWorkspaceID() string {
-	return s.workspaceID
 }
 
 // getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.

@@ -138,20 +138,6 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 	m.collectors[string(metricName)] = collector
 }
 
-func (m *Reporter) getWorkspaceID(ctx context.Context) (string, error) {
-	settingName := api.SettingWorkspaceID
-	setting, err := m.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get setting %s", settingName)
-	}
-	if setting == nil {
-		return "", errors.Errorf("cannot find setting %v", settingName)
-	}
-	return setting.Value, nil
-}
-
 func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 	if err := m.reporter.Report(id, metric); err != nil {
 		log.Error(
@@ -164,7 +150,7 @@ func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 
 // Identify will identify the workspace and update the subscription plan.
 func (m *Reporter) identify(ctx context.Context) (string, error) {
-	workspaceID, err := m.getWorkspaceID(ctx)
+	workspaceID, err := m.store.GetWorkspaceID(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -204,7 +190,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 // Report will report a metric.
 func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
-	workspaceID, err := m.getWorkspaceID(ctx)
+	workspaceID, err := m.store.GetWorkspaceID(ctx)
 	if err != nil {
 		log.Error("failed to find the workspace id", zap.Error(err))
 		return

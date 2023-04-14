@@ -24,7 +24,6 @@ import (
 // SubscriptionService implements the subscription service.
 type SubscriptionService struct {
 	v1pb.UnimplementedSubscriptionServiceServer
-	workspaceID    string
 	store          *store.Store
 	profile        *config.Profile
 	metricReporter *metricreport.Reporter
@@ -33,13 +32,11 @@ type SubscriptionService struct {
 
 // NewSubscriptionService creates a new SubscriptionService.
 func NewSubscriptionService(
-	workspaceID string,
 	store *store.Store,
 	profile *config.Profile,
 	metricReporter *metricreport.Reporter,
 	licenseService enterpriseAPI.LicenseService) *SubscriptionService {
 	return &SubscriptionService{
-		workspaceID:    workspaceID,
 		store:          store,
 		profile:        profile,
 		metricReporter: metricReporter,
@@ -84,6 +81,11 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		planType = api.ENTERPRISE
 	}
 
+	workspaceID, err := s.store.GetWorkspaceID(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	license := &enterpriseAPI.License{
 		InstanceCount: int(request.Trial.InstanceCount),
 		ExpiresTs:     time.Now().AddDate(0, 0, int(request.Trial.Days)).Unix(),
@@ -91,9 +93,9 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		Plan:          planType,
 		// the subject format for license should be {org id in hub}.{subscription id in hub}
 		// as we just need to simply generate the trialing license in console, we can use the workspace id instead.
-		Subject:  fmt.Sprintf("%s.%s", s.workspaceID, ""),
+		Subject:  fmt.Sprintf("%s.%s", workspaceID, ""),
 		Trialing: true,
-		OrgName:  s.workspaceID,
+		OrgName:  workspaceID,
 	}
 
 	subscription := s.licenseService.LoadSubscription(ctx)
