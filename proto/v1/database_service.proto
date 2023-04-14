@@ -566,20 +566,20 @@ message SlowQueryStatistics {
   // The average query time of the slow query log.
   google.protobuf.Duration average_query_time = 4;
   
-  // The nighty fifth percentile query time of the slow query log.
-  google.protobuf.Duration nighty_fifth_percentile_query_time = 5;
+  // The maximum query time of the slow query log.
+  google.protobuf.Duration maximum_query_time = 5;
   
   // The average rows sent of the slow query log.
   int32 average_rows_sent = 6;
   
-  // The nighty fifth percentile rows sent of the slow query log.
-  int32 nighty_fifth_percentile_rows_sent = 7;
+  // The maximum rows sent of the slow query log.
+  int32 maximum_rows_sent = 7;
   
   // The average rows examined of the slow query log.
   int32 average_rows_examined = 8;
   
-  // The nighty fifth percentile rows examined of the slow query log.
-  int32 nighty_fifth_percentile_rows_examined = 9;
+  // The maximum rows examined of the slow query log.
+  int32 maximum_rows_examined = 9;
   
   // Samples are details of the sample slow query logs with the same fingerprint.
   repeated SlowQueryDetails samples = 10;

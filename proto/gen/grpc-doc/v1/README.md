@@ -1574,11 +1574,11 @@ SlowQueryStatistics is the statistics of the slow query log.
 | count | [int32](#int32) |  | The count of the slow query log. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
 | average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
-| nighty_fifth_percentile_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The nighty fifth percentile query time of the slow query log. |
+| maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
 | average_rows_sent | [int32](#int32) |  | The average rows sent of the slow query log. |
-| nighty_fifth_percentile_rows_sent | [int32](#int32) |  | The nighty fifth percentile rows sent of the slow query log. |
+| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
 | average_rows_examined | [int32](#int32) |  | The average rows examined of the slow query log. |
-| nighty_fifth_percentile_rows_examined | [int32](#int32) |  | The nighty fifth percentile rows examined of the slow query log. |
+| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
