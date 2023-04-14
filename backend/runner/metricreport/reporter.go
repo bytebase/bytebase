@@ -30,6 +30,8 @@ const (
 	identifyTraitForOrgName = "org_name"
 	// identifyTraitForMode is the trait key for Bytebase service mode.
 	identifyTraitForMode = "mode"
+	// identifyTraitForLastActiveTime is the trait key for Bytebase last active time.
+	identifyTraitForLastActiveTime = "last_active"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
 	// bytebaseServiceModeSaaS is the mode for Bytebase SaaS.
@@ -41,17 +43,14 @@ const (
 // Reporter is the metric reporter.
 type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
-	// Version is the bytebase's version
-	version string
-	// mode is the Bytebase service mode, could be self-host or saas.
-	mode       string
-	reporter   metric.Reporter
-	collectors map[string]metric.Collector
-	store      *store.Store
+	profile        *config.Profile
+	reporter       metric.Reporter
+	collectors     map[string]metric.Collector
+	store          *store.Store
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, enabled bool) *Reporter {
+func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile *config.Profile, enabled bool) *Reporter {
 	var r metric.Reporter
 	if enabled {
 		r = segment.NewReporter(profile.MetricConnectionKey)
@@ -59,15 +58,9 @@ func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService
 		r = segment.NewMockReporter()
 	}
 
-	mode := bytebaseServiceModeSelfhost
-	if profile.SaaS {
-		mode = bytebaseServiceModeSaaS
-	}
-
 	return &Reporter{
 		licenseService: licenseService,
-		version:        profile.Version,
-		mode:           mode,
+		profile:        profile,
 		reporter:       r,
 		collectors:     make(map[string]metric.Collector),
 		store:          store,
@@ -138,20 +131,6 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 	m.collectors[string(metricName)] = collector
 }
 
-func (m *Reporter) getWorkspaceID(ctx context.Context) (string, error) {
-	settingName := api.SettingWorkspaceID
-	setting, err := m.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get setting %s", settingName)
-	}
-	if setting == nil {
-		return "", errors.Errorf("cannot find setting %v", settingName)
-	}
-	return setting.Value, nil
-}
-
 func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 	if err := m.reporter.Report(id, metric); err != nil {
 		log.Error(
@@ -164,7 +143,7 @@ func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 
 // Identify will identify the workspace and update the subscription plan.
 func (m *Reporter) identify(ctx context.Context) (string, error) {
-	workspaceID, err := m.getWorkspaceID(ctx)
+	workspaceID, err := m.store.GetWorkspaceID(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -184,16 +163,22 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 		name = user.Name
 	}
 
+	mode := bytebaseServiceModeSelfhost
+	if m.profile.SaaS {
+		mode = bytebaseServiceModeSaaS
+	}
+
 	if err := m.reporter.Identify(&metric.Identifier{
 		ID:    workspaceID,
 		Email: email,
 		Name:  name,
 		Labels: map[string]string{
-			identifyTraitForPlan:    plan,
-			identifyTraitForVersion: m.version,
-			identifyTraitForOrgID:   orgID,
-			identifyTraitForOrgName: orgName,
-			identifyTraitForMode:    m.mode,
+			identifyTraitForPlan:           plan,
+			identifyTraitForVersion:        m.profile.Version,
+			identifyTraitForOrgID:          orgID,
+			identifyTraitForOrgName:        orgName,
+			identifyTraitForMode:           mode,
+			identifyTraitForLastActiveTime: time.Unix(m.profile.LastActiveTs, 0).String(),
 		},
 	}); err != nil {
 		return workspaceID, err
@@ -204,7 +189,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 // Report will report a metric.
 func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
-	workspaceID, err := m.getWorkspaceID(ctx)
+	workspaceID, err := m.store.GetWorkspaceID(ctx)
 	if err != nil {
 		log.Error("failed to find the workspace id", zap.Error(err))
 		return

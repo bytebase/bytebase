@@ -33,6 +33,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -1904,6 +1905,22 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 	}
 }
 
+func getWorkspaceID(ctl *controller) (string, error) {
+	body, err := ctl.getOpenAPI("/actuator/info", nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	actuatorInfo := new(v1pb.ActuatorInfo)
+	if err = protojson.Unmarshal(bs, actuatorInfo); err != nil {
+		return "", errors.Wrap(err, "fail to unmarshal get actuator response")
+	}
+	return actuatorInfo.WorkspaceId, nil
+}
+
 // postVCSSQLReview will create the VCS SQL review and get the response.
 func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, repo.WebhookEndpointID)
@@ -1916,7 +1933,12 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
 	}
-	req.Header.Set("X-SQL-Review-Token", ctl.server.GetWorkspaceID())
+
+	workspaceID, err := getWorkspaceID(ctl)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-SQL-Review-Token", workspaceID)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
