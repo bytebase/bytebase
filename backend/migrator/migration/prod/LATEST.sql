@@ -102,6 +102,30 @@ UPDATE
     ON setting FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
+-- Role
+CREATE TABLE role (
+    id BIGSERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
+    description TEXT NOT NULL,
+    permissions JSONB NOT NULL DEFAULT '{}', -- saved for future use
+    payload JSONB NOT NULL DEFAULT '{}' -- saved for future use
+);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id on role (resource_id);
+
+ALTER SEQUENCE role_id_seq RESTART WITH 101;
+
+CREATE TRIGGER update_role_updated_ts
+BEFORE
+UPDATE
+    ON role FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
+
 -- Member
 -- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
 CREATE TABLE member (
@@ -248,7 +272,7 @@ CREATE TABLE project_member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
+    role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -982,7 +1006,7 @@ UPDATE
     ON label_value FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- db_label stores labels asscociated with databases.
+-- db_label stores labels associated with databases.
 CREATE TABLE db_label (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
