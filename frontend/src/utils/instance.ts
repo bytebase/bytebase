@@ -22,10 +22,8 @@ export const supportedEngineList = () => {
     "ORACLE",
     "MSSQL",
     "MARIADB",
+    "REDSHIFT",
   ];
-  if (isDev()) {
-    engines.push("REDSHIFT");
-  }
   return engines;
 };
 
