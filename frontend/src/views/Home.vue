@@ -222,9 +222,7 @@ const route = useRoute();
 
 const state = reactive<LocalState>({
   searchText: "",
-  showTrialStartModal: onboardingStateStore.getStateByKey(
-    "show-trialing-modal"
-  ),
+  showTrialStartModal: false,
 });
 
 const currentUser = useCurrentUser();
