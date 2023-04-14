@@ -5,7 +5,7 @@
         :value="state.searchText"
         :placeholder="$t('project.dashboard.search-bar-placeholder')"
         :autofocus="true"
-        style="width: 13rem"
+        style="width: 12rem"
         @update:value="changeSearchText($event)"
       />
     </div>

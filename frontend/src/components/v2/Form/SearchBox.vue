@@ -2,7 +2,7 @@
   <NInput
     ref="inputRef"
     :value="value"
-    :clearable="true"
+    :clearable="!!value"
     :placeholder="placeholder"
     style="width: 12rem"
     @update:value="$emit('update:value', $event)"

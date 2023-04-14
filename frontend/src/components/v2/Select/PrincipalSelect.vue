@@ -7,6 +7,7 @@
     :virtual-scroll="true"
     :render-label="renderLabel"
     :fallback-option="false"
+    :placeholder="$t('principal.select')"
     class="bb-principal-select"
     style="width: 12rem"
     @update:value="$emit('update:principal', $event)"
