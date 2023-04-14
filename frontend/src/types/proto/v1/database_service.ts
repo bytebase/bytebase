@@ -561,16 +561,16 @@ export interface SlowQueryStatistics {
   latestLogTime?: Date;
   /** The average query time of the slow query log. */
   averageQueryTime?: Duration;
-  /** The nighty fifth percentile query time of the slow query log. */
-  nightyFifthPercentileQueryTime?: Duration;
+  /** The maximum query time of the slow query log. */
+  maximumQueryTime?: Duration;
   /** The average rows sent of the slow query log. */
   averageRowsSent: number;
-  /** The nighty fifth percentile rows sent of the slow query log. */
-  nightyFifthPercentileRowsSent: number;
+  /** The maximum rows sent of the slow query log. */
+  maximumRowsSent: number;
   /** The average rows examined of the slow query log. */
   averageRowsExamined: number;
-  /** The nighty fifth percentile rows examined of the slow query log. */
-  nightyFifthPercentileRowsExamined: number;
+  /** The maximum rows examined of the slow query log. */
+  maximumRowsExamined: number;
   /** Samples are details of the sample slow query logs with the same fingerprint. */
   samples: SlowQueryDetails[];
 }
@@ -3425,11 +3425,11 @@ function createBaseSlowQueryStatistics(): SlowQueryStatistics {
     count: 0,
     latestLogTime: undefined,
     averageQueryTime: undefined,
-    nightyFifthPercentileQueryTime: undefined,
+    maximumQueryTime: undefined,
     averageRowsSent: 0,
-    nightyFifthPercentileRowsSent: 0,
+    maximumRowsSent: 0,
     averageRowsExamined: 0,
-    nightyFifthPercentileRowsExamined: 0,
+    maximumRowsExamined: 0,
     samples: [],
   };
 }
@@ -3448,20 +3448,20 @@ export const SlowQueryStatistics = {
     if (message.averageQueryTime !== undefined) {
       Duration.encode(message.averageQueryTime, writer.uint32(34).fork()).ldelim();
     }
-    if (message.nightyFifthPercentileQueryTime !== undefined) {
-      Duration.encode(message.nightyFifthPercentileQueryTime, writer.uint32(42).fork()).ldelim();
+    if (message.maximumQueryTime !== undefined) {
+      Duration.encode(message.maximumQueryTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.averageRowsSent !== 0) {
       writer.uint32(48).int32(message.averageRowsSent);
     }
-    if (message.nightyFifthPercentileRowsSent !== 0) {
-      writer.uint32(56).int32(message.nightyFifthPercentileRowsSent);
+    if (message.maximumRowsSent !== 0) {
+      writer.uint32(56).int32(message.maximumRowsSent);
     }
     if (message.averageRowsExamined !== 0) {
       writer.uint32(64).int32(message.averageRowsExamined);
     }
-    if (message.nightyFifthPercentileRowsExamined !== 0) {
-      writer.uint32(72).int32(message.nightyFifthPercentileRowsExamined);
+    if (message.maximumRowsExamined !== 0) {
+      writer.uint32(72).int32(message.maximumRowsExamined);
     }
     for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
@@ -3509,7 +3509,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.nightyFifthPercentileQueryTime = Duration.decode(reader, reader.uint32());
+          message.maximumQueryTime = Duration.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag != 48) {
@@ -3523,7 +3523,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.nightyFifthPercentileRowsSent = reader.int32();
+          message.maximumRowsSent = reader.int32();
           continue;
         case 8:
           if (tag != 64) {
@@ -3537,7 +3537,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.nightyFifthPercentileRowsExamined = reader.int32();
+          message.maximumRowsExamined = reader.int32();
           continue;
         case 10:
           if (tag != 82) {
@@ -3561,17 +3561,11 @@ export const SlowQueryStatistics = {
       count: isSet(object.count) ? Number(object.count) : 0,
       latestLogTime: isSet(object.latestLogTime) ? fromJsonTimestamp(object.latestLogTime) : undefined,
       averageQueryTime: isSet(object.averageQueryTime) ? Duration.fromJSON(object.averageQueryTime) : undefined,
-      nightyFifthPercentileQueryTime: isSet(object.nightyFifthPercentileQueryTime)
-        ? Duration.fromJSON(object.nightyFifthPercentileQueryTime)
-        : undefined,
+      maximumQueryTime: isSet(object.maximumQueryTime) ? Duration.fromJSON(object.maximumQueryTime) : undefined,
       averageRowsSent: isSet(object.averageRowsSent) ? Number(object.averageRowsSent) : 0,
-      nightyFifthPercentileRowsSent: isSet(object.nightyFifthPercentileRowsSent)
-        ? Number(object.nightyFifthPercentileRowsSent)
-        : 0,
+      maximumRowsSent: isSet(object.maximumRowsSent) ? Number(object.maximumRowsSent) : 0,
       averageRowsExamined: isSet(object.averageRowsExamined) ? Number(object.averageRowsExamined) : 0,
-      nightyFifthPercentileRowsExamined: isSet(object.nightyFifthPercentileRowsExamined)
-        ? Number(object.nightyFifthPercentileRowsExamined)
-        : 0,
+      maximumRowsExamined: isSet(object.maximumRowsExamined) ? Number(object.maximumRowsExamined) : 0,
       samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
@@ -3583,16 +3577,12 @@ export const SlowQueryStatistics = {
     message.latestLogTime !== undefined && (obj.latestLogTime = message.latestLogTime.toISOString());
     message.averageQueryTime !== undefined &&
       (obj.averageQueryTime = message.averageQueryTime ? Duration.toJSON(message.averageQueryTime) : undefined);
-    message.nightyFifthPercentileQueryTime !== undefined &&
-      (obj.nightyFifthPercentileQueryTime = message.nightyFifthPercentileQueryTime
-        ? Duration.toJSON(message.nightyFifthPercentileQueryTime)
-        : undefined);
+    message.maximumQueryTime !== undefined &&
+      (obj.maximumQueryTime = message.maximumQueryTime ? Duration.toJSON(message.maximumQueryTime) : undefined);
     message.averageRowsSent !== undefined && (obj.averageRowsSent = Math.round(message.averageRowsSent));
-    message.nightyFifthPercentileRowsSent !== undefined &&
-      (obj.nightyFifthPercentileRowsSent = Math.round(message.nightyFifthPercentileRowsSent));
+    message.maximumRowsSent !== undefined && (obj.maximumRowsSent = Math.round(message.maximumRowsSent));
     message.averageRowsExamined !== undefined && (obj.averageRowsExamined = Math.round(message.averageRowsExamined));
-    message.nightyFifthPercentileRowsExamined !== undefined &&
-      (obj.nightyFifthPercentileRowsExamined = Math.round(message.nightyFifthPercentileRowsExamined));
+    message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
     if (message.samples) {
       obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
@@ -3613,14 +3603,13 @@ export const SlowQueryStatistics = {
     message.averageQueryTime = (object.averageQueryTime !== undefined && object.averageQueryTime !== null)
       ? Duration.fromPartial(object.averageQueryTime)
       : undefined;
-    message.nightyFifthPercentileQueryTime =
-      (object.nightyFifthPercentileQueryTime !== undefined && object.nightyFifthPercentileQueryTime !== null)
-        ? Duration.fromPartial(object.nightyFifthPercentileQueryTime)
-        : undefined;
+    message.maximumQueryTime = (object.maximumQueryTime !== undefined && object.maximumQueryTime !== null)
+      ? Duration.fromPartial(object.maximumQueryTime)
+      : undefined;
     message.averageRowsSent = object.averageRowsSent ?? 0;
-    message.nightyFifthPercentileRowsSent = object.nightyFifthPercentileRowsSent ?? 0;
+    message.maximumRowsSent = object.maximumRowsSent ?? 0;
     message.averageRowsExamined = object.averageRowsExamined ?? 0;
-    message.nightyFifthPercentileRowsExamined = object.nightyFifthPercentileRowsExamined ?? 0;
+    message.maximumRowsExamined = object.maximumRowsExamined ?? 0;
     message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },
