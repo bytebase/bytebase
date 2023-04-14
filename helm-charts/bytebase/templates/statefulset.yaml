@@ -1,4 +1,3 @@
-{{- $external_url := index .Values.bytebase.option "external-url" -}}
 {{- $existingPgURLSecret := .Values.bytebase.option.existingPgURLSecret -}}
 {{- $existingPgURLSecretKey := .Values.bytebase.option.existingPgURLSecretKey -}}
 {{- $port := .Values.bytebase.option.port -}}
@@ -45,19 +44,10 @@ spec:
               {{ $data | quote }},
               "--port",
               {{ $port | quote }},
-              "--external-url",
-              # helm parser cannot handle the dash in the value, so we need to quote it, so we use $external_url instead of $external-url.
-              {{ $external_url | quote }},
             ]
           ports:
             - containerPort: {{ $port }}
               name: web
-          readinessProbe:
-            httpGet:
-              path: /api/actuator/info
-              port: web
-            initialDelaySeconds: 2
-            periodSeconds: 2
           livenessProbe:
             httpGet:
               path: /healthz
