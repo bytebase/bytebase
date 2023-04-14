@@ -41,6 +41,8 @@ export interface ActuatorInfo {
   lastActiveTime?: Date;
   /** require_2fa is the flag to require 2FA for all users. */
   require2fa: boolean;
+  /** workspace_id is the identifier for the workspace. */
+  workspaceId: string;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -145,6 +147,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     disallowSignup: false,
     lastActiveTime: undefined,
     require2fa: false,
+    workspaceId: "",
   };
 }
 
@@ -185,6 +188,9 @@ export const ActuatorInfo = {
     }
     if (message.require2fa === true) {
       writer.uint32(96).bool(message.require2fa);
+    }
+    if (message.workspaceId !== "") {
+      writer.uint32(106).string(message.workspaceId);
     }
     return writer;
   },
@@ -280,6 +286,13 @@ export const ActuatorInfo = {
 
           message.require2fa = reader.bool();
           continue;
+        case 13:
+          if (tag != 106) {
+            break;
+          }
+
+          message.workspaceId = reader.string();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -303,6 +316,7 @@ export const ActuatorInfo = {
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
       lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
+      workspaceId: isSet(object.workspaceId) ? String(object.workspaceId) : "",
     };
   },
 
@@ -320,6 +334,7 @@ export const ActuatorInfo = {
     message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
     message.lastActiveTime !== undefined && (obj.lastActiveTime = message.lastActiveTime.toISOString());
     message.require2fa !== undefined && (obj.require2fa = message.require2fa);
+    message.workspaceId !== undefined && (obj.workspaceId = message.workspaceId);
     return obj;
   },
 
@@ -341,6 +356,7 @@ export const ActuatorInfo = {
     message.disallowSignup = object.disallowSignup ?? false;
     message.lastActiveTime = object.lastActiveTime ?? undefined;
     message.require2fa = object.require2fa ?? false;
+    message.workspaceId = object.workspaceId ?? "";
     return message;
   },
 };
