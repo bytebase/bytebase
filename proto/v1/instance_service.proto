@@ -70,7 +70,7 @@ service InstanceService {
       body: "*"
     };
   }
-  
+
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/{instance=environments/*/instances/*}:syncSlowQueries"
