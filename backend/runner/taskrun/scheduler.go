@@ -587,87 +587,10 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, task
 	return nil
 }
 
-// CanPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
-func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *store.TaskMessage, toStatus api.TaskStatus) (bool, error) {
-	// The creator can cancel task.
-	if toStatus == api.TaskCanceled {
-		if principalID == task.CreatorID {
-			return true, nil
-		}
-	}
-	// the workspace owner and DBA roles can always change task status.
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
-	}
-	if user == nil {
-		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
-	}
-	if user.Role == api.Owner || user.Role == api.DBA {
-		return true, nil
-	}
-
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to find issue")
-	}
-	if issue == nil {
-		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
-	}
-	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
-	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to get assignee group value for taskID %d", task.ID)
-	}
-	if groupValue == nil {
-		return false, nil
-	}
-	// as the policy says, the project owner has the privilege to change task status.
-	if *groupValue == api.AssigneeGroupValueProjectOwner {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
-		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
-		}
-		for _, binding := range policy.Bindings {
-			if binding.Role != api.Owner {
-				continue
-			}
-			for _, member := range binding.Members {
-				if member.ID == principalID {
-					return true, nil
-				}
-			}
-		}
-	}
-	return false, nil
-}
-
-func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *store.IssueMessage, task *store.TaskMessage) (*api.AssigneeGroupValue, error) {
-	environmentID := api.UnknownID
-	stages, err := s.store.ListStageV2(ctx, task.PipelineID)
-	if err != nil {
-		return nil, err
-	}
-	for _, stage := range stages {
-		if stage.ID == task.StageID {
-			environmentID = stage.EnvironmentID
-			break
-		}
-	}
-	if environmentID == api.UnknownID {
-		return nil, common.Errorf(common.NotFound, "failed to find environmentID by task.StageID %d", task.StageID)
-	}
-
-	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
-	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get pipeline approval policy by environmentID %d", environmentID)
-	}
-
-	for _, assigneeGroup := range policy.AssigneeGroupList {
-		if assigneeGroup.IssueType == issue.Type {
-			return &assigneeGroup.Value, nil
-		}
-	}
-	return nil, nil
+// CanPrincipalChangeTaskStatus validates if the principal has the privilege to update task status.
+// Only the assignee is allowed to update task status.
+func (*Scheduler) CanPrincipalChangeTaskStatus(principalID int, issue *store.IssueMessage) bool {
+	return principalID == issue.Assignee.ID
 }
 
 // ClearRunningTasks changes all RUNNING tasks to CANCELED.
