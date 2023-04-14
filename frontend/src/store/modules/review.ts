@@ -1,4 +1,6 @@
 import { defineStore } from "pinia";
+import { ref } from "vue";
+import { uniq, uniqBy } from "lodash-es";
 
 import { Issue } from "@/types";
 import {
@@ -7,10 +9,8 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/review_service";
-import { ref } from "vue";
 import { extractUserEmail, useUserStore } from "./user";
 import { useMemberStore } from "./member";
-import { uniq, uniqBy } from "lodash-es";
 import { reviewServiceClient } from "@/grpcweb";
 import { User } from "@/types/proto/v1/auth_service";
 
