@@ -17,9 +17,7 @@ service ActuatorService {
   }
 
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/actuator/cache"
-    };
+    option (google.api.http) = {delete: "/v1/actuator/cache"};
   }
 }
 
