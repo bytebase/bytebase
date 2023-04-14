@@ -3,6 +3,12 @@
     :value="instance"
     :options="options"
     :placeholder="$t('instance.select')"
+    :render-label="renderLabel"
+    :filter="filterByName"
+    :filterable="true"
+    :virtual-scroll="true"
+    :fallback-option="false"
+    class="bb-instance-select"
     style="width: 12rem"
     @update:value="$emit('update:instance', $event)"
   />
@@ -18,12 +24,17 @@ import {
   InstanceId,
   EnvironmentId,
   Instance,
-  UNKNOWN_ID,
-  unknown,
   EngineType,
+  unknown,
   EngineTypeList,
+  UNKNOWN_ID,
 } from "@/types";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+
+interface InstanceSelectOption extends SelectOption {
+  value: InstanceId;
+  instance: Instance;
+}
 
 const props = withDefaults(
   defineProps<{
@@ -92,27 +103,39 @@ const combinedInstanceList = computed(() => {
   return list;
 });
 
+const renderLabel = (option: SelectOption) => {
+  const { instance } = option as InstanceSelectOption;
+  if (instance.id === UNKNOWN_ID) {
+    return t("instance.all");
+  }
+  const icon = h(InstanceEngineIcon, {
+    instance,
+    class: "bb-instance-select--engine-icon shrink-0",
+  });
+  const text = h("span", {}, instance.name);
+  return h(
+    "div",
+    {
+      class: "flex items-center gap-x-2",
+    },
+    [icon, text]
+  );
+};
+
 const options = computed(() => {
-  return combinedInstanceList.value.map<SelectOption>((instance) => {
+  return combinedInstanceList.value.map<InstanceSelectOption>((instance) => {
     return {
+      instance,
       value: instance.id,
-      label: () => {
-        if (instance.id === UNKNOWN_ID) {
-          return t("instance.all");
-        }
-        const icon = h(InstanceEngineIcon, { instance, class: "shrink-0" });
-        const text = h("span", {}, instance.name);
-        return h(
-          "div",
-          {
-            class: "flex items-center gap-x-2",
-          },
-          [icon, text]
-        );
-      },
+      label: instance.name,
     };
   });
 });
+
+const filterByName = (pattern: string, option: SelectOption) => {
+  const { instance } = option as InstanceSelectOption;
+  return instance.name.toLowerCase().includes(pattern.toLowerCase());
+};
 
 // The instance list might change if environment changes, and the previous selected id
 // might not exist in the new list. In such case, we need to reset the selection
@@ -131,3 +154,9 @@ watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
   immediate: true,
 });
 </script>
+
+<style>
+.bb-instance-select .n-base-selection--active .bb-instance-select--engine-icon {
+  opacity: 0.3;
+}
+</style>
