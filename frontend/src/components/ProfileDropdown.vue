@@ -154,18 +154,20 @@ const logout = () => {
 
 const resetQuickstart = () => {
   const keys = [
+    "hidden",
     "issue.visit",
     "project.visit",
     "environment.visit",
     "instance.visit",
     "database.visit",
     "member.addOrInvite",
-    "hidden",
-    "guide.project",
-    "guide.environment",
-    "guide.instance",
-    "guide.database",
     "kbar.open",
+    "help.issue.detail",
+    "help.project",
+    "help.environment",
+    "help.instance",
+    "help.database",
+    "help.member",
   ];
   keys.forEach((key) => {
     uiStateStore.saveIntroStateByKey({

@@ -47,7 +47,7 @@
               <span
                 class="ml-2 text-sm font-medium text-control-light group-hover:text-control-light-hover"
                 :class="intro.done.value ? 'line-through' : ''"
-                >{{ intro.name }}</span
+                >{{ intro.name.value }}</span
               >
             </span>
           </component>
