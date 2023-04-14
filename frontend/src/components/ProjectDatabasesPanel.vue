@@ -16,6 +16,7 @@
           :instance="state.instance"
           :include-all="true"
           :filter="filterInstance"
+          :environment="state.environment"
           @update:instance="state.instance = $event ?? UNKNOWN_ID"
         />
         <SearchBox
