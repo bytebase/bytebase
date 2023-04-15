@@ -1,15 +1,16 @@
 <template>
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedId="selectedEnvironment?.id"
-        @select-environment="selectEnvironment"
+        :include-all="true"
+        :environment="selectedEnvironment?.id ?? UNKNOWN_ID"
+        @update:environment="changeEnvironmentId"
       />
-      <BBTableSearch
-        ref="searchField"
+      <SearchBox
+        :value="state.searchText"
         :placeholder="$t('issue.search-issue-name')"
-        @change-text="(text: string) => changeSearchText(text)"
+        :autofocus="true"
+        @update:value="changeSearchText($event)"
       />
     </div>
 
@@ -186,11 +187,11 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref, computed } from "vue";
+import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { activeEnvironment } from "../utils";
-import { Environment, Issue, planTypeToString } from "../types";
+import { UNKNOWN_ID, Issue, planTypeToString, EnvironmentId } from "../types";
+import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   useCurrentUser,
   useEnvironmentStore,
@@ -211,8 +212,6 @@ interface LocalState {
 
 const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
 const MAX_CLOSED_ISSUE = 5;
-
-const searchField = ref();
 
 const environmentStore = useEnvironmentStore();
 const subscriptionStore = useSubscriptionStore();
@@ -250,7 +249,10 @@ const selectedEnvironment = computed(() => {
 });
 
 const keywordAndEnvironmentFilter = (issue: Issue) => {
-  if (selectedEnvironment.value) {
+  if (
+    selectedEnvironment.value &&
+    selectedEnvironment.value.id !== UNKNOWN_ID
+  ) {
     if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
       return false;
     }
@@ -263,13 +265,14 @@ const keywordAndEnvironmentFilter = (issue: Issue) => {
   }
   return true;
 };
-const selectEnvironment = (environment: Environment) => {
-  if (environment) {
+
+const changeEnvironmentId = (environment: EnvironmentId | undefined) => {
+  if (environment && environment !== UNKNOWN_ID) {
     router.replace({
       name: "workspace.home",
       query: {
         ...route.query,
-        environment: environment.id,
+        environment,
       },
     });
   } else {
@@ -286,9 +289,4 @@ const selectEnvironment = (environment: Environment) => {
 const changeSearchText = (searchText: string) => {
   state.searchText = searchText;
 };
-
-onMounted(() => {
-  // Focus on the internal search field when mounted
-  searchField.value.$el.querySelector("#search").focus();
-});
 </script>
