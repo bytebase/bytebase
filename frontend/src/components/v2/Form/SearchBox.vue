@@ -1,7 +1,8 @@
 <template>
   <NInput
+    ref="inputRef"
     :value="value"
-    :clearable="true"
+    :clearable="!!value"
     :placeholder="placeholder"
     style="width: 12rem"
     @update:value="$emit('update:value', $event)"
@@ -13,16 +14,18 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, useAttrs } from "vue";
+import { computed, onMounted, ref, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
 import { NInput } from "naive-ui";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     value?: string;
+    autofocus?: boolean;
   }>(),
   {
     value: "",
+    autofocus: false,
   }
 );
 
@@ -30,10 +33,17 @@ defineEmits<{
   (event: "update:value", value: string): void;
 }>();
 
+const inputRef = ref<InstanceType<typeof NInput>>();
 const attrs = useAttrs();
 const { t } = useI18n();
 
 const placeholder = computed(() => {
   return (attrs.placeholder as string) ?? t("common.search");
+});
+
+onMounted(() => {
+  if (props.autofocus) {
+    inputRef.value?.inputElRef?.focus();
+  }
 });
 </script>
