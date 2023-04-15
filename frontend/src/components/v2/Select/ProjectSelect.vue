@@ -3,6 +3,8 @@
     :value="project"
     :options="options"
     :placeholder="$t('project.select')"
+    :filterable="true"
+    :filter="filterByName"
     style="width: 12rem"
     @update:value="$emit('update:project', $event)"
   />
@@ -16,6 +18,7 @@ import { NSelect, SelectOption } from "naive-ui";
 import { useCurrentUser, useProjectStore } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
+  Project,
   ProjectId,
   ProjectRoleType,
   ProjectTenantMode,
@@ -24,6 +27,11 @@ import {
   unknown,
 } from "@/types";
 import { memberInProject } from "@/utils";
+
+interface ProjectSelectOption extends SelectOption {
+  value: ProjectId;
+  project: Project;
+}
 
 const props = withDefaults(
   defineProps<{
@@ -127,8 +135,9 @@ const combinedProjectList = computed(() => {
 });
 
 const options = computed(() => {
-  return combinedProjectList.value.map<SelectOption>((project) => {
+  return combinedProjectList.value.map<ProjectSelectOption>((project) => {
     return {
+      project,
       value: project.id,
       label:
         project.id === DEFAULT_PROJECT_ID
@@ -139,6 +148,15 @@ const options = computed(() => {
     };
   });
 });
+
+const filterByName = (pattern: string, option: SelectOption) => {
+  const { project } = option as ProjectSelectOption;
+  pattern = pattern.toLowerCase();
+  return (
+    project.name.toLowerCase().includes(pattern) ||
+    project.key.toLowerCase().includes(pattern)
+  );
+};
 
 watchEffect(prepare);
 </script>

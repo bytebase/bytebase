@@ -1,33 +1,30 @@
 <template>
-  <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedId="selectedEnvironment?.id"
-        @select-environment="selectEnvironment"
+        :include-all="true"
+        :environment="selectedEnvironment?.id ?? UNKNOWN_ID"
+        @update:environment="changeEnvironmentId($event)"
       />
       <div class="flex flex-row space-x-4">
-        <button
-          v-if="project"
-          class="px-4 cursor-pointer rounded-md text-control text-sm bg-link-hover focus:outline-none hover:underline"
-          @click.prevent="goProject"
-        >
+        <NButton v-if="project" @click="goProject">
           {{ project.key }}
-        </button>
-        <!-- eslint-disable vue/attribute-hyphenation -->
-        <MemberSelect
-          class="w-72"
-          :show-all="true"
-          :show-system-bot="true"
-          :selected-id="selectedPrincipalId"
-          @select-principal-id="selectPrincipal"
-        />
-        <BBTableSearch
-          ref="searchField"
-          :placeholder="$t('issue.search-issue-name')"
-          @change-text="(text: string) => changeSearchText(text)"
-        />
+        </NButton>
+
+        <NInputGroup style="width: auto">
+          <PrincipalSelect
+            :principal="selectedPrincipalId"
+            :include-system-bot="true"
+            :include-all="allowSelectAllUsers"
+            @update:principal="changePrincipalId"
+          />
+          <SearchBox
+            :value="state.searchText"
+            :placeholder="$t('issue.search-issue-name')"
+            :autofocus="true"
+            @update:value="changeSearchText($event)"
+          />
+        </NInputGroup>
       </div>
     </div>
 
@@ -37,7 +34,10 @@
       session-key="dashboard-open"
       :issue-find="{
         statusList: ['OPEN'],
-        principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
+        principalId:
+          selectedPrincipalId && selectedPrincipalId !== UNKNOWN_ID
+            ? selectedPrincipalId
+            : undefined,
         projectId: selectedProjectId,
       }"
       :page-size="10"
@@ -61,7 +61,10 @@
       session-key="dashboard-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
-        principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
+        principalId:
+          selectedPrincipalId && selectedPrincipalId !== UNKNOWN_ID
+            ? selectedPrincipalId
+            : undefined,
         projectId: selectedProjectId,
       }"
       :page-size="10"
@@ -83,12 +86,24 @@
 </template>
 
 <script lang="ts" setup>
+import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
+import { NInputGroup, NButton } from "naive-ui";
+
+import {
+  EnvironmentTabFilter,
+  PrincipalSelect,
+  SearchBox,
+} from "@/components/v2";
 import { IssueTable } from "../components/Issue";
-import MemberSelect from "../components/MemberSelect.vue";
-import { EMPTY_ID, Environment, Issue, PrincipalId, ProjectId } from "../types";
-import { reactive, ref, computed, onMounted } from "vue";
+import {
+  type Environment,
+  type EnvironmentId,
+  type Issue,
+  type PrincipalId,
+  type ProjectId,
+  UNKNOWN_ID,
+} from "../types";
 import {
   activeEnvironment,
   hasWorkspacePermission,
@@ -100,8 +115,6 @@ import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 interface LocalState {
   searchText: string;
 }
-
-const searchField = ref();
 
 const router = useRouter();
 const route = useRoute();
@@ -125,16 +138,20 @@ const showClosed = computed(
   () => statusList.value.length === 0 || statusList.value.includes("closed")
 );
 
+const allowSelectAllUsers = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-issue",
+    currentUser.value.role
+  );
+});
+
 const selectedPrincipalId = computed((): PrincipalId => {
   const id = parseInt(route.query.user as string, 10);
   if (id >= 0) {
     return id;
   }
-  return hasWorkspacePermission(
-    "bb.permission.workspace.manage-issue",
-    currentUser.value.role
-  )
-    ? EMPTY_ID // default to 'All' if current user is owner or DBA
+  return allowSelectAllUsers.value
+    ? UNKNOWN_ID // default to 'All' if current user is owner or DBA
     : currentUser.value.id; // default to current user otherwise
 });
 
@@ -148,11 +165,6 @@ const selectedEnvironment = computed((): Environment | undefined => {
 const selectedProjectId = computed((): ProjectId | undefined => {
   const { project } = route.query;
   return project ? parseInt(project as string, 10) : undefined;
-});
-
-onMounted(() => {
-  // Focus on the internal search field when mounted
-  searchField.value.$el.querySelector("#search").focus();
 });
 
 const project = computed(() => {
@@ -177,13 +189,13 @@ const filter = (issue: Issue) => {
   return true;
 };
 
-const selectEnvironment = (environment: Environment) => {
-  if (environment) {
+const changeEnvironmentId = (environment: EnvironmentId | undefined) => {
+  if (environment && environment !== UNKNOWN_ID) {
     router.replace({
       name: "workspace.issue",
       query: {
         ...route.query,
-        environment: environment.id,
+        environment,
       },
     });
   } else {
@@ -197,12 +209,15 @@ const selectEnvironment = (environment: Environment) => {
   }
 };
 
-const selectPrincipal = (principalId: PrincipalId) => {
+const changePrincipalId = (user: PrincipalId | undefined) => {
+  if (user === UNKNOWN_ID) {
+    user = undefined;
+  }
   router.replace({
     name: "workspace.issue",
     query: {
       ...route.query,
-      user: principalId,
+      user,
     },
   });
 };
