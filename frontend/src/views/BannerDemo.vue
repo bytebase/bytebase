@@ -26,7 +26,7 @@
             <heroicons-outline:arrow-down-tray class="ml-1 w-6 h-6" />
           </a>
           <a
-            href="https://hub.bytebase.com?source=demo"
+            href="https://hub.bytebase.com/workspace?source=demo"
             target="_blank"
             class="flex items-center justify-center pl-4 pr-2 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
