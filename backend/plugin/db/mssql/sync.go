@@ -31,8 +31,12 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	for rows.Next() {
 		database := &storepb.DatabaseMetadata{}
-		if err := rows.Scan(&database.Name, &database.Collation); err != nil {
+		var collation sql.NullString
+		if err := rows.Scan(&database.Name, &collation); err != nil {
 			return nil, err
+		}
+		if collation.Valid {
+			database.Collation = collation.String
 		}
 		databases = append(databases, database)
 	}
