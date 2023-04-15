@@ -903,6 +903,7 @@
     "visit-environment": "@:common.visit @:common.environments",
     "add-a-member": "Add a member",
     "use-kbar": "Use kbar ({shortcut})",
+    "query-data": "Query data",
     "notice": {
       "title": "Quickstart guide dismissed",
       "desc": "You can still bring it back later from the top right menu"

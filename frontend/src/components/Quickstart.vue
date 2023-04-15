@@ -82,9 +82,26 @@ export default defineComponent({
 
     const introList: IntroItem[] = [
       {
+        name: computed(() =>
+          t("quick-start.use-kbar", {
+            shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
+          })
+        ),
+        link: "",
+        click: () => {
+          kbarHandler.value.show();
+        },
+        done: computed(() => uiStateStore.getIntroStateByKey("kbar.open")),
+      },
+      {
         name: computed(() => t("quick-start.view-an-issue")),
         link: "/issue/101",
         done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
+      },
+      {
+        name: computed(() => t("quick-start.query-data")),
+        link: "/sql-editor/sheet/sample-sheet-101",
+        done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
       },
       {
         name: computed(() => t("quick-start.visit-project")),
@@ -141,19 +158,6 @@ export default defineComponent({
         ),
       });
     }
-
-    introList.push({
-      name: computed(() =>
-        t("quick-start.use-kbar", {
-          shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
-        })
-      ),
-      link: "",
-      click: () => {
-        kbarHandler.value.show();
-      },
-      done: computed(() => uiStateStore.getIntroStateByKey("kbar.open")),
-    });
 
     const isTaskActive = (index: number): boolean => {
       for (let i = index - 1; i >= 0; i--) {
