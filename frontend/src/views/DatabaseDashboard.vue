@@ -2,8 +2,9 @@
   <div class="flex flex-col relative">
     <div class="px-5 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
-        :selected-id="state.selectedEnvironment?.id"
-        @select-environment="selectEnvironment"
+        :include-all="true"
+        :environment="selectedEnvironment?.id ?? UNKNOWN_ID"
+        @update:environment="changeEnvironmentId"
       />
 
       <div class="flex items-center space-x-4">
@@ -27,11 +28,21 @@
             {{ $t("quick-action.default-db-hint") }}
           </div>
         </NTooltip>
-        <BBTableSearch
-          ref="searchField"
-          :placeholder="$t('database.search-database')"
-          @change-text="(text: string) => changeSearchText(text)"
-        />
+
+        <NInputGroup style="width: auto">
+          <InstanceSelect
+            :instance="state.instanceFilter"
+            :include-all="true"
+            :environment="selectedEnvironment?.id"
+            @update:instance="state.instanceFilter = $event ?? UNKNOWN_ID"
+          />
+          <SearchBox
+            :value="state.searchText"
+            :placeholder="$t('database.search-database')"
+            :autofocus="true"
+            @update:value="changeSearchText($event)"
+          />
+        </NInputGroup>
       </div>
     </div>
 
@@ -46,157 +57,134 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import { computed, watchEffect, onMounted, reactive } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { NInputGroup, NTooltip } from "naive-ui";
+import { cloneDeep } from "lodash-es";
+
 import {
-  computed,
-  watchEffect,
-  onMounted,
-  reactive,
-  ref,
-  defineComponent,
-} from "vue";
-import { useRouter } from "vue-router";
-import { NTooltip } from "naive-ui";
-import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
+  EnvironmentTabFilter,
+  InstanceSelect,
+  SearchBox,
+} from "@/components/v2";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import {
-  Environment,
-  Database,
+  type Database,
+  type EnvironmentId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
+  InstanceId,
 } from "../types";
 import {
   filterDatabaseByKeyword,
   hasWorkspacePermission,
   sortDatabaseList,
 } from "../utils";
-import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
   useDatabaseStore,
-  useEnvironmentList,
   useEnvironmentStore,
   useUIStateStore,
 } from "@/store";
 
 interface LocalState {
+  instanceFilter: InstanceId;
   searchText: string;
   databaseList: Database[];
-  selectedEnvironment?: Environment;
   loading: boolean;
 }
 
-export default defineComponent({
-  name: "DatabaseDashboard",
-  components: {
-    NTooltip,
-    EnvironmentTabFilter,
-    DatabaseTable,
-  },
-  setup() {
-    const searchField = ref();
+const uiStateStore = useUIStateStore();
+const environmentStore = useEnvironmentStore();
+const router = useRouter();
+const route = useRoute();
 
-    const uiStateStore = useUIStateStore();
-    const router = useRouter();
+const state = reactive<LocalState>({
+  instanceFilter: UNKNOWN_ID,
+  searchText: "",
+  databaseList: [],
+  loading: false,
+});
 
-    const state = reactive<LocalState>({
-      searchText: "",
-      databaseList: [],
-      selectedEnvironment: router.currentRoute.value.query.environment
-        ? useEnvironmentStore().getEnvironmentById(
-            parseInt(router.currentRoute.value.query.environment as string, 10)
-          )
-        : undefined,
-      loading: false,
+const currentUser = useCurrentUser();
+
+const selectedEnvironment = computed(() => {
+  const { environment } = route.query;
+  return environment
+    ? environmentStore.getEnvironmentById(parseInt(environment as string, 10))
+    : undefined;
+});
+
+const canVisitUnassignedDatabases = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-database",
+    currentUser.value.role
+  );
+});
+
+onMounted(() => {
+  if (!uiStateStore.getIntroStateByKey("database.visit")) {
+    uiStateStore.saveIntroStateByKey({
+      key: "database.visit",
+      newState: true,
     });
+  }
+});
 
-    const currentUser = useCurrentUser();
-
-    const environmentList = useEnvironmentList(["NORMAL"]);
-
-    const canVisitUnassignedDatabases = computed(() => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-database",
-        currentUser.value.role
-      );
-    });
-
-    onMounted(() => {
-      // Focus on the internal search field when mounted
-      searchField.value.$el.querySelector("#search").focus();
-
-      if (!uiStateStore.getIntroStateByKey("database.visit")) {
-        uiStateStore.saveIntroStateByKey({
-          key: "database.visit",
-          newState: true,
-        });
-      }
-    });
-
-    const prepareDatabaseList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        state.loading = true;
-        useDatabaseStore()
-          .fetchDatabaseList()
-          .then((list) => {
-            state.databaseList = sortDatabaseList(
-              cloneDeep(list),
-              environmentList.value
-            );
-          })
-          .finally(() => {
-            state.loading = false;
-          });
-      }
-    };
-
-    watchEffect(prepareDatabaseList);
-
-    const selectEnvironment = (environment: Environment) => {
-      state.selectedEnvironment = environment;
-      if (environment) {
-        router.replace({
-          name: "workspace.database",
-          query: { environment: environment.id },
-        });
-      } else {
-        router.replace({ name: "workspace.database" });
-      }
-    };
-
-    const changeSearchText = (searchText: string) => {
-      state.searchText = searchText;
-    };
-
-    const filteredList = computed(() => {
-      const { databaseList, selectedEnvironment, searchText } = state;
-      let list = [...databaseList];
-      if (selectedEnvironment) {
-        list = list.filter(
-          (db) => db.instance.environment.id === selectedEnvironment.id
+const prepareDatabaseList = () => {
+  // It will also be called when user logout
+  if (currentUser.value.id != UNKNOWN_ID) {
+    state.loading = true;
+    useDatabaseStore()
+      .fetchDatabaseList()
+      .then((list) => {
+        state.databaseList = sortDatabaseList(
+          cloneDeep(list),
+          environmentStore.getEnvironmentList()
         );
-      }
-      list = list.filter((db) =>
-        filterDatabaseByKeyword(db, searchText, [
-          "name",
-          "environment",
-          "instance",
-          "project",
-        ])
-      );
-      return list;
-    });
+      })
+      .finally(() => {
+        state.loading = false;
+      });
+  }
+};
 
-    return {
-      DEFAULT_PROJECT_ID,
-      searchField,
-      state,
-      filteredList,
-      selectEnvironment,
-      changeSearchText,
-      canVisitUnassignedDatabases,
-    };
-  },
+watchEffect(prepareDatabaseList);
+
+const changeEnvironmentId = (environment: EnvironmentId | undefined) => {
+  if (environment && environment !== UNKNOWN_ID) {
+    router.replace({
+      name: "workspace.database",
+      query: { environment },
+    });
+  } else {
+    router.replace({ name: "workspace.database" });
+  }
+};
+
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
+};
+
+const filteredList = computed(() => {
+  const { databaseList, searchText } = state;
+  let list = [...databaseList];
+  const environment = selectedEnvironment.value;
+  if (environment && environment.id !== UNKNOWN_ID) {
+    list = list.filter((db) => db.instance.environment.id === environment.id);
+  }
+  if (state.instanceFilter !== UNKNOWN_ID) {
+    list = list.filter((db) => db.instance.id === state.instanceFilter);
+  }
+  list = list.filter((db) =>
+    filterDatabaseByKeyword(db, searchText, [
+      "name",
+      "environment",
+      "instance",
+      "project",
+    ])
+  );
+  return list;
 });
 </script>
