@@ -87,7 +87,7 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 		p.lastFetchTime = time.Now().Unix()
 	}()
 
-	return p.requestLicense(ctx, payload.Url, setting.Value)
+	return p.requestLicense(ctx, payload.Url, payload.Token)
 }
 
 func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string) (string, error) {
