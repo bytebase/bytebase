@@ -356,7 +356,7 @@ const onButtonClick = (plan: Plan) => {
     );
   } else if (plan.type === PlanType.ENTERPRISE) {
     window.open(
-      "https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform"
+      "mailto:support@bytebase.com?subject=Request for enterprise plan&body=Hi Bytebase team,%0D%0A%0D%0AI would like to request for an enterprise plan. Please contact me at [your email].%0D%0A%0D%0AThanks"
     );
   } else {
     window.open("https://bytebase.com/docs?source=console", "_self");
