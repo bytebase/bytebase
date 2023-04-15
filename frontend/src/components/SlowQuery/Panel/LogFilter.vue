@@ -1,7 +1,12 @@
 <template>
   <div class="mb-2 space-y-2">
-    <div class="flex items-center gap-x-4 h-[34px]">
-      <NInputGroup style="width: auto">
+    <div
+      v-if="
+        filterTypes.includes('project') || filterTypes.includes('environment')
+      "
+      class="flex items-center gap-x-4"
+    >
+      <div class="flex-1 flex items-center gap-x-4">
         <ProjectSelect
           v-if="filterTypes.includes('project')"
           :project="params.project?.id ?? UNKNOWN_ID"
@@ -10,6 +15,24 @@
           :disabled="loading"
           @update:project="changeProjectId"
         />
+
+        <EnvironmentTabFilter
+          v-if="filterTypes.includes('environment')"
+          class="flex-1"
+          :environment="params.environment?.id ?? UNKNOWN_ID"
+          :include-all="true"
+          :disabled="loading"
+          @update:environment="changeEnvironmentId"
+        />
+      </div>
+
+      <div class="flex items-center justify-end">
+        <slot name="suffix" />
+      </div>
+    </div>
+
+    <div class="flex items-center gap-x-4">
+      <NInputGroup class="flex-1">
         <InstanceSelect
           v-if="filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"
@@ -42,18 +65,15 @@
         />
       </NInputGroup>
 
-      <div class="flex-1 flex items-center justify-end">
+      <div
+        v-if="
+          !filterTypes.includes('project') &&
+          !filterTypes.includes('environment')
+        "
+        class="flex items-center justify-end"
+      >
         <slot name="suffix" />
       </div>
-    </div>
-
-    <div v-if="filterTypes.includes('environment')">
-      <EnvironmentTabFilter
-        :environment="params.environment?.id ?? UNKNOWN_ID"
-        :include-all="true"
-        :disabled="loading"
-        @update:environment="changeEnvironmentId"
-      />
     </div>
   </div>
 </template>
