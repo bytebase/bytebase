@@ -94,6 +94,7 @@ import {
   useTabStore,
   useSQLEditorStore,
   useInstanceById,
+  useUIStateStore,
   useWebTerminalStore,
   featureToRef,
 } from "@/store";
@@ -121,6 +122,7 @@ const state = reactive<LocalState>({});
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
+const uiStateStore = useUIStateStore();
 const webTerminalStore = useWebTerminalStore();
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 
@@ -191,6 +193,10 @@ const handleRunQuery = async () => {
   const selectedStatement = currentTab.selectedStatement;
   const query = selectedStatement || statement;
   await emit("execute", query, { databaseType: selectedInstanceEngine.value });
+  uiStateStore.saveIntroStateByKey({
+    key: "data.query",
+    newState: true,
+  });
 };
 
 const handleExplainQuery = () => {
