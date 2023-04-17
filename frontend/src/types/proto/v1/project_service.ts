@@ -203,45 +203,6 @@ export function schemaChangeToJSON(object: SchemaChange): string {
   }
 }
 
-export enum ProjectRole {
-  PROJECT_ROLE_UNSPECIFIED = 0,
-  PROJECT_ROLE_OWNER = 1,
-  PROJECT_ROLE_DEVELOPER = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function projectRoleFromJSON(object: any): ProjectRole {
-  switch (object) {
-    case 0:
-    case "PROJECT_ROLE_UNSPECIFIED":
-      return ProjectRole.PROJECT_ROLE_UNSPECIFIED;
-    case 1:
-    case "PROJECT_ROLE_OWNER":
-      return ProjectRole.PROJECT_ROLE_OWNER;
-    case 2:
-    case "PROJECT_ROLE_DEVELOPER":
-      return ProjectRole.PROJECT_ROLE_DEVELOPER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ProjectRole.UNRECOGNIZED;
-  }
-}
-
-export function projectRoleToJSON(object: ProjectRole): string {
-  switch (object) {
-    case ProjectRole.PROJECT_ROLE_UNSPECIFIED:
-      return "PROJECT_ROLE_UNSPECIFIED";
-    case ProjectRole.PROJECT_ROLE_OWNER:
-      return "PROJECT_ROLE_OWNER";
-    case ProjectRole.PROJECT_ROLE_DEVELOPER:
-      return "PROJECT_ROLE_DEVELOPER";
-    case ProjectRole.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum OperatorType {
   /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
   OPERATOR_TYPE_UNSPECIFIED = 0,
@@ -441,8 +402,11 @@ export interface IamPolicy {
 }
 
 export interface Binding {
-  /** The project role that is assigned to the members. */
-  role: ProjectRole;
+  /**
+   * The project role that is assigned to the members.
+   * Format: roles/{role}
+   */
+  role: string;
   /**
    * Specifies the principals requesting access for a Bytebase resource.
    * `members` can have the following values:
@@ -1945,13 +1909,13 @@ export const IamPolicy = {
 };
 
 function createBaseBinding(): Binding {
-  return { role: 0, members: [] };
+  return { role: "", members: [] };
 }
 
 export const Binding = {
   encode(message: Binding, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.role !== 0) {
-      writer.uint32(8).int32(message.role);
+    if (message.role !== "") {
+      writer.uint32(10).string(message.role);
     }
     for (const v of message.members) {
       writer.uint32(18).string(v!);
@@ -1967,11 +1931,11 @@ export const Binding = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag != 10) {
             break;
           }
 
-          message.role = reader.int32() as any;
+          message.role = reader.string();
           continue;
         case 2:
           if (tag != 18) {
@@ -1991,14 +1955,14 @@ export const Binding = {
 
   fromJSON(object: any): Binding {
     return {
-      role: isSet(object.role) ? projectRoleFromJSON(object.role) : 0,
+      role: isSet(object.role) ? String(object.role) : "",
       members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
     };
   },
 
   toJSON(message: Binding): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = projectRoleToJSON(message.role));
+    message.role !== undefined && (obj.role = message.role);
     if (message.members) {
       obj.members = message.members.map((e) => e);
     } else {
@@ -2013,7 +1977,7 @@ export const Binding = {
 
   fromPartial(object: DeepPartial<Binding>): Binding {
     const message = createBaseBinding();
-    message.role = object.role ?? 0;
+    message.role = object.role ?? "";
     message.members = object.members?.map((e) => e) || [];
     return message;
   },

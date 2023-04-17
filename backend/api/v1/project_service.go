@@ -751,25 +751,16 @@ func getUserIdentifier(email string) string {
 	return "user:" + email
 }
 
-func convertToProjectRole(role api.Role) v1pb.ProjectRole {
-	switch role {
-	case api.Owner:
-		return v1pb.ProjectRole_PROJECT_ROLE_OWNER
-	case api.Developer:
-		return v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER
-	default:
-		return v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED
-	}
+func convertToProjectRole(role api.Role) string {
+	return fmt.Sprintf("%s%s", rolePrefix, role)
 }
 
-func convertProjectRole(role v1pb.ProjectRole) (api.Role, error) {
-	switch role {
-	case v1pb.ProjectRole_PROJECT_ROLE_OWNER:
-		return api.Owner, nil
-	case v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER:
-		return api.Developer, nil
+func convertProjectRole(role string) (api.Role, error) {
+	roleID, err := getRoleID(role)
+	if err != nil {
+		return api.Role(""), errors.Wrapf(err, "invalid project role %q", role)
 	}
-	return api.Role(""), errors.Errorf("invalid project role %q", role)
+	return api.Role(roleID), nil
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -1077,9 +1068,9 @@ func validateBindings(bindings []*v1pb.Binding) error {
 		return errors.Errorf("IAM Binding is required")
 	}
 	userMap := make(map[string]bool)
-	projectRoleMap := make(map[v1pb.ProjectRole]bool)
+	projectRoleMap := make(map[string]bool)
 	for _, binding := range bindings {
-		if binding.Role == v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED {
+		if binding.Role == "" {
 			return errors.Errorf("IAM Binding role is required")
 		}
 		// Each of the bindings must contain at least one member.
@@ -1103,7 +1094,7 @@ func validateBindings(bindings []*v1pb.Binding) error {
 		projectRoleMap[binding.Role] = true
 	}
 	// Must contain one owner binding.
-	if _, ok := projectRoleMap[v1pb.ProjectRole_PROJECT_ROLE_OWNER]; !ok {
+	if _, ok := projectRoleMap["roles/OWNER"]; !ok {
 		return errors.Errorf("IAM Policy must have at least one binding with role PROJECT_OWNER")
 	}
 	return nil
