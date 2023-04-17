@@ -189,7 +189,6 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 					return nil
 				}
 			}
-
 		}
 
 		if settingPatch.Name == api.SettingWorkspaceMailDelivery {
