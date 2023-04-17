@@ -21,6 +21,115 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
+type SMTPMailDeliverySetting_Encryption int32
+
+const (
+	SMTPMailDeliverySetting_ENCRYPTION_UNSPECIFIED SMTPMailDeliverySetting_Encryption = 0
+	SMTPMailDeliverySetting_ENCRYPTION_NONE        SMTPMailDeliverySetting_Encryption = 1
+	SMTPMailDeliverySetting_ENCRYPTION_STARTTLS    SMTPMailDeliverySetting_Encryption = 2
+	SMTPMailDeliverySetting_ENCRYPTION_SSL_TLS     SMTPMailDeliverySetting_Encryption = 3
+)
+
+// Enum value maps for SMTPMailDeliverySetting_Encryption.
+var (
+	SMTPMailDeliverySetting_Encryption_name = map[int32]string{
+		0: "ENCRYPTION_UNSPECIFIED",
+		1: "ENCRYPTION_NONE",
+		2: "ENCRYPTION_STARTTLS",
+		3: "ENCRYPTION_SSL_TLS",
+	}
+	SMTPMailDeliverySetting_Encryption_value = map[string]int32{
+		"ENCRYPTION_UNSPECIFIED": 0,
+		"ENCRYPTION_NONE":        1,
+		"ENCRYPTION_STARTTLS":    2,
+		"ENCRYPTION_SSL_TLS":     3,
+	}
+)
+
+func (x SMTPMailDeliverySetting_Encryption) Enum() *SMTPMailDeliverySetting_Encryption {
+	p := new(SMTPMailDeliverySetting_Encryption)
+	*p = x
+	return p
+}
+
+func (x SMTPMailDeliverySetting_Encryption) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SMTPMailDeliverySetting_Encryption) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_setting_proto_enumTypes[0].Descriptor()
+}
+
+func (SMTPMailDeliverySetting_Encryption) Type() protoreflect.EnumType {
+	return &file_store_setting_proto_enumTypes[0]
+}
+
+func (x SMTPMailDeliverySetting_Encryption) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SMTPMailDeliverySetting_Encryption.Descriptor instead.
+func (SMTPMailDeliverySetting_Encryption) EnumDescriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{3, 0}
+}
+
+// We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
+type SMTPMailDeliverySetting_Authentication int32
+
+const (
+	SMTPMailDeliverySetting_AUTHENTICATION_UNSPECIFIED SMTPMailDeliverySetting_Authentication = 0
+	SMTPMailDeliverySetting_AUTHENTICATION_NONE        SMTPMailDeliverySetting_Authentication = 1
+	SMTPMailDeliverySetting_AUTHENTICATION_PLAIN       SMTPMailDeliverySetting_Authentication = 2
+	SMTPMailDeliverySetting_AUTHENTICATION_LOGIN       SMTPMailDeliverySetting_Authentication = 3
+	SMTPMailDeliverySetting_AUTHENTICATION_CRAM_MD5    SMTPMailDeliverySetting_Authentication = 4
+)
+
+// Enum value maps for SMTPMailDeliverySetting_Authentication.
+var (
+	SMTPMailDeliverySetting_Authentication_name = map[int32]string{
+		0: "AUTHENTICATION_UNSPECIFIED",
+		1: "AUTHENTICATION_NONE",
+		2: "AUTHENTICATION_PLAIN",
+		3: "AUTHENTICATION_LOGIN",
+		4: "AUTHENTICATION_CRAM_MD5",
+	}
+	SMTPMailDeliverySetting_Authentication_value = map[string]int32{
+		"AUTHENTICATION_UNSPECIFIED": 0,
+		"AUTHENTICATION_NONE":        1,
+		"AUTHENTICATION_PLAIN":       2,
+		"AUTHENTICATION_LOGIN":       3,
+		"AUTHENTICATION_CRAM_MD5":    4,
+	}
+)
+
+func (x SMTPMailDeliverySetting_Authentication) Enum() *SMTPMailDeliverySetting_Authentication {
+	p := new(SMTPMailDeliverySetting_Authentication)
+	*p = x
+	return p
+}
+
+func (x SMTPMailDeliverySetting_Authentication) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SMTPMailDeliverySetting_Authentication) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_setting_proto_enumTypes[1].Descriptor()
+}
+
+func (SMTPMailDeliverySetting_Authentication) Type() protoreflect.EnumType {
+	return &file_store_setting_proto_enumTypes[1]
+}
+
+func (x SMTPMailDeliverySetting_Authentication) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SMTPMailDeliverySetting_Authentication.Descriptor instead.
+func (SMTPMailDeliverySetting_Authentication) EnumDescriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{3, 1}
+}
+
 type WorkspaceProfileSetting struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -204,6 +313,130 @@ func (x *WorkspaceApprovalSetting) GetRules() []*WorkspaceApprovalSetting_Rule {
 	return nil
 }
 
+type SMTPMailDeliverySetting struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The SMTP server address.
+	Server string `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty"`
+	// The SMTP server port.
+	Port int32 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	// The SMTP server encryption.
+	Encryption SMTPMailDeliverySetting_Encryption `protobuf:"varint,3,opt,name=encryption,proto3,enum=bytebase.store.SMTPMailDeliverySetting_Encryption" json:"encryption,omitempty"`
+	// The CA, KEY, and CERT for the SMTP server.
+	Ca             string                                 `protobuf:"bytes,4,opt,name=ca,proto3" json:"ca,omitempty"`
+	Key            string                                 `protobuf:"bytes,5,opt,name=key,proto3" json:"key,omitempty"`
+	Cert           string                                 `protobuf:"bytes,6,opt,name=cert,proto3" json:"cert,omitempty"`
+	Authentication SMTPMailDeliverySetting_Authentication `protobuf:"varint,7,opt,name=authentication,proto3,enum=bytebase.store.SMTPMailDeliverySetting_Authentication" json:"authentication,omitempty"`
+	Username       string                                 `protobuf:"bytes,8,opt,name=username,proto3" json:"username,omitempty"`
+	Password       string                                 `protobuf:"bytes,9,opt,name=password,proto3" json:"password,omitempty"`
+	// The sender email address.
+	From string `protobuf:"bytes,10,opt,name=from,proto3" json:"from,omitempty"`
+}
+
+func (x *SMTPMailDeliverySetting) Reset() {
+	*x = SMTPMailDeliverySetting{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SMTPMailDeliverySetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SMTPMailDeliverySetting) ProtoMessage() {}
+
+func (x *SMTPMailDeliverySetting) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SMTPMailDeliverySetting.ProtoReflect.Descriptor instead.
+func (*SMTPMailDeliverySetting) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SMTPMailDeliverySetting) GetServer() string {
+	if x != nil {
+		return x.Server
+	}
+	return ""
+}
+
+func (x *SMTPMailDeliverySetting) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *SMTPMailDeliverySetting) GetEncryption() SMTPMailDeliverySetting_Encryption {
+	if x != nil {
+		return x.Encryption
+	}
+	return SMTPMailDeliverySetting_ENCRYPTION_UNSPECIFIED
+}
+
+func (x *SMTPMailDeliverySetting) GetCa() string {
+	if x != nil {
+		return x.Ca
+	}
+	return ""
+}
+
+func (x *SMTPMailDeliverySetting) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SMTPMailDeliverySetting) GetCert() string {
+	if x != nil {
+		return x.Cert
+	}
+	return ""
+}
+
+func (x *SMTPMailDeliverySetting) GetAuthentication() SMTPMailDeliverySetting_Authentication {
+	if x != nil {
+		return x.Authentication
+	}
+	return SMTPMailDeliverySetting_AUTHENTICATION_UNSPECIFIED
+}
+
+func (x *SMTPMailDeliverySetting) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *SMTPMailDeliverySetting) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *SMTPMailDeliverySetting) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
+}
+
 type WorkspaceApprovalSetting_Rule struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -216,7 +449,7 @@ type WorkspaceApprovalSetting_Rule struct {
 func (x *WorkspaceApprovalSetting_Rule) Reset() {
 	*x = WorkspaceApprovalSetting_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[3]
+		mi := &file_store_setting_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -229,7 +462,7 @@ func (x *WorkspaceApprovalSetting_Rule) String() string {
 func (*WorkspaceApprovalSetting_Rule) ProtoMessage() {}
 
 func (x *WorkspaceApprovalSetting_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[3]
+	mi := &file_store_setting_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -298,8 +531,49 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c,
 	0x54, 0x65, 0x6d, 0x70, 0x6c, 0x61, 0x74, 0x65, 0x52, 0x08, 0x74, 0x65, 0x6d, 0x70, 0x6c, 0x61,
-	0x74, 0x65, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d,
-	0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x65, 0x22, 0x88, 0x05, 0x0a, 0x17, 0x53, 0x4d, 0x54, 0x50, 0x4d, 0x61, 0x69, 0x6c, 0x44,
+	0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x16,
+	0x0a, 0x06, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
+	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x52, 0x0a, 0x0a, 0x65, 0x6e,
+	0x63, 0x72, 0x79, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x32,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e,
+	0x53, 0x4d, 0x54, 0x50, 0x4d, 0x61, 0x69, 0x6c, 0x44, 0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x79,
+	0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x45, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x0a, 0x65, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e,
+	0x0a, 0x02, 0x63, 0x61, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x63, 0x61, 0x12, 0x10,
+	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
+	0x12, 0x12, 0x0a, 0x04, 0x63, 0x65, 0x72, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x63, 0x65, 0x72, 0x74, 0x12, 0x5e, 0x0a, 0x0e, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x36, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x4d,
+	0x54, 0x50, 0x4d, 0x61, 0x69, 0x6c, 0x44, 0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x79, 0x53, 0x65,
+	0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0e, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x1a, 0x0a, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x09, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x12, 0x12, 0x0a, 0x04,
+	0x66, 0x72, 0x6f, 0x6d, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d,
+	0x22, 0x6e, 0x0a, 0x0a, 0x45, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1a,
+	0x0a, 0x16, 0x45, 0x4e, 0x43, 0x52, 0x59, 0x50, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x55, 0x4e, 0x53,
+	0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x13, 0x0a, 0x0f, 0x45, 0x4e,
+	0x43, 0x52, 0x59, 0x50, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x4e, 0x4f, 0x4e, 0x45, 0x10, 0x01, 0x12,
+	0x17, 0x0a, 0x13, 0x45, 0x4e, 0x43, 0x52, 0x59, 0x50, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54,
+	0x41, 0x52, 0x54, 0x54, 0x4c, 0x53, 0x10, 0x02, 0x12, 0x16, 0x0a, 0x12, 0x45, 0x4e, 0x43, 0x52,
+	0x59, 0x50, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x53, 0x4c, 0x5f, 0x54, 0x4c, 0x53, 0x10, 0x03,
+	0x22, 0x9a, 0x01, 0x0a, 0x0e, 0x41, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x12, 0x1e, 0x0a, 0x1a, 0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43,
+	0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
+	0x44, 0x10, 0x00, 0x12, 0x17, 0x0a, 0x13, 0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43,
+	0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x4e, 0x4f, 0x4e, 0x45, 0x10, 0x01, 0x12, 0x18, 0x0a, 0x14,
+	0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x50,
+	0x4c, 0x41, 0x49, 0x4e, 0x10, 0x02, 0x12, 0x18, 0x0a, 0x14, 0x41, 0x55, 0x54, 0x48, 0x45, 0x4e,
+	0x54, 0x49, 0x43, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x4c, 0x4f, 0x47, 0x49, 0x4e, 0x10, 0x03,
+	0x12, 0x1b, 0x0a, 0x17, 0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43, 0x41, 0x54, 0x49,
+	0x4f, 0x4e, 0x5f, 0x43, 0x52, 0x41, 0x4d, 0x5f, 0x4d, 0x44, 0x35, 0x10, 0x04, 0x42, 0x14, 0x5a,
+	0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -314,24 +588,30 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 	return file_store_setting_proto_rawDescData
 }
 
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_setting_proto_goTypes = []interface{}{
-	(*WorkspaceProfileSetting)(nil),       // 0: bytebase.store.WorkspaceProfileSetting
-	(*AgentPluginSetting)(nil),            // 1: bytebase.store.AgentPluginSetting
-	(*WorkspaceApprovalSetting)(nil),      // 2: bytebase.store.WorkspaceApprovalSetting
-	(*WorkspaceApprovalSetting_Rule)(nil), // 3: bytebase.store.WorkspaceApprovalSetting.Rule
-	(*v1alpha1.ParsedExpr)(nil),           // 4: google.api.expr.v1alpha1.ParsedExpr
-	(*ApprovalTemplate)(nil),              // 5: bytebase.store.ApprovalTemplate
+	(SMTPMailDeliverySetting_Encryption)(0),     // 0: bytebase.store.SMTPMailDeliverySetting.Encryption
+	(SMTPMailDeliverySetting_Authentication)(0), // 1: bytebase.store.SMTPMailDeliverySetting.Authentication
+	(*WorkspaceProfileSetting)(nil),             // 2: bytebase.store.WorkspaceProfileSetting
+	(*AgentPluginSetting)(nil),                  // 3: bytebase.store.AgentPluginSetting
+	(*WorkspaceApprovalSetting)(nil),            // 4: bytebase.store.WorkspaceApprovalSetting
+	(*SMTPMailDeliverySetting)(nil),             // 5: bytebase.store.SMTPMailDeliverySetting
+	(*WorkspaceApprovalSetting_Rule)(nil),       // 6: bytebase.store.WorkspaceApprovalSetting.Rule
+	(*v1alpha1.ParsedExpr)(nil),                 // 7: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalTemplate)(nil),                    // 8: bytebase.store.ApprovalTemplate
 }
 var file_store_setting_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
-	4, // 1: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	5, // 2: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	6, // 0: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
+	0, // 1: bytebase.store.SMTPMailDeliverySetting.encryption:type_name -> bytebase.store.SMTPMailDeliverySetting.Encryption
+	1, // 2: bytebase.store.SMTPMailDeliverySetting.authentication:type_name -> bytebase.store.SMTPMailDeliverySetting.Authentication
+	7, // 3: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	8, // 4: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }
@@ -378,6 +658,18 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SMTPMailDeliverySetting); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_setting_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
 			case 0:
 				return &v.state
@@ -395,13 +687,14 @@ func file_store_setting_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_setting_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   4,
+			NumEnums:      2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_setting_proto_goTypes,
 		DependencyIndexes: file_store_setting_proto_depIdxs,
+		EnumInfos:         file_store_setting_proto_enumTypes,
 		MessageInfos:      file_store_setting_proto_msgTypes,
 	}.Build()
 	File_store_setting_proto = out.File
