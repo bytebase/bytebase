@@ -1,28 +1,26 @@
 // Package mail is a mail delivery plugin based on SMTP.
 package mail
 
-/**
-  * Usage:
- email := NewEmailMsg().SetFrom("Bytebase <from@bytebase.com>").AddTo("Customer <to@bytebase.com>").SetSubject("Test Email Subject").SetBody(`
-<!DOCTYPE html>
-<html>
-<head>
-	<title>HTML Test</title>
-</head>
-<body>
-	<h1>This is a mail delivery test.</h1>
-</body>
-</html>
-	`)
-	fmt.Printf("email: %+v\n", email)
-	client := NewSMTPClient("smtp.gmail.com", 587)
-	client.SetAuthType(SMTPAuthTypePlain)
-	client.SetAuthCredentials("from@bytebase.com", "nqxxxxxxxxxxxxxx")
-	client.SetEncryptionType(SMTPEncryptionTypeSTARTTLS)
-	if err := client.SendMail(email); err != nil {
-		t.Fatalf("SendMail failed: %v", err)
-	}
-*/
+// Usage:
+//  email := NewEmailMsg().SetFrom("Bytebase <from@bytebase.com>").AddTo("Customer <to@bytebase.com>").SetSubject("Test Email Subject").SetBody(`
+// <!DOCTYPE html>
+// <html>
+// <head>
+// 	<title>HTML Test</title>
+// </head>
+// <body>
+// 	<h1>This is a mail delivery test.</h1>
+// </body>
+// </html>
+// 	`)
+// 	fmt.Printf("email: %+v\n", email)
+// 	client := NewSMTPClient("smtp.gmail.com", 587)
+// 	client.SetAuthType(SMTPAuthTypePlain)
+// 	client.SetAuthCredentials("from@bytebase.com", "nqxxxxxxxxxxxxxx")
+// 	client.SetEncryptionType(SMTPEncryptionTypeSTARTTLS)
+// 	if err := client.SendMail(email); err != nil {
+// 		t.Fatalf("SendMail failed: %v", err)
+// 	}
 
 import (
 	"crypto/tls"
