@@ -235,7 +235,11 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
 	}
-	if err := validateIAMPolicy(request.Policy); err != nil {
+	roleMessages, err := s.store.ListRoles(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to list roles: %v", err)
+	}
+	if err := validateIAMPolicy(request.Policy, convertToRoles(roleMessages)); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -1052,26 +1056,33 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 	return false
 }
 
-func validateIAMPolicy(policy *v1pb.IamPolicy) error {
+func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")
 	}
-	return validateBindings(policy.Bindings)
+	return validateBindings(policy.Bindings, roles)
 }
 
 func getUserEmailFromIdentifier(ident string) string {
 	return strings.TrimPrefix(ident, "user:")
 }
 
-func validateBindings(bindings []*v1pb.Binding) error {
+func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}
 	userMap := make(map[string]bool)
 	projectRoleMap := make(map[string]bool)
+	existingRoles := make(map[string]bool)
+	for _, role := range roles {
+		existingRoles[role.Name] = true
+	}
 	for _, binding := range bindings {
 		if binding.Role == "" {
 			return errors.Errorf("IAM Binding role is required")
+		}
+		if !existingRoles[binding.Role] {
+			return errors.Errorf("IAM Binding role %s does not exist", binding.Role)
 		}
 		// Each of the bindings must contain at least one member.
 		if len(binding.Members) == 0 {
