@@ -2232,7 +2232,8 @@
     },
     "risk": {
       "self": "风险",
-      "risk-center": "风险中心"
+      "risk-center": "风险中心",
+      "description": "风险中心定义了不同数据库操作在不同条件下的风险等级。而风险等级则会决定工单的自定义审批流程。"
     },
     "workflow-center": {
       "workflow": "工作流"
