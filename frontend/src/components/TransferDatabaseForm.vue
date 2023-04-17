@@ -2,13 +2,14 @@
   <TransferMultipleDatabaseForm
     :target-project="project"
     :transfer-source="state.transferSource"
-    :database-list="databaseList"
+    :database-list="filteredDatabaseList"
     @dismiss="$emit('dismiss')"
     @submit="(databaseList) => transferDatabase(databaseList)"
   >
     <template #transfer-source-selector>
       <TransferSourceSelector
         :project="project"
+        :raw-database-list="rawDatabaseList"
         :transfer-source="state.transferSource"
         :instance-filter="state.instanceFilter"
         :search-text="state.searchText"
@@ -103,18 +104,20 @@ onBeforeMount(prepareDatabaseListForDefaultProject);
 
 const environmentList = useEnvironmentList(["NORMAL"]);
 
-const databaseList = computed(() => {
-  let list;
+const rawDatabaseList = computed(() => {
   if (state.transferSource == "DEFAULT") {
-    list = cloneDeep(
+    return cloneDeep(
       databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
     );
   } else {
-    list = cloneDeep(
+    return cloneDeep(
       databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
     ).filter((item: Database) => item.project.id != props.projectId);
   }
+});
 
+const filteredDatabaseList = computed(() => {
+  let list = [...rawDatabaseList.value];
   const keyword = state.searchText.trim();
   list = list.filter((db) =>
     filterDatabaseByKeyword(db, keyword, [
