@@ -28,7 +28,7 @@ func NewRoleService(store *store.Store) *RoleService {
 func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (*v1pb.ListRolesResponse, error) {
 	roleMessages, err := s.store.ListRoles(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to list roles: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
 
 	var roles []*v1pb.Role
@@ -49,7 +49,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	}
 	roleMessage, err := s.store.CreateRole(ctx, create, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to create role: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to create role: %v", err)
 	}
 	return convertToRole(roleMessage), nil
 }
@@ -63,10 +63,10 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	}
 	role, err := s.store.GetRole(ctx, roleID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get role: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get role: %v", err)
 	}
 	if role == nil {
-		return nil, status.Errorf(codes.NotFound, "Role not found: %s", roleID)
+		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 	patch := &store.UpdateRoleMessage{
 		UpdaterID:  principalID,
@@ -77,13 +77,13 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		case "description":
 			patch.Description = &request.Role.Description
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "Invalid update mask path: %s", path)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path: %s", path)
 		}
 	}
 
 	roleMessage, err := s.store.UpdateRole(ctx, patch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to update role: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to update role: %v", err)
 	}
 	return convertToRole(roleMessage), nil
 }
@@ -96,13 +96,13 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	}
 	role, err := s.store.GetRole(ctx, roleID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get role: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get role: %v", err)
 	}
 	if role == nil {
-		return nil, status.Errorf(codes.NotFound, "Role not found: %s", roleID)
+		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to delete role: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
 	}
 	return &emptypb.Empty{}, nil
 }
