@@ -5,7 +5,7 @@
     </div>
     <div class="flex items-center justify-between">
       <div class="radio-set-row">
-        <template v-if="project.id != DEFAULT_PROJECT_ID">
+        <template v-if="project.id !== DEFAULT_PROJECT_ID">
           <label class="radio">
             <input
               v-model="state.transferSource"
@@ -36,6 +36,7 @@
         <InstanceSelect
           :instance="instanceFilter?.id ?? UNKNOWN_ID"
           :include-all="true"
+          :filter="filterInstance"
           @update:instance="changeInstanceFilter"
         />
         <SearchBox
@@ -49,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, watch } from "vue";
+import { type PropType, computed, reactive, watch } from "vue";
 import { NInputGroup } from "naive-ui";
 
 import { TransferSource } from "./utils";
@@ -59,6 +60,7 @@ import {
   DEFAULT_PROJECT_ID,
   UNKNOWN_ID,
   InstanceId,
+  Database,
 } from "@/types";
 import { InstanceSelect, SearchBox } from "@/components/v2";
 import { useInstanceStore } from "@/store";
@@ -71,6 +73,10 @@ const props = defineProps({
   project: {
     required: true,
     type: Object as PropType<Project>,
+  },
+  rawDatabaseList: {
+    type: Array as PropType<Database[]>,
+    default: () => [],
   },
   transferSource: {
     type: String as PropType<TransferSource>,
@@ -96,11 +102,21 @@ const state = reactive<LocalState>({
   transferSource: props.transferSource,
 });
 
+const nonEmptyInstanceIdSet = computed(() => {
+  const instanceList = props.rawDatabaseList.map((db) => db.instance);
+  return new Set(instanceList.map((instance) => instance.id));
+});
+
 const changeInstanceFilter = (instanceId: InstanceId | undefined) => {
   if (!instanceId || instanceId === UNKNOWN_ID) {
     return emit("select-instance", undefined);
   }
   emit("select-instance", useInstanceStore().getInstanceById(instanceId));
+};
+
+const filterInstance = (instance: Instance) => {
+  if (instance.id === UNKNOWN_ID) return true; // "ALL" can be displayed.
+  return nonEmptyInstanceIdSet.value.has(instance.id);
 };
 
 watch(
