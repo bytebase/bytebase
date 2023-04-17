@@ -38,6 +38,122 @@ export interface WorkspaceApprovalSetting_Rule {
   template?: ApprovalTemplate;
 }
 
+export interface SMTPMailDeliverySetting {
+  /** The SMTP server address. */
+  server: string;
+  /** The SMTP server port. */
+  port: number;
+  /** The SMTP server encryption. */
+  encryption: SMTPMailDeliverySetting_Encryption;
+  /** The CA, KEY, and CERT for the SMTP server. */
+  ca: string;
+  key: string;
+  cert: string;
+  authentication: SMTPMailDeliverySetting_Authentication;
+  username: string;
+  password: string;
+  /** The sender email address. */
+  from: string;
+}
+
+/** We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS. */
+export enum SMTPMailDeliverySetting_Encryption {
+  ENCRYPTION_UNSPECIFIED = 0,
+  ENCRYPTION_NONE = 1,
+  ENCRYPTION_STARTTLS = 2,
+  ENCRYPTION_SSL_TLS = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function sMTPMailDeliverySetting_EncryptionFromJSON(object: any): SMTPMailDeliverySetting_Encryption {
+  switch (object) {
+    case 0:
+    case "ENCRYPTION_UNSPECIFIED":
+      return SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED;
+    case 1:
+    case "ENCRYPTION_NONE":
+      return SMTPMailDeliverySetting_Encryption.ENCRYPTION_NONE;
+    case 2:
+    case "ENCRYPTION_STARTTLS":
+      return SMTPMailDeliverySetting_Encryption.ENCRYPTION_STARTTLS;
+    case 3:
+    case "ENCRYPTION_SSL_TLS":
+      return SMTPMailDeliverySetting_Encryption.ENCRYPTION_SSL_TLS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SMTPMailDeliverySetting_Encryption.UNRECOGNIZED;
+  }
+}
+
+export function sMTPMailDeliverySetting_EncryptionToJSON(object: SMTPMailDeliverySetting_Encryption): string {
+  switch (object) {
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED:
+      return "ENCRYPTION_UNSPECIFIED";
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_NONE:
+      return "ENCRYPTION_NONE";
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_STARTTLS:
+      return "ENCRYPTION_STARTTLS";
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_SSL_TLS:
+      return "ENCRYPTION_SSL_TLS";
+    case SMTPMailDeliverySetting_Encryption.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5. */
+export enum SMTPMailDeliverySetting_Authentication {
+  AUTHENTICATION_UNSPECIFIED = 0,
+  AUTHENTICATION_NONE = 1,
+  AUTHENTICATION_PLAIN = 2,
+  AUTHENTICATION_LOGIN = 3,
+  AUTHENTICATION_CRAM_MD5 = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function sMTPMailDeliverySetting_AuthenticationFromJSON(object: any): SMTPMailDeliverySetting_Authentication {
+  switch (object) {
+    case 0:
+    case "AUTHENTICATION_UNSPECIFIED":
+      return SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED;
+    case 1:
+    case "AUTHENTICATION_NONE":
+      return SMTPMailDeliverySetting_Authentication.AUTHENTICATION_NONE;
+    case 2:
+    case "AUTHENTICATION_PLAIN":
+      return SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN;
+    case 3:
+    case "AUTHENTICATION_LOGIN":
+      return SMTPMailDeliverySetting_Authentication.AUTHENTICATION_LOGIN;
+    case 4:
+    case "AUTHENTICATION_CRAM_MD5":
+      return SMTPMailDeliverySetting_Authentication.AUTHENTICATION_CRAM_MD5;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SMTPMailDeliverySetting_Authentication.UNRECOGNIZED;
+  }
+}
+
+export function sMTPMailDeliverySetting_AuthenticationToJSON(object: SMTPMailDeliverySetting_Authentication): string {
+  switch (object) {
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED:
+      return "AUTHENTICATION_UNSPECIFIED";
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_NONE:
+      return "AUTHENTICATION_NONE";
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN:
+      return "AUTHENTICATION_PLAIN";
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_LOGIN:
+      return "AUTHENTICATION_LOGIN";
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_CRAM_MD5:
+      return "AUTHENTICATION_CRAM_MD5";
+    case SMTPMailDeliverySetting_Authentication.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return { externalUrl: "", disallowSignup: false, require2fa: false, outboundIpList: [] };
 }
@@ -344,6 +460,195 @@ export const WorkspaceApprovalSetting_Rule = {
     message.template = (object.template !== undefined && object.template !== null)
       ? ApprovalTemplate.fromPartial(object.template)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSMTPMailDeliverySetting(): SMTPMailDeliverySetting {
+  return {
+    server: "",
+    port: 0,
+    encryption: 0,
+    ca: "",
+    key: "",
+    cert: "",
+    authentication: 0,
+    username: "",
+    password: "",
+    from: "",
+  };
+}
+
+export const SMTPMailDeliverySetting = {
+  encode(message: SMTPMailDeliverySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.server !== "") {
+      writer.uint32(10).string(message.server);
+    }
+    if (message.port !== 0) {
+      writer.uint32(16).int32(message.port);
+    }
+    if (message.encryption !== 0) {
+      writer.uint32(24).int32(message.encryption);
+    }
+    if (message.ca !== "") {
+      writer.uint32(34).string(message.ca);
+    }
+    if (message.key !== "") {
+      writer.uint32(42).string(message.key);
+    }
+    if (message.cert !== "") {
+      writer.uint32(50).string(message.cert);
+    }
+    if (message.authentication !== 0) {
+      writer.uint32(56).int32(message.authentication);
+    }
+    if (message.username !== "") {
+      writer.uint32(66).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(74).string(message.password);
+    }
+    if (message.from !== "") {
+      writer.uint32(82).string(message.from);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SMTPMailDeliverySetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSMTPMailDeliverySetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.server = reader.string();
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.port = reader.int32();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.encryption = reader.int32() as any;
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.ca = reader.string();
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 6:
+          if (tag != 50) {
+            break;
+          }
+
+          message.cert = reader.string();
+          continue;
+        case 7:
+          if (tag != 56) {
+            break;
+          }
+
+          message.authentication = reader.int32() as any;
+          continue;
+        case 8:
+          if (tag != 66) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        case 9:
+          if (tag != 74) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        case 10:
+          if (tag != 82) {
+            break;
+          }
+
+          message.from = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SMTPMailDeliverySetting {
+    return {
+      server: isSet(object.server) ? String(object.server) : "",
+      port: isSet(object.port) ? Number(object.port) : 0,
+      encryption: isSet(object.encryption) ? sMTPMailDeliverySetting_EncryptionFromJSON(object.encryption) : 0,
+      ca: isSet(object.ca) ? String(object.ca) : "",
+      key: isSet(object.key) ? String(object.key) : "",
+      cert: isSet(object.cert) ? String(object.cert) : "",
+      authentication: isSet(object.authentication)
+        ? sMTPMailDeliverySetting_AuthenticationFromJSON(object.authentication)
+        : 0,
+      username: isSet(object.username) ? String(object.username) : "",
+      password: isSet(object.password) ? String(object.password) : "",
+      from: isSet(object.from) ? String(object.from) : "",
+    };
+  },
+
+  toJSON(message: SMTPMailDeliverySetting): unknown {
+    const obj: any = {};
+    message.server !== undefined && (obj.server = message.server);
+    message.port !== undefined && (obj.port = Math.round(message.port));
+    message.encryption !== undefined && (obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption));
+    message.ca !== undefined && (obj.ca = message.ca);
+    message.key !== undefined && (obj.key = message.key);
+    message.cert !== undefined && (obj.cert = message.cert);
+    message.authentication !== undefined &&
+      (obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication));
+    message.username !== undefined && (obj.username = message.username);
+    message.password !== undefined && (obj.password = message.password);
+    message.from !== undefined && (obj.from = message.from);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SMTPMailDeliverySetting>): SMTPMailDeliverySetting {
+    return SMTPMailDeliverySetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SMTPMailDeliverySetting>): SMTPMailDeliverySetting {
+    const message = createBaseSMTPMailDeliverySetting();
+    message.server = object.server ?? "";
+    message.port = object.port ?? 0;
+    message.encryption = object.encryption ?? 0;
+    message.ca = object.ca ?? "";
+    message.key = object.key ?? "";
+    message.cert = object.cert ?? "";
+    message.authentication = object.authentication ?? 0;
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
+    message.from = object.from ?? "";
     return message;
   },
 };

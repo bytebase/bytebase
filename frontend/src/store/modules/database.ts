@@ -25,6 +25,7 @@ import {
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
 import { useProjectStore } from "./project";
+import { isMemberOfProject } from "@/utils";
 
 function convert(
   database: ResourceObject,
@@ -158,11 +159,8 @@ export const useDatabaseStore = defineStore("database", {
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          for (const member of item.project.memberList) {
-            if (member.principal.id == userId) {
-              list.push(item);
-              break;
-            }
+          if (isMemberOfProject(item.project, userId)) {
+            list.push(item);
           }
         });
       }

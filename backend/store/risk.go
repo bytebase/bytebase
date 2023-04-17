@@ -81,6 +81,9 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 		&expressionBytes,
 		&rowStatus,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "failed to scan")
 	}
 

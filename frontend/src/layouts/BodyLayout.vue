@@ -98,12 +98,6 @@
           <heroicons-outline:archive class="w-5 h-5 mr-2" />
           {{ $t("common.archive") }}
         </router-link>
-        <div
-          v-if="showQuickstart"
-          class="flex-shrink-0 flex justify-center border-t border-block-border"
-        >
-          <Quickstart />
-        </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
           <div v-if="isDemo" class="text-sm flex whitespace-nowrap text-accent">
             <heroicons-outline:presentation-chart-bar class="w-5 h-5 mr-1" />
@@ -217,6 +211,8 @@
         <router-view name="content" />
         <!-- End main area -->
       </div>
+
+      <Quickstart v-if="showQuickstart" />
     </div>
   </div>
   <TrialModal
