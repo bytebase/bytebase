@@ -1833,42 +1833,224 @@
           "title": "Script SQL compartido",
           "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
         }
-      }    },
-      "sheet": {
-        "self": "Hojas",
-        "my-sheets": "Mis Hojas",
-        "shared-with-me": "Compartido conmigo",
-        "starred": "Marcado como favorito",
-        "actions": {
+      }
+    },
+    "sheet": {
+      "self": "Hojas",
+      "my-sheets": "Mis Hojas",
+      "shared-with-me": "Compartido conmigo",
+      "starred": "Marcado como favorito",
+      "actions": {
         "sync-from-vcs": "Sincronizar scripts SQL desde VCS"
-        },
-        "hint-tips": {
+      },
+      "hint-tips": {
         "confirm-to-sync-sheet": "¿Confirmar para sincronizar las hojas?",
         "confirm-to-delete-this-sheet": "¿Confirmar para eliminar esta hoja?",
         "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
+      },
+      "linked-issue": "Incidencia vinculada",
+      "from-sheet-warning": "La hoja proviene del problema {issue}. Es de solo lectura y solo se muestra una parte de ella."
+    },
+    "engine": {
+      "mysql": "MySQL",
+      "common": "Común"
+    },
+    "sql-review": {
+      "title": "Revisión de SQL",
+      "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
+      "disabled": "Deshabilitado",
+      "no-policy-set": "Sin política de revisión de SQL",
+      "create-policy": "Crear política",
+      "duplicate-policy": "Duplicar política de revisión de SQL",
+      "configure-policy": "Configurar política",
+      "search-rule-name": "Buscar nombre de regla",
+      "policy-removed": "La política de revisión se eliminó correctamente.",
+      "policy-created": "La política de revisión se creó correctamente.",
+      "policy-updated": "La política de revisión se actualizó correctamente.",
+      "policy-duplicated": "La política de revisión se duplicó correctamente.",
+      "rules": "Reglas",
+      "filter": "Filtro",
+      "no-permission": "Solo el DBA o el propietario tienen permiso para crear o actualizar la política de revisión.",
+      "disable": "Deshabilitar",
+      "enable": "Habilitar",
+      "delete": "Eliminar política de revisión SQL",
+      "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
+      "not-available-for-free": "La regla no está disponible para {plan}",
+      "unlock-full-feature": "Desbloquear más de 100 reglas de validación de SQL",
+      "create": {
+        "breadcrumb": "Crear política de revisión SQL",
+        "basic-info": {
+          "name": "Información básica",
+          "display-name": "Nombre para mostrar",
+          "display-name-placeholder": "El nombre de la política de revisión",
+          "display-name-default": "Política de revisión SQL",
+          "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
+          "environments": "Entornos",
+          "environments-label": "Aplicar la política de revisión a los entornos seleccionados. Un entorno solo puede estar vinculado a una política.",
+          "environments-select": "Seleccionar entornos",
+          "no-linked-environments": "Ningún entorno vinculado",
+          "no-available-environment": "Ningún entorno disponible",
+          "no-available-environment-desc": "No hay entornos disponibles. Un entorno solo puede estar vinculado a una política de revisión SQL.",
+          "choose-template": "Elegir plantilla"
         },
-        "linked-issue": "Incidencia vinculada",
-        "from-sheet-warning": "La hoja proviene del problema {issue}. Es de solo lectura y solo se muestra una parte de ella."
+        "configure-rule": {
+          "name": "Configurar regla",
+          "change-template": "Cambiar plantilla",
+          "confirm-override-title": "Confirmar cambio",
+          "confirm-override-description": "Sus reglas serán anuladas"
         },
-        "engine": {
-        "mysql": "MySQL",
-        "common": "Común"
+        "preview": {
+          "name": "Vista previa"
+        }
+      },
+      "edit-rule": {
+        "self": "Editar regla de revisión SQL"
+      },
+      "rule": {
+        "active": "Activa"
+      },
+      "enabled-rules": "Reglas habilitadas",
+      "rule-detail": "Detalle de la regla",
+      "view-definition": "Ver definición"
+    },
+    "debug-log": {
+      "title": "Registro de depuración",
+      "no-logs": "No hay registros de depuración",
+      "count-of-logs": "Se recuperaron los últimos {count} registro(s) del servidor.",
+      "debug-log-detail": "Detalles del registro de depuración",
+      "table": {
+        "record-ts": "Hora",
+        "method": "Método",
+        "request-path": "Ruta de solicitud",
+        "role": "Rol",
+        "error": "Error",
+        "stack-trace": "Rastreo de pila",
+        "empty": "<Vacío>",
+        "operation": {
+          "operation": "Operación",
+          "view-details": "Ver detalles",
+          "copy": "Copiar",
+          "copy-all": "Copiar todo",
+          "copied": "¡Copiado!",
+          "export": "Exportar"
+        }
+      }
+    },
+    "audit-log": {
+      "no-logs": "Sin registros de auditoría",
+      "audit-log-detail": "Detalles del registro de auditoría",
+      "table": {
+        "created-ts": "Hora",
+        "created-time": "Hora de creación",
+        "updated-time": "Hora de actualización",
+        "actor": "Actor",
+        "type": "Tipo de auditoría",
+        "level": "Nivel de auditoría",
+        "comment": "Comentario",
+        "payload": "Datos",
+        "empty": "<Vacío>",
+        "view-details": "Ver detalles",
+        "select-type": "Seleccionar tipo"
+      },
+      "type": {
+        "workspace": {
+          "member-create": "Crear miembro del espacio de trabajo",
+          "member-role-update": "Actualizar rol del miembro del espacio de trabajo",
+          "member-activate": "Activar miembro del espacio de trabajo",
+          "member-deactivate": "Desactivar miembro del espacio de trabajo"
         },
-        "sql-review": {
-        "title": "Revisión de SQL",
-        "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
-        "disabled": "Deshabilitado",
-        "no-policy-set": "Sin política de revisión de SQL",
-        "create-policy": "Crear política",
-        "duplicate-policy": "Duplicar política de revisión de SQL",
-        "configure-policy": "Configurar política",
-        "search-rule-name": "Buscar nombre de regla",
-        "policy-removed": "La política de revisión se eliminó correctamente.",
-        "policy-created": "La política de revisión se creó correctamente.",
-        "policy-updated": "La política de revisión se actualizó correctamente.",
-        "policy-duplicated": "La política de revisión se duplicó correctamente.",
-        "rules": "Reglas",
-        "filter": "Filtro",
-        "no-permission": "Solo el DBA o el propietario tienen permiso para crear o actualizar la política de revisión.",
+        "project": {
+          "member-role-update": "Actualizar rol del miembro del proyecto",
+          "database-transfer": "Transferir base de datos"
+        },
+        "sql-editor-query": "Consulta del editor de SQL"
+      }
+    },
+    "onboarding-guide": {
+      "create-database-guide": {
+        "let-add-a-instance": "Agreguemos una instancia",
+        "go-to-project-list-page": "Ir a la página de lista de proyectos",
+        "click-new-project": "Hacer clic en \"Nuevo proyecto\" para crear un proyecto",
+        "click-new-database": "Hacer clic en \"Nueva base de datos\" para crear una base de datos",
+        "click-approve": "Hacer clic en \"Aprobar\" para ejecutar el cambio",
+        "wait-issue-finished": "Esperando a que finalice el cambio...",
+        "back-to-home": "Volver al inicio",
+        "finished-dialog": {
+          "you-have-done": "Has completado:",
+          "add-an-instance": "Agregar una instancia",
+          "create-a-project": "Crear un proyecto",
+          "create-an-issue": "Crear un problema",
+          "create-a-new-database": "Crear una nueva base de datos",
+          "keep-going-with-bytebase": "¡Continúa con Bytebase!"
+        }
+      }
+    },
+    "schema-diagram": {
+      "self": "Diagrama de esquema",
+      "fit-content-with-view": "Ajustar contenido dentro de la vista"
+    },
+    "identity-provider": {
+      "test-connection": "Probar conexión",
+      "test-modal": {
+        "title": "Probar conexión OAuth2",
+        "start-test": "Haz clic en iniciar sesión para comenzar la prueba"
+      }
+    },
+    "sensitive-data": {
+      "self": "Datos Sensibles"
+    },
+    "resource": {
+      "environment": "Entorno",
+      "instance": "Instancia",
+      "project": "Proyecto",
+      "idp": "Proveedor de Identidad"
+    },
+    "resource-id": {
+      "self": "ID de {resource}",
+      "description": "El ID de {resource} es un identificador único. No se puede cambiar una vez creado.",
+      "cannot-be-changed-later": "No se puede cambiar posteriormente.",
+      "validation": {
+        "duplicated": "El ID de {resource} ya existe. Por favor, elige otro.",
+        "pattern": "El ID de {resource} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
+        "minlength": "El ID de {resource} es demasiado corto. Debe tener al menos 1 carácter.",
+        "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres."
+      }
+    },
+    "multi-factor": {
+      "self": "Autenticación de múltiples factores",
+      "auth-code": "Código de autenticación",
+      "recovery-code": "Código de recuperación",
+      "other-methods": {
+        "self": "Otros métodos",
+        "use-auth-app": {
+          "self": "Usa tu aplicación de autenticación",
+          "description": "Abre la aplicación de autenticación de dos factores (TOTP) en tu dispositivo móvil para ver tu código de autenticación."
+        },
+        "use-recovery-code": {
+          "self": "Usa un código de recuperación",
+          "description": "Si no puedes acceder a tu dispositivo móvil, ingresa uno de tus códigos de recuperación para verificar tu identidad."
+        }
+      }
+    },
+    "two-factor": {
+      "self": "Autenticación de dos factores",
+      "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
+      "enabled": "2FA habilitado",
+      "setup-steps": {
+        "setup-auth-app": {
+          "self": "Configurar la aplicación de autenticación",
+          "description": "Usa una aplicación de teléfono como Google Authenticator, Microsoft Authenticator o Authy para obtener códigos 2FA cuando se te solicite durante el inicio de sesión.",
+          "scan-qr-code": {
+            "self": "Escanear el código QR",
+            "description": "Usa una aplicación de autenticación de tu teléfono para escanear. Si no puedes escanear, {action} en su lugar.",
+            "enter-the-text": "ingresa el texto"
+          },
+          "verify-code": "Verifica el código de la aplicación"
+        },
+        "download-recovery-codes": {
+          "self": "Descarga tus códigos de recuperación"
+        }
+      }
+    }
   }
 }
