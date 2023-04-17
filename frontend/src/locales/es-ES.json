@@ -1431,41 +1431,41 @@
         }
       }
     },
-  "archive": {
-    "archived": "Archivado",
-    "project-search-bar-placeholder": "Buscar nombre de @.lower:{'common.project'}",
-    "instance-search-bar-placeholder": "Buscar nombre de @.lower:{'common.instance'}",
-    "environment-search-bar-placeholder": "Buscar nombre de @.lower:{'common.environment'}",
-    "sso-search-bar-placeholder": "Buscar nombre de SSO"
+    "archive": {
+      "archived": "Archivado",
+      "project-search-bar-placeholder": "Buscar nombre de @.lower:{'common.project'}",
+      "instance-search-bar-placeholder": "Buscar nombre de @.lower:{'common.instance'}",
+      "environment-search-bar-placeholder": "Buscar nombre de @.lower:{'common.environment'}",
+      "sso-search-bar-placeholder": "Buscar nombre de SSO"
     },
     "deployment-config": {
-    "stage-n": "Etapa {n}",
-    "add-selector": "Agregar selector",
-    "update-success": "Configuración de implementación actualizada con éxito.",
-    "this-is-example-deployment-config": "Este es un ejemplo de configuración de implementación. Debe editarla y guardarla.",
-    "n-databases": "{n} base de datos | {n} bases de datos",
-    "selectors": "Selectores",
-    "add-stage": "Agregar etapa",
-    "confirm-to-revert": "¿Confirmar para revertir la edición?",
-    "name-placeholder": "Nombre de la etapa...",
-    "error": {
-      "at-least-one-stage": "Al menos 1 etapa",
-      "stage-name-required": "Se requiere el nombre de la etapa",
-      "at-least-one-selector": "Al menos 1 selector en cada etapa",
-      "env-in-selector-required": "Se requiere \"Entorno en\" en cada etapa",
-      "env-selector-must-has-one-value": "\"Entorno en\" debe tener exactamente un valor",
-      "key-required": "Se requiere una clave",
-      "values-required": "Se requieren valores"
+      "stage-n": "Etapa {n}",
+      "add-selector": "Agregar selector",
+      "update-success": "Configuración de implementación actualizada con éxito.",
+      "this-is-example-deployment-config": "Este es un ejemplo de configuración de implementación. Debe editarla y guardarla.",
+      "n-databases": "{n} base de datos | {n} bases de datos",
+      "selectors": "Selectores",
+      "add-stage": "Agregar etapa",
+      "confirm-to-revert": "¿Confirmar para revertir la edición?",
+      "name-placeholder": "Nombre de la etapa...",
+      "error": {
+        "at-least-one-stage": "Al menos 1 etapa",
+        "stage-name-required": "Se requiere el nombre de la etapa",
+        "at-least-one-selector": "Al menos 1 selector en cada etapa",
+        "env-in-selector-required": "Se requiere \"Entorno en\" en cada etapa",
+        "env-selector-must-has-one-value": "\"Entorno en\" debe tener exactamente un valor",
+        "key-required": "Se requiere una clave",
+        "values-required": "Se requieren valores"
+      },
+      "project-has-no-deployment-config": "Este proyecto aún no tiene una configuración de implementación. Por favor {go} primero.",
+      "go-and-config": "Ir y configurar",
+      "wont-be-deployed-explanation": "Estas bases de datos no serán implementadas, ya que no cumplen con ninguno de los selectores.",
+      "wont-be-deployed": "No se implementará",
+      "pipeline-generated-from-deployment-config": "El pipeline de implementación se genera de acuerdo con la {deployment_config} del proyecto.",
+      "preview-deployment-pipeline": "Vista previa del pipeline de implementación",
+      "select-database-group": "Seleccionar grupo de bases de datos"
     },
-    "project-has-no-deployment-config": "Este proyecto aún no tiene una configuración de implementación. Por favor {go} primero.",
-    "go-and-config": "Ir y configurar",
-    "wont-be-deployed-explanation": "Estas bases de datos no serán implementadas, ya que no cumplen con ninguno de los selectores.",
-    "wont-be-deployed": "No se implementará",
-    "pipeline-generated-from-deployment-config": "El pipeline de implementación se genera de acuerdo con la {deployment_config} del proyecto.",
-    "preview-deployment-pipeline": "Vista previa del pipeline de implementación",
-    "select-database-group": "Seleccionar grupo de bases de datos"
-  },
-  "data-source": {
+    "data-source": {
       "role-type": "Tipo de rol",
       "successfully-deleted-data-source-name": "Se eliminó correctamente el origen de datos '{0}'.",
       "create-data-source": "Crear origen de datos",
@@ -1491,237 +1491,243 @@
       "connection-name-string-copied-to-clipboard": "Cadena de nombre de conexión {0} copiada al portapapeles.",
       "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC no puede conectar al socket {0}",
       "ssl-type": {
-      "ca": "@:{'data-source.ssl.ca-cert'}",
-      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
-      "none": "Ninguno"
+        "ca": "@:{'data-source.ssl.ca-cert'}",
+        "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
+        "none": "Ninguno"
+      },
+      "ssl": {
+        "ca-cert": "Certificado de CA",
+        "client-key": "Clave del cliente",
+        "client-cert": "Certificado del cliente"
+      },
+      "ssl-connection": "Conexión SSL",
+      "read-replica-host": "Anfitrión de réplica de lectura",
+      "read-replica-port": "Puerto de réplica de lectura",
+      "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
+      "connection-string-schema": "Esquema de cadena de conexión"
     },
-    "ssl": {
-    "ca-cert": "Certificado de CA",
-    "client-key": "Clave del cliente",
-    "client-cert": "Certificado del cliente"
-    },
-    "ssl-connection": "Conexión SSL",
-    "read-replica-host": "Anfitrión de réplica de lectura",
-    "read-replica-port": "Puerto de réplica de lectura",
-    "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
-    "connection-string-schema": "Esquema de cadena de conexión"
-  },
-  "setting": {
-    "project": {
-    "description": "Este es el panel de proyectos de administración que enumera todos los proyectos en Bytebase."
-    },
-    "label": {
-    "key": "Clave",
-    "values": "Valores",
-    "value-placeholder": "Valor de etiqueta..."
-    }
+    "setting": {
+      "project": {
+        "description": "Este es el panel de proyectos de administración que enumera todos los proyectos en Bytebase."
+      },
+      "label": {
+        "key": "Clave",
+        "values": "Valores",
+        "value-placeholder": "Valor de etiqueta..."
+      }
     },
     "sql-editor": {
-    "self": "Editor de SQL",
-    "select-connection": "Por favor seleccione conexiones",
-    "search-databases": "Buscar bases de datos",
-    "search-results": "Resultados de búsqueda",
-    "loading-databases": "Cargando bases de datos...",
-    "close-pane": "Cerrar panel",
-    "loading-data": "Cargando datos...",
-    "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
-    "no-rows-found": "No se encontraron filas",
-    "download-as-csv": "Descargar como CSV",
-    "download-as-json": "Descargar como JSON",
-    "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
-    "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe un problema.",
-    "table-schema-placeholder": "Seleccione una tabla para ver su esquema",
-    "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
-    "notify-multiple-statements": "Se detectaron múltiples declaraciones SQL. El Editor de SQL solo ejecuta la primera declaración. Puede seleccionar otra declaración y ejecutarla individualmente.",
-    "goto-alter-schema-hint": "Seleccione una conexión de base de datos desde la parte superior del editor",
-    "notify-invalid-sql-statement": "Declaración SQL inválida.",
-    "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
-    "rows": "fila | filas",
-    "no-history-found": "No se encontró historial",
-    "no-sheet-found": "No se encontró hoja",
-    "search-history": "Historial de búsqueda",
-    "search-sheets": "Buscar hojas",
-    "hint-tips": {
-    "confirm-to-delete-this-history": "¿Confirma eliminar este historial?",
-    "confirm-to-close-unsaved-sheet": {
-    "title": "¿Cerrar la hoja no guardada?",
-    "content": "¿Cerrar la hoja y perder cualquier dato no guardado?"
-    }
-    },
-    "please-input-the-tab-label": "¡Ingrese la etiqueta de pestaña!",
-    "copy-code": "Copiar código",
-    "notify": {
-      "copy-code-succeed": "Copia de código exitosa",
-      "copy-share-link": "El enlace compartido se copió al portapapeles.",
-      "sheet-is-read-only": "La hoja compartida es solo de lectura."
-    },
-    "view-all-tabs": "Ver todas las pestañas",
-    "sheet": "Hoja",
-    "sheets": "Hojas",
-    "connection-holder": "Haz clic en los nodos del panel izquierdo para comenzar",
-    "link-access": "Acceso al enlace",
-    "private": "Privado",
-    "private-desc": "Solo tú puedes acceder a esta hoja",
-    "project-desc": "Tanto el DUEÑO de la hoja como el DUEÑO del proyecto pueden leer/escribir, y el DESARROLLADOR del proyecto solo puede leer",
-    "public": "Público",
-    "public-desc": "El DUEÑO de la hoja puede leer/escribir, y todos los demás pueden leer",
-    "create-read-only-data-source": "Ir a crear",
-    "go-back": "Volver",
-    "save-sheet": "Guardar hoja",
-    "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
-    "untitled-sheet": "Hoja sin título",
-    "format": "Formato",
-    "sql-review-result": "Resultado de la revisión SQL",
-    "alter-table": "Modificar tabla",
-    "visualize-explain": "Visualizar explicación",
-    "sql-execute-in-production-environment": "Ten cuidado, estás accediendo a una base de datos en un entorno de producción.",
-    "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
-    "tab-mode": {
-    "readonly": "Solo lectura",
-    "admin": "Admin"
-    },
-    "close-sheet": "Cerrar hoja",
-    "connect": "Conectar",
-    "connect-in-admin-mode": "Conectar en modo administrador",
-    "admin-mode": {
-    "self": "Modo administrador"
-    },
-    "read-only-mode-not-allowed": "La instancia {instance} no es accesible en modo de solo lectura.",
-    "run-selected": "Ejecutar selección",
-    "clear-screen": "Limpiar pantalla"
+      "self": "Editor de SQL",
+      "select-connection": "Por favor seleccione conexiones",
+      "search-databases": "Buscar bases de datos",
+      "search-results": "Resultados de búsqueda",
+      "loading-databases": "Cargando bases de datos...",
+      "close-pane": "Cerrar panel",
+      "loading-data": "Cargando datos...",
+      "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
+      "no-rows-found": "No se encontraron filas",
+      "download-as-csv": "Descargar como CSV",
+      "download-as-json": "Descargar como JSON",
+      "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
+      "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe un problema.",
+      "table-schema-placeholder": "Seleccione una tabla para ver su esquema",
+      "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
+      "notify-multiple-statements": "Se detectaron múltiples declaraciones SQL. El Editor de SQL solo ejecuta la primera declaración. Puede seleccionar otra declaración y ejecutarla individualmente.",
+      "goto-alter-schema-hint": "Seleccione una conexión de base de datos desde la parte superior del editor",
+      "notify-invalid-sql-statement": "Declaración SQL inválida.",
+      "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
+      "rows": "fila | filas",
+      "no-history-found": "No se encontró historial",
+      "no-sheet-found": "No se encontró hoja",
+      "search-history": "Historial de búsqueda",
+      "search-sheets": "Buscar hojas",
+      "hint-tips": {
+        "confirm-to-delete-this-history": "¿Confirma eliminar este historial?",
+        "confirm-to-close-unsaved-sheet": {
+          "title": "¿Cerrar la hoja no guardada?",
+          "content": "¿Cerrar la hoja y perder cualquier dato no guardado?"
+        }
+      },
+      "please-input-the-tab-label": "¡Ingrese la etiqueta de pestaña!",
+      "copy-code": "Copiar código",
+      "notify": {
+        "copy-code-succeed": "Copia de código exitosa",
+        "copy-share-link": "El enlace compartido se copió al portapapeles.",
+        "sheet-is-read-only": "La hoja compartida es solo de lectura."
+      },
+      "view-all-tabs": "Ver todas las pestañas",
+      "sheet": "Hoja",
+      "sheets": "Hojas",
+      "connection-holder": "Haz clic en los nodos del panel izquierdo para comenzar",
+      "link-access": "Acceso al enlace",
+      "private": "Privado",
+      "private-desc": "Solo tú puedes acceder a esta hoja",
+      "project-desc": "Tanto el DUEÑO de la hoja como el DUEÑO del proyecto pueden leer/escribir, y el DESARROLLADOR del proyecto solo puede leer",
+      "public": "Público",
+      "public-desc": "El DUEÑO de la hoja puede leer/escribir, y todos los demás pueden leer",
+      "create-read-only-data-source": "Ir a crear",
+      "go-back": "Volver",
+      "save-sheet": "Guardar hoja",
+      "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
+      "untitled-sheet": "Hoja sin título",
+      "format": "Formato",
+      "sql-review-result": "Resultado de la revisión SQL",
+      "alter-table": "Modificar tabla",
+      "visualize-explain": "Visualizar explicación",
+      "sql-execute-in-production-environment": "Ten cuidado, estás accediendo a una base de datos en un entorno de producción.",
+      "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
+      "tab-mode": {
+        "readonly": "Solo lectura",
+        "admin": "Admin"
+      },
+      "close-sheet": "Cerrar hoja",
+      "connect": "Conectar",
+      "connect-in-admin-mode": "Conectar en modo administrador",
+      "admin-mode": {
+        "self": "Modo administrador"
+      },
+      "read-only-mode-not-allowed": "La instancia {instance} no es accesible en modo de solo lectura.",
+      "run-selected": "Ejecutar selección",
+      "clear-screen": "Limpiar pantalla"
     },
     "schema-editor": {
-    "self": "Editor de esquema",
-    "use-tips": "Haz clic en una base de datos/tabla para comenzar.",
-    "preview-issue": "Problema de vista previa",
-    "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
-    "raw-sql": "SQL sin procesar",
-    "search-database-and-table": "Buscar base de datos y tabla",
-    "search-table": "Buscar tabla",
-    "search-column": "Buscar columna",
-    "actions": {
-    "create-schema": "Crear esquema",
-    "drop-schema": "Eliminar esquema",
-    "create-table": "Nueva tabla",
-    "rename": "Renombrar",
-    "drop-table": "Eliminar tabla",
-    "restore": "Restaurar",
-    "add-column": "Agregar columna",
-    "drop-column": "Eliminar columna",
-    "sql-preview": "Vista previa SQL",
-    "reset": "Restablecer",
-    "save": "Guardar"
-    },
-    "database": {
-    "name": "Nombre",
-    "row-count": "Recuento de filas",
-    "data-size": "Tamaño de datos",
-    "engine": "Motor",
-    "collation": "Colación",
-    "comment": "Comentario"
-    },
-    "schema": {
-      "select": "Seleccionar esquema",
-      "name": "Nombre del Esquema"
+      "self": "Editor de esquema",
+      "use-tips": "Haz clic en una base de datos/tabla para comenzar.",
+      "preview-issue": "Problema de vista previa",
+      "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
+      "raw-sql": "SQL sin procesar",
+      "search-database-and-table": "Buscar base de datos y tabla",
+      "search-table": "Buscar tabla",
+      "search-column": "Buscar columna",
+      "actions": {
+        "create-schema": "Crear esquema",
+        "drop-schema": "Eliminar esquema",
+        "create-table": "Nueva tabla",
+        "rename": "Renombrar",
+        "drop-table": "Eliminar tabla",
+        "restore": "Restaurar",
+        "add-column": "Agregar columna",
+        "drop-column": "Eliminar columna",
+        "sql-preview": "Vista previa SQL",
+        "reset": "Restablecer",
+        "save": "Guardar"
+      },
+      "database": {
+        "name": "Nombre",
+        "row-count": "Recuento de filas",
+        "data-size": "Tamaño de datos",
+        "engine": "Motor",
+        "collation": "Colación",
+        "comment": "Comentario"
+      },
+      "schema": {
+        "select": "Seleccionar esquema",
+        "name": "Nombre del Esquema"
       },
       "tables": "Tablas",
       "table": {
-      "select": "Seleccionar tabla",
-      "name": "Nombre de la tabla"
+        "select": "Seleccionar tabla",
+        "name": "Nombre de la tabla"
       },
       "columns": "Columnas",
       "column": {
-      "select": "Seleccionar columna",
-      "name": "Nombre",
-      "type": "Tipo",
-      "default": "Valor predeterminado",
-      "comment": "Comentario",
-      "not-null": "No nulo",
-      "primary": "Primaria"
+        "select": "Seleccionar columna",
+        "name": "Nombre",
+        "type": "Tipo",
+        "default": "Valor predeterminado",
+        "comment": "Comentario",
+        "not-null": "No nulo",
+        "primary": "Primaria"
       },
       "nothing-changed": "Nada ha cambiado",
       "message": {
-      "invalid-schema-name": "Nombre de esquema inválido",
-      "duplicated-schema-name": "Nombre de esquema duplicado",
-      "invalid-table-name": "Nombre de tabla inválido",
-      "duplicated-table-name": "Nombre de tabla duplicado",
-      "invalid-column-name": "Nombre de columna inválido",
-      "duplicated-column-name": "Nombre de columna duplicado",
-      "invalid-column-type": "Tipo de columna inválido",
-      "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos"
+        "invalid-schema-name": "Nombre de esquema inválido",
+        "duplicated-schema-name": "Nombre de esquema duplicado",
+        "invalid-table-name": "Nombre de tabla inválido",
+        "duplicated-table-name": "Nombre de tabla duplicado",
+        "invalid-column-name": "Nombre de columna inválido",
+        "duplicated-column-name": "Nombre de columna duplicado",
+        "invalid-column-type": "Tipo de columna inválido",
+        "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos"
       },
       "confirm-to-close": {
-      "title": "Confirmar para cerrar",
-      "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
+        "title": "Confirmar para cerrar",
+        "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
       },
       "tenant-mode-tips": "Los cambios se aplicarán a todas las bases de datos de inquilinos seleccionados después de hacer clic en \"Vista previa de la incidencia\".",
       "edit-foreign-key": "Editar clave externa",
       "select-reference-schema": "Seleccionar un esquema de referencia",
       "select-reference-table": "Seleccionar una tabla de referencia",
       "select-reference-column": "Seleccionar una columna de referencia"
-      },
-      "label": {
+    },
+    "label": {
       "empty-label-value": "<Valor vacío>",
       "no-label": "Sin etiquetas",
       "error": {
-      "key-necessary": "Se requiere una clave",
-      "value-necessary": "Se requiere un valor",
-      "key-duplicated": "Claves duplicadas",
-      "value-duplicated": "Valores duplicados",
-      "max-length-exceeded": "La longitud no puede superar {len} caracteres",
-      "max-label-count-exceeded": "No se pueden exceder las {count} etiquetas",
-      "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\""
+        "key-necessary": "Se requiere una clave",
+        "value-necessary": "Se requiere un valor",
+        "key-duplicated": "Claves duplicadas",
+        "value-duplicated": "Valores duplicados",
+        "max-length-exceeded": "La longitud no puede superar {len} caracteres",
+        "max-label-count-exceeded": "No se pueden exceder las {count} etiquetas",
+        "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\""
       },
       "placeholder": {
-      "select-key": "Seleccionar clave...",
-      "select-value": "Seleccionar valor...",
-      "select-values": "Seleccionar valores..."
+        "select-key": "Seleccionar clave...",
+        "select-value": "Seleccionar valor...",
+        "select-values": "Seleccionar valores..."
       },
       "setting": {
-      "description": "Una etiqueta es un par clave-valor que le ayuda a identificar el inquilino para una base de datos. {link}."
+        "description": "Una etiqueta es un par clave-valor que le ayuda a identificar el inquilino para una base de datos. {link}."
       },
       "db-name-template-tips": "Si tus bases de datos de inquilinos siguen una plantilla de nombres, puedes especificarla aquí. Por ejemplo, si las bases de datos se llaman db1__SH, db1__BJ, db1__GZ, entonces la plantilla podría ser {placeholder}. {link}.",
-"confirm-change": "¿Estás seguro de cambiar '{label}'?",
-"parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
-"cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
-"oauth": {
-"unknown-event": "Tipo de evento inesperado, OAuth falló."
-},
-"subscription": {
-"trial-start-modal": {
-"title": "Inicia tu prueba de {plan}",
-"content": "¡Tu prueba de {plan} ha comenzado! Puedes acceder a las funciones de {plan} antes del {date}.",
-"button": "Entendido",
-"subscription-page": "página de suscripción",
-"subscription": "Ve a la {page} para conocer estas funciones y nuestros planes."
-},
-"description": "Puedes subir tu licencia Bytebase para desbloquear funciones de equipo/empresa.",
-"upload-license": "Subir licencia",
-"upgrade-trial-button": "Actualizar prueba",
-"start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
-"successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
-"successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
-"require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
-"required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
-"trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
-"trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
-"upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
-"update": {
-"success": {
-"title": "Licencia actualizada con éxito",
-"description": "Se desbloquearon funciones premium en el plan de suscripción."
-},
-"failure": {
-"title": "Error al actualizar la licencia",
-"description": "Por favor, comprueba si tu licencia es válida."
+      "confirm-change": "¿Estás seguro de cambiar '{label}'?",
+      "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
+      "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
+      "oauth": {
+        "unknown-event": "Tipo de evento inesperado, OAuth falló."
+      },
+      "subscription": {
+        "trial-start-modal": {
+          "title": "Inicia tu prueba de {plan}",
+          "content": "¡Tu prueba de {plan} ha comenzado! Puedes acceder a las funciones de {plan} antes del {date}.",
+          "button": "Entendido",
+          "subscription-page": "página de suscripción",
+          "subscription": "Ve a la {page} para conocer estas funciones y nuestros planes."
+        },
+        "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de equipo/empresa.",
+        "upload-license": "Subir licencia",
+        "upgrade-trial-button": "Actualizar prueba",
+        "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
+        "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
+        "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
+        "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
+        "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
+        "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
+        "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
+        "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+        "update": {
+          "success": {
+            "title": "Licencia actualizada con éxito",
+            "description": "Se desbloquearon funciones premium en el plan de suscripción."
+          },
+          "failure": {
+            "title": "Error al actualizar la licencia",
+            "description": "Por favor, comprueba si tu licencia es válida."
+          }
+        },
+        "features": {
+          "bb-feature-task-schedule-time": {
+            "title": "Establecer horario de tareas",
+            "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
+          },
+          "bb-feature-instance-count": {
+            "title": "Límite de cantidad de instancias",
+            "desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
+            "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias."
+          }
+        }
+      }
+    }
+  }
 }
-},
-"features": {
-"bb-feature-task-schedule-time": {
-"title": "Establecer horario de tareas",
-"desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
-},
-"bb-feature-instance-count": {
-"title": "Límite de cantidad de instancias",
-"desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
-"remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
