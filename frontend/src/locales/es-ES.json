@@ -879,5 +879,123 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias"
+  },
+  "environment": {
+    "id": "ID del Ambiente",
+    "id-description": "El ID del ambiente es el identificador único para su ambiente. No puede cambiarlo después de creado.",
+    "select": "Seleccionar ambiente",
+    "archive": "Archivar este ambiente",
+    "archive-info": "Los ambientes archivados no se mostrarán en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrar y restaurarlo.",
+    "create": "Crear ambiente",
+    "restore": "Restaurar este ambiente",
+    "successfully-updated-environment": "Ambiente '{name}' actualizado exitosamente.",
+    "disable-auto-backup": {
+      "self": "Desactivar copia de seguridad automática de la base de datos",
+      "content": "La política de desactivación de copias de seguridad automáticas no se aplica de forma retroactiva.\n¿Está seguro de aplicarla a todas las bases de datos en este ambiente?"
+    },
+    "production-environment": "Ambiente de producción"
+  },
+  "quick-start": {
+    "view-an-issue": "Ver una incidencia",
+    "visit-project": "@:common.visit @:common.projects",
+    "visit-instance": "@:common.visit @:common.instances",
+    "visit-database": "@:common.visit @:common.databases",
+    "visit-environment": "@:common.visit @:common.environments",
+    "add-a-member": "Agregar un miembro",
+    "use-kbar": "Usar kbar ({shortcut})",
+    "query-data": "Consultar datos",
+    "notice": {
+      "title": "Guía de inicio rápido cerrada",
+      "desc": "Todavía puede volver a abrirla más tarde desde el menú en la parte superior derecha"
+    }
+  },
+  "auth": {
+    "sign-up": {
+      "title": "Registre su cuenta",
+      "admin-title": "Configuración de {cuenta}",
+      "admin-account": "cuenta de administrador",
+      "create-admin-account": "Crear cuenta de administrador",
+      "confirm-password": "Confirmar contraseña",
+      "confirm-password-placeholder": "Confirmar contraseña",
+      "password-mismatch": "contraseñas no coinciden",
+      "existing-user": "¿Ya tienes una cuenta?",
+      "accept-terms-and-policy": "Acepto los {terms} y {policy} de Bytebase",
+      "terms-of-service": "Términos del servicio",
+      "privacy-policy": "Política de privacidad"
+    },
+    "sign-in": {
+      "title": "Inicie sesión en su cuenta",
+      "forget-password": "¿Olvidaste tu contraseña?",
+      "new-user": "¿Nuevo en Bytebase?",
+      "demo-note": "Correo electrónico:{username} Contraseña:{password}",
+      "gitlab": "Iniciar sesión con GitLab",
+      "github": "Iniciar sesión con GitHub",
+      "gitlab-oauth": "Póngase en contacto con su administrador para habilitar el inicio de sesión de GitLab",
+      "sign-in-with-idp": "Iniciar sesión con {idp}"
+    },
+    "password-forget": {
+      "title": "¿Olvidaste tu contraseña?",
+      "content": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
+      "return-to-sign-in": "Volver a iniciar sesión"
+    },
+    "password-forgot": "Contraseña olvidada",
+    "password-reset": {
+      "title": "Restablecer su contraseña",
+      "content": "Ingrese su dirección de correo electrónico y le enviaremos un enlace para restablecer su contraseña.",
+      "send-reset-link": "Enviar enlace de restablecimiento",
+      "return-to-sign-in": "Volver a iniciar sesión"
+    },
+    "activar": {
+      "title": "Active su cuenta {type}"
+    }
+  },
+  "policy": {
+    "rollout": {
+      "name": "Política de implementación",
+      "tip": "La política se aplica retrospectivamente a las incidencias.",
+      "info": "Para actualizar el esquema en la base de datos existente, esta configuración controla si la tarea requiere aprobación manual.",
+      "manual": "Requiere implementación manual",
+      "manual-info": "Las tareas solo se ejecutarán después de ser implementadas manualmente.",
+      "auto": "Omitir la implementación manual",
+      "auto-info": "Las tareas se implementarán y ejecutarán automáticamente si todas las comprobaciones de tarea son correctas.",
+      "assignee-group": {
+        "workspace-owner-or-dba": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
+        "project-owner": "Requiere implementación del propietario del proyecto."
+      }
+    },
+    "backup": {
+      "name": "Política de programación de copias de seguridad de la base de datos",
+      "tip": "La política no se aplica retrospectivamente.",
+      "not-enforced": "No obligatoria",
+      "not-enforced-info": "No se aplica ninguna programación de copias de seguridad.",
+      "daily": "Copia de seguridad diaria",
+      "daily-info": "Aplica copias de seguridad diarias para cada base de datos.",
+      "weekly": "Copia de seguridad semanal",
+      "weekly-info": "Aplica copias de seguridad semanales para cada base de datos."
+    },
+    "environment-tier": {
+      "name": "Nivel de entorno",
+      "description": "El entorno aparecerá de manera diferente a otros entornos.{newline}Por defecto, los desarrolladores no pueden ejecutar consultas en las bases de datos de este entorno utilizando el Editor de SQL.",
+      "mark-env-as-production": "Marcar como entorno de producción"
+    }
+  },
+  "change-history": {
+    "self": "Historial de cambios",
+    "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase.",
+    "workflow": "Flujo de trabajo",
+    "commit-info": "por {author} a las {time}",
+    "no-schema-change": "esta migración no tiene cambios de esquema",
+    "schema-drift": "Desviación de esquema",
+    "schema-drift-detected": "Se detectó una desviación de esquema.",
+    "view-drift": "Ver desviación",
+    "before-left-schema-choice": "Comparar el esquema",
+    "left-schema-choice-prev-history-schema": "después del cambio anterior",
+    "left-schema-choice-current-history-schema-prev": "antes de este cambio",
+    "after-left-schema-choice": "y después de este cambio",
+    "show-diff": "Mostrar diferencias",
+    "left-vs-right": "Anterior {prevLink} vs Esta versión",
+    "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
+    "current-schema-empty": "El esquema actual está vacío",
+    "list-limit": "Para la base de datos que tiene historial de cambios, listamos hasta 5 historiales más recientes a continuación. Puede hacer clic en el nombre de la base de datos para ver todos los historiales."
   }
 }
