@@ -52,9 +52,12 @@ LOOP
   UPDATE task SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE task_run SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE task_run SET updater_id = first_user.id WHERE updater_id = row_data.id;
+  UPDATE task_check_run SET creator_id = first_user.id WHERE creator_id = row_data.id;
+  UPDATE task_check_run SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE issue SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE issue SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE issue SET assignee_id = first_user.id WHERE assignee_id = row_data.id;
+  UPDATE issue_subscriber SET subscriber_id = first_user.id WHERE subscriber_id = row_data.id;
   UPDATE instance_change_history SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE instance_change_history SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE activity SET creator_id = first_user.id WHERE creator_id = row_data.id;
@@ -62,6 +65,8 @@ LOOP
   UPDATE inbox SET receiver_id = first_user.id WHERE receiver_id = row_data.id;
   UPDATE bookmark SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE bookmark SET updater_id = first_user.id WHERE updater_id = row_data.id;
+  UPDATE vcs SET creator_id = first_user.id WHERE creator_id = row_data.id;
+  UPDATE vcs SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE repository SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE repository SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE anomaly SET creator_id = first_user.id WHERE creator_id = row_data.id;
