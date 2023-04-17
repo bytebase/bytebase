@@ -89,8 +89,8 @@
     "name": "Nombre",
     "creator": "Creador",
     "version": "Versión",
-    "issue": "Problema",
-    "issues": "Problemas",
+    "issue": "Incidencia",
+    "issues": "Incidencias",
     "duration": "Duración",
     "created-at": "Creado",
     "updated-at": "Actualizado",
@@ -318,11 +318,11 @@
     "rollback": {
       "sql-rollback": "Reversión SQL",
       "failed": "Fallido",
-      "preview-rollback-issue": "Vista previa de problema de reversión",
+      "preview-rollback-issue": "Vista previa de incidencia para reversión",
       "generating": "Generando",
       "empty-rollback-statement": "La declaración de reversión está vacía",
       "cancel-generating": "Cancelar la generación de la reversión SQL",
-      "sql-rollback-tips": "Cuando se habilita, Bytebase mantendrá los registros de reversión para el cambio de datos\ny le permitirá crear un nuevo problema para revertir este cambio. {link}"
+      "sql-rollback-tips": "Cuando se habilita, Bytebase mantendrá los registros de reversión para el cambio de datos\ny le permitirá crear una nueva incidencia para revertir este cambio. {link}"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual"
   },
@@ -540,7 +540,7 @@
     "created": "Creado",
     "invoker": "Invocador",
     "type": {
-      "issue-create": "crear problema",
+      "issue-create": "crear incidencia",
       "comment-create": "crear comentario",
       "issue-field-update": "actualizar campo de la incidencia",
       "issue-status-update": "actualizar estado de la incidencia",
@@ -703,7 +703,7 @@
       "schema-change": "Cambio de esquema",
       "generated-ddl-statements": "Declaraciones DDL generadas",
       "full-schema": "Esquema completo",
-      "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique el problema."
+      "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
     "assignee-tooltip": "Permitir al asignado implementar la incidencia una vez que se haya aprobado el flujo de aprobación.",
     "approval-flow": {
@@ -1095,6 +1095,56 @@
       "restore-to": "Restaurar a",
       "restore-to-new-db": "A una nueva base de datos",
       "restore-to-in-place": "En el mismo lugar"
+      },
+      "show-reserved-tables": "Mostrar tablas reservadas de Bytebase",
+    "show-reserved-databases": "Mostrar bases de datos reservadas de Bytebase",
+    "backup-setting": {
+    "schedule": {
+    "disabled": "Desactivado",
+    "weekly": "Cada semana",
+    "daily": "Cada día"
+    },
+    "form": {
+    "schedule": "Programar",
+    "day-of-week": "Día de la semana",
+    "time-of-day": "Hora del día",
+    "retention-period": "Período de retención (días)"
+    }
+    },
+    "backup-policy-violation": "Violación de la política de copias de seguridad",
+    "synced-at": "Sincronizado en {time}",
+    "not-found-last-successful-sync-was": "No encontrado, última sincronización exitosa fue {time}",
+    "view-unassigned-databases": "Ver bases de datos no asignadas",
+    "unassigned-databases": "Bases de datos no asignadas",
+    "restore-database": "Restaurar base de datos",
+    "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
+    "sync-schema": {
+    "title": "Sincronizar esquema",
+    "select-project": "Seleccionar proyecto",
+    "to-database": "Aplicar a base de datos",
+    "from-database": "Desde base de datos",
+    "schema-change-preview": "Vista previa de cambio de esquema para '{database}'",
+    "schema-change-preview-no-database": "Vista previa de cambio de esquema",
+    "synchronize-statements": "Sentencias DDL generadas correspondientes",
+    "synchronize-statements-description": "Puede editar más las sentencias DDL generadas",
+    "select-from-database-and-schema-tip": "Seleccione la versión de base de datos y esquema para sincronizar desde",
+    "select-to-database-tip": "Seleccione la base de datos a la que se aplicará",
+    "no-difference-tip": "No se encontraron diferencias.",
+    "more-version": "más...",
+    "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
+    "preview-issue": "Vista previa de incidencia"
+    },
+    "sensitive": "Sensible",
+    "access-denied": "No tiene permiso para acceder a esta base de datos.",
+    "schema": {
+    "select": "Seleccionar esquema"
+    },
+    "show-missing-databases": "Mostrar bases de datos faltantes",
+    "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",
+    "doesnt-match-database-name-template": "No coincide con la plantilla de nombre de base de datos de inquilino",
+    "doesnt-match-tenant-value": "No coincide con el valor de la etiqueta",
+    "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
+    "all": "Todas las bases de datos"
     }
   }
 }
