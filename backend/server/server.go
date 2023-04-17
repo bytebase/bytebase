@@ -623,6 +623,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterExternalVersionControlServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
+	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
 	// GRPC web proxy.
 	options := []grpcweb.Option{
