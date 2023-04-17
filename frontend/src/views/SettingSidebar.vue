@@ -150,6 +150,13 @@
           >
             {{ $t("settings.sidebar.im-integration") }}
           </router-link>
+          <router-link
+            v-if="showMailDeliveryItem"
+            to="/setting/mail-delivery"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.mail-delivery") }}
+          </router-link>
         </div>
       </div>
     </div>
@@ -224,6 +231,13 @@ const showDebugLogItem = computed((): boolean => {
 const showAuditLogItem = computed((): boolean => {
   return hasWorkspacePermission(
     "bb.permission.workspace.audit-log",
+    currentUser.value.role
+  );
+});
+
+const showMailDeliveryItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-mail-delivery",
     currentUser.value.role
   );
 });

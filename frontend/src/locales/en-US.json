@@ -374,7 +374,8 @@
       "debug-log": "Debug Log",
       "sensitive-data": "Data Anonymization",
       "access-control": "Data Access Control",
-      "audit-log": "Audit Log"
+      "audit-log": "Audit Log",
+      "mail-delivery": "Mail Delivery"
     },
     "profile": {
       "email": "Email",
