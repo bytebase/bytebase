@@ -466,6 +466,55 @@
         "email": "Correo electrónico de usuario Bytebase"
       },
       "copy-redirect-url": "URL de redireccionamiento copiada al portapapeles."
+    },
+    "general": {
+      "workspace": {
+        "branding": "Marca",
+        "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración.",
+        "logo": "Logo",
+        "logo-aspect": "El tamaño sugerido para el logotipo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
+        "select-logo": "Subir un archivo",
+        "drag-logo": "o arrastrar aquí",
+        "logo-upload-tip": "{extensión} hasta {tamaño} MiB",
+        "logo-upload-succeed": "Logo actualizado correctamente",
+        "security": "Seguridad",
+        "watermark": {
+          "self": "Marca de agua",
+          "update-success": "Configuración de marca de agua actualizada",
+          "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
+          "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración de la marca de agua.",
+          "enable": "Activar marca de agua"
+        },
+        "disallow-signup": {
+          "enable": "Deshabilitar el registro de autoservicio",
+          "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
+        },
+        "require-2fa": {
+          "enable": "Requerir autenticación de dos factores para todos los usuarios",
+          "description": "Cuando está habilitado, los usuarios que no tienen la autenticación de dos factores habilitada para sus cuentas personales serán obligados a configurarla.",
+          "need-all-user-2fa-enabled": "Requiere que todos los usuarios habiliten 2FA primero. Todavía hay {count} usuarios que no han habilitado 2FA: {users}"
+        },
+        "network": "Red",
+        "external-url": {
+          "self": "URL externa",
+          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
+        },
+        "config-updated": "La configuración se ha actualizado",
+        "plugin": {
+          "openai": {
+            "ai-augmentation": "Ampliación de IA",
+            "openai-key": {
+              "self": "Clave de API de OpenAI",
+              "description": "Proporcione una clave de API de OpenAI para habilitar la capacidad ChatSQL en el Editor de SQL. {viewDoc}",
+              "placeholder": "Una clave de API de OpenAI generalmente comienza con sk-*****"
+            },
+            "openai-endpoint": {
+              "self": "Punto de conexión de API de OpenAI",
+              "description": "Proporcione una implementación privada del Punto de conexión de API de OpenAI."
+            }
+          }
+        }
+      }
     }
   }
 }
