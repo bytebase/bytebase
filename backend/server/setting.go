@@ -178,10 +178,10 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 <!DOCTYPE html>
 <html>
 <head>
-	<title>A test mail from Bytebase2.</title>
+	<title>A test mail from Bytebase.</title>
 </head>
 <body>
-	<h1>A test mail from Bytebase2.</h1>
+	<h1>A test mail from Bytebase.</h1>
 </body>
 </html>
 `)
