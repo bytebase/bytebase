@@ -1,4 +1,8 @@
 import { SettingId } from "./id";
+import {
+  SMTPMailDeliverySetting_Encryption,
+  SMTPMailDeliverySetting_Authentication,
+} from "./proto/store/setting";
 
 export type SettingName =
   | "bb.branding.logo"
@@ -7,7 +11,8 @@ export type SettingName =
   | "bb.workspace.profile"
   | "bb.workspace.approval"
   | "bb.plugin.openai.key"
-  | "bb.plugin.openai.endpoint";
+  | "bb.plugin.openai.endpoint"
+  | "bb.workspace.mail-delivery";
 
 export type Setting = {
   id: SettingId;
@@ -27,4 +32,22 @@ export interface SettingAppIMValue {
   externalApproval: {
     enabled: boolean;
   };
+}
+
+export type SMTPAuthenticationType = "NONE" | "PLAIN";
+export type SMTPEncryptionType = "NONE" | "SSL/TLS" | "STARTTLS";
+
+export interface SettingWorkspaceMailDeliveryValue {
+  smtpServerHost: string;
+  smtpServerPort: number;
+  smtpFrom: string;
+  smtpUsername: string;
+  smtpPassword: string | undefined;
+  smtpAuthenticationType: SMTPMailDeliverySetting_Authentication;
+  smtpEncryptionType: SMTPMailDeliverySetting_Encryption;
+}
+
+export interface TestWorkspaceDeliveryValue
+  extends SettingWorkspaceMailDeliveryValue {
+  sendTo: string;
 }

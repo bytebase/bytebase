@@ -76,6 +76,27 @@ export const useSettingStore = defineStore("setting", {
 
       return setting;
     },
+    async validateSettingByName({
+      name,
+      value,
+    }: {
+      name: SettingName;
+      value: string;
+    }): Promise<any> {
+      const data = (
+        await axios.patch(`/api/setting/${name}`, {
+          data: {
+            type: "settingPatch",
+            attributes: {
+              validateOnly: true,
+              value,
+            },
+          },
+        })
+      ).data;
+
+      return data;
+    },
     async updateWorkspaceProfile(payload: object): Promise<void> {
       if (!this.workspaceSetting) {
         return;
