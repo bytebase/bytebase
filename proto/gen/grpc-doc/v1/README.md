@@ -157,14 +157,14 @@
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
-    - [CreateRoleRequest](#bytebase-v1-CreateRoleRequest)
-    - [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest)
-    - [GetRoleRequest](#bytebase-v1-GetRoleRequest)
+    - [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest)
+    - [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest)
+    - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
     - [InstanceRole](#bytebase-v1-InstanceRole)
-    - [ListRolesRequest](#bytebase-v1-ListRolesRequest)
-    - [ListRolesResponse](#bytebase-v1-ListRolesResponse)
-    - [UndeleteRoleRequest](#bytebase-v1-UndeleteRoleRequest)
-    - [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest)
+    - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
+    - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
+    - [UndeleteInstanceRoleRequest](#bytebase-v1-UndeleteInstanceRoleRequest)
+    - [UpdateInstanceRoleRequest](#bytebase-v1-UpdateInstanceRoleRequest)
   
     - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
   
@@ -301,6 +301,16 @@
     - [Risk.Source](#bytebase-v1-Risk-Source)
   
     - [RiskService](#bytebase-v1-RiskService)
+  
+- [v1/role_service.proto](#v1_role_service-proto)
+    - [CreateRoleRequest](#bytebase-v1-CreateRoleRequest)
+    - [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest)
+    - [ListRolesRequest](#bytebase-v1-ListRolesRequest)
+    - [ListRolesResponse](#bytebase-v1-ListRolesResponse)
+    - [Role](#bytebase-v1-Role)
+    - [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest)
+  
+    - [RoleService](#bytebase-v1-RoleService)
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -1574,11 +1584,11 @@ SlowQueryStatistics is the statistics of the slow query log.
 | count | [int32](#int32) |  | The count of the slow query log. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
 | average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
-| nighty_fifth_percentile_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The nighty fifth percentile query time of the slow query log. |
+| maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
 | average_rows_sent | [int32](#int32) |  | The average rows sent of the slow query log. |
-| nighty_fifth_percentile_rows_sent | [int32](#int32) |  | The nighty fifth percentile rows sent of the slow query log. |
+| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
 | average_rows_examined | [int32](#int32) |  | The average rows examined of the slow query log. |
-| nighty_fifth_percentile_rows_examined | [int32](#int32) |  | The nighty fifth percentile rows examined of the slow query log. |
+| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
@@ -2507,9 +2517,9 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
-<a name="bytebase-v1-CreateRoleRequest"></a>
+<a name="bytebase-v1-CreateInstanceRoleRequest"></a>
 
-### CreateRoleRequest
+### CreateInstanceRoleRequest
 
 
 
@@ -2523,9 +2533,9 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
-<a name="bytebase-v1-DeleteRoleRequest"></a>
+<a name="bytebase-v1-DeleteInstanceRoleRequest"></a>
 
-### DeleteRoleRequest
+### DeleteInstanceRoleRequest
 
 
 
@@ -2538,9 +2548,9 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
-<a name="bytebase-v1-GetRoleRequest"></a>
+<a name="bytebase-v1-GetInstanceRoleRequest"></a>
 
-### GetRoleRequest
+### GetInstanceRoleRequest
 
 
 
@@ -2573,9 +2583,9 @@ InstanceRole is the API message for instance role.
 
 
 
-<a name="bytebase-v1-ListRolesRequest"></a>
+<a name="bytebase-v1-ListInstanceRolesRequest"></a>
 
-### ListRolesRequest
+### ListInstanceRolesRequest
 
 
 
@@ -2592,9 +2602,9 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
-<a name="bytebase-v1-ListRolesResponse"></a>
+<a name="bytebase-v1-ListInstanceRolesResponse"></a>
 
-### ListRolesResponse
+### ListInstanceRolesResponse
 
 
 
@@ -2608,9 +2618,9 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
-<a name="bytebase-v1-UndeleteRoleRequest"></a>
+<a name="bytebase-v1-UndeleteInstanceRoleRequest"></a>
 
-### UndeleteRoleRequest
+### UndeleteInstanceRoleRequest
 
 
 
@@ -2623,9 +2633,9 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
-<a name="bytebase-v1-UpdateRoleRequest"></a>
+<a name="bytebase-v1-UpdateInstanceRoleRequest"></a>
 
-### UpdateRoleRequest
+### UpdateInstanceRoleRequest
 
 
 
@@ -2654,12 +2664,12 @@ The role&#39;s `name`, `environment` and `instance` field is used to identify th
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetRole | [GetRoleRequest](#bytebase-v1-GetRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| ListRoles | [ListRolesRequest](#bytebase-v1-ListRolesRequest) | [ListRolesResponse](#bytebase-v1-ListRolesResponse) |  |
-| CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteRole | [UndeleteRoleRequest](#bytebase-v1-UndeleteRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
+| GetInstanceRole | [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
+| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) |  |
+| CreateInstanceRole | [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
+| UpdateInstanceRole | [UpdateInstanceRoleRequest](#bytebase-v1-UpdateInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
+| DeleteInstanceRole | [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| UndeleteInstanceRole | [UndeleteInstanceRoleRequest](#bytebase-v1-UndeleteInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
 
  
 
@@ -4588,6 +4598,134 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | CreateRisk | [CreateRiskRequest](#bytebase-v1-CreateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | DeleteRisk | [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
+<a name="v1_role_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/role_service.proto
+
+
+
+<a name="bytebase-v1-CreateRoleRequest"></a>
+
+### CreateRoleRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [Role](#bytebase-v1-Role) |  |  |
+| role_id | [string](#string) |  | The ID to use for the role, which will become the final component of the role&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][A-Z][0-9]/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteRoleRequest"></a>
+
+### DeleteRoleRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: roles/{role} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolesRequest"></a>
+
+### ListRolesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 50 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolesResponse"></a>
+
+### ListRolesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| roles | [Role](#bytebase-v1-Role) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Role"></a>
+
+### Role
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: roles/{role} |
+| description | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateRoleRequest"></a>
+
+### UpdateRoleRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [Role](#bytebase-v1-Role) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-RoleService"></a>
+
+### RoleService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListRoles | [ListRolesRequest](#bytebase-v1-ListRolesRequest) | [ListRolesResponse](#bytebase-v1-ListRolesResponse) |  |
+| CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) |  |
+| UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) |  |
+| DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

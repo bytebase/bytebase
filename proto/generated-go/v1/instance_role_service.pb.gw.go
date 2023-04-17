@@ -31,8 +31,8 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_InstanceRoleService_GetRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRoleRequest
+func request_InstanceRoleService_GetInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -52,13 +52,13 @@ func request_InstanceRoleService_GetRole_0(ctx context.Context, marshaler runtim
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := client.GetRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetInstanceRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_InstanceRoleService_GetRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRoleRequest
+func local_request_InstanceRoleService_GetInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -78,17 +78,17 @@ func local_request_InstanceRoleService_GetRole_0(ctx context.Context, marshaler 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := server.GetRole(ctx, &protoReq)
+	msg, err := server.GetInstanceRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_InstanceRoleService_ListRoles_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_InstanceRoleService_ListInstanceRoles_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
 )
 
-func request_InstanceRoleService_ListRoles_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListRolesRequest
+func request_InstanceRoleService_ListInstanceRoles_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListInstanceRolesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -111,17 +111,17 @@ func request_InstanceRoleService_ListRoles_0(ctx context.Context, marshaler runt
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_ListRoles_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_ListInstanceRoles_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListRoles(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListInstanceRoles(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_InstanceRoleService_ListRoles_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListRolesRequest
+func local_request_InstanceRoleService_ListInstanceRoles_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListInstanceRolesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -144,17 +144,17 @@ func local_request_InstanceRoleService_ListRoles_0(ctx context.Context, marshale
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_ListRoles_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_ListInstanceRoles_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListRoles(ctx, &protoReq)
+	msg, err := server.ListInstanceRoles(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_InstanceRoleService_CreateRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateRoleRequest
+func request_InstanceRoleService_CreateInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -182,13 +182,13 @@ func request_InstanceRoleService_CreateRole_0(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := client.CreateRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.CreateInstanceRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_InstanceRoleService_CreateRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateRoleRequest
+func local_request_InstanceRoleService_CreateInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -216,17 +216,17 @@ func local_request_InstanceRoleService_CreateRole_0(ctx context.Context, marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := server.CreateRole(ctx, &protoReq)
+	msg, err := server.CreateInstanceRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_InstanceRoleService_UpdateRole_0 = &utilities.DoubleArray{Encoding: map[string]int{"role": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_InstanceRoleService_UpdateInstanceRole_0 = &utilities.DoubleArray{Encoding: map[string]int{"role": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
 )
 
-func request_InstanceRoleService_UpdateRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateRoleRequest
+func request_InstanceRoleService_UpdateInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -264,17 +264,17 @@ func request_InstanceRoleService_UpdateRole_0(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_UpdateRole_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_UpdateInstanceRole_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.UpdateRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UpdateInstanceRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_InstanceRoleService_UpdateRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateRoleRequest
+func local_request_InstanceRoleService_UpdateInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -312,17 +312,17 @@ func local_request_InstanceRoleService_UpdateRole_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_UpdateRole_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InstanceRoleService_UpdateInstanceRole_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.UpdateRole(ctx, &protoReq)
+	msg, err := server.UpdateInstanceRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_InstanceRoleService_DeleteRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteRoleRequest
+func request_InstanceRoleService_DeleteInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -342,13 +342,13 @@ func request_InstanceRoleService_DeleteRole_0(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := client.DeleteRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeleteInstanceRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_InstanceRoleService_DeleteRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteRoleRequest
+func local_request_InstanceRoleService_DeleteInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -368,13 +368,13 @@ func local_request_InstanceRoleService_DeleteRole_0(ctx context.Context, marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := server.DeleteRole(ctx, &protoReq)
+	msg, err := server.DeleteInstanceRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_InstanceRoleService_UndeleteRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UndeleteRoleRequest
+func request_InstanceRoleService_UndeleteInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UndeleteInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -402,13 +402,13 @@ func request_InstanceRoleService_UndeleteRole_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := client.UndeleteRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UndeleteInstanceRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_InstanceRoleService_UndeleteRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UndeleteRoleRequest
+func local_request_InstanceRoleService_UndeleteInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, server InstanceRoleServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UndeleteInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -436,7 +436,7 @@ func local_request_InstanceRoleService_UndeleteRole_0(ctx context.Context, marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := server.UndeleteRole(ctx, &protoReq)
+	msg, err := server.UndeleteInstanceRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -447,7 +447,7 @@ func local_request_InstanceRoleService_UndeleteRole_0(ctx context.Context, marsh
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterInstanceRoleServiceHandlerFromEndpoint instead.
 func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server InstanceRoleServiceServer) error {
 
-	mux.Handle("GET", pattern_InstanceRoleService_GetRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_InstanceRoleService_GetInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -455,12 +455,12 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InstanceRoleService_GetRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InstanceRoleService_GetInstanceRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -468,11 +468,11 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_InstanceRoleService_GetRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_GetInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_InstanceRoleService_ListRoles_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_InstanceRoleService_ListInstanceRoles_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -480,12 +480,12 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListRoles", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListInstanceRoles", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InstanceRoleService_ListRoles_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InstanceRoleService_ListInstanceRoles_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -493,11 +493,11 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_InstanceRoleService_ListRoles_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_ListInstanceRoles_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_InstanceRoleService_CreateRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_InstanceRoleService_CreateInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -505,12 +505,12 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateRole", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateInstanceRole", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InstanceRoleService_CreateRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InstanceRoleService_CreateInstanceRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -518,11 +518,11 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_InstanceRoleService_CreateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_CreateInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PATCH", pattern_InstanceRoleService_UpdateRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PATCH", pattern_InstanceRoleService_UpdateInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -530,12 +530,12 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateRole", runtime.WithHTTPPathPattern("/v1/{role.name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateInstanceRole", runtime.WithHTTPPathPattern("/v1/{role.name=environments/*/instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InstanceRoleService_UpdateRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InstanceRoleService_UpdateInstanceRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -543,11 +543,11 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_InstanceRoleService_UpdateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_UpdateInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_InstanceRoleService_DeleteRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_InstanceRoleService_DeleteInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -555,12 +555,12 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InstanceRoleService_DeleteRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InstanceRoleService_DeleteInstanceRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -568,11 +568,11 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_InstanceRoleService_DeleteRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_DeleteInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_InstanceRoleService_UndeleteRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_InstanceRoleService_UndeleteInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -580,12 +580,12 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}:undelete"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}:undelete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InstanceRoleService_UndeleteRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InstanceRoleService_UndeleteInstanceRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -593,7 +593,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_InstanceRoleService_UndeleteRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_UndeleteInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -638,135 +638,135 @@ func RegisterInstanceRoleServiceHandler(ctx context.Context, mux *runtime.ServeM
 // "InstanceRoleServiceClient" to call the correct interceptors.
 func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client InstanceRoleServiceClient) error {
 
-	mux.Handle("GET", pattern_InstanceRoleService_GetRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_InstanceRoleService_GetInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InstanceRoleService_GetRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InstanceRoleService_GetInstanceRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_InstanceRoleService_GetRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_GetInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_InstanceRoleService_ListRoles_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_InstanceRoleService_ListInstanceRoles_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListRoles", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListInstanceRoles", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InstanceRoleService_ListRoles_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InstanceRoleService_ListInstanceRoles_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_InstanceRoleService_ListRoles_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_ListInstanceRoles_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_InstanceRoleService_CreateRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_InstanceRoleService_CreateInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateRole", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateInstanceRole", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InstanceRoleService_CreateRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InstanceRoleService_CreateInstanceRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_InstanceRoleService_CreateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_CreateInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PATCH", pattern_InstanceRoleService_UpdateRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PATCH", pattern_InstanceRoleService_UpdateInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateRole", runtime.WithHTTPPathPattern("/v1/{role.name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateInstanceRole", runtime.WithHTTPPathPattern("/v1/{role.name=environments/*/instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InstanceRoleService_UpdateRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InstanceRoleService_UpdateInstanceRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_InstanceRoleService_UpdateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_UpdateInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_InstanceRoleService_DeleteRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_InstanceRoleService_DeleteInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InstanceRoleService_DeleteRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InstanceRoleService_DeleteInstanceRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_InstanceRoleService_DeleteRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_DeleteInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_InstanceRoleService_UndeleteRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_InstanceRoleService_UndeleteInstanceRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}:undelete"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}:undelete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InstanceRoleService_UndeleteRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InstanceRoleService_UndeleteInstanceRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_InstanceRoleService_UndeleteRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InstanceRoleService_UndeleteInstanceRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -774,29 +774,29 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 }
 
 var (
-	pattern_InstanceRoleService_GetRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, ""))
+	pattern_InstanceRoleService_GetInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, ""))
 
-	pattern_InstanceRoleService_ListRoles_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "roles"}, ""))
+	pattern_InstanceRoleService_ListInstanceRoles_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "roles"}, ""))
 
-	pattern_InstanceRoleService_CreateRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "roles"}, ""))
+	pattern_InstanceRoleService_CreateInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "roles"}, ""))
 
-	pattern_InstanceRoleService_UpdateRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "role.name"}, ""))
+	pattern_InstanceRoleService_UpdateInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "role.name"}, ""))
 
-	pattern_InstanceRoleService_DeleteRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, ""))
+	pattern_InstanceRoleService_DeleteInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, ""))
 
-	pattern_InstanceRoleService_UndeleteRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, "undelete"))
+	pattern_InstanceRoleService_UndeleteInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, "undelete"))
 )
 
 var (
-	forward_InstanceRoleService_GetRole_0 = runtime.ForwardResponseMessage
+	forward_InstanceRoleService_GetInstanceRole_0 = runtime.ForwardResponseMessage
 
-	forward_InstanceRoleService_ListRoles_0 = runtime.ForwardResponseMessage
+	forward_InstanceRoleService_ListInstanceRoles_0 = runtime.ForwardResponseMessage
 
-	forward_InstanceRoleService_CreateRole_0 = runtime.ForwardResponseMessage
+	forward_InstanceRoleService_CreateInstanceRole_0 = runtime.ForwardResponseMessage
 
-	forward_InstanceRoleService_UpdateRole_0 = runtime.ForwardResponseMessage
+	forward_InstanceRoleService_UpdateInstanceRole_0 = runtime.ForwardResponseMessage
 
-	forward_InstanceRoleService_DeleteRole_0 = runtime.ForwardResponseMessage
+	forward_InstanceRoleService_DeleteInstanceRole_0 = runtime.ForwardResponseMessage
 
-	forward_InstanceRoleService_UndeleteRole_0 = runtime.ForwardResponseMessage
+	forward_InstanceRoleService_UndeleteInstanceRole_0 = runtime.ForwardResponseMessage
 )

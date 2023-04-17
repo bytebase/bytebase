@@ -162,6 +162,7 @@ const resetQuickstart = () => {
     "database.visit",
     "member.addOrInvite",
     "kbar.open",
+    "data.query",
     "help.issue.detail",
     "help.project",
     "help.environment",

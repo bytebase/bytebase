@@ -901,6 +901,7 @@
     "visit-environment": "@:common.visit@:common.environments",
     "add-a-member": "添加成员",
     "use-kbar": "使用 kbar ({shortcut})",
+    "query-data": "查询数据",
     "notice": {
       "title": "快速入门导览已关闭",
       "desc": "您稍后仍可以从右上角的菜单中再次打开快速入门导览"
@@ -2231,7 +2232,8 @@
     },
     "risk": {
       "self": "风险",
-      "risk-center": "风险中心"
+      "risk-center": "风险中心",
+      "description": "风险中心定义了不同数据库操作在不同条件下的风险等级。而风险等级则会决定工单的自定义审批流程。"
     },
     "workflow-center": {
       "workflow": "工作流"
@@ -2271,5 +2273,8 @@
     "attention-description": "为 {versions} 记录和分析慢查询。\nBytebase 会定期从实例上同步慢查询日志。",
     "sync-job-started": "同步作业已启动。请等待同步完成。",
     "detail": "慢查询详情"
+  },
+  "principal": {
+    "select": "选择用户"
   }
 }

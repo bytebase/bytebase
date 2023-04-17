@@ -1,11 +1,17 @@
 <template>
-  <div class="w-full mt-4 space-y-4 text-sm">
-    <FeatureAttention
-      v-if="!hasCustomApprovalFeature"
-      feature="bb.feature.custom-approval"
-      :description="$t('subscription.features.bb-feature-custom-approval.desc')"
-    />
+  <div class="textinfolabel">
+    {{ $t("custom-approval.risk.description") }}
+    <a
+      href="https://www.bytebase.com/docs/administration/risk-center"
+      target="_blank"
+      class="normal-link inline-flex flex-row items-center"
+    >
+      {{ $t("common.learn-more") }}
+      <heroicons-outline:external-link class="w-4 h-4" />
+    </a>
+  </div>
 
+  <div class="w-full mt-4 space-y-4 text-sm">
     <RiskCenter v-if="state.ready" />
     <div v-else class="w-full py-[4rem] flex justify-center items-center">
       <BBSpin />

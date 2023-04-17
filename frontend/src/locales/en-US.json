@@ -903,6 +903,7 @@
     "visit-environment": "@:common.visit @:common.environments",
     "add-a-member": "Add a member",
     "use-kbar": "Use kbar ({shortcut})",
+    "query-data": "Query data",
     "notice": {
       "title": "Quickstart guide dismissed",
       "desc": "You can still bring it back later from the top right menu"
@@ -2234,7 +2235,8 @@
     },
     "risk": {
       "self": "Risk",
-      "risk-center": "Risk Center"
+      "risk-center": "Risk Center",
+      "description": "Risk Center defines the risk levels for different database operations under different conditions. And risk levels determine the corresponding custom approval flows."
     },
     "workflow-center": {
       "workflow": "Workflow"
@@ -2274,5 +2276,8 @@
     "attention-description": "Logging and analyzing slow queries for {versions}.\nBytebase will periodically sync slow query logs from instances.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
     "detail": "Slow Query Detail"
+  },
+  "principal": {
+    "select": "Select user"
   }
 }

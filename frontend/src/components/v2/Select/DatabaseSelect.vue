@@ -4,6 +4,8 @@
     :options="options"
     :placeholder="$t('database.select')"
     :virtual-scroll="true"
+    :filter="filterByName"
+    :filterable="true"
     style="width: 12rem"
     @update:value="$emit('update:database', $event)"
   />
@@ -27,6 +29,11 @@ import {
   UNKNOWN_ID,
   unknown,
 } from "@/types";
+
+interface DatabaseSelectOption extends SelectOption {
+  value: DatabaseId;
+  database: Database;
+}
 
 const props = withDefaults(
   defineProps<{
@@ -102,13 +109,19 @@ const combinedDatabaseList = computed(() => {
 });
 
 const options = computed(() => {
-  return combinedDatabaseList.value.map<SelectOption>((database) => {
+  return combinedDatabaseList.value.map<DatabaseSelectOption>((database) => {
     return {
+      database,
       value: database.id,
       label: database.name,
     };
   });
 });
+
+const filterByName = (pattern: string, option: SelectOption) => {
+  const { database } = option as DatabaseSelectOption;
+  return database.name.toLowerCase().includes(pattern.toLowerCase());
+};
 
 // The database list might change if environment changes, and the previous selected id
 // might not exist in the new list. In such case, we need to invalidate the selection

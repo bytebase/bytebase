@@ -31,8 +31,12 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	for rows.Next() {
 		database := &storepb.DatabaseMetadata{}
-		if err := rows.Scan(&database.Name, &database.Collation); err != nil {
+		var collation sql.NullString
+		if err := rows.Scan(&database.Name, &collation); err != nil {
 			return nil, err
+		}
+		if collation.Valid {
+			database.Collation = collation.String
 		}
 		databases = append(databases, database)
 	}
@@ -316,4 +320,9 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 // SyncSlowQuery syncs the slow query.
 func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, errors.Errorf("not implemented")
+}
+
+// CheckSlowQueryLogEnabled checks if slow query log is enabled.
+func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
+	return errors.Errorf("not implemented")
 }
