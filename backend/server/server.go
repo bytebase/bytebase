@@ -571,6 +571,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.stateCfg))
+	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
