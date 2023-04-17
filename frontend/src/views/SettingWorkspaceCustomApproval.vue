@@ -1,5 +1,11 @@
 <template>
   <div class="w-full mt-4 space-y-4 text-sm">
+    <FeatureAttention
+      v-if="!hasCustomApprovalFeature"
+      feature="bb.feature.custom-approval"
+      :description="$t('subscription.features.bb-feature-custom-approval.desc')"
+    />
+
     <CustomApproval v-if="state.ready" />
     <div v-else class="w-full py-[4rem] flex justify-center items-center">
       <BBSpin />
