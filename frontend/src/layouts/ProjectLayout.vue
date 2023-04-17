@@ -46,8 +46,8 @@ import { startCase } from "lodash-es";
 
 import {
   idFromSlug,
-  hasProjectPermission,
   hasWorkspacePermission,
+  hasPermissionInProject,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
@@ -147,17 +147,14 @@ export default defineComponent({
         return true;
       }
 
-      for (const member of project.value.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (
-            hasProjectPermission(
-              "bb.permission.project.manage-general",
-              member.role
-            )
-          ) {
-            return true;
-          }
-        }
+      if (
+        hasPermissionInProject(
+          project.value,
+          currentUser.value,
+          "bb.permission.project.manage-general"
+        )
+      ) {
+        return true;
       }
       return false;
     });
