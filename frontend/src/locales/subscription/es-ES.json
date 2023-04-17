@@ -119,7 +119,7 @@
         "rbac": "RBAC (Propietario, DBA, Rol Desarrollador)",
         "slow-query": "Consulta lenta",
         "watermark": "Marca de agua",
-        "sso": "Inicio de sesión único (SSO)",
+        "sso": "Inicio de Sesión Único (SSO)",
         "2fa": "Autenticación de dos factores (2FA)",
         "custom-approval": "Aprobación personalizada",
         "dba-workflow": "Flujo de Trabajo DBA",
@@ -175,7 +175,7 @@
     "database-access-control": "Control de acceso a la base de datos",
     "roadmap": "Priorización de la hoja de ruta",
     "custom-contract": "MSA y BAA personalizados",
-    "sso": "Inicio de sesión único (SSO)",
+    "sso": "Inicio de Sesión Único (SSO)",
     "2fa": "Autenticación de dos factores (2FA)",
     "custom-approval": "Aprobación personalizada"
   }

@@ -69,7 +69,7 @@
     "skip": "Saltar",
     "reopen": "Reabrir",
     "dismiss": "Descartar",
-    "back": "Atrás",
+    "back": "Volver",
     "next": "Siguiente",
     "edit": "Editar",
     "update": "Actualizar",
@@ -238,7 +238,7 @@
     "active": "Activo"
   },
   "error-page": {
-    "go-back-home": "Regresar al inicio"
+    "go-back-home": "Volver al inicio"
   },
   "anomaly-center": "Centro de Anomalías",
   "kbar": {
@@ -248,7 +248,7 @@
       "navigate": "navegar",
       "perform": "realizar",
       "close": "cerrar",
-      "back": "regresar"
+      "back": "volver"
     },
     "options": {
       "placeholder": "Escriba un comando o búsqueda..."
@@ -338,5 +338,134 @@
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url",
     "configure-now": "Configurar ahora"
+  },
+  "intro": {
+    "doc": "doc",
+    "issue": "incidencia",
+    "quickstart": "inicio rápido"
+  },
+  "bbkit": {
+    "common": {
+      "ok": "OK",
+      "cancel": "Cancelar",
+      "back": "Volver",
+      "next": "Siguiente",
+      "finish": "Finalizar",
+      "step": "Paso"
+    },
+    "attention": {
+      "default": "Atención requerida"
+    }
+  },
+  "settings": {
+    "sidebar": {
+      "account": "Cuenta",
+      "profile": "Perfil",
+      "workspace": "Espacio de trabajo",
+      "security-and-policy": "Seguridad y Política",
+      "integration": "Integración",
+      "general": "General",
+      "members": "Miembros",
+      "im-integration": "Integración de IM",
+      "sso": "SSO",
+      "gitops": "GitOps",
+      "subscription": "Suscripción",
+      "labels": "Etiquetas",
+      "debug-log": "Registro de Depuración",
+      "sensitive-data": "Anonimización de Datos",
+      "access-control": "Control de Acceso a Datos",
+      "audit-log": "Registro de auditoría"
+    },
+    "profile": {
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "password": "Contraseña",
+      "password-confirm": "Confirmar",
+      "password-confirm-placeholder": "Confirmar nueva contraseña",
+      "password-mismatch": "no coincide",
+      "subscription": "(Actualice para habilitar la gestión de roles)"
+    },
+    "members": {
+      "active": "Miembros activos",
+      "inactive": "Miembros inactivos",
+      "helper": "Agregar o invitar por dirección de correo electrónico",
+      "add-more": "+ Agregar más",
+      "add": "Agregar",
+      "invites": "Enviar invitaciones",
+      "invited": "Invitado",
+      "yourself": "Tú",
+      "upgrade": "Actualice para habilitar la gestión de roles",
+      "select-role": "Seleccione el rol",
+      "not-assigned": "No asignado",
+      "table": {
+        "account": "Cuenta",
+        "role": "Rol",
+        "update-time": "Hora de Actualización",
+        "granted-time": "Hora de Concesión"
+      },
+      "action": {
+        "deactivate": "Desactivar",
+        "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
+        "deactivate-confirm-description": "Aún puedes reactivar más tarde",
+        "reactivate": "Reactivar",
+        "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
+      },
+      "tooltip": {
+        "upgrade": "Actualice para habilitar la gestión de roles",
+        "not-allow-edit": "Solo el propietario puede cambiar el rol",
+        "not-allow-remove": "No se puede eliminar el último propietario",
+        "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
+        "cannot-change-role-of-systembot": "No se puede cambiar el rol del bot del sistema"
+      },
+      "system-bot": "Bot del Sistema",
+      "service-account": "Cuenta de Servicio",
+      "copy-service-key": "Copiar Clave de Servicio",
+      "reset-service-key": "Restablecer Clave de Servicio",
+      "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
+      "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
+      "create-as-service-account": "Crear como cuenta de servicio"
+    },
+    "im-integration": {
+      "enable": "Habilitar",
+      "description": "Permitir a los usuarios aprobar incidencias directamente desde IM.",
+      "feishu-updated-tip": "Integración con Feishu actualizada correctamente"
+    },
+    "sso": {
+      "create": "Crear SSO",
+      "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
+      "archive": "Archivar este SSO",
+      "archive-info": "El SSO archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
+      "restore": "Restaurar este SSO",
+      "form": {
+        "type": "Tipo",
+        "learn-more-with-user-doc": "Obtenga más información sobre la configuración",
+        "redirect-url": "URL de redireccionamiento de autorización",
+        "redirect-url-description": "Se utilizará para completar el campo correspondiente en el formulario de la aplicación del proveedor de identidad.",
+        "use-template": "Usar plantilla",
+        "select-template": "Seleccionar plantilla",
+        "basic-information": "Información básica",
+        "name": "Nombre",
+        "name-description": "El nombre de visualización que se mostrará a los usuarios",
+        "resource-id": "ID de recurso",
+        "resource-id-description": "Una cadena única y los caracteres válidos son /[a-z][0-9]-/",
+        "domain": "Dominio",
+        "domain-description": "El nombre de dominio del proveedor de identidad.",
+        "identity-provider-information": "Información del proveedor de identidad",
+        "identity-provider-information-description": "La información es proporcionada por su proveedor de identidad.",
+        "identity-provider-needed-information": "Cree su aplicación SSO con la siguiente información.",
+        "endpoints": "Endpoints",
+        "endpoints-description": "Las URL relacionadas proporcionadas por su proveedor de OAuth.",
+        "auth-url-description": "El enlace a la página de inicio de sesión de OAuth",
+        "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación.",
+        "token-url-description": "La dirección API para obtener el token de acceso.",
+        "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso.",
+        "user-information-mapping": "Mapeo de información del usuario",
+        "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
+        "identifier": "Identificador de usuario Bytebase",
+        "display-name": "Nombre de visualización de usuario Bytebase",
+        "email": "Correo electrónico de usuario Bytebase"
+      },
+      "copy-redirect-url": "URL de redireccionamiento copiada al portapapeles."
+    }
   }
 }
