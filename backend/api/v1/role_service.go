@@ -109,7 +109,11 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 
 func convertToRole(role *store.RoleMessage) *v1pb.Role {
 	return &v1pb.Role{
-		Name:        fmt.Sprintf("%s%s", rolePrefix, role.ResourceID),
+		Name:        convertToRoleName(role.ResourceID),
 		Description: role.Description,
 	}
+}
+
+func convertToRoleName(role string) string {
+	return fmt.Sprintf("%s%s", rolePrefix, role)
 }
