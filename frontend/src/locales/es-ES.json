@@ -1619,5 +1619,66 @@
     "engine": "Motor",
     "collation": "Colación",
     "comment": "Comentario"
-    }
+    },
+    "schema": {
+      "select": "Seleccionar esquema",
+      "name": "Nombre del Esquema"
+      },
+      "tables": "Tablas",
+      "table": {
+      "select": "Seleccionar tabla",
+      "name": "Nombre de la tabla"
+      },
+      "columns": "Columnas",
+      "column": {
+      "select": "Seleccionar columna",
+      "name": "Nombre",
+      "type": "Tipo",
+      "default": "Valor predeterminado",
+      "comment": "Comentario",
+      "not-null": "No nulo",
+      "primary": "Primaria"
+      },
+      "nothing-changed": "Nada ha cambiado",
+      "message": {
+      "invalid-schema-name": "Nombre de esquema inválido",
+      "duplicated-schema-name": "Nombre de esquema duplicado",
+      "invalid-table-name": "Nombre de tabla inválido",
+      "duplicated-table-name": "Nombre de tabla duplicado",
+      "invalid-column-name": "Nombre de columna inválido",
+      "duplicated-column-name": "Nombre de columna duplicado",
+      "invalid-column-type": "Tipo de columna inválido",
+      "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos"
+      },
+      "confirm-to-close": {
+      "title": "Confirmar para cerrar",
+      "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
+      },
+      "tenant-mode-tips": "Los cambios se aplicarán a todas las bases de datos de inquilinos seleccionados después de hacer clic en \"Vista previa de la incidencia\".",
+      "edit-foreign-key": "Editar clave externa",
+      "select-reference-schema": "Seleccionar un esquema de referencia",
+      "select-reference-table": "Seleccionar una tabla de referencia",
+      "select-reference-column": "Seleccionar una columna de referencia"
+      },
+      "label": {
+      "empty-label-value": "<Valor vacío>",
+      "no-label": "Sin etiquetas",
+      "error": {
+      "key-necessary": "Se requiere una clave",
+      "value-necessary": "Se requiere un valor",
+      "key-duplicated": "Claves duplicadas",
+      "value-duplicated": "Valores duplicados",
+      "max-length-exceeded": "La longitud no puede superar {len} caracteres",
+      "max-label-count-exceeded": "No se pueden exceder las {count} etiquetas",
+      "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\""
+      },
+      "placeholder": {
+      "select-key": "Seleccionar clave...",
+      "select-value": "Seleccionar valor...",
+      "select-values": "Seleccionar valores..."
+      },
+      "setting": {
+      "description": "Una etiqueta es un par clave-valor que le ayuda a identificar el inquilino para una base de datos. {link}."
+      }
+      }
 }
