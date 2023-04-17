@@ -2048,7 +2048,50 @@
           "verify-code": "Verifica el código de la aplicación"
         },
         "download-recovery-codes": {
-          "self": "Descarga tus códigos de recuperación"
+          "self": "Descarga tus códigos de recuperación",
+          "tips": "Mantenga sus códigos de recuperación tan seguros como su contraseña. Recomendamos guardarlos con un administrador de contraseñas como Lastpass, 1Password o Keeper.",
+          "keep-safe": {
+            "self": "Mantenga sus códigos de recuperación en un lugar seguro.",
+            "description": "Estos códigos son el último recurso para acceder a su cuenta en caso de que pierda su código de autenticación de dos factores. Si no puede encontrar estos códigos, perderá el acceso a su cuenta."
+          }
+        },
+        "recovery-codes-saved": "He guardado mis códigos de recuperación",
+        "recovery-codes": {
+          "self": "Códigos de recuperación",
+          "description": "Los códigos de recuperación se pueden utilizar para acceder a su cuenta en caso de que no pueda recibir códigos de autenticación de dos factores."
+        },
+        "disable": {
+          "self": "Desactivar la autenticación de dos factores",
+          "description": "Está a punto de desactivar la autenticación de dos factores para su cuenta. Ya no se le pedirá que ingrese el código de seguridad generado por su aplicación de autenticación cuando inicie sesión."
+        },
+        "your-two-factor-secret": {
+          "self": "Su secreto de dos factores",
+          "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
+          "copy-succeed": "Secreto copiado al portapapeles. Péguelo en su aplicación."
+        },
+        "messages": {
+          "2fa-enabled": "La autenticación de dos factores está activada.",
+          "2fa-disabled": "La autenticación de dos factores está desactivada.",
+          "recovery-codes-regenerated": "Los códigos de recuperación se han regenerado.",
+          "2fa-required": "Se requiere autenticación de dos factores en su espacio de trabajo. Actívelo antes de poder continuar.",
+          "cannot-disable": "No puede desactivar la autenticación de dos factores porque su administrador la requiere en el espacio de trabajo."
+        },
+        "plugin": {
+          "ai": {
+            "examples": "Ejemplos",
+            "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL",
+            "text-to-sql-disabled-placeholder": "Habilite la capacidad de ChatSQL suministrando una clave de API de OpenAI.",
+            "run-automatically": "Ejecutar automáticamente",
+            "conversation": {
+              "conversaciones": "Conversaciones",
+              "untitled": "Conversación sin título",
+              "delete": "Eliminar conversación",
+              "rename": "Renombrar conversación",
+              "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
+              "exit-conversation-mode": "Salir del modo de chat",
+              "history-conversations": "Historial de conversaciones"
+            }
+          }
         }
       }
     }
