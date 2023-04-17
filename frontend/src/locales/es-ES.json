@@ -1833,7 +1833,42 @@
           "title": "Script SQL compartido",
           "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
         }
-      }
-    }
+      }    },
+      "sheet": {
+        "self": "Hojas",
+        "my-sheets": "Mis Hojas",
+        "shared-with-me": "Compartido conmigo",
+        "starred": "Marcado como favorito",
+        "actions": {
+        "sync-from-vcs": "Sincronizar scripts SQL desde VCS"
+        },
+        "hint-tips": {
+        "confirm-to-sync-sheet": "¿Confirmar para sincronizar las hojas?",
+        "confirm-to-delete-this-sheet": "¿Confirmar para eliminar esta hoja?",
+        "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
+        },
+        "linked-issue": "Incidencia vinculada",
+        "from-sheet-warning": "La hoja proviene del problema {issue}. Es de solo lectura y solo se muestra una parte de ella."
+        },
+        "engine": {
+        "mysql": "MySQL",
+        "common": "Común"
+        },
+        "sql-review": {
+        "title": "Revisión de SQL",
+        "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
+        "disabled": "Deshabilitado",
+        "no-policy-set": "Sin política de revisión de SQL",
+        "create-policy": "Crear política",
+        "duplicate-policy": "Duplicar política de revisión de SQL",
+        "configure-policy": "Configurar política",
+        "search-rule-name": "Buscar nombre de regla",
+        "policy-removed": "La política de revisión se eliminó correctamente.",
+        "policy-created": "La política de revisión se creó correctamente.",
+        "policy-updated": "La política de revisión se actualizó correctamente.",
+        "policy-duplicated": "La política de revisión se duplicó correctamente.",
+        "rules": "Reglas",
+        "filter": "Filtro",
+        "no-permission": "Solo el DBA o el propietario tienen permiso para crear o actualizar la política de revisión.",
   }
 }
