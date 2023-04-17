@@ -2209,11 +2209,49 @@
                   "approver": "Aprobador",
                   "group": {
                   "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
+                  "WORKSPACE_DBA": "DBA",
+"PROJECT_OWNER": "Propietario del proyecto",
+"PROJECT_MEMBER": "Miembro del proyecto"},
+"add": "Agregar nodo",
+"delete": "Eliminar nodo de aprobación"
+},
+"presets": {
+  "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
+  "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
+  "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
+  "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
+  "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
+  },
+  "view-approval-flow": "Ver flujo de aprobación",
+  "skip": "Omitir aprobación manual",
+  "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
+  "the-related-risk-rules": "las reglas de riesgo relacionadas"
+  },
+  "risk": {
+  "self": "Riesgo",
+  "risk-center": "Centro de riesgo",
+  "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
+  },
+  "workflow-center": {
+  "workflow": "Flujo de trabajo"
+  },
+  "rule": {
+  "rules": "Reglas"
+  },
+  "issue-review": {
+  "approve-issue": "¿Aprobar problema?",
+  "form": {
+  "placeholder": "(Opcional) Agregar una nota...",
+  "note": "Nota"
+  },
+  "you": "Tú",
+  "generating-approval-flow": "Generando flujo de aprobación",
+  "approved-issue": "problema aprobado"
+  }
+  }
               }
             }
           }
         }
       }
     }
-  }
-}
