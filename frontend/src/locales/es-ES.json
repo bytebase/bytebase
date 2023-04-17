@@ -1725,7 +1725,117 @@
             "title": "Límite de cantidad de instancias",
             "desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
             "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias."
-          }
+          },
+          "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
+          "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
+        },
+        "bb-feature-multi-tenancy": {
+          "title": "Multi-tenancy",
+          "desc": "Gestión inteligente de la base de datos para inquilinos que utilizan esquemas idénticos."
+        },
+        "bb-feature-approval-policy": {
+          "title": "Política de implementación",
+          "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
+        },
+        "bb-feature-backup-policy": {
+          "title": "Política de respaldo",
+          "desc": "La política de respaldo realizará una copia de seguridad automática de su base de datos según la programación establecida."
+        },
+        "bb-feature-environment-tier-policy": {
+          "title": "Nivel de entorno",
+          "desc": "Marque el entorno como producción."
+        },
+        "bb-feature-sensitive-data": {
+          "title": "Datos sensibles",
+          "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
+        },
+        "bb-feature-access-control": {
+          "title": "Control de acceso",
+          "desc": "Cambie el permiso de consulta para bases de datos en entornos de producción."
+        },
+        "bb-feature-lgtm": {
+          "title": "Verificación LGTM",
+          "desc": "Comprueba si el problema tiene un comentario \"LGTM\"."
+        },
+        "bb-feature-im-approval": {
+          "title": "Aprobación IM",
+          "desc": "Aprobación de problemas con integración de IM."
+        },
+        "bb-feature-sql-review": {
+          "title": "Desbloquee más de 100 verificaciones de revisión de SQL",
+          "desc": "Especifique las reglas de linting de SQL para adoptar las mejores prácticas de SQL y hacer cumplir la coherencia del esquema en toda la organización de ingeniería."
+        },
+        "bb-feature-custom-approval": {
+          "title": "Aprobación personalizada",
+          "desc": "Configure el nivel de riesgo de seguridad y el flujo de aprobación para diferentes tareas."
+        },
+        "bb-feature-vcs-schema-write-back": {
+          "title": "Escritura de esquema",
+          "desc": "Después de un cambio de esquema exitoso, la escritura de esquema permite a Bytebase escribir de nuevo la última instantánea completa del esquema en su repositorio de VCS."
+        },
+        "bb-feature-vcs-sheet-sync": {
+          "title": "Sincronizar scripts SQL desde VCS",
+          "desc": "Sincronice los scripts SQL almacenados en VCS en la hoja de cálculo."
+        },
+        "bb-feature-vcs-sql-review": {
+          "title": "Revisión de SQL en el flujo de trabajo de GitOps",
+          "desc": "Agregue la integración de revisión de SQL a la tubería del repositorio de VCS. La revisión de SQL se activará en la solicitud de extracción para los archivos SQL modificados."
+        },
+        "bb-feature-rbac": {
+          "title": "Gestión de roles",
+          "bb-feature-gestion-de-roles": {
+            "title": "Gestión de roles",
+            "desc": "Permite asignar un rol particular (por ejemplo, DBA) a un miembro."
+            },
+            "bb-feature-marca-de-agua": {
+            "title": "Marca de agua",
+            "desc": "Muestra marcas de agua visibles en las páginas, incluyendo el nombre de usuario, ID y correo electrónico."
+            },
+            "bb-feature-registro-de-auditoría": {
+            "title": "Registro de auditoría",
+            "desc": "Registra y consulta las operaciones realizadas por los usuarios en el espacio de trabajo."
+            },
+            "bb-feature-desviación-de-esquema": {
+            "title": "Desviación de esquema",
+            "desc": "@:{'subscription.upgrade'} para desbloquear la detección automática de desviación de esquema."
+            },
+            "bb-feature-branding": {
+            "title": "Personalización",
+            "desc": "Personaliza el logotipo."
+            },
+            "bb-feature-migración-en-línea": {
+            "title": "Migración en línea",
+            "desc": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos."
+            },
+            "bb-feature-recuperación-de-desastres-pitr": {
+            "title": "Recuperación en punto en el tiempo (PITR)",
+            "desc": "Restaura el estado de la base de datos a un punto en el tiempo."
+            },
+            "bb-feature-sincronización-de-esquemas-todas-las-versiones": {
+            "title": "Sincronización de esquemas de todas las versiones",
+            "desc": "Selecciona cualquier versión de migración arbitraria de la base de datos y sincronízala con la base de datos de destino."
+            },
+            "bb-feature-conexión-a-replica-de-lectura": {
+            "title": "Conexión a réplica de lectura",
+            "desc": "Conéctate a una réplica de lectura para obtener una fuente de datos de solo lectura."
+            },
+            "bb-feature-sso": {
+            "title": "Inicio de sesión único (SSO)",
+            "desc": "Permite a los usuarios autenticarse de manera segura en varias aplicaciones y sitios web mediante un único conjunto de credenciales."
+            },
+            "bb-feature-2fa": {
+            "title": "Autenticación de dos factores (2FA)",
+            "desc": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se requerirá ingresar el código de seguridad generado por tu aplicación autenticadora."
+            },
+            "bb-feature-augmentación-de-ai": {
+            "title": "Aumento de AI",
+            "desc": "Características del editor de SQL mejoradas por AI proporcionado por OpenAI."
+            },
+            "bb-feature-script-sql-compartido": {
+            "title": "Script SQL compartido",
+            "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
+            }
+            }
         }
       }
     }
