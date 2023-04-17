@@ -30,6 +30,7 @@ const (
 	externalVersionControlPrefix = "externalVersionControls/"
 	riskPrefix                   = "risks/"
 	reviewPrefix                 = "reviews/"
+	rolePrefix                   = "roles/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -197,6 +198,14 @@ func getReviewID(name string) (int, error) {
 		return 0, errors.Errorf("invalid review ID %q", tokens[1])
 	}
 	return reviewID, nil
+}
+
+func getRoleID(name string) (string, error) {
+	tokens, err := getNameParentTokens(name, rolePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {
