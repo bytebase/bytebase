@@ -1200,38 +1200,95 @@
     "select-repository-search": "Buscar repositorio",
     "linked": "Repositorios vinculados"
   },
-    "workflow": {
-      "current-workflow": "Flujo de trabajo actual",
-      "ui-workflow": "Flujo de trabajo de la interfaz de usuario",
-      "ui-workflow-description": "Flujo de trabajo de revisión de SQL clásico en el que el desarrollador envía un ticket de revisión de SQL directamente desde Bytebase y espera a que el DBA o desarrollador asignado revise. Bytebase aplica el cambio de esquema SQL después de la aprobación de la revisión.",
-      "gitops-workflow": "Flujo de trabajo de GitOps",
-      "gitops-workflow-description": "Los scripts de migración de la base de datos se almacenan en un repositorio de git. Para realizar cambios en el esquema, un desarrollador crearía un script de migración y lo enviaría para su revisión en el VCS correspondiente, como GitLab. Después de que se aprueba el script y se fusiona en la rama configurada, Bytebase iniciará automáticamente la tarea para aplicar el nuevo cambio de esquema.",
-      "configure-gitops": "Configurar GitOps",
-      "configure-gitops-success": "Se habilitó correctamente el flujo de trabajo de GitOps para {proyecto}",
-      "change-gitops-success": "Se cambió correctamente el repositorio para {proyecto}"
-      },
-      "anomaly": {
-      "attention-title": "Detección de anomalías",
-      "attention-desc": "Bytebase escanea periódicamente los recursos administrados y lista las anomalías detectadas aquí. La lista se actualiza aproximadamente cada 10 minutos.",
-      "table-search-placeholder": "Buscar {tipo} o entorno",
-      "table-placeholder": "¡Hurra, no se detectaron anomalías de {tipo}!",
-      "tooltip": "{env} tiene {criticalCount} anomalías CRÍTICAS, {highCount} anomalías ALTAS y {mediumCount} anomalías MEDIA",
-      "types": {
+  "workflow": {
+    "current-workflow": "Flujo de trabajo actual",
+    "ui-workflow": "Flujo de trabajo de la interfaz de usuario",
+    "ui-workflow-description": "Flujo de trabajo de revisión de SQL clásico en el que el desarrollador envía un ticket de revisión de SQL directamente desde Bytebase y espera a que el DBA o desarrollador asignado revise. Bytebase aplica el cambio de esquema SQL después de la aprobación de la revisión.",
+    "gitops-workflow": "Flujo de trabajo de GitOps",
+    "gitops-workflow-description": "Los scripts de migración de la base de datos se almacenan en un repositorio de git. Para realizar cambios en el esquema, un desarrollador crearía un script de migración y lo enviaría para su revisión en el VCS correspondiente, como GitLab. Después de que se aprueba el script y se fusiona en la rama configurada, Bytebase iniciará automáticamente la tarea para aplicar el nuevo cambio de esquema.",
+    "configure-gitops": "Configurar GitOps",
+    "configure-gitops-success": "Se habilitó correctamente el flujo de trabajo de GitOps para {proyecto}",
+    "change-gitops-success": "Se cambió correctamente el repositorio para {proyecto}"
+  },
+  "anomaly": {
+    "attention-title": "Detección de anomalías",
+    "attention-desc": "Bytebase escanea periódicamente los recursos administrados y lista las anomalías detectadas aquí. La lista se actualiza aproximadamente cada 10 minutos.",
+    "table-search-placeholder": "Buscar {tipo} o entorno",
+    "table-placeholder": "¡Hurra, no se detectaron anomalías de {tipo}!",
+    "tooltip": "{env} tiene {criticalCount} anomalías CRÍTICAS, {highCount} anomalías ALTAS y {mediumCount} anomalías MEDIA",
+    "types": {
       "connection-failure": "Fallo de conexión",
       "missing-migration-schema": "Falta de esquema de migración",
       "backup-enforcement-violation": "Violación de cumplimiento de copia de seguridad",
       "missing-backup": "Copia de seguridad faltante",
       "schema-drift": "Variación de esquema"
-      },
-      "action": {
+    },
+    "action": {
       "check-instance": "Ver instancia",
       "view-backup": "Ver copia de seguridad",
       "configure-backup": "Configurar copia de seguridad",
       "view-diff": "Ver diferencia"
+    },
+    "last-seen": "Último visto",
+    "first-seen": "Primero visto"
+  },
+  "project": {
+    "dashboard": {
+      "modal": {
+        "title": "¿Cómo configurar '@:{'common.project'}'?",
+        "content": "El proyecto de Bytebase es similar al concepto de proyecto en otras herramientas de desarrollo comunes.\n\nUn proyecto tiene sus propios miembros, y cada problema y base de datos siempre pertenece a un solo proyecto.\n\nUn proyecto también puede configurarse para enlazarlo con un repositorio y habilitar el flujo de trabajo de GitOps.",
+        "cancel": "Descartar",
+        "confirm": "No volver a mostrar"
       },
-      "last-seen": "Último visto",
-      "first-seen": "Primero visto"
+      "search-bar-placeholder": "Buscar nombre del proyecto"
+    },
+    "table": {
+      "key": "@:common.key",
+      "name": "@:common.name"
+    },
+    "create-modal": {
+      "project-name": "@:common.project @:common.name",
+      "key": "@:common.key",
+      "key-hint": "(Letras mayúsculas que identifican tu proyecto)",
+      "cancel": "@:common.cancel",
+      "confirm": "@:common.create",
+      "success-prompt": "Proyecto {name} creado exitosamente."
+    },
+    "overview": {
+      "view-all": "Ver todo",
+      "view-all-closed": "Ver todo cerrado",
+      "recent-activity": "Actividades recientes @.lower:{'common.activities'}",
+      "in-progress": "En progreso",
+      "recently-closed": "Recientemente cerrado",
+      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
+      "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
+    },
+    "webhook": {
+      "success-created-prompt": "Webhook {name} creado exitosamente.",
+      "success-updated-prompt": "Webhook {name} actualizado exitosamente.",
+      "success-deleted-prompt": "Webhook {name} eliminado exitosamente.",
+      "success-tested-prompt": "Prueba de evento de webhook OK.",
+      "fail-tested-title": "La prueba de evento de webhook falló.",
+      "add-a-webhook": "Agregar un webhook",
+      "create-webhook": "Crear webhook",
+      "last-updated-by": "Última actualización por",
+      "destination": "Destino",
+      "webhook-url": "URL del webhook",
+      "triggering-activity": "Actividades de disparo",
+      "test-webhook": "Probar webhook",
+      "no-webhook": {
+        "title": "No hay webhook configurado para este proyecto.",
+        "content": "Configure los webhooks para que Bytebase publique notificaciones en los sistemas externos sobre varios eventos."
+      },
+      "creation": {
+        "title": "Crear webhook",
+        "desc": "Cree el webhook correspondiente para el canal {destination} que reciba el mensaje.",
+        "how-to-protect": "Si desea utilizar una lista de palabras clave para proteger el webhook, puede agregar \"Bytebase\" a esa lista.",
+        "view-doc": "Ver documentación de {destination}"
+      },
+      "deletion": {
+        "btn-text": "Eliminar este webhook"
       }
-      }
+    }
   }
 }
