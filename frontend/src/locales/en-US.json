@@ -1510,7 +1510,8 @@
   },
   "setting": {
     "project": {
-      "description": "This is the Admin project panel listing all projects in Bytebase."
+      "description": "This is the Admin project panel listing all projects in Bytebase.",
+      "show-archived": "Show archived projects"
     },
     "label": {
       "key": "Key",

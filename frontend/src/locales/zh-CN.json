@@ -1508,7 +1508,8 @@
   },
   "setting": {
     "project": {
-      "description": "这里是项目管理员界面，列出了 Bytebase 上的所有项目。"
+      "description": "这里是项目管理员界面，列出了 Bytebase 上的所有项目。",
+      "show-archived": "显示已归档的项目"
     },
     "label": {
       "key": "Key",
