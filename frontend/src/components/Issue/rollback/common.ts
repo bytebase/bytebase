@@ -16,7 +16,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  hasProjectPermission,
+  hasPermissionInProject,
   hasWorkspacePermission,
   isTaskCreate,
   isTaskSkipped,
@@ -114,17 +114,13 @@ export const useRollbackLogic = () => {
       return true;
     }
 
-    const memberInProject = issueEntity.project.memberList.find(
-      (member) => member.principal.id === user.id
-    );
     if (
-      memberInProject?.role &&
-      hasProjectPermission(
-        "bb.permission.project.admin-database",
-        memberInProject.role
+      hasPermissionInProject(
+        issueEntity.project,
+        user,
+        "bb.permission.project.admin-database"
       )
     ) {
-      // Allowed to the project owner
       return true;
     }
 

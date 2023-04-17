@@ -23,9 +23,10 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import {
-  hasProjectPermission,
+  hasPermissionInProject,
   hasWorkspacePermission,
   idFromSlug,
+  memberListInProject,
   migrationHistoryIdFromSlug,
 } from "../utils";
 import Signin from "../views/auth/Signin.vue";
@@ -672,17 +673,20 @@ const routes: Array<RouteRecordRaw> = [
                     allowCreateDB = true;
                     allowTransferDB = true;
                   } else {
-                    const memberOfProject = project.memberList.find(
-                      (m) => m.principal.id === currentUser.value.id
+                    const memberList = memberListInProject(
+                      project,
+                      currentUser.value
                     );
-                    if (memberOfProject) {
-                      allowAlterSchemaOrChangeData = hasProjectPermission(
-                        "bb.permission.project.change-database",
-                        memberOfProject.role
+                    if (memberList.length > 0) {
+                      allowAlterSchemaOrChangeData = hasPermissionInProject(
+                        project,
+                        currentUser.value,
+                        "bb.permission.project.change-database"
                       );
-                      allowTransferDB = hasProjectPermission(
-                        "bb.permission.project.transfer-database",
-                        memberOfProject.role
+                      allowTransferDB = hasPermissionInProject(
+                        project,
+                        currentUser.value,
+                        "bb.permission.project.transfer-database"
                       );
 
                       if (
@@ -696,9 +700,10 @@ const routes: Array<RouteRecordRaw> = [
                       } else {
                         // See RBAC otherwise.
                         // AKA yes if project owner.
-                        allowCreateDB = hasProjectPermission(
-                          "bb.permission.project.create-database",
-                          memberOfProject.role
+                        allowCreateDB = hasPermissionInProject(
+                          project,
+                          currentUser.value,
+                          "bb.permission.project.create-database"
                         );
                       }
                     }

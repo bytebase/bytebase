@@ -20,6 +20,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { isMemberOfProject } from "@/utils";
 
 function convert(
   project: ResourceObject,
@@ -118,11 +119,8 @@ export const useProjectStore = defineStore("project", {
           (!rowStatusList && project.rowStatus == "NORMAL") ||
           (rowStatusList && rowStatusList.includes(project.rowStatus))
         ) {
-          for (const member of project.memberList) {
-            if (member.principal.id == userId) {
-              result.push(project);
-              break;
-            }
+          if (isMemberOfProject(project, userId)) {
+            result.push(project);
           }
         }
       }
