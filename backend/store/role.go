@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -36,6 +37,25 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID i
 		return nil, err
 	}
 	return create, nil
+}
+
+// GetRole returns a role by ID.
+func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, error) {
+	query := `
+		SELECT
+			creator_id, description
+		FROM role
+		WHERE resource_id = $1
+	`
+	var role RoleMessage
+	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Description); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	role.ResourceID = resourceID
+	return &role, nil
 }
 
 // ListRoles returns a list of roles.
