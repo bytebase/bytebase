@@ -39,6 +39,20 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 
 		filteredList := []*api.Setting{}
 		for _, setting := range settingList {
+			if setting.Name == api.SettingWorkspaceMailDelivery {
+				// We don't want to return the mail password to the client.
+				var value storepb.SMTPMailDeliverySetting
+				if err := protojson.Unmarshal([]byte(setting.Value), &value); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
+				}
+				value.Password = ""
+				apiValue := convertStorepbToAPIMailDeliveryValue(&value)
+				bytes, err := json.Marshal(apiValue)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal mail delivery setting value").SetInternal(err)
+				}
+				setting.Value = string(bytes)
+			}
 			for _, whitelist := range whitelistSettings {
 				if setting.Name == whitelist {
 					filteredList = append(filteredList, setting)
