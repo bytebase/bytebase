@@ -2089,7 +2089,127 @@
               "rename": "Renombrar conversación",
               "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
               "exit-conversation-mode": "Salir del modo de chat",
-              "history-conversations": "Historial de conversaciones"
+              "history-conversations": "Historial de conversaciones",
+              "historial-de-conversaciones": "Ver historial de conversaciones",
+              "nueva-conversacion": "Comenzar nueva conversación",
+              "sin-mensaje": "No hay mensajes en esta conversación",
+              "tips": {
+                "sugerir-prompt": "Sugiriendo promts...",
+                "mas": "Más",
+                "no-mas": "No más"
+              },
+              "sugerencia-preestablecida": {
+                "1": "¿Qué departamento tiene más empleados?",
+                "2": "¿Qué gerente tiene más reportes directos en cada departamento?",
+                "3": "¿Cuál es la proporción de género en cada departamento?"
+              },
+              "declaracion-copiada": "Declaración copiada al portapapeles",
+              "no-mostrar-de-nuevo": "No mostrar de nuevo"
+            },
+            "aprobacion-personalizada": {
+              "self": "Aprobación personalizada",
+              "regla-de-seguridad": {
+                "self": "Regla de seguridad",
+                "reglas-de-seguridad": "Reglas de seguridad",
+                "reglas-de-riesgo-x": {
+                  "bajo": "Reglas de riesgo bajo",
+                  "moderado": "Reglas de riesgo moderado",
+                  "alto": "Reglas de riesgo alto"
+                },
+                "activo": "Activo",
+                "agregar-regla": "Agregar regla",
+                "editar-regla": "Editar regla",
+                "eliminar": "Eliminar regla de seguridad",
+                "reglas-por-defecto": {
+                  "self": "Reglas por defecto",
+                  "descripcion": "Las reglas por defecto se ejecutarán cuando un problema no cumpla con las reglas personalizadas."
+                },
+                "riesgo": {
+                  "self": "Riesgo",
+                  "seleccionar": "Seleccionar riesgo",
+                  "nivel-de-riesgo": {
+                    "0": "Por defecto",
+                    "100": "Bajo",
+                    "200": "Moderado",
+                    "300": "Alto"
+                  },
+                  "espacio-de-nombres": {
+                    "dml": "DML",
+                    "ddl": "DDL",
+                    "crear_base_de_datos": "Crear base de datos"
+                  },
+                  "factor": {
+                    "filas_afectadas": "Filas afectadas",
+                    "id_de_entorno": "ID de entorno",
+                    "id_de_proyecto": "ID de proyecto",
+                    "nombre_de_base_de_datos": "Nombre de base de datos",
+                    "motor_de_base_de_datos": "Motor de base de datos",
+                    "sql_type": "Tipo SQL"
+                  }
+                },
+                "condition": {
+                  "self": "Condición",
+                  "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición "Entorno es prod" coincidirá con los problemas ejecutados en el entorno "prod".",
+                  "add": "Agregar condición",
+                  "add-group": "Agregar grupo de condiciones",
+                  "group": {
+                  "or": {
+                  "description": "Cualquiera de los siguientes es verdadero..."
+                  },
+                  "and": {
+                  "description": "Todos los siguientes son verdaderos..."
+                  },
+                  "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores "Y" y "O"."
+                  },
+                  "input-value": "Valor de entrada",
+                  "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
+                  "select-value": "Seleccionar valor",
+                  "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
+                  "add-root-condition-placeholder": "Haga clic en "Agregar condición" o "Agregar grupo de condiciones" para agregar una condición"
+                  },
+                  "template": {
+                  "templates": "Plantillas",
+                  "load": "Cargar",
+                  "presets": {
+                  "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
+                  "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
+                  "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
+                  "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
+                  },
+                  "load-template": "Cargar plantilla",
+                  "view": "Ver plantilla"
+                  },
+                  "rule-name": "Nombre de la regla",
+                  "view-rule": "Ver regla",
+                  "source": {
+                  "select": "Seleccionar tipo",
+                  "self": "Tipo"
+                  },
+                  "input-rule-name": "Ingrese el nombre de la regla",
+                  "search": "Buscar regla"
+                  },
+                  "approval-flow": {
+                  "self": "Flujo de aprobación",
+                  "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación.",
+                  "approval-flows": "Flujos de aprobación",
+                  "approval-nodes": "Nodos de aprobación",
+                  "type": {
+                  "system": "Sistema",
+                  "custom": "Personalizado"
+                  },
+                  "delete": "Eliminar flujo de aprobación",
+                  "search": "Buscar flujo de aprobación",
+                  "select": "Seleccionar flujo de aprobación",
+                  "create-approval-flow": "Crear flujo de aprobación",
+                  "edit-approval-flow": "Editar flujo de aprobación",
+                  "node": {
+                  "nodes": "Nodos de aprobación",
+                  "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
+                  "order": "Orden",
+                  "approver": "Aprobador",
+                  "group": {
+                  "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
+              }
             }
           }
         }
