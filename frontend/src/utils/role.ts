@@ -1,5 +1,6 @@
-import { ProjectRoleType, RoleType } from "../types";
-import { hasFeature } from "@/store";
+import { computed, unref } from "vue";
+import { MaybeRef, ProjectRoleType, RoleType } from "../types";
+import { hasFeature, useCurrentUser } from "@/store";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
@@ -75,6 +76,15 @@ export function hasWorkspacePermission(
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
   }
 }
+
+export const useWorkspacePermission = (
+  permission: MaybeRef<WorkspacePermissionType>
+) => {
+  const user = useCurrentUser();
+  return computed(() => {
+    return hasWorkspacePermission(unref(permission), user.value.role);
+  });
+};
 
 export type ProjectPermissionType =
   | "bb.permission.project.manage-general"
@@ -158,3 +168,9 @@ export function projectRoleName(role: ProjectRoleType): string {
       return "Developer";
   }
 }
+
+export const extractRoleResourceName = (resourceId: string): string => {
+  const pattern = /(?:^|\/)roles\/([^/]+)(?:$|\/)/;
+  const matches = resourceId.match(pattern);
+  return matches?.[1] ?? "";
+};

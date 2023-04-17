@@ -233,7 +233,8 @@
     "will-override-current-data": "将会覆盖当前数据。",
     "rollout": "发布",
     "uploading": "上传中",
-    "active": "开启"
+    "active": "开启",
+    "added": "已创建"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -372,7 +373,8 @@
       "debug-log": "Debug 日志",
       "sensitive-data": "数据脱敏",
       "access-control": "数据访问控制",
-      "audit-log": "审计日志"
+      "audit-log": "审计日志",
+      "roles": "角色"
     },
     "profile": {
       "email": "邮箱",
@@ -2276,5 +2278,21 @@
   },
   "principal": {
     "select": "选择用户"
+  },
+  "role": {
+    "setting": {
+      "description": "定义自定义角色，你可以将它们应用到项目成员上。",
+      "add": "添加角色",
+      "edit": "编辑角色",
+      "name-placeholder": "输入角色名称",
+      "description-placeholder": "输入角色描述",
+      "validation": {
+        "duplicated": "{resource}已存在",
+        "required": "{resource}是必填的",
+        "pattern": "{resource}只能包含小写字母、数字和连字符，并以小写字母开头。",
+        "max-length": "{resource}至多包含 {length} 个字符"
+      },
+      "delete": "删除角色"
+    }
   }
 }
