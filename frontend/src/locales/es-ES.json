@@ -707,23 +707,23 @@
     },
     "assignee-tooltip": "Permitir al asignado implementar la incidencia una vez que se haya aprobado el flujo de aprobación.",
     "approval-flow": {
-    "self": "Flujo de aprobación",
-    "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."
+      "self": "Flujo de aprobación",
+      "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."
     },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "waiting-for-my-approval": "Esperando mi aprobación"
-    },
-    "alter-schema": {
+  },
+  "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
     "vcs-info": "VCS habilitado. Seleccionar esto lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
     "alter-single-db": "Modificar una sola base de datos",
     "alter-multiple-db": "Selección manual",
     "alter-db-group": "Por Configuración de Implementación",
     "no-databases-in-project": "No hay bases de datos en este proyecto. Haga clic en Nueva BD o Transferir BD para agregar bases de datos."
-    },
-    "quick-action": {
+  },
+  "quick-action": {
     "create-db": "Crear base de datos",
     "new-db": "Nueva BD",
     "add-instance": "@:common.add @:common.instance",
@@ -744,7 +744,7 @@
     "default-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en el proyecto predeterminado.",
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
     "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas."
-    },
+  },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",
     "database-owner-name": "Nombre del propietario de la base de datos",
@@ -752,8 +752,8 @@
     "reserved-db-error": "{databaseName} es un nombre reservado",
     "generated-database-name": "Nombre de la base de datos generada",
     "db-name-generated-by-template": "Generado por plantilla \"{template}\"",
-"input-label-value": "Entrada {key}",
-"new-collection-name": "Nuevo Nombre de Colección"
+    "input-label-value": "Entrada {key}",
+    "new-collection-name": "Nuevo Nombre de Colección"
   },
   "db": {
     "encoding": "Codificación",
@@ -814,5 +814,70 @@
     "show-how-to-create": "Mostrar cómo crear",
     "below-is-an-example-to-create-user-bytebase-with-password": "A continuación se muestra un ejemplo para crear el usuario 'bytebase {'@'}%' con contraseña",
     "your_db_pwd": "SU_DB_PWD",
-    "no-read-only-data-source-warn": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una."
-    }
+    "no-read-only-data-source-warn": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
+    "sentence": {
+      "host": {
+        "snowflake": "por ejemplo, host.docker.internal {'|'} <<ip>> {'|'} <<socket local>>"
+      },
+      "proxy": {
+        "snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto."
+      },
+      "console": {
+        "snowflake": "La URL de la consola externa que administra esta instancia (por ejemplo, la consola de AWS RDS, la consola de la instancia de base de datos interna)"
+      },
+      "outbound-ip-list": "Si utiliza reglas de firewall de entrada para su instancia de base de datos, incluya las siguientes direcciones IP en su lista de permisos para permitir el acceso desde Bytebase Cloud.",
+      "create-admin-user": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones DDL y DML (no SELECT).",
+      "create-readonly-user": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura como la consulta SELECT.",
+      "create-admin-user-non-sql": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones de escritura y administración.",
+      "create-readonly-user-non-sql": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura.",
+      "create-user-example": {
+        "snowflake": {
+          "user": "bytebase{'@'}%",
+          "password": "SU_CONTRASEÑA_DE_BD",
+          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {contraseña} para {almacén de datos} y otorgar al usuario los privilegios necesarios."
+        },
+        "mysql": {
+          "password": "SU_CONTRASEÑA_DE_BD",
+          "user": "bytebase{'@'}%",
+          "template": "A continuación se muestra un ejemplo para crear el usuario {usuario} con la contraseña {contraseña} y otorgar al usuario los privilegios necesarios."
+        },
+        "clickhouse": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {contraseña} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {link} y luego ejecutar la siguiente consulta para crear el usuario.",
+          "sql-driven-workflow": "Flujo de trabajo impulsado por SQL"
+        },
+        "postgresql": {
+          "warn": "Si la instancia de conexión es administrada por el proveedor de la nube, entonces SUPERUSER no está disponible y debes crear el usuario a través de la consola de administración del proveedor. El usuario creado tendrá privilegios semi-SUPERUSER específicos del proveedor. Debes otorgar privilegios de Bytebase con 'GRANT role_name TO bytebase;' para todos los roles existentes, de lo contrario Bytebase puede no tener acceso a las bases de datos o tablas existentes.",
+          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER."
+        },
+        "redis": {
+          "password": "TU_DB_PWD",
+          "user": "bytebase",
+          "template": "A continuación se muestra un ejemplo para crear el usuario {user} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
+        }
+      }
+    },
+    "no-password": "Sin contraseña",
+    "type-or-paste-credentials": "Escriba o pegue las credenciales",
+    "type-or-paste-credentials-write-only": "Escriba o pegue las credenciales - solo escritura",
+    "password-write-only": "SU_DB_PWD - solo escritura",
+    "test-connection": "Probar conexión",
+    "ignore-and-create": "Ignorar y crear",
+    "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
+    "successfully-added-postgresql-instance": "Se ha agregado correctamente una instancia de muestra de PostgreSQL y se han completado la información de conexión.",
+    "connection-info-seems-to-be-incorrect": "La información de conexión parece ser incorrecta",
+    "new-instance": "Nueva instancia",
+    "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {0}",
+    "successfully-created-instance-createdinstance-name": "Se ha creado correctamente la instancia '{0}'.",
+    "successfully-updated-instance-instance-name": "Se ha actualizado correctamente la instancia '{0}'.",
+    "copy-grant-statement": "Se ha copiado la declaración CREATE USER y GRANT al portapapeles. Pegue en su cliente de {motor} para aplicar.",
+    "successfully-connected-instance": "Instancia conectada correctamente.",
+    "failed-to-connect-instance": "Error al conectar la instancia.",
+    "failed-to-connect-instance-localhost": "Error al conectar la instancia.\nSi ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
+    "search-instance-name": "Buscar nombre de instancia",
+    "grants": "Concesiones",
+    "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
+    "create-gcp-credentials": "Para crear credenciales, consulte",
+    "used-for-testing-connection": "Usado solo para probar conexiones",
+    "all": "Todas las instancias"
+  }
+}
