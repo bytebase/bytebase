@@ -1095,21 +1095,21 @@
       "restore-to": "Restaurar a",
       "restore-to-new-db": "A una nueva base de datos",
       "restore-to-in-place": "En el mismo lugar"
-      },
-      "show-reserved-tables": "Mostrar tablas reservadas de Bytebase",
+    },
+    "show-reserved-tables": "Mostrar tablas reservadas de Bytebase",
     "show-reserved-databases": "Mostrar bases de datos reservadas de Bytebase",
     "backup-setting": {
-    "schedule": {
-    "disabled": "Desactivado",
-    "weekly": "Cada semana",
-    "daily": "Cada día"
-    },
-    "form": {
-    "schedule": "Programar",
-    "day-of-week": "Día de la semana",
-    "time-of-day": "Hora del día",
-    "retention-period": "Período de retención (días)"
-    }
+      "schedule": {
+        "disabled": "Desactivado",
+        "weekly": "Cada semana",
+        "daily": "Cada día"
+      },
+      "form": {
+        "schedule": "Programar",
+        "day-of-week": "Día de la semana",
+        "time-of-day": "Hora del día",
+        "retention-period": "Período de retención (días)"
+      }
     },
     "backup-policy-violation": "Violación de la política de copias de seguridad",
     "synced-at": "Sincronizado en {time}",
@@ -1119,25 +1119,25 @@
     "restore-database": "Restaurar base de datos",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "sync-schema": {
-    "title": "Sincronizar esquema",
-    "select-project": "Seleccionar proyecto",
-    "to-database": "Aplicar a base de datos",
-    "from-database": "Desde base de datos",
-    "schema-change-preview": "Vista previa de cambio de esquema para '{database}'",
-    "schema-change-preview-no-database": "Vista previa de cambio de esquema",
-    "synchronize-statements": "Sentencias DDL generadas correspondientes",
-    "synchronize-statements-description": "Puede editar más las sentencias DDL generadas",
-    "select-from-database-and-schema-tip": "Seleccione la versión de base de datos y esquema para sincronizar desde",
-    "select-to-database-tip": "Seleccione la base de datos a la que se aplicará",
-    "no-difference-tip": "No se encontraron diferencias.",
-    "more-version": "más...",
-    "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
-    "preview-issue": "Vista previa de incidencia"
+      "title": "Sincronizar esquema",
+      "select-project": "Seleccionar proyecto",
+      "to-database": "Aplicar a base de datos",
+      "from-database": "Desde base de datos",
+      "schema-change-preview": "Vista previa de cambio de esquema para '{database}'",
+      "schema-change-preview-no-database": "Vista previa de cambio de esquema",
+      "synchronize-statements": "Sentencias DDL generadas correspondientes",
+      "synchronize-statements-description": "Puede editar más las sentencias DDL generadas",
+      "select-from-database-and-schema-tip": "Seleccione la versión de base de datos y esquema para sincronizar desde",
+      "select-to-database-tip": "Seleccione la base de datos a la que se aplicará",
+      "no-difference-tip": "No se encontraron diferencias.",
+      "more-version": "más...",
+      "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
+      "preview-issue": "Vista previa de incidencia"
     },
     "sensitive": "Sensible",
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
     "schema": {
-    "select": "Seleccionar esquema"
+      "select": "Seleccionar esquema"
     },
     "show-missing-databases": "Mostrar bases de datos faltantes",
     "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",
@@ -1145,6 +1145,31 @@
     "doesnt-match-tenant-value": "No coincide con el valor de la etiqueta",
     "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
     "all": "Todas las bases de datos"
-    }
+  },
+  "repository": {
+    "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
+    "base-directory": "Directorio base",
+    "base-directory-description": "El directorio raíz donde Bytebase observa el cambio de archivo. Si está vacío, observa todo el repositorio.",
+    "file-path-template": "Plantilla de ruta de archivo",
+    "file-path-template-description": "Bytebase solo observa la ruta del archivo que coincida con el patrón de plantilla en relación al directorio base.",
+    "file-path-example-schema-migration": "Ejemplo de ruta de archivo para el tipo de migración de esquema",
+    "file-path-example-data-migration": "Ejemplo de ruta de archivo para el tipo de migración de datos",
+    "schema-path-template": "Plantilla de ruta de esquema",
+    "schema-writeback-description": "Cuando se especifica, después de cada migración, Bytebase escribirá el último esquema en la ruta de esquema en relación al directorio base en la misma rama que el commit original que activó la migración. Deje en blanco si no desea que Bytebase haga esto.",
+    "schema-writeback-protected-branch": "Asegúrese de que la rama modificada no esté protegida o permita que el mantenedor del repositorio haga push a esa rama protegida.",
+    "if-specified": "Si se especifica",
+    "schema-path-example": "Ejemplo de ruta de esquema",
+    "sheet-path-template": "Plantilla de ruta de hoja",
+    "sheet-path-template-description": "Bytebase solo observa archivos con nombres de ruta que coincidan con el patrón de plantilla en relación al directorio base. Los archivos coincidentes se sincronizarán con el editor de SQL para su uso allí.",
+    "sql-review-ci": "Revisión de SQL CI",
+    "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
+    "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
+    "sql-review-ci-enable-github": "Habilitar la revisión de SQL CI a través de la acción de GitHub",
+    "sql-review-ci-description": "Bytebase creará un {pr} para configurar la revisión de SQL CI en su repositorio. Después de la configuración, en cada {pr}, la política de revisión de SQL se verificará en archivos cambiados que coincidan con el \"{pathTemplate}\".",
+    "sql-review-ci-setup": "Configurar revisión de SQL CI",
+    "sql-review-ci-setup-failed": "Error al configurar la revisión de SQL CI",
+    "sql-review-ci-setup-pr": "Revisar el {pr}",
+    "merge-request": "solicitud de extracción",
+    "pull-request": "solicitud de extracción"
   }
 }
