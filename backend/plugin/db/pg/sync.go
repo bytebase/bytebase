@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -603,11 +605,115 @@ func getIndexMethodType(stmt string) string {
 }
 
 // SyncSlowQuery syncs the slow query.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("not implemented")
+func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
+	var now time.Time
+	getNow := `SELECT NOW();`
+	nowRows, err := driver.db.QueryContext(ctx, getNow)
+	defer nowRows.Close()
+	for nowRows.Next() {
+		if err := nowRows.Scan(&now); err != nil {
+			return nil, util.FormatErrorWithQuery(err, getNow)
+		}
+	}
+	if err := nowRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, getNow)
+	}
+
+	result := make(map[string]*storepb.SlowQueryStatistics)
+	query := `
+		SELECT
+			pg_database.datname,
+			query,
+			calls,
+			total_exec_time,
+			max_exec_time,
+			rows
+		FROM
+			pg_stat_statements
+			JOIN pg_database ON pg_database.oid = pg_stat_statements.dbid;
+	`
+
+	slowQueryStatisticsRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer slowQueryStatisticsRows.Close()
+	for slowQueryStatisticsRows.Next() {
+		var database string
+		var fingerprint string
+		var calls int64
+		var totalExecTime float64
+		var maxExecTime float64
+		var rows int64
+		if err := slowQueryStatisticsRows.Scan(&database, &fingerprint, &calls, &totalExecTime, &maxExecTime, &rows); err != nil {
+			return nil, err
+		}
+		if len(fingerprint) > db.SlowQueryMaxLen {
+			fingerprint = fingerprint[:db.SlowQueryMaxLen]
+		}
+		item := storepb.SlowQueryStatisticsItem{
+			SqlFingerprint:   fingerprint,
+			Count:            calls,
+			LatestLogTime:    timestamppb.New(now),
+			TotalQueryTime:   durationpb.New(time.Duration(totalExecTime * float64(time.Millisecond))),
+			MaximumQueryTime: durationpb.New(time.Duration(maxExecTime * float64(time.Millisecond))),
+			TotalRowsSent:    rows,
+		}
+		if statistics, exists := result[database]; exists {
+			statistics.Items = append(statistics.Items, &item)
+		} else {
+			result[database] = &storepb.SlowQueryStatistics{
+				Items: []*storepb.SlowQueryStatisticsItem{&item},
+			}
+		}
+	}
+	if err := slowQueryStatisticsRows.Err(); err != nil {
+		return nil, err
+	}
+
+	reset := `SELECT pg_stat_statements_reset();`
+	if _, err := driver.db.ExecContext(ctx, reset); err != nil {
+		return nil, util.FormatErrorWithQuery(err, reset)
+	}
+	return result, nil
 }
 
 // CheckSlowQueryLogEnabled checks if slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("not implemented")
+func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
+	showSharedPreloadLibraries := `SELECT setting FROM pg_settings WHERE name = 'shared_preload_libraries';`
+
+	sharedPreloadLibrariesRows, err := driver.db.QueryContext(ctx, showSharedPreloadLibraries)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
+	}
+	defer sharedPreloadLibrariesRows.Close()
+	for sharedPreloadLibrariesRows.Next() {
+		var sharedPreloadLibraries string
+		if err := sharedPreloadLibrariesRows.Scan(&sharedPreloadLibraries); err != nil {
+			return err
+		}
+		if !strings.Contains(sharedPreloadLibraries, "pg_stat_statements") {
+			return errors.New("pg_stat_statements is not loaded")
+		}
+	}
+	if err := sharedPreloadLibrariesRows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
+	}
+
+	showPGStatStatementsInfo := `SELECT dealloc, stats_reset FROM pg_stat_statements_info;`
+
+	pgStatStatementsInfoRows, err := driver.db.QueryContext(ctx, showPGStatStatementsInfo)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, showPGStatStatementsInfo)
+	}
+	defer pgStatStatementsInfoRows.Close()
+	// no need to scan rows, just check if there is any row
+	if !pgStatStatementsInfoRows.Next() {
+		return errors.New("pg_stat_statements_info is empty")
+	}
+	if err := pgStatStatementsInfoRows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, showPGStatStatementsInfo)
+	}
+
+	return nil
 }

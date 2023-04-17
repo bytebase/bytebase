@@ -3440,7 +3440,7 @@ export const SlowQueryStatistics = {
       writer.uint32(10).string(message.sqlFingerprint);
     }
     if (message.count !== 0) {
-      writer.uint32(16).int32(message.count);
+      writer.uint32(16).int64(message.count);
     }
     if (message.latestLogTime !== undefined) {
       Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
@@ -3452,16 +3452,16 @@ export const SlowQueryStatistics = {
       Duration.encode(message.maximumQueryTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.averageRowsSent !== 0) {
-      writer.uint32(48).int32(message.averageRowsSent);
+      writer.uint32(48).int64(message.averageRowsSent);
     }
     if (message.maximumRowsSent !== 0) {
-      writer.uint32(56).int32(message.maximumRowsSent);
+      writer.uint32(56).int64(message.maximumRowsSent);
     }
     if (message.averageRowsExamined !== 0) {
-      writer.uint32(64).int32(message.averageRowsExamined);
+      writer.uint32(64).int64(message.averageRowsExamined);
     }
     if (message.maximumRowsExamined !== 0) {
-      writer.uint32(72).int32(message.maximumRowsExamined);
+      writer.uint32(72).int64(message.maximumRowsExamined);
     }
     for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
@@ -3488,7 +3488,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.count = reader.int32();
+          message.count = longToNumber(reader.int64() as Long);
           continue;
         case 3:
           if (tag != 26) {
@@ -3516,28 +3516,28 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.averageRowsSent = reader.int32();
+          message.averageRowsSent = longToNumber(reader.int64() as Long);
           continue;
         case 7:
           if (tag != 56) {
             break;
           }
 
-          message.maximumRowsSent = reader.int32();
+          message.maximumRowsSent = longToNumber(reader.int64() as Long);
           continue;
         case 8:
           if (tag != 64) {
             break;
           }
 
-          message.averageRowsExamined = reader.int32();
+          message.averageRowsExamined = longToNumber(reader.int64() as Long);
           continue;
         case 9:
           if (tag != 72) {
             break;
           }
 
-          message.maximumRowsExamined = reader.int32();
+          message.maximumRowsExamined = longToNumber(reader.int64() as Long);
           continue;
         case 10:
           if (tag != 82) {
@@ -3631,10 +3631,10 @@ export const SlowQueryDetails = {
       Duration.encode(message.lockTime, writer.uint32(26).fork()).ldelim();
     }
     if (message.rowsSent !== 0) {
-      writer.uint32(32).int32(message.rowsSent);
+      writer.uint32(32).int64(message.rowsSent);
     }
     if (message.rowsExamined !== 0) {
-      writer.uint32(40).int32(message.rowsExamined);
+      writer.uint32(40).int64(message.rowsExamined);
     }
     if (message.sqlText !== "") {
       writer.uint32(50).string(message.sqlText);
@@ -3675,14 +3675,14 @@ export const SlowQueryDetails = {
             break;
           }
 
-          message.rowsSent = reader.int32();
+          message.rowsSent = longToNumber(reader.int64() as Long);
           continue;
         case 5:
           if (tag != 40) {
             break;
           }
 
-          message.rowsExamined = reader.int32();
+          message.rowsExamined = longToNumber(reader.int64() as Long);
           continue;
         case 6:
           if (tag != 50) {
