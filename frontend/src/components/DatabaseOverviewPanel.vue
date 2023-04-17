@@ -208,7 +208,7 @@
               <DataSourceConnectionPanel
                 :editing="isEditingDataSource(ds)"
                 :data-source="
-                  isEditingDataSource(ds) ? state.editingDataSource : ds
+                  isEditingDataSource(ds) ? state.editingDataSource! : ds
                 "
               />
             </div>
@@ -226,7 +226,7 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
-import { hasWorkspacePermission } from "../utils";
+import { hasWorkspacePermission, memberListInProject } from "../utils";
 import {
   Anomaly,
   Database,
@@ -355,13 +355,13 @@ const allowViewDataSource = computed(() => {
     return true;
   }
 
-  for (const member of props.database.project.memberList) {
-    if (member.principal.id == currentUser.value.id) {
-      return true;
-    }
-  }
-
-  return false;
+  return (
+    memberListInProject(
+      props.database.project,
+      currentUser.value,
+      /* empty array to "ALL" */ []
+    ).length > 0
+  );
 });
 
 const dataSourceList = computed(() => {

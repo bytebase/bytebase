@@ -26,7 +26,7 @@ import {
   UNKNOWN_ID,
   unknown,
 } from "@/types";
-import { memberInProject } from "@/utils";
+import { memberListInProject } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
   value: ProjectId;
@@ -75,9 +75,12 @@ const rawProjectList = computed(() => {
   ]);
   // Filter by role
   list = list.filter((project) => {
-    const member = memberInProject(project, currentUser.value);
-    if (!member) return false;
-    return props.allowedProjectRoleList.includes(member.role);
+    const memberList = memberListInProject(
+      project,
+      currentUser.value,
+      props.allowedProjectRoleList
+    );
+    return memberList.length > 0;
   });
   // Filter by project tenant mode
   list = list.filter((project) => {

@@ -39,7 +39,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { hasProjectPermission, hasWorkspacePermission } from "../utils";
+import { hasPermissionInProject, hasWorkspacePermission } from "../utils";
 import { ProjectGeneralSettingPanel } from "../components/Project/ProjectSetting";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
 import { ProjectPatch, Project } from "../types";
@@ -75,17 +75,14 @@ export default defineComponent({
         return true;
       }
 
-      for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (
-            hasProjectPermission(
-              "bb.permission.project.manage-general",
-              member.role
-            )
-          ) {
-            return true;
-          }
-        }
+      if (
+        hasPermissionInProject(
+          props.project,
+          currentUser.value,
+          "bb.permission.project.manage-general"
+        )
+      ) {
+        return true;
       }
       return false;
     });

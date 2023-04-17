@@ -157,6 +157,7 @@ import {
   idFromSlug,
   hasWorkspacePermission,
   instanceHasCreateDatabase,
+  isMemberOfProject,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -316,11 +317,8 @@ const databaseList = computed(() => {
   // databases not meeting this criteria and we need to filter out them.
   const filteredList: Database[] = [];
   for (const database of list) {
-    for (const member of database.project.memberList) {
-      if (member.principal.id == currentUser.value.id) {
-        filteredList.push(database);
-        break;
-      }
+    if (isMemberOfProject(database.project, currentUser.value)) {
+      filteredList.push(database);
     }
   }
 
