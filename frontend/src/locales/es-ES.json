@@ -233,7 +233,7 @@
     "will-lose-unsaved-data": "Se perderán los datos no guardados.",
     "deleted": "Eliminado",
     "will-override-current-data": "Se sobrescribirán los datos actuales.",
-    "rollout": "Desplegar",
+    "rollout": "Implementar",
     "uploading": "Subiendo",
     "active": "Activo"
   },
@@ -667,24 +667,24 @@
     "new-issue": "@:common.new @:common.issue",
     "format-on-save": "Formatear al guardar",
     "action-to-current-stage": "{action} etapa actual",
-    "edit-sql-statement-in-vcs": "Este proyecto ha habilitado el control de versiones basado en VCS. Modifique el archivo SQL en el repositorio Git correspondiente y comprométalo para crear un nuevo problema.",
+    "edit-sql-statement-in-vcs": "Este proyecto ha habilitado el control de versiones basado en VCS. Modifique el archivo SQL en el repositorio Git correspondiente y haga un commit para crear una nueva incidencia.",
     "edit-sql-statement": "Editar declaración SQL",
     "upload-sql": "Cargar SQL",
-    "upload-sql-as-sheet": "Cargar SQL como hoja",
+    "upload-sql-as-sheet": "Cargar SQL como Hoja",
     "statement-from-sheet-warning": "La declaración SQL actual proviene de una hoja. Es de solo lectura y solo se muestra parte de ella.",
     "override-current-statement": "Anular la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
-    "waiting-earliest-allowed-time": "Se ejecutará después de {time} como muy temprano",
+    "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
     "batch-transition": {
-      "not-allowed-tips": "Algunos de los problemas seleccionados no se pueden {operation}",
+      "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {operation}",
       "resolve": "Resolver",
       "resolved": "resuelto",
       "cancel": "Cancelar",
       "cancelled": "cancelado",
       "reopen": "Reabrir",
       "reopened": "reabierto",
-      "action-n-issues": "{action} {n} problema | {action} {n} problemas",
-      "successfully-updated-n-issues": "Problema actualizado correctamente {n} | Problemas actualizados correctamente {n}"
+      "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
+      "successfully-updated-n-issues": "Incidencia actualizada correctamente {n} | Incidencias actualizadas correctamente {n}"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "El cambio se aplicará a todas las tareas",
@@ -692,7 +692,7 @@
       "snowflake": "Use <<schema>>.<<table>> para especificar una tabla Snowflake"
     },
     "will-rollback": "Esta tarea revertirá {link}",
-    "issue-link-with-task": "Problema {issue} - tarea {task}",
+    "issue-link-with-task": "Incidencia {issue} - tarea {task}",
     "assignee-attention": {
       "send-approval-request-successfully": "Enviar una solicitud de aprobación de {im} correctamente",
       "send-attention-request-successfully": "Solicitar la atención del asignado {principal} con éxito",
@@ -704,6 +704,50 @@
       "generated-ddl-statements": "Declaraciones DDL generadas",
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique el problema."
-    }
-  }
-}
+    },
+    "assignee-tooltip": "Permitir al asignado implementar la incidencia una vez que se haya aprobado el flujo de aprobación.",
+    "approval-flow": {
+    "self": "Flujo de aprobación",
+    "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."
+    },
+    "waiting-to-rollout": "Esperando para implementar",
+    "waiting-for-review": "Esperando revisión",
+    "issue-name": "Nombre de la incidencia",
+    "waiting-for-my-approval": "Esperando mi aprobación"
+    },
+    "alter-schema": {
+    "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
+    "vcs-info": "VCS habilitado. Seleccionar esto lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
+    "alter-single-db": "Modificar una sola base de datos",
+    "alter-multiple-db": "Selección manual",
+    "alter-db-group": "Por Configuración de Implementación",
+    "no-databases-in-project": "No hay bases de datos en este proyecto. Haga clic en Nueva BD o Transferir BD para agregar bases de datos."
+    },
+    "quick-action": {
+    "create-db": "Crear base de datos",
+    "new-db": "Nueva BD",
+    "add-instance": "@:common.add @:common.instance",
+    "create-instance": "@:common.create @:common.instance",
+    "manage-user": "Administrar usuario",
+    "add-environment": "@:common.add @:common.environment",
+    "create-environment": "@:common.create @:common.environment",
+    "new-project": "@:common.new @:common.project",
+    "create-project": "@:common.create @:common.project",
+    "edit-data": "Editar datos",
+    "troubleshoot": "Solucionar problemas",
+    "sync-schema": "Sincronizar Esquema",
+    "transfer-in-db": "Transferir BD",
+    "request-db": "Solicitar BD",
+    "from-unassigned-databases": "De bases de datos no asignadas",
+    "from-projects": "De proyectos",
+    "transfer-in-db-title": "Transferir base de datos",
+    "default-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en el proyecto predeterminado.",
+    "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
+    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas."
+    },
+  "create-db": {
+    "new-database-name": "Nuevo nombre de la base de datos",
+    "database-owner-name": "Nombre del propietario de la base de datos",
+    "cluster": "Clúster",
+    "reserved-db-error": "{databaseName} es un nombre reservado",
+    "generated-database-name": "Nombre de la base de datos generado",
