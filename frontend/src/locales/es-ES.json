@@ -1291,28 +1291,28 @@
       },
       "activity-item": {
         "issue-creation": {
-        "title": "Creación de incidencia",
-        "label": "Cuando se crea una nueva incidencia"
+          "title": "Creación de incidencia",
+          "label": "Cuando se crea una nueva incidencia"
         },
         "issue-status-change": {
-        "title": "Cambio de estado de incidencia",
-        "label": "Cuando se cambia el estado de la incidencia"
+          "title": "Cambio de estado de incidencia",
+          "label": "Cuando se cambia el estado de la incidencia"
         },
         "issue-stage-status-change": {
-        "title": "Cambio de estado de etapa de incidencia",
-        "label": "Cuando cambia el estado de la etapa que encierra la incidencia"
+          "title": "Cambio de estado de etapa de incidencia",
+          "label": "Cuando cambia el estado de la etapa que encierra la incidencia"
         },
         "issue-task-status-change": {
-        "title": "Cambio de estado de tarea de incidencia",
-        "label": "Cuando cambia el estado de la tarea que encierra la incidencia"
+          "title": "Cambio de estado de tarea de incidencia",
+          "label": "Cuando cambia el estado de la tarea que encierra la incidencia"
         },
         "issue-info-change": {
-        "title": "Cambio de información de incidencia",
-        "label": "Cuando cambia la información de la incidencia (por ejemplo, asignación, título, descripción)"
+          "title": "Cambio de información de incidencia",
+          "label": "Cuando cambia la información de la incidencia (por ejemplo, asignación, título, descripción)"
         },
         "issue-comment-creation": {
-        "title": "Creación de comentario de incidencia",
-        "label": "Cuando se crea un nuevo comentario en la incidencia"
+          "title": "Creación de comentario de incidencia",
+          "label": "Cuando se crea un nuevo comentario en la incidencia"
         }
       }
     },
@@ -1326,19 +1326,18 @@
       "owner": "@.upper:common.role.owner",
       "developer": "@.upper:common.role.developer",
       "archive": {
-      "title": "Archivar proyecto",
-      "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
-      "btn-text": "Archivar este @.lower:{'common.project'}"
+        "title": "Archivar proyecto",
+        "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
+        "btn-text": "Archivar este @.lower:{'common.project'}"
       },
       "restore": {
-      "title": "Restaurar proyecto",
-      "btn-text": "Restaurar este @.lower:{'common.project'}"
+        "title": "Restaurar proyecto",
+        "btn-text": "Restaurar este @.lower:{'common.project'}"
       },
       "schema-change-type": "Tipo de cambio de esquema",
       "select-schema-change-type-ddl": "Migración basada en imperativo. Por ejemplo, ALTER TABLE",
       "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
-      },
     }
   }
 }
