@@ -1199,5 +1199,39 @@
     "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-search": "Buscar repositorio",
     "linked": "Repositorios vinculados"
+  },
+    "workflow": {
+      "current-workflow": "Flujo de trabajo actual",
+      "ui-workflow": "Flujo de trabajo de la interfaz de usuario",
+      "ui-workflow-description": "Flujo de trabajo de revisión de SQL clásico en el que el desarrollador envía un ticket de revisión de SQL directamente desde Bytebase y espera a que el DBA o desarrollador asignado revise. Bytebase aplica el cambio de esquema SQL después de la aprobación de la revisión.",
+      "gitops-workflow": "Flujo de trabajo de GitOps",
+      "gitops-workflow-description": "Los scripts de migración de la base de datos se almacenan en un repositorio de git. Para realizar cambios en el esquema, un desarrollador crearía un script de migración y lo enviaría para su revisión en el VCS correspondiente, como GitLab. Después de que se aprueba el script y se fusiona en la rama configurada, Bytebase iniciará automáticamente la tarea para aplicar el nuevo cambio de esquema.",
+      "configure-gitops": "Configurar GitOps",
+      "configure-gitops-success": "Se habilitó correctamente el flujo de trabajo de GitOps para {proyecto}",
+      "change-gitops-success": "Se cambió correctamente el repositorio para {proyecto}"
+      },
+      "anomaly": {
+      "attention-title": "Detección de anomalías",
+      "attention-desc": "Bytebase escanea periódicamente los recursos administrados y lista las anomalías detectadas aquí. La lista se actualiza aproximadamente cada 10 minutos.",
+      "table-search-placeholder": "Buscar {tipo} o entorno",
+      "table-placeholder": "¡Hurra, no se detectaron anomalías de {tipo}!",
+      "tooltip": "{env} tiene {criticalCount} anomalías CRÍTICAS, {highCount} anomalías ALTAS y {mediumCount} anomalías MEDIA",
+      "types": {
+      "connection-failure": "Fallo de conexión",
+      "missing-migration-schema": "Falta de esquema de migración",
+      "backup-enforcement-violation": "Violación de cumplimiento de copia de seguridad",
+      "missing-backup": "Copia de seguridad faltante",
+      "schema-drift": "Variación de esquema"
+      },
+      "action": {
+      "check-instance": "Ver instancia",
+      "view-backup": "Ver copia de seguridad",
+      "configure-backup": "Configurar copia de seguridad",
+      "view-diff": "Ver diferencia"
+      },
+      "last-seen": "Último visto",
+      "first-seen": "Primero visto"
+      }
+      }
   }
 }
