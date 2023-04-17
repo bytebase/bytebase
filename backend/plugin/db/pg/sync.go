@@ -609,6 +609,9 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	var now time.Time
 	getNow := `SELECT NOW();`
 	nowRows, err := driver.db.QueryContext(ctx, getNow)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, getNow)
+	}
 	defer nowRows.Close()
 	for nowRows.Next() {
 		if err := nowRows.Scan(&now); err != nil {
