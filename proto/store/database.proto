@@ -35,6 +35,9 @@ message SchemaMetadata {
 
   // The views is the list of views in a schema.
   repeated ViewMetadata views = 3;
+
+  // The functions is the list of functions in a schema.
+  repeated FunctionMetadata functions = 4;
 }
 
 // TableMetadata is the metadata for tables.
@@ -130,6 +133,15 @@ message DependentColumn {
 
   // The column is the name of a reference column.
   string column = 3;
+}
+
+// FunctionMetadata is the metadata for functions.
+message FunctionMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
 }
 
 // IndexMetadata is the metadata for indexes.

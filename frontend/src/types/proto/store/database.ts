@@ -32,6 +32,8 @@ export interface SchemaMetadata {
   tables: TableMetadata[];
   /** The views is the list of views in a schema. */
   views: ViewMetadata[];
+  /** The functions is the list of functions in a schema. */
+  functions: FunctionMetadata[];
 }
 
 /** TableMetadata is the metadata for tables. */
@@ -102,6 +104,14 @@ export interface DependentColumn {
   table: string;
   /** The column is the name of a reference column. */
   column: string;
+}
+
+/** FunctionMetadata is the metadata for functions. */
+export interface FunctionMetadata {
+  /** The name is the name of a view. */
+  name: string;
+  /** The definition is the definition of a view. */
+  definition: string;
 }
 
 /** IndexMetadata is the metadata for indexes. */
@@ -293,7 +303,7 @@ export const DatabaseMetadata = {
 };
 
 function createBaseSchemaMetadata(): SchemaMetadata {
-  return { name: "", tables: [], views: [] };
+  return { name: "", tables: [], views: [], functions: [] };
 }
 
 export const SchemaMetadata = {
@@ -306,6 +316,9 @@ export const SchemaMetadata = {
     }
     for (const v of message.views) {
       ViewMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    for (const v of message.functions) {
+      FunctionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -338,6 +351,13 @@ export const SchemaMetadata = {
 
           message.views.push(ViewMetadata.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -352,6 +372,7 @@ export const SchemaMetadata = {
       name: isSet(object.name) ? String(object.name) : "",
       tables: Array.isArray(object?.tables) ? object.tables.map((e: any) => TableMetadata.fromJSON(e)) : [],
       views: Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
+      functions: Array.isArray(object?.functions) ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e)) : [],
     };
   },
 
@@ -368,6 +389,11 @@ export const SchemaMetadata = {
     } else {
       obj.views = [];
     }
+    if (message.functions) {
+      obj.functions = message.functions.map((e) => e ? FunctionMetadata.toJSON(e) : undefined);
+    } else {
+      obj.functions = [];
+    }
     return obj;
   },
 
@@ -380,6 +406,7 @@ export const SchemaMetadata = {
     message.name = object.name ?? "";
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
+    message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
     return message;
   },
 };
@@ -953,6 +980,77 @@ export const DependentColumn = {
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
+    return message;
+  },
+};
+
+function createBaseFunctionMetadata(): FunctionMetadata {
+  return { name: "", definition: "" };
+}
+
+export const FunctionMetadata = {
+  encode(message: FunctionMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FunctionMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFunctionMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FunctionMetadata {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      definition: isSet(object.definition) ? String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: FunctionMetadata): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.definition !== undefined && (obj.definition = message.definition);
+    return obj;
+  },
+
+  create(base?: DeepPartial<FunctionMetadata>): FunctionMetadata {
+    return FunctionMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<FunctionMetadata>): FunctionMetadata {
+    const message = createBaseFunctionMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
     return message;
   },
 };
