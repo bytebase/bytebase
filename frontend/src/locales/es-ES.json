@@ -1430,7 +1430,128 @@
           "delete-confirm": "¿Eliminar el proveedor de Git \"{name}\"?"
         }
       }
-      }
+    },
+  "archive": {
+    "archived": "Archivado",
+    "project-search-bar-placeholder": "Buscar nombre de @.lower:{'common.project'}",
+    "instance-search-bar-placeholder": "Buscar nombre de @.lower:{'common.instance'}",
+    "environment-search-bar-placeholder": "Buscar nombre de @.lower:{'common.environment'}",
+    "sso-search-bar-placeholder": "Buscar nombre de SSO"
+    },
+    "deployment-config": {
+    "stage-n": "Etapa {n}",
+    "add-selector": "Agregar selector",
+    "update-success": "Configuración de implementación actualizada con éxito.",
+    "this-is-example-deployment-config": "Este es un ejemplo de configuración de implementación. Debe editarla y guardarla.",
+    "n-databases": "{n} base de datos | {n} bases de datos",
+    "selectors": "Selectores",
+    "add-stage": "Agregar etapa",
+    "confirm-to-revert": "¿Confirmar para revertir la edición?",
+    "name-placeholder": "Nombre de la etapa...",
+    "error": {
+      "at-least-one-stage": "Al menos 1 etapa",
+      "stage-name-required": "Se requiere el nombre de la etapa",
+      "at-least-one-selector": "Al menos 1 selector en cada etapa",
+      "env-in-selector-required": "Se requiere \"Entorno en\" en cada etapa",
+      "env-selector-must-has-one-value": "\"Entorno en\" debe tener exactamente un valor",
+      "key-required": "Se requiere una clave",
+      "values-required": "Se requieren valores"
+    },
+    "project-has-no-deployment-config": "Este proyecto aún no tiene una configuración de implementación. Por favor {go} primero.",
+    "go-and-config": "Ir y configurar",
+    "wont-be-deployed-explanation": "Estas bases de datos no serán implementadas, ya que no cumplen con ninguno de los selectores.",
+    "wont-be-deployed": "No se implementará",
+    "pipeline-generated-from-deployment-config": "El pipeline de implementación se genera de acuerdo con la {deployment_config} del proyecto.",
+    "preview-deployment-pipeline": "Vista previa del pipeline de implementación",
+    "select-database-group": "Seleccionar grupo de bases de datos"
+  },
+  "data-source": {
+      "role-type": "Tipo de rol",
+      "successfully-deleted-data-source-name": "Se eliminó correctamente el origen de datos '{0}'.",
+      "create-data-source": "Crear origen de datos",
+      "data-source-list": "Lista de origen de datos",
+      "all-data-source": "Todos los orígenes de datos",
+      "search-name": "Buscar nombre",
+      "search-name-database": "Buscar nombre, base de datos",
+      "successfully-created-data-source-datasource-name": "Se creó correctamente el origen de datos '{0}'.",
+      "select-database-first": "Seleccione la base de datos primero",
+      "select-data-source": "Seleccionar origen de datos",
+      "search-user": "Buscar usuario",
+      "user-list": "Lista de usuarios",
+      "revoke-access": "¿Está seguro de revocar el acceso de '{0}' de '{1}'?",
+      "grant-data-source": "Conceder origen de datos",
+      "grant-database": "Conceder base de datos",
+      "requested-issue": "Problema solicitado",
+      "successfully-revoked-member-principal-name-access-from-props-datasource-name": "Se revocó correctamente el acceso de '{0}' de '{1}'.",
+      "your-issue-id-e-g-1234": "Su ID de problema (por ejemplo, 1234)",
+      "member-principal-name-already-exists": "{0} ya existe",
+      "successfully-granted-datasource-name-to-addedmember-principal-name": "Se concedió correctamente '{0}' a '{1}'.",
+      "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "También vinculamos la base de datos concedida al problema solicitado '{0}'.",
+      "new-data-source": "Nuevo origen de datos",
+      "connection-name-string-copied-to-clipboard": "Cadena de nombre de conexión {0} copiada al portapapeles.",
+      "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC no puede conectar al socket {0}",
+      "ssl-type": {
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
+      "none": "Ninguno"
+    },
+    "ssl": {
+    "ca-cert": "Certificado de CA",
+    "client-key": "Clave del cliente",
+    "client-cert": "Certificado del cliente"
+    },
+    "ssl-connection": "Conexión SSL",
+    "read-replica-host": "Anfitrión de réplica de lectura",
+    "read-replica-port": "Puerto de réplica de lectura",
+    "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
+    "connection-string-schema": "Esquema de cadena de conexión"
+  },
+  "setting": {
+    "project": {
+    "description": "Este es el panel de proyectos de administración que enumera todos los proyectos en Bytebase."
+    },
+    "label": {
+    "key": "Clave",
+    "values": "Valores",
+    "value-placeholder": "Valor de etiqueta..."
     }
-  }
-}
+    },
+    "sql-editor": {
+    "self": "Editor de SQL",
+    "select-connection": "Por favor seleccione conexiones",
+    "search-databases": "Buscar bases de datos",
+    "search-results": "Resultados de búsqueda",
+    "loading-databases": "Cargando bases de datos...",
+    "close-pane": "Cerrar panel",
+    "loading-data": "Cargando datos...",
+    "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
+    "no-rows-found": "No se encontraron filas",
+    "download-as-csv": "Descargar como CSV",
+    "download-as-json": "Descargar como JSON",
+    "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
+    "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe un problema.",
+    "table-schema-placeholder": "Seleccione una tabla para ver su esquema",
+    "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
+    "notify-multiple-statements": "Se detectaron múltiples declaraciones SQL. El Editor de SQL solo ejecuta la primera declaración. Puede seleccionar otra declaración y ejecutarla individualmente.",
+    "goto-alter-schema-hint": "Seleccione una conexión de base de datos desde la parte superior del editor",
+    "notify-invalid-sql-statement": "Declaración SQL inválida.",
+    "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
+    "rows": "fila | filas",
+    "no-history-found": "No se encontró historial",
+    "no-sheet-found": "No se encontró hoja",
+    "search-history": "Historial de búsqueda",
+    "search-sheets": "Buscar hojas",
+    "hint-tips": {
+    "confirm-to-delete-this-history": "¿Confirma eliminar este historial?",
+    "confirm-to-close-unsaved-sheet": {
+    "title": "¿Cerrar la hoja no guardada?",
+    "content": "¿Cerrar la hoja y perder cualquier dato no guardado?"
+    }
+    },
+    "please-input-the-tab-label": "¡Ingrese la etiqueta de pestaña!",
+    "copy-code": "Copiar código",
+    "notify": {
+      "copy-code-succeed": "Copia de código exitosa",
+      "copy-share-link": "El enlace compartido se copió al portapapeles.",
+      "sheet-is-read-only": "La hoja compartida es solo de lectura."
+    },
