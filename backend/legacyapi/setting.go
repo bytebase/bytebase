@@ -37,7 +37,7 @@ const (
 	// For now we will call the hub to fetch the subscription license.
 	SettingPluginAgent SettingName = "bb.plugin.agent"
 	// SettingWorkspaceMailDelivery is the setting name for workspace mail delivery.
-	SettingWorkspaceMailDelivery SettingName = "bb.worksapce.mail-delivery"
+	SettingWorkspaceMailDelivery SettingName = "bb.workspace.mail-delivery"
 )
 
 // IMType is the type of IM.

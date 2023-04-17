@@ -200,6 +200,15 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		setting, err := s.store.PatchSetting(ctx, settingPatch)
+		if setting.Name == api.SettingWorkspaceMailDelivery {
+			// We don't want to return the mail password to the client.
+			safeValue, err := sanitizeMailDeliveryValue(setting.Value)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sanitize mail delivery value: %s", setting.Value)).SetInternal(err)
+			}
+			setting.Value = safeValue
+		}
+
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Setting name not found: %s", settingPatch.Name))

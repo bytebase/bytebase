@@ -190,8 +190,6 @@
       </div>
     </div>
   </div>
-  <div>{{ state.originMailDeliverySetting }}</div>
-  <div>{{ state.mailDeliverySetting }}</div>
 </template>
 
 <script lang="ts" setup>
@@ -272,9 +270,12 @@ const updateMailDeliverySetting = async () => {
     return;
   }
 
+  // Remove the sensitive information from the state.
+  mailDelivery.smtpPassword = "";
   state.isLoading = false;
   state.originMailDeliverySetting = cloneDeep(mailDelivery);
   state.useEmptyPassword = false;
+  state.mailDeliverySetting = mailDelivery;
 
   pushNotification({
     module: "bytebase",
