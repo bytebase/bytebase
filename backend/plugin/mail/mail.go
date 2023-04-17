@@ -2,7 +2,7 @@
 package mail
 
 /**
- * Usage:
+  * Usage:
  email := NewEmailMsg().SetFrom("Bytebase <from@bytebase.com>").AddTo("Customer <to@bytebase.com>").SetSubject("Test Email Subject").SetBody(`
 <!DOCTYPE html>
 <html>
