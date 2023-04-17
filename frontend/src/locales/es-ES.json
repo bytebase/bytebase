@@ -1406,31 +1406,30 @@
           "copy-redirect-uri": "URI de redireccionamiento copiado al portapapeles. Péguelo en el campo correspondiente en el formulario de aplicación OAuth.",
           "direct-link": "Enlace directo",
           "create-oauth-app": "Cree su aplicación OAuth de Bytebase con la siguiente información.",
-          "errores": {
-            "gitlab-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 64 caracteres",
-            "gitlab-secret-error": "El secreto debe ser una cadena alfanumérica de 64 caracteres",
-            "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres",
-            "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
-            "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
-            "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres"
-          },
-          "confirmar": {
-            "confirm-info": "Confirmar la información",
-            "confirm-description": "Después de la creación, este proveedor de Git se puede elegir en la pestaña \"GitOps\" del panel del proyecto por el propietario del proyecto."
-          },
-          "proveedor-git": {
-            "gitlab-self-host-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada en toda la instancia.",
-            "gitlab-com-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada.",
-            "view-in-gitlab": "Ver en GitLab",
-            "gitlab-self-host-secret-label": "Secreto para la aplicación OAuth de GitLab registrada en toda la instancia.",
-            "gitlab-com-secret-label": "Secreto para la aplicación OAuth de GitLab registrada.",
-            "github-application-id-label": "ID de cliente para la aplicación OAuth de GitHub registrada en toda la organización.",
-            "secret-label-github": "Secreto de cliente para la aplicación OAuth de GitHub registrada en toda la organización.",
-            "delete-forbidden": "Para eliminar este proveedor, primero desenlaza todos los repositorios.",
-            "delete": "Eliminar este proveedor de Git",
-            "delete-confirm": "¿Eliminar el proveedor de Git \"{name}\"?"
-          }
+          "gitlab-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 64 caracteres",
+          "gitlab-secret-error": "El secreto debe ser una cadena alfanumérica de 64 caracteres",
+          "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres",
+          "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
+          "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
+          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres"
+        },
+        "confirm": {
+          "confirm-info": "Confirmar la información",
+          "confirm-description": "Después de la creación, este proveedor de Git se puede elegir en la pestaña \"GitOps\" del panel del proyecto por el propietario del proyecto."
+        },
+        "git-provider": {
+          "gitlab-self-host-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada en toda la instancia.",
+          "gitlab-com-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada.",
+          "view-in-gitlab": "Ver en GitLab",
+          "gitlab-self-host-secret-label": "Secreto para la aplicación OAuth de GitLab registrada en toda la instancia.",
+          "gitlab-com-secret-label": "Secreto para la aplicación OAuth de GitLab registrada.",
+          "github-application-id-label": "ID de cliente para la aplicación OAuth de GitHub registrada en toda la organización.",
+          "secret-label-github": "Secreto de cliente para la aplicación OAuth de GitHub registrada en toda la organización.",
+          "delete-forbidden": "Para eliminar este proveedor, primero desenlaza todos los repositorios.",
+          "delete": "Eliminar este proveedor de Git",
+          "delete-confirm": "¿Eliminar el proveedor de Git \"{name}\"?"
         }
+      }
       }
     }
   }
