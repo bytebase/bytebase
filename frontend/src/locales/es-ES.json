@@ -47,9 +47,9 @@
     "description": "Descripción",
     "instance": "Instancia",
     "instances": "Instancias",
-    "environment": "Entorno",
-    "environments": "Entornos",
-    "environment-name": "Nombre del entorno",
+    "environment": "Ambiente",
+    "environments": "Ambientes",
+    "environment-name": "Nombre del ambiente",
     "bookmark": "Marcador",
     "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
@@ -515,6 +515,195 @@
           }
         }
       }
+    },
+    "sensitive-data": {
+      "description": "El resultado de la consulta de las siguientes columnas se muestra como \"******\". \nPuede marcar más columnas como datos sensibles en la página de detalles de la tabla.",
+      "remove-sensitive-column-tips": "¿Exponer esta columna?"
+    },
+    "access-control": {
+      "description": "Permitir a los desarrolladores ejecutar consultas para las siguientes bases de datos en ambientes de producción desde el Editor de SQL. {enlace}",
+      "add-rule": "Añadir regla",
+      "remove-policy-tips": "¿Eliminar esta regla?",
+      "inactive-rules": "Reglas inactivas",
+      "inactive-rules-description": "Estas reglas están inactivas porque el ambiente no es de producción.",
+      "no-database-in-production-environment": "Asegúrese de que hay bases de datos en el {production_environment}."
+    },
+    "release": {
+      "new-version-available": "Nueva versión disponible",
+      "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación.",
+      "not-show-till-next-release": "No mostrar esto hasta la próxima versión"
+    }
+  },
+  "activity": {
+    "name": "Nombre",
+    "comment": "Comentario",
+    "created": "Creado",
+    "invoker": "Invocador",
+    "type": {
+      "issue-create": "crear problema",
+      "comment-create": "crear comentario",
+      "issue-field-update": "actualizar campo de la incidencia",
+      "issue-status-update": "actualizar estado de la incidencia",
+      "pipeline-stage-status-update": "actualizar estado de la etapa de la incidencia",
+      "pipeline-task-status-update": "actualizar estado de la tarea de la incidencia",
+      "pipeline-task-file-commit": "commit al archivo",
+      "pipeline-task-statement-update": "actualización SQL",
+      "member-create": "crear miembro",
+      "member-role-update": "actualizar rol",
+      "member-activate": "activar miembro",
+      "member-deactivate": "desactivar miembro",
+      "project-repository-push": "evento de push del repositorio del proyecto",
+      "project-database-transfer": "transferencia de base de datos",
+      "project-member-create": "agregar miembro del proyecto",
+      "project-member-delete": "eliminar miembro del proyecto",
+      "project-member-role-update": "cambiar el rol del miembro del proyecto",
+      "pipeline-task-earliest-allowed-time-update": "actualizar tiempo de inicio temprano",
+      "database-recovery-pitr-done": "restaurar base de datos a un punto en el tiempo",
+      "external-approval-rejected": "rechazo de aprobación externa"
+    },
+    "sentence": {
+      "created-issue": "incidencia creado",
+      "commented": "comentado",
+      "reassigned-issue": "incidencia reasignada de {oldName} a {newName}",
+      "assigned-issue": "incidencia asignada a {newName}",
+      "unassigned-issue": "incidencia desasignada de {oldName}",
+      "invalid-assignee-update": "actualización de asignatario no válida",
+      "changed-description": "cambio de descripción",
+      "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
+      "unset-from": "eliminación de {name} de \"{oldValue}\"",
+      "set-to": "asignación de {name} a \"{newValue}\"",
+      "changed-update": "actualización de cambio {name}",
+      "reopened-issue": "incidencia reabierta",
+      "resolved-issue": "incidencia resuelta",
+      "canceled-issue": "incidencia cancelada",
+      "empty": "",
+      "changed": "cambio",
+      "updated": "actualizado",
+      "canceled": "cancelado",
+      "approved": "aprobado",
+      "started": "iniciado",
+      "completed": "completado",
+      "failed": "fallido",
+      "task-name": " tarea {name}",
+      "committed-to-at": "confirmado {file} a {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "aprobaciones obsoletas de {task} descartadas",
+      "external-approval-rejected": "rechazo de aprobación externa de {imName} de la etapa \"{stageName}\"",
+      "skipped": "omitido",
+      "rolled-out": "implementado",
+      "schema-version": "versión de esquema {version}",
+      "xxx-automatically": "{verb} automáticamente",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+    },
+    "subject-prefix": {
+      "task": "Tarea",
+      "stage": "Etapa"
+    },
+    "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
+  },
+  "issue": {
+    "waiting-approval": "Esperando Aprobación",
+    "opened-by-at": "abierta por {creator} a las {time}",
+    "commit-by-at": "commit {id} {title} por {author} a las {time}",
+    "status-transition": {
+      "modal": {
+        "resolve": "¿Resolver incidencia?",
+        "cancel": "¿Cancelar todo el incidencia?",
+        "reopen": "¿Reabrir incidencia?",
+        "title": "{action} {type} [{name}]?",
+        "action-to-stage": "{action} etapa ({n} tareas)"
+      },
+      "dropdown": {
+        "resolve": "Resolver incidencia",
+        "cancel": "Cancelar incidencia",
+        "reopen": "Reabrir incidencia"
+      },
+      "form": {
+        "note": "Nota",
+        "placeholder": "(Opcional) Agregar una nota..."
+      }
+    },
+    "subscribe": "Suscribirse",
+    "unsubscribe": "Cancelar suscripción",
+    "subscriber": "No hay suscriptores | 1 suscriptor | {n} suscriptores",
+    "apply-to-other-tasks": "Aplicar a otras tareas",
+    "add-sql-statement": "Agregar declaración SQL...",
+    "optional-add-sql-statement": "(Opcional) Agregar declaración SQL...",
+    "edit-description": "Editar descripción",
+    "add-some-description": "Agregar alguna descripción...",
+    "add-a-comment": "Agregar un comentario",
+    "edit-comment": "Editar comentario",
+    "leave-a-comment": "Dejar un comentario...",
+    "view-commit": "Ver commit",
+    "search-issue-name": "Buscar nombre de la incidencia",
+    "table": {
+      "open": "Abierto",
+      "closed": "Cerrado",
+      "status": "Estado",
+      "project": "Proyecto",
+      "name": "Nombre",
+      "environment": "Ambiente",
+      "db": "Base de datos",
+      "progress": "Progreso",
+      "updated": "Actualizado",
+      "approver": "Aprobador",
+      "assignee": "Asignado"
+    },
+    "stage-select": {
+      "active": "{name} (activo)"
+    },
+    "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas. \nPrimero deben ser transferidas a un proyecto.",
+    "migration-mode": {
+      "title": "Modo migración",
+      "normal": {
+        "title": "Migración normal (para tablas de tamaño normal)",
+        "description": "Realizar cambios de esquema directamente en la tabla de destino. Se mantendrá un bloqueo durante toda la migración."
+      },
+      "online": {
+        "title": "Migración en línea (para tablas de gran tamaño)",
+        "description": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos {link}."
+      }
+    },
+    "new-issue": "@:common.new @:common.issue",
+    "format-on-save": "Formatear al guardar",
+    "action-to-current-stage": "{action} etapa actual",
+    "edit-sql-statement-in-vcs": "Este proyecto ha habilitado el control de versiones basado en VCS. Modifique el archivo SQL en el repositorio Git correspondiente y comprométalo para crear un nuevo problema.",
+    "edit-sql-statement": "Editar declaración SQL",
+    "upload-sql": "Cargar SQL",
+    "upload-sql-as-sheet": "Cargar SQL como hoja",
+    "statement-from-sheet-warning": "La declaración SQL actual proviene de una hoja. Es de solo lectura y solo se muestra parte de ella.",
+    "override-current-statement": "Anular la declaración SQL actual",
+    "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
+    "waiting-earliest-allowed-time": "Se ejecutará después de {time} como muy temprano",
+    "batch-transition": {
+      "not-allowed-tips": "Algunos de los problemas seleccionados no se pueden {operation}",
+      "resolve": "Resolver",
+      "resolved": "resuelto",
+      "cancel": "Cancelar",
+      "cancelled": "cancelado",
+      "reopen": "Reabrir",
+      "reopened": "reabierto",
+      "action-n-issues": "{action} {n} problema | {action} {n} problemas",
+      "successfully-updated-n-issues": "Problema actualizado correctamente {n} | Problemas actualizados correctamente {n}"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "El cambio se aplicará a todas las tareas",
+      "dont-apply-to-database-in-baseline-migration": "La creación de la línea base solo registra el esquema actual en el historial de cambios y no aplica SQL a la base de datos",
+      "snowflake": "Use <<schema>>.<<table>> para especificar una tabla Snowflake"
+    },
+    "will-rollback": "Esta tarea revertirá {link}",
+    "issue-link-with-task": "Problema {issue} - tarea {task}",
+    "assignee-attention": {
+      "send-approval-request-successfully": "Enviar una solicitud de aprobación de {im} correctamente",
+      "send-attention-request-successfully": "Solicitar la atención del asignado {principal} con éxito",
+      "needs-attention": "Necesita atención",
+      "click-to-mark": "Haga clic para solicitar la atención del asignado"
+    },
+    "sdl": {
+      "schema-change": "Cambio de esquema",
+      "generated-ddl-statements": "Declaraciones DDL generadas",
+      "full-schema": "Esquema completo",
+      "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique el problema."
     }
   }
 }
