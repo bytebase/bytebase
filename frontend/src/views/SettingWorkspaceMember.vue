@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full overflow-x-hidden pb-4">
+  <div class="w-full pb-4">
     <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
       <MemberAddOrInvite />
     </div>
@@ -40,28 +40,40 @@
       v-if="inactiveMemberList.length > 0 || state.inactiveMemberFilterText"
       class="mt-8"
     >
-      <div class="flex justify-between items-center">
-        <p class="text-lg font-medium leading-7 text-control-light">
-          <span>{{ $t("settings.members.inactive") }}</span>
-          <span class="ml-1 font-normal text-control-light">
-            ({{ inactiveMemberList.length }})
+      <div>
+        <NCheckbox v-model:checked="state.showInactiveMemberList">
+          <span class="textinfolabel">
+            {{ $t("settings.members.show-inactive") }}
           </span>
-        </p>
-
-        <div>
-          <BBTableSearch
-            :value="state.inactiveMemberFilterText"
-            @change-text="(text: string) => state.inactiveMemberFilterText = text"
-          />
-        </div>
+        </NCheckbox>
       </div>
-      <MemberTable :member-list="inactiveMemberList" />
+
+      <template v-if="state.showInactiveMemberList">
+        <div class="flex justify-between items-center">
+          <p class="text-lg font-medium leading-7 text-control-light">
+            <span>{{ $t("settings.members.inactive") }}</span>
+            <span class="ml-1 font-normal text-control-light">
+              ({{ inactiveMemberList.length }})
+            </span>
+          </p>
+
+          <div>
+            <BBTableSearch
+              :value="state.inactiveMemberFilterText"
+              @change-text="(text: string) => state.inactiveMemberFilterText = text"
+            />
+          </div>
+        </div>
+        <MemberTable :member-list="inactiveMemberList" />
+      </template>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
+import { NCheckbox } from "naive-ui";
+
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { hasWorkspacePermission } from "../utils";
@@ -76,15 +88,17 @@ import {
 type LocalState = {
   activeMemberFilterText: string;
   inactiveMemberFilterText: string;
+  showInactiveMemberList: boolean;
 };
 
 export default defineComponent({
   name: "SettingWorkspaceMember",
-  components: { MemberAddOrInvite, MemberTable },
+  components: { MemberAddOrInvite, MemberTable, NCheckbox },
   setup() {
     const state = reactive<LocalState>({
       activeMemberFilterText: "",
       inactiveMemberFilterText: "",
+      showInactiveMemberList: false,
     });
 
     const currentUser = useCurrentUser();
