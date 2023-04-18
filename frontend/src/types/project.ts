@@ -5,7 +5,9 @@ import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 import { VCS } from "./vcs";
 
-export type ProjectRoleType = "OWNER" | "DEVELOPER";
+export type ProjectRoleType = "OWNER" | "DEVELOPER" | string;
+export const ProjectRoleTypeOwner: ProjectRoleType = "OWNER";
+export const ProjectRoleTypeDeveloper: ProjectRoleType = "DEVELOPER";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 

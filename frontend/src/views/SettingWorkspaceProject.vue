@@ -9,15 +9,24 @@
       </div>
 
       <div class="flex justify-end items-center gap-x-2">
-        <BBTableSearch
-          ref="searchField"
+        <SearchBox
+          :value="state.searchText"
           :placeholder="$t('project.dashboard.search-bar-placeholder')"
-          @change-text="(text: string) => changeSearchText(text)"
+          :autofocus="true"
+          @update:value="changeSearchText($event)"
         />
       </div>
     </div>
 
-    <ProjectTable :project-list="filteredList(state.projectList)" />
+    <div class="py-2">
+      <NCheckbox v-model:checked="state.includesArchived">
+        <span class="textinfolabel">
+          {{ $t("setting.project.show-archived") }}
+        </span>
+      </NCheckbox>
+    </div>
+
+    <ProjectTable :project-list="filteredList" />
 
     <BBModal
       v-if="state.showCreateModal"
@@ -30,71 +39,65 @@
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { watchEffect, reactive, computed } from "vue";
+import { NCheckbox } from "naive-ui";
+
+import { DEFAULT_PROJECT_ID, Project } from "../types";
 import { useProjectStore } from "@/store";
-import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
 import ProjectCreate from "../components/ProjectCreate.vue";
-import { Project } from "../types";
+import { SearchBox } from "@/components/v2";
 
 interface LocalState {
   projectList: Project[];
   searchText: string;
   showCreateModal: boolean;
+  includesArchived: boolean;
 }
 
-export default defineComponent({
-  name: "SettingWorkspaceProject",
-  components: {
-    ProjectCreate,
-    ProjectTable,
-  },
-  setup() {
-    const searchField = ref();
+const projectStore = useProjectStore();
 
-    const projectStore = useProjectStore();
+const state = reactive<LocalState>({
+  projectList: [],
+  searchText: "",
+  showCreateModal: false,
+  includesArchived: false,
+});
 
-    const state = reactive<LocalState>({
-      projectList: [],
-      searchText: "",
-      showCreateModal: false,
-    });
+const prepareProjectList = async () => {
+  const projectList = [...(await projectStore.fetchAllProjectList())];
+  // Put "Unassigned" to the first;
+  const unassignedIndex = projectList.findIndex(
+    (project) => project.id === DEFAULT_PROJECT_ID
+  );
+  if (unassignedIndex >= 0) {
+    const unassignedProject = projectList[unassignedIndex];
+    projectList.splice(unassignedIndex, 1);
+    projectList.unshift(unassignedProject);
+  }
+  state.projectList = projectList;
+};
 
-    onMounted(() => {
-      // Focus on the internal search field when mounted
-      searchField.value.$el.querySelector("#search").focus();
-    });
+watchEffect(prepareProjectList);
 
-    const prepareProjectList = async () => {
-      const projectList = await projectStore.fetchAllProjectList();
-      state.projectList = projectList;
-    };
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
+};
 
-    watchEffect(prepareProjectList);
-
-    const changeSearchText = (searchText: string) => {
-      state.searchText = searchText;
-    };
-
-    const filteredList = (list: Project[]) => {
-      if (!state.searchText) {
-        // Select "All"
-        return list;
-      }
-      return list.filter((issue) => {
-        return (
-          !state.searchText ||
-          issue.name.toLowerCase().includes(state.searchText.toLowerCase())
-        );
-      });
-    };
-
-    return {
-      searchField,
-      state,
-      filteredList,
-      changeSearchText,
-    };
-  },
+const filteredList = computed(() => {
+  let list = state.projectList;
+  const keyword = state.searchText.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter(
+      (project) =>
+        project.name.toLowerCase().includes(keyword) ||
+        project.key.toLowerCase().includes(keyword)
+    );
+  }
+  if (!state.includesArchived) {
+    list = list.filter((project) => project.rowStatus === "NORMAL");
+  }
+  return list;
 });
 </script>

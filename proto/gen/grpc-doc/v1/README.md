@@ -258,7 +258,6 @@
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [OperatorType](#bytebase-v1-OperatorType)
-    - [ProjectRole](#bytebase-v1-ProjectRole)
     - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
@@ -1564,8 +1563,8 @@ SlowQueryDetails is the details of the slow query log.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The start time of the slow query log. |
 | query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query time of the slow query log. |
 | lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The lock time of the slow query log. |
-| rows_sent | [int32](#int32) |  | The rows sent of the slow query log. |
-| rows_examined | [int32](#int32) |  | The rows examined of the slow query log. |
+| rows_sent | [int64](#int64) |  | The rows sent of the slow query log. |
+| rows_examined | [int64](#int64) |  | The rows examined of the slow query log. |
 | sql_text | [string](#string) |  | The sql text of the slow query log. |
 
 
@@ -1599,14 +1598,14 @@ SlowQueryStatistics is the statistics of the slow query log.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sql_fingerprint | [string](#string) |  | The fingerprint of the slow query log. |
-| count | [int32](#int32) |  | The count of the slow query log. |
+| count | [int64](#int64) |  | The count of the slow query log. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
 | average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
 | maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| average_rows_sent | [int32](#int32) |  | The average rows sent of the slow query log. |
-| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
-| average_rows_examined | [int32](#int32) |  | The average rows examined of the slow query log. |
-| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
+| average_rows_sent | [int64](#int64) |  | The average rows sent of the slow query log. |
+| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
+| average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
+| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
@@ -3529,7 +3528,7 @@ TODO(zp): move to activity later.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [ProjectRole](#bytebase-v1-ProjectRole) |  | The project role that is assigned to the members. |
+| role | [string](#string) |  | The project role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
@@ -4014,19 +4013,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
-
-
-
-<a name="bytebase-v1-ProjectRole"></a>
-
-### ProjectRole
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROJECT_ROLE_UNSPECIFIED | 0 |  |
-| PROJECT_ROLE_OWNER | 1 |  |
-| PROJECT_ROLE_DEVELOPER | 2 |  |
 
 
 
@@ -4795,6 +4781,7 @@ The request message for updating a setting.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
+| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
 
 
 

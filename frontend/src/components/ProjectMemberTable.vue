@@ -92,7 +92,7 @@ import {
   ProjectMemberPatch,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { hasWorkspacePermission, hasProjectPermission } from "../utils";
+import { hasWorkspacePermission, hasPermissionInProject } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -197,17 +197,14 @@ export default defineComponent({
         return true;
       }
 
-      for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (
-            hasProjectPermission(
-              "bb.permission.project.manage-member",
-              member.role
-            )
-          ) {
-            return true;
-          }
-        }
+      if (
+        hasPermissionInProject(
+          props.project,
+          currentUser.value,
+          "bb.permission.project.manage-member"
+        )
+      ) {
+        return true;
       }
 
       return false;

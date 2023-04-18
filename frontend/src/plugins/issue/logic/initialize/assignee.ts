@@ -1,4 +1,4 @@
-import type { IssueCreate } from "@/types";
+import { IssueCreate, ProjectRoleTypeOwner } from "@/types";
 import {
   useInstanceStore,
   useMemberStore,
@@ -51,7 +51,7 @@ const assignToProjectOwner = (issueCreate: IssueCreate) => {
   const project = useProjectStore().getProjectById(issueCreate.projectId);
   // Find the owner of the project, the first owner we found is okay.
   const projectOwner = project.memberList.find(
-    (member) => member.role === "OWNER"
+    (member) => member.role === ProjectRoleTypeOwner
   );
   if (projectOwner) {
     issueCreate.assigneeId = projectOwner.principal.id;

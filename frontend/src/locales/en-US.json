@@ -423,7 +423,8 @@
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
-      "create-as-service-account": "Create as service account"
+      "create-as-service-account": "Create as service account",
+      "show-inactive": "Show inactive members"
     },
     "im-integration": {
       "enable": "Enable",
@@ -1509,7 +1510,8 @@
   },
   "setting": {
     "project": {
-      "description": "This is the Admin project panel listing all projects in Bytebase."
+      "description": "This is the Admin project panel listing all projects in Bytebase.",
+      "show-archived": "Show archived projects"
     },
     "label": {
       "key": "Key",

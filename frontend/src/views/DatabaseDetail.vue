@@ -198,7 +198,7 @@
             name="project"
             :allowed-role-list="['OWNER']"
             :include-default-project="allowTransferToDefaultProject"
-            :selected-id="state.editingProjectId"
+            :selected-id="state.editingProjectId as number"
             @select-project-id="
               (projectId) => {
                 state.editingProjectId = projectId;
@@ -315,7 +315,6 @@ import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
-  hasProjectPermission,
   hasWorkspacePermission,
   hidePrefix,
   allowGhostMigration,
@@ -326,6 +325,7 @@ import {
   instanceHasBackupRestore,
   instanceHasAlterSchema,
   instanceSupportSlowQuery,
+  hasPermissionInProject,
 } from "@/utils";
 import {
   ProjectId,
@@ -440,16 +440,14 @@ const allowTransferProject = computed(() => {
     return true;
   }
 
-  for (const member of database.value.project.memberList) {
-    if (
-      member.principal.id == currentUser.value.id &&
-      hasProjectPermission(
-        "bb.permission.project.transfer-database",
-        member.role
-      )
-    ) {
-      return true;
-    }
+  if (
+    hasPermissionInProject(
+      database.value.project,
+      currentUser.value,
+      "bb.permission.project.transfer-database"
+    )
+  ) {
+    return true;
   }
 
   return false;
@@ -490,13 +488,14 @@ const allowAdmin = computed(() => {
     return true;
   }
 
-  for (const member of database.value.project.memberList) {
-    if (
-      member.principal.id == currentUser.value.id &&
-      hasProjectPermission("bb.permission.project.admin-database", member.role)
-    ) {
-      return true;
-    }
+  if (
+    hasPermissionInProject(
+      database.value.project,
+      currentUser.value,
+      "bb.permission.project.admin-database"
+    )
+  ) {
+    return true;
   }
   return false;
 });
@@ -521,13 +520,14 @@ const allowEdit = computed(() => {
     return true;
   }
 
-  for (const member of database.value.project.memberList) {
-    if (
-      member.principal.id == currentUser.value.id &&
-      hasProjectPermission("bb.permission.project.change-database", member.role)
-    ) {
-      return true;
-    }
+  if (
+    hasPermissionInProject(
+      database.value.project,
+      currentUser.value,
+      "bb.permission.project.change-database"
+    )
+  ) {
+    return true;
   }
   return false;
 });

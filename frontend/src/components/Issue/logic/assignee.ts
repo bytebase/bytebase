@@ -103,7 +103,7 @@ export const allowUserToBeAssignee = (
 
   if (assigneeGroup === "PROJECT_OWNER") {
     // Project owner
-    return isOwnerOfProject(user, project);
+    return isOwnerOfProject(project, user);
   }
 
   console.assert(false, "should never reach this line");
