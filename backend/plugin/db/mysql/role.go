@@ -389,10 +389,10 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	var err error
 	users, err = driver.getUsersFromMySQLUser(ctx)
 	if err != nil {
-		log.Warn("failed to get users", zap.Error(err))
+		log.Info("failed to get users", zap.Error(err))
 		users, err = driver.getUsersFromUserAttributes(ctx)
 		if err != nil {
-			log.Warn("failed to get users", zap.Error(err))
+			log.Info("failed to get users", zap.Error(err))
 			return nil, nil
 		}
 	}
@@ -420,7 +420,7 @@ func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]stri
 		grantQuery,
 	)
 	if err != nil {
-		log.Warn("failed to get grants", zap.String("user", name), zap.Error(err))
+		log.Info("failed to get grants", zap.String("user", name), zap.Error(err))
 		return nil, nil
 	}
 	defer grantRows.Close()
