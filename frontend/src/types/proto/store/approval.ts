@@ -126,7 +126,11 @@ export function approvalStep_TypeToJSON(object: ApprovalStep_Type): string {
 
 export interface ApprovalNode {
   type: ApprovalNode_Type;
-  groupValue?: ApprovalNode_GroupValue | undefined;
+  groupValue?:
+    | ApprovalNode_GroupValue
+    | undefined;
+  /** Format: roles/{role} */
+  role?: string | undefined;
 }
 
 /**
@@ -169,7 +173,6 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
 }
 
 /**
- * GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
  * The predefined user groups are:
  * - WORKSPACE_OWNER
  * - WORKSPACE_DBA
@@ -642,7 +645,7 @@ export const ApprovalStep = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { type: 0, groupValue: undefined };
+  return { type: 0, groupValue: undefined, role: undefined };
 }
 
 export const ApprovalNode = {
@@ -652,6 +655,9 @@ export const ApprovalNode = {
     }
     if (message.groupValue !== undefined) {
       writer.uint32(16).int32(message.groupValue);
+    }
+    if (message.role !== undefined) {
+      writer.uint32(26).string(message.role);
     }
     return writer;
   },
@@ -677,6 +683,13 @@ export const ApprovalNode = {
 
           message.groupValue = reader.int32() as any;
           continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -690,6 +703,7 @@ export const ApprovalNode = {
     return {
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
+      role: isSet(object.role) ? String(object.role) : undefined,
     };
   },
 
@@ -700,6 +714,7 @@ export const ApprovalNode = {
       (obj.groupValue = message.groupValue !== undefined
         ? approvalNode_GroupValueToJSON(message.groupValue)
         : undefined);
+    message.role !== undefined && (obj.role = message.role);
     return obj;
   },
 
@@ -711,6 +726,7 @@ export const ApprovalNode = {
     const message = createBaseApprovalNode();
     message.type = object.type ?? 0;
     message.groupValue = object.groupValue ?? undefined;
+    message.role = object.role ?? undefined;
     return message;
   },
 };

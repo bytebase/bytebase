@@ -108,6 +108,77 @@ func TestCanUserApproveStep(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			step: &storepb.ApprovalStep{
+				Type: storepb.ApprovalStep_ANY,
+				Nodes: []*storepb.ApprovalNode{
+					{
+						Type: storepb.ApprovalNode_ANY_IN_GROUP,
+						Payload: &storepb.ApprovalNode_Role{
+							Role: "roles/ProjectDBA",
+						},
+					},
+				},
+			},
+			user: &store.UserMessage{
+				ID:   1,
+				Role: api.DBA,
+			},
+			policy: &store.IAMPolicyMessage{
+				Bindings: []*store.PolicyBinding{
+					{
+						Role: api.Developer,
+						Members: []*store.UserMessage{
+							{
+								ID:   1,
+								Role: api.Developer,
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			step: &storepb.ApprovalStep{
+				Type: storepb.ApprovalStep_ANY,
+				Nodes: []*storepb.ApprovalNode{
+					{
+						Type: storepb.ApprovalNode_ANY_IN_GROUP,
+						Payload: &storepb.ApprovalNode_Role{
+							Role: "roles/ProjectDBA",
+						},
+					},
+				},
+			},
+			user: &store.UserMessage{
+				ID:   1,
+				Role: api.DBA,
+			},
+			policy: &store.IAMPolicyMessage{
+				Bindings: []*store.PolicyBinding{
+					{
+						Role: api.Developer,
+						Members: []*store.UserMessage{
+							{
+								ID:   1,
+								Role: api.Developer,
+							},
+						},
+					},
+					{
+						Role: "ProjectDBA",
+						Members: []*store.UserMessage{
+							{
+								ID:   1,
+								Role: api.Developer,
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
 	}
 
 	a := require.New(t)
