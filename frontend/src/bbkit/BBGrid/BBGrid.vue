@@ -53,13 +53,28 @@
 
     <slot name="placeholder">
       <div
-        v-if="dataSource.length === 0 && showPlaceholder"
-        class="flex flex-col items-center justify-center py-8 text-control-placeholder border-t"
+        v-if="ready && dataSource.length === 0 && showPlaceholder"
+        class="flex flex-col items-center justify-center text-control-placeholder border-t"
         :style="{
           'grid-column': `auto / span ${columnList.length}`,
         }"
       >
-        <p>{{ $t("common.no-data") }}</p>
+        <slot name="placeholder-content">
+          <p class="py-8">{{ $t("common.no-data") }}</p>
+        </slot>
+      </div>
+    </slot>
+    <slot name="loading">
+      <div
+        v-if="!ready"
+        class="flex flex-col items-center justify-center text-control-placeholder border-t"
+        :style="{
+          'grid-column': `auto / span ${columnList.length}`,
+        }"
+      >
+        <p class="py-8">
+          <BBSpin />
+        </p>
       </div>
     </slot>
   </div>
@@ -96,6 +111,7 @@ const props = withDefaults(
     headerClass?: VueClass;
     rowClickable?: boolean;
     showPlaceholder?: boolean;
+    ready?: boolean;
     isRowExpanded?: (item: DataType, row: number) => boolean;
   }>(),
   {
@@ -107,6 +123,7 @@ const props = withDefaults(
     headerClass: undefined,
     rowClickable: true,
     showPlaceholder: false,
+    ready: true,
     isRowExpanded: () => false,
   }
 );
