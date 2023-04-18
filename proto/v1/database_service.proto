@@ -577,10 +577,10 @@ message SlowQueryStatistics {
 
   // The average query time of the slow query log.
   google.protobuf.Duration average_query_time = 4;
-  
+
   // The maximum query time of the slow query log.
   google.protobuf.Duration maximum_query_time = 5;
-  
+
   // The average rows sent of the slow query log.
   int64 average_rows_sent = 6;
   

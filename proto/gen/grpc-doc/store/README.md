@@ -251,6 +251,7 @@ convert to the expected struct there.
 | ----- | ---- | ----- | ----------- |
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
+| role | [string](#string) |  | Format: roles/{role} |
 
 
 
@@ -331,7 +332,6 @@ IssuePayloadApproval records the approval template used and the approval history
 <a name="bytebase-store-ApprovalNode-GroupValue"></a>
 
 ### ApprovalNode.GroupValue
-GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
 The predefined user groups are:
 - WORKSPACE_OWNER
 - WORKSPACE_DBA
