@@ -878,6 +878,12 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 				DependentColumns: dependentColumnList,
 			})
 		}
+		for _, function := range schema.Functions {
+			s.Functions = append(s.Functions, &v1pb.FunctionMetadata{
+				Name:       function.Name,
+				Definition: function.Definition,
+			})
+		}
 		m.Schemas = append(m.Schemas, s)
 	}
 	for _, extension := range metadata.Extensions {
