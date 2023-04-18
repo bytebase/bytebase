@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -11,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -189,18 +191,59 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
-	if err != nil {
-		return nil, err
-	}
-	defer driver.Close(ctx)
-	if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", err.Error())
-	}
+	switch instance.Engine {
+	case db.MySQL:
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", err.Error())
+		}
 
-	if instance.Engine == db.MySQL {
 		// Sync slow queries for instance.
 		s.stateCfg.InstanceSlowQuerySyncChan <- composedInstance
+	case db.Postgres:
+		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instance.ResourceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
+		}
+		var firstDatabase string
+		for _, database := range databases {
+			if database.SyncState != api.OK {
+				continue
+			}
+			if err := func() error {
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+				if err != nil {
+					return err
+				}
+				defer driver.Close(ctx)
+				return driver.CheckSlowQueryLogEnabled(ctx)
+			}(); err != nil {
+				log.Warn("pg_stat_statements is not enabled",
+					zap.String("instance", instance.ResourceID),
+					zap.String("database", database.DatabaseName),
+					zap.Int("databaseID", database.UID),
+					zap.Error(err))
+			}
+
+			if firstDatabase == "" {
+				firstDatabase = database.DatabaseName
+			}
+		}
+
+		if firstDatabase == "" {
+			return nil, status.Errorf(codes.FailedPrecondition, "no database enabled pg_stat_statements")
+		}
+
+		// Sync slow queries for instance.
+		s.stateCfg.InstanceSlowQuerySyncChan <- composedInstance
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Engine)
 	}
 
 	return &emptypb.Empty{}, nil
