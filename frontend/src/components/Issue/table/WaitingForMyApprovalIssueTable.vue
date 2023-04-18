@@ -80,7 +80,7 @@ const fetchData = () => {
   issueStore
     .fetchIssueList({
       ...props.issueFind,
-      limit: 1000000,
+      limit: 20,
     })
     .then((issueList) => {
       state.issueList = issueList;
