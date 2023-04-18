@@ -385,6 +385,13 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "role",
+                name: "setting.workspace.role",
+                meta: { title: () => t("settings.sidebar.roles") },
+                component: () => import("../views/SettingWorkspaceRole.vue"),
+                props: true,
+              },
+              {
                 path: "im-integration",
                 name: "setting.workspace.im-integration",
                 meta: { title: () => t("settings.sidebar.im-integration") },

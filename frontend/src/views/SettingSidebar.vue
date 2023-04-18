@@ -52,6 +52,11 @@
             >{{ $t("settings.sidebar.members") }}</router-link
           >
           <router-link
+            to="/setting/role"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.roles") }}</router-link
+          >
+          <router-link
             v-if="showProjectItem"
             to="/setting/project"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
