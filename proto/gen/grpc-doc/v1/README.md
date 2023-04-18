@@ -258,7 +258,6 @@
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [OperatorType](#bytebase-v1-OperatorType)
-    - [ProjectRole](#bytebase-v1-ProjectRole)
     - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
@@ -316,9 +315,13 @@
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
+    - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
+  
+    - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
+    - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
   
     - [SettingService](#bytebase-v1-SettingService)
   
@@ -1564,8 +1567,8 @@ SlowQueryDetails is the details of the slow query log.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The start time of the slow query log. |
 | query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query time of the slow query log. |
 | lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The lock time of the slow query log. |
-| rows_sent | [int32](#int32) |  | The rows sent of the slow query log. |
-| rows_examined | [int32](#int32) |  | The rows examined of the slow query log. |
+| rows_sent | [int64](#int64) |  | The rows sent of the slow query log. |
+| rows_examined | [int64](#int64) |  | The rows examined of the slow query log. |
 | sql_text | [string](#string) |  | The sql text of the slow query log. |
 
 
@@ -1599,14 +1602,14 @@ SlowQueryStatistics is the statistics of the slow query log.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sql_fingerprint | [string](#string) |  | The fingerprint of the slow query log. |
-| count | [int32](#int32) |  | The count of the slow query log. |
+| count | [int64](#int64) |  | The count of the slow query log. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
 | average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
 | maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| average_rows_sent | [int32](#int32) |  | The average rows sent of the slow query log. |
-| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
-| average_rows_examined | [int32](#int32) |  | The average rows examined of the slow query log. |
-| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
+| average_rows_sent | [int64](#int64) |  | The average rows sent of the slow query log. |
+| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
+| average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
+| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
@@ -3529,7 +3532,7 @@ TODO(zp): move to activity later.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [ProjectRole](#bytebase-v1-ProjectRole) |  | The project role that is assigned to the members. |
+| role | [string](#string) |  | The project role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
@@ -4017,19 +4020,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-ProjectRole"></a>
-
-### ProjectRole
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROJECT_ROLE_UNSPECIFIED | 0 |  |
-| PROJECT_ROLE_OWNER | 1 |  |
-| PROJECT_ROLE_DEVELOPER | 2 |  |
-
-
-
 <a name="bytebase-v1-SchemaChange"></a>
 
 ### SchemaChange
@@ -4177,6 +4167,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | ----- | ---- | ----- | ----------- |
 | type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue) |  |  |
+| role | [string](#string) |  | Format: roles/{role} |
 
 
 
@@ -4380,7 +4371,6 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 <a name="bytebase-v1-ApprovalNode-GroupValue"></a>
 
 ### ApprovalNode.GroupValue
-GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
 The predefined user groups are:
 - WORKSPACE_OWNER
 - WORKSPACE_DBA
@@ -4786,6 +4776,31 @@ The response message for getting a setting.
 
 
 
+<a name="bytebase-v1-SMTPMailDeliverySettingValue"></a>
+
+### SMTPMailDeliverySettingValue
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| server | [string](#string) |  | The SMTP server address. |
+| port | [int32](#int32) |  | The SMTP server port. |
+| encryption | [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption) |  | The SMTP server encryption. |
+| ca | [string](#string) | optional | The CA, KEY, and CERT for the SMTP server. Not used. |
+| key | [string](#string) | optional |  |
+| cert | [string](#string) | optional |  |
+| authentication | [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication) |  |  |
+| username | [string](#string) |  |  |
+| password | [string](#string) | optional | If not specified, server will use the existed password. |
+| from | [string](#string) |  | The sender email address. |
+| to | [string](#string) |  | The recipient email address, used with validate_only to send test email. |
+
+
+
+
+
+
 <a name="bytebase-v1-SetSettingRequest"></a>
 
 ### SetSettingRequest
@@ -4829,12 +4844,42 @@ The data in setting value.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | string_value | [string](#string) |  | Defines this value as being a string value. |
+| smtp_mail_delivery_setting_value | [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-v1-SMTPMailDeliverySettingValue-Authentication"></a>
+
+### SMTPMailDeliverySettingValue.Authentication
+We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| AUTHENTICATION_NONE | 1 |  |
+| AUTHENTICATION_PLAIN | 2 |  |
+| AUTHENTICATION_LOGIN | 3 |  |
+| AUTHENTICATION_CRAM_MD5 | 4 |  |
+
+
+
+<a name="bytebase-v1-SMTPMailDeliverySettingValue-Encryption"></a>
+
+### SMTPMailDeliverySettingValue.Encryption
+We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENCRYPTION_UNSPECIFIED | 0 |  |
+| ENCRYPTION_NONE | 1 |  |
+| ENCRYPTION_STARTTLS | 2 |  |
+| ENCRYPTION_SSL_TLS | 3 |  |
+
 
  
 

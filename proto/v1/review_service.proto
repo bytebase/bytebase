@@ -210,7 +210,6 @@ message ApprovalNode {
   }
   Type type = 1;
 
-  // GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
   // The predefined user groups are:
   // - WORKSPACE_OWNER
   // - WORKSPACE_DBA
@@ -225,5 +224,7 @@ message ApprovalNode {
   }
   oneof payload {
     GroupValue group_value = 2;
+    // Format: roles/{role}
+    string role = 3;
   }
 }
