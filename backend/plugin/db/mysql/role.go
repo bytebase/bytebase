@@ -439,7 +439,7 @@ func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]stri
 	return grantList, nil
 }
 
-// getUsersFromUserAttributes reads users from information_schema.user_attributes, returns the list of users with format "'<user>'@'<host>'"
+// getUsersFromUserAttributes reads users from information_schema.user_attributes, returns the list of users with format "'<user>'@'<host>'".
 func (driver *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string, error) {
 	var users []string
 	query := `
