@@ -235,7 +235,8 @@
     "will-override-current-data": "Will override current data.",
     "rollout": "Rollout",
     "uploading": "Uploading",
-    "active": "Active"
+    "active": "Active",
+    "added": "Added"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -374,7 +375,8 @@
       "debug-log": "Debug Log",
       "sensitive-data": "Data Anonymization",
       "access-control": "Data Access Control",
-      "audit-log": "Audit Log"
+      "audit-log": "Audit Log",
+      "roles": "Roles"
     },
     "profile": {
       "email": "Email",
@@ -2281,5 +2283,21 @@
   },
   "principal": {
     "select": "Select user"
+  },
+  "role": {
+    "setting": {
+      "description": "Defining custom roles, and you may apply them to project members.",
+      "add": "Add role",
+      "edit": "Edit role",
+      "name-placeholder": "Input role name",
+      "description-placeholder": "Input role description",
+      "validation": {
+        "duplicated": "Duplicated {resource}",
+        "required": "{resource} is required",
+        "pattern": "{resource} can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
+        "max-length": "{resource} can contain up to {length} characters"
+      },
+      "delete": "Delete role"
+    }
   }
 }
