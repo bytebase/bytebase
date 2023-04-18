@@ -381,6 +381,7 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 			Members: users,
 		})
 	}
+
 	return &IAMPolicyMessage{
 			Bindings: deleteBindings,
 		}, &IAMPolicyMessage{
