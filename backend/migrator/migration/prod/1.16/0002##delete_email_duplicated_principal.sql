@@ -56,7 +56,7 @@ FOR row_data IN (
 )
 LOOP
   SELECT * INTO first_user FROM principal WHERE email = row_data.email ORDER BY id LIMIT 1;
-  UPDATE setting SET creator_id = first_user.id, updated_ts = updated_ts WHERE creator_id = row_data.id;
+  UPDATE setting SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE setting SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE environment SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE environment SET updater_id = first_user.id WHERE updater_id = row_data.id;
