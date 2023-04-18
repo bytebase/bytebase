@@ -155,6 +155,9 @@ export const instanceSupportSlowQuery = (instance: Instance) => {
   if (engine === "MYSQL") {
     return semverCompare(instance.engineVersion, "5.7", "gte");
   }
+  if (engine === "POSTGRES") {
+    return true;
+  }
   return false;
 };
 
