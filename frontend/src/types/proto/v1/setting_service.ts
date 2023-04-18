@@ -19,6 +19,11 @@ export interface GetSettingResponse {
 export interface SetSettingRequest {
   /** The setting to update. */
   setting?: Setting;
+  /**
+   * validate_only is a flag to indicate whether to validate the setting value,
+   * server would not persist the setting value if it is true.
+   */
+  validateOnly: boolean;
 }
 
 /** The schema of setting. */
@@ -155,13 +160,16 @@ export const GetSettingResponse = {
 };
 
 function createBaseSetSettingRequest(): SetSettingRequest {
-  return { setting: undefined };
+  return { setting: undefined, validateOnly: false };
 }
 
 export const SetSettingRequest = {
   encode(message: SetSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.setting !== undefined) {
       Setting.encode(message.setting, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(16).bool(message.validateOnly);
     }
     return writer;
   },
@@ -180,6 +188,13 @@ export const SetSettingRequest = {
 
           message.setting = Setting.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -190,12 +205,16 @@ export const SetSettingRequest = {
   },
 
   fromJSON(object: any): SetSettingRequest {
-    return { setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined };
+    return {
+      setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined,
+      validateOnly: isSet(object.validateOnly) ? Boolean(object.validateOnly) : false,
+    };
   },
 
   toJSON(message: SetSettingRequest): unknown {
     const obj: any = {};
     message.setting !== undefined && (obj.setting = message.setting ? Setting.toJSON(message.setting) : undefined);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -208,6 +227,7 @@ export const SetSettingRequest = {
     message.setting = (object.setting !== undefined && object.setting !== null)
       ? Setting.fromPartial(object.setting)
       : undefined;
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };
