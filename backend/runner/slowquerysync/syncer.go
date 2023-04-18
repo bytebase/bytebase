@@ -9,13 +9,17 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -111,6 +115,162 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 		return nil
 	}
 
+	switch instance.Engine {
+	case db.MySQL:
+		return s.syncMySQLSlowQuery(ctx, instance)
+	case db.Postgres:
+		return s.syncPostgreSQLSlowQuery(ctx, instance)
+	default:
+		return errors.Errorf("unsupported database engine: %s", instance.Engine)
+	}
+}
+
+func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID: &instance.ResourceID,
+	})
+	if err != nil {
+		return err
+	}
+
+	var firstDatabase string
+	for _, database := range databases {
+		if database.SyncState != api.OK {
+			continue
+		}
+		if err := func() error {
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+			if err != nil {
+				return err
+			}
+			defer driver.Close(ctx)
+			return driver.CheckSlowQueryLogEnabled(ctx)
+		}(); err != nil {
+			log.Warn("pg_stat_statements is not enabled",
+				zap.String("instance", instance.ResourceID),
+				zap.String("database", database.DatabaseName),
+				zap.Int("databaseID", database.UID),
+				zap.Error(err))
+		}
+
+		if firstDatabase == "" {
+			firstDatabase = database.DatabaseName
+		}
+	}
+
+	if firstDatabase == "" {
+		return errors.Errorf("no database is available for slow query sync in instance %s", instance.ResourceID)
+	}
+
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, firstDatabase)
+	if err != nil {
+		return err
+	}
+	defer driver.Close(ctx)
+
+	logMap, err := driver.SyncSlowQuery(ctx, time.Now() /* logDateTs is not used for postgresql */)
+	if err != nil {
+		return err
+	}
+
+	latestLogDate := getLatestLogTime(logMap)
+	if latestLogDate.IsZero() {
+		// Empty log, no need to sync.
+		return nil
+	}
+	latestLogDate = latestLogDate.Truncate(24 * time.Hour)
+	nextLogDate := latestLogDate.AddDate(0, 0, 1)
+
+	for _, database := range databases {
+		statistics, exists := logMap[database.DatabaseName]
+		if !exists {
+			continue
+		}
+
+		logs, err := s.store.ListSlowQuery(ctx, &store.ListSlowQueryMessage{
+			InstanceUID:  &instance.UID,
+			DatabaseUID:  &database.UID,
+			StartLogDate: &latestLogDate,
+			EndLogDate:   &nextLogDate,
+		})
+		if err != nil {
+			log.Warn("Failed to list slow query logs",
+				zap.String("instance", instance.ResourceID),
+				zap.String("database", database.DatabaseName),
+				zap.Int("databaseID", database.UID),
+				zap.Error(err))
+			logs = nil
+		}
+
+		if len(logs) != 0 {
+			statistics = pgMergeSlowQueryLog(statistics, logs)
+		}
+		if err := s.store.UpsertSlowLog(ctx, &store.UpsertSlowLogMessage{
+			EnvironmentID: &instance.EnvironmentID,
+			InstanceID:    &instance.ResourceID,
+			DatabaseName:  database.DatabaseName,
+			InstanceUID:   instance.UID,
+			LogDate:       latestLogDate,
+			SlowLog:       statistics,
+			UpdaterID:     api.SystemBotID,
+		}); err != nil {
+			log.Warn("Failed to upsert slow query log",
+				zap.String("instance", instance.ResourceID),
+				zap.String("database", database.DatabaseName),
+				zap.Int("databaseID", database.UID),
+				zap.Error(err))
+		}
+	}
+
+	return nil
+}
+
+func pgMergeSlowQueryLog(statistics *storepb.SlowQueryStatistics, logs []*v1pb.SlowQueryLog) *storepb.SlowQueryStatistics {
+	status := make(map[string]*storepb.SlowQueryStatisticsItem)
+
+	for _, item := range statistics.Items {
+		status[item.SqlFingerprint] = item
+	}
+
+	for _, log := range logs {
+		value, exists := status[log.Statistics.SqlFingerprint]
+		if !exists {
+			status[log.Statistics.SqlFingerprint] = &storepb.SlowQueryStatisticsItem{
+				SqlFingerprint:   log.Statistics.SqlFingerprint,
+				Count:            log.Statistics.Count,
+				LatestLogTime:    log.Statistics.LatestLogTime,
+				TotalQueryTime:   durationpb.New(log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)),
+				MaximumQueryTime: log.Statistics.MaximumQueryTime,
+				TotalRowsSent:    log.Statistics.AverageRowsSent * log.Statistics.Count,
+			}
+		} else {
+			value.Count += log.Statistics.Count
+			totalQueryTime := log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
+			value.TotalQueryTime = durationpb.New(value.TotalQueryTime.AsDuration() + totalQueryTime)
+			if value.MaximumQueryTime.AsDuration() < log.Statistics.MaximumQueryTime.AsDuration() {
+				value.MaximumQueryTime = log.Statistics.MaximumQueryTime
+			}
+			value.TotalRowsSent += log.Statistics.AverageRowsSent * log.Statistics.Count
+		}
+	}
+
+	var result []*storepb.SlowQueryStatisticsItem
+	for _, item := range status {
+		result = append(result, item)
+	}
+	return &storepb.SlowQueryStatistics{Items: result}
+}
+
+func getLatestLogTime(logMap map[string]*storepb.SlowQueryStatistics) time.Time {
+	for _, log := range logMap {
+		for _, item := range log.Items {
+			return item.LatestLogTime.AsTime()
+		}
+	}
+	return time.Time{}
+}
+
+func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
 	today := time.Now().Truncate(24 * time.Hour)
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
