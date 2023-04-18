@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
 
@@ -216,6 +217,12 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	if approvalTemplate != nil {
 		payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
 	}
+
+	approval, err := utils.ApproveIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to approve if needed")
+	}
+	payload.Approval = approval
 
 	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
