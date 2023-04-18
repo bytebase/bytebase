@@ -44,21 +44,23 @@
         {{ $t("common.issue") }}
       </p>
 
-      <WaitingForMyApprovalIssueTable
-        v-if="hasCustomApprovalFeature"
-        :issue-find="{
-          statusList: ['OPEN'],
-          projectId: project.id,
-        }"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTable
-            :show-placeholder="!loading"
-            :title="$t('issue.waiting-for-my-approval')"
-            :issue-list="issueList"
-          />
-        </template>
-      </WaitingForMyApprovalIssueTable>
+      <div>
+        <WaitingForMyApprovalIssueTable
+          v-if="hasCustomApprovalFeature"
+          session-key="project-waiting-approval"
+          :issue-find="{
+            statusList: ['OPEN'],
+            projectId: project.id,
+          }"
+        >
+          <template #table="{ issueList, loading }">
+            <IssueTable
+              :show-placeholder="!loading"
+              :title="$t('issue.waiting-for-my-approval')"
+              :issue-list="issueList"
+            />
+          </template>
+        </WaitingForMyApprovalIssueTable>
 
       <!-- show OPEN issues with pageSize=10 -->
       <div>

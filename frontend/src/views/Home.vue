@@ -15,6 +15,7 @@
 
     <WaitingForMyApprovalIssueTable
       v-if="hasCustomApprovalFeature"
+      session-key="home-waiting-approval"
       :issue-find="{
         statusList: ['OPEN'],
       }"
@@ -23,7 +24,6 @@
         <IssueTable
           :left-bordered="false"
           :right-bordered="false"
-          :bottom-bordered="loading"
           :show-placeholder="!loading"
           :title="$t('issue.waiting-for-my-approval')"
           :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
@@ -42,6 +42,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTable
+          class="-mt-px"
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
