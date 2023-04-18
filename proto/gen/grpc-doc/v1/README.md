@@ -4795,6 +4795,7 @@ The request message for updating a setting.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
+| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
 
 
 
