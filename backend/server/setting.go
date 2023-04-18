@@ -12,6 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
+	"github.com/bytebase/bytebase/backend/plugin/mail"
+	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -23,6 +25,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWorkspaceProfile,
 	api.SettingPluginOpenAIKey,
 	api.SettingPluginOpenAIEndpoint,
+	api.SettingWorkspaceMailDelivery,
 }
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
@@ -36,6 +39,20 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 
 		filteredList := []*api.Setting{}
 		for _, setting := range settingList {
+			if setting.Name == api.SettingWorkspaceMailDelivery {
+				// We don't want to return the mail password to the client.
+				var value storepb.SMTPMailDeliverySetting
+				if err := protojson.Unmarshal([]byte(setting.Value), &value); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
+				}
+				value.Password = ""
+				apiValue := convertStorepbToAPIMailDeliveryValue(&value)
+				bytes, err := json.Marshal(apiValue)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal mail delivery setting value").SetInternal(err)
+				}
+				setting.Value = string(bytes)
+			}
 			for _, whitelist := range whitelistSettings {
 				if setting.Name == whitelist {
 					filteredList = append(filteredList, setting)
@@ -132,14 +149,94 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				}
 				settingPatch.Value = string(b)
 			}
+
+			if settingPatch.Name == api.SettingWorkspaceMailDelivery {
+				var value api.SettingWorkspaceMailDeliveryValue
+				if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed setting value for mail delivery").SetInternal(err)
+				}
+				if settingPatch.ValidateOnly {
+					var password string
+					if v := value.SMTPPassword; v != nil {
+						password = *v
+					} else {
+						var storeValue api.SettingWorkspaceMailDeliveryValue
+						settingName := api.SettingWorkspaceMailDelivery
+						storeMailDelivery, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+							Name: &settingName,
+						})
+						if err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get mail delivery setting").SetInternal(err)
+						}
+						if storeMailDelivery == nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Cannot get mail delivery setting").SetInternal(err)
+						}
+						if err := json.Unmarshal([]byte(storeMailDelivery.Value), &storeValue); err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
+						}
+						if storeValue.SMTPPassword != nil {
+							password = *storeValue.SMTPPassword
+						}
+					}
+					email := mail.NewEmailMsg()
+					email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.SMTPFrom)).AddTo(value.SMTPTo).SetSubject("Test Email Subject").SetBody(`
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<title>A test mail from Bytebase.</title>
+	</head>
+	<body>
+		<h1>A test mail from Bytebase.</h1>
+	</body>
+	</html>
+	`)
+					client := mail.NewSMTPClient(value.SMTPServerHost, value.SMTPServerPort)
+					client.SetAuthType(convertSMTPAuthType(value.SMTPAuthenticationType))
+					client.SetAuthCredentials(value.SMTPUsername, password)
+					client.SetEncryptionType(convertSMTPEncryptionType(value.SMTPEncryptionType))
+					if err := client.SendMail(email); err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to send test email").SetInternal(err)
+					}
+					if _, err := c.Response().Write([]byte("OK")); err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to write response").SetInternal(err)
+					}
+					return nil
+				}
+			}
 		}
 
+		if settingPatch.Name == api.SettingWorkspaceMailDelivery {
+			value := api.SettingWorkspaceMailDeliveryValue{}
+			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
+			}
+			storepbValue := convertAPIMailDeliveryValueToStorePb(&value)
+			bytes, err := protojson.Marshal(storepbValue)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal mail delivery setting value").SetInternal(err)
+			}
+			settingPatch.Value = string(bytes)
+		}
 		setting, err := s.store.PatchSetting(ctx, settingPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Setting name not found: %s", settingPatch.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update setting: %v", settingPatch.Name)).SetInternal(err)
+		}
+		if setting.Name == api.SettingWorkspaceMailDelivery {
+			// We don't want to return the mail password to the client.
+			var value storepb.SMTPMailDeliverySetting
+			if err := protojson.Unmarshal([]byte(setting.Value), &value); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
+			}
+			value.Password = ""
+			apiValue := convertStorepbToAPIMailDeliveryValue(&value)
+			bytes, err := json.Marshal(apiValue)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal mail delivery setting value").SetInternal(err)
+			}
+			setting.Value = string(bytes)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -148,4 +245,71 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func convertSMTPAuthType(authType storepb.SMTPMailDeliverySetting_Authentication) mail.SMTPAuthType {
+	switch authType {
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_NONE:
+		return mail.SMTPAuthTypeNone
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_PLAIN:
+		return mail.SMTPAuthTypePlain
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_LOGIN:
+		return mail.SMTPAuthTypeLogin
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_CRAM_MD5:
+		return mail.SMTPAuthTypeCRAMMD5
+	}
+	return mail.SMTPAuthTypeNone
+}
+
+func convertSMTPEncryptionType(encryptionType storepb.SMTPMailDeliverySetting_Encryption) mail.SMTPEncryptionType {
+	switch encryptionType {
+	case storepb.SMTPMailDeliverySetting_ENCRYPTION_NONE:
+		return mail.SMTPEncryptionTypeNone
+	case storepb.SMTPMailDeliverySetting_ENCRYPTION_STARTTLS:
+		return mail.SMTPEncryptionTypeSTARTTLS
+	case storepb.SMTPMailDeliverySetting_ENCRYPTION_SSL_TLS:
+		return mail.SMTPEncryptionTypeSSLTLS
+	}
+	return mail.SMTPEncryptionTypeNone
+}
+
+func convertAPIMailDeliveryValueToStorePb(value *api.SettingWorkspaceMailDeliveryValue) *storepb.SMTPMailDeliverySetting {
+	if value == nil {
+		return nil
+	}
+	password := ""
+	if value.SMTPPassword != nil {
+		password = *value.SMTPPassword
+	}
+
+	pb := storepb.SMTPMailDeliverySetting{
+		Server:         value.SMTPServerHost,
+		Port:           int32(value.SMTPServerPort),
+		Encryption:     value.SMTPEncryptionType,
+		Ca:             "",
+		Key:            "",
+		Cert:           "",
+		Authentication: value.SMTPAuthenticationType,
+		Username:       value.SMTPUsername,
+		Password:       password,
+		From:           value.SMTPFrom,
+	}
+	return &pb
+}
+
+func convertStorepbToAPIMailDeliveryValue(pb *storepb.SMTPMailDeliverySetting) *api.SettingWorkspaceMailDeliveryValue {
+	if pb == nil {
+		return nil
+	}
+	password := pb.Password
+	value := api.SettingWorkspaceMailDeliveryValue{
+		SMTPServerHost:         pb.Server,
+		SMTPServerPort:         int(pb.Port),
+		SMTPEncryptionType:     pb.Encryption,
+		SMTPAuthenticationType: pb.Authentication,
+		SMTPUsername:           pb.Username,
+		SMTPPassword:           &password,
+		SMTPFrom:               pb.From,
+	}
+	return &value
 }

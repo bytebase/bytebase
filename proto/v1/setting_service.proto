@@ -37,6 +37,10 @@ message GetSettingResponse {
 message SetSettingRequest {
   // The setting to update.
   Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // validate_only is a flag to indicate whether to validate the setting value,
+  // server would not persist the setting value if it is true.
+  bool validate_only = 2;
 }
 
 // The schema of setting.
@@ -57,5 +61,50 @@ message Value {
   oneof value {
     // Defines this value as being a string value.
     string string_value = 1;
+    SMTPMailDeliverySettingValue smtp_mail_delivery_setting_value = 2;
   }
+}
+
+message SMTPMailDeliverySettingValue {
+  // The SMTP server address.
+  string server = 1;
+
+  // The SMTP server port.
+  int32 port = 2;
+
+  // We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
+  enum Encryption {
+    ENCRYPTION_UNSPECIFIED = 0;
+    ENCRYPTION_NONE = 1;
+    ENCRYPTION_STARTTLS = 2;
+    ENCRYPTION_SSL_TLS = 3;
+  }
+
+  // The SMTP server encryption.
+  Encryption encryption = 3;
+
+  // The CA, KEY, and CERT for the SMTP server.
+  // Not used.
+  optional string ca = 4;
+  optional string key = 5;
+  optional string cert = 6;
+
+  // We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
+  enum Authentication {
+    AUTHENTICATION_UNSPECIFIED = 0;
+    AUTHENTICATION_NONE = 1;
+    AUTHENTICATION_PLAIN = 2;
+    AUTHENTICATION_LOGIN = 3;
+    AUTHENTICATION_CRAM_MD5 = 4;
+  }
+  Authentication authentication = 7;
+  string username = 8;
+  // If not specified, server will use the existed password.
+  optional string password = 9;
+
+  // The sender email address.
+  string from = 10;
+
+  // The recipient email address, used with validate_only to send test email.
+  string to = 11;
 }

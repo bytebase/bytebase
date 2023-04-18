@@ -260,7 +260,8 @@ message IamPolicy {
 
 message Binding {
   // The project role that is assigned to the members.
-  ProjectRole role = 1;
+  // Format: roles/{role}
+  string role = 1;
 
   // Specifies the principals requesting access for a Bytebase resource.
   // `members` can have the following values:
@@ -299,12 +300,6 @@ enum SchemaChange {
   SCHEMA_CHANGE_UNSPECIFIED = 0;
   DDL = 1;
   SDL = 2;
-}
-
-enum ProjectRole {
-  PROJECT_ROLE_UNSPECIFIED = 0;
-  PROJECT_ROLE_OWNER = 1;
-  PROJECT_ROLE_DEVELOPER = 2;
 }
 
 message AddWebhookRequest {

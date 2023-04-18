@@ -235,7 +235,11 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
 	}
-	if err := validateIAMPolicy(request.Policy); err != nil {
+	roleMessages, err := s.store.ListRoles(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to list roles: %v", err)
+	}
+	if err := validateIAMPolicy(request.Policy, convertToRoles(roleMessages)); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -751,25 +755,16 @@ func getUserIdentifier(email string) string {
 	return "user:" + email
 }
 
-func convertToProjectRole(role api.Role) v1pb.ProjectRole {
-	switch role {
-	case api.Owner:
-		return v1pb.ProjectRole_PROJECT_ROLE_OWNER
-	case api.Developer:
-		return v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER
-	default:
-		return v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED
-	}
+func convertToProjectRole(role api.Role) string {
+	return fmt.Sprintf("%s%s", rolePrefix, role)
 }
 
-func convertProjectRole(role v1pb.ProjectRole) (api.Role, error) {
-	switch role {
-	case v1pb.ProjectRole_PROJECT_ROLE_OWNER:
-		return api.Owner, nil
-	case v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER:
-		return api.Developer, nil
+func convertProjectRole(role string) (api.Role, error) {
+	roleID, err := getRoleID(role)
+	if err != nil {
+		return api.Role(""), errors.Wrapf(err, "invalid project role %q", role)
 	}
-	return api.Role(""), errors.Errorf("invalid project role %q", role)
+	return api.Role(roleID), nil
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -1061,26 +1056,33 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 	return false
 }
 
-func validateIAMPolicy(policy *v1pb.IamPolicy) error {
+func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")
 	}
-	return validateBindings(policy.Bindings)
+	return validateBindings(policy.Bindings, roles)
 }
 
 func getUserEmailFromIdentifier(ident string) string {
 	return strings.TrimPrefix(ident, "user:")
 }
 
-func validateBindings(bindings []*v1pb.Binding) error {
+func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}
 	userMap := make(map[string]bool)
-	projectRoleMap := make(map[v1pb.ProjectRole]bool)
+	projectRoleMap := make(map[string]bool)
+	existingRoles := make(map[string]bool)
+	for _, role := range roles {
+		existingRoles[role.Name] = true
+	}
 	for _, binding := range bindings {
-		if binding.Role == v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED {
+		if binding.Role == "" {
 			return errors.Errorf("IAM Binding role is required")
+		}
+		if !existingRoles[binding.Role] {
+			return errors.Errorf("IAM Binding role %s does not exist", binding.Role)
 		}
 		// Each of the bindings must contain at least one member.
 		if len(binding.Members) == 0 {
@@ -1103,7 +1105,7 @@ func validateBindings(bindings []*v1pb.Binding) error {
 		projectRoleMap[binding.Role] = true
 	}
 	// Must contain one owner binding.
-	if _, ok := projectRoleMap[v1pb.ProjectRole_PROJECT_ROLE_OWNER]; !ok {
+	if _, ok := projectRoleMap["roles/OWNER"]; !ok {
 		return errors.Errorf("IAM Policy must have at least one binding with role PROJECT_OWNER")
 	}
 	return nil

@@ -51,3 +51,4 @@ export * from "./risk";
 export * from "./workspaceApprovalSetting";
 export * from "./review";
 export * from "./slowQuery";
+export * from "./role";
