@@ -38,7 +38,7 @@ type ProjectMemberMessage struct {
 	PrincipalID int
 }
 
-// GetProjectMemberByProjectIDAndPrincipalID gets a project member by project ID and principal ID.
+// GetProjectMemberByProjectIDAndPrincipalIDAndRole gets a project member by project ID and principal ID.
 func (s *Store) GetProjectMemberByProjectIDAndPrincipalIDAndRole(ctx context.Context, projectID int, principalID int, role api.Role) (*ProjectMemberMessage, error) {
 	var projectMember ProjectMemberMessage
 	query := `
