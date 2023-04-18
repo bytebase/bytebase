@@ -177,14 +177,16 @@ func (c *SMTPClient) SendMail(e *Email) error {
 }
 
 // SetAuthType sets the auth type of the SMTP client.
-func (c *SMTPClient) SetAuthType(authType SMTPAuthType) {
+func (c *SMTPClient) SetAuthType(authType SMTPAuthType) *SMTPClient {
 	c.authType = authType
+	return c
 }
 
 // SetAuthCredentials sets the auth credentials of the SMTP client.
-func (c *SMTPClient) SetAuthCredentials(username, password string) {
+func (c *SMTPClient) SetAuthCredentials(username, password string) *SMTPClient {
 	c.username = username
 	c.password = password
+	return c
 }
 
 func (c *SMTPClient) getAuth() smtp.Auth {
