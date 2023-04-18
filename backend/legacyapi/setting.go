@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // SettingName is the name of a setting.
@@ -34,6 +36,8 @@ const (
 	// SettingPluginAgent is the setting name for the internal agent API.
 	// For now we will call the hub to fetch the subscription license.
 	SettingPluginAgent SettingName = "bb.plugin.agent"
+	// SettingWorkspaceMailDelivery is the setting name for workspace mail delivery.
+	SettingWorkspaceMailDelivery SettingName = "bb.workspace.mail-delivery"
 )
 
 // IMType is the type of IM.
@@ -69,8 +73,9 @@ type SettingPatch struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
-	Name  SettingName
-	Value string `jsonapi:"attr,value"`
+	Name         SettingName
+	Value        string `jsonapi:"attr,value"`
+	ValidateOnly bool   `jsonapi:"attr,validateOnly"`
 }
 
 func (find *SettingFind) String() string {
@@ -90,4 +95,16 @@ type SettingAppIMValue struct {
 		Enabled              bool   `json:"enabled"`
 		ApprovalDefinitionID string `json:"approvalDefinitionID"`
 	} `json:"externalApproval"`
+}
+
+// SettingWorkspaceMailDeliveryValue is the setting value of SettingMailDelivery type setting.
+type SettingWorkspaceMailDeliveryValue struct {
+	SMTPServerHost         string                                         `json:"smtpServerHost"`
+	SMTPServerPort         int                                            `json:"smtpServerPort"`
+	SMTPUsername           string                                         `json:"smtpUsername"`
+	SMTPPassword           *string                                        `json:"smtpPassword"`
+	SMTPFrom               string                                         `json:"smtpFrom"`
+	SMTPAuthenticationType storepb.SMTPMailDeliverySetting_Authentication `json:"smtpAuthenticationType"`
+	SMTPEncryptionType     storepb.SMTPMailDeliverySetting_Encryption     `json:"smtpEncryptionType"`
+	SMTPTo                 string                                         `json:"sendTo"`
 }
