@@ -37,6 +37,10 @@ message GetSettingResponse {
 message SetSettingRequest {
   // The setting to update.
   Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // validate_only is a flag to indicate whether to validate the setting value,
+  // server would not persist the setting value if it is true.
+  bool validate_only = 2;
 }
 
 // The schema of setting.
