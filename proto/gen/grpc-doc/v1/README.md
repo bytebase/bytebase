@@ -4163,6 +4163,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | ----- | ---- | ----- | ----------- |
 | type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue) |  |  |
+| role | [string](#string) |  | Format: roles/{role} |
 
 
 
@@ -4366,7 +4367,6 @@ The review&#39;s `name` field is used to identify the review to update. Format: 
 <a name="bytebase-v1-ApprovalNode-GroupValue"></a>
 
 ### ApprovalNode.GroupValue
-GroupValue is used if ApprovalNode Type is ANY_IN_GROUP
 The predefined user groups are:
 - WORKSPACE_OWNER
 - WORKSPACE_DBA
