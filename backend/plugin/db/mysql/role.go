@@ -8,7 +8,12 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
@@ -379,21 +384,76 @@ func (driver *Driver) findRoleGrant(ctx context.Context, name string) (string, e
 }
 
 func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
-	query := `
-	  SELECT
-			user,
-			host
-		FROM mysql.user
-		WHERE user NOT LIKE 'mysql.%'
-	`
 	var instanceRoles []*storepb.InstanceRoleMetadata
-	roleRows, err := driver.db.QueryContext(ctx, query)
-
+	var users []string
+	var err error
+	users, err = driver.getUsersFromMySQLUser(ctx)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		log.Info("failed to get users", zap.Error(err))
+		users, err = driver.getUsersFromUserAttributes(ctx)
+		if err != nil {
+			log.Info("failed to get users", zap.Error(err))
+			return nil, nil
+		}
+	}
+
+	// Uses single quote instead of backtick to escape because this is a string
+	// instead of table (which should use backtick instead). MySQL actually works
+	// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
+	for _, name := range users {
+		grantList, err := driver.getGrantFromUser(ctx, name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get grants for %s", name)
+		}
+		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
+			Name:  name,
+			Grant: strings.Join(grantList, "\n"),
+		})
+	}
+	return instanceRoles, nil
+}
+
+// getGrantFromUser reads grants for user with format "'<user>'@'<host>'".
+func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]string, error) {
+	grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
+	grantRows, err := driver.db.QueryContext(ctx,
+		grantQuery,
+	)
+	if err != nil {
+		log.Info("failed to get grants", zap.String("user", name), zap.Error(err))
+		return nil, nil
+	}
+	defer grantRows.Close()
+
+	grants := []string{}
+	for grantRows.Next() {
+		var grant string
+		if err := grantRows.Scan(&grant); err != nil {
+			return nil, err
+		}
+		grants = append(grants, grant)
+	}
+	if err := grantRows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate grants for %s", name)
+	}
+	return grants, nil
+}
+
+// getUsersFromUserAttributes reads users from information_schema.user_attributes, returns the list of users with format "'<user>'@'<host>'".
+func (driver *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string, error) {
+	var users []string
+	query := `
+	SELECT
+		user,
+		host
+	FROM information_schema.user_attributes
+	WHERE user NOT LIKE 'mysql.%'
+	`
+	roleRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query information_schema.user_attributes")
 	}
 	defer roleRows.Close()
-
 	for roleRows.Next() {
 		var user string
 		var host string
@@ -403,44 +463,42 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		); err != nil {
 			return nil, err
 		}
-
-		if err := func() error {
-			// Uses single quote instead of backtick to escape because this is a string
-			// instead of table (which should use backtick instead). MySQL actually works
-			// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-			name := fmt.Sprintf("'%s'@'%s'", user, host)
-			grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
-			grantRows, err := driver.db.QueryContext(ctx,
-				grantQuery,
-			)
-			if err != nil {
-				return util.FormatErrorWithQuery(err, grantQuery)
-			}
-			defer grantRows.Close()
-
-			grantList := []string{}
-			for grantRows.Next() {
-				var grant string
-				if err := grantRows.Scan(&grant); err != nil {
-					return err
-				}
-				grantList = append(grantList, grant)
-			}
-			if err := grantRows.Err(); err != nil {
-				return util.FormatErrorWithQuery(err, grantQuery)
-			}
-
-			instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-				Name:  name,
-				Grant: strings.Join(grantList, "\n"),
-			})
-			return nil
-		}(); err != nil {
-			return nil, err
-		}
+		users = append(users, fmt.Sprintf("'%s'@'%s'", user, host))
 	}
 	if err := roleRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, errors.Wrapf(err, "failed to iterate information_schema.user_attributes")
 	}
-	return instanceRoles, nil
+	return users, nil
+}
+
+// getUsersFromMySQLUser reads users from mysql.user, returns the list of users with format "'<user>'@'<host>'".
+func (driver *Driver) getUsersFromMySQLUser(ctx context.Context) ([]string, error) {
+	var users []string
+	query := `
+	SELECT
+		user,
+		host
+	FROM mysql.user
+	WHERE user NOT LIKE 'mysql.%'
+	`
+	roleRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query mysql.user")
+	}
+	defer roleRows.Close()
+	for roleRows.Next() {
+		var user string
+		var host string
+		if err := roleRows.Scan(
+			&user,
+			&host,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, fmt.Sprintf("'%s'@'%s'", user, host))
+	}
+	if err := roleRows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate mysql.user")
+	}
+	return users, nil
 }
