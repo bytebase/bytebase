@@ -4,6 +4,7 @@ import {
   FetchTransport,
 } from "nice-grpc-web";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
+import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
@@ -32,6 +33,11 @@ const clientFactory = createClientFactory();
 
 export const authServiceClient = clientFactory.create(
   AuthServiceDefinition,
+  channel
+);
+
+export const roleServiceClient = clientFactory.create(
+  RoleServiceDefinition,
   channel
 );
 
