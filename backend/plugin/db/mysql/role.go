@@ -393,7 +393,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		users, err = driver.getUsersFromUserAttributes(ctx)
 		if err != nil {
 			log.Warn("failed to get users", zap.Error(err))
-			return instanceRoles, nil
+			return nil, nil
 		}
 	}
 
@@ -420,23 +420,23 @@ func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]stri
 		grantQuery,
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get grants for %s", name)
-
+		log.Warn("failed to get grants", zap.String("user", name), zap.Error(err))
+		return nil, nil
 	}
 	defer grantRows.Close()
 
-	grantList := []string{}
+	grants := []string{}
 	for grantRows.Next() {
 		var grant string
 		if err := grantRows.Scan(&grant); err != nil {
 			return nil, err
 		}
-		grantList = append(grantList, grant)
+		grants = append(grants, grant)
 	}
 	if err := grantRows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to iterate grants for %s", name)
 	}
-	return grantList, nil
+	return grants, nil
 }
 
 // getUsersFromUserAttributes reads users from information_schema.user_attributes, returns the list of users with format "'<user>'@'<host>'".
