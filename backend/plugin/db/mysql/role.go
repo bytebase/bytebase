@@ -471,7 +471,7 @@ func (driver *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string,
 	return users, nil
 }
 
-// getUsersFromMySQLUser reads users from mysql.user, returns the list of users with format "'<user>'@'<host>'"
+// getUsersFromMySQLUser reads users from mysql.user, returns the list of users with format "'<user>'@'<host>'".
 func (driver *Driver) getUsersFromMySQLUser(ctx context.Context) ([]string, error) {
 	var users []string
 	query := `
