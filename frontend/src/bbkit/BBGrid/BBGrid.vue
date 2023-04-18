@@ -24,31 +24,37 @@
       </div>
     </div>
 
-    <template
-      v-for="(item, row) in dataSource"
-      :key="rowKey ? item[rowKey] : row"
-    >
-      <div
-        row="table-row"
-        class="bb-grid-row group"
-        :class="{
-          clickable: rowClickable,
-        }"
-        @click="handleClick(item, 0, row, $event)"
+    <template v-if="ready">
+      <template
+        v-for="(item, row) in dataSource"
+        :key="rowKey ? item[rowKey] : row"
       >
-        <slot name="item" :item="item" :row="row" />
-      </div>
-      <div v-if="isRowExpanded(item, row)" row="table-row" class="bb-grid-row">
         <div
-          class="bb-grid-cell"
-          :style="{
-            gridColumnStart: 1,
-            gridColumnEnd: columnList.length + 1,
+          row="table-row"
+          class="bb-grid-row group"
+          :class="{
+            clickable: rowClickable,
           }"
+          @click="handleClick(item, 0, row, $event)"
         >
-          <slot name="expanded-item" :item="item" :row="row" />
+          <slot name="item" :item="item" :row="row" />
         </div>
-      </div>
+        <div
+          v-if="isRowExpanded(item, row)"
+          row="table-row"
+          class="bb-grid-row"
+        >
+          <div
+            class="bb-grid-cell"
+            :style="{
+              gridColumnStart: 1,
+              gridColumnEnd: columnList.length + 1,
+            }"
+          >
+            <slot name="expanded-item" :item="item" :row="row" />
+          </div>
+        </div>
+      </template>
     </template>
 
     <slot name="placeholder">
