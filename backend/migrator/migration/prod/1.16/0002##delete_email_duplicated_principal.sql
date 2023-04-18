@@ -3,6 +3,7 @@ DO $$
 DECLARE
   row_data RECORD;
   first_user RECORD;
+  row_exists NUMERIC;
 BEGIN
 FOR row_data IN (
   SELECT
@@ -88,9 +89,19 @@ LOOP
   UPDATE risk SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE slow_query SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE slow_query SET updater_id = first_user.id WHERE updater_id = row_data.id;
+  UPDATE principal SET creator_id = 1 WHERE creator_id = row_data.id;
+  UPDATE principal SET updater_id = 1 WHERE updater_id = row_data.id;
 
+  SELECT 1 INTO row_exists FROM project_member WHERE principal_id = first_user.id;
+  IF (row_exists > 0) THEN
+    DELETE FROM project_member WHERE principal_id = row_data.id;
+  ELSE
+    UPDATE project_member SET principal_id = first_user.id, creator_id = 1, updater_id = 1 WHERE principal_id = row_data.id;
+  END IF;
+
+  UPDATE member SET creator_id = 1 WHERE creator_id = row_data.id;
+  UPDATE member SET updater_id = 1 WHERE updater_id = row_data.id;
   DELETE FROM member WHERE principal_id = row_data.id;
-  DELETE FROM project_member WHERE principal_id = row_data.id;
   DELETE FROM principal WHERE id = row_data.id;
 END LOOP;
 END $$;
