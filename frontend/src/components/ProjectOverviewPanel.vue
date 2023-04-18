@@ -62,8 +62,7 @@
           </template>
         </WaitingForMyApprovalIssueTable>
 
-      <!-- show OPEN issues with pageSize=10 -->
-      <div>
+        <!-- show OPEN issues with pageSize=10 -->
         <PagedIssueTable
           session-key="project-open"
           :issue-find="{
@@ -74,6 +73,7 @@
         >
           <template #table="{ issueList, loading }">
             <IssueTable
+              class="-mt-px"
               :mode="'PROJECT'"
               :title="$t('project.overview.in-progress')"
               :issue-list="issueList"
