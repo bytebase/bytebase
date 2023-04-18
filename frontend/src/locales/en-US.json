@@ -376,7 +376,8 @@
       "sensitive-data": "Data Anonymization",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
-      "roles": "Roles"
+      "roles": "Roles",
+      "mail-delivery": "Mail Delivery"
     },
     "profile": {
       "email": "Email",
@@ -535,6 +536,22 @@
       "new-version-available": "New version is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
       "not-show-till-next-release": "Don't show this till next version"
+    },
+    "mail-delivery": {
+      "description": "Enable mail delivery to receive email notification by configuring SMTP server information.",
+      "field": {
+        "smtp-server-host": "SMTP Server Host",
+        "smtp-server-port": "SMTP Server Port",
+        "from": "From",
+        "smtp-username": "SMTP Username",
+        "smtp-password": "SMTP Password",
+        "send-test-email-to": "Send Test Email To",
+        "send": "Send",
+        "authentication-method": "Authentication Method",
+        "encryption": "Encryption"
+      },
+      "updated-tip": "Successfully updated the mail delivery setting",
+      "tested-tip": "Send successfully, please check the inbox of {address}."
     }
   },
   "activity": {
