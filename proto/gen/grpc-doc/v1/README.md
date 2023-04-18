@@ -258,7 +258,6 @@
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [OperatorType](#bytebase-v1-OperatorType)
-    - [ProjectRole](#bytebase-v1-ProjectRole)
     - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
@@ -3529,7 +3528,7 @@ TODO(zp): move to activity later.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [ProjectRole](#bytebase-v1-ProjectRole) |  | The project role that is assigned to the members. |
+| role | [string](#string) |  | The project role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
@@ -4014,19 +4013,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
-
-
-
-<a name="bytebase-v1-ProjectRole"></a>
-
-### ProjectRole
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROJECT_ROLE_UNSPECIFIED | 0 |  |
-| PROJECT_ROLE_OWNER | 1 |  |
-| PROJECT_ROLE_DEVELOPER | 2 |  |
 
 
 

@@ -31,12 +31,8 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
 
-	var roles []*v1pb.Role
-	for _, roleMessage := range roleMessages {
-		roles = append(roles, convertToRole(roleMessage))
-	}
 	return &v1pb.ListRolesResponse{
-		Roles: roles,
+		Roles: convertToRoles(roleMessages),
 	}, nil
 }
 
@@ -105,6 +101,14 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func convertToRoles(roleMessages []*store.RoleMessage) []*v1pb.Role {
+	var roles []*v1pb.Role
+	for _, roleMessage := range roleMessages {
+		roles = append(roles, convertToRole(roleMessage))
+	}
+	return roles
 }
 
 func convertToRole(role *store.RoleMessage) *v1pb.Role {
