@@ -8,7 +8,10 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser"
@@ -388,9 +391,23 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	`
 	var instanceRoles []*storepb.InstanceRoleMetadata
 	roleRows, err := driver.db.QueryContext(ctx, query)
-
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		// RDS may not have the permission to query mysql.user.
+		log.Warn("failed to query mysql.user", zap.Error(err))
+		// try reading from information_schema.user_attributes
+		query := `
+		SELECT
+			user,
+			host
+		FROM information_schema.user_attributes
+		WHERE user NOT LIKE 'mysql.%'
+		`
+		roleRows, err = driver.db.QueryContext(ctx, query)
+		if err != nil {
+			log.Warn("failed to query information_schema.user_attributes", zap.Error(err))
+			// if both queries fail, return empty list
+			return instanceRoles, nil
+		}
 	}
 	defer roleRows.Close()
 
