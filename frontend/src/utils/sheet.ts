@@ -16,7 +16,11 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseSchemaUpdateSDLPayload,
 } from "@/types";
-import { hasProjectPermission, hasWorkspacePermission } from "../utils";
+import {
+  hasPermissionInProject,
+  hasWorkspacePermission,
+  isMemberOfProject,
+} from "../utils";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
   // readable to
@@ -42,12 +46,7 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
       return true;
     }
 
-    const projectMemberList = sheet.project.memberList;
-    return (
-      projectMemberList.findIndex(
-        (member) => member.principal.id === currentUser.id
-      ) >= 0
-    );
+    return isMemberOfProject(sheet.project, currentUser);
   }
   // visibility === "PUBLIC"
   return true;
@@ -83,17 +82,10 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
     }
 
     const isCurrentUserProjectOwner = () => {
-      const projectMemberList = sheet.project.memberList || [];
-      const memberInProject = projectMemberList.find((member) => {
-        return member.principal.id === currentUser.id;
-      });
-
-      return (
-        memberInProject &&
-        hasProjectPermission(
-          "bb.permission.project.manage-sheet",
-          memberInProject.role
-        )
+      return hasPermissionInProject(
+        sheet.project,
+        currentUser,
+        "bb.permission.project.manage-sheet"
       );
     };
     return isCurrentUserProjectOwner();

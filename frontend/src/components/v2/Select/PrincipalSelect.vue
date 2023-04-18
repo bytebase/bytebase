@@ -18,6 +18,7 @@
 import { computed, watch, watchEffect, h } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { uniqBy } from "lodash-es";
 import UserIcon from "~icons/heroicons-outline/user";
 
 import { useMemberStore, usePrincipalStore, useProjectStore } from "@/store";
@@ -82,12 +83,13 @@ const prepare = () => {
 watchEffect(prepare);
 
 const getPrincipalListFromProject = (project: ProjectId) => {
-  return projectStore
+  const principalList = projectStore
     .getProjectById(project)
     .memberList.filter((member) => {
       return props.allowedProjectMemberRoleList.includes(member.role);
     })
     .map((member) => member.principal);
+  return uniqBy(principalList, (user) => user.id);
 };
 const getPrincipalListFromWorkspace = () => {
   return memberStore.memberList

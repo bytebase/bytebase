@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { uniq, uniqBy } from "lodash-es";
 
-import { Issue } from "@/types";
+import { Issue, ProjectRoleTypeOwner } from "@/types";
 import {
   Review,
   ApprovalStep,
@@ -105,12 +105,12 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
     if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
     if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
       return issue.project.memberList
-        .filter((member) => member.role === "DEVELOPER")
+        .filter((member) => member.role !== ProjectRoleTypeOwner)
         .map((member) => member.principal);
     }
     if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
       return issue.project.memberList
-        .filter((member) => member.role === "OWNER")
+        .filter((member) => member.role === ProjectRoleTypeOwner)
         .map((member) => member.principal);
     }
     if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {

@@ -121,21 +121,22 @@ export function hasProjectPermission(
     case "OWNER":
       return PROJECT_PERMISSION_MATRIX.get(permission)![1];
   }
+  return false;
 }
 
 // Returns true if admin feature is NOT supported or the principal is OWNER
 export function isOwner(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role == "OWNER";
+  return !hasFeature("bb.feature.rbac") || role === "OWNER";
 }
 
 // Returns true if admin feature is NOT supported or the principal is DBA
 export function isDBA(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role == "DBA";
+  return !hasFeature("bb.feature.rbac") || role === "DBA";
 }
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
 export function isDeveloper(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role == "DEVELOPER";
+  return !hasFeature("bb.feature.rbac") || role === "DEVELOPER";
 }
 
 export function roleName(role: RoleType): string {
@@ -157,4 +158,5 @@ export function projectRoleName(role: ProjectRoleType): string {
     case "DEVELOPER":
       return "Developer";
   }
+  return role;
 }

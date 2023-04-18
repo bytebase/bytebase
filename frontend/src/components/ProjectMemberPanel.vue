@@ -24,7 +24,7 @@
                 class="w-full"
                 :required="false"
                 :placeholder="$t('project.settings.member-placeholder')"
-                :selected-id="state.principalId"
+                :selected-id="state.principalId as number"
                 @select-principal-id="
                   (principalId) => {
                     state.principalId = principalId;
@@ -98,7 +98,7 @@ import {
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
-import { hasProjectPermission, hasWorkspacePermission } from "../utils";
+import { hasPermissionInProject, hasWorkspacePermission } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -160,17 +160,14 @@ export default defineComponent({
         return true;
       }
 
-      for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (
-            hasProjectPermission(
-              "bb.permission.project.manage-member",
-              member.role
-            )
-          ) {
-            return true;
-          }
-        }
+      if (
+        hasPermissionInProject(
+          props.project,
+          currentUser.value,
+          "bb.permission.project.manage-member"
+        )
+      ) {
+        return true;
       }
       return false;
     });
