@@ -47,6 +47,7 @@
       <div>
         <WaitingForMyApprovalIssueTable
           v-if="hasCustomApprovalFeature"
+          session-key="project-waiting-approval"
           :issue-find="{
             statusList: ['OPEN'],
             projectId: project.id,
