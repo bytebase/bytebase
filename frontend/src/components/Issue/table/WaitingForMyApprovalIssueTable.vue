@@ -19,7 +19,7 @@ import { Review } from "@/types/proto/v1/review_service";
 const currentUserName = computed(() => useAuthStore().currentUser.name);
 
 const filter = (issueList: Issue[]) => {
-  const issueListWithReview = issueList.map((issue) => {
+  return issueList.filter((issue) => {
     const review = computed(() => {
       try {
         return Review.fromJSON(issue.payload.approval);
@@ -29,22 +29,13 @@ const filter = (issueList: Issue[]) => {
     });
     const context = extractIssueReviewContext(review);
     const steps = useWrappedReviewSteps(issue, context);
-    return {
-      issue,
-      context,
-      steps,
-    };
-  });
-
-  const filteredList = issueListWithReview.filter(({ steps }) => {
     const currentStep = steps.value?.find((step) => step.status === "CURRENT");
-
-    const me = currentStep?.candidates.find(
-      (user) => user.name === currentUserName.value
+    if (!currentStep) return false;
+    return (
+      currentStep.candidates.findIndex(
+        (user) => user.name === currentUserName.value
+      ) >= 0
     );
-
-    return me;
   });
-  return filteredList.map(({ issue }) => issue);
 };
 </script>
