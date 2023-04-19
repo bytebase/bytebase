@@ -252,6 +252,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
+func (driver *Driver) QueryConn(ctx context.Context, statement string, queryContext *db.QueryContext) ([]any, error) {
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
 	return util.Query(ctx, db.Snowflake, conn, statement, queryContext)
 }
