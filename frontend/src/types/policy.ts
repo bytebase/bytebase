@@ -95,6 +95,7 @@ export type AccessControlPolicyPayload = {
 
 export type SlowQueryPolicyPayload = {
   active: boolean;
+  databaseList?: string[];
 };
 
 export type PolicyPayload =
