@@ -236,7 +236,9 @@
     "rollout": "Rollout",
     "uploading": "Uploading",
     "active": "Active",
-    "added": "Added"
+    "added": "Added",
+    "revoke": "Revoke",
+    "cannot-undo-this-action": "You cannot undo this action"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -403,7 +405,8 @@
         "account": "Account",
         "role": "Role",
         "update-time": "Updated Time",
-        "granted-time": "Granted Time"
+        "granted-time": "Granted Time",
+        "roles": "Roles"
       },
       "action": {
         "deactivate": "Deactivate",
@@ -1340,7 +1343,14 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
       "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
+      "members": {
+        "view-by-principals": "View by principals",
+        "view-by-roles": "View by roles",
+        "cannot-remove-last-owner": "Cannot remove the last owner of a project",
+        "revoke-role-from-user": "Revoke '{role}' from '{user}'",
+        "remove-user": "Remove '{user}'"
+      }
     },
     "mode": {
       "standard": "Standard",
@@ -2298,6 +2308,8 @@
         "max-length": "{resource} can contain up to {length} characters"
       },
       "delete": "Delete role"
-    }
+    },
+    "select": "Select role",
+    "select-roles": "Select roles"
   }
 }
