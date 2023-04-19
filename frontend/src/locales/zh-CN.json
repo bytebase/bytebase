@@ -1693,6 +1693,15 @@
     "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
+    "try-for-free": "免费试用",
+    "inquire-enterprise-plan": "企业版询价",
+    "enterprise-free-trial": "企业版 {days} 天免费试用",
+    "button": {
+      "free-trial": "{days} 天免费试用",
+      "upgrade": "升级",
+      "contact-us": "联系我们",
+      "view-subscription": "查看订阅"
+    },
     "trial-start-modal": {
       "title": "已开启{plan}试用",
       "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
