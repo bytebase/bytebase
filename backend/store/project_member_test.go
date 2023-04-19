@@ -15,7 +15,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 		newPolicy map[api.Role][]int
 	}
 	type Result struct {
-		deleteIDs     []int
+		deletesPolicy map[api.Role][]int
 		createsPolicy map[api.Role][]int
 	}
 
@@ -37,7 +37,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			Bindings: bindings,
 		}
 	}
-	extractCreatePolicyFromIAMPolicyMessage := func(m *IAMPolicyMessage) map[api.Role][]int {
+	extractPolicyFromIAMPolicyMessage := func(m *IAMPolicyMessage) map[api.Role][]int {
 		result := make(map[api.Role][]int)
 		for _, binding := range m.Bindings {
 			var memberIDs []int
@@ -50,11 +50,13 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 	}
 
 	testCases := []struct {
+		name   string
 		input  Input
 		result Result
 	}{
 		// Only Delete Member
 		{
+			name: "Only Delete Member",
 			input: Input{
 				oldPolicy: map[api.Role][]int{
 					api.Owner:     {1, 2},
@@ -66,12 +68,15 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 			result: Result{
-				deleteIDs:     []int{4},
+				deletesPolicy: map[api.Role][]int{
+					api.Developer: {4},
+				},
 				createsPolicy: map[api.Role][]int{},
 			},
 		},
 		// Only Add Member
 		{
+			name: "Only Add Member",
 			input: Input{
 				oldPolicy: map[api.Role][]int{
 					api.Owner:     {1, 2},
@@ -83,6 +88,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 			result: Result{
+				deletesPolicy: map[api.Role][]int{},
 				createsPolicy: map[api.Role][]int{
 					api.Developer: {5},
 				},
@@ -90,6 +96,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 		},
 		// Only Change Member Role
 		{
+			name: "Only Change Member Role",
 			input: Input{
 				oldPolicy: map[api.Role][]int{
 					api.Owner:     {1, 2},
@@ -101,7 +108,9 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 			result: Result{
-				deleteIDs: []int{3},
+				deletesPolicy: map[api.Role][]int{
+					api.Developer: {3},
+				},
 				createsPolicy: map[api.Role][]int{
 					api.Owner: {3},
 				},
@@ -109,6 +118,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 		},
 		// Complex Case
 		{
+			name: "Complex Case",
 			input: Input{
 				oldPolicy: map[api.Role][]int{
 					api.Owner:     {1, 2},
@@ -120,10 +130,40 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 			result: Result{
-				deleteIDs: []int{1, 4},
+				deletesPolicy: map[api.Role][]int{
+					api.Owner:     {1},
+					api.Developer: {4},
+				},
 				createsPolicy: map[api.Role][]int{
 					api.Owner:     {4, 5},
 					api.Developer: {6},
+				},
+			},
+		},
+		// Complex Case 2
+		{
+			name: "Complex Case 2",
+			input: Input{
+				oldPolicy: map[api.Role][]int{
+					api.Owner:          {1, 2, 7},
+					api.Developer:      {3, 4, 8},
+					api.Role("Tester"): {5},
+				},
+				newPolicy: map[api.Role][]int{
+					api.Owner:          {2, 4, 5, 7, 8},
+					api.Developer:      {3, 6, 7},
+					api.Role("Tester"): {5, 8},
+				},
+			},
+			result: Result{
+				deletesPolicy: map[api.Role][]int{
+					api.Owner:     {1},
+					api.Developer: {4, 8},
+				},
+				createsPolicy: map[api.Role][]int{
+					api.Owner:          {4, 5, 8},
+					api.Developer:      {6, 7},
+					api.Role("Tester"): {8},
 				},
 			},
 		},
@@ -132,11 +172,20 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 	for _, tc := range testCases {
 		oldPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.oldPolicy)
 		newPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.newPolicy)
-		deleteIDs, creates := getIAMPolicyDiff(oldPolicyMessage, newPolicyMessage)
-		sort.Slice(deleteIDs, func(i, j int) bool { return deleteIDs[i] < deleteIDs[j] })
-		sort.Slice(tc.result.deleteIDs, func(i, j int) bool { return tc.result.deleteIDs[i] < tc.result.deleteIDs[j] })
-		require.Equal(t, tc.result.deleteIDs, deleteIDs)
-		createsPolicy := extractCreatePolicyFromIAMPolicyMessage(creates)
+		deletes, creates := getIAMPolicyDiff(oldPolicyMessage, newPolicyMessage)
+
+		deletesPolicy := extractPolicyFromIAMPolicyMessage(deletes)
+		for role, memberIDs := range deletesPolicy {
+			sort.Slice(memberIDs, func(i, j int) bool { return memberIDs[i] < memberIDs[j] })
+			deletesPolicy[role] = memberIDs
+		}
+		for role, memberIDs := range tc.result.createsPolicy {
+			sort.Slice(memberIDs, func(i, j int) bool { return memberIDs[i] < memberIDs[j] })
+			tc.result.createsPolicy[role] = memberIDs
+		}
+		require.Equal(t, tc.result.deletesPolicy, deletesPolicy, tc.name)
+
+		createsPolicy := extractPolicyFromIAMPolicyMessage(creates)
 		for role, memberIDs := range createsPolicy {
 			sort.Slice(memberIDs, func(i, j int) bool { return memberIDs[i] < memberIDs[j] })
 			createsPolicy[role] = memberIDs
@@ -145,6 +194,6 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			sort.Slice(memberIDs, func(i, j int) bool { return memberIDs[i] < memberIDs[j] })
 			tc.result.createsPolicy[role] = memberIDs
 		}
-		require.Equal(t, tc.result.createsPolicy, createsPolicy)
+		require.Equal(t, tc.result.createsPolicy, createsPolicy, tc.name)
 	}
 }

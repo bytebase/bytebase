@@ -3,14 +3,11 @@ import axios from "axios";
 import {
   empty,
   EMPTY_ID,
-  MemberId,
   PrincipalId,
   Project,
   ProjectCreate,
   ProjectId,
   ProjectMember,
-  ProjectMemberCreate,
-  ProjectMemberPatch,
   ProjectPatch,
   ProjectState,
   ResourceIdentifier,
@@ -60,10 +57,7 @@ function convert(
 
   // sort the member list
   memberList.sort((a: ProjectMember, b: ProjectMember) => {
-    if (a.createdTs === b.createdTs) {
-      return a.id - b.id;
-    }
-    return a.createdTs - b.createdTs;
+    return Number(a.id) - Number(b.id);
   });
 
   return {
@@ -249,57 +243,6 @@ export const useProjectStore = defineStore("project", {
     async syncMemberRoleFromVCS({ projectId }: { projectId: ProjectId }) {
       await axios.post(`/api/project/${projectId}/sync-member`);
       const updatedProject = await this.fetchProjectById(projectId);
-
-      return updatedProject;
-    },
-
-    // Project Role Mapping
-    // Returns existing member if the principalId has already been created.
-    async createdMember({
-      projectId,
-      projectMember,
-    }: {
-      projectId: ProjectId;
-      projectMember: ProjectMemberCreate;
-    }) {
-      await axios.post(`/api/project/${projectId}/member`, {
-        data: {
-          type: "projectMemberCreate",
-          attributes: projectMember,
-        },
-      });
-
-      const updatedProject = await this.fetchProjectById(projectId);
-      return updatedProject;
-    },
-
-    async patchMember({
-      projectId,
-      memberId,
-      projectMemberPatch,
-    }: {
-      projectId: ProjectId;
-      memberId: MemberId;
-      projectMemberPatch: ProjectMemberPatch;
-    }) {
-      await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
-        data: {
-          type: "projectMemberPatch",
-          attributes: projectMemberPatch,
-        },
-      });
-
-      const updatedProject = await this.fetchProjectById(projectId);
-
-      return updatedProject;
-    },
-
-    async deleteMember(member: ProjectMember) {
-      await axios.delete(
-        `/api/project/${member.project.id}/member/${member.id}`
-      );
-
-      const updatedProject = await this.fetchProjectById(member.project.id);
 
       return updatedProject;
     },

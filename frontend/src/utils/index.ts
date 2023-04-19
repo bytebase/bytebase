@@ -27,3 +27,4 @@ export * from "./math";
 export * from "./idp";
 export * from "./id";
 export * from "./workspaceApprovalSetting";
+export * from "./projectIamPolicy";

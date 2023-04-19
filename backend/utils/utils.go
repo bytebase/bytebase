@@ -656,3 +656,112 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	}
 	return FindNextPendingStep(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers) == nil, nil
 }
+
+// SkipApprovalStepIfNeeded skips approval steps if no user can approve the step.
+func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID int, approval *storepb.IssuePayloadApproval) error {
+	if len(approval.ApprovalTemplates) == 0 {
+		return nil
+	}
+
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get project policy for project %d", projectUID)
+	}
+
+	var users []*store.UserMessage
+	roles := []api.Role{api.Owner, api.DBA}
+	for _, role := range roles {
+		principalType := api.EndUser
+		limit := 1
+		role := role
+		userMessages, err := s.ListUsers(ctx, &store.FindUserMessage{
+			Role:  &role,
+			Type:  &principalType,
+			Limit: &limit,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to list users for role %s", role)
+		}
+		if len(userMessages) != 0 {
+			users = append(users, userMessages[0])
+		}
+	}
+	for {
+		step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
+		if step == nil {
+			break
+		}
+		hasApprover, err := userCanApprove(step, users, policy)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if user can approve")
+		}
+		if hasApprover {
+			break
+		}
+		approval.Approvers = append(approval.Approvers, &storepb.IssuePayloadApproval_Approver{
+			Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
+			PrincipalId: api.SystemBotID,
+		})
+	}
+	return nil
+}
+
+func userCanApprove(step *storepb.ApprovalStep, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
+	if len(step.Nodes) != 1 {
+		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+	}
+	if step.Type != storepb.ApprovalStep_ANY {
+		return false, errors.Errorf("expecting ANY step type but got %v", step.Type)
+	}
+	node := step.Nodes[0]
+	if node.Type != storepb.ApprovalNode_ANY_IN_GROUP {
+		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
+	}
+
+	hasOwner := false
+	hasDBA := false
+	for _, user := range users {
+		if user.Role == api.Owner {
+			hasOwner = true
+		}
+		if user.Role == api.DBA {
+			hasDBA = true
+		}
+		if hasOwner && hasDBA {
+			break
+		}
+	}
+
+	projectRoleExist := make(map[string]bool)
+	for _, binding := range policy.Bindings {
+		if len(binding.Members) > 0 {
+			projectRoleExist[convertToRoleName(binding.Role)] = true
+		}
+	}
+
+	switch val := node.Payload.(type) {
+	case *storepb.ApprovalNode_GroupValue_:
+		switch val.GroupValue {
+		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
+			return false, errors.Errorf("invalid group value")
+		case storepb.ApprovalNode_WORKSPACE_OWNER:
+			return hasOwner, nil
+		case storepb.ApprovalNode_WORKSPACE_DBA:
+			return hasDBA, nil
+		case storepb.ApprovalNode_PROJECT_OWNER:
+			return projectRoleExist[convertToRoleName(api.Owner)], nil
+		case storepb.ApprovalNode_PROJECT_MEMBER:
+			return projectRoleExist[convertToRoleName(api.Developer)], nil
+		default:
+			return false, errors.Errorf("invalid group value")
+		}
+	case *storepb.ApprovalNode_Role:
+		return projectRoleExist[val.Role], nil
+	default:
+		return false, errors.Errorf("invalid node payload type")
+	}
+}
+
+func convertToRoleName(role api.Role) string {
+	return fmt.Sprintf("roles/%s", role)
+}

@@ -38,8 +38,8 @@ type ProjectMemberMessage struct {
 	PrincipalID int
 }
 
-// GetProjectMemberByProjectIDAndPrincipalID gets a project member by project ID and principal ID.
-func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, projectID int, principalID int) (*ProjectMemberMessage, error) {
+// GetProjectMemberByProjectIDAndPrincipalIDAndRole gets a project member by project ID and principal ID.
+func (s *Store) GetProjectMemberByProjectIDAndPrincipalIDAndRole(ctx context.Context, projectID int, principalID int, role api.Role) (*ProjectMemberMessage, error) {
 	var projectMember ProjectMemberMessage
 	query := `
 	SELECT
@@ -47,14 +47,14 @@ func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, p
 		project_member.project_id,
 		project_member.principal_id
 	FROM project_member 
-	WHERE project_member.project_id = $1 AND project_member.principal_id = $2`
+	WHERE project_member.project_id = $1 AND project_member.principal_id = $2 AND project_member.role = $3`
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, projectID, principalID)
+	rows, err := tx.QueryContext(ctx, query, projectID, principalID, role)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 	}
 	deletes, inserts := getIAMPolicyDiff(oldPolicy, set)
 
-	if len(deletes) > 0 {
+	if len(deletes.Bindings) > 0 {
 		if err := s.deleteProjectIAMPolicyImpl(ctx, tx, projectUID, deletes); err != nil {
 			return err
 		}
@@ -300,56 +300,78 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 	return nil
 }
 
-func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID int, memberIDs []int) error {
-	if len(memberIDs) == 0 {
+func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID int, deletes *IAMPolicyMessage) error {
+	if len(deletes.Bindings) == 0 {
 		return nil
 	}
-	query := ""
-	where, deletePlaceholders, args := []string{}, []string{}, []any{}
-	where, args = append(where, fmt.Sprintf("(project_member.project_id = $%d)", len(args)+1)), append(args, projectUID)
-	for _, id := range memberIDs {
-		deletePlaceholders = append(deletePlaceholders, fmt.Sprintf("$%d", len(args)+1))
-		args = append(args, id)
+	where, args := []string{}, []any{}
+	args = append(args, projectUID)
+	for _, binding := range deletes.Bindings {
+		for _, member := range binding.Members {
+			where = append(where, fmt.Sprintf("(project_member.principal_id = $%d AND project_member.role = $%d)", len(args)+1, len(args)+2))
+			args = append(args, member.ID, binding.Role)
+		}
 	}
-	where = append(where, fmt.Sprintf("(project_member.principal_id IN (%s))", strings.Join(deletePlaceholders, ", ")))
-	query = `DELETE FROM project_member WHERE ` + strings.Join(where, " AND ")
+	query := fmt.Sprintf(`DELETE FROM project_member WHERE project_member.project_id = $1 AND (%s)`, strings.Join(where, " OR "))
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 	return nil
 }
 
-func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) ([]int, *IAMPolicyMessage) {
-	oldUserIDToProjectRoleMap := make(map[int]api.Role)
-	newUserIDToProjectRoleMap := make(map[int]api.Role)
+func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) (*IAMPolicyMessage, *IAMPolicyMessage) {
+	oldUserIDToProjectRoleMap := make(map[int]map[api.Role]bool)
+	oldUserIDToUserMap := make(map[int]*UserMessage)
+	newUserIDToProjectRoleMap := make(map[int]map[api.Role]bool)
 	newUserIDToUserMap := make(map[int]*UserMessage)
 
 	for _, binding := range oldPolicy.Bindings {
 		for _, member := range binding.Members {
-			oldUserIDToProjectRoleMap[member.ID] = binding.Role
+			oldUserIDToUserMap[member.ID] = member
+
+			if _, ok := oldUserIDToProjectRoleMap[member.ID]; !ok {
+				oldUserIDToProjectRoleMap[member.ID] = make(map[api.Role]bool)
+			}
+			oldUserIDToProjectRoleMap[member.ID][binding.Role] = true
 		}
 	}
 	for _, binding := range newPolicy.Bindings {
 		for _, member := range binding.Members {
-			newUserIDToProjectRoleMap[member.ID] = binding.Role
 			newUserIDToUserMap[member.ID] = member
+
+			if _, ok := newUserIDToProjectRoleMap[member.ID]; !ok {
+				newUserIDToProjectRoleMap[member.ID] = make(map[api.Role]bool)
+			}
+			newUserIDToProjectRoleMap[member.ID][binding.Role] = true
 		}
 	}
 
-	var deletes []int
+	deletes := make(map[api.Role][]*UserMessage)
 	inserts := make(map[api.Role][]*UserMessage)
-	// Delete member that no longer exist or role doesn't match.
-	for oldUserID, oldRole := range oldUserIDToProjectRoleMap {
-		if newRole, ok := newUserIDToProjectRoleMap[oldUserID]; !ok || oldRole != newRole {
-			deletes = append(deletes, oldUserID)
+	// Delete member that no longer exists.
+	for oldUserID, oldRoleMap := range oldUserIDToProjectRoleMap {
+		for oldRole := range oldRoleMap {
+			if newRoleMap, ok := newUserIDToProjectRoleMap[oldUserID]; !ok || !newRoleMap[oldRole] {
+				deletes[oldRole] = append(deletes[oldRole], oldUserIDToUserMap[oldUserID])
+			}
 		}
 	}
 
-	// Create member if not exist in old policy or project role doesn't match.
-	for newUserID, newRole := range newUserIDToProjectRoleMap {
-		if oldRole, ok := oldUserIDToProjectRoleMap[newUserID]; !ok || newRole != oldRole {
-			inserts[newRole] = append(inserts[newRole], newUserIDToUserMap[newUserID])
+	// Create member if not exist in old policy.
+	for newUserID, newRoleMap := range newUserIDToProjectRoleMap {
+		for newRole := range newRoleMap {
+			if oldRoleMap, ok := oldUserIDToProjectRoleMap[newUserID]; !ok || !oldRoleMap[newRole] {
+				inserts[newRole] = append(inserts[newRole], newUserIDToUserMap[newUserID])
+			}
 		}
+	}
+
+	var deleteBindings []*PolicyBinding
+	for role, users := range deletes {
+		deleteBindings = append(deleteBindings, &PolicyBinding{
+			Role:    role,
+			Members: users,
+		})
 	}
 
 	var upsertBindings []*PolicyBinding
@@ -359,7 +381,10 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 			Members: users,
 		})
 	}
-	return deletes, &IAMPolicyMessage{
-		Bindings: upsertBindings,
-	}
+
+	return &IAMPolicyMessage{
+			Bindings: deleteBindings,
+		}, &IAMPolicyMessage{
+			Bindings: upsertBindings,
+		}
 }

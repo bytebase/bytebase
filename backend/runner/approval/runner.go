@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
 
@@ -215,6 +216,10 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 	if approvalTemplate != nil {
 		payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
+	}
+
+	if err := utils.SkipApprovalStepIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval); err != nil {
+		return false, errors.Wrap(err, "failed to skip approval step if needed")
 	}
 
 	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {

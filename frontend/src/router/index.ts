@@ -497,6 +497,13 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "mail-delivery",
+                name: "setting.workspace.mail-delivery",
+                meta: { title: () => t("settings.sidebar.mail-delivery") },
+                component: () =>
+                  import("../views/SettingWorkspaceMailDelivery.vue"),
+              },
+              {
                 path: "subscription",
                 name: "setting.workspace.subscription",
                 meta: { title: () => t("settings.sidebar.subscription") },

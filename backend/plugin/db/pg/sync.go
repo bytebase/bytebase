@@ -93,6 +93,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
+	functionMap, err := getFunctions(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
+	}
+
 	extensions, err := getExtensions(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extensions from database %q", driver.databaseName)
@@ -120,6 +125,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	for _, schemaName := range schemaNames {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
+		var functions []*storepb.FunctionMetadata
 		var exists bool
 		if tables, exists = tableMap[schemaName]; !exists {
 			tables = []*storepb.TableMetadata{}
@@ -127,10 +133,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		if views, exists = viewMap[schemaName]; !exists {
 			views = []*storepb.ViewMetadata{}
 		}
+		if functions, exists = functionMap[schemaName]; !exists {
+			functions = []*storepb.FunctionMetadata{}
+		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:   schemaName,
-			Tables: tables,
-			Views:  views,
+			Name:      schemaName,
+			Tables:    tables,
+			Views:     views,
+			Functions: functions,
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -602,6 +612,44 @@ func getIndexMethodType(stmt string) string {
 		return ""
 	}
 	return matches[1]
+}
+
+// getFunctions gets all functions of a database.
+func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
+	functionMap := make(map[string][]*storepb.FunctionMetadata)
+
+	query := `
+		select n.nspname as function_schema,
+			p.proname as function_name,
+			case when l.lanname = 'internal' then p.prosrc
+					else pg_get_functiondef(p.oid)
+					end as definition
+		from pg_proc p
+		left join pg_namespace n on p.pronamespace = n.oid
+		left join pg_language l on p.prolang = l.oid
+		left join pg_type t on t.oid = p.prorettype 
+		where n.nspname not in ('pg_catalog', 'information_schema')
+		order by function_schema, function_name;`
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		function := &storepb.FunctionMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &function.Name, &function.Definition); err != nil {
+			return nil, err
+		}
+
+		functionMap[schemaName] = append(functionMap[schemaName], function)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return functionMap, nil
 }
 
 // SyncSlowQuery syncs the slow query.
