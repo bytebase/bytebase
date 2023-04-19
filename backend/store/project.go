@@ -117,7 +117,7 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 			if err != nil {
 				return nil, err
 			}
-			projectMember, err := s.GetProjectMemberByProjectIDAndPrincipalID(ctx, project.UID, principal.ID)
+			projectMember, err := s.GetProjectMemberByProjectIDAndPrincipalIDAndRole(ctx, project.UID, principal.ID, binding.Role)
 			if err != nil {
 				return nil, err
 			}

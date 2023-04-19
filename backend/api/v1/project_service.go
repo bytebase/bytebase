@@ -1071,7 +1071,6 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}
-	userMap := make(map[string]bool)
 	projectRoleMap := make(map[string]bool)
 	existingRoles := make(map[string]bool)
 	for _, role := range roles {
@@ -1093,9 +1092,11 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 			return errors.Errorf("Each IAM binding must have a unique role")
 		}
 
+		// Users with each role must be unique.
+		userMap := make(map[string]bool)
 		for _, member := range binding.Members {
 			if _, ok := userMap[member]; ok {
-				return errors.Errorf("duplicate user %s", member)
+				return errors.Errorf("duplicate user %s in role %s", member, binding.Role)
 			}
 			userMap[member] = true
 			if err := validateMember(member); err != nil {
