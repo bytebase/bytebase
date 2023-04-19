@@ -326,6 +326,9 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 		return status.Errorf(codes.Internal, "failed to read banner.png: %v", err)
 	}
 	mailHTMLBody, err := testEmailFs.ReadFile("mail_templates/testmail/template.html")
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to read template.html: %v", err)
+	}
 	logoFullReader := bytes.NewReader(logoFull)
 	bannerReader := bytes.NewReader(banner)
 	logoFullFileName, err := email.Attach(logoFullReader, "logo-full.png", "image/png")
