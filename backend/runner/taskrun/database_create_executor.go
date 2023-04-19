@@ -85,9 +85,19 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		zap.String("database", payload.DatabaseName),
 		zap.String("statement", statement),
 	)
-	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
-	if err != nil {
-		return true, nil, err
+	var defaultDBDriver db.Driver
+	if instance.Engine == db.MongoDB {
+		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
+		// And run the create collection statement later.
+		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, payload.DatabaseName)
+		if err != nil {
+			return true, nil, err
+		}
+	} else {
+		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+		if err != nil {
+			return true, nil, err
+		}
 	}
 	defer defaultDBDriver.Close(ctx)
 	if _, err := defaultDBDriver.Execute(ctx, statement, true /* createDatabase */); err != nil {
