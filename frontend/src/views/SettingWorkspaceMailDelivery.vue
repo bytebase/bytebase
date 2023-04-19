@@ -211,8 +211,8 @@ interface LocalState {
 }
 const { t } = useI18n();
 
-const state = reactive<LocalState>({
-  mailDeliverySetting: {
+const defaultMailDeliverySetting = function (): SMTPMailDeliverySettingValue {
+  return {
     server: "",
     port: 587,
     username: "",
@@ -222,7 +222,11 @@ const state = reactive<LocalState>({
       SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN,
     encryption: SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_STARTTLS,
     to: "",
-  },
+  };
+};
+
+const state = reactive<LocalState>({
+  mailDeliverySetting: defaultMailDeliverySetting(),
   testMailTo: "",
   isLoading: false,
   useEmptyPassword: false,
