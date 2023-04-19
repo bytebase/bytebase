@@ -107,10 +107,16 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	if !canApprove {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot approve because the user does not have the required permission")
 	}
+
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
 		Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
 		PrincipalId: int32(principalID),
 	})
+
+	if err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to skip approval step if needed, error: %v", err)
+	}
+
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
