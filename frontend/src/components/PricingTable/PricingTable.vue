@@ -375,6 +375,7 @@ const getButtonText = (plan: Plan): string => {
       if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
         return "";
       }
+      break;
     case PlanType.ENTERPRISE:
       if (subscriptionStore.currentPlan === PlanType.FREE) {
         return t("subscription.button.free-trial", {
@@ -392,6 +393,7 @@ const getButtonText = (plan: Plan): string => {
         }
         return t("subscription.button.view-subscription");
       }
+      break;
   }
   return "";
 };
