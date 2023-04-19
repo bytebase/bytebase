@@ -1,6 +1,7 @@
 import { computed, unref } from "vue";
 import { MaybeRef, ProjectRoleType, RoleType } from "../types";
 import { hasFeature, useCurrentUser } from "@/store";
+import { t, te } from "@/plugins/i18n";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
@@ -175,4 +176,13 @@ export const extractRoleResourceName = (resourceId: string): string => {
   const pattern = /(?:^|\/)roles\/([^/]+)(?:$|\/)/;
   const matches = resourceId.match(pattern);
   return matches?.[1] ?? "";
+};
+
+export const roleNameText = (name: string): string => {
+  const keypath = `common.role.${name.toLowerCase()}`;
+
+  if (te(keypath)) {
+    return t(keypath);
+  }
+  return name;
 };

@@ -6,6 +6,7 @@
 import {
   useEnvironmentStore,
   useMemberStore,
+  useRoleStore,
   usePrincipalStore,
   useSettingStore,
   useUIStateStore,
@@ -23,6 +24,7 @@ export default defineComponent({
       useSettingStore().fetchSetting(),
       // Fetch so MemberSelect can have the data.
       useMemberStore().fetchMemberList(),
+      useRoleStore().fetchRoleList(),
       useUserStore().fetchUserList(),
       // Though fetchMemberList also return the principal info, it's possible that a principal is no longer a member.
       // since all record types have creator, updater which are associated with principal, so we need to fetch
