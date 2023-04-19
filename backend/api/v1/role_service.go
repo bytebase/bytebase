@@ -109,6 +109,13 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	if role == nil {
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
+	using, project, err := s.store.GetProjectUsingRole(ctx, api.Role(roleID))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
+	}
+	if using {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", convertToRoleName(roleID), fmt.Sprintf("%s%s", projectNamePrefix, project))
+	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
 	}
