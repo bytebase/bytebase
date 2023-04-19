@@ -23,11 +23,12 @@ import {
 } from "@/types";
 import { t, te } from "@/plugins/i18n";
 import {
+  ApprovalNode,
   ApprovalNode_GroupValue,
   approvalNode_GroupValueToJSON,
   ApprovalNode_Type,
   ApprovalStep_Type,
-} from "@/types/proto/store/approval";
+} from "@/types/proto/v1/review_service";
 import { usePrincipalStore } from "@/store";
 import {
   buildCELExpr,
@@ -36,6 +37,7 @@ import {
   resolveCELExpr,
   SimpleExpr,
 } from "@/plugins/cel";
+import { extractRoleResourceName, roleNameText } from "./role";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -44,6 +46,21 @@ export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
     return t(keypath);
   }
   return name;
+};
+
+export const approvalNodeRoleText = (role: string) => {
+  return roleNameText(extractRoleResourceName(role));
+};
+
+export const approvalNodeText = (node: ApprovalNode): string => {
+  const { groupValue, role } = node;
+  if (groupValue && groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
+    return approvalNodeGroupValueText(groupValue);
+  }
+  if (role) {
+    return approvalNodeRoleText(role);
+  }
+  return "";
 };
 
 /*
