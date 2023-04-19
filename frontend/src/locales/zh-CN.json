@@ -376,7 +376,8 @@
       "sensitive-data": "数据脱敏",
       "access-control": "数据访问控制",
       "audit-log": "审计日志",
-      "roles": "角色"
+      "roles": "角色",
+      "mail-delivery": "邮件传输"
     },
     "profile": {
       "email": "邮箱",
@@ -536,6 +537,22 @@
       "new-version-available": "有新版本可更新",
       "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
       "not-show-till-next-release": "在下次更新前不要提醒我"
+    },
+    "mail-delivery": {
+      "description": "通过配置 SMTP 服务器信息以接收相关问题的电子邮件通知。",
+      "field": {
+        "smtp-server-host": "SMTP 服务器主机",
+        "from": "发送自",
+        "smtp-username": "SMTP 用户名",
+        "smtp-password": "SMTP 密码",
+        "send-test-email-to": "发送测试邮件给",
+        "authentication-method": "验证方式",
+        "encryption": "加密方式",
+        "smtp-server-port": "SMTP 服务器端口",
+        "send": "发送"
+      },
+      "updated-tip": "邮件传输配置更新成功",
+      "tested-tip": "发送成功，请检查 {address} 的收件箱。"
     }
   },
   "activity": {
