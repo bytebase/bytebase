@@ -119,13 +119,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 	case db.MySQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case db.Postgres:
-		return s.syncPostgreSQLSlowQuery(ctx, instance)
+		return s.syncPostgreSQLSlowQuery(ctx, instance, slowQueryPolicy)
 	default:
 		return errors.Errorf("unsupported database engine: %s", instance.Engine)
 	}
 }
 
-func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage, policy *api.SlowQueryPolicy) error {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		InstanceID: &instance.ResourceID,
 	})
@@ -133,9 +133,17 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return err
 	}
 
+	databaseMap := make(map[string]bool)
+	for _, database := range policy.DatabaseList {
+		databaseMap[database] = true
+	}
+
 	var firstDatabase string
 	for _, database := range databases {
 		if database.SyncState != api.OK {
+			continue
+		}
+		if _, exists := databaseMap[database.DatabaseName]; !exists {
 			continue
 		}
 		if err := func() error {
