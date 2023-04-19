@@ -659,6 +659,10 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 
 // SkipApprovalStepIfNeeded skips approval steps if no user can approve the step.
 func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID int, approval *storepb.IssuePayloadApproval) error {
+	if len(approval.ApprovalTemplates) == 0 {
+		return nil
+	}
+
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get project policy for project %d", projectUID)
