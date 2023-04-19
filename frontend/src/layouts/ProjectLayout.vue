@@ -90,6 +90,10 @@ export default defineComponent({
       return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
+    const isDefaultProject = computed((): boolean => {
+      return project.value.id === DEFAULT_PROJECT_ID;
+    });
+
     const isTenantProject = computed((): boolean => {
       return project.value.tenantMode === "TENANT";
     });
@@ -108,7 +112,9 @@ export default defineComponent({
         { name: t("common.activities"), hash: "activity" },
         { name: t("common.gitops"), hash: "gitops" },
         { name: t("common.webhooks"), hash: "webhook" },
-        { name: t("common.settings"), hash: "setting" },
+        isDefaultProject.value
+          ? null
+          : { name: t("common.settings"), hash: "setting" },
       ];
       const filteredList = list.filter(
         (item) => item !== null

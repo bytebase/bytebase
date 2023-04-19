@@ -35,7 +35,7 @@
         class="w-[12rem] max-h-[18rem] flex flex-col border rounded bg-white shadow-md text-control-light overflow-y-hidden"
       >
         <div class="whitespace-nowrap pt-3 pb-2 px-2 border-b textlabel">
-          {{ approvalNodeGroupValueText(step.step.nodes[0].groupValue!) }}
+          {{ approvalNodeText(step.step.nodes[0]) }}
         </div>
         <div class="flex-1 overflow-auto text-xs">
           <div
@@ -67,7 +67,7 @@ import { NEllipsis } from "naive-ui";
 
 import { convertUserToPrincipal, useAuthStore } from "@/store";
 import { WrappedReviewStep } from "@/types";
-import { approvalNodeGroupValueText } from "@/utils";
+import { approvalNodeText } from "@/utils";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 
 const { currentUser } = storeToRefs(useAuthStore());

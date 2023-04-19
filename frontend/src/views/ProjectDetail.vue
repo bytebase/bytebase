@@ -47,7 +47,7 @@
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-if="hash === 'setting'">
+  <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'setting'">
     <ProjectSettingPanel
       id="setting"
       :project="project"
@@ -58,6 +58,10 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
+import { cloneDeep } from "lodash-es";
+import { useRoute } from "vue-router";
+
+import { DEFAULT_PROJECT_ID } from "@/types";
 import { idFromSlug, sortDatabaseList } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
@@ -68,8 +72,6 @@ import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel
 import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
-import { cloneDeep } from "lodash-es";
-import { useRoute } from "vue-router";
 import { useDatabaseStore, useEnvironmentList, useProjectStore } from "@/store";
 
 export default defineComponent({
@@ -132,6 +134,7 @@ export default defineComponent({
     });
 
     return {
+      DEFAULT_PROJECT_ID,
       hash,
       project,
       databaseList,
