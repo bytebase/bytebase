@@ -31,8 +31,8 @@ const (
 	filterKeyProject   = "project"
 	filterKeyStartTime = "start_time"
 
-	// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
-	// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+	// Support order by count, latest_log_time, average_query_time, maximum_query_time,
+	// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
 	orderByKeyCount               = "count"
 	orderByKeyLatestLogTime       = "latest_log_time"
 	orderByKeyAverageQueryTime    = "average_query_time"
@@ -637,7 +637,7 @@ func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKey
 	if len(orderByKeys) == 0 {
 		orderByKeys = []orderByKey{
 			{
-				key:      orderByKeyMaximumQueryTime,
+				key:      orderByKeyAverageQueryTime,
 				isAscend: false,
 			},
 		}
@@ -733,8 +733,8 @@ func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKey
 func validSlowQueryOrderByKey(keys []orderByKey) error {
 	for _, key := range keys {
 		switch key.key {
-		// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
-		// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+		// Support order by count, latest_log_time, average_query_time, maximum_query_time,
+		// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
 		case orderByKeyCount, orderByKeyLatestLogTime, orderByKeyAverageQueryTime, orderByKeyMaximumQueryTime,
 			orderByKeyAverageRowsSent, orderByKeyMaximumRowsSent, orderByKeyAverageRowsExamined, orderByKeyMaximumRowsExamined:
 		default:
