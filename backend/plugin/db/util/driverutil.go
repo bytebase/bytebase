@@ -209,6 +209,10 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]any, error) {
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
+		// TODO(d): ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
+		if dbType == db.ClickHouse {
+			return nil, nil
+		}
 		return nil, FormatErrorWithQuery(err, statement)
 	}
 	defer rows.Close()
