@@ -19,6 +19,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -67,20 +68,21 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
-	stateCfg  *state.State
-
-	licenseService enterpriseAPI.LicenseService
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	stateCfg        *state.State
+	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
-		store:          store,
-		dbFactory:      dbFactory,
-		stateCfg:       stateCfg,
-		licenseService: licenseService,
+		store:           store,
+		dbFactory:       dbFactory,
+		stateCfg:        stateCfg,
+		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -218,13 +220,50 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
 	}
 
-	if err := utils.SkipApprovalStepIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval); err != nil {
+	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval)
+	if err != nil {
 		return false, errors.Wrap(err, "failed to skip approval step if needed")
 	}
 
 	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
+
+	if stepsSkipped > 0 {
+		// It's ok to fail to create activity.
+		if err := func() error {
+			activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
+				Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
+					ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
+						Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED,
+					},
+				},
+				IssueName: issue.Title,
+			})
+			if err != nil {
+				return err
+			}
+
+			for i := 0; i < stepsSkipped; i++ {
+				create := &api.ActivityCreate{
+					CreatorID:   api.SystemBotID,
+					ContainerID: issue.UID,
+					Type:        api.ActivityIssueCommentCreate,
+					Level:       api.ActivityInfo,
+					Comment:     "",
+					Payload:     string(activityPayload),
+				}
+				if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}(); err != nil {
+			log.Error("failed to create activity after approving review", zap.Error(err))
+		}
+	}
+
 	return true, nil
 }
 

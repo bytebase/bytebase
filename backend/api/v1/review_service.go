@@ -113,7 +113,8 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		PrincipalId: int32(principalID),
 	})
 
-	if err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval); err != nil {
+	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip approval step if needed, error: %v", err)
 	}
 
@@ -151,8 +152,27 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			Comment:     "",
 			Payload:     string(activityPayload),
 		}
-		_, err = s.activityManager.CreateActivity(ctx, create, &activity.Metadata{})
-		return err
+		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+			return err
+		}
+
+		if stepsSkipped > 0 {
+			for i := 0; i < stepsSkipped; i++ {
+				create := &api.ActivityCreate{
+					CreatorID:   api.SystemBotID,
+					ContainerID: issue.UID,
+					Type:        api.ActivityIssueCommentCreate,
+					Level:       api.ActivityInfo,
+					Comment:     "",
+					Payload:     string(activityPayload),
+				}
+				if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
 	}(); err != nil {
 		log.Error("failed to create activity after approving review", zap.Error(err))
 	}
