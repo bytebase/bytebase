@@ -2250,7 +2250,12 @@
           "PROJECT_MEMBER": "Project Member"
         },
         "add": "Add node",
-        "delete": "Delete approval node"
+        "delete": "Delete approval node",
+        "select-approver": "Select approver",
+        "roles": {
+          "system": "System roles",
+          "custom": "Custom roles"
+        }
       },
       "presets": {
         "owner-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",

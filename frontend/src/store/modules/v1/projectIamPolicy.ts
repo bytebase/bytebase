@@ -1,4 +1,4 @@
-import { computed, ref, unref, watchEffect } from "vue";
+import { computed, ref, unref, watch } from "vue";
 import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
@@ -48,12 +48,16 @@ export const useProjectIamPolicyStore = defineStore(
 export const useProjectIamPolicy = (project: MaybeRef<string>) => {
   const store = useProjectIamPolicyStore();
   const ready = ref(false);
-  watchEffect(() => {
-    ready.value = false;
-    store.fetchProjectIamPolicy(unref(project)).finally(() => {
-      ready.value = true;
-    });
-  });
+  watch(
+    () => unref(project),
+    (project) => {
+      ready.value = false;
+      store.fetchProjectIamPolicy(project).finally(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
   const policy = computed(() => {
     return store.policyMap.get(unref(project)) ?? IamPolicy.fromJSON({});
   });
