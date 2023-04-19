@@ -2158,13 +2158,13 @@ type ListSlowQueriesRequest struct {
 	//   - Currently we only support filtering down to date granularity.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the slow query log.
-	// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
-	// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+	// Support order by count, latest_log_time, average_query_time, maximum_query_time,
+	// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
 	// For example:
 	//   - order by count: order_by = "count"
 	//   - order by latest_log_time desc: order_by = "latest_log_time desc"
 	//
-	// Default: order by nighty_fifth_percentile_query_time desc.
+	// Default: order by average_query_time desc.
 	OrderBy string `protobuf:"bytes,3,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
