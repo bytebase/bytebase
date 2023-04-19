@@ -33,7 +33,7 @@
           row="table-row"
           class="bb-grid-row group"
           :class="{
-            clickable: rowClickable,
+            clickable: rowClickable && isRowClickable(item, row),
           }"
           @click="handleClick(item, 0, row, $event)"
         >
@@ -46,6 +46,7 @@
         >
           <div
             class="bb-grid-cell"
+            :class="expandedRowClass"
             :style="{
               gridColumnStart: 1,
               gridColumnEnd: columnList.length + 1,
@@ -119,6 +120,8 @@ const props = withDefaults(
     showPlaceholder?: boolean;
     ready?: boolean;
     isRowExpanded?: (item: DataType, row: number) => boolean;
+    isRowClickable?: (item: DataType, row: number) => boolean;
+    expandedRowClass?: VueClass;
   }>(),
   {
     columnList: () => [],
@@ -131,6 +134,8 @@ const props = withDefaults(
     showPlaceholder: false,
     ready: true,
     isRowExpanded: () => false,
+    isRowClickable: () => true,
+    expandedRowClass: undefined,
   }
 );
 
@@ -144,7 +149,7 @@ const handleClick = (
   row: number,
   e: MouseEvent
 ) => {
-  if (props.rowClickable) {
+  if (props.rowClickable && props.isRowClickable(item, row)) {
     emit("click-row", item, section, row, e);
   }
 };
