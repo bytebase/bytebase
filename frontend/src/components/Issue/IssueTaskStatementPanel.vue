@@ -451,7 +451,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
         projectId: projectId,
         name: filename,
         statement,
-        visibility: "PRIVATE",
+        visibility: "PROJECT",
         payload: {},
       },
       {
