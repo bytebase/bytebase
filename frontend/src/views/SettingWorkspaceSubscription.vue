@@ -52,7 +52,7 @@
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
       <div
-        v-if="subscriptionStore.currentPlan != PlanType.ENTERPRISE"
+        v-if="canTrial && subscriptionStore.currentPlan != PlanType.ENTERPRISE"
         class="my-3"
       >
         <dt class="text-gray-400">
