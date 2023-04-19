@@ -218,11 +218,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = append(payload.Approval.ApprovalTemplates, approvalTemplate)
 	}
 
-	approval, err := utils.ApproveIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to approve if needed")
+	if err := utils.SkipApprovalStepIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval); err != nil {
+		return false, errors.Wrap(err, "failed to skip approval step if needed")
 	}
-	payload.Approval = approval
 
 	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")

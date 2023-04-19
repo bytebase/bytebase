@@ -16,8 +16,6 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -659,14 +657,15 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return FindNextPendingStep(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers) == nil, nil
 }
 
-func ApproveIfNeeded(ctx context.Context, s *store.Store, projectUID int, approval *storepb.IssuePayloadApproval) (*storepb.IssuePayloadApproval, error) {
+// SkipApprovalStepIfNeeded skips approval steps if no user can approve the step.
+func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID int, approval *storepb.IssuePayloadApproval) error {
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
+		return errors.Wrapf(err, "failed to get project policy for project %d", projectUID)
 	}
 
 	var users []*store.UserMessage
-	roles := []api.Role{api.Owner, api.DBA, api.Developer}
+	roles := []api.Role{api.Owner, api.DBA}
 	for _, role := range roles {
 		principalType := api.EndUser
 		limit := 1
@@ -677,7 +676,7 @@ func ApproveIfNeeded(ctx context.Context, s *store.Store, projectUID int, approv
 			Limit: &limit,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list users, error: %v", err)
+			return errors.Wrapf(err, "failed to list users for role %s", role)
 		}
 		if len(userMessages) != 0 {
 			users = append(users, userMessages[0])
@@ -690,7 +689,7 @@ func ApproveIfNeeded(ctx context.Context, s *store.Store, projectUID int, approv
 		}
 		hasApprover, err := userCanApprove(step, users, policy)
 		if err != nil {
-			return nil, err
+			return errors.Wrapf(err, "failed to check if user can approve")
 		}
 		if hasApprover {
 			break
@@ -700,7 +699,7 @@ func ApproveIfNeeded(ctx context.Context, s *store.Store, projectUID int, approv
 			PrincipalId: api.SystemBotID,
 		})
 	}
-	return approval, nil
+	return nil
 }
 
 func userCanApprove(step *storepb.ApprovalStep, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {

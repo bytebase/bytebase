@@ -113,11 +113,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		PrincipalId: int32(principalID),
 	})
 
-	approval, err := utils.ApproveIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to approve if needed, error: %v", err)
+	if err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to skip approval step if needed, error: %v", err)
 	}
-	payload.Approval = approval
 
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
