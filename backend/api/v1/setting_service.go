@@ -123,6 +123,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		storeSettingValue = string(bytes)
 
 	case api.SettingWorkspaceApproval:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
+		}
 		settingValue := request.Setting.Value.GetStringValue()
 		payload := new(storepb.WorkspaceApprovalSetting)
 		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
