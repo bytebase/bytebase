@@ -192,7 +192,7 @@ planList:
       - pitr
   - type: 2
     title: enterprise
-    trialDays: 0
+    trialDays: 14
     unitPrice: 0
     trialPrice: 0
     freeSeatCount: -1
