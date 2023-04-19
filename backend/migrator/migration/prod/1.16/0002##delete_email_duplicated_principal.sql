@@ -56,14 +56,20 @@ FOR row_data IN (
 )
 LOOP
   SELECT * INTO first_user FROM principal WHERE email = row_data.email ORDER BY id LIMIT 1;
+  UPDATE principal SET creator_id = 1 WHERE creator_id = row_data.id;
+  UPDATE principal SET updater_id = 1 WHERE updater_id = row_data.id;
   UPDATE setting SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE setting SET updater_id = first_user.id WHERE updater_id = row_data.id;
+  UPDATE member SET creator_id = 1 WHERE creator_id = row_data.id;
+  UPDATE member SET updater_id = 1 WHERE updater_id = row_data.id;
   UPDATE environment SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE environment SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE policy SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE policy SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE project SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE project SET updater_id = first_user.id WHERE updater_id = row_data.id;
+  UPDATE project_member SET creator_id = 1 WHERE creator_id = row_data.id;
+  UPDATE project_member SET updater_id = 1 WHERE updater_id = row_data.id;
   UPDATE project_webhook SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE project_webhook SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE instance SET creator_id = first_user.id WHERE creator_id = row_data.id;
@@ -124,8 +130,6 @@ LOOP
   UPDATE risk SET updater_id = first_user.id WHERE updater_id = row_data.id;
   UPDATE slow_query SET creator_id = first_user.id WHERE creator_id = row_data.id;
   UPDATE slow_query SET updater_id = first_user.id WHERE updater_id = row_data.id;
-  UPDATE principal SET creator_id = 1 WHERE creator_id = row_data.id;
-  UPDATE principal SET updater_id = 1 WHERE updater_id = row_data.id;
 
   SELECT 1 INTO row_exists FROM project_member WHERE principal_id = first_user.id;
   IF (row_exists > 0) THEN
@@ -134,8 +138,6 @@ LOOP
     UPDATE project_member SET principal_id = first_user.id, creator_id = 1, updater_id = 1 WHERE principal_id = row_data.id;
   END IF;
 
-  UPDATE member SET creator_id = 1 WHERE creator_id = row_data.id;
-  UPDATE member SET updater_id = 1 WHERE updater_id = row_data.id;
   DELETE FROM member WHERE principal_id = row_data.id;
   DELETE FROM principal WHERE id = row_data.id;
 END LOOP;
