@@ -312,7 +312,7 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 			args = append(args, member.ID, binding.Role)
 		}
 	}
-	query := fmt.Sprintf(`DELETE FROM project_member WHERE project_member.project_id = $1 AND (%s)`+strings.Join(where, " AND "), strings.Join(where, " OR "))
+	query := fmt.Sprintf(`DELETE FROM project_member WHERE project_member.project_id = $1 AND (%s)`, strings.Join(where, " OR "))
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
