@@ -14,7 +14,8 @@
       <SlowQueryPolicyTable
         :instance-list="state.ready ? filteredInstanceList : []"
         :policy-list="policyList"
-        :toggle-active="toggleActive"
+        :toggle-instance-active="toggleInstanceActive"
+        :toggle-database-active="toggleDatabaseActive"
         :show-placeholder="state.ready"
       />
       <div
@@ -33,22 +34,31 @@ import { computed, onMounted, reactive } from "vue";
 import { BBAttention } from "@/bbkit";
 import {
   pushNotification,
+  useDatabaseStore,
   useEnvironmentList,
   useInstanceStore,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
 import {
+  Database,
   Environment,
   EnvironmentId,
   Instance,
   SlowQueryPolicyPayload,
   UNKNOWN_ID,
+  engineName,
 } from "@/types";
 import { EnvironmentTabFilter } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
-import { instanceSupportSlowQuery } from "@/utils";
+import {
+  InstanceListSupportSlowQuery,
+  extractSlowQueryPolicyPayload,
+  instanceSupportSlowQuery,
+  slowQueryTypeOfInstance,
+} from "@/utils";
 import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
 
 type LocalState = {
   ready: boolean;
@@ -70,6 +80,7 @@ const { t } = useI18n();
 const policyStore = useSlowQueryPolicyStore();
 const slowQueryStore = useSlowQueryStore();
 const instanceStore = useInstanceStore();
+const databaseStore = useDatabaseStore();
 const environmentList = useEnvironmentList(["NORMAL"]);
 
 const policyList = computed(() => {
@@ -94,6 +105,13 @@ const prepare = async () => {
   try {
     const prepareInstanceList = async () => {
       const list = await instanceStore.fetchInstanceList(["NORMAL"]);
+      const instanceListWithDatabases = list.filter(
+        (instance) => slowQueryTypeOfInstance(instance) === "DATABASE"
+      );
+      await instanceListWithDatabases.map((instance) =>
+        databaseStore.fetchDatabaseListByInstanceId(instance.id)
+      );
+
       state.instanceList = list.filter(instanceSupportSlowQuery);
     };
     const preparePolicyList = async () => {
@@ -112,9 +130,14 @@ const changeEnvironment = (id: EnvironmentId | undefined) => {
   state.filter.environment = environmentList.value.find((env) => env.id === id);
 };
 
-const patchInstanceSlowQueryPolicy = (instance: Instance, active: boolean) => {
+const patchInstanceSlowQueryPolicy = (
+  instance: Instance,
+  active: boolean,
+  databaseList: string[] = []
+) => {
   const payload: SlowQueryPolicyPayload = {
     active,
+    databaseList,
   };
   return policyStore.upsertPolicyByResourceTypeAndPolicyType(
     "instance",
@@ -126,7 +149,7 @@ const patchInstanceSlowQueryPolicy = (instance: Instance, active: boolean) => {
   );
 };
 
-const toggleActive = async (instance: Instance, active: boolean) => {
+const toggleInstanceActive = async (instance: Instance, active: boolean) => {
   try {
     await patchInstanceSlowQueryPolicy(instance, active);
     if (active) {
@@ -154,10 +177,85 @@ const toggleActive = async (instance: Instance, active: boolean) => {
   }
 };
 
+const toggleDatabaseActive = async (
+  instance: Instance,
+  database: Database,
+  active: boolean
+) => {
+  const composePolicyPayload = (
+    instance: Instance,
+    database: Database,
+    active: boolean
+  ) => {
+    const payload = cloneDeep(
+      extractSlowQueryPolicyPayload(
+        policyList.value.find((policy) => policy.resourceId === instance.id)
+      )
+    );
+    const databaseList = payload.databaseList ?? [];
+    if (active) {
+      if (!databaseList.includes(database.name)) {
+        databaseList.push(database.name);
+      }
+    } else {
+      const index = databaseList.indexOf(database.name);
+      if (index >= 0) {
+        databaseList.splice(index, 1);
+      }
+    }
+
+    return {
+      active: databaseList.length > 0,
+      databaseList,
+    };
+  };
+  try {
+    const payload = composePolicyPayload(instance, database, active);
+    await patchInstanceSlowQueryPolicy(
+      instance,
+      payload.active,
+      payload.databaseList
+    );
+    if (active) {
+      // When turning ON an database's slow query, call the corresponding
+      // API endpoint to sync slow queries from the instance immediately.
+      try {
+        await slowQueryStore.syncSlowQueriesByInstance(instance);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      } catch (err: any) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: typeof err.message === "string" ? err.message : String(err),
+        });
+
+        const rollbackPayload = composePolicyPayload(instance, database, false);
+        await patchInstanceSlowQueryPolicy(
+          instance,
+          rollbackPayload.active,
+          rollbackPayload.databaseList
+        );
+      }
+    }
+  } catch {
+    // nothing
+  }
+};
+
 onMounted(prepare);
 
 const attentionDescription = computed(() => {
-  const versions = `MySQL >= 5.7`;
+  const versions = InstanceListSupportSlowQuery.map(([engine, minVersion]) => {
+    const parts = [engineName(engine)];
+    if (minVersion !== "0") {
+      parts.push(minVersion);
+    }
+    return parts.join(" >= ");
+  }).join(", ");
 
   return t("slow-query.attention-description", {
     versions,
