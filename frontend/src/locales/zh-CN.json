@@ -234,7 +234,9 @@
     "rollout": "发布",
     "uploading": "上传中",
     "active": "开启",
-    "added": "已创建"
+    "added": "已创建",
+    "revoke": "撤销",
+    "cannot-undo-this-action": "这个操作无法撤销"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -402,7 +404,8 @@
         "account": "账户",
         "role": "角色",
         "update-time": "更新时间",
-        "granted-time": "批准时间"
+        "granted-time": "批准时间",
+        "roles": "角色"
       },
       "action": {
         "deactivate": "禁用",
@@ -1355,7 +1358,14 @@
       "schema-change-type": "Schema 变更类型",
       "select-schema-change-type-ddl": "命令式 - 面向过程的 DDL 命令，如 ALTER TABLE",
       "select-schema-change-type-sdl": "声明式 - 面向终态的 Schema 描述，如 CREATE TABLE",
-      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
+      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。",
+      "members": {
+        "view-by-principals": "按用户查看",
+        "view-by-roles": "按角色查看",
+        "cannot-remove-last-owner": "不能移除项目的最后一个所有者",
+        "revoke-role-from-user": "撤销 '{user}' 的 '{role}' 角色",
+        "remove-user": "移除 '{user}'"
+      }
     },
     "mode": {
       "standard": "标准",
@@ -2312,6 +2322,8 @@
         "max-length": "{resource}至多包含 {length} 个字符"
       },
       "delete": "删除角色"
-    }
+    },
+    "select": "选择角色",
+    "select-roles": "选择角色"
   }
 }

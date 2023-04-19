@@ -76,6 +76,7 @@ type FindUserMessage struct {
 	Role        *api.Role
 	ShowDeleted bool
 	Type        *api.PrincipalType
+	Limit       *int
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -198,22 +199,26 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
+	query := `
+	SELECT
+		principal.id AS user_id,
+		principal.email,
+		principal.name,
+		principal.type,
+		principal.password_hash,
+		principal.mfa_config,
+		member.role,
+		member.row_status AS row_status
+	FROM principal
+	LEFT JOIN member ON principal.id = member.principal_id
+	WHERE ` + strings.Join(where, " AND ")
+
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+
 	var userMessages []*UserMessage
-	rows, err := tx.QueryContext(ctx, `
-				SELECT
-					principal.id AS user_id,
-					principal.email,
-					principal.name,
-					principal.type,
-					principal.password_hash,
-					principal.mfa_config,
-					member.role,
-					member.row_status AS row_status
-				FROM principal
-				LEFT JOIN member ON principal.id = member.principal_id
-				WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

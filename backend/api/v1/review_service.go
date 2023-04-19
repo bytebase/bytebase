@@ -107,10 +107,16 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	if !canApprove {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot approve because the user does not have the required permission")
 	}
+
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
 		Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
 		PrincipalId: int32(principalID),
 	})
+
+	if err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to skip approval step if needed, error: %v", err)
+	}
+
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
@@ -320,13 +326,17 @@ func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
 }
 
 func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
-	if v, ok := node.Payload.(*storepb.ApprovalNode_GroupValue_); ok {
-		return &v1pb.ApprovalNode{
-			Type: v1pb.ApprovalNode_ANY_IN_GROUP,
-			Payload: &v1pb.ApprovalNode_GroupValue_{
-				GroupValue: v1pb.ApprovalNode_GroupValue(v.GroupValue),
-			},
+	v1node := &v1pb.ApprovalNode{}
+	v1node.Type = v1pb.ApprovalNode_Type(node.Type)
+	switch payload := node.Payload.(type) {
+	case *storepb.ApprovalNode_GroupValue_:
+		v1node.Payload = &v1pb.ApprovalNode_GroupValue_{
+			GroupValue: v1pb.ApprovalNode_GroupValue(payload.GroupValue),
+		}
+	case *storepb.ApprovalNode_Role:
+		v1node.Payload = &v1pb.ApprovalNode_Role{
+			Role: payload.Role,
 		}
 	}
-	return &v1pb.ApprovalNode{}
+	return v1node
 }
