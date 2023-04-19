@@ -25,6 +25,7 @@ package mail
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/mail"
 	"net/smtp"
 
@@ -108,6 +109,25 @@ func (e *Email) SetSubject(subject string) *Email {
 func (e *Email) SetBody(body string) *Email {
 	e.e.HTML = []byte(body)
 	return e
+}
+
+// The ContentType is the type of the content.
+// https://cloud.google.com/appengine/docs/legacy/standard/php/mail/mail-with-headers-attachments.
+type ContentType string
+
+const (
+	// ContentTypeImagePNG is the content type of the file with png extension.
+	ContentTypeImagePNG ContentType = "image/png"
+)
+
+// Attach attaches the file to the email, and returns the filename of the attachment.
+// Caller can use filename as content id to reference the attachment in the email body.
+func (e *Email) Attach(reader io.Reader, filename string, contentType ContentType) (string, error) {
+	attachment, err := e.e.Attach(reader, filename, string(contentType))
+	if err != nil {
+		return "", err
+	}
+	return attachment.Filename, nil
 }
 
 // SMTPAuthType is the type of SMTP authentication.
