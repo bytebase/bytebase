@@ -325,7 +325,7 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to read banner.png: %v", err)
 	}
-	mailHtmlBody, err := testEmailFs.ReadFile("mail_templates/testmail/template.html")
+	mailHTMLBody, err := testEmailFs.ReadFile("mail_templates/testmail/template.html")
 	logoFullReader := bytes.NewReader(logoFull)
 	bannerReader := bytes.NewReader(banner)
 	logoFullFileName, err := email.Attach(logoFullReader, "logo-full.png", "image/png")
@@ -337,8 +337,8 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 		return status.Errorf(codes.Internal, "failed to attach banner.png: %v", err)
 	}
 
-	polishHtmlBody := prepareTestMailContent(string(mailHtmlBody), consoleRedirectURL, logoFullFileName, bannerFileName)
-	email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.From)).AddTo(value.To).SetSubject("Bytebase mail server test").SetBody(polishHtmlBody)
+	polishHTMLBody := prepareTestMailContent(string(mailHTMLBody), consoleRedirectURL, logoFullFileName, bannerFileName)
+	email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.From)).AddTo(value.To).SetSubject("Bytebase mail server test").SetBody(polishHTMLBody)
 	client := mail.NewSMTPClient(value.Server, int(value.Port))
 	client.SetAuthType(convertToMailSMTPAuthType(value.Authentication)).
 		SetAuthCredentials(value.Username, *value.Password).
@@ -350,9 +350,9 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 	return nil
 }
 
-func prepareTestMailContent(htmlTemplate, consoleRedirectURL, logoContentId, bannerContentId string) string {
-	testEmailContent := strings.ReplaceAll(htmlTemplate, "{{BYTEBASE_LOGO_URL}}", fmt.Sprintf("cid:%s", logoContentId))
-	testEmailContent = strings.ReplaceAll(testEmailContent, "{{BYTEBASE_BANNER_URL}}", fmt.Sprintf("cid:%s", bannerContentId))
+func prepareTestMailContent(htmlTemplate, consoleRedirectURL, logoContentID, bannerContentID string) string {
+	testEmailContent := strings.ReplaceAll(htmlTemplate, "{{BYTEBASE_LOGO_URL}}", fmt.Sprintf("cid:%s", logoContentID))
+	testEmailContent = strings.ReplaceAll(testEmailContent, "{{BYTEBASE_BANNER_URL}}", fmt.Sprintf("cid:%s", bannerContentID))
 	testEmailContent = strings.ReplaceAll(testEmailContent, "{{BYTEBASE_CONSOLE_REDIRECT_URL}}", consoleRedirectURL)
 	return testEmailContent
 }
