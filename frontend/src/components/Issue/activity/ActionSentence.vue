@@ -68,7 +68,11 @@ const renderActionSentence = () => {
         }
       }
       if (payload.approvalEvent?.status === "APPROVED") {
-        return renderSpan(t("custom-approval.issue-review.approved-issue"));
+        const verb = maybeAutomaticallyVerb(
+          activity,
+          t("custom-approval.issue-review.approved-issue")
+        );
+        return renderSpan(verb);
       }
     }
 
