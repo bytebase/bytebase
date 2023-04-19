@@ -139,8 +139,16 @@
         <tr class="border-t border-gray-200">
           <th class="sr-only" scope="row">Choose your plan</th>
           <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
+            <a
+              v-if="plan.type == PlanType.ENTERPRISE"
+              class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
+              target="__blank"
+              :href="enterprisePlanFormLink"
+            >
+              {{ $t("subscription.button.contact-us") }}
+            </a>
             <button
-              v-if="plan.buttonText"
+              v-else-if="plan.buttonText"
               class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
               @click="onButtonClick(plan)"
             >
@@ -263,8 +271,21 @@
           </template>
         </tbody>
       </table>
+      <a
+        v-if="plan.type == PlanType.ENTERPRISE"
+        :class="[
+          plan.highlight
+            ? 'border-indigo-500  text-white  bg-indigo-500 hover:bg-indigo-600 hover:border-indigo-600'
+            : 'border-accent text-accent hover:bg-accent',
+          'mt-8 block w-full border rounded-md py-4 text-lg font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
+        ]"
+        target="__blank"
+        :href="enterprisePlanFormLink"
+      >
+        {{ $t("subscription.button.contact-us") }}
+      </a>
       <button
-        v-if="plan.buttonText"
+        v-else-if="plan.buttonText"
         type="button"
         :class="[
           plan.highlight
@@ -305,6 +326,8 @@ const state = reactive<LocalState>({
   instanceCount:
     subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
 });
+const enterprisePlanFormLink =
+  "https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform";
 
 watch(
   () => subscriptionStore.subscription,
@@ -391,10 +414,7 @@ const onButtonClick = (plan: Plan) => {
     case PlanType.ENTERPRISE:
       if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
         if (subscriptionStore.isTrialing) {
-          window.open(
-            "https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform",
-            "__blank"
-          );
+          window.open(enterprisePlanFormLink, "__blank");
         } else {
           window.open(
             "https://hub.bytebase.com/subscription?source=console.subscription",
