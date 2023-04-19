@@ -66,6 +66,9 @@ const (
 	// FeatureAuditLog enables viewing audit logs.
 	FeatureAuditLog FeatureType = "bb.feature.audit-log"
 
+	// FeatureCustomRole enables customizing roles.
+	FeatureCustomRole FeatureType = "bb.feature.custom-role"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -182,6 +185,8 @@ func (e FeatureType) Name() string {
 		return "Watermark"
 	case FeatureAuditLog:
 		return "Audit log"
+	case FeatureCustomRole:
+		return "Custom role"
 	// Branding
 	case FeatureBranding:
 		return "Branding"
@@ -260,11 +265,12 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:       {false, false, true},
-	Feature2FA:       {false, false, true},
-	FeatureRBAC:      {true, true, true},
-	FeatureWatermark: {false, false, true},
-	FeatureAuditLog:  {false, false, true},
+	FeatureSSO:        {false, false, true},
+	Feature2FA:        {false, false, true},
+	FeatureRBAC:       {true, true, true},
+	FeatureWatermark:  {false, false, true},
+	FeatureAuditLog:   {false, false, true},
+	FeatureCustomRole: {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
