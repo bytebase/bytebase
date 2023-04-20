@@ -25,7 +25,9 @@ export const useUserStore = defineStore("user", {
   },
   actions: {
     async fetchUserList() {
-      const { users } = await authServiceClient.listUsers({});
+      const { users } = await authServiceClient.listUsers({
+        showDeleted: true,
+      });
       for (const user of users) {
         this.userMapByName.set(user.name, user);
       }

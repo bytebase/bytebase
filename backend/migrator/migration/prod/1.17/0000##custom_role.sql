@@ -6,6 +6,7 @@ CREATE TABLE role (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
+    name TEXT NOT NULL,
     description TEXT NOT NULL,
     permissions JSONB NOT NULL DEFAULT '{}', -- saved for future use
     payload JSONB NOT NULL DEFAULT '{}' -- saved for future use

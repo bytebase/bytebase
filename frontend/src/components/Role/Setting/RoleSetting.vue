@@ -5,7 +5,7 @@
         {{ $t("role.setting.description") }}
       </div>
       <div>
-        <NButton type="primary" @click="addRole">
+        <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
           {{ $t("role.setting.add") }}
         </NButton>
       </div>
@@ -40,6 +40,7 @@ import { NButton } from "naive-ui";
 import { RoleTable, RolePanel } from "./components";
 import { useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
+import { useWorkspacePermission } from "@/utils";
 
 type LocalState = {
   ready: boolean;
@@ -63,6 +64,10 @@ const state = reactive<LocalState>({
     keyword: "",
   },
 });
+
+const allowAdmin = useWorkspacePermission(
+  "bb.permission.workspace.manage-general"
+);
 
 const filteredRoleList = computed(() => {
   const keyword = state.filter.keyword.trim().toLowerCase();

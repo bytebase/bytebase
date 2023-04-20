@@ -8,6 +8,7 @@ import {
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
+  FunctionMetadata,
 } from "@/types/proto/store/database";
 
 export const useDBSchemaStore = defineStore("dbSchema", {
@@ -138,6 +139,26 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       }
 
       return databaseMetadata.extensions;
+    },
+    async getOrFetchFunctionListByDatabaseId(
+      databaseId: DatabaseId
+    ): Promise<FunctionMetadata[]> {
+      if (!this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId);
+      }
+      return this.getFunctionListByDatabaseId(databaseId);
+    },
+    getFunctionListByDatabaseId(databaseId: DatabaseId): FunctionMetadata[] {
+      const databaseMetadata = this.databaseMetadataById.get(databaseId);
+      if (!databaseMetadata) {
+        return [];
+      }
+
+      const functionList: FunctionMetadata[] = [];
+      for (const schema of databaseMetadata.schemas) {
+        functionList.push(...schema.functions);
+      }
+      return functionList;
     },
     removeCacheByDatabaseId(databaseId: DatabaseId) {
       this.requestCache.delete(databaseId);

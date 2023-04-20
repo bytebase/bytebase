@@ -111,6 +111,7 @@ CREATE TABLE role (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
+    name TEXT NOT NULL,
     description TEXT NOT NULL,
     permissions JSONB NOT NULL DEFAULT '{}', -- saved for future use
     payload JSONB NOT NULL DEFAULT '{}' -- saved for future use
@@ -278,7 +279,7 @@ CREATE TABLE project_member (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
+CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id_role ON project_member(project_id, principal_id, role);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
 

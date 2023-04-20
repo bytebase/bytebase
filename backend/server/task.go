@@ -122,13 +122,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
 		}
 
-		if taskPatch.Statement != nil {
-			// Tenant mode project don't allow updating SQL statement for a single task.
-			if issue.Project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
-				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
-			}
-		}
-
 		if taskPatch.RollbackEnabled != nil && task.Type != api.TaskDatabaseDataUpdate {
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot generate rollback SQL statement for a non-DML task")
 		}

@@ -116,46 +116,19 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	settingName := api.SettingEnterpriseTrial
-	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
-		Name: &settingName,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list settings: %v", err.Error())
+	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:  api.SettingEnterpriseTrial,
+		Value: string(value),
+	}, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create license: %v", err.Error())
 	}
 
-	if len(settings) == 0 {
-		// We will create a new setting named SettingEnterpriseTrial to store the free trial license.
-		_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-			Name:        api.SettingEnterpriseTrial,
-			Value:       string(value),
-			Description: "The trialing license.",
-		}, principalID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create license: %v", err.Error())
-		}
-
-		if created && subscription.Trialing {
-			// For trial upgrade
-			// Case 1: Users just have the SettingEnterpriseTrial, don't upload their license in SettingEnterpriseLicense.
-			// Case 2: Users have the SettingEnterpriseLicense with team plan and trialing status.
-			// In both cases, we can override the SettingEnterpriseLicense with an empty value to get the valid free trial.
-			if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
-				UpdaterID: principalID,
-				License:   "",
-			}); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to remove license: %v", err.Error())
-			}
-		}
-	} else {
-		// Update the existed free trial.
-		if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-			UpdaterID: principalID,
-			Name:      api.SettingEnterpriseTrial,
-			Value:     string(value),
-		}); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to patch license: %v", err.Error())
-		}
+	// we need to override the SettingEnterpriseLicense with an empty value to get the valid free trial.
+	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
+		UpdaterID: principalID,
+		License:   "",
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to remove license: %v", err.Error())
 	}
 
 	s.licenseService.RefreshCache(ctx)

@@ -28,15 +28,18 @@ const validateApprovalFlow = (flow: ApprovalFlow) => {
       return false;
     }
     return nodes.every((node) => {
-      const { type, groupValue } = node;
+      const { type, groupValue, role } = node;
       if (type !== ApprovalNode_Type.ANY_IN_GROUP) {
         return false;
       }
       if (!groupValue) {
-        return false;
-      }
-      if (!SupportedGroupValues.has(groupValue)) {
-        return false;
+        if (!role) {
+          return false;
+        }
+      } else {
+        if (!SupportedGroupValues.has(groupValue)) {
+          return false;
+        }
       }
       return true;
     });

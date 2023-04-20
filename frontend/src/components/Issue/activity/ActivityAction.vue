@@ -3,7 +3,10 @@
     <div class="min-w-0 flex-1 pt-1 flex justify-between">
       <div class="text-sm text-control-light space-x-1">
         <ActionCreator
-          v-if="activity.creator.id !== SYSTEM_BOT_ID"
+          v-if="
+            activity.creator.id !== SYSTEM_BOT_ID ||
+            activity.type === 'bb.issue.comment.create'
+          "
           :activity="activity"
         />
 

@@ -65,11 +65,11 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		for _, projectID := range projectIDs {
-			projectRole, err := in.getProjectMember(ctx, user, projectID)
+			projectRoles, err := in.getProjectRoles(ctx, user, projectID)
 			if err != nil {
 				return nil, status.Errorf(codes.PermissionDenied, err.Error())
 			}
-			if projectRole != api.Owner {
+			if !projectRoles[api.Owner] {
 				return nil, status.Errorf(codes.PermissionDenied, "only the owner of project %q can access method %q", projectID, methodName)
 			}
 		}
@@ -81,11 +81,11 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		for _, projectID := range projectIDs {
-			projectRole, err := in.getProjectMember(ctx, user, projectID)
+			projectRoles, err := in.getProjectRoles(ctx, user, projectID)
 			if err != nil {
 				return nil, status.Errorf(codes.PermissionDenied, err.Error())
 			}
-			if projectRole != api.Owner {
+			if !projectRoles[api.Owner] {
 				return nil, status.Errorf(codes.PermissionDenied, "only project owner can transfer database to project %q", projectID)
 			}
 		}
@@ -118,23 +118,26 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 	return user, nil
 }
 
-func (in *ACLInterceptor) getProjectMember(ctx context.Context, user *store.UserMessage, projectID string) (api.Role, error) {
+func (in *ACLInterceptor) getProjectRoles(ctx context.Context, user *store.UserMessage, projectID string) (map[api.Role]bool, error) {
 	projectPolicy, err := in.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
 	if err != nil {
-		return api.UnknownRole, err
+		return nil, err
 	}
+	roles := map[api.Role]bool{}
 	for _, binding := range projectPolicy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == user.ID {
-				return binding.Role, nil
+				roles[binding.Role] = true
+				break
 			}
 		}
 	}
-	return api.UnknownRole, nil
+	return roles, nil
 }
 
 func getProjectIDs(req any) ([]string, error) {
-	if request, ok := req.(*v1pb.UpdateProjectRequest); ok {
+	switch request := req.(type) {
+	case *v1pb.UpdateProjectRequest:
 		if request.Project == nil {
 			return nil, errors.Errorf("project not found")
 		}
@@ -143,16 +146,20 @@ func getProjectIDs(req any) ([]string, error) {
 			return nil, err
 		}
 		return []string{projectID}, nil
-	}
-	if request, ok := req.(*v1pb.DeleteProjectRequest); ok {
+	case *v1pb.DeleteProjectRequest:
 		projectID, err := getProjectID(request.Name)
 		if err != nil {
 			return nil, err
 		}
 		return []string{projectID}, nil
-	}
-	if request, ok := req.(*v1pb.UndeleteProjectRequest); ok {
+	case *v1pb.UndeleteProjectRequest:
 		projectID, err := getProjectID(request.Name)
+		if err != nil {
+			return nil, err
+		}
+		return []string{projectID}, nil
+	case *v1pb.SetIamPolicyRequest:
+		projectID, err := getProjectID(request.Project)
 		if err != nil {
 			return nil, err
 		}
