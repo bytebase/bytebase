@@ -152,7 +152,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
+				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), projectRolesFinder)
 			} else if strings.HasPrefix(path, "/issue") {
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
@@ -235,7 +235,7 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 
 var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d+)$`)
 
-func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
 		// For /database route, server should list the databases that the user has access to.
@@ -251,16 +251,13 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
 			}
-			principalIDs, err := getProjectMemberIDs(projectID)
+			projectRoles, err := projectRolesFinder(projectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
 			}
-			for _, id := range principalIDs {
-				if id == principalID {
-					return nil
-				}
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
 		}
 	case http.MethodPatch:
 		// PATCH /database/xxx
@@ -274,17 +271,11 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project id for database %d", databaseIDInt)).SetInternal(err)
 			}
-			oldProjectMemberIDs, err := getProjectMemberIDs(oldProjectID)
+			oldProjectRoles, err := projectRolesFinder(oldProjectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", oldProjectID)).SetInternal(err)
 			}
-			find := false
-			for _, id := range oldProjectMemberIDs {
-				if id == principalID {
-					find = true
-				}
-			}
-			if !find {
+			if len(oldProjectRoles) == 0 {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project owns the database %d", databaseIDInt))
 			}
 			// Workspace developer can only modify the database belongs to the project which he is a member of.
@@ -294,17 +285,11 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 			}
 			// Workspace developer cannot transfer the project to the project that he is not a member of.
 			if databasePatch.ProjectID != nil {
-				newProjectMemberIDs, err := getProjectMemberIDs(*databasePatch.ProjectID)
+				newProjectRoles, err := projectRolesFinder(*databasePatch.ProjectID, principalID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", *databasePatch.ProjectID)).SetInternal(err)
 				}
-				find = false
-				for _, id := range newProjectMemberIDs {
-					if id == principalID {
-						find = true
-					}
-				}
-				if !find {
+				if len(newProjectRoles) == 0 {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project %d", *databasePatch.ProjectID))
 				}
 			}
@@ -502,27 +487,6 @@ func getRetrieveDatabaseProjectID(ctx context.Context, s *store.Store) func(data
 			return 0, errors.Errorf("cannot find project %s", db.ProjectID)
 		}
 		return project.UID, nil
-	}
-}
-
-func getRetrieveProjectMemberIDs(ctx context.Context, s *store.Store) func(projectID int) ([]int, error) {
-	return func(projectID int) ([]int, error) {
-		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-			UID: &projectID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if policy == nil {
-			return nil, errors.Errorf("cannot find policy for project %d", projectID)
-		}
-		var memberIDs []int
-		for _, binding := range policy.Bindings {
-			for _, member := range binding.Members {
-				memberIDs = append(memberIDs, member.ID)
-			}
-		}
-		return memberIDs, nil
 	}
 }
 
