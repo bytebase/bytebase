@@ -3,6 +3,10 @@ package server
 import (
 	"net/url"
 	"testing"
+
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 func TestWorkspaceDeveloperIssueRouteACL_RetrieveIssue(t *testing.T) {
@@ -155,4 +159,38 @@ func TestWorkspaceDeveloperIssueRouteACL_CreateIssue(t *testing.T) {
 			}
 		})
 	}
+}
+
+var testWorkspaceDeveloperIssueRouteHelper = struct {
+	projectMembers map[int]map[common.ProjectRole][]int
+	// issueIDToProjectID is a map from issue ID to the project ID.
+	issueIDToProjectID map[int]int
+}{
+	projectMembers: map[int]map[common.ProjectRole][]int{
+		// Project 102 contains members 202 and 203.
+		102: {
+			common.ProjectOwner:     {202},
+			common.ProjectDeveloper: {202, 203},
+		},
+		// Project 103 contains member 204.
+		103: {
+			common.ProjectOwner: {204},
+		},
+	},
+	issueIDToProjectID: map[int]int{
+		// Issue 401 belongs to project 102.
+		401: 102,
+		// Issue 402 belongs to project 102.
+		402: 102,
+		// Issue 403 belongs to project 103.
+		403: 103,
+	},
+}
+
+func testWorkspaceDeveloperIssueRouteMockGetIssueProjectID(issueID int) (int, error) {
+	projectID, ok := testWorkspaceDeveloperIssueRouteHelper.issueIDToProjectID[issueID]
+	if !ok {
+		return 0, errors.Errorf("issue %d does not belong to any project", issueID)
+	}
+	return projectID, nil
 }
