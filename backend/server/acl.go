@@ -111,7 +111,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		// pass any project ACL.
 		if role != api.Owner && role != api.DBA {
 			var aclErr *echo.HTTPError
-			projectRoleFinder := func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
+			projectRolesFinder := func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
 				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 				if err != nil {
 					return nil, err
@@ -136,9 +136,9 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			}
 
 			if strings.HasPrefix(path, "/project") {
-				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, projectRoleFinder)
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, projectRolesFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
-				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRoleFinder, sheetFinder)
+				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder, sheetFinder)
 			} else if strings.HasPrefix(path, "/database") {
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
