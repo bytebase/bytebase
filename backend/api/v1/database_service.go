@@ -597,9 +597,33 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		return nil, status.Errorf(codes.Internal, "failed to find database list %q", err.Error())
 	}
 
+	var canAccessDBs []*store.DatabaseMessage
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user %q", err.Error())
+	}
+	switch user.Role {
+	case api.Owner, api.DBA:
+		canAccessDBs = databases
+	case api.Developer:
+		for _, database := range databases {
+			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
+			}
+			if isProjectOwnerOrDeveloper(principalID, policy) {
+				canAccessDBs = append(canAccessDBs, database)
+			}
+		}
+	default:
+		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", user.Role)
+	}
+
 	result := &v1pb.ListSlowQueriesResponse{}
 
-	for _, database := range databases {
+	for _, database := range canAccessDBs {
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &database.InstanceID,
 		})
@@ -1039,4 +1063,19 @@ func convertPeriodTsToDuration(periodTs int) (*durationpb.Duration, error) {
 		return nil, errors.New("invalid period")
 	}
 	return durationpb.New(time.Duration(periodTs) * time.Second), nil
+}
+
+// isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
+func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
+	for _, binding := range projectPolicy.Bindings {
+		if binding.Role != api.Owner && binding.Role != api.Developer {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID == principalID {
+				return true
+			}
+		}
+	}
+	return false
 }
