@@ -37,7 +37,7 @@ import {
   resolveCELExpr,
   SimpleExpr,
 } from "@/plugins/cel";
-import { extractRoleResourceName, roleNameText } from "./role";
+import { displayRoleTitle } from "./role";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -49,7 +49,7 @@ export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
 };
 
 export const approvalNodeRoleText = (role: string) => {
-  return roleNameText(extractRoleResourceName(role));
+  return displayRoleTitle(role);
 };
 
 export const approvalNodeText = (node: ApprovalNode): string => {

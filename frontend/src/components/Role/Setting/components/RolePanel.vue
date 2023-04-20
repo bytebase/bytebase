@@ -10,37 +10,31 @@
       :closable="true"
       class="w-[30rem] max-w-[100vw] relative"
     >
-      <div
-        class="flex flex-col gap-y-4"
-        style="grid-template-columns: auto 1fr"
-      >
+      <div class="flex flex-col gap-y-4">
         <div class="flex flex-col gap-y-2">
           <div class="textlabel">
-            {{ $t("common.name") }}
+            {{ $t("role.title") }}
             <span class="ml-0.5 text-error">*</span>
           </div>
-          <div class="flex flex-col gap-y-2">
+          <div>
             <NInput
-              v-model:value="readableName"
-              :placeholder="$t('role.setting.name-placeholder')"
-              :disabled="mode === 'EDIT'"
-              :status="errors.name?.length ? 'error' : undefined"
+              v-model:value="state.role.title"
+              :placeholder="$t('role.setting.title-placeholder')"
+              :status="state.role.title?.length === 0 ? 'error' : undefined"
             />
-            <div
-              v-if="mode === 'ADD' && !readableName"
-              class="text-sm text-warning"
-            >
-              {{ $t("resource-id.cannot-be-changed-later") }}
-            </div>
-            <div
-              v-for="(err, i) in errors.name"
-              :key="i"
-              class="text-sm text-error"
-            >
-              {{ err }}
-            </div>
           </div>
         </div>
+
+        <ResourceIdField
+          ref="resourceIdField"
+          v-model:value="resourceId"
+          resource-type="role"
+          :resource-title="state.role.title"
+          :suffix="true"
+          :readonly="mode === 'EDIT'"
+          :validate="validateResourceId"
+          class="flex flex-col gap-y-2"
+        />
 
         <div class="flex flex-col gap-y-2">
           <div class="textlabel">{{ $t("common.description") }}</div>
@@ -75,18 +69,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch, nextTick } from "vue";
+import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
 
 import { Role } from "@/types/proto/v1/role_service";
-import { extractRoleResourceName } from "@/utils";
+import { ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
-
-type ValidationErrors<T> = Partial<{
-  [K in keyof T]: string[];
-}>;
+import { extractRoleResourceName } from "@/utils";
+import { ValidatedMessage } from "@/types";
 
 type LocalState = {
   role: Role;
@@ -103,8 +95,8 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const RESOURCE_ID_PATTERN = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
 const { t } = useI18n();
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const store = useRoleStore();
 const state = reactive<LocalState>({
   role: Role.fromJSON({}),
@@ -112,68 +104,21 @@ const state = reactive<LocalState>({
   loading: false,
 });
 
-const readableName = computed({
+const resourceId = computed({
   get() {
     return extractRoleResourceName(state.role.name);
   },
-  set(name) {
-    state.role.name = `roles/${name}`;
+  set(value) {
+    state.role.name = `roles/${value}`;
   },
-});
-
-const errors = computed(() => {
-  const errors: ValidationErrors<Role> = {
-    name: [],
-  };
-  const { role, dirty } = state;
-  if (dirty) {
-    if (!readableName.value) {
-      errors.name?.push(
-        t("role.setting.validation.required", {
-          resource: t("common.name"),
-        })
-      );
-    } else {
-      if (role.name !== props.role?.name) {
-        const roleList = store.roleList;
-        if (roleList.findIndex((r) => r.name === role.name) >= 0) {
-          errors.name?.push(
-            t("role.setting.validation.duplicated", {
-              resource: t("common.name"),
-            })
-          );
-        }
-        if (readableName.value.length > 64) {
-          errors.name?.push(
-            t("role.setting.validation.max-length", {
-              length: 64,
-              resource: t("common.name"),
-            })
-          );
-        }
-        if (!RESOURCE_ID_PATTERN.test(readableName.value)) {
-          errors.name?.push(
-            t("role.setting.validation.pattern", {
-              resource: t("common.name"),
-            })
-          );
-        }
-      }
-    }
-  }
-
-  return errors;
 });
 
 const allowSave = computed(() => {
   if (!state.dirty) return false;
-  const keys = Object.keys(errors.value) as (keyof Role)[];
-  if (
-    keys.some((key) => {
-      return errors.value[key]?.length ?? 0 > 0;
-    })
-  ) {
-    return false;
+  if (state.role.title?.length === 0) return false;
+  if (resourceIdField.value) {
+    if (!resourceIdField.value.resourceId) return false;
+    if (!resourceIdField.value.isValidated) return false;
   }
   return true;
 });
@@ -193,11 +138,30 @@ const handleSave = async () => {
   }
 };
 
+const validateResourceId = async (
+  name: string
+): Promise<ValidatedMessage[]> => {
+  if (store.roleList.find((r) => r.name === `roles/${name}`)) {
+    return [
+      {
+        type: "error",
+        message: t("resource-id.validation.duplicated", {
+          resource: t("role.self"),
+        }),
+      },
+    ];
+  }
+  return [];
+};
+
 watch(
   () => props.role,
   () => {
     if (props.role) {
       state.role = cloneDeep(props.role);
+      if (!state.role.title) {
+        state.role.title = extractRoleResourceName(state.role.name);
+      }
     }
     nextTick(() => {
       state.dirty = false;

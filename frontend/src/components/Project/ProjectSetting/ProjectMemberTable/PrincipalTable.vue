@@ -30,7 +30,7 @@
           :closable="allowRemoveRole(role)"
           @close="removeRole(item, role)"
         >
-          {{ roleNameText(extractRoleResourceName(role)) }}
+          {{ displayRoleTitle(role) }}
         </NTag>
         <NPopselect
           v-if="allowAddRole(item)"
@@ -96,10 +96,9 @@ import {
   useUserStore,
 } from "@/store";
 import {
-  extractRoleResourceName,
   hasPermissionInProject,
   hasWorkspacePermission,
-  roleNameText,
+  displayRoleTitle,
   addRoleToProjectIamPolicy,
   removeRoleFromProjectIamPolicy,
   removeUserFromProjectIamPolicy,
@@ -242,7 +241,7 @@ const allowRemoveRole = (role: ProjectRoleType) => {
 
 const removeRole = (item: ComposedPrincipal, role: string) => {
   const title = t("project.settings.members.revoke-role-from-user", {
-    role: roleNameText(extractRoleResourceName(role)),
+    role: displayRoleTitle(role),
     user: item.principal.name,
   });
   const d = dialog.error({
@@ -277,9 +276,8 @@ const getRoleOptions = (item: ComposedPrincipal) => {
   return roleStore.roleList
     .filter((role) => !item.roleList.includes(role.name))
     .map<SelectOption>((role) => {
-      const name = extractRoleResourceName(role.name);
       return {
-        label: roleNameText(name),
+        label: displayRoleTitle(role.name),
         value: role.name,
       };
     });
