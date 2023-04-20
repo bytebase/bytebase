@@ -14,8 +14,8 @@
       class="bb-grid-row bb-grid-header-row group"
     >
       <div
-        v-for="(column, row) in columnList"
-        :key="row"
+        v-for="(column, i) in columnList"
+        :key="i"
         role="table-cell"
         class="bb-grid-header-cell"
         :class="[headerClass, column.class]"
@@ -25,10 +25,7 @@
     </div>
 
     <template v-if="ready">
-      <template
-        v-for="(item, row) in dataSource"
-        :key="rowKey ? item[rowKey] : row"
-      >
+      <template v-for="(item, row) in dataSource" :key="rowKeyOf(item, row)">
         <div
           row="table-row"
           class="bb-grid-row group"
@@ -112,7 +109,7 @@ const props = withDefaults(
   defineProps<{
     columnList?: BBGridColumn[];
     dataSource?: DataType[];
-    rowKey?: string;
+    rowKey?: string | ((item: DataType, row: number) => any);
     showHeader?: boolean;
     customHeader?: boolean;
     headerClass?: VueClass;
@@ -142,6 +139,17 @@ const props = withDefaults(
 const gridClass = useResponsiveGridColumns(
   computed(() => props.columnList.map((col) => col.width))
 );
+
+const rowKeyOf = (item: DataType, row: number) => {
+  const { rowKey } = props;
+  if (typeof rowKey === "function") {
+    return rowKey(item, row);
+  }
+  if (typeof rowKey === "string") {
+    return item[rowKey];
+  }
+  return row;
+};
 
 const handleClick = (
   item: DataType,
