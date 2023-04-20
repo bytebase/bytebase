@@ -2046,14 +2046,15 @@
     "environment": "环境",
     "instance": "实例",
     "project": "项目",
-    "idp": "身份提供商"
+    "idp": "身份提供商",
+    "role": "角色"
   },
   "resource-id": {
     "self": "{resource} ID",
     "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
     "cannot-be-changed-later": "创建之后无法修改。",
     "validation": {
-      "duplicate": "{resource} ID 已存在。请使用其他 ID。",
+      "duplicated": "{resource} ID 已存在。请使用其他 ID。",
       "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
       "minlength": "{resource} ID 至少包含 1 个字符。",
       "overflow": "{resource} ID 应该少于 64 个字符。"
@@ -2326,11 +2327,13 @@
     "select": "选择用户"
   },
   "role": {
+    "self": "角色",
     "setting": {
       "description": "定义自定义角色，你可以将它们应用到项目成员上。",
       "add": "添加角色",
       "edit": "编辑角色",
       "name-placeholder": "输入角色名称",
+      "title-placeholder": "输入角色称谓",
       "description-placeholder": "输入角色描述",
       "validation": {
         "duplicated": "{resource}已存在",
@@ -2341,6 +2344,13 @@
       "delete": "删除角色"
     },
     "select": "选择角色",
-    "select-roles": "选择角色"
+    "select-roles": "选择角色",
+    "title": "称谓",
+    "owner": {
+      "description": "系统定义的项目所有者角色"
+    },
+    "developer": {
+      "description": "系统定义的项目开发者角色"
+    }
   }
 }
