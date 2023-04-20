@@ -117,12 +117,9 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 			if err != nil {
 				return nil, err
 			}
-			projectMember, err := s.GetProjectMemberByProjectIDAndPrincipalIDAndRole(ctx, project.UID, principal.ID, binding.Role)
-			if err != nil {
-				return nil, err
-			}
+
 			composedProject.ProjectMemberList = append(composedProject.ProjectMemberList, &api.ProjectMember{
-				ID:        projectMember.ID,
+				ID:        fmt.Sprintf("projects/%s/roles/%s/principals/%d", project.ResourceID, binding.Role, principal.ID),
 				ProjectID: project.UID,
 				Role:      string(binding.Role),
 				Principal: principal,
@@ -132,7 +129,7 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 	return composedProject, nil
 }
 
-// ProjectMessage is the mssage for project.
+// ProjectMessage is the message for project.
 type ProjectMessage struct {
 	ResourceID       string
 	Title            string

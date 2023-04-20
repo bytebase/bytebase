@@ -55,11 +55,6 @@ function convert(
     }
   }
 
-  // sort the member list
-  memberList.sort((a: ProjectMember, b: ProjectMember) => {
-    return Number(a.id) - Number(b.id);
-  });
-
   return {
     ...(projectWithoutMemberList as Omit<Project, "memberList">),
     memberList,
@@ -73,15 +68,13 @@ function convertMember(
   projectMember: ResourceObject,
   includedList: ResourceObject[]
 ): ProjectMember {
-  const attrs = projectMember.attributes as Omit<
-    ProjectMember,
-    "id" | "project"
-  >;
+  const attrs = projectMember.attributes as Omit<ProjectMember, "project">;
 
   return {
-    id: parseInt(projectMember.id),
-    project: unknown("PROJECT") as Project,
+    id: projectMember.id,
     role: attrs.role,
+    // `project` will be overwritten after the value is correctly composed
+    project: unknown("PROJECT") as Project,
     principal: getPrincipalFromIncludedList(
       projectMember.relationships!.principal.data,
       includedList
