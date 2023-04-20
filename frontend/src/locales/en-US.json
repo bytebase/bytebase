@@ -1146,7 +1146,15 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Synchronize Schema",
+      "description": "",
+      "select-source-schema": "Select source schema",
+      "select-target-databases": "Select target databases",
       "select-project": "Select project",
+      "source-database": "Source database",
+      "schema-version": {
+        "self": "Schema version",
+        "description": "Schema version is recorded each time a schema change is applied via Bytebase"
+      },
       "to-database": "Apply to database",
       "from-database": "From database",
       "schema-change-preview": "Preview Schema change for '{database}'",
