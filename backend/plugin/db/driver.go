@@ -464,7 +464,7 @@ type Driver interface {
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, statement string, queryContext *QueryContext) ([]any, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.

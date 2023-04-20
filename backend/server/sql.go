@@ -413,7 +413,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			// TODO(p0ny): refactor
 			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis {
-				data, err := driver.QueryConn(ctx, exec.Statement, &db.QueryContext{
+				data, err := driver.QueryConn(ctx, nil, exec.Statement, &db.QueryContext{
 					Limit:                 exec.Limit,
 					ReadOnly:              true,
 					CurrentDatabase:       exec.DatabaseName,
@@ -435,8 +435,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}, nil
 			}
 
+			sqlDB := driver.GetDB()
+			if err != nil {
+				return nil, err
+			}
+			conn, err := sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
+
 			var singleSQLResults []api.SingleSQLResult
-			rowSet, err := driver.QueryConn(ctx, exec.Statement, &db.QueryContext{
+
+			rowSet, err := driver.QueryConn(ctx, conn, exec.Statement, &db.QueryContext{
 				Limit:           exec.Limit,
 				ReadOnly:        true,
 				CurrentDatabase: exec.DatabaseName,
@@ -603,7 +614,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			// TODO(p0ny): refactor
 			if instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis {
-				data, err := driver.QueryConn(ctx, exec.Statement, &db.QueryContext{
+				data, err := driver.QueryConn(ctx, nil, exec.Statement, &db.QueryContext{
 					Limit:               exec.Limit,
 					ReadOnly:            false,
 					CurrentDatabase:     exec.DatabaseName,
@@ -624,6 +635,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}, nil
 			}
 
+			sqlDB := driver.GetDB()
+			conn, err := sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
+
 			var singleSQLResults []api.SingleSQLResult
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
 			if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.Postgres || instance.Engine == db.Oracle || instance.Engine == db.Redshift {
@@ -632,7 +650,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					return nil, errors.Wrapf(err, "failed to split statements")
 				}
 				for _, singleSQL := range singleSQLs {
-					rowSet, err := driver.QueryConn(ctx, singleSQL.Text, &db.QueryContext{
+					rowSet, err := driver.QueryConn(ctx, conn, singleSQL.Text, &db.QueryContext{
 						Limit:               exec.Limit,
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,
@@ -657,7 +675,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}
 			} else {
 				if err := util.ApplyMultiStatements(strings.NewReader(exec.Statement), func(statement string) error {
-					rowSet, err := driver.QueryConn(ctx, statement, &db.QueryContext{
+					rowSet, err := driver.QueryConn(ctx, conn, statement, &db.QueryContext{
 						Limit:               exec.Limit,
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,

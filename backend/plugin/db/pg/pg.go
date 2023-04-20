@@ -434,13 +434,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, statement string, queryContext *db.QueryContext) ([]any, error) {
-	conn, err := driver.db.Conn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
