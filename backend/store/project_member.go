@@ -38,43 +38,6 @@ type ProjectMemberMessage struct {
 	PrincipalID int
 }
 
-// GetProjectMemberByProjectIDAndPrincipalIDAndRole gets a project member by project ID and principal ID.
-func (s *Store) GetProjectMemberByProjectIDAndPrincipalIDAndRole(ctx context.Context, projectID int, principalID int, role api.Role) (*ProjectMemberMessage, error) {
-	var projectMember ProjectMemberMessage
-	query := `
-	SELECT
-		project_member.id,
-		project_member.project_id,
-		project_member.principal_id
-	FROM project_member 
-	WHERE project_member.project_id = $1 AND project_member.principal_id = $2 AND project_member.role = $3`
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query, projectID, principalID, role)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&projectMember.ID, &projectMember.ProjectID, &projectMember.PrincipalID); err != nil {
-			return nil, err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-	return &projectMember, nil
-}
-
 // GetProjectUsingRole gets a project that uses the role.
 func (s *Store) GetProjectUsingRole(ctx context.Context, role api.Role) (bool, string, error) {
 	query := `
@@ -91,43 +54,6 @@ func (s *Store) GetProjectUsingRole(ctx context.Context, role api.Role) (bool, s
 		return false, "", err
 	}
 	return true, project, nil
-}
-
-// GetProjectMemberByID gets a project member by ID.
-func (s *Store) GetProjectMemberByID(ctx context.Context, projectMemberID int) (*ProjectMemberMessage, error) {
-	var projectMember ProjectMemberMessage
-	query := `
-	SELECT
-		project_member.id,
-		project_member.project_id,
-		project_member.principal_id
-	FROM project_member 
-	WHERE project_member.id = $1`
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query, projectMemberID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&projectMember.ID, &projectMember.ProjectID, &projectMember.PrincipalID); err != nil {
-			return nil, err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-	return &projectMember, nil
 }
 
 // GetProjectPolicy gets the IAM policy of a project.

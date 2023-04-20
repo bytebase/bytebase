@@ -1,5 +1,5 @@
 import { RowStatus } from "./common";
-import { MemberId, ProjectId, ResourceId } from "./id";
+import { ProjectId, ResourceId } from "./id";
 import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
@@ -62,7 +62,7 @@ export type ProjectPatch = {
 
 // Project Member
 export type ProjectMember = {
-  id: MemberId;
+  id: string; // projects/%s/roles/%s/principals/%d
 
   // Related fields
   project: Project;

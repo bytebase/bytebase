@@ -6,7 +6,7 @@ import (
 
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
-	ID int `jsonapi:"primary,projectMember"`
+	ID string `jsonapi:"primary,projectMember"`
 
 	// Related fields
 	// Just returns ProjectID otherwise would cause circular dependency.
