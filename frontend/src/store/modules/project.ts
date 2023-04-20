@@ -73,6 +73,7 @@ function convertMember(
   return {
     id: projectMember.id,
     role: attrs.role,
+    // `project` will be overwritten after the value is correctly composed
     project: unknown("PROJECT") as Project,
     principal: getPrincipalFromIncludedList(
       projectMember.relationships!.principal.data,
