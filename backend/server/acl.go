@@ -30,301 +30,6 @@ func getRoleContextKey() string {
 	return roleContextKey
 }
 
-var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`)
-var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
-var projectSyncSheetRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/sync-sheet`)
-
-func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, roleFinder func(projectID int, principalID int) (common.ProjectRole, error)) *echo.HTTPError {
-	var projectID int
-	var permission api.ProjectPermissionType
-	var permissionErrMsg string
-	if method == "GET" {
-		if path == "/project" {
-			userIDStr := quaryParams.Get("user")
-			if userIDStr == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch all project list")
-			}
-			if strconv.Itoa(principalID) != userIDStr {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
-			}
-		}
-		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
-	} else {
-		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
-			projectID, _ = strconv.Atoi(matches[1])
-			permission = api.ProjectPermissionManageMember
-			permissionErrMsg = "not have permission to manage the project member"
-		} else if matches := projectSyncSheetRouteRegex.FindStringSubmatch(path); matches != nil {
-			projectID, _ = strconv.Atoi(matches[1])
-			permission = api.ProjectPermissionSyncSheet
-			permissionErrMsg = "not have permission to sync sheet for project"
-		} else if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
-			projectID, _ = strconv.Atoi(matches[1])
-			permission = api.ProjectPermissionManageGeneral
-			permissionErrMsg = "not have permission to manage the project general setting"
-		}
-	}
-
-	if projectID > 0 {
-		role, err := roleFinder(projectID, principalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-
-		if role == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project")
-		}
-
-		if !api.ProjectPermission(permission, plan, role) {
-			return echo.NewHTTPError(http.StatusUnauthorized, permissionErrMsg)
-		}
-	}
-
-	return nil
-}
-
-var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d+)$`)
-
-func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
-	switch method {
-	case http.MethodGet:
-		// For /database route, server should list the databases that the user has access to.
-		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
-			// For /database/xxx subroutes, since Developer cannot retrieve the database if it's not a member of the project which owns the database.
-
-			// Get the database ID from the path.
-			dbID, err := strconv.Atoi(matches[1])
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
-			}
-			projectID, err := projectIDOfDatabase(dbID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
-			}
-			principalIDs, err := getProjectMemberIDs(projectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
-			}
-			for _, id := range principalIDs {
-				if id == principalID {
-					return nil
-				}
-			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
-		}
-	case http.MethodPatch:
-		// PATCH /database/xxx
-		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
-			databaseID := matches[1]
-			databaseIDInt, err := strconv.Atoi(databaseID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid database id").SetInternal(err)
-			}
-			oldProjectID, err := projectIDOfDatabase(databaseIDInt)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project id for database %d", databaseIDInt)).SetInternal(err)
-			}
-			oldProjectMemberIDs, err := getProjectMemberIDs(oldProjectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", oldProjectID)).SetInternal(err)
-			}
-			find := false
-			for _, id := range oldProjectMemberIDs {
-				if id == principalID {
-					find = true
-				}
-			}
-			if !find {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project owns the database %d", databaseIDInt))
-			}
-			// Workspace developer can only modify the database belongs to the project which he is a member of.
-			var databasePatch api.DatabasePatch
-			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &databasePatch); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
-			}
-			// Workspace developer cannot transfer the project to the project that he is not a member of.
-			if databasePatch.ProjectID != nil {
-				newProjectMemberIDs, err := getProjectMemberIDs(*databasePatch.ProjectID)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", *databasePatch.ProjectID)).SetInternal(err)
-				}
-				find = false
-				for _, id := range newProjectMemberIDs {
-					if id == principalID {
-						find = true
-					}
-				}
-				if !find {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project %d", *databasePatch.ProjectID))
-				}
-			}
-		}
-	}
-	return nil
-}
-
-var sheetRouteRegex = regexp.MustCompile(`^/sheet/(?P<sheetID>\d+)`)
-var sheetOrganizeRouteRegex = regexp.MustCompile(`^/sheet/(?P<projectID>\d+)/organize`)
-
-func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, method string, principalID int, roleFinder func(projectID int, principalID int) (common.ProjectRole, error), sheetFinder func(sheetID int) (*api.Sheet, error)) *echo.HTTPError {
-	if matches := sheetOrganizeRouteRegex.FindStringSubmatch(path); matches != nil {
-		sheetID, _ := strconv.Atoi(matches[1])
-		sheet, err := sheetFinder(sheetID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-		if sheet == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
-		}
-		// Creator can always manage her own sheet.
-		if sheet.CreatorID == principalID {
-			return nil
-		}
-		switch sheet.Visibility {
-		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
-		case api.PublicSheet:
-			return nil
-		case api.ProjectSheet:
-			role, err := roleFinder(sheet.ProjectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-
-			if role == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
-			}
-
-			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, role) {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to organize the project sheet")
-			}
-		}
-	} else if matches := sheetRouteRegex.FindStringSubmatch(path); matches != nil {
-		sheetID, _ := strconv.Atoi(matches[1])
-		sheet, err := sheetFinder(sheetID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-		if sheet == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
-		}
-		// Creator can always manage her own sheet.
-		if sheet.CreatorID == principalID {
-			return nil
-		}
-		switch sheet.Visibility {
-		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
-		case api.PublicSheet:
-			if method == "GET" {
-				return nil
-			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to change public sheet created by other user")
-		case api.ProjectSheet:
-			role, err := roleFinder(sheet.ProjectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-
-			if role == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
-			}
-
-			if method == "GET" {
-				return nil
-			}
-
-			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, role) {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to change the project sheet")
-			}
-		}
-	}
-
-	return nil
-}
-
-var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
-var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
-
-func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
-	switch method {
-	case http.MethodGet:
-		// For /issue route, require the caller principal to be the same as the user in the query.
-		// Only /issue and /project route will bring parameter user in the query.
-		if userStr := queryParams.Get("user"); userStr != "" {
-			userID, err := strconv.Atoi(userStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID").SetInternal(err)
-			}
-			if principalID != userID {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
-			}
-		} else if matches := issueRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
-			issueIDStr := matches[1]
-			issueID, err := strconv.Atoi(issueIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
-			}
-			projectID, err := getIssueProjectID(issueID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			memberIDs, err := getProjectMemberIDs(projectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			for _, memberID := range memberIDs {
-				if memberID == principalID {
-					return nil
-				}
-			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to retrieve issue that is in the project that the user is not a member of")
-		}
-	case http.MethodPatch:
-		// Workspace developer can only operating the issues if the user is the member of the project that the issue belongs to.
-		if matches := issueStatusRegex.FindStringSubmatch(path); len(matches) > 0 {
-			issueIDStr := matches[1]
-			issueID, err := strconv.Atoi(issueIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
-			}
-			projectID, err := getIssueProjectID(issueID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			memberIDs, err := getProjectMemberIDs(projectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			for _, memberID := range memberIDs {
-				if memberID == principalID {
-					return nil
-				}
-			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
-		}
-	case http.MethodPost:
-		if path == "/issue" {
-			// Workspace developer can only create issue under the project that the user is the member of.
-			var issueCreate api.IssueCreate
-			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
-			}
-			memberIDs, err := getProjectMemberIDs(issueCreate.ProjectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			for _, memberID := range memberIDs {
-				if memberID == principalID {
-					return nil
-				}
-			}
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
-		}
-	}
-	return nil
-}
-
 func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -406,19 +111,21 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		// pass any project ACL.
 		if role != api.Owner && role != api.DBA {
 			var aclErr *echo.HTTPError
-			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
+			projectRolesFinder := func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
 				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 				if err != nil {
-					return "", err
+					return nil, err
 				}
+				projectRoles := make(map[common.ProjectRole]bool)
 				for _, binding := range policy.Bindings {
 					for _, member := range binding.Members {
 						if member.ID == principalID {
-							return common.ProjectRole(binding.Role), nil
+							projectRoles[common.ProjectRole(binding.Role)] = true
+							break
 						}
 					}
 				}
-				return "", nil
+				return projectRoles, nil
 			}
 
 			sheetFinder := func(sheetID int) (*api.Sheet, error) {
@@ -429,9 +136,9 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			}
 
 			if strings.HasPrefix(path, "/project") {
-				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, projectRolesFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
-				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
+				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder, sheetFinder)
 			} else if strings.HasPrefix(path, "/database") {
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
@@ -445,7 +152,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
+				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), projectRolesFinder)
 			} else if strings.HasPrefix(path, "/issue") {
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
@@ -459,7 +166,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(s.licenseService.GetEffectivePlan(), path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -471,6 +178,277 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 
 		return next(c)
 	}
+}
+
+var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`)
+var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
+var projectSyncSheetRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/sync-sheet`)
+
+func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+	var projectID int
+	var permission api.ProjectPermissionType
+	var permissionErrMsg string
+	if method == "GET" {
+		if path == "/project" {
+			userIDStr := quaryParams.Get("user")
+			if userIDStr == "" {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch all project list")
+			}
+			if strconv.Itoa(principalID) != userIDStr {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
+			}
+		}
+		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
+	} else {
+		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionManageMember
+			permissionErrMsg = "not have permission to manage the project member"
+		} else if matches := projectSyncSheetRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionSyncSheet
+			permissionErrMsg = "not have permission to sync sheet for project"
+		} else if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionManageGeneral
+			permissionErrMsg = "not have permission to manage the project general setting"
+		}
+	}
+
+	if projectID > 0 {
+		projectRoles, err := projectRolesFinder(projectID, principalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+
+		if len(projectRoles) == 0 {
+			return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project")
+		}
+
+		if !api.ProjectPermission(permission, plan, projectRoles) {
+			return echo.NewHTTPError(http.StatusUnauthorized, permissionErrMsg)
+		}
+	}
+
+	return nil
+}
+
+var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d+)$`)
+
+func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+	switch method {
+	case http.MethodGet:
+		// For /database route, server should list the databases that the user has access to.
+		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
+			// For /database/xxx subroutes, since Developer cannot retrieve the database if it's not a member of the project which owns the database.
+
+			// Get the database ID from the path.
+			dbID, err := strconv.Atoi(matches[1])
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
+			}
+			projectID, err := projectIDOfDatabase(dbID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
+			}
+			projectRoles, err := projectRolesFinder(projectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
+			}
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
+			}
+		}
+	case http.MethodPatch:
+		// PATCH /database/xxx
+		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
+			databaseID := matches[1]
+			databaseIDInt, err := strconv.Atoi(databaseID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid database id").SetInternal(err)
+			}
+			oldProjectID, err := projectIDOfDatabase(databaseIDInt)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project id for database %d", databaseIDInt)).SetInternal(err)
+			}
+			oldProjectRoles, err := projectRolesFinder(oldProjectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", oldProjectID)).SetInternal(err)
+			}
+			if len(oldProjectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project owns the database %d", databaseIDInt))
+			}
+			// Workspace developer can only modify the database belongs to the project which he is a member of.
+			var databasePatch api.DatabasePatch
+			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &databasePatch); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
+			}
+			// Workspace developer cannot transfer the project to the project that he is not a member of.
+			if databasePatch.ProjectID != nil {
+				newProjectRoles, err := projectRolesFinder(*databasePatch.ProjectID, principalID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", *databasePatch.ProjectID)).SetInternal(err)
+				}
+				if len(newProjectRoles) == 0 {
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project %d", *databasePatch.ProjectID))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+var sheetRouteRegex = regexp.MustCompile(`^/sheet/(?P<sheetID>\d+)`)
+var sheetOrganizeRouteRegex = regexp.MustCompile(`^/sheet/(?P<projectID>\d+)/organize`)
+
+func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, method string, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error), sheetFinder func(sheetID int) (*api.Sheet, error)) *echo.HTTPError {
+	if matches := sheetOrganizeRouteRegex.FindStringSubmatch(path); matches != nil {
+		sheetID, _ := strconv.Atoi(matches[1])
+		sheet, err := sheetFinder(sheetID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+		if sheet == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
+		}
+		// Creator can always manage her own sheet.
+		if sheet.CreatorID == principalID {
+			return nil
+		}
+		switch sheet.Visibility {
+		case api.PrivateSheet:
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
+		case api.PublicSheet:
+			return nil
+		case api.ProjectSheet:
+			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
+			}
+
+			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to organize the project sheet")
+			}
+		}
+	} else if matches := sheetRouteRegex.FindStringSubmatch(path); matches != nil {
+		sheetID, _ := strconv.Atoi(matches[1])
+		sheet, err := sheetFinder(sheetID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+		if sheet == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
+		}
+		// Creator can always manage her own sheet.
+		if sheet.CreatorID == principalID {
+			return nil
+		}
+		switch sheet.Visibility {
+		case api.PrivateSheet:
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
+		case api.PublicSheet:
+			if method == "GET" {
+				return nil
+			}
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to change public sheet created by other user")
+		case api.ProjectSheet:
+			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
+			}
+
+			if method == "GET" {
+				return nil
+			}
+
+			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, projectRoles) {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to change the project sheet")
+			}
+		}
+	}
+
+	return nil
+}
+
+var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
+var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
+
+func enforceWorkspaceDeveloperIssueRouteACL(plan api.PlanType, path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+	switch method {
+	case http.MethodGet:
+		// For /issue route, require the caller principal to be the same as the user in the query.
+		// Only /issue and /project route will bring parameter user in the query.
+		if userStr := queryParams.Get("user"); userStr != "" {
+			userID, err := strconv.Atoi(userStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID").SetInternal(err)
+			}
+			if principalID != userID {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
+			}
+		} else if matches := issueRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
+			issueIDStr := matches[1]
+			issueID, err := strconv.Atoi(issueIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
+			}
+			projectID, err := getIssueProjectID(issueID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			projectRoles, err := projectRolesFinder(projectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to retrieve issue that is in the project that the user is not a member of")
+			}
+		}
+	case http.MethodPatch:
+		// Workspace developer can only operating the issues if the user is the member of the project that the issue belongs to.
+		if matches := issueStatusRegex.FindStringSubmatch(path); len(matches) > 0 {
+			issueIDStr := matches[1]
+			issueID, err := strconv.Atoi(issueIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
+			}
+			projectID, err := getIssueProjectID(issueID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			projectRoles, err := projectRolesFinder(projectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
+			}
+		}
+	case http.MethodPost:
+		if path == "/issue" {
+			// Workspace developer can only create issue under the project that the user is the member of.
+			var issueCreate api.IssueCreate
+			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
+			}
+			projectRoles, err := projectRolesFinder(issueCreate.ProjectID, principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+			}
+			if !api.ProjectPermission(api.ProjectPermissionChangeDatabase, plan, projectRoles) {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issues under the project %d", issueCreate.ProjectID))
+			}
+		}
+	}
+	return nil
 }
 
 func getRetrieveIssueProjectID(ctx context.Context, s *store.Store) func(issueID int) (int, error) {
@@ -509,27 +487,6 @@ func getRetrieveDatabaseProjectID(ctx context.Context, s *store.Store) func(data
 			return 0, errors.Errorf("cannot find project %s", db.ProjectID)
 		}
 		return project.UID, nil
-	}
-}
-
-func getRetrieveProjectMemberIDs(ctx context.Context, s *store.Store) func(projectID int) ([]int, error) {
-	return func(projectID int) ([]int, error) {
-		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-			UID: &projectID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if policy == nil {
-			return nil, errors.Errorf("cannot find policy for project %d", projectID)
-		}
-		var memberIDs []int
-		for _, binding := range policy.Bindings {
-			for _, member := range binding.Members {
-				memberIDs = append(memberIDs, member.ID)
-			}
-		}
-		return memberIDs, nil
 	}
 }
 
