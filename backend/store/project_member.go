@@ -75,6 +75,24 @@ func (s *Store) GetProjectMemberByProjectIDAndPrincipalIDAndRole(ctx context.Con
 	return &projectMember, nil
 }
 
+// GetProjectUsingRole gets a project that uses the role.
+func (s *Store) GetProjectUsingRole(ctx context.Context, role api.Role) (bool, string, error) {
+	query := `
+		SELECT project.resource_id
+		FROM project_member, project
+		WHERE project_member.role = $1 AND project_member.project_id = project.id
+		LIMIT 1
+	`
+	var project string
+	if err := s.db.db.QueryRowContext(ctx, query, role).Scan(&project); err != nil {
+		if err == sql.ErrNoRows {
+			return false, "", nil
+		}
+		return false, "", err
+	}
+	return true, project, nil
+}
+
 // GetProjectMemberByID gets a project member by ID.
 func (s *Store) GetProjectMemberByID(ctx context.Context, projectMemberID int) (*ProjectMemberMessage, error) {
 	var projectMember ProjectMemberMessage
