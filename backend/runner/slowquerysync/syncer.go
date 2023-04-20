@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -119,13 +120,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 	case db.MySQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case db.Postgres:
-		return s.syncPostgreSQLSlowQuery(ctx, instance, slowQueryPolicy)
+		return s.syncPostgreSQLSlowQuery(ctx, instance)
 	default:
 		return errors.Errorf("unsupported database engine: %s", instance.Engine)
 	}
 }
 
-func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage, policy *api.SlowQueryPolicy) error {
+func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		InstanceID: &instance.ResourceID,
 	})
@@ -133,17 +134,12 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return err
 	}
 
-	databaseMap := make(map[string]bool)
-	for _, database := range policy.DatabaseList {
-		databaseMap[database] = true
-	}
-
 	var firstDatabase string
 	for _, database := range databases {
 		if database.SyncState != api.OK {
 			continue
 		}
-		if _, exists := databaseMap[database.DatabaseName]; !exists {
+		if _, exists := pg.ExcludedDatabaseList[database.DatabaseName]; exists {
 			continue
 		}
 		if err := func() error {

@@ -24,6 +24,8 @@ const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
 	// identifyTraitForPlan is the trait key for subscription plan.
 	identifyTraitForPlan = "plan"
+	// identifyTraitForTrial is the trait key for trialing.
+	identifyTraitForTrial = "trial"
 	// identifyTraitForOrgID is the trait key for organization id.
 	identifyTraitForOrgID = "org_id"
 	// identifyTraitForOrgName is the trait key for organization name.
@@ -152,6 +154,11 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 	orgID := subscription.OrgID
 	orgName := subscription.OrgName
 
+	trial := "N"
+	if subscription.Trialing {
+		trial = "Y"
+	}
+
 	user, err := m.store.GetUserByID(ctx, api.PrincipalIDForFirstUser)
 	if err != nil {
 		log.Debug("unable to get the first principal user", zap.Int("id", api.PrincipalIDForFirstUser), zap.Error(err))
@@ -174,6 +181,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 		Name:  name,
 		Labels: map[string]string{
 			identifyTraitForPlan:           plan,
+			identifyTraitForTrial:          trial,
 			identifyTraitForVersion:        m.profile.Version,
 			identifyTraitForOrgID:          orgID,
 			identifyTraitForOrgName:        orgName,
