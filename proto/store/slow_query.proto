@@ -35,13 +35,13 @@ message SlowQueryStatisticsItem {
 
   // The maximum rows sent of the slow query log.
   int64 maximum_rows_sent = 7;
-  
+
   // The total rows examined of the slow query log.
   int64 total_rows_examined = 8;
 
   // The maximum rows examined of the slow query log.
   int64 maximum_rows_examined = 9;
-  
+
   // samples are the details of the sample slow queries with the same fingerprint.
   repeated SlowQueryDetails samples = 10;
 }

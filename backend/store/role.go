@@ -12,6 +12,7 @@ import (
 // RoleMessage is the message for roles.
 type RoleMessage struct {
 	ResourceID  string
+	Name        string
 	Description string
 
 	// Output only
@@ -23,6 +24,7 @@ type UpdateRoleMessage struct {
 	UpdaterID  int
 	ResourceID string
 
+	Name        *string
 	Description *string
 }
 
@@ -30,10 +32,10 @@ type UpdateRoleMessage struct {
 func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID int) (*RoleMessage, error) {
 	query := `
 		INSERT INTO
-			role (creator_id, updater_id, resource_id, description)
-		VALUES ($1, $2, $3, $4)
+			role (creator_id, updater_id, resource_id, name, description)
+		VALUES ($1, $2, $3, $4, $5)
 	`
-	if _, err := s.db.db.ExecContext(ctx, query, creatorID, creatorID, create.ResourceID, create.Description); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, creatorID, creatorID, create.ResourceID, create.Name, create.Description); err != nil {
 		return nil, err
 	}
 	return create, nil
@@ -43,12 +45,12 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID i
 func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, error) {
 	query := `
 		SELECT
-			creator_id, description
+			creator_id, name, description
 		FROM role
 		WHERE resource_id = $1
 	`
 	var role RoleMessage
-	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Description); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Name, &role.Description); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -62,7 +64,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 	query := `
 		SELECT
-			creator_id, resource_id, description
+			creator_id, resource_id, name, description
 		FROM role
 	`
 	rows, err := s.db.db.QueryContext(ctx, query)
@@ -76,18 +78,20 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 		&RoleMessage{
 			CreatorID:   api.SystemBotID,
 			ResourceID:  "OWNER",
+			Name:        "Project owner",
 			Description: "",
 		},
 		&RoleMessage{
 			CreatorID:   api.SystemBotID,
 			ResourceID:  "DEVELOPER",
+			Name:        "Project developer",
 			Description: "",
 		},
 	)
 
 	for rows.Next() {
 		var role RoleMessage
-		if err := rows.Scan(&role.CreatorID, &role.ResourceID, &role.Description); err != nil {
+		if err := rows.Scan(&role.CreatorID, &role.ResourceID, &role.Name, &role.Description); err != nil {
 			return nil, err
 		}
 		roles = append(roles, &role)
@@ -103,6 +107,9 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 // UpdateRole updates an existing role.
 func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*RoleMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", patch.UpdaterID)}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
 	}
@@ -112,13 +119,13 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		UPDATE role
 		SET `+strings.Join(set, ", ")+`
 		WHERE resource_id = $%d
-		RETURNING creator_id, description
+		RETURNING creator_id, name, description
 	`, len(args))
 
 	role := RoleMessage{
 		ResourceID: patch.ResourceID,
 	}
-	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Description); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Name, &role.Description); err != nil {
 		return nil, err
 	}
 
