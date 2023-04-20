@@ -292,8 +292,7 @@ func (p *AccessControlPolicy) String() (string, error) {
 
 // SlowQueryPolicy is the policy configuration for slow query.
 type SlowQueryPolicy struct {
-	Active       bool     `json:"active"`
-	DatabaseList []string `json:"databaseList"`
+	Active bool `json:"active"`
 }
 
 // UnmarshalSlowQueryPolicy will unmarshal payload to slow query policy.

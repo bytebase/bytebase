@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -17,6 +18,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
@@ -218,17 +220,13 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 			return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
 		}
 
-		databaseMap := make(map[string]bool)
-		for _, database := range slowQueryPolicy.DatabaseList {
-			databaseMap[database] = true
-		}
-
 		var firstDatabase string
+		var errs error
 		for _, database := range databases {
 			if database.SyncState != api.OK {
 				continue
 			}
-			if _, exists := databaseMap[database.DatabaseName]; !exists {
+			if _, exists := pg.ExcludedDatabaseList[database.DatabaseName]; exists {
 				continue
 			}
 			if err := func() error {
@@ -239,12 +237,16 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 				defer driver.Close(ctx)
 				return driver.CheckSlowQueryLogEnabled(ctx)
 			}(); err != nil {
-				return nil, status.Errorf(codes.FailedPrecondition, "slow query log for database %q is not enabled: %s", database.DatabaseName, err.Error())
+				errs = multierr.Append(errs, err)
 			}
 
 			if firstDatabase == "" {
 				firstDatabase = database.DatabaseName
 			}
+		}
+
+		if errs != nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", errs.Error())
 		}
 
 		if firstDatabase == "" {

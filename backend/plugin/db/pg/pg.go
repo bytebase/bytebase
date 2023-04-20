@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	excludedDatabaseList = map[string]bool{
+	ExcludedDatabaseList = map[string]bool{
 		// Skip our internal "bytebase" database
 		"bytebase": true,
 		// Skip internal databases from cloud service providers
