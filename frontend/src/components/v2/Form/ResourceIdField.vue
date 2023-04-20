@@ -57,7 +57,7 @@ import { useI18n } from "vue-i18n";
 import { NInput, type InputProps } from "naive-ui";
 
 import type { ResourceId, ValidatedMessage } from "@/types";
-import { VueClass, randomString } from "@/utils";
+import { randomString } from "@/utils";
 
 // characters is the validated characters for resource id.
 const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";
@@ -89,7 +89,6 @@ const props = withDefaults(
     suffix?: boolean;
     readonly?: boolean;
     inputProps?: Partial<InputProps>;
-    labelClass?: VueClass;
     validate?: (resourceId: ResourceId) => Promise<ValidatedMessage[]>;
   }>(),
   {
@@ -98,7 +97,6 @@ const props = withDefaults(
     suffix: false,
     readonly: false,
     inputProps: undefined,
-    labelClass: "textlabel",
     validate: () => Promise.resolve([]),
   }
 );
