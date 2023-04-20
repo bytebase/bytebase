@@ -114,6 +114,11 @@ export const allowUserToChangeAssignee = (user: Principal, issue: Issue) => {
   if (issue.status !== "OPEN") {
     return false;
   }
+  if (
+    hasWorkspacePermission("bb.permission.workspace.manage-issue", user.role)
+  ) {
+    return true;
+  }
   if (issue.assignee.id === SYSTEM_BOT_ID) {
     return user.id === issue.creator.id;
   }
