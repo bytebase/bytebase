@@ -123,6 +123,7 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, "failed to create license: %v", err.Error())
 	}
 
+	// we need to override the SettingEnterpriseLicense with an empty value to get the valid free trial.
 	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
 		UpdaterID: principalID,
 		License:   "",
