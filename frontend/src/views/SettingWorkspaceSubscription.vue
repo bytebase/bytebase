@@ -9,7 +9,7 @@
       >
         {{ $t("subscription.purchase-license") }}
       </a>
-      <span v-if="canTrial" class="ml-1">
+      <span v-if="subscriptionStore.canTrial" class="ml-1">
         {{ $t("common.or") }}
         <span class="text-accent cursor-pointer" @click="openTrialModal">
           {{ $t("subscription.plan.try") }}
@@ -52,7 +52,10 @@
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
       <div
-        v-if="canTrial && subscriptionStore.currentPlan != PlanType.ENTERPRISE"
+        v-if="
+          subscriptionStore.canTrial &&
+          subscriptionStore.currentPlan != PlanType.ENTERPRISE
+        "
         class="my-3"
       >
         <dt class="text-gray-400">
@@ -207,10 +210,6 @@ const currentPlan = computed((): string => {
     default:
       return t("subscription.plan.free.title");
   }
-});
-
-const canTrial = computed((): boolean => {
-  return subscriptionStore.canTrial;
 });
 
 const openTrialModal = () => {

@@ -92,12 +92,7 @@ export const useSubscriptionStore = defineStore("subscription", {
       return this.canUpgradeTrial;
     },
     canUpgradeTrial(state): boolean {
-      if (!state.subscription) {
-        return false;
-      }
-      return (
-        state.subscription.trialing && this.currentPlan < PlanType.ENTERPRISE
-      );
+      return this.currentPlan < PlanType.ENTERPRISE;
     },
   },
   actions: {
