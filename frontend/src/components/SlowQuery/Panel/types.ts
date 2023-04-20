@@ -62,6 +62,6 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
     request.filter = query.join(" && ");
   }
 
-  request.orderBy = "nighty_fifth_percentile_query_time desc";
+  request.orderBy = "maximum_query_time desc";
   return ListSlowQueriesRequest.fromJSON(request);
 };
