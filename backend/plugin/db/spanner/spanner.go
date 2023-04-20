@@ -190,7 +190,7 @@ func (d *Driver) creataDatabase(ctx context.Context, createStatement string, ext
 }
 
 // QueryConn querys statements.
-func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext *db.QueryContext) ([]any, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
 		return nil, err
