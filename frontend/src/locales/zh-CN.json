@@ -236,7 +236,9 @@
     "active": "开启",
     "added": "已创建",
     "revoke": "撤销",
-    "cannot-undo-this-action": "这个操作无法撤销"
+    "cannot-undo-this-action": "这个操作无法撤销",
+    "expand": "展开",
+    "collapse": "收起"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -787,6 +789,7 @@
     "collections": "集合",
     "views": "视图",
     "extensions": "插件",
+    "functions": "函数",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
