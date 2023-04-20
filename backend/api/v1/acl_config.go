@@ -36,6 +36,7 @@ var projectOwnerMethods = map[string]bool{
 	"ProjectService/UpdateProject":           true,
 	"ProjectService/DeleteProject":           true,
 	"ProjectService/UndeleteProject":         true,
+	"ProjectService/SetIamPolicy":            true,
 	"SubscriptionService/UpdateSubscription": true,
 }
 
