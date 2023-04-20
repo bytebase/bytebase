@@ -30,6 +30,154 @@ func getRoleContextKey() string {
 	return roleContextKey
 }
 
+func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
+
+		// Skips auth
+		if common.HasPrefixes(path, "/auth", "/oauth") {
+			return next(c)
+		}
+
+		// Skips OpenAPI SQL endpoint
+		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
+			return next(c)
+		}
+
+		method := c.Request().Method
+
+		// Skip GET /feature request
+		if common.HasPrefixes(path, "/feature") && method == "GET" {
+			return next(c)
+		}
+
+		if readonly && method != "GET" {
+			return echo.NewHTTPError(http.StatusMethodNotAllowed, "Server is in readonly mode")
+		}
+
+		// Gets principal id from the context.
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+
+		user, err := s.store.GetUserByID(ctx, principalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+		if user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalID))
+		}
+		if user.MemberDeleted {
+			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
+		}
+
+		role := user.Role
+		// If admin feature is not enabled, then we treat all user as OWNER.
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+			role = api.Owner
+		}
+
+		// Performs the ACL check.
+		pass, err := ce.Enforce(string(role), path, method)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+
+		if !pass {
+			// If the request is trying to GET/PATCH/DELETE itself, we will change the method signature to
+			// XXX_SELF and try again. Because XXX is a superset of XXX_SELF, thus we only try XXX_SELF after
+			// XXX fails.
+			if method == "GET" || method == "PATCH" || method == "DELETE" {
+				if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method, path); err != nil {
+					return err
+				} else if isSelf {
+					method += "_SELF"
+
+					// Performs the ACL check with _SELF.
+					pass, err = ce.Enforce(string(role), path, method)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+					}
+				}
+			}
+		}
+
+		if !pass {
+			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+				errors.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
+		}
+
+		// Workspace Owner or DBA assumes project Owner role for all projects, so will
+		// pass any project ACL.
+		if role != api.Owner && role != api.DBA {
+			var aclErr *echo.HTTPError
+			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
+				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
+				if err != nil {
+					return "", err
+				}
+				for _, binding := range policy.Bindings {
+					for _, member := range binding.Members {
+						if member.ID == principalID {
+							return common.ProjectRole(binding.Role), nil
+						}
+					}
+				}
+				return "", nil
+			}
+
+			sheetFinder := func(sheetID int) (*api.Sheet, error) {
+				sheetFind := &api.SheetFind{
+					ID: &sheetID,
+				}
+				return s.store.GetSheet(ctx, sheetFind, principalID)
+			}
+
+			if strings.HasPrefix(path, "/project") {
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
+			} else if strings.HasPrefix(path, "/sheet") {
+				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
+			} else if strings.HasPrefix(path, "/database") {
+				// We need to copy the body because it will be consumed by the next middleware.
+				// And TeeReader require us the write must complete before the read completes.
+				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
+				bodyBytes, err := io.ReadAll(c.Request().Body)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
+				}
+				if err := c.Request().Body.Close(); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
+				}
+				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
+			} else if strings.HasPrefix(path, "/issue") {
+				// We need to copy the body because it will be consumed by the next middleware.
+				// And TeeReader require us the write must complete before the read completes.
+				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
+				bodyBytes, err := io.ReadAll(c.Request().Body)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
+				}
+				if err := c.Request().Body.Close(); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
+				}
+				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
+			}
+			if aclErr != nil {
+				return aclErr
+			}
+		}
+
+		// Stores role into context.
+		c.Set(getRoleContextKey(), role)
+
+		return next(c)
+	}
+}
+
 var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`)
 var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
 var projectSyncSheetRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/sync-sheet`)
@@ -323,154 +471,6 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 		}
 	}
 	return nil
-}
-
-func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-
-		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
-
-		// Skips auth
-		if common.HasPrefixes(path, "/auth", "/oauth") {
-			return next(c)
-		}
-
-		// Skips OpenAPI SQL endpoint
-		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
-			return next(c)
-		}
-
-		method := c.Request().Method
-
-		// Skip GET /feature request
-		if common.HasPrefixes(path, "/feature") && method == "GET" {
-			return next(c)
-		}
-
-		if readonly && method != "GET" {
-			return echo.NewHTTPError(http.StatusMethodNotAllowed, "Server is in readonly mode")
-		}
-
-		// Gets principal id from the context.
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-
-		user, err := s.store.GetUserByID(ctx, principalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-		if user == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalID))
-		}
-		if user.MemberDeleted {
-			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
-		}
-
-		role := user.Role
-		// If admin feature is not enabled, then we treat all user as OWNER.
-		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
-			role = api.Owner
-		}
-
-		// Performs the ACL check.
-		pass, err := ce.Enforce(string(role), path, method)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-
-		if !pass {
-			// If the request is trying to GET/PATCH/DELETE itself, we will change the method signature to
-			// XXX_SELF and try again. Because XXX is a superset of XXX_SELF, thus we only try XXX_SELF after
-			// XXX fails.
-			if method == "GET" || method == "PATCH" || method == "DELETE" {
-				if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method, path); err != nil {
-					return err
-				} else if isSelf {
-					method += "_SELF"
-
-					// Performs the ACL check with _SELF.
-					pass, err = ce.Enforce(string(role), path, method)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-					}
-				}
-			}
-		}
-
-		if !pass {
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				errors.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
-		}
-
-		// Workspace Owner or DBA assumes project Owner role for all projects, so will
-		// pass any project ACL.
-		if role != api.Owner && role != api.DBA {
-			var aclErr *echo.HTTPError
-			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
-				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
-				if err != nil {
-					return "", err
-				}
-				for _, binding := range policy.Bindings {
-					for _, member := range binding.Members {
-						if member.ID == principalID {
-							return common.ProjectRole(binding.Role), nil
-						}
-					}
-				}
-				return "", nil
-			}
-
-			sheetFinder := func(sheetID int) (*api.Sheet, error) {
-				sheetFind := &api.SheetFind{
-					ID: &sheetID,
-				}
-				return s.store.GetSheet(ctx, sheetFind, principalID)
-			}
-
-			if strings.HasPrefix(path, "/project") {
-				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
-			} else if strings.HasPrefix(path, "/sheet") {
-				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
-			} else if strings.HasPrefix(path, "/database") {
-				// We need to copy the body because it will be consumed by the next middleware.
-				// And TeeReader require us the write must complete before the read completes.
-				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
-				bodyBytes, err := io.ReadAll(c.Request().Body)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
-				}
-				if err := c.Request().Body.Close(); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
-				}
-				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
-			} else if strings.HasPrefix(path, "/issue") {
-				// We need to copy the body because it will be consumed by the next middleware.
-				// And TeeReader require us the write must complete before the read completes.
-				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
-				bodyBytes, err := io.ReadAll(c.Request().Body)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
-				}
-				if err := c.Request().Body.Close(); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
-				}
-				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
-			}
-			if aclErr != nil {
-				return aclErr
-			}
-		}
-
-		// Stores role into context.
-		c.Set(getRoleContextKey(), role)
-
-		return next(c)
-	}
 }
 
 func getRetrieveIssueProjectID(ctx context.Context, s *store.Store) func(issueID int) (int, error) {
