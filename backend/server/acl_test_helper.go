@@ -201,21 +201,10 @@ func testWorkspaceDeveloperDatabaseRouteMockGetProjectMemberIDs(projectID int) (
 }
 
 var testWorkspaceDeveloperIssueRouteHelper = struct {
-	// principalIDToProjectID is a map from principal ID to the project ID.
-	// We assume that a principal can only be a member of one project (actually it can be a member of multiple projects).
-	principalIDToProjectID map[int]int
-	projectMembers         map[int]map[common.ProjectRole][]int
+	projectMembers map[int]map[common.ProjectRole][]int
 	// issueIDToProjectID is a map from issue ID to the project ID.
 	issueIDToProjectID map[int]int
 }{
-	principalIDToProjectID: map[int]int{
-		// User 202 is a member of project 102.
-		202: 102,
-		// User 203 is a member of project 102.
-		203: 102,
-		// User 203 is a member of project 103.
-		204: 103,
-	},
 	projectMembers: map[int]map[common.ProjectRole][]int{
 		// Project 102 contains members 202 and 203.
 		102: {
