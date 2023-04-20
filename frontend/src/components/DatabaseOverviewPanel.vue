@@ -124,6 +124,17 @@
           </div>
           <DBExtensionTable :db-extension-list="dbExtensionList" />
         </template>
+
+        <template v-if="database.instance.engine === 'POSTGRES'">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.functions") }}
+          </div>
+          <FunctionTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :function-list="functionList"
+          />
+        </template>
       </template>
     </div>
 
@@ -220,12 +231,8 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, head, isEqual } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import AnomalyTable from "../components/AnomalyTable.vue";
-import DataSourceTable from "../components/DataSourceTable.vue";
-import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
-import TableTable from "../components/TableTable.vue";
-import ViewTable from "../components/ViewTable.vue";
 import { hasWorkspacePermission, memberListInProject } from "../utils";
 import {
   Anomaly,
@@ -234,8 +241,6 @@ import {
   DataSourcePatch,
   EngineType,
 } from "../types";
-import { cloneDeep, head, isEqual } from "lodash-es";
-import { BBTableSectionDataSource } from "../bbkit/types";
 import {
   featureToRef,
   useCurrentUser,
@@ -243,6 +248,13 @@ import {
   useAnomalyList,
   useDBSchemaStore,
 } from "@/store";
+import { BBTableSectionDataSource } from "../bbkit/types";
+import AnomalyTable from "../components/AnomalyTable.vue";
+import DataSourceTable from "../components/DataSourceTable.vue";
+import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
+import TableTable from "../components/TableTable.vue";
+import ViewTable from "../components/ViewTable.vue";
+import FunctionTable from "../components/FunctionTable.vue";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -341,6 +353,17 @@ const viewList = computed(() => {
 
 const dbExtensionList = computed(() => {
   return dbSchemaStore.getExtensionListByDatabaseId(props.database.id);
+});
+
+const functionList = computed(() => {
+  if (hasSchemaProperty.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.functions || []
+    );
+  }
+  return dbSchemaStore.getFunctionListByDatabaseId(props.database.id);
 });
 
 const allowConfigInstance = computed(() => {
