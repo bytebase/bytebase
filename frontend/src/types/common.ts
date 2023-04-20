@@ -209,7 +209,7 @@ const makeUnknown = (type: ResourceType) => {
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
-    id: UNKNOWN_ID,
+    id: `projects/${UNKNOWN_ID}/roles/${UNKNOWN_ID}/principals/${UNKNOWN_ID}`,
     project: UNKNOWN_PROJECT,
     role: "DEVELOPER",
     principal: UNKNOWN_PRINCIPAL,
@@ -568,7 +568,7 @@ const makeEmpty = (type: ResourceType) => {
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
-    id: EMPTY_ID,
+    id: `projects/${EMPTY_ID}/roles/${EMPTY_ID}/principals/${EMPTY_ID}`,
     project: EMPTY_PROJECT,
     role: "DEVELOPER",
     principal: EMPTY_PRINCIPAL,
