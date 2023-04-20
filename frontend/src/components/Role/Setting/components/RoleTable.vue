@@ -35,7 +35,7 @@ const { t } = useI18n();
 const COLUMNS = computed((): BBGridColumn[] => {
   return [
     {
-      title: t("common.name"),
+      title: t("role.title"),
       width: "minmax(auto, 1fr)",
     },
     {

@@ -1,10 +1,10 @@
 <template>
   <div class="bb-grid-cell whitespace-nowrap">
-    {{ extractRoleResourceName(role.name) }}
+    {{ title }}
   </div>
 
   <div class="bb-grid-cell">
-    {{ role.description }}
+    {{ description }}
   </div>
   <div class="bb-grid-cell gap-x-1">
     <template v-if="allowEdit">
@@ -26,9 +26,10 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { NButton } from "naive-ui";
+import { useI18n } from "vue-i18n";
 
 import type { Role } from "@/types/proto/v1/role_service";
-import { extractRoleResourceName, useWorkspacePermission } from "@/utils";
+import { useWorkspacePermission } from "@/utils";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
 
@@ -39,6 +40,22 @@ const props = defineProps<{
 defineEmits<{
   (event: "edit", role: Role): void;
 }>();
+
+const { t } = useI18n();
+
+const description = computed(() => {
+  const { role } = props;
+  if (role.name === "roles/OWNER") return t("role.owner.description");
+  if (role.name === "roles/DEVELOPER") return t("role.developer.description");
+  return role.description;
+});
+
+const title = computed(() => {
+  const { role } = props;
+  if (role.name === "roles/OWNER") return t("common.role.owner");
+  if (role.name === "roles/DEVELOPER") return t("common.role.developer");
+  return role.title;
+});
 
 const allowAdmin = useWorkspacePermission(
   "bb.permission.workspace.manage-general"

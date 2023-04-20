@@ -1,7 +1,7 @@
 import { computed, unref } from "vue";
 import { MaybeRef, ProjectRoleType, RoleType } from "../types";
-import { hasFeature, useCurrentUser } from "@/store";
-import { t, te } from "@/plugins/i18n";
+import { hasFeature, useCurrentUser, useRoleStore } from "@/store";
+import { t } from "@/plugins/i18n";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
@@ -180,11 +180,12 @@ export const extractRoleResourceName = (resourceId: string): string => {
   return matches?.[1] ?? "";
 };
 
-export const roleNameText = (name: string): string => {
-  const keypath = `common.role.${name.toLowerCase()}`;
-
-  if (te(keypath)) {
-    return t(keypath);
-  }
-  return name;
+export const displayRoleTitle = (role: string): string => {
+  // Use i18n-defined readable titles for system roles
+  if (role === "roles/OWNER") return t("common.role.owner");
+  if (role === "roles/DEVELOPER") return t("common.role.developer");
+  // Use role.title if possible
+  const item = useRoleStore().roleList.find((r) => r.name === role);
+  // Fallback to extracted resource name otherwise
+  return item?.title || extractRoleResourceName(role);
 };
