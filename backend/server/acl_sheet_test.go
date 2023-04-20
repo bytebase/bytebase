@@ -314,7 +314,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperSheetRouteACL(tc.plan, tc.path, tc.method, tc.principalID, roleFinder, sheetFinder)
+			err := enforceWorkspaceDeveloperSheetRouteACL(tc.plan, tc.path, tc.method, tc.principalID, projectRolesFinderForTest, sheetFinderForTest)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
