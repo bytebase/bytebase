@@ -111,19 +111,21 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		// pass any project ACL.
 		if role != api.Owner && role != api.DBA {
 			var aclErr *echo.HTTPError
-			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
+			projectRoleFinder := func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
 				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 				if err != nil {
-					return "", err
+					return nil, err
 				}
+				projectRoles := make(map[common.ProjectRole]bool)
 				for _, binding := range policy.Bindings {
 					for _, member := range binding.Members {
 						if member.ID == principalID {
-							return common.ProjectRole(binding.Role), nil
+							projectRoles[common.ProjectRole(binding.Role)] = true
+							break
 						}
 					}
 				}
-				return "", nil
+				return projectRoles, nil
 			}
 
 			sheetFinder := func(sheetID int) (*api.Sheet, error) {
@@ -134,9 +136,9 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			}
 
 			if strings.HasPrefix(path, "/project") {
-				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, projectRoleFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
-				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
+				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRoleFinder, sheetFinder)
 			} else if strings.HasPrefix(path, "/database") {
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
@@ -182,7 +184,7 @@ var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`
 var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
 var projectSyncSheetRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/sync-sheet`)
 
-func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, roleFinder func(projectID int, principalID int) (common.ProjectRole, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	var projectID int
 	var permission api.ProjectPermissionType
 	var permissionErrMsg string
@@ -214,16 +216,16 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 	}
 
 	if projectID > 0 {
-		role, err := roleFinder(projectID, principalID)
+		projectRoles, err := projectRolesFinder(projectID, principalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
 
-		if role == "" {
+		if len(projectRoles) == 0 {
 			return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project")
 		}
 
-		if !api.ProjectPermission(permission, plan, role) {
+		if !api.ProjectPermission(permission, plan, projectRoles) {
 			return echo.NewHTTPError(http.StatusUnauthorized, permissionErrMsg)
 		}
 	}
@@ -314,7 +316,7 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 var sheetRouteRegex = regexp.MustCompile(`^/sheet/(?P<sheetID>\d+)`)
 var sheetOrganizeRouteRegex = regexp.MustCompile(`^/sheet/(?P<projectID>\d+)/organize`)
 
-func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, method string, principalID int, roleFinder func(projectID int, principalID int) (common.ProjectRole, error), sheetFinder func(sheetID int) (*api.Sheet, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, method string, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error), sheetFinder func(sheetID int) (*api.Sheet, error)) *echo.HTTPError {
 	if matches := sheetOrganizeRouteRegex.FindStringSubmatch(path); matches != nil {
 		sheetID, _ := strconv.Atoi(matches[1])
 		sheet, err := sheetFinder(sheetID)
@@ -334,16 +336,16 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 		case api.PublicSheet:
 			return nil
 		case api.ProjectSheet:
-			role, err := roleFinder(sheet.ProjectID, principalID)
+			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
 
-			if role == "" {
+			if len(projectRoles) == 0 {
 				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
 			}
 
-			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, role) {
+			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
 				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to organize the project sheet")
 			}
 		}
@@ -369,12 +371,12 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to change public sheet created by other user")
 		case api.ProjectSheet:
-			role, err := roleFinder(sheet.ProjectID, principalID)
+			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
 
-			if role == "" {
+			if len(projectRoles) == 0 {
 				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
 			}
 
@@ -382,7 +384,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 				return nil
 			}
 
-			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, role) {
+			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, projectRoles) {
 				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to change the project sheet")
 			}
 		}
