@@ -358,16 +358,6 @@ const getButtonText = (plan: Plan): string => {
       }
       break;
     case PlanType.ENTERPRISE:
-      // if (subscriptionStore.currentPlan === PlanType.FREE) {
-      //   return t("subscription.button.free-trial", {
-      //     days: subscriptionStore.trialingDays,
-      //   });
-      // }
-      // if (subscriptionStore.currentPlan === PlanType.TEAM) {
-      //   return t("subscription.button.free-trial", {
-      //     days: subscriptionStore.trialingDays,
-      //   });
-      // }
       if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
         if (subscriptionStore.isTrialing) {
           return t("subscription.button.contact-us");
@@ -406,7 +396,6 @@ const onButtonClick = (plan: Plan) => {
           );
         }
       } else {
-        // emit("on-trial");
         window.open(enterprisePlanFormLink, "__blank");
       }
   }
