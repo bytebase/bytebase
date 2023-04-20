@@ -141,7 +141,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 }
 
 // QueryConn executes the statement, returns the results.
-func (d *Driver) QueryConn(ctx context.Context, statement string, _ *db.QueryContext) ([]any, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]any, error) {
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
 		lines[i] = strings.Trim(lines[i], " \n\t\r")
