@@ -58,6 +58,7 @@ export interface DeleteRoleRequest {
 export interface Role {
   /** Format: roles/{role} */
   name: string;
+  title: string;
   description: string;
 }
 
@@ -406,7 +407,7 @@ export const DeleteRoleRequest = {
 };
 
 function createBaseRole(): Role {
-  return { name: "", description: "" };
+  return { name: "", title: "", description: "" };
 }
 
 export const Role = {
@@ -414,8 +415,11 @@ export const Role = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
     if (message.description !== "") {
-      writer.uint32(18).string(message.description);
+      writer.uint32(26).string(message.description);
     }
     return writer;
   },
@@ -439,6 +443,13 @@ export const Role = {
             break;
           }
 
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.description = reader.string();
           continue;
       }
@@ -453,6 +464,7 @@ export const Role = {
   fromJSON(object: any): Role {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
     };
   },
@@ -460,6 +472,7 @@ export const Role = {
   toJSON(message: Role): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
     return obj;
   },
@@ -471,6 +484,7 @@ export const Role = {
   fromPartial(object: DeepPartial<Role>): Role {
     const message = createBaseRole();
     message.name = object.name ?? "";
+    message.title = object.title ?? "";
     message.description = object.description ?? "";
     return message;
   },

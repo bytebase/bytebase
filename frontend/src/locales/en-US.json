@@ -238,7 +238,9 @@
     "active": "Active",
     "added": "Added",
     "revoke": "Revoke",
-    "cannot-undo-this-action": "You cannot undo this action"
+    "cannot-undo-this-action": "You cannot undo this action",
+    "expand": "Expand",
+    "collapse": "Collapse"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -789,6 +791,7 @@
     "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",
+    "functions": "Functions",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",

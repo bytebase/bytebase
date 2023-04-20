@@ -50,6 +50,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	create := &store.RoleMessage{
 		ResourceID:  request.RoleId,
+		Name:        request.Role.Title,
 		Description: request.Role.Description,
 	}
 	roleMessage, err := s.store.CreateRole(ctx, create, principalID)
@@ -82,6 +83,8 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
+		case "title":
+			patch.Name = &request.Role.Title
 		case "description":
 			patch.Description = &request.Role.Description
 		default:
@@ -109,6 +112,13 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	if role == nil {
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
+	has, project, err := s.store.GetProjectUsingRole(ctx, api.Role(roleID))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
+	}
+	if has {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", convertToRoleName(roleID), fmt.Sprintf("%s%s", projectNamePrefix, project))
+	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
 	}
@@ -126,6 +136,7 @@ func convertToRoles(roleMessages []*store.RoleMessage) []*v1pb.Role {
 func convertToRole(role *store.RoleMessage) *v1pb.Role {
 	return &v1pb.Role{
 		Name:        convertToRoleName(role.ResourceID),
+		Title:       role.Name,
 		Description: role.Description,
 	}
 }

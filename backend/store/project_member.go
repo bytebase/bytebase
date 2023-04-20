@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -35,6 +36,24 @@ type ProjectMemberMessage struct {
 	ID          int
 	ProjectID   int
 	PrincipalID int
+}
+
+// GetProjectUsingRole gets a project that uses the role.
+func (s *Store) GetProjectUsingRole(ctx context.Context, role api.Role) (bool, string, error) {
+	query := `
+		SELECT project.resource_id
+		FROM project_member, project
+		WHERE project_member.role = $1 AND project_member.project_id = project.id
+		LIMIT 1
+	`
+	var project string
+	if err := s.db.db.QueryRowContext(ctx, query, role).Scan(&project); err != nil {
+		if err == sql.ErrNoRows {
+			return false, "", nil
+		}
+		return false, "", err
+	}
+	return true, project, nil
 }
 
 // GetProjectPolicy gets the IAM policy of a project.
