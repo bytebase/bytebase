@@ -121,11 +121,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 }
 
 // QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, statement string, queryContext *db.QueryContext) ([]any, error) {
-	conn, err := driver.db.Conn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.MSSQL, conn, statement, queryContext)
 }
