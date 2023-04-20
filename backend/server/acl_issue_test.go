@@ -37,7 +37,7 @@ func TestWorkspaceDeveloperIssueRouteACL_RetrieveIssue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.body, tc.queryParams, tc.principalID, testWorkspaceDeveloperIssueRouteMockGetIssueProjectID, testWorkspaceDeveloperIssueRouteMockGetProjectMemberIDs)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.body, tc.queryParams, tc.principalID, testWorkspaceDeveloperIssueRouteMockGetIssueProjectID, getProjectRolesFinderForTest(testWorkspaceDeveloperIssueRouteHelper.projectMembers))
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
@@ -93,8 +93,9 @@ func TestWorkspaceDeveloperIssueRouteACL_OperateIssue(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.body, tc.queryParams, tc.principalID, testWorkspaceDeveloperIssueRouteMockGetIssueProjectID, testWorkspaceDeveloperIssueRouteMockGetProjectMemberIDs)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.body, tc.queryParams, tc.principalID, testWorkspaceDeveloperIssueRouteMockGetIssueProjectID, getProjectRolesFinderForTest(testWorkspaceDeveloperIssueRouteHelper.projectMembers))
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
@@ -142,7 +143,7 @@ func TestWorkspaceDeveloperIssueRouteACL_CreateIssue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.body, tc.queryParams, tc.principalID, testWorkspaceDeveloperIssueRouteMockGetIssueProjectID, testWorkspaceDeveloperIssueRouteMockGetProjectMemberIDs)
+			err := enforceWorkspaceDeveloperIssueRouteACL(tc.path, tc.method, tc.body, tc.queryParams, tc.principalID, testWorkspaceDeveloperIssueRouteMockGetIssueProjectID, getProjectRolesFinderForTest(testWorkspaceDeveloperIssueRouteHelper.projectMembers))
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)

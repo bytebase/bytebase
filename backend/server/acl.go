@@ -166,7 +166,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), getRetrieveProjectMemberIDs(ctx, s.store))
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -396,7 +396,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
 var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
 
-func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), getProjectMemberIDs func(projectID int) ([]int, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
 		// For /issue route, require the caller principal to be the same as the user in the query.
@@ -419,16 +419,13 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			memberIDs, err := getProjectMemberIDs(projectID)
+			projectRoles, err := projectRolesFinder(projectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			for _, memberID := range memberIDs {
-				if memberID == principalID {
-					return nil
-				}
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to retrieve issue that is in the project that the user is not a member of")
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to retrieve issue that is in the project that the user is not a member of")
 		}
 	case http.MethodPatch:
 		// Workspace developer can only operating the issues if the user is the member of the project that the issue belongs to.
@@ -442,16 +439,13 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			memberIDs, err := getProjectMemberIDs(projectID)
+			projectRoles, err := projectRolesFinder(projectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			for _, memberID := range memberIDs {
-				if memberID == principalID {
-					return nil
-				}
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 		}
 	case http.MethodPost:
 		if path == "/issue" {
@@ -460,16 +454,13 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &issueCreate); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 			}
-			memberIDs, err := getProjectMemberIDs(issueCreate.ProjectID)
+			projectRoles, err := projectRolesFinder(issueCreate.ProjectID, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			for _, memberID := range memberIDs {
-				if memberID == principalID {
-					return nil
-				}
+			if len(projectRoles) == 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
 		}
 	}
 	return nil

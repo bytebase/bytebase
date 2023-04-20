@@ -75,6 +75,25 @@ func testFindPrincipalIDFromSheet(sheetID int, v string) int {
 	return id
 }
 
+func getProjectRolesFinderForTest(projectMemberMap map[int]map[common.ProjectRole][]int) func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
+	return func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
+		m, ok := projectMemberMap[projectID]
+		if !ok {
+			return nil, errors.Errorf("failed to get project iam policy for project %d", projectID)
+		}
+
+		projectRoles := make(map[common.ProjectRole]bool)
+		for role, ids := range m {
+			for _, id := range ids {
+				if id == principalID {
+					projectRoles[role] = true
+				}
+			}
+		}
+		return projectRoles, nil
+	}
+}
+
 var projectRolesFinderForTest = func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
 	m, ok := testProjectMemberMap[projectID]
 	if !ok {
@@ -185,6 +204,7 @@ var testWorkspaceDeveloperIssueRouteHelper = struct {
 	// principalIDToProjectID is a map from principal ID to the project ID.
 	// We assume that a principal can only be a member of one project (actually it can be a member of multiple projects).
 	principalIDToProjectID map[int]int
+	projectMembers         map[int]map[common.ProjectRole][]int
 	// issueIDToProjectID is a map from issue ID to the project ID.
 	issueIDToProjectID map[int]int
 }{
@@ -195,6 +215,17 @@ var testWorkspaceDeveloperIssueRouteHelper = struct {
 		203: 102,
 		// User 203 is a member of project 103.
 		204: 103,
+	},
+	projectMembers: map[int]map[common.ProjectRole][]int{
+		// Project 102 contains members 202 and 203.
+		102: {
+			common.ProjectOwner:     {202},
+			common.ProjectDeveloper: {202, 203},
+		},
+		// Project 103 contains member 204.
+		103: {
+			common.ProjectOwner: {204},
+		},
 	},
 	issueIDToProjectID: map[int]int{
 		// Issue 401 belongs to project 102.
@@ -212,14 +243,4 @@ func testWorkspaceDeveloperIssueRouteMockGetIssueProjectID(issueID int) (int, er
 		return 0, errors.Errorf("issue %d does not belong to any project", issueID)
 	}
 	return projectID, nil
-}
-
-func testWorkspaceDeveloperIssueRouteMockGetProjectMemberIDs(projectID int) ([]int, error) {
-	var memberIDs []int
-	for principalID, id := range testWorkspaceDeveloperIssueRouteHelper.principalIDToProjectID {
-		if id == projectID {
-			memberIDs = append(memberIDs, principalID)
-		}
-	}
-	return memberIDs, nil
 }
