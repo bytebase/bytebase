@@ -2047,7 +2047,8 @@
     "environment": "Environment",
     "instance": "Instance",
     "project": "Project",
-    "idp": "Identity Provider"
+    "idp": "Identity Provider",
+    "role": "Role"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2329,10 +2330,12 @@
     "select": "Select user"
   },
   "role": {
+    "self": "Role",
     "setting": {
       "description": "Defining custom roles, and you may apply them to project members.",
       "add": "Add role",
       "edit": "Edit role",
+      "title-placeholder": "Input role title",
       "name-placeholder": "Input role name",
       "description-placeholder": "Input role description",
       "validation": {
@@ -2344,6 +2347,13 @@
       "delete": "Delete role"
     },
     "select": "Select role",
-    "select-roles": "Select roles"
+    "select-roles": "Select roles",
+    "title": "Title",
+    "owner": {
+      "description": "System defined project owner role"
+    },
+    "developer": {
+      "description": "System defined project developer role"
+    }
   }
 }

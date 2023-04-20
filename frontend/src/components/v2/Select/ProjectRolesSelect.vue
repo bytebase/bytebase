@@ -14,8 +14,8 @@ import { computed } from "vue";
 import { type SelectOption, NSelect } from "naive-ui";
 
 import { useRoleStore } from "@/store";
-import { extractRoleResourceName, roleNameText } from "@/utils";
 import { ProjectRoleType } from "@/types";
+import { displayRoleTitle } from "@/utils";
 
 defineProps<{
   roleList: ProjectRoleType[];
@@ -27,9 +27,8 @@ defineEmits<{
 
 const roleOptions = computed(() => {
   return useRoleStore().roleList.map<SelectOption>((role) => {
-    const readableName = extractRoleResourceName(role.name);
     return {
-      label: roleNameText(readableName),
+      label: displayRoleTitle(role.name),
       value: role.name,
     };
   });
