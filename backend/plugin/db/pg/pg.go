@@ -24,6 +24,7 @@ import (
 )
 
 var (
+	// ExcludedDatabaseList is the list of system or internal databases.
 	ExcludedDatabaseList = map[string]bool{
 		// Skip our internal "bytebase" database
 		"bytebase": true,
