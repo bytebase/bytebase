@@ -75,9 +75,10 @@
               </button>
               <div
                 v-if="plan.canTrial && subscriptionStore.canTrial"
-                class="font-bold text-sm my-2 text-center"
+                class="font-bold text-sm my-2 text-center underline cursor-pointer"
+                @click="emit('on-trial')"
               >
-                {{ $t("subscription.free-trial") }}
+                {{ $t("subscription.start-free-trial") }}
               </div>
             </div>
           </td>
@@ -139,16 +140,8 @@
         <tr class="border-t border-gray-200">
           <th class="sr-only" scope="row">Choose your plan</th>
           <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
-            <a
-              v-if="plan.type == PlanType.ENTERPRISE"
-              class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
-              target="__blank"
-              :href="enterprisePlanFormLink"
-            >
-              {{ $t("subscription.button.contact-us") }}
-            </a>
             <button
-              v-else-if="plan.buttonText"
+              v-if="plan.buttonText"
               class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
               @click="onButtonClick(plan)"
             >
@@ -219,9 +212,10 @@
         </button>
         <div
           v-if="plan.canTrial && subscriptionStore.canTrial"
-          class="font-bold text-sm my-2 text-center"
+          class="font-bold text-sm my-2 text-center underline cursor-pointer"
+          @click="emit('on-trial')"
         >
-          {{ $t("subscription.free-trial") }}
+          {{ $t("subscription.start-free-trial") }}
         </div>
 
         <div v-if="plan.isAvailable" class="px-4 py-8 text-right text-gray-500">
@@ -271,21 +265,8 @@
           </template>
         </tbody>
       </table>
-      <a
-        v-if="plan.type == PlanType.ENTERPRISE"
-        :class="[
-          plan.highlight
-            ? 'border-indigo-500  text-white  bg-indigo-500 hover:bg-indigo-600 hover:border-indigo-600'
-            : 'border-accent text-accent hover:bg-accent',
-          'mt-8 block w-full border rounded-md py-4 text-lg font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
-        ]"
-        target="__blank"
-        :href="enterprisePlanFormLink"
-      >
-        {{ $t("subscription.button.contact-us") }}
-      </a>
       <button
-        v-else-if="plan.buttonText"
+        v-if="plan.buttonText"
         type="button"
         :class="[
           plan.highlight
@@ -377,23 +358,14 @@ const getButtonText = (plan: Plan): string => {
       }
       break;
     case PlanType.ENTERPRISE:
-      if (subscriptionStore.currentPlan === PlanType.FREE) {
-        return t("subscription.button.free-trial", {
-          days: subscriptionStore.trialingDays,
-        });
-      }
-      if (subscriptionStore.currentPlan === PlanType.TEAM) {
-        return t("subscription.button.free-trial", {
-          days: subscriptionStore.trialingDays,
-        });
-      }
       if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
         if (subscriptionStore.isTrialing) {
           return t("subscription.button.contact-us");
         }
         return t("subscription.button.view-subscription");
+      } else {
+        return t("subscription.button.contact-us");
       }
-      break;
   }
   return "";
 };
@@ -424,7 +396,7 @@ const onButtonClick = (plan: Plan) => {
           );
         }
       } else {
-        emit("on-trial");
+        window.open(enterprisePlanFormLink, "__blank");
       }
   }
 };
