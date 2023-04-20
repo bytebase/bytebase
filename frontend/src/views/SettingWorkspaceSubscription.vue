@@ -51,13 +51,7 @@
         </dt>
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
-      <div
-        v-if="
-          subscriptionStore.canTrial &&
-          subscriptionStore.currentPlan != PlanType.ENTERPRISE
-        "
-        class="my-3"
-      >
+      <div v-if="subscriptionStore.canTrial" class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.try-for-free") }}
         </dt>
