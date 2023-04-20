@@ -26,6 +26,10 @@ var ownerAndDBAMethods = map[string]bool{
 	"RiskService/CreateRisk":                 true,
 	"RiskService/UpdateRisk":                 true,
 	"RiskService/DeleteRisk":                 true,
+	"SettingService/SetSetting":              true,
+	"RoleService/CreateRole":                 true,
+	"RoleService/UpdateRole":                 true,
+	"RoleService/DeleteRole":                 true,
 }
 
 var projectOwnerMethods = map[string]bool{

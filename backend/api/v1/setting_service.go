@@ -1,8 +1,10 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,6 +12,8 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
+
+	"embed"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -49,6 +53,13 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWorkspaceApproval,
 	api.SettingWorkspaceMailDelivery,
 }
+
+var (
+	//go:embed mail_templates/testmail/template.html
+	//go:embed mail_templates/testmail/statics/logo-full.png
+	//go:embed mail_templates/testmail/statics/banner.png
+	testEmailFs embed.FS
+)
 
 // GetSetting gets the setting by name.
 func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettingRequest) (*v1pb.Setting, error) {
@@ -123,6 +134,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		storeSettingValue = string(bytes)
 
 	case api.SettingWorkspaceApproval:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
+		}
 		settingValue := request.Setting.Value.GetStringValue()
 		payload := new(storepb.WorkspaceApprovalSetting)
 		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
@@ -165,7 +179,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			apiValue.Password = &oldValue.Password
 		}
 		if request.ValidateOnly {
-			if err := sendTestEmail(apiValue); err != nil {
+			if err := s.sendTestEmail(ctx, apiValue); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate smtp setting: %v", err)
 			}
 			apiValue.Password = nil
@@ -277,7 +291,7 @@ func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {
 	return nil
 }
 
-func sendTestEmail(value *v1pb.SMTPMailDeliverySettingValue) error {
+func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMailDeliverySettingValue) error {
 	if value.Password == nil {
 		return status.Errorf(codes.InvalidArgument, "password is required when sending test email")
 	}
@@ -288,19 +302,49 @@ func sendTestEmail(value *v1pb.SMTPMailDeliverySettingValue) error {
 		return status.Errorf(codes.InvalidArgument, "from is required when sending test email")
 	}
 
+	consoleRedirectURL := "www.bytebase.com"
+	workspaceProfileSettingName := api.SettingWorkspaceProfile
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get workspace profile setting: %v", err)
+	}
+	if setting != nil {
+		settingValue := new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+			return status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		}
+		if settingValue.ExternalUrl != "" {
+			consoleRedirectURL = settingValue.ExternalUrl
+		}
+	}
+
 	email := mail.NewEmailMsg()
-	// TODO(zp): beautify the test mail.
-	email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.From)).AddTo(value.To).SetSubject("Test Email Subject").SetBody(`
-	<!DOCTYPE html>
-	<html>
-	<head>
-		<title>A test mail from Bytebase.</title>
-	</head>
-	<body>
-		<h1>A test mail from Bytebase.</h1>
-	</body>
-	</html>
-	`)
+
+	logoFull, err := testEmailFs.ReadFile("mail_templates/testmail/statics/logo-full.png")
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to read logo-full.png: %v", err)
+	}
+	banner, err := testEmailFs.ReadFile("mail_templates/testmail/statics/banner.png")
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to read banner.png: %v", err)
+	}
+	mailHTMLBody, err := testEmailFs.ReadFile("mail_templates/testmail/template.html")
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to read template.html: %v", err)
+	}
+	logoFullReader := bytes.NewReader(logoFull)
+	bannerReader := bytes.NewReader(banner)
+	logoFullFileName, err := email.Attach(logoFullReader, "logo-full.png", "image/png")
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to attach logo-full.png: %v", err)
+	}
+	bannerFileName, err := email.Attach(bannerReader, "banner.png", "image/png")
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to attach banner.png: %v", err)
+	}
+
+	polishHTMLBody := prepareTestMailContent(string(mailHTMLBody), consoleRedirectURL, logoFullFileName, bannerFileName)
+	email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.From)).AddTo(value.To).SetSubject("Bytebase mail server test").SetBody(polishHTMLBody)
 	client := mail.NewSMTPClient(value.Server, int(value.Port))
 	client.SetAuthType(convertToMailSMTPAuthType(value.Authentication)).
 		SetAuthCredentials(value.Username, *value.Password).
@@ -310,6 +354,13 @@ func sendTestEmail(value *v1pb.SMTPMailDeliverySettingValue) error {
 		return status.Errorf(codes.Internal, "failed to send test email: %v", err)
 	}
 	return nil
+}
+
+func prepareTestMailContent(htmlTemplate, consoleRedirectURL, logoContentID, bannerContentID string) string {
+	testEmailContent := strings.ReplaceAll(htmlTemplate, "{{BYTEBASE_LOGO_URL}}", fmt.Sprintf("cid:%s", logoContentID))
+	testEmailContent = strings.ReplaceAll(testEmailContent, "{{BYTEBASE_BANNER_URL}}", fmt.Sprintf("cid:%s", bannerContentID))
+	testEmailContent = strings.ReplaceAll(testEmailContent, "{{BYTEBASE_CONSOLE_REDIRECT_URL}}", consoleRedirectURL)
+	return testEmailContent
 }
 
 func convertToMailSMTPAuthType(authType v1pb.SMTPMailDeliverySettingValue_Authentication) mail.SMTPAuthType {

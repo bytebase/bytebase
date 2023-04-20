@@ -22,7 +22,7 @@
 
       <div class="flex-1 flex text-sm overflow-hidden" :class="itemClass(step)">
         <div class="whitespace-nowrap shrink-0">
-          {{ approvalNodeGroupValueText(step.step.nodes[0].groupValue!) }}
+          {{ approvalNodeText(step.step.nodes[0]) }}
         </div>
         <div class="mr-1.5 shrink-0">:</div>
         <div class="flex-1 overflow-hidden">
@@ -34,6 +34,12 @@
             <span>{{ step.approver?.title }}</span>
             <span v-if="step.approver?.name === currentUser.name">
               ({{ $t("custom-approval.issue-review.you") }})
+            </span>
+            <span
+              v-if="step.approver?.name === USER_SYSTEM_BOT"
+              class="ml-0.5 inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+            >
+              {{ $t("settings.members.system-bot") }}
             </span>
           </NEllipsis>
           <Candidates v-else :step="step" />
@@ -47,10 +53,12 @@
 import { NTimeline, NTimelineItem, NEllipsis } from "naive-ui";
 
 import { WrappedReviewStep } from "@/types";
-import { approvalNodeGroupValueText } from "@/utils";
+import { approvalNodeText } from "@/utils";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store";
 import Candidates from "./Candidates.vue";
+
+const USER_SYSTEM_BOT = "users/1";
 
 defineProps<{
   steps: WrappedReviewStep[];

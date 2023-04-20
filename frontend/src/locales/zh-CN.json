@@ -2256,7 +2256,12 @@
         },
         "add": "增加节点",
         "delete": "删除审批节点",
-        "order": "顺序"
+        "order": "顺序",
+        "select-approver": "选择审批人",
+        "roles": {
+          "system": "系统角色",
+          "custom": "自定义角色"
+        }
       },
       "presets": {
         "owner-dba": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。",

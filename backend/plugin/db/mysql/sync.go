@@ -596,15 +596,33 @@ func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, e
 func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsItem, details *storepb.SlowQueryDetails) *storepb.SlowQueryStatisticsItem {
 	if statistics == nil {
 		return &storepb.SlowQueryStatisticsItem{
-			SqlFingerprint: fingerprint,
-			Count:          1,
-			LatestLogTime:  details.StartTime,
-			Samples:        []*storepb.SlowQueryDetails{details},
+			SqlFingerprint:      fingerprint,
+			Count:               1,
+			LatestLogTime:       details.StartTime,
+			TotalQueryTime:      details.QueryTime,
+			MaximumQueryTime:    details.QueryTime,
+			TotalRowsSent:       details.RowsSent,
+			MaximumRowsSent:     details.RowsSent,
+			TotalRowsExamined:   details.RowsExamined,
+			MaximumRowsExamined: details.RowsExamined,
+			Samples:             []*storepb.SlowQueryDetails{details},
 		}
 	}
 	statistics.Count++
 	if statistics.LatestLogTime.AsTime().Before(details.StartTime.AsTime()) {
 		statistics.LatestLogTime = details.StartTime
+	}
+	statistics.TotalQueryTime = durationpb.New(statistics.TotalQueryTime.AsDuration() + details.QueryTime.AsDuration())
+	if statistics.MaximumQueryTime.AsDuration() < details.QueryTime.AsDuration() {
+		statistics.MaximumQueryTime = details.QueryTime
+	}
+	statistics.TotalRowsSent += details.RowsSent
+	if statistics.MaximumRowsSent < details.RowsSent {
+		statistics.MaximumRowsSent = details.RowsSent
+	}
+	statistics.TotalRowsExamined += details.RowsExamined
+	if statistics.MaximumRowsExamined < details.RowsExamined {
+		statistics.MaximumRowsExamined = details.RowsExamined
 	}
 	if len(statistics.Samples) < db.SlowQueryMaxSamplePerFingerprint {
 		statistics.Samples = append(statistics.Samples, details)
