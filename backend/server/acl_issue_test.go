@@ -24,12 +24,21 @@ func TestWorkspaceDeveloperIssueRouteACL_RetrieveIssue(t *testing.T) {
 
 	tests := []test{
 		{
-			desc:        "Retrieve other users' issue",
+			desc:        "Retrieve other users' issue by project owner",
 			plan:        api.ENTERPRISE,
 			path:        "/issue?user=201",
 			queryParams: url.Values{"user": []string{"201"}},
 			method:      "GET",
 			principalID: 202,
+			errMsg:      "not allowed to list other users' issues",
+		},
+		{
+			desc:        "Retrieve other users' issue by custom role",
+			plan:        api.ENTERPRISE,
+			path:        "/issue?user=201",
+			queryParams: url.Values{"user": []string{"201"}},
+			method:      "GET",
+			principalID: 204,
 			errMsg:      "not allowed to list other users' issues",
 		},
 		{
@@ -102,6 +111,16 @@ func TestWorkspaceDeveloperIssueRouteACL_OperateIssue(t *testing.T) {
 			principalID: 202,
 			errMsg:      "",
 		},
+		{
+			desc:        "Operating the issue created by other user in projects I am a member of but I'm neither a project owner nor a developer",
+			plan:        api.ENTERPRISE,
+			path:        "/issue/402/status",
+			body:        "",
+			queryParams: url.Values{},
+			method:      "PATCH",
+			principalID: 204,
+			errMsg:      "not allowed to operate the issue",
+		},
 	}
 
 	for _, tc := range tests {
@@ -154,6 +173,16 @@ func TestWorkspaceDeveloperIssueRouteACL_CreateIssue(t *testing.T) {
 			principalID: 202,
 			errMsg:      "",
 		},
+		{
+			desc:        "Create issue under project I am a member of but I am neither a project owner nor a developer",
+			plan:        api.ENTERPRISE,
+			path:        "/issue",
+			body:        `{"data":{"type":"issue","attributes":{"title":"test","description":"test","projectId":102}}}`,
+			queryParams: url.Values{},
+			method:      "POST",
+			principalID: 204,
+			errMsg:      "not allowed to create issues under the project 102",
+		},
 	}
 
 	for _, tc := range tests {
@@ -180,8 +209,9 @@ var testWorkspaceDeveloperIssueRouteHelper = struct {
 	projectMembers: map[int]map[common.ProjectRole][]int{
 		// Project 102 contains members 202 and 203.
 		102: {
-			common.ProjectOwner:     {202},
-			common.ProjectDeveloper: {202, 203},
+			common.ProjectOwner:              {202},
+			common.ProjectDeveloper:          {202, 203},
+			common.ProjectRole("CustomRole"): {204},
 		},
 		// Project 103 contains member 204.
 		103: {
