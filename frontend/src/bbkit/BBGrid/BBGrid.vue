@@ -14,8 +14,8 @@
       class="bb-grid-row bb-grid-header-row group"
     >
       <div
-        v-for="(column, row) in columnList"
-        :key="row"
+        v-for="(column, i) in columnList"
+        :key="i"
         role="table-cell"
         class="bb-grid-header-cell"
         :class="[headerClass, column.class]"
@@ -25,15 +25,12 @@
     </div>
 
     <template v-if="ready">
-      <template
-        v-for="(item, row) in dataSource"
-        :key="rowKey ? item[rowKey] : row"
-      >
+      <template v-for="(item, row) in dataSource" :key="rowKeyOf(item, row)">
         <div
           row="table-row"
           class="bb-grid-row group"
           :class="{
-            clickable: rowClickable,
+            clickable: rowClickable && isRowClickable(item, row),
           }"
           @click="handleClick(item, 0, row, $event)"
         >
@@ -46,6 +43,7 @@
         >
           <div
             class="bb-grid-cell"
+            :class="expandedRowClass"
             :style="{
               gridColumnStart: 1,
               gridColumnEnd: columnList.length + 1,
@@ -111,7 +109,7 @@ const props = withDefaults(
   defineProps<{
     columnList?: BBGridColumn[];
     dataSource?: DataType[];
-    rowKey?: string;
+    rowKey?: string | ((item: DataType, row: number) => any);
     showHeader?: boolean;
     customHeader?: boolean;
     headerClass?: VueClass;
@@ -119,6 +117,8 @@ const props = withDefaults(
     showPlaceholder?: boolean;
     ready?: boolean;
     isRowExpanded?: (item: DataType, row: number) => boolean;
+    isRowClickable?: (item: DataType, row: number) => boolean;
+    expandedRowClass?: VueClass;
   }>(),
   {
     columnList: () => [],
@@ -131,6 +131,8 @@ const props = withDefaults(
     showPlaceholder: false,
     ready: true,
     isRowExpanded: () => false,
+    isRowClickable: () => true,
+    expandedRowClass: undefined,
   }
 );
 
@@ -138,13 +140,24 @@ const gridClass = useResponsiveGridColumns(
   computed(() => props.columnList.map((col) => col.width))
 );
 
+const rowKeyOf = (item: DataType, row: number) => {
+  const { rowKey } = props;
+  if (typeof rowKey === "function") {
+    return rowKey(item, row);
+  }
+  if (typeof rowKey === "string") {
+    return item[rowKey];
+  }
+  return row;
+};
+
 const handleClick = (
   item: DataType,
   section: number,
   row: number,
   e: MouseEvent
 ) => {
-  if (props.rowClickable) {
+  if (props.rowClickable && props.isRowClickable(item, row)) {
     emit("click-row", item, section, row, e);
   }
 };

@@ -7,15 +7,6 @@
       class="flex items-center gap-x-4"
     >
       <div class="flex-1 flex items-center gap-x-4">
-        <ProjectSelect
-          v-if="filterTypes.includes('project')"
-          :project="params.project?.id ?? UNKNOWN_ID"
-          :include-default-project="canVisitDefaultProject"
-          :include-all="true"
-          :disabled="loading"
-          @update:project="changeProjectId"
-        />
-
         <EnvironmentTabFilter
           v-if="filterTypes.includes('environment')"
           class="flex-1"
@@ -33,6 +24,14 @@
 
     <div class="flex items-center gap-x-4">
       <NInputGroup class="flex-1">
+        <ProjectSelect
+          v-if="filterTypes.includes('project')"
+          :project="params.project?.id ?? UNKNOWN_ID"
+          :include-default-project="canVisitDefaultProject"
+          :include-all="true"
+          :disabled="loading"
+          @update:project="changeProjectId"
+        />
         <InstanceSelect
           v-if="filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"

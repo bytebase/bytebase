@@ -22,7 +22,7 @@
         :show-environment-column="showEnvironmentColumn"
         :show-instance-column="showInstanceColumn"
         :show-database-column="showDatabaseColumn"
-        @select="selectedSlowQueryLog = $event"
+        @select="selectSlowQueryLog"
       />
       <div
         v-if="loading"
@@ -60,6 +60,7 @@ import {
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
 import DetailPanel from "./DetailPanel.vue";
+import { instanceHasSlowQueryDetail } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -101,6 +102,14 @@ const fetchSlowQueryLogList = async () => {
     slowQueryLogList.value = list;
   } finally {
     loading.value = false;
+  }
+};
+
+const selectSlowQueryLog = (log: ComposedSlowQueryLog) => {
+  if (instanceHasSlowQueryDetail(log.database.instance)) {
+    selectedSlowQueryLog.value = log;
+  } else {
+    selectedSlowQueryLog.value = undefined;
   }
 };
 
