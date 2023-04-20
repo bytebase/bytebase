@@ -166,7 +166,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(s.licenseService.GetEffectivePlan(), path, method, string(bodyBytes), c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -396,7 +396,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
 var issueRouteRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)$`)
 
-func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperIssueRouteACL(plan api.PlanType, path string, method string, body string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
 		// For /issue route, require the caller principal to be the same as the user in the query.
@@ -443,7 +443,7 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			if len(projectRoles) == 0 {
+			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
 				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 			}
 		}
@@ -458,8 +458,8 @@ func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, body str
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 			}
-			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issue under the project %d", issueCreate.ProjectID))
+			if !api.ProjectPermission(api.ProjectPermissionChangeDatabase, plan, projectRoles) {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("not allowed to create issues under the project %d", issueCreate.ProjectID))
 			}
 		}
 	}
