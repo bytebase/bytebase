@@ -136,7 +136,8 @@ func (in *ACLInterceptor) getProjectRoles(ctx context.Context, user *store.UserM
 }
 
 func getProjectIDs(req any) ([]string, error) {
-	if request, ok := req.(*v1pb.UpdateProjectRequest); ok {
+	switch request := req.(type) {
+	case *v1pb.UpdateProjectRequest:
 		if request.Project == nil {
 			return nil, errors.Errorf("project not found")
 		}
@@ -145,16 +146,20 @@ func getProjectIDs(req any) ([]string, error) {
 			return nil, err
 		}
 		return []string{projectID}, nil
-	}
-	if request, ok := req.(*v1pb.DeleteProjectRequest); ok {
+	case *v1pb.DeleteProjectRequest:
 		projectID, err := getProjectID(request.Name)
 		if err != nil {
 			return nil, err
 		}
 		return []string{projectID}, nil
-	}
-	if request, ok := req.(*v1pb.UndeleteProjectRequest); ok {
+	case *v1pb.UndeleteProjectRequest:
 		projectID, err := getProjectID(request.Name)
+		if err != nil {
+			return nil, err
+		}
+		return []string{projectID}, nil
+	case *v1pb.SetIamPolicyRequest:
+		projectID, err := getProjectID(request.Project)
 		if err != nil {
 			return nil, err
 		}
