@@ -4694,6 +4694,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: roles/{role} |
+| title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 
 
