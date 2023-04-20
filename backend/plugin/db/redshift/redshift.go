@@ -358,7 +358,13 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // QueryConn will query the database using the provided connection, it is useful for keeping the context of the connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
+func (driver *Driver) QueryConn(ctx context.Context, statement string, queryContext *db.QueryContext) ([]any, error) {
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
