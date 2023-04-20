@@ -1367,7 +1367,9 @@
         "view-by-roles": "按角色查看",
         "cannot-remove-last-owner": "不能移除项目的最后一个所有者",
         "revoke-role-from-user": "撤销 '{user}' 的 '{role}' 角色",
-        "remove-user": "移除 '{user}'"
+        "remove-user": "移除 '{user}'",
+        "inactive-members": "未激活的成员",
+        "show-inactive": "查看未激活的成员"
       }
     },
     "mode": {
