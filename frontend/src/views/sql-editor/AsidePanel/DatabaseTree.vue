@@ -19,6 +19,7 @@
         block-line
         :data="treeData"
         :pattern="searchPattern"
+        :show-irrelevant-nodes="false"
         :expand-on-click="true"
         :selected-keys="selectedKeys"
         :expanded-keys="connectionTreeStore.expandedTreeNodeKeys"
