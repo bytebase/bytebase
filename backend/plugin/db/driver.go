@@ -27,6 +27,8 @@ const (
 	ClickHouse Type = "CLICKHOUSE"
 	// MySQL is the database type for MYSQL.
 	MySQL Type = "MYSQL"
+	// OceanBase is the database type for OCEANBASE.
+	OceanBase Type = "OCEANBASE"
 	// Postgres is the database type for POSTGRES.
 	Postgres Type = "POSTGRES"
 	// Snowflake is the database type for SNOWFLAKE.

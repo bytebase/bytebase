@@ -41,7 +41,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 
 	dbBinDir := ""
 	switch instance.Engine {
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
 	case db.Postgres:
@@ -124,7 +124,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 
 	dbBinDir := ""
 	switch instance.Engine {
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
 	case db.Postgres:

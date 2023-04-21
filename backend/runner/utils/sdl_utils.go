@@ -37,7 +37,7 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 	switch instance.Engine {
 	case db.Postgres:
 		engine = parser.Postgres
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		engine = parser.MySQL
 	default:
 		return "", errors.Errorf("unsupported database engine %q", instance.Engine)

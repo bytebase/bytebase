@@ -35,6 +35,7 @@ var (
 func init() {
 	differ.Register(bbparser.MySQL, &SchemaDiffer{})
 	differ.Register(bbparser.TiDB, &SchemaDiffer{})
+	differ.Register(bbparser.OceanBase, &SchemaDiffer{})
 }
 
 const (
