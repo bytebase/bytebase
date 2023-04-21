@@ -581,6 +581,10 @@ export interface SlowQueryStatistics {
   averageRowsExamined: number;
   /** The maximum rows examined of the slow query log. */
   maximumRowsExamined: number;
+  /** The percentage of the query time. */
+  queryTimePercent: number;
+  /** The percentage of the rows sent. */
+  rowsSentPercent: number;
   /** Samples are details of the sample slow query logs with the same fingerprint. */
   samples: SlowQueryDetails[];
 }
@@ -3528,6 +3532,8 @@ function createBaseSlowQueryStatistics(): SlowQueryStatistics {
     maximumRowsSent: 0,
     averageRowsExamined: 0,
     maximumRowsExamined: 0,
+    queryTimePercent: 0,
+    rowsSentPercent: 0,
     samples: [],
   };
 }
@@ -3561,8 +3567,14 @@ export const SlowQueryStatistics = {
     if (message.maximumRowsExamined !== 0) {
       writer.uint32(72).int64(message.maximumRowsExamined);
     }
+    if (message.queryTimePercent !== 0) {
+      writer.uint32(81).double(message.queryTimePercent);
+    }
+    if (message.rowsSentPercent !== 0) {
+      writer.uint32(89).double(message.rowsSentPercent);
+    }
     for (const v of message.samples) {
-      SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
+      SlowQueryDetails.encode(v!, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -3638,7 +3650,21 @@ export const SlowQueryStatistics = {
           message.maximumRowsExamined = longToNumber(reader.int64() as Long);
           continue;
         case 10:
-          if (tag != 82) {
+          if (tag != 81) {
+            break;
+          }
+
+          message.queryTimePercent = reader.double();
+          continue;
+        case 11:
+          if (tag != 89) {
+            break;
+          }
+
+          message.rowsSentPercent = reader.double();
+          continue;
+        case 12:
+          if (tag != 98) {
             break;
           }
 
@@ -3664,6 +3690,8 @@ export const SlowQueryStatistics = {
       maximumRowsSent: isSet(object.maximumRowsSent) ? Number(object.maximumRowsSent) : 0,
       averageRowsExamined: isSet(object.averageRowsExamined) ? Number(object.averageRowsExamined) : 0,
       maximumRowsExamined: isSet(object.maximumRowsExamined) ? Number(object.maximumRowsExamined) : 0,
+      queryTimePercent: isSet(object.queryTimePercent) ? Number(object.queryTimePercent) : 0,
+      rowsSentPercent: isSet(object.rowsSentPercent) ? Number(object.rowsSentPercent) : 0,
       samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
@@ -3681,6 +3709,8 @@ export const SlowQueryStatistics = {
     message.maximumRowsSent !== undefined && (obj.maximumRowsSent = Math.round(message.maximumRowsSent));
     message.averageRowsExamined !== undefined && (obj.averageRowsExamined = Math.round(message.averageRowsExamined));
     message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
+    message.queryTimePercent !== undefined && (obj.queryTimePercent = message.queryTimePercent);
+    message.rowsSentPercent !== undefined && (obj.rowsSentPercent = message.rowsSentPercent);
     if (message.samples) {
       obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
@@ -3708,6 +3738,8 @@ export const SlowQueryStatistics = {
     message.maximumRowsSent = object.maximumRowsSent ?? 0;
     message.averageRowsExamined = object.averageRowsExamined ?? 0;
     message.maximumRowsExamined = object.maximumRowsExamined ?? 0;
+    message.queryTimePercent = object.queryTimePercent ?? 0;
+    message.rowsSentPercent = object.rowsSentPercent ?? 0;
     message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },
