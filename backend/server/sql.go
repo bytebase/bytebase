@@ -1039,12 +1039,12 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 		return false, err
 	}
 
-	// Only project member can access database.
+	// Only project owner or developer can access database.
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return false, err
 	}
-	if !hasActiveProjectMembership(principalID, projectPolicy) {
+	if !isProjectOwnerOrDeveloper(principalID, projectPolicy) {
 		return false, nil
 	}
 

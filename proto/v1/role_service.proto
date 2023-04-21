@@ -5,11 +5,8 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/api/http.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
-import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -83,5 +80,6 @@ message DeleteRoleRequest {
 message Role {
   // Format: roles/{role}
   string name = 1;
-  string description = 2;
+  string title = 2;
+  string description = 3;
 }

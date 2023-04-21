@@ -9,7 +9,7 @@
       >
         {{ $t("subscription.purchase-license") }}
       </a>
-      <span v-if="canTrial" class="ml-1">
+      <span v-if="subscriptionStore.canTrial" class="ml-1">
         {{ $t("common.or") }}
         <span class="text-accent cursor-pointer" @click="openTrialModal">
           {{ $t("subscription.plan.try") }}
@@ -45,11 +45,52 @@
         </dt>
         <dd class="mt-1 text-4xl">{{ instanceCount }}</dd>
       </div>
-      <div class="my-3">
+      <div v-if="!subscriptionStore.isFreePlan" class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
         </dt>
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
+      </div>
+      <div v-if="subscriptionStore.canTrial" class="my-3">
+        <dt class="text-gray-400">
+          {{ $t("subscription.try-for-free") }}
+        </dt>
+
+        <dd class="mt-1">
+          <button
+            type="button"
+            class="btn-primary inline-flex justify-center ml-auto"
+            @click="state.showTrialModal = true"
+          >
+            {{
+              $t("subscription.enterprise-free-trial", {
+                days: subscriptionStore.trialingDays,
+              })
+            }}
+          </button>
+        </dd>
+      </div>
+      <div
+        v-if="
+          subscriptionStore.isTrialing &&
+          subscriptionStore.currentPlan == PlanType.ENTERPRISE
+        "
+        class="my-3"
+      >
+        <dt class="text-gray-400">
+          {{ $t("subscription.inquire-enterprise-plan") }}
+        </dt>
+
+        <dd class="mt-1">
+          <a
+            type="button"
+            class="btn-primary inline-flex justify-center ml-auto"
+            target="_blank"
+            href="https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform"
+          >
+            {{ $t("subscription.contact-us") }}
+          </a>
+        </dd>
       </div>
     </dl>
     <div v-if="canManageSubscription" class="w-full mt-5 flex flex-col">
@@ -84,8 +125,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, reactive } from "vue";
+<script lang="ts" setup>
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import PricingTable from "../components/PricingTable/";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -103,102 +144,76 @@ interface LocalState {
   showTrialModal: boolean;
 }
 
-export default defineComponent({
-  name: "SettingWorkspaceSubscription",
-  components: {
-    PricingTable,
-  },
-  setup() {
-    const subscriptionStore = useSubscriptionStore();
-    const { t } = useI18n();
-    const currentUser = useCurrentUser();
+const subscriptionStore = useSubscriptionStore();
+const { t } = useI18n();
+const currentUser = useCurrentUser();
 
-    const state = reactive<LocalState>({
-      loading: false,
-      license: "",
-      showTrialModal: false,
+const state = reactive<LocalState>({
+  loading: false,
+  license: "",
+  showTrialModal: false,
+});
+
+const disabled = computed((): boolean => {
+  return state.loading || !state.license;
+});
+
+const uploadLicense = async () => {
+  if (disabled.value) return;
+  state.loading = true;
+
+  try {
+    await subscriptionStore.patchSubscription(state.license);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("subscription.update.success.title"),
+      description: t("subscription.update.success.description"),
     });
-
-    const disabled = computed((): boolean => {
-      return state.loading || !state.license;
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("subscription.update.failure.title"),
+      description: t("subscription.update.failure.description"),
     });
+  } finally {
+    state.loading = false;
+    state.license = "";
+  }
+};
 
-    const uploadLicense = async () => {
-      if (disabled.value) return;
-      state.loading = true;
+const { subscription, expireAt, isTrialing, isExpired } =
+  storeToRefs(subscriptionStore);
 
-      try {
-        await subscriptionStore.patchSubscription(state.license);
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("subscription.update.success.title"),
-          description: t("subscription.update.success.description"),
-        });
-      } catch {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("subscription.update.failure.title"),
-          description: t("subscription.update.failure.description"),
-        });
-      } finally {
-        state.loading = false;
-        state.license = "";
-      }
-    };
+const instanceCount = computed((): string => {
+  const count = subscription.value?.instanceCount ?? 5;
+  if (count > 0) {
+    return `${count}`;
+  }
+  return t("subscription.unlimited");
+});
 
-    const { subscription, expireAt, isTrialing, isExpired } =
-      storeToRefs(subscriptionStore);
+const currentPlan = computed((): string => {
+  const plan = subscriptionStore.currentPlan;
+  switch (plan) {
+    case PlanType.TEAM:
+      return t("subscription.plan.team.title");
+    case PlanType.ENTERPRISE:
+      return t("subscription.plan.enterprise.title");
+    default:
+      return t("subscription.plan.free.title");
+  }
+});
 
-    const instanceCount = computed((): string => {
-      const count = subscription.value?.instanceCount ?? 5;
-      if (count > 0) {
-        return `${count}`;
-      }
-      return t("subscription.unlimited");
-    });
+const openTrialModal = () => {
+  state.showTrialModal = true;
+};
 
-    const currentPlan = computed((): string => {
-      const plan = subscriptionStore.currentPlan;
-      switch (plan) {
-        case PlanType.TEAM:
-          return t("subscription.plan.team.title");
-        case PlanType.ENTERPRISE:
-          return t("subscription.plan.enterprise.title");
-        default:
-          return t("subscription.plan.free.title");
-      }
-    });
-
-    const canTrial = computed((): boolean => {
-      return subscriptionStore.canTrial;
-    });
-
-    const openTrialModal = () => {
-      state.showTrialModal = true;
-    };
-
-    const canManageSubscription = computed((): boolean => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-subscription",
-        currentUser.value.role
-      );
-    });
-
-    return {
-      state,
-      disabled,
-      canTrial,
-      expireAt,
-      isTrialing,
-      isExpired,
-      currentPlan,
-      instanceCount,
-      uploadLicense,
-      openTrialModal,
-      canManageSubscription,
-    };
-  },
+const canManageSubscription = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-subscription",
+    currentUser.value.role
+  );
 });
 </script>

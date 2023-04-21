@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { Role } from "@/types/proto/v1/role_service";
 import { roleServiceClient } from "@/grpcweb";
 import { extractRoleResourceName } from "@/utils";
+import { useGracefulRequest } from "./utils";
 
 export const useRoleStore = defineStore("role", () => {
   const roleList = ref<Role[]>([]);
@@ -20,7 +21,7 @@ export const useRoleStore = defineStore("role", () => {
       // update
       const updated = await roleServiceClient.updateRole({
         role,
-        updateMask: ["description"],
+        updateMask: ["title", "description"],
       });
       Object.assign(existedRole, updated);
     } else {
@@ -35,13 +36,15 @@ export const useRoleStore = defineStore("role", () => {
   };
 
   const deleteRole = async (role: Role) => {
-    await roleServiceClient.deleteRole({
-      name: role.name,
+    await useGracefulRequest(async () => {
+      await roleServiceClient.deleteRole({
+        name: role.name,
+      });
+      const index = roleList.value.findIndex((r) => r.name === role.name);
+      if (index >= 0) {
+        roleList.value.splice(index, 1);
+      }
     });
-    const index = roleList.value.findIndex((r) => r.name === role.name);
-    if (index >= 0) {
-      roleList.value.splice(index, 1);
-    }
   };
 
   return {

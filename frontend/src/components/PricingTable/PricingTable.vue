@@ -61,6 +61,7 @@
               </div>
 
               <button
+                v-if="plan.buttonText"
                 type="button"
                 :class="[
                   plan.highlight
@@ -73,10 +74,11 @@
                 {{ plan.buttonText }}
               </button>
               <div
-                v-if="plan.trialDays"
-                class="font-bold text-sm my-2 text-center"
+                v-if="plan.canTrial && subscriptionStore.canTrial"
+                class="font-bold text-sm my-2 text-center underline cursor-pointer"
+                @click="emit('on-trial')"
               >
-                {{ $t("subscription.free-trial") }}
+                {{ $t("subscription.start-free-trial") }}
               </div>
             </div>
           </td>
@@ -139,7 +141,7 @@
           <th class="sr-only" scope="row">Choose your plan</th>
           <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
             <button
-              v-if="!plan.isFreePlan"
+              v-if="plan.buttonText"
               class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
               @click="onButtonClick(plan)"
             >
@@ -196,6 +198,7 @@
         </div>
 
         <button
+          v-if="plan.buttonText"
           type="button"
           :class="[
             plan.highlight
@@ -207,8 +210,12 @@
         >
           {{ plan.buttonText }}
         </button>
-        <div v-if="plan.trialDays" class="font-bold text-sm my-2 text-center">
-          {{ $t("subscription.free-trial") }}
+        <div
+          v-if="plan.canTrial && subscriptionStore.canTrial"
+          class="font-bold text-sm my-2 text-center underline cursor-pointer"
+          @click="emit('on-trial')"
+        >
+          {{ $t("subscription.start-free-trial") }}
         </div>
 
         <div v-if="plan.isAvailable" class="px-4 py-8 text-right text-gray-500">
@@ -259,7 +266,7 @@
         </tbody>
       </table>
       <button
-        v-if="!plan.isFreePlan"
+        v-if="plan.buttonText"
         type="button"
         :class="[
           plan.highlight
@@ -300,6 +307,8 @@ const state = reactive<LocalState>({
   instanceCount:
     subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
 });
+const enterprisePlanFormLink =
+  "https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform";
 
 watch(
   () => subscriptionStore.subscription,
@@ -316,7 +325,6 @@ const plans = computed((): LocalPlan[] => {
     buttonText: getButtonText(plan),
     highlight: plan.type === PlanType.TEAM,
     isAvailable: plan.type === PlanType.TEAM,
-    isFreePlan: plan.type === PlanType.FREE,
     label: t(`subscription.plan.${plan.title}.label`),
     pricing:
       plan.type === PlanType.ENTERPRISE
@@ -329,37 +337,67 @@ const plans = computed((): LocalPlan[] => {
         : plan.type === PlanType.ENTERPRISE
         ? ""
         : t("subscription.per-month"),
+    // only support free trial for enterprise in console.
+    canTrial: plan.type === PlanType.ENTERPRISE && plan.trialDays > 0,
   }));
 });
 
 const getButtonText = (plan: Plan): string => {
-  if (plan.type === PlanType.FREE) return t("subscription.deploy");
-  if (plan.type === PlanType.ENTERPRISE) return t("subscription.contact-us");
-
-  if (subscriptionStore.isTrialing) return t("subscription.subscribe");
-  if (plan.type === subscriptionStore.currentPlan)
-    return t("subscription.upgrade");
-  if (plan.trialDays) return t("subscription.start-trial");
-
-  return t("subscription.subscribe");
+  switch (plan.type) {
+    case PlanType.FREE:
+      return "";
+    case PlanType.TEAM:
+      if (subscriptionStore.currentPlan === PlanType.FREE) {
+        return t("subscription.button.upgrade");
+      }
+      if (subscriptionStore.currentPlan === PlanType.TEAM) {
+        return t("subscription.button.view-subscription");
+      }
+      if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+        return "";
+      }
+      break;
+    case PlanType.ENTERPRISE:
+      if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+        if (subscriptionStore.isTrialing) {
+          return t("subscription.button.contact-us");
+        }
+        return t("subscription.button.view-subscription");
+      } else {
+        return t("subscription.button.contact-us");
+      }
+  }
+  return "";
 };
 
 const onButtonClick = (plan: Plan) => {
-  if (plan.type === PlanType.TEAM) {
-    if (subscriptionStore.canTrial && !subscriptionStore.isTrialing) {
-      emit("on-trial");
+  switch (plan.type) {
+    case PlanType.TEAM:
+      if (subscriptionStore.currentPlan === PlanType.FREE) {
+        window.open(
+          "https://hub.bytebase.com/workspace?source=console.subscription",
+          "__blank"
+        );
+      } else if (subscriptionStore.currentPlan === PlanType.TEAM) {
+        window.open(
+          "https://hub.bytebase.com/subscription?source=console.subscription",
+          "__blank"
+        );
+      }
       return;
-    }
-    window.open(
-      "https://hub.bytebase.com/subscription?source=console.subscription",
-      "__blank"
-    );
-  } else if (plan.type === PlanType.ENTERPRISE) {
-    window.open(
-      "https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform"
-    );
-  } else {
-    window.open("https://bytebase.com/docs?source=console", "_self");
+    case PlanType.ENTERPRISE:
+      if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+        if (subscriptionStore.isTrialing) {
+          window.open(enterprisePlanFormLink, "__blank");
+        } else {
+          window.open(
+            "https://hub.bytebase.com/subscription?source=console.subscription",
+            "__blank"
+          );
+        }
+      } else {
+        window.open(enterprisePlanFormLink, "__blank");
+      }
   }
 };
 </script>

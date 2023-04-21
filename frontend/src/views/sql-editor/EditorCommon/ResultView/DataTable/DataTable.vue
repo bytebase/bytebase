@@ -26,7 +26,15 @@
                 v-bind="tableResize.getColumnProps(header.index)"
               >
                 <div class="flex items-center overflow-hidden">
-                  <span> {{ header.column.columnDef.header }}</span>
+                  <span>
+                    <template
+                      v-if="String(header.column.columnDef.header).length > 0"
+                    >
+                      {{ header.column.columnDef.header }}
+                    </template>
+                    <br v-else class="min-h-[1rem] inline-flex" />
+                  </span>
+
                   <SensitiveDataIcon
                     v-if="isSensitiveColumn(header.index)"
                     class="ml-0.5 shrink-0"
@@ -53,9 +61,9 @@
                 :key="cellIndex"
                 class="px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-pre-wrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
               >
-                <template v-if="cell.getValue()">{{
-                  cell.getValue()
-                }}</template>
+                <template v-if="String(cell.getValue()).length > 0">
+                  {{ cell.getValue() }}
+                </template>
                 <br v-else class="min-h-[1rem] inline-flex" />
               </td>
             </tr>

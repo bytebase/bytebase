@@ -65,7 +65,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				if err != nil {
 					return err
 				}
-				if hasActiveProjectMembership(principalID, policy) {
+				if isProjectOwnerOrDeveloper(principalID, policy) {
 					filteredList = append(filteredList, database)
 				}
 			}

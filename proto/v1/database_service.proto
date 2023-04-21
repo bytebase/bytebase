@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
@@ -535,12 +534,12 @@ message ListSlowQueriesRequest {
   string filter = 2;
 
   // The order by of the slow query log.
-  // Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
-  // average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+  // Support order by count, latest_log_time, average_query_time, maximum_query_time,
+  // average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
   // For example:
   //  - order by count: order_by = "count"
   //  - order by latest_log_time desc: order_by = "latest_log_time desc"
-  // Default: order by nighty_fifth_percentile_query_time desc.
+  // Default: order by average_query_time desc.
   string order_by = 3;
 }
 
@@ -583,16 +582,16 @@ message SlowQueryStatistics {
 
   // The average rows sent of the slow query log.
   int64 average_rows_sent = 6;
-  
+
   // The maximum rows sent of the slow query log.
   int64 maximum_rows_sent = 7;
-  
+
   // The average rows examined of the slow query log.
   int64 average_rows_examined = 8;
-  
+
   // The maximum rows examined of the slow query log.
   int64 maximum_rows_examined = 9;
-  
+
   // Samples are details of the sample slow query logs with the same fingerprint.
   repeated SlowQueryDetails samples = 10;
 }

@@ -46,6 +46,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeSystemBot?: boolean;
     includeServiceAccount?: boolean;
+    includeArchived?: boolean;
     allowedRoleList?: RoleType[];
     allowedProjectMemberRoleList?: ProjectRoleType[];
     autoReset?: boolean;
@@ -56,6 +57,7 @@ const props = withDefaults(
     includeAll: false,
     includeSystemBot: false,
     includeServiceAccount: false,
+    includeArchived: false,
     allowedRoleList: () => ["DEVELOPER", "DBA", "OWNER"],
     allowedProjectMemberRoleList: () => ["DEVELOPER", "OWNER"],
     autoReset: true,
@@ -93,6 +95,10 @@ const getPrincipalListFromProject = (project: ProjectId) => {
 };
 const getPrincipalListFromWorkspace = () => {
   return memberStore.memberList
+    .filter((member) => {
+      if (props.includeArchived) return true;
+      return member.rowStatus === "NORMAL";
+    })
     .filter((member) => {
       return props.allowedRoleList.includes(member.role);
     })

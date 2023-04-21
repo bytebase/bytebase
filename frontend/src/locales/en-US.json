@@ -236,7 +236,11 @@
     "rollout": "Rollout",
     "uploading": "Uploading",
     "active": "Active",
-    "added": "Added"
+    "added": "Added",
+    "revoke": "Revoke",
+    "cannot-undo-this-action": "You cannot undo this action",
+    "expand": "Expand",
+    "collapse": "Collapse"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -376,7 +380,8 @@
       "sensitive-data": "Data Anonymization",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
-      "roles": "Roles"
+      "roles": "Roles",
+      "mail-delivery": "Mail Delivery"
     },
     "profile": {
       "email": "Email",
@@ -403,7 +408,8 @@
         "account": "Account",
         "role": "Role",
         "update-time": "Updated Time",
-        "granted-time": "Granted Time"
+        "granted-time": "Granted Time",
+        "roles": "Roles"
       },
       "action": {
         "deactivate": "Deactivate",
@@ -535,6 +541,22 @@
       "new-version-available": "New version is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
       "not-show-till-next-release": "Don't show this till next version"
+    },
+    "mail-delivery": {
+      "description": "Enable mail delivery to receive email notification by configuring SMTP server information.",
+      "field": {
+        "smtp-server-host": "SMTP Server Host",
+        "smtp-server-port": "SMTP Server Port",
+        "from": "From",
+        "smtp-username": "SMTP Username",
+        "smtp-password": "SMTP Password",
+        "send-test-email-to": "Send Test Email To",
+        "send": "Send",
+        "authentication-method": "Authentication Method",
+        "encryption": "Encryption"
+      },
+      "updated-tip": "Successfully updated the mail delivery setting",
+      "tested-tip": "Send successfully, please check the inbox of {address}."
     }
   },
   "activity": {
@@ -769,6 +791,7 @@
     "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",
+    "functions": "Functions",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
@@ -1340,7 +1363,16 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
       "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
+      "members": {
+        "view-by-principals": "View by principals",
+        "view-by-roles": "View by roles",
+        "cannot-remove-last-owner": "Cannot remove the last owner of a project",
+        "revoke-role-from-user": "Revoke '{role}' from '{user}'",
+        "remove-user": "Remove '{user}'",
+        "inactive-members": "Inactive members",
+        "show-inactive": "Show inactive members"
+      }
     },
     "mode": {
       "standard": "Standard",
@@ -1694,6 +1726,15 @@
     "unknown-event": "Unexpected event type, OAuth failed."
   },
   "subscription": {
+    "try-for-free": "Free trial",
+    "inquire-enterprise-plan": "Inquire Enterprise Plan",
+    "enterprise-free-trial": "{days}-day free Enterprise trial",
+    "button": {
+      "free-trial": "{days}-day free trial",
+      "upgrade": "Upgrade",
+      "contact-us": "Contact us",
+      "view-subscription": "View subscription"
+    },
     "trial-start-modal": {
       "title": "Start your {plan} trial",
       "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
@@ -2008,7 +2049,8 @@
     "environment": "Environment",
     "instance": "Instance",
     "project": "Project",
-    "idp": "Identity Provider"
+    "idp": "Identity Provider",
+    "role": "Role"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2223,7 +2265,12 @@
           "PROJECT_MEMBER": "Project Member"
         },
         "add": "Add node",
-        "delete": "Delete approval node"
+        "delete": "Delete approval node",
+        "select-approver": "Select approver",
+        "roles": {
+          "system": "System roles",
+          "custom": "Custom roles"
+        }
       },
       "presets": {
         "owner-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
@@ -2262,22 +2309,25 @@
   "slow-query": {
     "self": "Slow query",
     "slow-queries": "Slow queries",
+    "report-slow-query": "Report slow query",
+    "report": "Report",
     "last-query-time": "Last query time",
     "database-name": "Database name",
     "sql-statement": "SQL statement",
     "total-query-count": "Total query count",
-    "query-time-95-percent": "Query time (95%)",
-    "query-time-avg": "Query time avg.",
-    "rows-examined-95-percent": "Rows examined (95%)",
-    "rows-sent-95-percent": "Rows sent (95%)",
-    "rows-examined-avg": "Rows examined avg.",
+    "max-query-time": "Max query time",
+    "avg-query-time": "Avg query time",
+    "max-rows-examined": "Max rows examined",
+    "avg-rows-examined": "Avg rows examined",
+    "max-rows-sent": "Max rows sent",
+    "avg-rows-sent": "Avg rows sent",
     "rows-sent-avg": "Rows sent avg.",
     "query-start-time": "Query start time",
     "rows-examined": "Rows examined",
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Logging and analyzing slow queries for {versions}.\nBytebase will periodically sync slow query logs from instances.",
+    "attention-description": "Bytebase periodically syncs slow query logs from instances.\nFor MySQL instance, {slow_query} must be enabled first.\nFor PostgreSQL instance, {pg_stat_statements} must be enabled first in each database.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
     "detail": "Slow Query Detail"
   },
@@ -2285,10 +2335,12 @@
     "select": "Select user"
   },
   "role": {
+    "self": "Role",
     "setting": {
       "description": "Defining custom roles, and you may apply them to project members.",
       "add": "Add role",
       "edit": "Edit role",
+      "title-placeholder": "Input role title",
       "name-placeholder": "Input role name",
       "description-placeholder": "Input role description",
       "validation": {
@@ -2298,6 +2350,15 @@
         "max-length": "{resource} can contain up to {length} characters"
       },
       "delete": "Delete role"
+    },
+    "select": "Select role",
+    "select-roles": "Select roles",
+    "title": "Title",
+    "owner": {
+      "description": "System defined project owner role"
+    },
+    "developer": {
+      "description": "System defined project developer role"
     }
   }
 }

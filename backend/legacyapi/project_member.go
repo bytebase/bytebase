@@ -6,7 +6,7 @@ import (
 
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
-	ID int `jsonapi:"primary,projectMember"`
+	ID string `jsonapi:"primary,projectMember"`
 
 	// Related fields
 	// Just returns ProjectID otherwise would cause circular dependency.
@@ -57,7 +57,7 @@ const (
 )
 
 // ProjectPermission returns whether a particular permission is granted to a particular project role in a particular plan.
-func ProjectPermission(permission ProjectPermissionType, plan PlanType, role common.ProjectRole) bool {
+func ProjectPermission(permission ProjectPermissionType, plan PlanType, roles map[common.ProjectRole]bool) bool {
 	// a map from the a particular feature to the respective enablement of a project developer and owner.
 	projectPermissionMatrix := map[ProjectPermissionType][2]bool{
 		ProjectPermissionManageGeneral:  {false, true},
@@ -74,11 +74,18 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, role com
 		ProjectPermissionTransferDatabase: {!Feature(FeatureDBAWorkflow, plan), true},
 	}
 
-	switch role {
-	case common.ProjectDeveloper:
-		return projectPermissionMatrix[permission][0]
-	case common.ProjectOwner:
-		return projectPermissionMatrix[permission][1]
+	for role := range roles {
+		switch role {
+		case common.ProjectDeveloper:
+			if projectPermissionMatrix[permission][0] {
+				return true
+			}
+		case common.ProjectOwner:
+			if projectPermissionMatrix[permission][1] {
+				return true
+			}
+		}
 	}
+
 	return false
 }

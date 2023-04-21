@@ -31,8 +31,8 @@ const (
 	filterKeyProject   = "project"
 	filterKeyStartTime = "start_time"
 
-	// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
-	// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+	// Support order by count, latest_log_time, average_query_time, maximum_query_time,
+	// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
 	orderByKeyCount               = "count"
 	orderByKeyLatestLogTime       = "latest_log_time"
 	orderByKeyAverageQueryTime    = "average_query_time"
@@ -597,9 +597,33 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		return nil, status.Errorf(codes.Internal, "failed to find database list %q", err.Error())
 	}
 
+	var canAccessDBs []*store.DatabaseMessage
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user %q", err.Error())
+	}
+	switch user.Role {
+	case api.Owner, api.DBA:
+		canAccessDBs = databases
+	case api.Developer:
+		for _, database := range databases {
+			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
+			}
+			if isProjectOwnerOrDeveloper(principalID, policy) {
+				canAccessDBs = append(canAccessDBs, database)
+			}
+		}
+	default:
+		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", user.Role)
+	}
+
 	result := &v1pb.ListSlowQueriesResponse{}
 
-	for _, database := range databases {
+	for _, database := range canAccessDBs {
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &database.InstanceID,
 		})
@@ -637,7 +661,7 @@ func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKey
 	if len(orderByKeys) == 0 {
 		orderByKeys = []orderByKey{
 			{
-				key:      orderByKeyMaximumQueryTime,
+				key:      orderByKeyAverageQueryTime,
 				isAscend: false,
 			},
 		}
@@ -733,8 +757,8 @@ func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKey
 func validSlowQueryOrderByKey(keys []orderByKey) error {
 	for _, key := range keys {
 		switch key.key {
-		// Support order by count, latest_log_time, average_query_time, nighty_fifth_percentile_query_time,
-		// average_rows_sent, nighty_fifth_percentile_rows_sent, average_rows_examined, nighty_fifth_percentile_rows_examined for now.
+		// Support order by count, latest_log_time, average_query_time, maximum_query_time,
+		// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
 		case orderByKeyCount, orderByKeyLatestLogTime, orderByKeyAverageQueryTime, orderByKeyMaximumQueryTime,
 			orderByKeyAverageRowsSent, orderByKeyMaximumRowsSent, orderByKeyAverageRowsExamined, orderByKeyMaximumRowsExamined:
 		default:
@@ -876,6 +900,12 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 				Definition:       view.Definition,
 				Comment:          view.Comment,
 				DependentColumns: dependentColumnList,
+			})
+		}
+		for _, function := range schema.Functions {
+			s.Functions = append(s.Functions, &v1pb.FunctionMetadata{
+				Name:       function.Name,
+				Definition: function.Definition,
 			})
 		}
 		m.Schemas = append(m.Schemas, s)
@@ -1033,4 +1063,19 @@ func convertPeriodTsToDuration(periodTs int) (*durationpb.Duration, error) {
 		return nil, errors.New("invalid period")
 	}
 	return durationpb.New(time.Duration(periodTs) * time.Second), nil
+}
+
+// isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
+func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
+	for _, binding := range projectPolicy.Bindings {
+		if binding.Role != api.Owner && binding.Role != api.Developer {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID == principalID {
+				return true
+			}
+		}
+	}
+	return false
 }

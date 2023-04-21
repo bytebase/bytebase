@@ -6,235 +6,277 @@
       feature="bb.feature.rbac"
       :description="$t('subscription.features.bb-feature-rbac.desc')"
     />
-    <span class="text-lg font-medium leading-7 text-main">
-      {{ $t("project.settings.manage-member") }}
-    </span>
-
-    <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
-      <!-- To prevent jiggling when showing the error text -->
-      <div :class="state.error ? 'space-y-1' : 'space-y-6'">
-        <div class="space-y-2">
-          <div
-            class="flex flex-row justify-between py-0.5 select-none space-x-4"
-          >
-            <div class="w-64">
-              <MemberSelect
-                id="user"
-                name="user"
-                class="w-full"
-                :required="false"
-                :placeholder="$t('project.settings.member-placeholder')"
-                :selected-id="state.principalId as number"
-                @select-principal-id="
-                  (principalId) => {
-                    state.principalId = principalId;
-                    clearValidationError();
-                    validateMember();
-                  }
-                "
-              />
-            </div>
-            <div v-if="hasRBACFeature" class="radio-set-row">
-              <div class="radio">
-                <label class="label">
-                  <input
-                    v-model="state.role"
-                    :name="`member_role`"
-                    tabindex="-1"
-                    type="radio"
-                    class="btn"
-                    value="OWNER"
-                  />
-                  {{ $t("common.role.owner") }}
-                </label>
-              </div>
-              <div class="radio">
-                <label class="label">
-                  <input
-                    v-model="state.role"
-                    :name="`member_role`"
-                    tabindex="-1"
-                    type="radio"
-                    class="btn"
-                    value="DEVELOPER"
-                  />
-                  {{ $t("common.role.developer") }}
-                </label>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="btn-primary items-center"
-              :disabled="!hasValidMember"
-              @click.prevent="addMember"
-            >
-              <heroicons-outline:user-add class="mr-2 w-5 h-5" />
-              {{ $t("project.settings.add-member") }}
-            </button>
-          </div>
-        </div>
-
-        <div id="state-error" class="flex justify-start">
-          <span v-if="state.error" class="text-sm text-error">
-            {{ state.error }}
-          </span>
-        </div>
-      </div>
+    <div class="text-lg font-medium leading-7 text-main">
+      <span>{{ $t("project.settings.manage-member") }}</span>
+      <span class="ml-1 font-normal text-control-light">
+        ({{ activeComposedPrincipalList.length }})
+      </span>
     </div>
-    <ProjectMemberTable :project="project" />
+
+    <div v-if="allowAdmin" class="my-4 w-full flex gap-x-2">
+      <div class="w-[18rem] shrink-0">
+        <PrincipalSelect
+          v-model:principal="state.principalId"
+          :include-all="false"
+          :filter="filterNonMemberUsers"
+          :disabled="state.adding"
+          style="width: 100%"
+        />
+      </div>
+      <div v-if="hasRBACFeature" class="flex-1 overflow-hidden">
+        <ProjectRolesSelect
+          v-model:role-list="state.roleList"
+          :disabled="state.adding"
+        />
+      </div>
+      <NButton
+        type="primary"
+        :disabled="!isValid"
+        :loading="state.adding"
+        @click="addMember"
+      >
+        <template #icon>
+          <heroicons-outline:user-add class="w-4 h-4" />
+        </template>
+        {{ $t("project.settings.add-member") }}
+      </NButton>
+    </div>
+
+    <ProjectMemberTable
+      :iam-policy="iamPolicy"
+      :project="project"
+      :ready="ready"
+      :editable="true"
+      :composed-principal-list="activeComposedPrincipalList"
+    />
+
+    <div v-if="inactiveComposedPrincipalList.length > 0" class="mt-4">
+      <NCheckbox v-model:checked="state.showInactiveMemberList">
+        <span class="textinfolabel">
+          {{ $t("project.settings.members.show-inactive") }}
+        </span>
+      </NCheckbox>
+    </div>
+
+    <div v-if="state.showInactiveMemberList" class="my-4 space-y-2">
+      <div class="text-lg font-medium leading-7 text-main">
+        <span>{{ $t("project.settings.members.inactive-members") }}</span>
+        <span class="ml-1 font-normal text-control-light">
+          ({{ inactiveComposedPrincipalList.length }})
+        </span>
+      </div>
+      <ProjectMemberTable
+        :iam-policy="iamPolicy"
+        :project="project"
+        :ready="ready"
+        :editable="false"
+        :composed-principal-list="
+          composedPrincipalList.filter(
+            (item) => item.member.rowStatus === 'ARCHIVED'
+          )
+        "
+      />
+    </div>
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType, reactive } from "vue";
-import MemberSelect from "../components/MemberSelect.vue";
-import ProjectMemberTable from "../components/ProjectMemberTable.vue";
+<script lang="ts" setup>
+import { computed, PropType, reactive } from "vue";
+import { NButton, NCheckbox } from "naive-ui";
+import { useI18n } from "vue-i18n";
+import { cloneDeep, orderBy, uniq } from "lodash-es";
+
+import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
   DEFAULT_PROJECT_ID,
+  Principal,
   PrincipalId,
   Project,
-  ProjectMember,
-  ProjectMemberCreate,
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
-import { hasPermissionInProject, hasWorkspacePermission } from "../utils";
-import { useI18n } from "vue-i18n";
+import { PrincipalSelect, ProjectRolesSelect } from "./v2";
 import {
+  addRoleToProjectIamPolicy,
+  hasPermissionInProject,
+  hasWorkspacePermission,
+} from "../utils";
+import {
+  extractUserEmail,
   featureToRef,
   pushNotification,
   useCurrentUser,
   useMemberStore,
-  useProjectStore,
+  usePrincipalStore,
+  useProjectIamPolicy,
+  useProjectIamPolicyStore,
+  useUserStore,
 } from "@/store";
+import { ComposedPrincipal } from "./Project/ProjectSetting/common";
 
 interface LocalState {
-  principalId: PrincipalId;
-  role: ProjectRoleType;
-  error: string;
-  showModal: boolean;
-  previewMember: boolean;
+  principalId: PrincipalId | undefined;
+  roleList: ProjectRoleType[];
+  adding: boolean;
+  showInactiveMemberList: boolean;
 }
 
-export default defineComponent({
-  name: "ProjectMemberPanel",
-  components: { MemberSelect, ProjectMemberTable },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-  },
-  setup(props) {
-    const { t } = useI18n();
-
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
-
-    const state = reactive<LocalState>({
-      principalId: UNKNOWN_ID,
-      role: "DEVELOPER",
-      error: "",
-      showModal: false,
-      previewMember: false,
-    });
-
-    const hasRBACFeature = featureToRef("bb.feature.rbac");
-
-    const allowAddMember = computed(() => {
-      if (props.project.id == DEFAULT_PROJECT_ID) {
-        return false;
-      }
-
-      if (props.project.rowStatus == "ARCHIVED") {
-        return false;
-      }
-
-      // Allow workspace roles having manage project permission here in case project owners are not available.
-      if (
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-project",
-          currentUser.value.role
-        )
-      ) {
-        return true;
-      }
-
-      if (
-        hasPermissionInProject(
-          props.project,
-          currentUser.value,
-          "bb.permission.project.manage-member"
-        )
-      ) {
-        return true;
-      }
-      return false;
-    });
-
-    const hasValidMember = computed(() => {
-      return (
-        state.principalId != UNKNOWN_ID && validateInviteInternal().length == 0
-      );
-    });
-
-    const validateInviteInternal = (): string => {
-      if (state.principalId != UNKNOWN_ID) {
-        if (
-          props.project.memberList.find((item: ProjectMember) => {
-            return item.principal.id == state.principalId;
-          })
-        ) {
-          return "Already a project member";
-        }
-      }
-      return "";
-    };
-
-    const validateMember = () => {
-      state.error = validateInviteInternal();
-    };
-
-    const clearValidationError = () => {
-      state.error = "";
-    };
-
-    const addMember = () => {
-      // If admin feature is NOT enabled, then we set every member to OWNER role.
-      const projectMember: ProjectMemberCreate = {
-        principalId: state.principalId,
-        role: hasRBACFeature.value ? state.role : "OWNER",
-      };
-      const member = useMemberStore().memberByPrincipalId(state.principalId);
-      projectStore
-        .createdMember({
-          projectId: props.project.id,
-          projectMember,
-        })
-        .then(() => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("project.settings.success-member-added-prompt", {
-              name: member.principal.name,
-            }),
-          });
-        });
-
-      state.principalId = UNKNOWN_ID;
-      state.role = "DEVELOPER";
-      state.error = "";
-    };
-
-    return {
-      state,
-      hasRBACFeature,
-      allowAddMember,
-      validateMember,
-      clearValidationError,
-      hasValidMember,
-      addMember,
-    };
+const props = defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
 });
+
+const ROLE_OWNER = "roles/OWNER";
+const ROLE_DEVELOPER = "roles/DEVELOPER";
+const { t } = useI18n();
+const currentUser = useCurrentUser();
+const projectResourceName = computed(
+  () => `projects/${props.project.resourceId}`
+);
+const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
+
+const state = reactive<LocalState>({
+  principalId: undefined,
+  roleList: [],
+  adding: false,
+  showInactiveMemberList: false,
+});
+
+const hasRBACFeature = featureToRef("bb.feature.rbac");
+const userStore = useUserStore();
+const memberStore = useMemberStore();
+
+const allowAdmin = computed(() => {
+  if (props.project.id === DEFAULT_PROJECT_ID) {
+    return false;
+  }
+
+  if (props.project.rowStatus === "ARCHIVED") {
+    return false;
+  }
+
+  // Allow workspace roles having manage project permission here in case project owners are not available.
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-project",
+      currentUser.value.role
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    hasPermissionInProject(
+      props.project,
+      currentUser.value,
+      "bb.permission.project.manage-member"
+    )
+  ) {
+    return true;
+  }
+  return false;
+});
+
+const composedPrincipalList = computed(() => {
+  const distinctUserResourceNameList = uniq(
+    iamPolicy.value.bindings.flatMap((binding) => binding.members)
+  );
+
+  const userEmailList = distinctUserResourceNameList.map((user) =>
+    extractUserEmail(user)
+  );
+
+  const composedUserList = userEmailList.map((email) => {
+    const user = userStore.getUserByEmail(email);
+    const member = memberStore.memberByEmail(email);
+    return { email, user, member };
+  });
+
+  const usersByRole = iamPolicy.value.bindings.map((binding) => {
+    return {
+      role: binding.role,
+      users: new Set(binding.members),
+    };
+  });
+  const composedPrincipalList = composedUserList.map<ComposedPrincipal>(
+    ({ email, member }) => {
+      const resourceName = `user:${email}`;
+      const roleList = usersByRole
+        .filter((binding) => binding.users.has(resourceName))
+        .map((binding) => binding.role);
+      return {
+        email,
+        member,
+        principal: member.principal,
+        roleList,
+      };
+    }
+  );
+
+  return orderBy(
+    composedPrincipalList,
+    [
+      (item) => (item.roleList.includes(ROLE_OWNER) ? 0 : 1),
+      (item) => item.principal.id,
+    ],
+    ["asc", "asc"]
+  );
+});
+
+const activeComposedPrincipalList = computed(() => {
+  return composedPrincipalList.value.filter(
+    (item) => item.member.rowStatus === "NORMAL"
+  );
+});
+
+const inactiveComposedPrincipalList = computed(() => {
+  return composedPrincipalList.value.filter(
+    (item) => item.member.rowStatus === "ARCHIVED"
+  );
+});
+
+const isValid = computed(() => {
+  const { principalId, roleList } = state;
+  return principalId && principalId !== UNKNOWN_ID && roleList.length > 0;
+});
+
+const filterNonMemberUsers = (principal: Principal) => {
+  const user = `user:${principal.email}`;
+  return iamPolicy.value.bindings.every(
+    (binding) => !binding.members.includes(user)
+  );
+};
+
+const addMember = async () => {
+  if (!isValid.value) return;
+  const { principalId, roleList } = state;
+  if (!principalId) return;
+  state.adding = true;
+  try {
+    const principal = usePrincipalStore().principalById(principalId);
+    const policy = cloneDeep(iamPolicy.value);
+    const user = `user:${principal.email}`;
+    roleList.forEach((role) => {
+      addRoleToProjectIamPolicy(policy, user, role);
+    });
+    await useProjectIamPolicyStore().updateProjectIamPolicy(
+      projectResourceName.value,
+      policy
+    );
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("project.settings.success-member-added-prompt", {
+        name: principal.name,
+      }),
+    });
+    state.roleList = [ROLE_DEVELOPER];
+    state.principalId = undefined;
+  } finally {
+    state.adding = false;
+  }
+};
 </script>
