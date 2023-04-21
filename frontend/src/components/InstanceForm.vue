@@ -719,6 +719,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "1433";
   } else if (engine === "REDSHIFT") {
     return "5439";
+  } else if (engine === "OCEANBASE") {
+    return "2883";
   }
   return "3306";
 };
@@ -772,6 +774,7 @@ const EngineIconPath = {
   MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
   REDSHIFT: new URL("../assets/db-redshift.svg", import.meta.url).href,
   MARIADB: new URL("../assets/db-mariadb.png", import.meta.url).href,
+  OCEANBASE: new URL("../assets/db-oceanbase.png", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
@@ -865,6 +868,8 @@ const defaultPort = computed(() => {
     return "5439";
   } else if (basicInformation.value.engine == "MARIADB") {
     return "3306";
+  } else if (basicInformation.value.engine == "OCEANBASE") {
+    return "2883";
   }
   return "3306";
 });

@@ -504,6 +504,11 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	return convertToBackup(backup, environmentID, instanceID, databaseName), nil
 }
 
+type totalValue struct {
+	totalQueryTime time.Duration
+	totalRowsSent  int64
+}
+
 // ListSlowQueries lists the slow queries.
 func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
 	findDatabase := &store.FindDatabaseMessage{}
@@ -622,6 +627,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	}
 
 	result := &v1pb.ListSlowQueriesResponse{}
+	instanceMap := make(map[string]*totalValue)
 
 	for _, database := range canAccessDBs {
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -646,7 +652,27 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 
 		for _, log := range logs {
 			result.SlowQueryLogs = append(result.SlowQueryLogs, convertToSlowQueryLog(database.EnvironmentID, database.InstanceID, database.DatabaseName, database.ProjectID, log))
+			if value, exists := instanceMap[database.InstanceID]; exists {
+				value.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
+				value.totalRowsSent += log.Statistics.AverageRowsSent * log.Statistics.Count
+			} else {
+				instanceMap[database.InstanceID] = &totalValue{
+					totalQueryTime: log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count),
+					totalRowsSent:  log.Statistics.AverageRowsSent * log.Statistics.Count,
+				}
+			}
 		}
+	}
+
+	for _, log := range result.SlowQueryLogs {
+		_, instanceID, _, err := getEnvironmentInstanceDatabaseID(log.Resource)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get instance id %q", err.Error())
+		}
+		totalQueryTime := log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
+		totalRowsSent := log.Statistics.AverageRowsSent * log.Statistics.Count
+		log.Statistics.QueryTimePercent = float64(totalQueryTime) / float64(instanceMap[instanceID].totalQueryTime)
+		log.Statistics.RowsSentPercent = float64(totalRowsSent) / float64(instanceMap[instanceID].totalRowsSent)
 	}
 
 	result, err = sortSlowQueryLogResponse(result, orderByKeys)

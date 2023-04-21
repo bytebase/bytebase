@@ -30,6 +30,8 @@ const (
 	MSSQL EngineType = "MSSQL"
 	// Redshift is the engine type for redshift.
 	Redshift EngineType = "REDSHIFT"
+	// OceanBase is the engine type for OceanBase.
+	OceanBase EngineType = "OCEANBASE"
 
 	// DeparseIndentString is the string for each indent level.
 	DeparseIndentString = "    "

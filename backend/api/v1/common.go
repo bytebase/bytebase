@@ -506,6 +506,8 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_REDSHIFT
 	case db.MariaDB:
 		return v1pb.Engine_MARIADB
+	case db.OceanBase:
+		return v1pb.Engine_OCEANBASE
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -538,6 +540,8 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.Redshift
 	case v1pb.Engine_MARIADB:
 		return db.MariaDB
+	case v1pb.Engine_OCEANBASE:
+		return db.OceanBase
 	}
 	return db.UnknownType
 }
