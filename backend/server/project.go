@@ -111,7 +111,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				if err != nil {
 					return err
 				}
-				if isProjectOwnerOrDeveloper(principalID, projectPolicy) {
+				if isProjectMember(principalID, projectPolicy) {
 					ps = append(ps, project)
 				}
 			}
@@ -1360,6 +1360,19 @@ func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMe
 		if binding.Role != api.Owner && binding.Role != api.Developer {
 			continue
 		}
+		for _, member := range binding.Members {
+			if member.ID == principalID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isProjectMember returns whether a principal is a project member in the project,
+// that is the principal has any role in the project.
+func isProjectMember(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
+	for _, binding := range projectPolicy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == principalID {
 				return true
