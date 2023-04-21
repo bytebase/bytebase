@@ -668,6 +668,7 @@ BackupPlanSchedule is the backup plan schedule.
 | MSSQL | 11 |  |
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
 
 
 

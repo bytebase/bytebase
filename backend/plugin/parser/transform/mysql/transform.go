@@ -27,6 +27,7 @@ var (
 func init() {
 	transform.Register(bbparser.MySQL, &SchemaTransformer{})
 	transform.Register(bbparser.TiDB, &SchemaTransformer{})
+	transform.Register(bbparser.OceanBase, &SchemaTransformer{})
 }
 
 // SchemaTransformer it the transformer for MySQL dialect.

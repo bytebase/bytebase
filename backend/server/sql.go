@@ -261,7 +261,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		// Database Access Control for MySQL dialect.
 		// MySQL dialect can query cross the database.
 		// We need special check.
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB {
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.OceanBase {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
@@ -385,7 +385,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
@@ -644,7 +644,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			var singleSQLResults []api.SingleSQLResult
 			// We split the query into multiple statements and execute them one by one for MySQL and PostgreSQL.
-			if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.Postgres || instance.Engine == db.Oracle || instance.Engine == db.Redshift {
+			if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.Postgres || instance.Engine == db.Oracle || instance.Engine == db.Redshift || instance.Engine == db.OceanBase {
 				singleSQLs, err := parser.SplitMultiSQL(parser.EngineType(instance.Engine), exec.Statement)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to split statements")
@@ -789,6 +789,8 @@ func convertToParserEngine(engine db.Type) parser.EngineType {
 		return parser.Oracle
 	case db.MSSQL:
 		return parser.MSSQL
+	case db.OceanBase:
+		return parser.OceanBase
 	}
 	return parser.Standard
 }

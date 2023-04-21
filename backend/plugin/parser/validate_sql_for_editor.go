@@ -23,7 +23,7 @@ func ValidateSQLForEditor(engine EngineType, statement string) bool {
 	switch engine {
 	case Postgres:
 		return postgresValidateSQLForEditor(statement)
-	case MySQL, TiDB, MariaDB:
+	case MySQL, TiDB, MariaDB, OceanBase:
 		return mysqlValidateSQLForEditor(statement)
 	default:
 		return standardValidateSQLForEditor(statement)
@@ -158,7 +158,7 @@ func removeQuotedTextAndComment(engine EngineType, statement string) (string, er
 	switch engine {
 	case Postgres:
 		return "", errors.Errorf("unsupported engine type: %s", engine)
-	case MySQL, TiDB, MariaDB:
+	case MySQL, TiDB, MariaDB, OceanBase:
 		return mysqlRemoveQuotedTextAndComment(statement)
 	case Standard, Oracle, MSSQL:
 		return standardRemoveQuotedTextAndComment(statement)
