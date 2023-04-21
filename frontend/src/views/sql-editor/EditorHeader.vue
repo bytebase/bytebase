@@ -1,15 +1,8 @@
 <template>
   <div class="flex items-center justify-between h-16">
-    <div class="flex items-center">
-      <div class="flex-shrink-0 w-44">
-        <router-link to="/" class="select-none">
-          <img
-            class="h-12 w-auto"
-            src="../../assets/logo-full.svg"
-            alt="Bytebase"
-          />
-        </router-link>
-      </div>
+    <div class="flex items-center h-full">
+      <BytebaseLogo class="h-full overflow-y-hidden" />
+
       <div class="hidden sm:block">
         <div class="ml-4 flex items-baseline space-x-1">
           <router-link
@@ -44,17 +37,9 @@
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <div class="ml-2">
-          <div
-            class="flex justify-center items-center bg-gray-100 rounded-3xl"
-            :class="logoUrl ? 'p-2' : ''"
-          >
-            <img
-              v-if="logoUrl"
-              class="h-7 mr-4 ml-2 bg-no-repeat bg-contain bg-center"
-              :src="logoUrl"
-            />
+          <ProfileBrandingLogo>
             <ProfileDropdown />
-          </div>
+          </ProfileBrandingLogo>
         </div>
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
@@ -106,6 +91,9 @@ import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
+
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
 import { useCurrentUser, useInboxStore, useSettingStore } from "@/store";
@@ -117,7 +105,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "EditorHeader",
-  components: { ProfileDropdown },
+  components: { BytebaseLogo, ProfileBrandingLogo, ProfileDropdown },
   setup() {
     const { t, availableLocales, locale } = useI18n();
     const inboxStore = useInboxStore();

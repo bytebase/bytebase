@@ -125,17 +125,9 @@
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <div class="ml-2">
-          <div
-            class="flex justify-center items-center bg-gray-100 rounded-3xl"
-            :class="logoUrl ? 'p-2' : ''"
-          >
-            <img
-              v-if="logoUrl"
-              class="h-7 mr-4 ml-2 bg-no-repeat bg-contain bg-center"
-              :src="logoUrl"
-            />
+          <ProfileBrandingLogo>
             <ProfileDropdown />
-          </div>
+          </ProfileBrandingLogo>
         </div>
         <div class="ml-2 -mr-2 flex md:hidden">
           <!-- Mobile menu button -->
@@ -214,6 +206,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import BytebaseLogo from "../components/BytebaseLogo.vue";
+import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "../types";
 import { hasWorkspacePermission, isDev } from "../utils";
@@ -221,7 +214,6 @@ import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
   useDebugStore,
-  useSettingStore,
   useSubscriptionStore,
   useInboxStore,
 } from "@/store";
@@ -237,13 +229,13 @@ export default defineComponent({
   name: "DashboardHeader",
   components: {
     BytebaseLogo,
+    ProfileBrandingLogo,
     ProfileDropdown,
   },
   setup() {
     const { t, availableLocales } = useI18n();
     const debugStore = useDebugStore();
     const inboxStore = useInboxStore();
-    const settingStore = useSettingStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const route = useRoute();
@@ -284,12 +276,6 @@ export default defineComponent({
 
     const isDevFeatures = computed((): boolean => {
       return isDev();
-    });
-
-    const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting =
-        settingStore.getSettingByName("bb.branding.logo");
-      return brandingLogoSetting?.value;
     });
 
     const prepareInboxSummary = () => {
@@ -422,7 +408,6 @@ export default defineComponent({
       getRouteLinkClass,
       shouldShowInstanceEntry,
       shouldShowIssueEntry,
-      logoUrl,
       currentUser,
       currentPlan,
       PlanType,
