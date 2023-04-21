@@ -339,7 +339,7 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Task list for pipeline %v", pipeline.ID)
 	}
-	taskRuns, err := s.listTaskRun(ctx, &TaskRunFind{PipelineID: &pipeline.ID})
+	taskRuns, err := s.ListTaskRun(ctx, &TaskRunFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, err
 	}
