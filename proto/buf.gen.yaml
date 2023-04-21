@@ -11,11 +11,10 @@ plugins:
     out: generated-go
     opt:
       - paths=source_relative
-  - name: ts
+  - remote: buf.build/stephenh/plugins/ts-proto
     out: ../frontend/src/types/proto
     # reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md#using-ts-proto
     opt: env=browser,useOptionals=messages,outputServices=nice-grpc,outputServices=generic-definitions,useExactTypes=false
-    path: ../frontend/node_modules/.bin/protoc-gen-ts_proto
   - remote: buf.build/sawadashota/plugins/protoc-gen-doc:v1.5.1
     out: gen/grpc-doc
     opt:

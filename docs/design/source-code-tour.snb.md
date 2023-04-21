@@ -10,7 +10,7 @@ https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/bin/server/cm
 
 Bytebase is a database change and version control tool. It helps DevOps team to handle database CI/CD for DDL (aka schema migration) and DML. A typical application consists of the code/stateless and data/stateful part, GitLab/GitHub deals with the code change and deployment (the stateless part), while Bytebase deals with the database change and deployment (the stateful part).
 
-![Overview](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview2.webp)
+![Overview](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/issue-detail.webp)
 
 ## Architecture Overview
 
