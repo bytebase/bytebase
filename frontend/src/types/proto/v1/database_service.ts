@@ -583,8 +583,8 @@ export interface SlowQueryStatistics {
   maximumRowsExamined: number;
   /** The percentage of the query time. */
   queryTimePercent: number;
-  /** The percentage of the rows sent. */
-  rowsSentPercent: number;
+  /** The percentage of the count. */
+  countPercent: number;
   /** Samples are details of the sample slow query logs with the same fingerprint. */
   samples: SlowQueryDetails[];
 }
@@ -3533,7 +3533,7 @@ function createBaseSlowQueryStatistics(): SlowQueryStatistics {
     averageRowsExamined: 0,
     maximumRowsExamined: 0,
     queryTimePercent: 0,
-    rowsSentPercent: 0,
+    countPercent: 0,
     samples: [],
   };
 }
@@ -3570,8 +3570,8 @@ export const SlowQueryStatistics = {
     if (message.queryTimePercent !== 0) {
       writer.uint32(81).double(message.queryTimePercent);
     }
-    if (message.rowsSentPercent !== 0) {
-      writer.uint32(89).double(message.rowsSentPercent);
+    if (message.countPercent !== 0) {
+      writer.uint32(89).double(message.countPercent);
     }
     for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(98).fork()).ldelim();
@@ -3661,7 +3661,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.rowsSentPercent = reader.double();
+          message.countPercent = reader.double();
           continue;
         case 12:
           if (tag != 98) {
@@ -3691,7 +3691,7 @@ export const SlowQueryStatistics = {
       averageRowsExamined: isSet(object.averageRowsExamined) ? Number(object.averageRowsExamined) : 0,
       maximumRowsExamined: isSet(object.maximumRowsExamined) ? Number(object.maximumRowsExamined) : 0,
       queryTimePercent: isSet(object.queryTimePercent) ? Number(object.queryTimePercent) : 0,
-      rowsSentPercent: isSet(object.rowsSentPercent) ? Number(object.rowsSentPercent) : 0,
+      countPercent: isSet(object.countPercent) ? Number(object.countPercent) : 0,
       samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
@@ -3710,7 +3710,7 @@ export const SlowQueryStatistics = {
     message.averageRowsExamined !== undefined && (obj.averageRowsExamined = Math.round(message.averageRowsExamined));
     message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
     message.queryTimePercent !== undefined && (obj.queryTimePercent = message.queryTimePercent);
-    message.rowsSentPercent !== undefined && (obj.rowsSentPercent = message.rowsSentPercent);
+    message.countPercent !== undefined && (obj.countPercent = message.countPercent);
     if (message.samples) {
       obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
@@ -3739,7 +3739,7 @@ export const SlowQueryStatistics = {
     message.averageRowsExamined = object.averageRowsExamined ?? 0;
     message.maximumRowsExamined = object.maximumRowsExamined ?? 0;
     message.queryTimePercent = object.queryTimePercent ?? 0;
-    message.rowsSentPercent = object.rowsSentPercent ?? 0;
+    message.countPercent = object.countPercent ?? 0;
     message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },

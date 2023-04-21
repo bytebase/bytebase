@@ -595,8 +595,8 @@ message SlowQueryStatistics {
   // The percentage of the query time.
   double query_time_percent = 10;
   
-  // The percentage of the rows sent.
-  double rows_sent_percent = 11;
+  // The percentage of the count.
+  double count_percent = 11;
 
   // Samples are details of the sample slow query logs with the same fingerprint.
   repeated SlowQueryDetails samples = 12;

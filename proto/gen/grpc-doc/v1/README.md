@@ -1612,7 +1612,7 @@ SlowQueryStatistics is the statistics of the slow query log.
 | average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
 | maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
 | query_time_percent | [double](#double) |  | The percentage of the query time. |
-| rows_sent_percent | [double](#double) |  | The percentage of the rows sent. |
+| count_percent | [double](#double) |  | The percentage of the count. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
