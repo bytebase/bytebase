@@ -655,6 +655,11 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			if value, exists := instanceMap[database.InstanceID]; exists {
 				value.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
 				value.totalRowsSent += log.Statistics.AverageRowsSent * log.Statistics.Count
+			} else {
+				instanceMap[database.InstanceID] = &totalValue{
+					totalQueryTime: log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count),
+					totalRowsSent:  log.Statistics.AverageRowsSent * log.Statistics.Count,
+				}
 			}
 		}
 	}
