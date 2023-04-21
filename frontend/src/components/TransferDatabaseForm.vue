@@ -49,6 +49,7 @@ import {
   filterDatabaseByKeyword,
   PRESET_LABEL_KEY_PLACEHOLDERS,
   sortDatabaseList,
+  useWorkspacePermission,
 } from "../utils";
 import {
   pushNotification,
@@ -86,7 +87,9 @@ const state = reactive<LocalState>({
   searchText: "",
   loading: false,
 });
-
+const hasWorkspaceManageDatabasePermission = useWorkspacePermission(
+  "bb.permission.workspace.manage-database"
+);
 const project = computed(() => projectStore.getProjectById(props.projectId));
 
 // Fetch project entity when initialize and props.projectId changes.
@@ -96,11 +99,11 @@ watch(
   { immediate: true }
 );
 
-const prepareDatabaseListForDefaultProject = () => {
-  databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
+const prepare = async () => {
+  await databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
 };
 
-onBeforeMount(prepareDatabaseListForDefaultProject);
+onBeforeMount(prepare);
 
 const environmentList = useEnvironmentList(["NORMAL"]);
 
@@ -110,9 +113,14 @@ const rawDatabaseList = computed(() => {
       databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
     );
   } else {
-    return cloneDeep(
-      databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
-    ).filter((item: Database) => item.project.id != props.projectId);
+    const list = hasWorkspaceManageDatabasePermission.value
+      ? databaseStore.getDatabaseList()
+      : databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+    return cloneDeep(list).filter(
+      (item: Database) =>
+        item.project.id !== props.projectId &&
+        item.project.id !== DEFAULT_PROJECT_ID
+    );
   }
 });
 
