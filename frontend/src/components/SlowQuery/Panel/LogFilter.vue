@@ -54,7 +54,7 @@
         />
         <NDatePicker
           v-if="filterTypes.includes('time-range')"
-          :value="params.timeRange"
+          :value="[0, params.timeRange![1]]"
           :disabled="loading"
           :is-date-disabled="isDateDisabled"
           type="daterange"

@@ -94,7 +94,7 @@
       >
         <div class="flex flex-col w-52 bg-control-bg">
           <!-- Sidebar component, swap this element with another sidebar if you like -->
-          <div class="flex-1 flex flex-col py-2 overflow-y-auto">
+          <div class="flex-1 flex flex-col py-0 overflow-y-auto">
             <router-view name="leftSidebar" />
           </div>
           <router-link
