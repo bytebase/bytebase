@@ -70,7 +70,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRu
 		if err != nil {
 			return nil, err
 		}
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		result, err = mysqlStatementTypeCheck(payload.Statement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, task.Type)
 		if err != nil {
 			return nil, err
