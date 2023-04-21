@@ -592,9 +592,15 @@ message SlowQueryStatistics {
 
   // The maximum rows examined of the slow query log.
   int64 maximum_rows_examined = 9;
+  
+  // The percentage of the query time.
+  double query_time_percent = 10;
+  
+  // The percentage of the rows sent.
+  double rows_sent_percent = 11;
 
   // Samples are details of the sample slow query logs with the same fingerprint.
-  repeated SlowQueryDetails samples = 10;
+  repeated SlowQueryDetails samples = 12;
 }
 
 // SlowQueryDetails is the details of the slow query log.
