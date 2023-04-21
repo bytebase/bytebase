@@ -36,6 +36,12 @@
             .text-center {
                 text-align: center;
             }
+            .sql-text {
+                font-size: 16px;
+                line-height: 20px;
+                word-wrap: normal;
+                font-family: monospace;
+            }
 
             #slow-query td, #slow-query th {
                 border: 1px solid #ddd;
@@ -55,7 +61,7 @@
             }
         </style>
     </head>
-    <body style="background-color: #ffffff;font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,Oxygen-Sans,Ubuntu,Cantarell,&quot;Helvetica Neue&quot;,sans-serif">
+    <body style="background-color: #ffffff;font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,Oxygen-Sans,Ubuntu,Cantarell,&quot;Helvetica Neue&quot;,monospace,sans-serif">
         <h1 data-id="mail-heading" class="mail-heading">{{PROJECT_NAME}} database slow query weekly report {{BEGIN_DATE}} ~ {{END_DATE}}</h1>
         <p data-id="mail-first-graph" class="mail-text" style="text-align: center;">
             Below is the {{PROJECT_NAME}} slow query for {{BEGIN_DATE}} ~ {{END_DATE}}, each database lists at most 5 slow queries.
@@ -80,9 +86,9 @@
                     </tr>
                     <!-- TODO(junyi) For loop this tr block to generate all slow query entry in table element.-->
                     <tr>
-                        <td>{{DB_TYPE}}</td>
+                        <td><{{DB_TYPE}}</td>
                         <td>{{DB_NAME}}</td>
-                        <td>{{SLOW_QUERY}}</td>
+                        <td><span class="sql-text">{{SLOW_QUERY}}</span></td>
                     </tr>
                 </table>
             </div>

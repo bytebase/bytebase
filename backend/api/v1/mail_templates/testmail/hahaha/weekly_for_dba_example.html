@@ -36,6 +36,12 @@
             .text-center {
                 text-align: center;
             }
+            .sql-text {
+                font-size: 16px;
+                line-height: 20px;
+                word-wrap: normal;
+                font-family: monospace;
+            }
 
             #slow-query-table td, #slow-query-table th {
                 white-space: pre-wrap;
@@ -77,7 +83,7 @@
                     <!-- TODO(junyi) For loop this tr block to generate all slow query entry in table element.-->
                     <tr>
                         <td>Employee</td>
-                        <td> -- create a dummy table with 10 rows
+                        <td><span class="sql-text"> -- create a dummy table with 10 rows
 CREATE TABLE dummy_table (id INT NOT NULL PRIMARY KEY);
 INSERT INTO dummy_table VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
 -- create the table if it doesn't exist
@@ -100,11 +106,11 @@ JOIN my_table t2 ON t1.id = t2.id
 WHERE t1.age > 30
 GROUP BY t1.name
 HAVING COUNT(*) > 1000;
-                        </td>
+</span></td>
                     </tr>
                     <tr>
                         <td>Employee</td>
-                        <td> -- create a dummy table with 10 rows
+                        <td><span class="sql-text"> -- create a dummy table with 10 rows
 CREATE TABLE dummy_table (id INT NOT NULL PRIMARY KEY);
 INSERT INTO dummy_table VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
 -- create the table if it doesn't exist
@@ -127,11 +133,11 @@ JOIN my_table t2 ON t1.id = t2.id
 WHERE t1.age > 30
 GROUP BY t1.name
 HAVING COUNT(*) > 1000;
-                        </td>
+</span></td>
                     </tr>
                     <tr>
                         <td>Salary</td>
-                        <td> 
+                        <td><span class="sql-text">
 -- run a complex query that takes more than 10 seconds to execute
 SELECT t1.name, AVG(t1.salary)
 FROM my_table t1
@@ -139,7 +145,7 @@ JOIN my_table t2 ON t1.id = t2.id
 WHERE t1.age > 30
 GROUP BY t1.name
 HAVING COUNT(*) > 1000;
-                        </td>
+</span></td>
                     </tr>
                 </table>
             </div>

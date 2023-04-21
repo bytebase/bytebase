@@ -37,6 +37,13 @@
                 text-align: center;
             }
 
+            .sql-text {
+                font-size: 16px;
+                line-height: 20px;
+                word-wrap: normal;
+                font-family: monospace;
+            }
+
             #slow-query-table td, #slow-query-table th {
                 white-space: pre-wrap;
                 border: 1px solid #ddd;
@@ -82,7 +89,7 @@
                     <!-- TODO(junyi) For loop this tr block to generate all slow query entry in table element.-->
                     <tr>
                         <td>{{DB_NAME}}</td>
-                        <td>{{SLOW_QUERY}}</td>
+                        <td><span class="sql-text">{{SLOW_QUERY}}</span></td>
                     </tr>
                 </table>
             </div>
