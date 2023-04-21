@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
-import { uniq } from "lodash-es";
 
 import { databaseServiceClient, instanceServiceClient } from "@/grpcweb";
 import {
   ListSlowQueriesRequest,
   SlowQueryLog,
+  Database as V1Database,
 } from "@/types/proto/v1/database_service";
 import {
   ComposedSlowQueryLog,
@@ -40,13 +40,23 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
   return { fetchSlowQueryLogList, syncSlowQueriesByInstance };
 });
 
+const databaseRequestCache = new Map<string, Promise<V1Database>>();
+
+const getOrFetchV1Database = (name: string) => {
+  const cached = databaseRequestCache.get(name);
+  if (cached) return cached;
+  const request = databaseServiceClient.getDatabase({ name });
+  databaseRequestCache.set(name, request);
+  return request;
+};
+
 const composeSlowQueryLogDatabase = async (
   slowQueryLogList: SlowQueryLog[]
 ) => {
-  const databaseNameList = uniq(slowQueryLogList.map((log) => log.resource));
+  const databaseNameList = slowQueryLogList.map((log) => log.resource);
   const databaseIdList = await Promise.all(
     databaseNameList.map((name) => {
-      return databaseServiceClient.getDatabase({ name }).then(
+      return getOrFetchV1Database(name).then(
         (db) => parseInt(db.uid, 10),
         () => UNKNOWN_ID // fallback for robustness
       );

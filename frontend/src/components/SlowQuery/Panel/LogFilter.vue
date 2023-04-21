@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-2 space-y-2">
+  <div v-if="ready" class="mb-2 space-y-2">
     <div
       v-if="
         filterTypes.includes('project') || filterTypes.includes('environment')
@@ -118,7 +118,7 @@ const emit = defineEmits<{
 }>();
 
 const currentUser = useCurrentUser();
-const policyList = useSlowQueryPolicyList();
+const { list: policyList, ready } = useSlowQueryPolicyList();
 
 const canVisitDefaultProject = computed(() => {
   return hasWorkspacePermission(
