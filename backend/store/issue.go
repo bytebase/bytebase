@@ -40,15 +40,15 @@ func (s *Store) FindIssueStripped(ctx context.Context, find *FindIssueMessage) (
 	}
 	var composedIssues []*api.Issue
 	for _, issue := range issues {
-		issue, err := s.composeIssueStripped(ctx, issue)
+		composedIssue, err := s.composeIssueStripped(ctx, issue)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose issue %d", issue.ID)
+			return nil, errors.Wrapf(err, "failed to compose issue %d", issue.UID)
 		}
 		// If no specified project, filter out issues belonging to archived project
-		if issue == nil || issue.Project == nil || issue.Project.RowStatus == api.Archived {
+		if composedIssue == nil || composedIssue.Project == nil || composedIssue.Project.RowStatus == api.Archived {
 			continue
 		}
-		composedIssues = append(composedIssues, issue)
+		composedIssues = append(composedIssues, composedIssue)
 	}
 
 	return composedIssues, nil
