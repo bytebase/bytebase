@@ -54,13 +54,25 @@
         />
         <NDatePicker
           v-if="filterTypes.includes('time-range')"
-          :value="params.timeRange"
+          :value="params.fromTime"
           :disabled="loading"
           :is-date-disabled="isDateDisabled"
-          type="daterange"
+          :placeholder="$t('slow-query.filter.from-date')"
+          type="date"
           clearable
-          style="width: 16rem"
-          @update:value="changeTimeRange"
+          style="width: 10rem"
+          @update:value="changeFromTime($event)"
+        />
+        <NDatePicker
+          v-if="filterTypes.includes('time-range')"
+          :value="params.toTime"
+          :disabled="loading"
+          :is-date-disabled="isDateDisabled"
+          :placeholder="$t('slow-query.filter.to-date')"
+          type="date"
+          clearable
+          style="width: 10rem"
+          @update:value="changeToTime($event)"
         />
       </NInputGroup>
 
@@ -155,12 +167,32 @@ const changeProjectId = (id: ProjectId | undefined) => {
   }
   update({ project: undefined });
 };
-const changeTimeRange = (timeRange: [number, number] | null) => {
-  if (!timeRange) {
-    update({ timeRange: undefined });
+const changeTime = (
+  fromTime: number | undefined,
+  toTime: number | undefined
+) => {
+  if (fromTime && toTime && fromTime > toTime) {
+    // Swap if from > to
+    changeTime(toTime, fromTime);
     return;
   }
-  update({ timeRange });
+  if (fromTime) {
+    // fromTime is the start of the day
+    fromTime = dayjs(fromTime).startOf("day").valueOf();
+  }
+  if (toTime) {
+    // toTime is the end of the day
+    toTime = dayjs(toTime).endOf("day").valueOf();
+  }
+  update({ fromTime, toTime });
+};
+const changeFromTime = (fromTime: number | undefined) => {
+  const { toTime } = props.params;
+  changeTime(fromTime, toTime);
+};
+const changeToTime = (toTime: number | undefined) => {
+  const { fromTime } = props.params;
+  changeTime(fromTime, toTime);
 };
 
 const update = (params: Partial<SlowQueryFilterParams>) => {
