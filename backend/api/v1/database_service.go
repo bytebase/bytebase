@@ -506,7 +506,7 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 
 type totalValue struct {
 	totalQueryTime time.Duration
-	totalRowsSent  int64
+	totalCount     int64
 }
 
 // ListSlowQueries lists the slow queries.
@@ -654,11 +654,11 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			result.SlowQueryLogs = append(result.SlowQueryLogs, convertToSlowQueryLog(database.EnvironmentID, database.InstanceID, database.DatabaseName, database.ProjectID, log))
 			if value, exists := instanceMap[database.InstanceID]; exists {
 				value.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
-				value.totalRowsSent += log.Statistics.AverageRowsSent * log.Statistics.Count
+				value.totalCount += log.Statistics.Count
 			} else {
 				instanceMap[database.InstanceID] = &totalValue{
 					totalQueryTime: log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count),
-					totalRowsSent:  log.Statistics.AverageRowsSent * log.Statistics.Count,
+					totalCount:     log.Statistics.Count,
 				}
 			}
 		}
@@ -670,9 +670,8 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			return nil, status.Errorf(codes.Internal, "failed to get instance id %q", err.Error())
 		}
 		totalQueryTime := log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
-		totalRowsSent := log.Statistics.AverageRowsSent * log.Statistics.Count
 		log.Statistics.QueryTimePercent = float64(totalQueryTime) / float64(instanceMap[instanceID].totalQueryTime)
-		log.Statistics.RowsSentPercent = float64(totalRowsSent) / float64(instanceMap[instanceID].totalRowsSent)
+		log.Statistics.CountPercent = float64(log.Statistics.Count) / float64(instanceMap[instanceID].totalCount)
 	}
 
 	result, err = sortSlowQueryLogResponse(result, orderByKeys)
