@@ -632,9 +632,9 @@ func getRoutines(txn *sql.Tx, dbType db.Type, dbName string) ([]*routineSchema, 
 		if err := func() error {
 			var query string
 			if dbType == "OCEANBASE" {
-				query = fmt.Sprintf("SHOW %s STATUS FROM %s;", routineType, dbName)
+				query = fmt.Sprintf("SHOW %s STATUS FROM `%s`;", routineType, dbName)
 			} else {
-				query = fmt.Sprintf("SHOW %s STATUS WHERE Db = %s;", routineType, dbName)
+				query = fmt.Sprintf("SHOW %s STATUS WHERE Db = '%s';", routineType, dbName)
 			}
 			rows, err := txn.Query(query)
 			if err != nil {
