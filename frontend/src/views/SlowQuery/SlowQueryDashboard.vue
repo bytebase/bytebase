@@ -65,8 +65,8 @@ const syncFilterParamsFromQuery = async () => {
       const timeRangeStr = String(query.timeRange);
       const matches = timeRangeStr.match(/^(\d+)-(\d+)$/);
       if (matches && matches.length === 3) {
-        const from = parseInt(matches[1], 10);
-        const to = parseInt(matches[2], 10);
+        const from = parseInt(matches[1], 10) * 1000;
+        const to = parseInt(matches[2], 10) * 1000;
         if (from > 0 && to > 0) {
           params.timeRange = [from, to];
         }
@@ -103,7 +103,9 @@ watch(
         if (
           !isEqual(params.timeRange, defaultSlowQueryFilterParams().timeRange)
         ) {
-          query.timeRange = params.timeRange.join("-");
+          query.timeRange = params.timeRange
+            .map((ms) => Math.floor(ms / 1000))
+            .join("-");
         }
       }
       return query;
