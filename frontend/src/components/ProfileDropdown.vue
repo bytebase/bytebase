@@ -74,6 +74,16 @@
                 <label class="ml-2">简体中文</label>
               </div>
             </div>
+            <div
+              class="menu-item px-3 py-1 hover:bg-gray-100"
+              :class="{ 'bg-gray-100': locale === 'es-ES' }"
+              @click.prevent="toggleLocale('es-ES')"
+            >
+              <div class="radio text-sm">
+                <input type="radio" class="btn" :checked="locale === 'es-ES'" />
+                <label class="ml-2">Español</label>
+              </div>
+            </div>
           </BBContextMenu>
         </div>
         <a
