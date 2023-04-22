@@ -788,14 +788,14 @@ const currentMongoDBConnectionSchema = computed(() => {
 const allowCreate = computed(() => {
   if (basicInformation.value.engine === "SPANNER") {
     return (
-      basicInformation.value.name &&
+      basicInformation.value.name.trim() &&
       isValidSpannerHost(adminDataSource.value.host) &&
       adminDataSource.value.updatedPassword
     );
   }
 
   return (
-    basicInformation.value.name &&
+    basicInformation.value.name.trim() &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated &&
     adminDataSource.value.host
@@ -969,7 +969,7 @@ const changeInstanceEngine = (engine: EngineType) => {
 };
 
 const handleInstanceNameInput = (event: Event) => {
-  basicInformation.value.name = (event.target as HTMLInputElement).value.trim();
+  basicInformation.value.name = (event.target as HTMLInputElement).value;
 };
 
 const handleInstanceHostInput = (event: Event) => {
@@ -1235,7 +1235,7 @@ const doCreate = async () => {
 
   const instanceCreate: InstanceCreate = {
     resourceId: resourceIdField.value?.resourceId as string,
-    name: basicInformation.value.name,
+    name: basicInformation.value.name.trim(),
     engine: basicInformation.value.engine,
     externalLink: basicInformation.value.externalLink,
     environmentId: basicInformation.value.environmentId,
@@ -1291,8 +1291,8 @@ const doUpdate = async () => {
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
 
-  if (basicInformation.value.name != props.instance.name) {
-    patchedInstance.name = basicInformation.value.name;
+  if (basicInformation.value.name.trim() != props.instance.name) {
+    patchedInstance.name = basicInformation.value.name.trim();
     instanceInfoChanged = true;
   }
   if (basicInformation.value.externalLink != props.instance.externalLink) {
@@ -1412,7 +1412,7 @@ const doUpdate = async () => {
       module: "bytebase",
       style: "SUCCESS",
       title: t("instance.successfully-updated-instance-instance-name", [
-        basicInformation.value.name,
+        basicInformation.value.name.trim(),
       ]),
     });
     state.isRequesting = false;
