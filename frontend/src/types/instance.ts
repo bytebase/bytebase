@@ -23,6 +23,7 @@ export const EngineTypeList = [
   "MSSQL",
   "REDSHIFT",
   "MARIADB",
+  "OCEANBASE",
 ] as const;
 
 export type EngineType = typeof EngineTypeList[number];
@@ -53,6 +54,8 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.REDSHIFT;
     case "MARIADB":
       return Engine.MARIADB;
+    case "OCEANBASE":
+      return Engine.OCEANBASE;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -65,6 +68,7 @@ export function defaultCharset(type: EngineType): string {
     case "MYSQL":
     case "TIDB":
     case "MARIADB":
+    case "OCEANBASE":
       return "utf8mb4";
     case "POSTGRES":
       return "UTF8";
@@ -109,6 +113,8 @@ export function engineName(type: EngineType): string {
       return "Redshift";
     case "MARIADB":
       return "MariaDB";
+    case "OCEANBASE":
+      return "OceanBase";
   }
 }
 
@@ -120,6 +126,7 @@ export function defaultCollation(type: EngineType): string {
     case "MYSQL":
     case "TIDB":
     case "MARIADB":
+    case "OCEANBASE":
       return "utf8mb4_general_ci";
     // For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
     // If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't

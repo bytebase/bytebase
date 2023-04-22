@@ -38,7 +38,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 	}
 
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		extractor := &sensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,

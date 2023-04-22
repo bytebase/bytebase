@@ -1,7 +1,7 @@
 <template>
   <!-- Navigation -->
   <nav class="overflow-y-hidden flex flex-col">
-    <BytebaseLogo class="w-full px-4 pb-2 shrink-0" />
+    <BytebaseLogo class="w-full px-4 shrink-0" />
 
     <div class="flex-1 overflow-y-auto px-2 pt-1">
       <button

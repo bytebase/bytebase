@@ -10,10 +10,6 @@
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
-- [v1/common.proto](#v1_common-proto)
-    - [Engine](#bytebase-v1-Engine)
-    - [State](#bytebase-v1-State)
-  
 - [v1/anomaly_service.proto](#v1_anomaly_service-proto)
     - [Anomaly](#bytebase-v1-Anomaly)
     - [Anomaly.DatabaseBackupMissingDetail](#bytebase-v1-Anomaly-DatabaseBackupMissingDetail)
@@ -29,6 +25,10 @@
     - [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule)
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
+  
+- [v1/common.proto](#v1_common-proto)
+    - [Engine](#bytebase-v1-Engine)
+    - [State](#bytebase-v1-State)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
@@ -422,59 +422,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
-<a name="v1_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/common.proto
-
-
- 
-
-
-<a name="bytebase-v1-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-
-
-
-<a name="bytebase-v1-State"></a>
-
-### State
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATE_UNSPECIFIED | 0 |  |
-| ACTIVE | 1 |  |
-| DELETED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_anomaly_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -686,6 +633,60 @@ BackupPlanSchedule is the backup plan schedule.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | SearchAnomalies | [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest) | [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse) |  |
+
+ 
+
+
+
+<a name="v1_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/common.proto
+
+
+ 
+
+
+<a name="bytebase-v1-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+
+
+
+<a name="bytebase-v1-State"></a>
+
+### State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| ACTIVE | 1 |  |
+| DELETED | 2 |  |
+
+
+ 
+
+ 
 
  
 
@@ -1610,6 +1611,8 @@ SlowQueryStatistics is the statistics of the slow query log.
 | maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
 | average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
 | maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
+| query_time_percent | [double](#double) |  | The percentage of the query time. |
+| count_percent | [double](#double) |  | The percentage of the count. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 

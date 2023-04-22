@@ -152,6 +152,13 @@ export const useDatabaseStore = defineStore("database", {
     ): Database {
       return convert(database, includedList);
     },
+    getDatabaseList(): Database[] {
+      const list: Database[] = [];
+      for (const [_, databaseList] of this.databaseListByInstanceId) {
+        list.push(...databaseList);
+      }
+      return list;
+    },
     getDatabaseListByInstanceId(instanceId: InstanceId): Database[] {
       return this.databaseListByInstanceId.get(instanceId) || [];
     },

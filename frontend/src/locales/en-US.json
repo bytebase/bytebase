@@ -1369,7 +1369,9 @@
         "view-by-roles": "View by roles",
         "cannot-remove-last-owner": "Cannot remove the last owner of a project",
         "revoke-role-from-user": "Revoke '{role}' from '{user}'",
-        "remove-user": "Remove '{user}'"
+        "remove-user": "Remove '{user}'",
+        "inactive-members": "Inactive members",
+        "show-inactive": "Show inactive members"
       }
     },
     "mode": {
@@ -2307,24 +2309,33 @@
   "slow-query": {
     "self": "Slow query",
     "slow-queries": "Slow queries",
+    "report-slow-query": "Report slow query",
+    "report": "Report",
     "last-query-time": "Last query time",
     "database-name": "Database name",
     "sql-statement": "SQL statement",
     "total-query-count": "Total query count",
-    "query-time-95-percent": "Query time (95%)",
-    "query-time-avg": "Query time avg.",
-    "rows-examined-95-percent": "Rows examined (95%)",
-    "rows-sent-95-percent": "Rows sent (95%)",
-    "rows-examined-avg": "Rows examined avg.",
+    "query-count-percent": "Query count %",
+    "max-query-time": "Max query time",
+    "avg-query-time": "Avg query time",
+    "query-time-percent": "Query time %",
+    "max-rows-examined": "Max rows examined",
+    "avg-rows-examined": "Avg rows examined",
+    "max-rows-sent": "Max rows sent",
+    "avg-rows-sent": "Avg rows sent",
     "rows-sent-avg": "Rows sent avg.",
     "query-start-time": "Query start time",
     "rows-examined": "Rows examined",
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Logging and analyzing slow queries for {versions}.\nBytebase will periodically sync slow query logs from instances.",
+    "attention-description": "Bytebase periodically syncs slow query logs from instances.\nFor MySQL instance, {slow_query} must be enabled first.\nFor PostgreSQL instance, {pg_stat_statements} must be enabled first in each database.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
-    "detail": "Slow Query Detail"
+    "detail": "Slow Query Detail",
+    "filter": {
+      "from-date": "From date",
+      "to-date": "To date"
+    }
   },
   "principal": {
     "select": "Select user"

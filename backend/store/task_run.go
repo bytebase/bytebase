@@ -188,7 +188,8 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 	return &taskRun, nil
 }
 
-func (s *Store) listTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunMessage, error) {
+// ListTaskRun returns a list of taskRuns.
+func (s *Store) ListTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -285,4 +286,21 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 	}
 
 	return taskRuns, nil
+}
+
+// BatchPatchTaskRunStatus updates the status of a list of taskRuns.
+func (s *Store) BatchPatchTaskRunStatus(ctx context.Context, taskRunIDs []int, status api.TaskRunStatus, updaterID int) error {
+	var ids []string
+	for _, id := range taskRunIDs {
+		ids = append(ids, fmt.Sprintf("%d", id))
+	}
+	query := fmt.Sprintf(`
+		UPDATE task_run
+		SET status = $1, updater_id = $2
+		WHERE id IN (%s);
+	`, strings.Join(ids, ","))
+	if _, err := s.db.db.ExecContext(ctx, query, status, updaterID); err != nil {
+		return err
+	}
+	return nil
 }

@@ -7,7 +7,8 @@ export type SlowQueryFilterParams = {
   environment: Environment | undefined; // undefined to "All"
   instance: Instance | undefined; // undefined to "All"
   database: Database | undefined; // undefined to "All"
-  timeRange: [number, number] | undefined;
+  fromTime: number | undefined;
+  toTime: number | undefined;
 };
 
 export const FilterTypeList = [
@@ -22,22 +23,21 @@ export type FilterType = typeof FilterTypeList[number];
 
 export const defaultSlowQueryFilterParams = (): SlowQueryFilterParams => {
   const now = dayjs();
-  const recentWeek: [number, number] = [
-    now.subtract(7, "days").startOf("day").valueOf(),
-    now.endOf("day").valueOf(),
-  ];
+  const aWeekAgo = now.subtract(7, "days").startOf("day").valueOf();
+  const tonight = now.endOf("day").valueOf();
   return {
     project: undefined,
     environment: undefined,
     instance: undefined,
     database: undefined,
-    timeRange: recentWeek,
+    fromTime: aWeekAgo,
+    toTime: tonight,
   };
 };
 
 export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
   const request = {} as Partial<ListSlowQueriesRequest>;
-  const { project, environment, instance, database, timeRange } = filter;
+  const { project, environment, instance, database, fromTime, toTime } = filter;
 
   request.parent = "environments/-/instances/-/databases/-";
   if (database && database.id !== UNKNOWN_ID) {
@@ -52,16 +52,18 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
   if (project) {
     query.push(`project = "projects/${project.resourceId}"`);
   }
-  if (timeRange) {
-    const start = dayjs(timeRange[0]).startOf("day").toISOString();
-    const end = dayjs(timeRange[1]).endOf("day").toISOString();
+  if (fromTime) {
+    const start = dayjs(fromTime).toISOString();
     query.push(`start_time >= "${start}"`);
+  }
+  if (toTime) {
+    const end = dayjs(toTime).toISOString();
     query.push(`start_time <= "${end}"`);
   }
   if (query.length > 0) {
     request.filter = query.join(" && ");
   }
 
-  request.orderBy = "nighty_fifth_percentile_query_time desc";
+  request.orderBy = "maximum_query_time desc";
   return ListSlowQueriesRequest.fromJSON(request);
 };

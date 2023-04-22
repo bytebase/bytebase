@@ -6,9 +6,7 @@
       class="overflow-y-auto"
       style="max-height: calc(100vh - 380px)"
       arrow-placement="left"
-      :default-expanded-names="
-        databaseListGroupByEnvironment.map((group) => group.environment.id)
-      "
+      :default-expanded-names="environmentList.map((env) => env.id)"
     >
       <NCollapseItem
         v-for="{

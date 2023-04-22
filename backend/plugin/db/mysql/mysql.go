@@ -31,6 +31,7 @@ func init() {
 	db.Register(db.MySQL, newDriver)
 	db.Register(db.TiDB, newDriver)
 	db.Register(db.MariaDB, newDriver)
+	db.Register(db.OceanBase, newDriver)
 }
 
 // Driver is the MySQL driver.
@@ -69,9 +70,13 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 
 	port := connCfg.Port
 	if port == "" {
-		port = "3306"
-		if dbType == db.TiDB {
+		switch dbType {
+		case db.TiDB:
 			port = "4000"
+		case db.OceanBase:
+			port = "2883"
+		default:
+			port = "3306"
 		}
 	}
 

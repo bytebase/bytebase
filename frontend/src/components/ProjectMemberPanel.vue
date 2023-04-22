@@ -6,9 +6,12 @@
       feature="bb.feature.rbac"
       :description="$t('subscription.features.bb-feature-rbac.desc')"
     />
-    <span class="text-lg font-medium leading-7 text-main">
-      {{ $t("project.settings.manage-member") }}
-    </span>
+    <div class="text-lg font-medium leading-7 text-main">
+      <span>{{ $t("project.settings.manage-member") }}</span>
+      <span class="ml-1 font-normal text-control-light">
+        ({{ activeComposedPrincipalList.length }})
+      </span>
+    </div>
 
     <div v-if="allowAdmin" class="my-4 w-full flex gap-x-2">
       <div class="w-[18rem] shrink-0">
@@ -38,19 +41,50 @@
         {{ $t("project.settings.add-member") }}
       </NButton>
     </div>
+
     <ProjectMemberTable
       :iam-policy="iamPolicy"
       :project="project"
       :ready="ready"
+      :editable="true"
+      :composed-principal-list="activeComposedPrincipalList"
     />
+
+    <div v-if="inactiveComposedPrincipalList.length > 0" class="mt-4">
+      <NCheckbox v-model:checked="state.showInactiveMemberList">
+        <span class="textinfolabel">
+          {{ $t("project.settings.members.show-inactive") }}
+        </span>
+      </NCheckbox>
+    </div>
+
+    <div v-if="state.showInactiveMemberList" class="my-4 space-y-2">
+      <div class="text-lg font-medium leading-7 text-main">
+        <span>{{ $t("project.settings.members.inactive-members") }}</span>
+        <span class="ml-1 font-normal text-control-light">
+          ({{ inactiveComposedPrincipalList.length }})
+        </span>
+      </div>
+      <ProjectMemberTable
+        :iam-policy="iamPolicy"
+        :project="project"
+        :ready="ready"
+        :editable="false"
+        :composed-principal-list="
+          composedPrincipalList.filter(
+            (item) => item.member.rowStatus === 'ARCHIVED'
+          )
+        "
+      />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-import { NButton } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, orderBy, uniq } from "lodash-es";
 
 import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
@@ -68,18 +102,23 @@ import {
   hasWorkspacePermission,
 } from "../utils";
 import {
+  extractUserEmail,
   featureToRef,
   pushNotification,
   useCurrentUser,
+  useMemberStore,
   usePrincipalStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
+  useUserStore,
 } from "@/store";
+import { ComposedPrincipal } from "./Project/ProjectSetting/common";
 
 interface LocalState {
   principalId: PrincipalId | undefined;
   roleList: ProjectRoleType[];
   adding: boolean;
+  showInactiveMemberList: boolean;
 }
 
 const props = defineProps({
@@ -89,6 +128,7 @@ const props = defineProps({
   },
 });
 
+const ROLE_OWNER = "roles/OWNER";
 const ROLE_DEVELOPER = "roles/DEVELOPER";
 const { t } = useI18n();
 const currentUser = useCurrentUser();
@@ -101,9 +141,12 @@ const state = reactive<LocalState>({
   principalId: undefined,
   roleList: [],
   adding: false,
+  showInactiveMemberList: false,
 });
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
+const userStore = useUserStore();
+const memberStore = useMemberStore();
 
 const allowAdmin = computed(() => {
   if (props.project.id === DEFAULT_PROJECT_ID) {
@@ -134,6 +177,64 @@ const allowAdmin = computed(() => {
     return true;
   }
   return false;
+});
+
+const composedPrincipalList = computed(() => {
+  const distinctUserResourceNameList = uniq(
+    iamPolicy.value.bindings.flatMap((binding) => binding.members)
+  );
+
+  const userEmailList = distinctUserResourceNameList.map((user) =>
+    extractUserEmail(user)
+  );
+
+  const composedUserList = userEmailList.map((email) => {
+    const user = userStore.getUserByEmail(email);
+    const member = memberStore.memberByEmail(email);
+    return { email, user, member };
+  });
+
+  const usersByRole = iamPolicy.value.bindings.map((binding) => {
+    return {
+      role: binding.role,
+      users: new Set(binding.members),
+    };
+  });
+  const composedPrincipalList = composedUserList.map<ComposedPrincipal>(
+    ({ email, member }) => {
+      const resourceName = `user:${email}`;
+      const roleList = usersByRole
+        .filter((binding) => binding.users.has(resourceName))
+        .map((binding) => binding.role);
+      return {
+        email,
+        member,
+        principal: member.principal,
+        roleList,
+      };
+    }
+  );
+
+  return orderBy(
+    composedPrincipalList,
+    [
+      (item) => (item.roleList.includes(ROLE_OWNER) ? 0 : 1),
+      (item) => item.principal.id,
+    ],
+    ["asc", "asc"]
+  );
+});
+
+const activeComposedPrincipalList = computed(() => {
+  return composedPrincipalList.value.filter(
+    (item) => item.member.rowStatus === "NORMAL"
+  );
+});
+
+const inactiveComposedPrincipalList = computed(() => {
+  return composedPrincipalList.value.filter(
+    (item) => item.member.rowStatus === "ARCHIVED"
+  );
 });
 
 const isValid = computed(() => {

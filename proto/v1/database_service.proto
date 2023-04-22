@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
@@ -592,9 +591,15 @@ message SlowQueryStatistics {
 
   // The maximum rows examined of the slow query log.
   int64 maximum_rows_examined = 9;
+  
+  // The percentage of the query time.
+  double query_time_percent = 10;
+  
+  // The percentage of the count.
+  double count_percent = 11;
 
   // Samples are details of the sample slow query logs with the same fingerprint.
-  repeated SlowQueryDetails samples = 10;
+  repeated SlowQueryDetails samples = 12;
 }
 
 // SlowQueryDetails is the details of the slow query log.
